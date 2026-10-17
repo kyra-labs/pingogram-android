@@ -20,6 +20,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Committed debug keystore for consistent debug signatures; release signing from environment or
   `keystore.properties` (v2/v3/v4), and release packaging fails early when signing is not configured.
 
+- Static analysis in `./gradlew check`: ktlint 1.8 (`./gradlew ktlintFormat`), detekt 1.23.8 with the
+  `PingogramHardcodedToken` rule (no literal colors, text sizes, sizes, shapes or animation specs in
+  `:feature:*` code), Android Lint with warnings as errors, and `./gradlew dependencyUpdates`.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.

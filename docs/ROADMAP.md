@@ -13,13 +13,13 @@ the release workflow so the owner can install and test on a phone.
       Google Sans Flex type scale (15 styles + 15 emphasized, variable axes per style), shapes
       + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, app icon
       (adaptive + monochrome), splash
-- [ ] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
+- [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
 - [ ] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
 - [ ] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
       database key in Keystore, parameters provider
 - [ ] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
       shell with placeholder tabs
-- [ ] ktlint, detekt, lint config; `./gradlew check` green
+- [x] ktlint, detekt, lint config; `./gradlew check` green
 - [ ] CI workflow green on PR; TDLib workflow produces an AAR release; release workflow
       produces signed APKs on tag
 - [x] README badges, CONTRIBUTING, issue templates in place

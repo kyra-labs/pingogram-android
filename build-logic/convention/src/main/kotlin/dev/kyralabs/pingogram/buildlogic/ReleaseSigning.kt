@@ -16,9 +16,13 @@ class ReleaseSigning(
 ) {
     /** The signing to use, or why there is none (naming variables and keys, never values). */
     sealed interface Resolution {
-        class Configured(val signing: ReleaseSigning) : Resolution
+        class Configured(
+            val signing: ReleaseSigning,
+        ) : Resolution
 
-        class Missing(val message: String) : Resolution
+        class Missing(
+            val message: String,
+        ) : Resolution
     }
 
     companion object {
@@ -30,7 +34,10 @@ class ReleaseSigning(
         private val PROPERTY_KEYS = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
 
         /** [env] looks up an environment variable; [keystoreProperties] is the file's text, or null if absent. */
-        fun resolve(env: (String) -> String?, keystoreProperties: String?): Resolution {
+        fun resolve(
+            env: (String) -> String?,
+            keystoreProperties: String?,
+        ): Resolution {
             val properties = keystoreProperties?.let { Properties().apply { load(StringReader(it)) } }
             // Blank counts as unset: GitHub Actions passes an empty string for a secret that does not exist.
             val fromEnv = ENV_VARS.associateWith { env(it)?.takeIf(String::isNotBlank) }
@@ -39,10 +46,11 @@ class ReleaseSigning(
             (fromEnv.toSigning() ?: fromFile.toSigning())?.let { return Resolution.Configured(it) }
 
             // Only mention a source the user evidently tried to set up.
-            val incomplete = listOfNotNull(
-                "environment (missing ${fromEnv.missing()})".takeIf { fromEnv.values.any { it != null } },
-                "$PROPERTIES_FILE (missing ${fromFile.missing()})".takeIf { properties != null },
-            )
+            val incomplete =
+                listOfNotNull(
+                    "environment (missing ${fromEnv.missing()})".takeIf { fromEnv.values.any { it != null } },
+                    "$PROPERTIES_FILE (missing ${fromFile.missing()})".takeIf { properties != null },
+                )
             val details = if (incomplete.isEmpty()) "" else incomplete.joinToString("; ", " Incomplete: ", ".")
             return Resolution.Missing(
                 "Release signing is not configured. Set the environment variables ${ENV_VARS.joinToString()}, " +

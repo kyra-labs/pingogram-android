@@ -3,13 +3,20 @@
 
 [versions]
 androidGradlePlugin = "9.4.1"
+assertj = "3.27.7"
 composeBom = "2026.09.00"
+# detekt-cli runs in its own JVM (pingogram.detekt), so its embedded Kotlin compiler never meets ours.
+detekt = "1.23.8"
+gradleVersionsPlugin = "0.54.0"
 hilt = "2.60.1"
 junit = "5.14.4"
 kotlin = "2.4.21"
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
 ksp = "2.3.12"
+# ktlint engine used by the ktlint Gradle plugin (pingogram.ktlint)
+ktlint = "1.8.0"
+ktlintGradlePlugin = "14.2.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 
@@ -26,21 +33,33 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 
+# Static analysis: detekt CLI run by pingogram.detekt, and our own rule set from build-logic/detekt-rules (no version)
+detekt-cli = { group = "io.gitlab.arturbosch.detekt", name = "detekt-cli", version.ref = "detekt" }
+pingogram-detekt-rules = { group = "dev.kyralabs.pingogram.buildlogic", name = "detekt-rules" }
+
 # Build-logic dependencies (compileOnly in build-logic/convention)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
 compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
+ktlint-gradlePlugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlintGradlePlugin" }
+
+# Build-logic dependencies of build-logic/detekt-rules
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+detekt-api = { group = "io.gitlab.arturbosch.detekt", name = "detekt-api", version.ref = "detekt" }
+detekt-test = { group = "io.gitlab.arturbosch.detekt", name = "detekt-test", version.ref = "detekt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }
+gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradlePlugin" }
 
 # Convention plugins defined in build-logic (no versions)
 pingogram-android-application = { id = "pingogram.android.application" }
@@ -49,4 +68,6 @@ pingogram-android-feature = { id = "pingogram.android.feature" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-lint = { id = "pingogram.android.lint" }
+pingogram-detekt = { id = "pingogram.detekt" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
+pingogram-ktlint = { id = "pingogram.ktlint" }

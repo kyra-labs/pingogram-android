@@ -17,6 +17,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "com.android.application")
             apply(plugin = "pingogram.android.lint")
+            apply(plugin = "pingogram.detekt")
+            apply(plugin = "pingogram.ktlint")
 
             val version = PingogramVersion.parse(providers.gradleProperty("version").orNull)
             val secrets = TelegramSecrets.parse(rootFileText(TelegramSecrets.FILE_NAME))
@@ -38,9 +40,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             extensions.configure<ApplicationAndroidComponentsExtension> {
                 onVariants { variant ->
                     variant.outputs.forEach { output ->
-                        val abi = output.filters
-                            .find { it.filterType == FilterConfiguration.FilterType.ABI }
-                            ?.identifier
+                        val abi =
+                            output.filters
+                                .find { it.filterType == FilterConfiguration.FilterType.ABI }
+                                ?.identifier
                         output.versionCode.set(version.versionCode(abi))
                     }
                 }
@@ -62,23 +65,27 @@ private fun Project.configureSigning(android: ApplicationExtension) {
         keyPassword = "android"
     }
 
-    val resolution = ReleaseSigning.resolve(
-        env = { providers.environmentVariable(it).orNull },
-        keystoreProperties = rootFileText(ReleaseSigning.PROPERTIES_FILE),
-    )
+    val resolution =
+        ReleaseSigning.resolve(
+            env = { providers.environmentVariable(it).orNull },
+            keystoreProperties = rootFileText(ReleaseSigning.PROPERTIES_FILE),
+        )
     when (resolution) {
         is ReleaseSigning.Resolution.Configured -> {
             val signing = resolution.signing
-            android.buildTypes.getByName("release").signingConfig = android.signingConfigs.create("release") {
-                // A relative path in keystore.properties is relative to the repository root.
-                storeFile = layout.settingsDirectory.file(signing.storeFile).asFile
-                storePassword = signing.storePassword
-                keyAlias = signing.keyAlias
-                keyPassword = signing.keyPassword
-            }
+            android.buildTypes.getByName("release").signingConfig =
+                android.signingConfigs.create("release") {
+                    // A relative path in keystore.properties is relative to the repository root.
+                    storeFile = layout.settingsDirectory.file(signing.storeFile).asFile
+                    storePassword = signing.storePassword
+                    keyAlias = signing.keyAlias
+                    keyPassword = signing.keyPassword
+                }
         }
 
-        is ReleaseSigning.Resolution.Missing -> failReleasePackaging(resolution.message)
+        is ReleaseSigning.Resolution.Missing -> {
+            failReleasePackaging(resolution.message)
+        }
     }
 
     // minSdk 26 needs no v1 (JAR) signature.

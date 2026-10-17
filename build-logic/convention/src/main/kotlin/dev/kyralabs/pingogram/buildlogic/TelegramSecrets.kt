@@ -37,20 +37,27 @@ class TelegramSecrets private constructor(
             val apiHash = rawHash?.takeIf(HEX_32::matches)
 
             check(apiId != null && apiHash != null) {
-                val problems = listOfNotNull(
-                    problem(API_ID, rawId, apiId, "must be a non-negative integer"),
-                    problem(API_HASH, rawHash, apiHash, "must be exactly 32 hexadecimal characters"),
-                )
+                val problems =
+                    listOfNotNull(
+                        problem(API_ID, rawId, apiId, "must be a non-negative integer"),
+                        problem(API_HASH, rawHash, apiHash, "must be exactly 32 hexadecimal characters"),
+                    )
                 "$FILE_NAME is invalid: ${problems.joinToString("; ")}. " +
                     "Use the format of secrets.properties.example $WHERE_TO_GET."
             }
             return TelegramSecrets(apiId, apiHash)
         }
 
-        private fun problem(key: String, raw: String?, parsed: Any?, requirement: String): String? = when {
-            raw == null -> "$key is missing or empty"
-            parsed == null -> "$key $requirement"
-            else -> null
-        }
+        private fun problem(
+            key: String,
+            raw: String?,
+            parsed: Any?,
+            requirement: String,
+        ): String? =
+            when {
+                raw == null -> "$key is missing or empty"
+                parsed == null -> "$key $requirement"
+                else -> null
+            }
     }
 }
