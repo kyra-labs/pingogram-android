@@ -15,6 +15,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   `:app`, `:core:*` and `:feature:*` modules from `docs/ARCHITECTURE.md` (mostly empty for now).
   AGP 9.4.1, Kotlin 2.4.21, Compose BOM 2026.09.00; `foss`/`gms` flavors; app version and
   per-ABI version codes from `-Pversion`.
+- Telegram API credentials come from the git-ignored `secrets.properties`; the build fails with a
+  clear message (never echoing values) when the file or a key is missing or malformed.
+- Committed debug keystore for consistent debug signatures; release signing from environment or
+  `keystore.properties` (v2/v3/v4), and release packaging fails early when signing is not configured.
 
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
