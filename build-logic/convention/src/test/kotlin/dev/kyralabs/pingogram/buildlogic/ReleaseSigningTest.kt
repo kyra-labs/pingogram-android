@@ -7,28 +7,36 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ReleaseSigningTest {
-    private val env = mapOf(
-        "SIGNING_KEYSTORE_PATH" to "/ci/release.jks",
-        "SIGNING_KEYSTORE_PASSWORD" to "env-store-pass",
-        "SIGNING_KEY_ALIAS" to "pingogram",
-        "SIGNING_KEY_PASSWORD" to "env-key-pass",
-    )
-    private val keystoreProperties = """
+    private val env =
+        mapOf(
+            "SIGNING_KEYSTORE_PATH" to "/ci/release.jks",
+            "SIGNING_KEYSTORE_PASSWORD" to "env-store-pass",
+            "SIGNING_KEY_ALIAS" to "pingogram",
+            "SIGNING_KEY_PASSWORD" to "env-key-pass",
+        )
+    private val keystoreProperties =
+        """
         storeFile=/home/me/pingogram-release.jks
         storePassword=file-store-pass
         keyAlias=local
         keyPassword=file-key-pass
-    """.trimIndent()
+        """.trimIndent()
 
     private val ReleaseSigning.fields get() = listOf(storeFile, storePassword, keyAlias, keyPassword)
 
-    private fun signing(env: Map<String, String>, keystoreProperties: String?): ReleaseSigning =
+    private fun signing(
+        env: Map<String, String>,
+        keystoreProperties: String?,
+    ): ReleaseSigning =
         assertInstanceOf(
             ReleaseSigning.Resolution.Configured::class.java,
             ReleaseSigning.resolve(env::get, keystoreProperties),
         ).signing
 
-    private fun missingMessage(env: Map<String, String>, keystoreProperties: String?): String =
+    private fun missingMessage(
+        env: Map<String, String>,
+        keystoreProperties: String?,
+    ): String =
         assertInstanceOf(
             ReleaseSigning.Resolution.Missing::class.java,
             ReleaseSigning.resolve(env::get, keystoreProperties),
@@ -82,10 +90,11 @@ class ReleaseSigningTest {
 
     @Test
     fun `incomplete sources name what is missing`() {
-        val message = missingMessage(
-            env - "SIGNING_KEY_ALIAS",
-            keystoreProperties.lines().filterNot { it.startsWith("keyPassword") }.joinToString("\n"),
-        )
+        val message =
+            missingMessage(
+                env - "SIGNING_KEY_ALIAS",
+                keystoreProperties.lines().filterNot { it.startsWith("keyPassword") }.joinToString("\n"),
+            )
 
         val expected = listOf("environment (missing SIGNING_KEY_ALIAS)", "keystore.properties (missing keyPassword)")
         assertTrue(expected.all { it in message }, message)

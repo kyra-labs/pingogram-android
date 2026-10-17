@@ -9,7 +9,10 @@ import org.junit.jupiter.api.assertThrows
 class TelegramSecretsTest {
     private val hash = "0123456789abcdef0123456789abcdef"
 
-    private fun secretsFile(id: String, hash: String) = "TELEGRAM_API_ID=$id\nTELEGRAM_API_HASH=$hash\n"
+    private fun secretsFile(
+        id: String,
+        hash: String,
+    ) = "TELEGRAM_API_ID=$id\nTELEGRAM_API_HASH=$hash\n"
 
     private fun errorFor(contents: String?): String =
         assertThrows<IllegalStateException> { TelegramSecrets.parse(contents) }.message.orEmpty()

@@ -65,23 +65,27 @@ private fun Project.configureSigning(android: ApplicationExtension) {
         keyPassword = "android"
     }
 
-    val resolution = ReleaseSigning.resolve(
-        env = { providers.environmentVariable(it).orNull },
-        keystoreProperties = rootFileText(ReleaseSigning.PROPERTIES_FILE),
-    )
+    val resolution =
+        ReleaseSigning.resolve(
+            env = { providers.environmentVariable(it).orNull },
+            keystoreProperties = rootFileText(ReleaseSigning.PROPERTIES_FILE),
+        )
     when (resolution) {
         is ReleaseSigning.Resolution.Configured -> {
             val signing = resolution.signing
-            android.buildTypes.getByName("release").signingConfig = android.signingConfigs.create("release") {
-                // A relative path in keystore.properties is relative to the repository root.
-                storeFile = layout.settingsDirectory.file(signing.storeFile).asFile
-                storePassword = signing.storePassword
-                keyAlias = signing.keyAlias
-                keyPassword = signing.keyPassword
-            }
+            android.buildTypes.getByName("release").signingConfig =
+                android.signingConfigs.create("release") {
+                    // A relative path in keystore.properties is relative to the repository root.
+                    storeFile = layout.settingsDirectory.file(signing.storeFile).asFile
+                    storePassword = signing.storePassword
+                    keyAlias = signing.keyAlias
+                    keyPassword = signing.keyPassword
+                }
         }
 
-        is ReleaseSigning.Resolution.Missing -> failReleasePackaging(resolution.message)
+        is ReleaseSigning.Resolution.Missing -> {
+            failReleasePackaging(resolution.message)
+        }
     }
 
     // minSdk 26 needs no v1 (JAR) signature.
