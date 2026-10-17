@@ -18,7 +18,8 @@ rules apply to humans and AI assistants.
 2. `cp secrets.properties.example secrets.properties` and fill in your own `api_id` /
    `api_hash` from https://my.telegram.org. The build fails with a clear message without it.
 3. `./gradlew check` runs everything CI runs on a PR; `./gradlew :app:assembleFossDebug`
-   builds an installable debug APK.
+   builds an installable debug APK. The first build downloads the prebuilt TDLib AAR from this
+   repository's GitHub releases; to use one you built, see `docs/TDLIB.md` (`pingogram.tdlib.aar`).
 
 ## Workflow
 
