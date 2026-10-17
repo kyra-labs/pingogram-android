@@ -143,7 +143,7 @@ jobs:
           fail_on_unmatched_files: true
 
       - name: Upload AAB and R8 mapping (artifact only)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pingogram-${{ steps.version.outputs.version }}-bundle-and-mapping
           path: |
