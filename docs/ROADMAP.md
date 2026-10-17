@@ -17,7 +17,7 @@ the release workflow so the owner can install and test on a phone.
 - [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
 - [x] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
       database key in Keystore, parameters provider
-- [ ] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
+- [x] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
       shell with placeholder tabs
 - [x] ktlint, detekt, lint config; `./gradlew check` green
 - [x] CI workflow green on PR; TDLib workflow produces an AAR release
