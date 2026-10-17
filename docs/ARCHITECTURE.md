@@ -115,8 +115,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`.
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /
-  `TELEGRAM_API_HASH` (String) via the secrets-gradle-plugin or a small custom task. CI writes the
-  file from GitHub secrets. Missing values fail configuration with a readable message.
+  `TELEGRAM_API_HASH` (String), parsed and validated in `build-logic` (`TelegramSecrets`, applied
+  by `pingogram.android.application`). CI writes the file from GitHub secrets. A missing file or
+  key, a non-integer id or a hash that is not 32 hex characters fails configuration with a
+  readable message that names the key but never its value.
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
   for GitHub releases: `foss`. Build types: `debug` (suffix `.debug`, debuggable), `release`
   (R8 full mode, resource shrinking, Baseline Profiles).
