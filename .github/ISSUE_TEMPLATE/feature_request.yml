@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an improvement
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Mention which Material 3 Expressive component you imagine, if relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: parity
+    attributes:
+      label: Does the official Telegram app have this?
+      options: ["Yes", "No", "Not sure"]
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Compliance
+      options:
+        - label: This does not require hiding sponsored messages, automation, or anything against Telegram's API terms
+          required: true

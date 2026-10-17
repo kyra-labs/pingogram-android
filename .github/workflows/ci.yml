@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "17"
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # Secrets are unavailable to PRs from forks; placeholders let the build compile.
+      # The resulting debug APK cannot log in, which is fine for CI.
+      - name: Write secrets.properties
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          printf 'TELEGRAM_API_ID=%s\nTELEGRAM_API_HASH=%s\n' \
+            "${TELEGRAM_API_ID:-0}" "${TELEGRAM_API_HASH:-00000000000000000000000000000000}" \
+            > secrets.properties
+
+      - name: Static checks and unit tests
+        run: ./gradlew check --stacktrace --no-daemon
+
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleFossDebug --stacktrace --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pingogram-foss-debug
+          path: app/build/outputs/apk/foss/debug/*.apk
+          retention-days: 14
+
+      - name: Upload test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+          retention-days: 7

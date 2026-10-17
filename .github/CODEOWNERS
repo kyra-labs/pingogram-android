@@ -1,0 +1,6 @@
+# Replace @OWNER with your GitHub username. Reviews are requested automatically.
+*                         @OWNER
+/.github/                 @OWNER
+/core/tdlib/              @OWNER
+/docs/                    @OWNER
+/CLAUDE.md                @OWNER

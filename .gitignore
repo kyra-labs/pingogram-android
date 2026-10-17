@@ -1,0 +1,33 @@
+# Secrets — never commit
+secrets.properties
+keystore.properties
+*.jks
+*.keystore
+!app/debug.keystore
+keystore.b64
+
+# TDLib binaries (downloaded by Gradle)
+core/tdlib/libs/
+*.aar
+!gradle/wrapper/*
+
+# Gradle / build
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+mapping.txt
+
+# IDE
+.idea/
+*.iml
+local.properties
+.kotlin/
+.DS_Store
+
+# Claude Code local state
+.claude/settings.local.json

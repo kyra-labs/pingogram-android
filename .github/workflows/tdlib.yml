@@ -1,0 +1,138 @@
+name: Build TDLib
+
+# Builds TDLib for Android at the pinned commit and publishes the AAR as a pre-release
+# tagged tdlib-<short-sha>. The app's `fetchTdlib` Gradle task downloads that asset.
+# Run manually (Actions → Build TDLib → Run workflow) after changing TDLIB_COMMIT.
+#
+# NOTE for maintainers / Claude Code: the official scripts live in tdlib/td at
+# example/android/. Their arguments and output paths occasionally change between TDLib
+# versions — check example/android/README.md at the pinned commit if a step fails.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tdlib_commit:
+        description: "tdlib/td commit SHA or tag (leave empty to use TDLIB_COMMIT below)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  # Pin an exact commit SHA here (also mirrored in gradle/libs.versions.toml → tdlib).
+  TDLIB_COMMIT: "master"   # TODO(owner/Claude Code): replace with a specific SHA before M0 ends
+  ANDROID_API: "26"
+  # NDK r28+ produces 16 KB page-size aligned .so files (required on Android 15+).
+  ANDROID_NDK_VERSION: "28.1.13356709"
+
+jobs:
+  build:
+    name: build-aar
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Resolve commit
+        id: commit
+        run: |
+          C="${{ inputs.tdlib_commit }}"
+          [[ -z "$C" ]] && C="${TDLIB_COMMIT}"
+          echo "commit=$C" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout tdlib/td
+        uses: actions/checkout@v4
+        with:
+          repository: tdlib/td
+          ref: ${{ steps.commit.outputs.commit }}
+          path: td
+          fetch-depth: 1
+
+      - name: Record resolved SHA
+        id: sha
+        working-directory: td
+        run: |
+          FULL=$(git rev-parse HEAD)
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          echo "short=${FULL:0:10}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make git zlib1g-dev libssl-dev gperf php-cli cmake \
+            clang libc++-dev libc++abi-dev ninja-build unzip
+
+      - name: Check environment
+        working-directory: td/example/android
+        run: ./check-environment.sh
+
+      - name: Fetch Android SDK/NDK (TDLib's helper)
+        working-directory: td/example/android
+        run: ./fetch-sdk.sh
+
+      - name: Build OpenSSL for Android
+        working-directory: td/example/android
+        run: ./build-openssl.sh
+
+      - name: Build TDLib (JNI + Java bindings)
+        working-directory: td/example/android
+        run: ./build-tdlib.sh
+
+      - name: Collect AAR
+        id: collect
+        env:
+          SHORT: ${{ steps.sha.outputs.short }}
+        run: |
+          mkdir -p dist
+          # The build script packages its output under td/example/android/tdlib (zip and/or AAR).
+          find td/example/android/tdlib -name '*.zip' -print -exec unzip -oq {} -d td/example/android/tdlib/unzipped \;
+          AAR=$(find td/example/android/tdlib -name '*.aar' ! -name '*debug*' | head -n 1)
+          if [[ -z "$AAR" ]]; then
+            echo "::error::No .aar produced — inspect build output / README of the pinned TDLib commit"; exit 1
+          fi
+          cp "$AAR" "dist/tdlib-${SHORT}.aar"
+          ( cd dist && sha256sum "tdlib-${SHORT}.aar" > SHA256SUMS.txt )
+          echo "aar=dist/tdlib-${SHORT}.aar" >> "$GITHUB_OUTPUT"
+          ls -la dist
+
+      - name: Verify 16 KB page alignment
+        continue-on-error: true
+        run: |
+          mkdir -p check && ( cd check && unzip -oq ../${{ steps.collect.outputs.aar }} )
+          READELF=$(find td/example/android/SDK/ndk -path '*linux-x86_64/bin/llvm-readelf' | head -n 1)
+          [[ -z "$READELF" ]] && READELF=$(find "$ANDROID_NDK_LATEST_HOME" -name llvm-readelf | head -n 1)
+          for so in $(find check -name '*.so'); do
+            ALIGN=$("$READELF" -l "$so" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')
+            echo "$so → LOAD align: $ALIGN"
+            echo "$ALIGN" | grep -q '0x4000' || echo "::warning::$so is not 16 KB aligned"
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdlib-${{ steps.sha.outputs.short }}
+          path: dist/*
+          retention-days: 90
+
+      - name: Publish as tdlib-* pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: tdlib-${{ steps.sha.outputs.short }}
+          name: TDLib ${{ steps.sha.outputs.short }} (Android AAR)
+          prerelease: true
+          body: |
+            Prebuilt TDLib for Android.
+            - tdlib/td commit: `${{ steps.sha.outputs.full }}`
+            - ABIs: arm64-v8a, armeabi-v7a, x86_64 · min API ${{ env.ANDROID_API }}
+            - Built with NDK ${{ env.ANDROID_NDK_VERSION }} (16 KB page aligned)
+            - License: Boost Software License 1.0 (https://github.com/tdlib/td)
+
+            Consumed by `core/tdlib` via the `fetchTdlib` Gradle task.
+          files: |
+            dist/*.aar
+            dist/SHA256SUMS.txt

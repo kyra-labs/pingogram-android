@@ -1,0 +1,152 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+    inputs:
+      build_gms:
+        description: "Also build the gms (FCM) flavor"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  JAVA_VERSION: "17"
+
+jobs:
+  release:
+    name: build-and-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == 0.* || "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Write secrets.properties
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          if [[ -z "$TELEGRAM_API_ID" || -z "$TELEGRAM_API_HASH" ]]; then
+            echo "::error::TELEGRAM_API_ID / TELEGRAM_API_HASH secrets are not set"; exit 1
+          fi
+          printf 'TELEGRAM_API_ID=%s\nTELEGRAM_API_HASH=%s\n' "$TELEGRAM_API_ID" "$TELEGRAM_API_HASH" > secrets.properties
+
+      - name: Decode release keystore
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -z "$SIGNING_KEYSTORE_BASE64" ]]; then
+            echo "::error::SIGNING_KEYSTORE_BASE64 secret is not set"; exit 1
+          fi
+          echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: Build signed release APKs and AAB (foss)
+        env:
+          SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          ./gradlew :app:assembleFossRelease :app:bundleFossRelease \
+            -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
+
+      - name: Build gms flavor (optional)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_gms }}
+        env:
+          SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleGmsRelease -Pversion="${{ steps.version.outputs.version }}" --no-daemon
+
+      - name: Collect and rename artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p dist
+          shopt -s nullglob
+          for f in app/build/outputs/apk/*/release/*.apk; do
+            flavor=$(basename "$(dirname "$(dirname "$f")")")
+            abi=$(echo "$f" | grep -oE 'arm64-v8a|armeabi-v7a|x86_64|universal' || echo universal)
+            suffix=""; [[ "$flavor" != "foss" ]] && suffix="-$flavor"
+            cp "$f" "dist/pingogram-${VERSION}-${abi}${suffix}.apk"
+          done
+          for f in app/build/outputs/bundle/*/*.aab; do
+            flavor=$(basename "$(dirname "$f")")
+            cp "$f" "dist/pingogram-${VERSION}-${flavor}.aab"
+          done
+          ( cd dist && sha256sum *.apk > SHA256SUMS.txt )
+          ls -la dist
+
+      - name: Extract changelog section
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [[ ! -s release-notes.md ]]; then
+            echo "_No changelog section for ${VERSION}. Update CHANGELOG.md next time._" > release-notes.md
+          fi
+          {
+            echo
+            echo "### Downloads"
+            echo "- **universal** — works on every device (largest)"
+            echo "- **arm64-v8a** — most phones from 2017 onwards"
+            echo "- **armeabi-v7a** — older 32-bit devices"
+            echo "- **x86_64** — emulators / Chromebooks"
+            echo
+            echo "Verify with \`sha256sum -c SHA256SUMS.txt\`."
+          } >> release-notes.md
+          cat release-notes.md
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Pingogram v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          files: |
+            dist/*.apk
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+
+      - name: Upload AAB and R8 mapping (artifact only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pingogram-${{ steps.version.outputs.version }}-bundle-and-mapping
+          path: |
+            dist/*.aab
+            app/build/outputs/mapping/**/mapping.txt
+          retention-days: 90

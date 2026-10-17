@@ -1,0 +1,48 @@
+name: Bug report
+description: Something is broken
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks! Please do not include screenshots of private chats or phone numbers.
+  - type: input
+    id: version
+    attributes:
+      label: Pingogram version
+      placeholder: "0.2.0 (arm64-v8a) — see Settings → About"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: "Pixel 8a, Android 16"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open a group chat\n2. Long-press a photo\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / crash trace
+      description: From Logcat or Settings → About → Export logs (debug builds). Redact anything personal.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues
+          required: true
+        - label: This also happens with dynamic color turned off (if UI-related)
