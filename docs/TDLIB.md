@@ -59,35 +59,38 @@ If the owner prefers, the AAR can instead be committed via Git LFS; document the
 ## Kotlin wrapper (`core:tdlib`)
 
 ```kotlin
-class TdlibClient @Inject constructor(
-    @ApplicationContext ctx: Context,
-    @Dispatcher(Default) private val dispatcher: CoroutineDispatcher,
-    private val keyStore: DatabaseKeyProvider,
-    private val params: TdlibParametersProvider,
-) {
-    private val client: Client = Client.create(::onUpdate, ::onException, ::onException)
-    private val _updates = MutableSharedFlow<TdApi.Update>(extraBufferCapacity = 4096)
-    val updates: SharedFlow<TdApi.Update> = _updates.asSharedFlow()
-    val authState: StateFlow<AuthState>
+interface TdlibClient {
+    val updates: SharedFlow<TdApi.Update>          // every update, in order, never dropped
+    val authState: StateFlow<AuthState>            // typed mirror of updateAuthorizationState
     val connectionState: StateFlow<ConnectionState>
-
-    suspend fun <T : TdApi.Object> send(fn: TdApi.Function<T>): TdResult<T> =
-        suspendCancellableCoroutine { cont ->
-            client.send(fn) { obj ->
-                when (obj) {
-                    is TdApi.Error -> cont.resume(TdResult.Failure(TdError(obj.code, obj.message)))
-                    else -> @Suppress("UNCHECKED_CAST") cont.resume(TdResult.Success(obj as T))
-                }
-            }
-        }
+    fun start()                                    // non-blocking, idempotent
+    suspend fun <T : TdApi.Object> send(function: TdApi.Function<T>): TdResult<T>
 }
 ```
 
-- `onUpdate` posts to `_updates` via `tryEmit`; if the buffer is full, log and `runBlocking`
-  emit — losing updates corrupts state.
-- `Client.execute(TdApi.SetLogVerbosityLevel(...))` before creating the client: 1 in release,
-  3 in debug. Never log `TdApi` objects containing text in release.
-- Call `setLogStream` to a rotating file only in debug builds.
+`DefaultTdlibClient` (`@Singleton`, bound by `TdlibModule`) implements it:
+
+- `send` wraps `Client.send` in `suspendCancellableCoroutine` and maps `TdApi.Error` to
+  `TdResult.Failure(TdError(code, message))`. Cancelling only stops the wait: TDLib cannot cancel
+  a request, and its late answer is dropped. `TdError.retryAfter` reads `FLOOD_WAIT_x` and
+  `Too Many Requests: retry after x` for the countdown UI.
+- Updates leave TDLib's thread at once: the callback puts them into an unbounded queue, drained
+  in order by one coroutine on the `@Dispatcher(Default)` dispatcher. It applies `authState` /
+  `connectionState`, then emits to `updates` (`MutableSharedFlow`, `extraBufferCapacity = 4096`):
+  `tryEmit`, or, if slow collectors filled the buffer, log and suspend in `emit`. Updates are
+  never dropped (losing one corrupts state), and TDLib's thread never blocks: it also delivers
+  the answers to `send`, so blocking it while a collector awaits one would deadlock.
+- `updates` has no replay: a repository that needs every update subscribes before `start()`.
+- `start()` runs `Client.execute(SetLogVerbosityLevel)` before creating the client: 1 in release
+  (`REQUIREMENTS.md` §6.2: ≤ 2), 3 in debug, where `SetLogStream` also writes a rotating file
+  (`filesDir/tdlib/logs/tdlib.log`, 10 MB). Our own logs never contain `TdApi` objects (their
+  `toString()` dumps everything, message text included) or user data; `AuthState.toString()`
+  leaves payloads out.
+- `org.drinkless.tdlib.Client` sits behind an internal seam (`TdlibNative` / `NativeClient`), so
+  JVM unit tests drive `DefaultTdlibClient` without `libtdjni`. `TdApi` classes are plain Java
+  and work in JVM tests, except their native `toString()`.
+- `PingogramApplication.onCreate()` calls `start()`, so TDLib starts in the background before
+  the first frame (`docs/PERFORMANCE.md` §2).
 
 ## Parameters
 
@@ -96,9 +99,9 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 | Field | Value |
 |---|---|
 | `useTestDc` | `false` (debug toggle available) |
-| `databaseDirectory` | `filesDir/tdlib/db` |
-| `filesDirectory` | `filesDir/tdlib/files` (cache-clearable via `optimizeStorage`) |
-| `databaseEncryptionKey` | 32 random bytes generated once, wrapped by an Android Keystore AES key, stored in EncryptedFile/DataStore |
+| `databaseDirectory` | `filesDir/tdlib/db` (`filesDir/tdlib-test/db` on the test DC) |
+| `filesDirectory` | `filesDir/tdlib/files` (`tdlib-test/files` on the test DC; cache-clearable via `optimizeStorage`) |
+| `databaseEncryptionKey` | 32 random bytes generated once, wrapped by an Android Keystore AES key, stored in `noBackupFilesDir` (see below) |
 | `useFileDatabase`, `useChatInfoDatabase`, `useMessageDatabase` | `true` |
 | `useSecretChats` | `true` |
 | `apiId` / `apiHash` | `BuildConfig.TELEGRAM_API_ID` / `TELEGRAM_API_HASH` |
@@ -106,6 +109,24 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 | `deviceModel` | `"${Build.MANUFACTURER} ${Build.MODEL}"` |
 | `systemVersion` | `"Android ${Build.VERSION.RELEASE}"` |
 | `applicationVersion` | `"Pingogram ${BuildConfig.VERSION_NAME}"` |
+
+`TdlibConfig` (api id/hash, version name, debug flag, test DC) comes from `:app`'s
+`TdlibConfigModule`, which reads `BuildConfig`; `AndroidTdlibParametersProvider` builds the rest.
+
+### Database encryption key
+
+`KeystoreDatabaseKeyProvider`: 32 random bytes from `SecureRandom`, encrypted with AES-256-GCM by
+a key that lives in the Android Keystore (no user authentication, so TDLib can start in the
+background) and stored as IV + ciphertext in `noBackupFilesDir/tdlib_database_key`, which is
+never backed up or transferred. No crypto library: `security-crypto` is deprecated.
+
+If the stored key can never be decrypted again (Keystore key deleted or permanently
+invalidated, unreadable entry, file corrupt or encrypted with another key), a new key is
+generated. TDLib cannot open the old database with it, so the database and files directories
+are deleted and the user logs in again (secret chats are lost; there is no way around that).
+Transient errors (IO, a busy Keystore) are thrown instead and never cost the session. If TDLib
+still answers `SetTdlibParameters` with 401 (wrong key), the client discards key and database
+once and sends the parameters again.
 
 Useful options via `setOption`: `notification_group_count_max`, `notification_group_size_max`,
 `ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
@@ -120,8 +141,15 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
           └── LoggingOut ─▶ Closing ─▶ Closed (recreate Client, clear caches, go to Welcome)
 ```
 
-- Modelled as a sealed `AuthState` in `core:tdlib`; `feature:auth` renders one screen per state.
-- `AuthorizationStateClosed` must destroy and recreate the `Client` and wipe in-memory repos.
+- Modelled as a sealed `AuthState` in `core:tdlib`: one entry per `AuthorizationState` of the
+  pinned TDLib version (some carry TdApi payloads for `core:data` to map), plus `Initializing`
+  until TDLib reports its first state. `feature:auth` renders one screen per state. A TDLib bump
+  that adds a state fails `TdApiFixturesTest` until `AuthState` and the fixtures cover it.
+- `WaitTdlibParameters` is handled inside `TdlibClient`: it sends the parameters itself.
+- On `AuthorizationStateClosed` the client creates a new `Client` (which starts again at
+  `WaitTdlibParameters`) and resets `connectionState`. Repositories wipe their in-memory caches
+  when they see `UpdateAuthorizationState(AuthorizationStateClosed)` in `updates` (`authState` is
+  conflated and may skip `Closed`).
 - Rate limits during auth (`FLOOD_WAIT_N`, `PHONE_NUMBER_FLOOD`) show a countdown screen.
 
 ## Updates we must handle from day one

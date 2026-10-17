@@ -14,6 +14,8 @@ composeBom = "2026.09.00"
 detekt = "1.23.8"
 gradleVersionsPlugin = "0.54.0"
 hilt = "2.60.1"
+# javax.inject annotations (@Qualifier for core:common's @Dispatcher); the API's only release
+javaxInject = "1"
 junit = "5.14.4"
 junit4 = "4.13.2"
 kotlin = "2.4.21"
@@ -35,6 +37,7 @@ tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 # Not a dependency version: build-logic (pingogram.tdlib) verifies the downloaded AAR against it. "unpinned" (the
 # catalog allows no empty value) fails the build with instructions, unless pingogram.tdlib.aar is set.
 tdlibAarSha256 = "unpinned"
+turbine = "1.2.1"
 
 [libraries]
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
@@ -48,6 +51,7 @@ androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profi
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
@@ -55,10 +59,12 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine" }
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 # Static analysis: detekt CLI run by pingogram.detekt, and our own rule set from build-logic/detekt-rules (no version)
 detekt-cli = { group = "io.gitlab.arturbosch.detekt", name = "detekt-cli", version.ref = "detekt" }

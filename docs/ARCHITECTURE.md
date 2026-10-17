@@ -39,14 +39,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     └──── UiState (StateFlow) ◀─────────────────┴──── Flow<Update> ◀┘
 ```
 
-- **TdlibClient** (`core:tdlib`) owns exactly one `org.drinkless.tdlib.Client` per logged-in
-  account. It exposes:
-  - `suspend fun <T : TdApi.Object> send(fn: TdApi.Function<T>): TdResult<T>` — wraps
+- **TdlibClient** (`core:tdlib`, an interface; `DefaultTdlibClient` in production,
+  `FakeTdlibClient` in tests) owns exactly one `org.drinkless.tdlib.Client` per logged-in
+  account. It exposes (details in `docs/TDLIB.md`):
+  - `suspend fun <T : TdApi.Object> send(function: TdApi.Function<T>): TdResult<T>` — wraps
     `Client.send` in `suspendCancellableCoroutine`; maps `TdApi.Error` to `TdError(code, message)`.
-  - `val updates: SharedFlow<TdApi.Update>` — hot, buffered (`extraBufferCapacity = 1024`,
-    `DROP_OLDEST` never — use `SUSPEND`), collected by repositories on `Dispatchers.Default`.
+  - `val updates: SharedFlow<TdApi.Update>` — hot, no replay, buffered
+    (`extraBufferCapacity = 4096`, `SUSPEND`, never dropping), collected by repositories on
+    `Dispatchers.Default`.
   - `val authState: StateFlow<AuthState>` — typed mirror of `updateAuthorizationState`.
   - `val connectionState: StateFlow<ConnectionState>`.
+  - `fun start()` — called once by `PingogramApplication`; creates the client in the background.
 - **Repositories** (`core:data`) keep in-memory caches keyed by TDLib ids (chat, user, message)
   as `MutableStateFlow<Map<Long, Chat>>` and apply updates incrementally. They never expose
   `TdApi` types upward; they map to domain models (`core:domain`). TDLib already persists
@@ -78,7 +81,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Dispatchers.Default`. Nothing TDLib-related touches `Main` except state emission.
 - File IO (saving media) on `Dispatchers.IO`. Image decoding via Coil's own threads.
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
-  `StandardTestDispatcher`.
+  `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
+  provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
 
 ## Files and media
 

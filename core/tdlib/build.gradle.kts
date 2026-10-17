@@ -6,5 +6,9 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.core.common)
+    api(projects.core.common)
+
+    testImplementation(projects.core.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }
