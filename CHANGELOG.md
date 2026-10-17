@@ -24,6 +24,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   `PingogramHardcodedToken` rule (no literal colors, text sizes, sizes, shapes or animation specs in
   `:feature:*` code), Android Lint with warnings as errors, and `./gradlew dependencyUpdates`.
 
+- `:benchmark` module: Macrobenchmark `StartupBenchmark` and Baseline/Startup Profile generation
+  (`./gradlew :app:generateBaselineProfile`); release builds ship the profile via profileinstaller.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
