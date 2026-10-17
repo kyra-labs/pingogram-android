@@ -27,9 +27,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - `:benchmark` module: Macrobenchmark `StartupBenchmark` and Baseline/Startup Profile generation
   (`./gradlew :app:generateBaselineProfile`); release builds ship the profile via profileinstaller.
 
+- `PingogramTheme` on `MaterialExpressiveTheme`: six generated brand color schemes (seed `#E8457C`,
+  standard/medium/high contrast), dynamic color on Android 12+, system contrast on Android 14+,
+  AMOLED black, harmonized online green; the full Google Sans Flex type scale (15 styles + 15
+  emphasized, per-style variable axes); the expressive shape scale with `MaterialShapes` helpers;
+  spacing tokens; preview helpers; splash and window themes.
+- Roborazzi screenshot tests (Robolectric, native graphics) verified by `./gradlew check`.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
+- Uses the pre-release `androidx.compose.material3:material3:1.5.0-beta01` (allowed by CLAUDE.md rule 7):
+  in the stable 1.4.0 the Material 3 Expressive APIs (`MotionScheme.expressive()`, `MaterialShapes`,
+  the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
 [Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/main...HEAD
