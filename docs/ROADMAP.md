@@ -14,7 +14,7 @@ the release workflow so the owner can install and test on a phone.
       + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, app icon
       (adaptive + monochrome), splash
 - [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
-- [ ] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
+- [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
 - [ ] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
       database key in Keystore, parameters provider
 - [ ] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`

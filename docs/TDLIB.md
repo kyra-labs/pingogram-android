@@ -21,8 +21,9 @@ per pinned commit in CI and reuse the AAR everywhere.
    example scripts in `example/android/` (`check-environment.sh`, `fetch-sdk.sh`,
    `build-openssl.sh`, `build-tdlib.sh`). Verify the exact script arguments against the README
    of the pinned commit; they take the SDK path, NDK version, OpenSSL dir, STL and API level.
-2. Build with **NDK r28 or newer** so all `.so` files are **16 KB page-size aligned**
-   (verify with `llvm-readelf -l libtdjni.so | grep LOAD` → alignment `0x4000`).
+2. Build with **NDK r28 or newer** so the 64-bit `.so` files (`arm64-v8a`, `x86_64`) are **16 KB
+   page-size aligned** (verify with `llvm-readelf -l libtdjni.so | grep LOAD` → alignment `0x4000`;
+   the workflow fails otherwise). `armeabi-v7a` stays 4 KB aligned: 32-bit devices only use 4 KB pages.
 3. ABIs: `arm64-v8a`, `armeabi-v7a`, `x86_64`. Minimum API 26.
 4. The workflow uploads `tdlib-<sha>.aar` (+ `SHA256SUMS`) as a workflow artifact **and**
    attaches it to a GitHub Release tagged `tdlib-<short-sha>` marked pre-release, so the app

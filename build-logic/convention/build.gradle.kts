@@ -75,6 +75,10 @@ gradlePlugin {
             id = libs.plugins.pingogram.android.lint.pluginId
             implementationClass = "AndroidLintConventionPlugin"
         }
+        register("androidTest") {
+            id = libs.plugins.pingogram.android.test.pluginId
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("detekt") {
             id = libs.plugins.pingogram.detekt.pluginId
             implementationClass = "DetektConventionPlugin"
