@@ -22,6 +22,19 @@
 - Screenshot tests: `@Config(qualifiers = "w411dp-h891dp-xxhdpi")` compact phone, plus one
   `w840dp` expanded variant for adaptive screens. Record with `./gradlew recordRoborazziDebug`,
   verify with `verifyRoborazziDebug` in CI.
+  - The `pingogram.android.roborazzi` convention plugin sets them up (Robolectric native graphics,
+    JUnit 4 tests on the JUnit Platform through the vintage engine). `pingogram.android.feature`
+    applies it; other modules add it next to `pingogram.android.compose`.
+  - Write `@RunWith(RobolectricTestRunner::class)` tests that call
+    `captureRoboImage { PingogramTheme(dynamicColor = false) { … } }`: brand colors, so goldens do
+    not depend on a wallpaper. Example: `core/ui/.../ThemeShowcaseScreenshotTest.kt`.
+  - Goldens: `src/test/snapshots/<package>.<TestClass>.<test>.png`. Record them with
+    `./gradlew :<module>:recordRoborazziDebug` and commit them; `./gradlew check` fails on any
+    difference (it runs `verifyRoborazziDebug`). A plain `testDebugUnitTest` skips the captures.
+    Record on Linux like CI: other platforms rasterize text slightly differently.
+  - Robolectric runs API 34 by default (`PingogramAndroid.ROBOLECTRIC_SDK`): its API 35+ runtimes
+    need JDK 21 and the build uses JDK 17. A test that needs a newer API sets
+    `@Config(sdk = [...])` and must run on JDK 21.
 - Accessibility assertions: `assertHasClickAction`, `assertContentDescriptionEquals` on icon
   buttons; `AccessibilityChecks` enabled in Compose UI tests.
 - Test names in backticks describing behaviour. One assertion concept per test.

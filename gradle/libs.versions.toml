@@ -6,6 +6,7 @@ androidGradlePlugin = "9.4.1"
 composeBom = "2026.09.00"
 hilt = "2.60.1"
 junit = "5.14.4"
+junit4 = "4.13.2"
 kotlin = "2.4.21"
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
@@ -14,12 +15,15 @@ ksp = "2.3.12"
 # (MotionScheme.expressive(), MaterialShapes, the *Emphasized type styles, Shapes.largeIncreased
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
 material3 = "1.5.0-beta01"
+robolectric = "4.17"
+roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 
 [libraries]
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
@@ -27,14 +31,21 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.r
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
 junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+# Runs JUnit 4 tests (Robolectric) on the JUnit Platform; version from junit-bom.
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine" }
+junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
 
 # Build-logic dependencies (compileOnly in build-logic/convention)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
 compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
+roborazzi-gradlePlugin = { group = "io.github.takahirom.roborazzi", name = "roborazzi-gradle-plugin", version.ref = "roborazzi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
@@ -45,6 +56,7 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 
 # Convention plugins defined in build-logic (no versions)
 pingogram-android-application = { id = "pingogram.android.application" }
@@ -53,4 +65,5 @@ pingogram-android-feature = { id = "pingogram.android.feature" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-lint = { id = "pingogram.android.lint" }
+pingogram-android-roborazzi = { id = "pingogram.android.roborazzi" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }

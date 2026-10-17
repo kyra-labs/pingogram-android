@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.pingogram.android.library)
     alias(libs.plugins.pingogram.android.compose)
+    alias(libs.plugins.pingogram.android.roborazzi)
 }
 
 dependencies {
