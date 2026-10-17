@@ -11,11 +11,13 @@ class AndroidLintConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             when {
-                pluginManager.hasPlugin("com.android.application") ->
+                pluginManager.hasPlugin("com.android.application") -> {
                     extensions.configure<ApplicationExtension> { lint(Lint::configure) }
+                }
 
-                pluginManager.hasPlugin("com.android.library") ->
+                pluginManager.hasPlugin("com.android.library") -> {
                     extensions.configure<LibraryExtension> { lint(Lint::configure) }
+                }
 
                 else -> {
                     apply(plugin = "com.android.lint")
@@ -28,5 +30,5 @@ class AndroidLintConventionPlugin : Plugin<Project> {
 
 private fun Lint.configure() {
     abortOnError = true
-    fatal +=listOf("NewApi", "UnusedResources", "MissingTranslation")
+    fatal += listOf("NewApi", "UnusedResources", "MissingTranslation")
 }

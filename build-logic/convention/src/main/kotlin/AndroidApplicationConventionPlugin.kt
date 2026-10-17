@@ -30,9 +30,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             extensions.configure<ApplicationAndroidComponentsExtension> {
                 onVariants { variant ->
                     variant.outputs.forEach { output ->
-                        val abi = output.filters
-                            .find { it.filterType == FilterConfiguration.FilterType.ABI }
-                            ?.identifier
+                        val abi =
+                            output.filters
+                                .find { it.filterType == FilterConfiguration.FilterType.ABI }
+                                ?.identifier
                         output.versionCode.set(version.versionCode(abi))
                     }
                 }

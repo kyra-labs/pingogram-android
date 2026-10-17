@@ -1,3 +1,4 @@
+import org.gradle.plugin.use.PluginDependency
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -39,34 +40,37 @@ tasks {
     }
 }
 
+// Plugin ids come from the version catalog, the same entries module build scripts apply.
+val Provider<PluginDependency>.pluginId: String get() = get().pluginId
+
 gradlePlugin {
     plugins {
         register("androidApplication") {
-            id = libs.plugins.pingogram.android.application.get().pluginId
+            id = libs.plugins.pingogram.android.application.pluginId
             implementationClass = "AndroidApplicationConventionPlugin"
         }
         register("androidCompose") {
-            id = libs.plugins.pingogram.android.compose.get().pluginId
+            id = libs.plugins.pingogram.android.compose.pluginId
             implementationClass = "AndroidComposeConventionPlugin"
         }
         register("androidFeature") {
-            id = libs.plugins.pingogram.android.feature.get().pluginId
+            id = libs.plugins.pingogram.android.feature.pluginId
             implementationClass = "AndroidFeatureConventionPlugin"
         }
         register("androidHilt") {
-            id = libs.plugins.pingogram.android.hilt.get().pluginId
+            id = libs.plugins.pingogram.android.hilt.pluginId
             implementationClass = "AndroidHiltConventionPlugin"
         }
         register("androidLibrary") {
-            id = libs.plugins.pingogram.android.library.get().pluginId
+            id = libs.plugins.pingogram.android.library.pluginId
             implementationClass = "AndroidLibraryConventionPlugin"
         }
         register("androidLint") {
-            id = libs.plugins.pingogram.android.lint.get().pluginId
+            id = libs.plugins.pingogram.android.lint.pluginId
             implementationClass = "AndroidLintConventionPlugin"
         }
         register("jvmLibrary") {
-            id = libs.plugins.pingogram.jvm.library.get().pluginId
+            id = libs.plugins.pingogram.jvm.library.pluginId
             implementationClass = "JvmLibraryConventionPlugin"
         }
     }
