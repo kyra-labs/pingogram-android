@@ -1,5 +1,5 @@
 # The only place dependency versions live (CLAUDE.md rule 7). Exact, stable versions only.
-# Compose artifacts take their versions from the BOM.
+# Compose artifacts take their versions from the BOM, except where noted.
 
 [versions]
 androidGradlePlugin = "9.4.1"
@@ -10,12 +10,16 @@ kotlin = "2.4.21"
 kotlinxCoroutines = "1.11.0"
 kotlinxSerialization = "1.11.0"
 ksp = "2.3.12"
+# Pre-release allowed by CLAUDE.md rule 7: the BOM's material3 1.4.0 keeps the Expressive API
+# (MotionScheme.expressive(), MaterialShapes, the *Emphasized type styles, Shapes.largeIncreased
+# and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
+material3 = "1.5.0-beta01"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 
 [libraries]
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

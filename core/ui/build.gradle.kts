@@ -5,5 +5,6 @@ plugins {
 
 dependencies {
     api(libs.androidx.compose.material3)
-    implementation(projects.core.domain)
+    // PingogramTheme takes ThemeMode and Contrast from the domain model.
+    api(projects.core.domain)
 }
