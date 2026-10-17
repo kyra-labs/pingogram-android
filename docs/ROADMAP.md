@@ -29,8 +29,8 @@ the release workflow so the owner can install and test on a phone.
 
 - [ ] Welcome, phone + country picker, code entry (all code types), 2FA password, forgot
       password, registration, QR login, email states, logout, `Closed` handling
-- [ ] FLOOD_WAIT countdown UI, offline banner, error mapping
-- [ ] Unit tests for `AuthViewModel` against `FakeTdlibClient` for every state transition
+- [x] FLOOD_WAIT countdown UI, offline banner, error mapping
+- [x] Unit tests for `AuthViewModel` against `FakeTdlibClient` for every state transition
 - [ ] Screenshot tests for each auth screen (light/dark/dynamic)
 
 ## M2 — Chat list + read-only conversation → `v0.2.0`
