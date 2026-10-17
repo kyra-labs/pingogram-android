@@ -21,4 +21,4 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/OWNER/pingogram-android/compare/main...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/main...HEAD
