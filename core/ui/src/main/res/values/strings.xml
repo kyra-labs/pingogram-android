@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Errors (errorText); every DomainError has one. -->
+    <string name="error_flood_wait">Too many attempts. Try again in %1$s.</string>
+    <string name="error_network">No connection. Check your internet connection and try again.</string>
+    <string name="error_unauthorized">You\'re logged out. Log in again to continue.</string>
+    <string name="error_not_found">This couldn\'t be found.</string>
+    <string name="error_already_requested">This was already requested. Please wait.</string>
+    <string name="error_app_update_required">Telegram requires a newer app to log in. Update Pingogram and try again.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <!-- Debug builds only: %1$d is TDLib's error code, %2$s its message. -->
+    <string name="error_unknown_details">Something went wrong (%1$d: %2$s).</string>
+    <string name="error_phone_number_invalid">Enter a valid phone number.</string>
+    <string name="error_phone_number_banned">This phone number is banned from Telegram.</string>
+    <string name="error_phone_number_flood">Too many login attempts for this number. Try again later.</string>
+    <string name="error_code_invalid">Wrong code. Check it and try again.</string>
+    <string name="error_code_expired">This code has expired. Request a new one.</string>
+    <string name="error_password_invalid">Wrong password.</string>
+    <string name="error_first_name_invalid">Enter a valid first name.</string>
+    <string name="error_last_name_invalid">Enter a valid last name.</string>
+    <string name="error_email_invalid">Enter a valid email address.</string>
+    <string name="error_email_not_allowed">This email address can\'t be used. Try another one.</string>
+    <string name="error_password_recovery_unavailable">This account has no recovery email, so its password can\'t be recovered.</string>
+    <string name="error_password_recovery_expired">The recovery code has expired. Request a new one.</string>
+
+    <!-- Remaining time in countdowns (durationText). -->
+    <plurals name="duration_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <plurals name="duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="duration_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+</resources>
