@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     `kotlin-dsl`
+    alias(libs.plugins.ktlint)
 }
 
 group = "dev.kyralabs.pingogram.buildlogic"
@@ -18,11 +19,16 @@ kotlin {
     }
 }
 
+ktlint {
+    version = libs.versions.ktlint
+}
+
 dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.compose.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
+    compileOnly(libs.ktlint.gradlePlugin)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
@@ -69,9 +75,17 @@ gradlePlugin {
             id = libs.plugins.pingogram.android.lint.pluginId
             implementationClass = "AndroidLintConventionPlugin"
         }
+        register("detekt") {
+            id = libs.plugins.pingogram.detekt.pluginId
+            implementationClass = "DetektConventionPlugin"
+        }
         register("jvmLibrary") {
             id = libs.plugins.pingogram.jvm.library.pluginId
             implementationClass = "JvmLibraryConventionPlugin"
+        }
+        register("ktlint") {
+            id = libs.plugins.pingogram.ktlint.pluginId
+            implementationClass = "KtlintConventionPlugin"
         }
     }
 }

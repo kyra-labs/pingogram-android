@@ -14,6 +14,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "com.android.application")
             apply(plugin = "pingogram.android.lint")
+            apply(plugin = "pingogram.detekt")
+            apply(plugin = "pingogram.ktlint")
 
             val version = PingogramVersion.parse(providers.gradleProperty("version").orNull)
 

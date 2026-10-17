@@ -112,7 +112,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 - `build-logic/convention` with plugins: `pingogram.android.application`,
   `pingogram.android.library`, `pingogram.android.feature`, `pingogram.android.compose`,
-  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`.
+  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
+  `pingogram.detekt`.
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /
   `TELEGRAM_API_HASH` (String) via the secrets-gradle-plugin or a small custom task. CI writes the

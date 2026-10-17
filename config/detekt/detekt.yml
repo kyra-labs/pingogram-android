@@ -1,0 +1,21 @@
+# detekt config for every module (convention plugin `pingogram.detekt`). It is applied on top of
+# detekt's default config (`--build-upon-default-config`), so list only deviations, each with a reason.
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase, matching the ktlint exception in .editorconfig.
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongParameterList:
+    # Composables take state, callbacks and an optional `modifier`; parameters with defaults are optional.
+    ignoreDefaultParameters: true
+
+style:
+  MagicNumber:
+    # A named property is not a magic number.
+    ignorePropertyDeclaration: true
+  UnusedPrivateMember:
+    # Private @Preview functions are only called by tooling.
+    ignoreAnnotated: ['Preview']
+
