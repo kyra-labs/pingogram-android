@@ -183,6 +183,9 @@ Unknown updates are ignored but counted in debug logs.
 
 ## Testing without the network
 
-`core:testing` provides `FakeTdlibClient` that replays scripted `TdApi.Update`s and answers
-`send()` from a map of function class → response. Repositories and ViewModels are tested
-against it; only `connectedAndroidTest` touches the real library (against the test DC).
+`core:testing` provides `FakeTdlibClient`: `on(TdApi.GetMe::class) { … }` registers the answer
+for a function class (handlers may suspend), `sent` records every request, `emit(update)` and
+`emitAuthorizationState(…)` script updates, and `authState` / `connectionState` can be set
+directly. `TdApiFixtures` builds TdApi objects (authorization and connection states, errors,
+flood waits). Repositories and ViewModels are tested against them; only `connectedAndroidTest`
+touches the real library (against the test DC).
