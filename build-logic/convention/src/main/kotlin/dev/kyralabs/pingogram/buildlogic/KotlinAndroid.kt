@@ -21,6 +21,13 @@ object PingogramAndroid {
     const val TARGET_SDK = 36
     const val MIN_SDK = 26
     const val NAMESPACE_ROOT = "dev.kyralabs.pingogram"
+
+    /**
+     * Default SDK of Robolectric unit tests. Robolectric's runtimes for API 35+ are Java 21 bytecode,
+     * while the build and CI use JDK 17 (`REQUIREMENTS.md` §3), so tests run on the newest API that
+     * Java 17 can load. Tests that need a newer API set `@Config(sdk = ...)` and require JDK 21.
+     */
+    const val ROBOLECTRIC_SDK = 34
     val JAVA_VERSION = JavaVersion.VERSION_17
     val JVM_TARGET = JvmTarget.JVM_17
 }

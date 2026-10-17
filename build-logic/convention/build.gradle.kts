@@ -29,6 +29,7 @@ dependencies {
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.ktlint.gradlePlugin)
+    compileOnly(libs.roborazzi.gradlePlugin)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
@@ -74,6 +75,10 @@ gradlePlugin {
         register("androidLint") {
             id = libs.plugins.pingogram.android.lint.pluginId
             implementationClass = "AndroidLintConventionPlugin"
+        }
+        register("androidRoborazzi") {
+            id = libs.plugins.pingogram.android.roborazzi.pluginId
+            implementationClass = "AndroidRoborazziConventionPlugin"
         }
         register("androidTest") {
             id = libs.plugins.pingogram.android.test.pluginId

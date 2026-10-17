@@ -22,6 +22,9 @@ captures/
 *.aab
 mapping.txt
 
+# Node (tools/theme)
+node_modules/
+
 # IDE
 .idea/
 *.iml

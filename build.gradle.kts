@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.roborazzi) apply false
     // Applied here too: checks this file and settings.gradle.kts.
     alias(libs.plugins.ktlint)
     // `./gradlew dependencyUpdates` lists newer stable versions of every dependency and plugin.

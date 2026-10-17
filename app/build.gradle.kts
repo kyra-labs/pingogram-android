@@ -61,6 +61,7 @@ baselineProfile {
 
 dependencies {
     baselineProfile(projects.benchmark)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.profileinstaller)
 
     implementation(projects.core.common)
