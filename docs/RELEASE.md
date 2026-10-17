@@ -13,9 +13,9 @@
 
 ## Signing
 
-- **Debug**: `app/debug.keystore` committed (password `android`, alias `androiddebugkey`) so
-  contributors get consistent debug signatures.
-- **Release**: never committed. Locally, `keystore.properties` (git-ignored):
+- **Debug**: `app/debug.keystore` committed (password `android`, alias `androiddebugkey`) and
+  set explicitly on the `debug` signing config, so contributors get consistent debug signatures.
+- **Release**: never committed. Locally, `keystore.properties` in the repository root (git-ignored):
 
   ```properties
   storeFile=/absolute/path/pingogram-release.jks
@@ -24,10 +24,17 @@
   keyPassword=…
   ```
 
-  In CI the workflow decodes `SIGNING_KEYSTORE_BASE64` to `app/release.jks` and passes the
-  other values as environment variables (`SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_ALIAS`,
-  `SIGNING_KEY_PASSWORD`). The Gradle signing config reads env first, then
-  `keystore.properties`, and is simply absent otherwise (release build fails with a clear message).
+  A relative `storeFile` is resolved against the repository root.
+
+  In CI the workflow decodes `SIGNING_KEYSTORE_BASE64` to `$RUNNER_TEMP/release.jks` (outside the
+  checkout) and passes its path and the other values as environment variables
+  (`SIGNING_KEYSTORE_PATH`, `SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_ALIAS`,
+  `SIGNING_KEY_PASSWORD`). The Gradle signing config (`build-logic`,
+  `AndroidApplicationConventionPlugin`) uses the environment when all four variables are set,
+  otherwise `keystore.properties` when all four keys are present, and is simply absent otherwise.
+  Without it, configuration, debug builds and `./gradlew check` still work, but any release APK or
+  bundle task (`assemble*Release`, `bundle*Release`, `package*Release`) fails before anything runs,
+  with a message naming the missing variables or keys. Passwords are never printed.
 
 - Use **v2 + v3 (+ v4) APK signatures**; `enableV1Signing = false` (minSdk 26).
 

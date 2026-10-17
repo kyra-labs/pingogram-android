@@ -7,8 +7,8 @@ the release workflow so the owner can install and test on a phone.
 
 - [x] Gradle project: version catalog, `build-logic` convention plugins, modules from
       `docs/ARCHITECTURE.md` (empty where needed), Kotlin 2.x, AGP latest stable, JDK 17
-- [ ] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
-- [ ] Debug keystore committed; release signing from env/`keystore.properties`
+- [x] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
+- [x] Debug keystore committed; release signing from env/`keystore.properties`
 - [ ] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
       Google Sans Flex type scale (15 styles + 15 emphasized, variable axes per style), shapes
       + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, app icon
