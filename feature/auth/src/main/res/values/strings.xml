@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared -->
+    <string name="auth_back">Back</string>
+    <string name="auth_next">Next</string>
+    <string name="auth_loading">Loading</string>
+    <string name="auth_logging_out">Logging out…</string>
+    <string name="auth_connection_waiting_for_network">Waiting for network…</string>
+    <string name="auth_connection_connecting_to_proxy">Connecting to proxy…</string>
+    <string name="auth_connection_connecting">Connecting…</string>
+    <string name="auth_connection_updating">Updating…</string>
+    <string name="auth_offline_banner">You\'re offline. Pingogram will continue as soon as you\'re back online.</string>
+    <!-- %1$s: the remaining time, e.g. "5 minutes". -->
+    <string name="auth_flood_wait">Too many attempts. Try again in %1$s.</string>
+    <string name="auth_terms_of_service">Terms of Service</string>
+    <string name="auth_privacy_policy">Privacy Policy</string>
+
+    <!-- Welcome (FR-A1) -->
+    <string name="auth_welcome_title">Pingogram</string>
+    <string name="auth_welcome_tagline">A fast, private Telegram client for Android.</string>
+    <string name="auth_welcome_disclaimer">Pingogram is an independent, open-source app. It isn\'t made by Telegram.</string>
+    <string name="auth_start_messaging">Start messaging</string>
+    <string name="auth_welcome_agreement">By continuing, you agree to Telegram\'s Terms of Service and Privacy Policy.</string>
+
+    <!-- Phone number (FR-A2) -->
+    <string name="auth_phone_title">Your phone number</string>
+    <string name="auth_phone_change_title">Change phone number</string>
+    <string name="auth_phone_description">Check the country code and enter your phone number. Telegram will send you a login code.</string>
+    <string name="auth_country">Country</string>
+    <string name="auth_country_choose">Choose a country</string>
+    <string name="auth_country_search">Search countries</string>
+    <string name="auth_country_none">No countries found</string>
+    <string name="auth_calling_code">Code</string>
+    <string name="auth_phone_number">Phone number</string>
+    <string name="auth_qr_login">Log in with QR code</string>
+
+    <!-- Login code (FR-A3); %1$s is the phone number. -->
+    <string name="auth_code_title">Enter the code</string>
+    <string name="auth_code_label">Code</string>
+    <string name="auth_code_sent_telegram">We sent the code to your Telegram app on another device.</string>
+    <string name="auth_code_sent_sms">We sent an SMS with the code to %1$s.</string>
+    <string name="auth_code_sent_sms_word">We sent an SMS with a code word to %1$s.</string>
+    <string name="auth_code_sent_sms_phrase">We sent an SMS with a code phrase to %1$s.</string>
+    <!-- %1$s: the first letters or the first word of the code. -->
+    <string name="auth_code_sent_starts_with">It starts with “%1$s”.</string>
+    <string name="auth_code_sent_call">We\'re calling %1$s. Enter the code you hear.</string>
+    <string name="auth_code_sent_flash_call">We\'re calling %1$s. Enter the number that calls you.</string>
+    <!-- %2$s: the beginning of the calling number; %3$d: how many of its last digits make the code. -->
+    <plurals name="auth_code_sent_missed_call">
+        <item quantity="one">We\'re calling %1$s from a number starting with %2$s. Enter its last %3$d digit.</item>
+        <item quantity="other">We\'re calling %1$s from a number starting with %2$s. Enter its last %3$d digits.</item>
+    </plurals>
+    <string name="auth_code_sent_fragment">Get the code on Fragment, where %1$s was bought.</string>
+    <string name="auth_code_sent_unsupported">This code is sent only to Telegram\'s own apps. Request a code another way.</string>
+    <string name="auth_code_open_fragment">Open Fragment</string>
+    <string name="auth_code_resend_sms">Send the code by SMS</string>
+    <string name="auth_code_resend_call">Call me with the code</string>
+    <string name="auth_code_resend_telegram">Send the code to my Telegram app</string>
+    <string name="auth_code_resend_fragment">Get the code on Fragment</string>
+    <!-- %1$s: the remaining time, e.g. "42 seconds". -->
+    <string name="auth_code_resend_in">You can get a new code in %1$s.</string>
+    <string name="auth_change_number">Wrong number?</string>
+
+    <!-- 2-step verification password (FR-A4) -->
+    <string name="auth_password_title">Two-step verification</string>
+    <string name="auth_password_description">Your account is protected with an additional password.</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_password_hint">Hint: %1$s</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_password_no_recovery_email">This account has no recovery email, so its password can\'t be reset here. Try to remember it; the hint may help. Pingogram doesn\'t offer resetting the account.</string>
+    <string name="auth_recovery_title">Password recovery</string>
+    <string name="auth_recovery_description">We emailed a recovery code to %1$s.</string>
+    <string name="auth_recovery_description_unknown">We emailed a recovery code to your recovery address.</string>
+    <string name="auth_recovery_code_label">Recovery code</string>
+    <string name="auth_new_password_title">New password</string>
+    <string name="auth_new_password_description">The code is correct. Choose a new password for your account.</string>
+    <string name="auth_new_password_label">New password</string>
+    <string name="auth_new_password_confirmation_label">Repeat new password</string>
+    <string name="auth_new_password_mismatch">Passwords don\'t match</string>
+    <string name="auth_new_password_hint_label">Hint (optional)</string>
+    <string name="auth_new_password_submit">Save and log in</string>
+
+    <!-- Registration (FR-A5) -->
+    <string name="auth_registration_title">Your name</string>
+    <string name="auth_registration_description">This number has no Telegram account yet. Enter your name to create one.</string>
+    <string name="auth_first_name">First name</string>
+    <string name="auth_last_name">Last name (optional)</string>
+    <string name="auth_accept_terms">I accept Telegram\'s Terms of Service</string>
+    <string name="auth_read_terms">Read the Terms of Service</string>
+    <string name="auth_create_account">Create account</string>
+    <plurals name="auth_terms_min_age">
+        <item quantity="one">You must be at least %d year old to use Telegram.</item>
+        <item quantity="other">You must be at least %d years old to use Telegram.</item>
+    </plurals>
+    <string name="auth_terms_accept">Accept</string>
+    <string name="auth_terms_decline">Decline</string>
+
+    <!-- QR code login (FR-A6) -->
+    <string name="auth_qr_title">Log in with QR code</string>
+    <string name="auth_qr_instructions">1. Open Telegram on your phone.\n2. Go to Settings › Devices › Link Desktop Device.\n3. Scan this code.</string>
+    <string name="auth_qr_code_description">QR code for logging in</string>
+    <string name="auth_qr_use_phone">Log in with phone number instead</string>
+
+    <!-- Email address (FR-A7) -->
+    <string name="auth_email_title">Your email address</string>
+    <string name="auth_email_change_title">Change email address</string>
+    <string name="auth_email_description">Telegram needs an email address for this account. You\'ll get a login code there.</string>
+    <string name="auth_email_label">Email address</string>
+    <string name="auth_email_code_title">Check your email</string>
+    <!-- %1$s: the email address with most of it hidden, e.g. "a***@example.org". -->
+    <string name="auth_email_code_description">We sent a code to %1$s.</string>
+    <string name="auth_email_resend">Resend code</string>
+    <string name="auth_email_change">Use a different email</string>
+    <string name="auth_email_reset">Reset email address</string>
+    <string name="auth_email_reset_available">Can\'t open this email? Reset it to get a code by SMS instead.</string>
+    <!-- %1$s: how long a reset takes, e.g. "7 hours". -->
+    <string name="auth_email_reset_wait">Can\'t open this email? You can reset it; this takes %1$s.</string>
+    <string name="auth_email_reset_pending">Your email address will be reset in %1$s.</string>
+    <string name="auth_email_reset_check">Check again</string>
+
+    <!-- Telegram Premium required -->
+    <string name="auth_premium_title">Telegram Premium required</string>
+    <string name="auth_premium_description">Telegram lets this account log in only after buying Telegram Premium.</string>
+    <string name="auth_premium_not_offered">Pingogram doesn\'t sell subscriptions. You can buy Telegram Premium in one of Telegram\'s own apps, then log in here.</string>
+    <!-- %1$s: Telegram's support email address. -->
+    <string name="auth_premium_support">Questions about the purchase? Write to Telegram support at %1$s.</string>
+    <string name="auth_premium_contact_support">Contact support</string>
+    <string name="auth_premium_change_number">Use a different number</string>
+</resources>
