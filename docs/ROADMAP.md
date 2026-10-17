@@ -9,10 +9,10 @@ the release workflow so the owner can install and test on a phone.
       `docs/ARCHITECTURE.md` (empty where needed), Kotlin 2.x, AGP latest stable, JDK 17
 - [x] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
 - [x] Debug keystore committed; release signing from env/`keystore.properties`
-- [ ] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
+- [x] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
       Google Sans Flex type scale (15 styles + 15 emphasized, variable axes per style), shapes
-      + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, app icon
-      (adaptive + monochrome), splash
+      + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, splash
+- [ ] App icon (adaptive + monochrome) — waiting for the owner's artwork
 - [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
 - [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
 - [ ] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,

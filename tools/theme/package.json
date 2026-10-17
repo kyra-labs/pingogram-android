@@ -1,0 +1,17 @@
+{
+  "name": "pingogram-theme-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generates the brand color schemes in core/ui (Color.kt) from the seed color with material-color-utilities.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "0.4.0"
+  }
+}
