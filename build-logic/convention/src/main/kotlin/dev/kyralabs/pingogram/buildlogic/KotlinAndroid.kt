@@ -33,17 +33,22 @@ internal val Project.pingogramNamespace: String
     get() = PingogramAndroid.NAMESPACE_ROOT + path.replace(':', '.').replace('-', '_')
 
 internal fun Project.configureKotlinAndroid(extension: CommonExtension) {
+    configureAndroidCompilation(extension)
+    extension.testOptions.unitTests.all { it.useJUnitPlatform() }
+    configureJUnit()
+}
+
+/** SDK levels and JVM target without the unit test setup, for `com.android.test` modules (they have no unit tests). */
+internal fun Project.configureAndroidCompilation(extension: CommonExtension) {
     extension.apply {
         compileSdk = PingogramAndroid.COMPILE_SDK
         defaultConfig.minSdk = PingogramAndroid.MIN_SDK
         compileOptions.sourceCompatibility = PingogramAndroid.JAVA_VERSION
         compileOptions.targetCompatibility = PingogramAndroid.JAVA_VERSION
-        testOptions.unitTests.all { it.useJUnitPlatform() }
     }
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions.jvmTarget.set(PingogramAndroid.JVM_TARGET)
     }
-    configureJUnit()
 }
 
 internal fun Project.configureKotlinJvm() {

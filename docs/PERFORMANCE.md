@@ -122,11 +122,22 @@ regresses by more than 10%.
 
 - `benchmark/` module: `StartupBenchmark`, `ChatListScrollBenchmark`,
   `ConversationScrollBenchmark`, `OpenChatBenchmark`; generates Baseline Profiles.
+  It drives `:app`'s `foss` flavor in two build types the Baseline Profile plugin adds:
+  `benchmarkRelease` (R8 like `release`) for benchmarks and `nonMinifiedRelease` for profile
+  generation. Both are non-debuggable and profileable, and are signed with the debug key, so they
+  need no release credentials. They keep the release `applicationId` but not its signature:
+  uninstall a release-signed Pingogram from the device first.
+- Regenerate the Baseline + Startup Profile with `./gradlew :app:generateBaselineProfile` (device on
+  API 33+, or rooted on API 28+) and commit `app/src/main/generated/baselineProfiles/`; both
+  flavors ship it. Do this before benchmarking: the `*BaselineProfile` startup benchmarks
+  require a profile.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
 - LeakCanary in debug builds; a leak fails the nightly.
-- Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only; real-device
+- Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only (the plugin skips
+  them on emulators until `benchmark/build.gradle.kts` sets
+  `baselineProfile { skipBenchmarksOnEmulator = false }`); real-device
   numbers come from the owner's phone with `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest`.
 
 ## 10. Checklist for PRs touching UI or data
