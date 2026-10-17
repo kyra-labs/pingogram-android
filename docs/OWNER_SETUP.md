@@ -83,8 +83,9 @@ Delete `keystore.b64` from disk afterwards.
 2. From the zip, copy the **variable** TTF (the single file with all axes, usually
    `GoogleSansFlex[...].ttf`) to `core/ui/src/main/res/font/google_sans_flex.ttf` — Android
    resource names must be lowercase letters, digits and underscores only.
-3. Copy `OFL.txt` from the zip next to it as `core/ui/src/main/res/font/google_sans_flex_ofl.txt`
-   (or into `core/ui/licenses/`). The license allows bundling and redistribution.
+3. Copy `OFL.txt` from the zip to `core/ui/src/main/assets/licenses/google_sans_flex_OFL.txt`
+   (not into `res/font/`: Android rejects non-font files there and the build fails). The
+   license allows bundling and redistribution; shipping it in `assets/` keeps it in the APK.
 4. Commit both files (`git add -f` is not needed; they are not ignored). Claude Code will wire
    the type scale when it starts M0.
 

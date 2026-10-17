@@ -123,8 +123,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 ## Naming conventions
 
-- Packages: `app.pingogram.<module>.<layer>` e.g. `app.pingogram.feature.chat.ui`,
-  `app.pingogram.core.data.repository`.
+- Packages: `dev.kyralabs.pingogram.<module>.<layer>` e.g. `dev.kyralabs.pingogram.feature.chat.ui`,
+  `dev.kyralabs.pingogram.core.data.repository`.
 - Composables: `ChatListScreen`, `ChatListRoute`, `ChatListItem`; previews `ChatListScreenPreview`.
 - ViewModel: `ChatListViewModel`; state `ChatListUiState`; events `ChatListEvent`; effects `ChatListEffect`.
 - Repositories: interface `ChatRepository` in `core:domain`, impl `TdlibChatRepository` in `core:data`.
