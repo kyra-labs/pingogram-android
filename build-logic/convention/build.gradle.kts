@@ -65,6 +65,10 @@ gradlePlugin {
             id = libs.plugins.pingogram.android.lint.get().pluginId
             implementationClass = "AndroidLintConventionPlugin"
         }
+        register("androidTest") {
+            id = libs.plugins.pingogram.android.test.get().pluginId
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("jvmLibrary") {
             id = libs.plugins.pingogram.jvm.library.get().pluginId
             implementationClass = "JvmLibraryConventionPlugin"

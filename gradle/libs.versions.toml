@@ -3,6 +3,10 @@
 
 [versions]
 androidGradlePlugin = "9.4.1"
+# benchmark-macro-junit4 and the baselineprofile Gradle plugin ship together; keep them on one version
+androidxBenchmark = "1.5.0"
+androidxProfileinstaller = "1.4.1"
+androidxTestExtJunit = "1.3.0"
 composeBom = "2026.09.00"
 hilt = "2.60.1"
 junit = "5.14.4"
@@ -14,10 +18,13 @@ ksp = "2.3.12"
 tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 
 [libraries]
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "androidxProfileinstaller" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
@@ -36,6 +43,8 @@ ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processin
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }
+android-test = { id = "com.android.test", version.ref = "androidGradlePlugin" }
+androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxBenchmark" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -49,4 +58,5 @@ pingogram-android-feature = { id = "pingogram.android.feature" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-lint = { id = "pingogram.android.lint" }
+pingogram-android-test = { id = "pingogram.android.test" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
