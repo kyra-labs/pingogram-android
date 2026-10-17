@@ -1,12 +1,14 @@
 name: Build TDLib
 
-# Builds TDLib for Android at the pinned commit and publishes the AAR as a pre-release
-# tagged tdlib-<short-sha>. The app's `fetchTdlib` Gradle task downloads that asset.
+# Builds TDLib for Android at the pinned commit, packages it as an AAR and publishes it as a
+# pre-release tagged tdlib-<short-sha>. The app's `fetchTdlib` Gradle task downloads that asset.
 # Run manually (Actions → Build TDLib → Run workflow) after changing TDLIB_COMMIT.
 #
 # NOTE for maintainers / Claude Code: the official scripts live in tdlib/td at
 # example/android/. Their arguments and output paths occasionally change between TDLib
 # versions — check example/android/README.md at the pinned commit if a step fails.
+# The scripts produce tdlib/tdlib.zip (libs/<abi>/libtdjni.so + java/org/drinkless/tdlib/*.java),
+# not an AAR; the "Package AAR" step below turns that into one.
 
 on:
   workflow_dispatch:
@@ -20,11 +22,14 @@ permissions:
   contents: write
 
 env:
-  # Pin an exact commit SHA here (also mirrored in gradle/libs.versions.toml → tdlib).
-  TDLIB_COMMIT: "master"   # TODO(owner/Claude Code): replace with a specific SHA before M0 ends
+  # TDLib 1.8.68. Keep in sync with gradle/libs.versions.toml → tdlib.
+  TDLIB_COMMIT: "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
   ANDROID_API: "26"
+  ABIS: "arm64-v8a armeabi-v7a x86_64"
   # NDK r28+ produces 16 KB page-size aligned .so files (required on Android 15+).
   ANDROID_NDK_VERSION: "28.1.13356709"
+  # androidx.annotation is on the compile classpath because TDLib adds @IntDef to TdApi.java.
+  ANNOTATION_VERSION: "1.4.0"
 
 jobs:
   build:
@@ -64,8 +69,8 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y make git zlib1g-dev libssl-dev gperf php-cli cmake \
-            clang libc++-dev libc++abi-dev ninja-build unzip
+          sudo apt-get install -y make git zlib1g-dev libssl-dev gperf php-cli perl cmake \
+            clang libc++-dev libc++abi-dev ninja-build unzip zip wget
 
       - name: Check environment
         working-directory: td/example/android
@@ -73,44 +78,69 @@ jobs:
 
       - name: Fetch Android SDK/NDK (TDLib's helper)
         working-directory: td/example/android
-        run: ./fetch-sdk.sh
+        run: ./fetch-sdk.sh SDK "$ANDROID_NDK_VERSION"
 
       - name: Build OpenSSL for Android
         working-directory: td/example/android
-        run: ./build-openssl.sh
+        run: ./build-openssl.sh SDK "$ANDROID_NDK_VERSION" third-party/openssl
 
       - name: Build TDLib (JNI + Java bindings)
         working-directory: td/example/android
-        run: ./build-tdlib.sh
+        run: |
+          ./build-tdlib.sh SDK "$ANDROID_NDK_VERSION" third-party/openssl c++_static Java \
+            "$ANDROID_API" "$ABIS"
 
-      - name: Collect AAR
+      - name: Package AAR
         id: collect
         env:
           SHORT: ${{ steps.sha.outputs.short }}
         run: |
-          mkdir -p dist
-          # The build script packages its output under td/example/android/tdlib (zip and/or AAR).
-          find td/example/android/tdlib -name '*.zip' -print -exec unzip -oq {} -d td/example/android/tdlib/unzipped \;
-          AAR=$(find td/example/android/tdlib -name '*.aar' ! -name '*debug*' | head -n 1)
-          if [[ -z "$AAR" ]]; then
-            echo "::error::No .aar produced — inspect build output / README of the pinned TDLib commit"; exit 1
-          fi
-          cp "$AAR" "dist/tdlib-${SHORT}.aar"
-          ( cd dist && sha256sum "tdlib-${SHORT}.aar" > SHA256SUMS.txt )
+          set -euo pipefail
+          OUT=td/example/android/tdlib
+          WORK=$RUNNER_TEMP/aar
+          mkdir -p "$WORK/classes" "$WORK/aar/jni" dist
+
+          wget -q -O "$RUNNER_TEMP/annotation.jar" \
+            "https://maven.google.com/androidx/annotation/annotation/${ANNOTATION_VERSION}/annotation-${ANNOTATION_VERSION}.jar"
+          javac --release 11 -nowarn -encoding UTF-8 \
+            -cp "td/example/android/SDK/platforms/android-34/android.jar:$RUNNER_TEMP/annotation.jar" \
+            -d "$WORK/classes" $(find "$OUT/java" -name '*.java')
+          jar cf "$WORK/aar/classes.jar" -C "$WORK/classes" .
+
+          for ABI in $ABIS; do
+            mkdir -p "$WORK/aar/jni/$ABI"
+            cp "$OUT/libs/$ABI/"*.so "$WORK/aar/jni/$ABI/"
+          done
+
+          cat > "$WORK/aar/AndroidManifest.xml" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.drinkless.tdlib">
+              <uses-sdk android:minSdkVersion="${ANDROID_API}" />
+          </manifest>
+          EOF
+          # JNI creates TdApi objects and calls Client callbacks by name, so R8 must keep them.
+          printf -- '-keep class org.drinkless.tdlib.** { *; }\n' > "$WORK/aar/proguard.txt"
+          : > "$WORK/aar/R.txt"
+
+          ( cd "$WORK/aar" && zip -qr "$GITHUB_WORKSPACE/dist/tdlib-${SHORT}.aar" . )
+          ( cd "$OUT/java" && zip -qr "$GITHUB_WORKSPACE/dist/tdlib-${SHORT}-sources.jar" . )
+          ( cd dist && sha256sum *.aar *.jar > SHA256SUMS.txt )
           echo "aar=dist/tdlib-${SHORT}.aar" >> "$GITHUB_OUTPUT"
+          unzip -l "dist/tdlib-${SHORT}.aar"
           ls -la dist
 
       - name: Verify 16 KB page alignment
-        continue-on-error: true
         run: |
-          mkdir -p check && ( cd check && unzip -oq ../${{ steps.collect.outputs.aar }} )
+          set -euo pipefail
+          mkdir -p check && ( cd check && unzip -oq "../${{ steps.collect.outputs.aar }}" )
           READELF=$(find td/example/android/SDK/ndk -path '*linux-x86_64/bin/llvm-readelf' | head -n 1)
-          [[ -z "$READELF" ]] && READELF=$(find "$ANDROID_NDK_LATEST_HOME" -name llvm-readelf | head -n 1)
+          FAIL=0
           for so in $(find check -name '*.so'); do
-            ALIGN=$("$READELF" -l "$so" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')
+            ALIGN=$("$READELF" -lW "$so" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')
             echo "$so → LOAD align: $ALIGN"
-            echo "$ALIGN" | grep -q '0x4000' || echo "::warning::$so is not 16 KB aligned"
+            if [[ "$ALIGN" != *0x4000* ]]; then echo "::error::$so is not 16 KB aligned"; FAIL=1; fi
           done
+          exit $FAIL
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -128,11 +158,12 @@ jobs:
           body: |
             Prebuilt TDLib for Android.
             - tdlib/td commit: `${{ steps.sha.outputs.full }}`
-            - ABIs: arm64-v8a, armeabi-v7a, x86_64 · min API ${{ env.ANDROID_API }}
+            - ABIs: ${{ env.ABIS }} · min API ${{ env.ANDROID_API }}
             - Built with NDK ${{ env.ANDROID_NDK_VERSION }} (16 KB page aligned)
             - License: Boost Software License 1.0 (https://github.com/tdlib/td)
 
             Consumed by `core/tdlib` via the `fetchTdlib` Gradle task.
           files: |
             dist/*.aar
+            dist/*.jar
             dist/SHA256SUMS.txt

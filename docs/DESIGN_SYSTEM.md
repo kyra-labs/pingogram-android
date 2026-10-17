@@ -99,8 +99,9 @@ fun PingogramTheme(
 
 ### 3.1 Font asset
 - **Google Sans Flex**, SIL Open Font License 1.1, downloaded from Google Fonts and bundled as
-  `core/ui/src/main/res/font/google_sans_flex.ttf` (variable TTF) with `OFL.txt` beside it and
-  an entry in the OSS licenses screen. Bundling (not Downloadable Fonts) keeps the `foss`
+  `core/ui/src/main/res/font/google_sans_flex.ttf` (variable TTF) with its license shipped as
+  `core/ui/src/main/assets/licenses/google_sans_flex_OFL.txt` (`res/font/` accepts only font
+  files) and an entry in the OSS licenses screen. Bundling (not Downloadable Fonts) keeps the `foss`
   flavor independent of Play Services and avoids first-launch flashes.
 - Verify the axis table of the downloaded file with `fonttools varLib.instancer -h` /
   `ttx -t fvar`. Expected axes (check ranges in the file):

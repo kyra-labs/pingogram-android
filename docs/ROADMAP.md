@@ -5,7 +5,7 @@ the release workflow so the owner can install and test on a phone.
 
 ## M0 — Project foundation → `v0.0.1`
 
-- [ ] Gradle project: version catalog, `build-logic` convention plugins, modules from
+- [x] Gradle project: version catalog, `build-logic` convention plugins, modules from
       `docs/ARCHITECTURE.md` (empty where needed), Kotlin 2.x, AGP latest stable, JDK 17
 - [ ] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
 - [ ] Debug keystore committed; release signing from env/`keystore.properties`

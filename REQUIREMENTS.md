@@ -35,8 +35,8 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 |---|---|
 | App name | **Pingogram** |
 | Repository | `pingogram-android` |
-| `applicationId` | `app.pingogram` (debug builds: `app.pingogram.debug`) |
-| Kotlin package root | `app.pingogram` |
+| `applicationId` | `dev.kyralabs.pingogram` (debug builds: `dev.kyralabs.pingogram.debug`) |
+| Kotlin package root | `dev.kyralabs.pingogram` |
 | License | **GPL-3.0-or-later** (owner may switch to Apache-2.0 before first release; TDLib is Boost 1.0 so either is allowed) |
 | Trademark | Must not use "Telegram" in name, icon, package or store title. "Pingogram — Telegram client" is acceptable as a *description*. |
 | Telegram API | Each build uses the owner's `api_id`/`api_hash` from https://my.telegram.org. Never committed. |
@@ -49,7 +49,8 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 | Item | Value | Rationale |
 |---|---|---|
 | `minSdk` | 26 (Android 8.0) | Notification channels, adaptive icons, modern APIs; ~97% coverage |
-| `targetSdk` / `compileSdk` | 36 (Android 16) or the latest Play requirement | Play requires targeting recent APIs; edge-to-edge is enforced from 35 |
+| `targetSdk` | 36 (Android 16) or the latest Play requirement | Play requires targeting recent APIs; edge-to-edge is enforced from 35 |
+| `compileSdk` | 37 | Required by the latest stable Compose (BOM 2026.09.00 / Compose 1.12); compiling against a newer SDK does not change runtime behaviour |
 | ABIs | `arm64-v8a`, `armeabi-v7a`, `x86_64` (+ universal APK) | x86 32-bit dropped |
 | 16 KB page size | Required — TDLib native libs must be built 16 KB-aligned (NDK r28+) | Play requirement for apps targeting Android 15+ |
 | Language | Kotlin 2.x, Compose compiler plugin | |
