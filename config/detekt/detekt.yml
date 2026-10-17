@@ -13,9 +13,17 @@ complexity:
 
 style:
   MagicNumber:
-    # A named property is not a magic number.
+    # A named property is not a magic number. Literal design values in feature code are caught by
+    # PingogramHardcodedToken instead.
     ignorePropertyDeclaration: true
   UnusedPrivateMember:
     # Private @Preview functions are only called by tooling.
     ignoreAnnotated: ['Preview']
 
+# Our own rules (build-logic/detekt-rules).
+pingogram:
+  active: true
+  PingogramHardcodedToken:
+    # Literal colors, text sizes, sizes, shapes and animation specs in :feature:* production code
+    # (CLAUDE.md hard rule 4, docs/DESIGN_SYSTEM.md §1).
+    active: true

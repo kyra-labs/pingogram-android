@@ -3,6 +3,7 @@
 
 [versions]
 androidGradlePlugin = "9.4.1"
+assertj = "3.27.7"
 composeBom = "2026.09.00"
 # detekt-cli runs in its own JVM (pingogram.detekt), so its embedded Kotlin compiler never meets ours.
 detekt = "1.23.8"
@@ -32,8 +33,9 @@ junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 
-# Static analysis: detekt CLI run by pingogram.detekt
+# Static analysis: detekt CLI run by pingogram.detekt, and our own rule set from build-logic/detekt-rules (no version)
 detekt-cli = { group = "io.gitlab.arturbosch.detekt", name = "detekt-cli", version.ref = "detekt" }
+pingogram-detekt-rules = { group = "dev.kyralabs.pingogram.buildlogic", name = "detekt-rules" }
 
 # Build-logic dependencies (compileOnly in build-logic/convention)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
@@ -41,6 +43,11 @@ compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compile
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
 ktlint-gradlePlugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlintGradlePlugin" }
+
+# Build-logic dependencies of build-logic/detekt-rules
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+detekt-api = { group = "io.gitlab.arturbosch.detekt", name = "detekt-api", version.ref = "detekt" }
+detekt-test = { group = "io.gitlab.arturbosch.detekt", name = "detekt-test", version.ref = "detekt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

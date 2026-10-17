@@ -17,7 +17,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 
 /**
  * detekt on every Kotlin source set of the module, wired into `check`: `config/detekt/detekt.yml`
- * on top of detekt's defaults.
+ * on top of detekt's defaults, plus our rule set (`PingogramHardcodedToken`) from build-logic.
  *
  * The stable detekt CLI runs through [Detekt] instead of detekt's 1.23 Gradle plugin, which has no
  * AGP 9 support and calls Gradle APIs that Gradle 10 removes. Add rule set jars with `detektPlugins(...)`.
@@ -31,12 +31,13 @@ class DetektConventionPlugin : Plugin<Project> {
             val detektPluginsClasspath = jvmRuntimeClasspath(configurations.dependencyScope("detektPlugins"))
             dependencies {
                 "detekt"(libs.findLibrary("detekt-cli").get())
+                "detektPlugins"(libs.findLibrary("pingogram-detekt-rules").get())
             }
 
             val detektTask =
                 tasks.register<Detekt>("detekt") {
                     group = LifecycleBasePlugin.VERIFICATION_GROUP
-                    description = "Runs detekt on this module's Kotlin sources."
+                    description = "Runs detekt with the Pingogram rule set on this module's Kotlin sources."
                     source.from(fileTree("src") { include("**/*.kt", "**/*.kts") })
                     config.set(layout.settingsDirectory.file("config/detekt/detekt.yml"))
                     classpath.from(detektClasspath)

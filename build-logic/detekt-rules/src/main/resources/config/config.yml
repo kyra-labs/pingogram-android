@@ -1,0 +1,4 @@
+pingogram:
+  active: true
+  PingogramHardcodedToken:
+    active: true

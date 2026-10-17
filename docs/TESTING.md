@@ -9,7 +9,7 @@
 | Compose UI (JVM) | `createComposeRule` + Robolectric | `feature:*` | Interaction-heavy screens (composer, code entry, swipe) |
 | Instrumented | Espresso/Compose on emulator, test DC | `:app` `androidTest` | Smoke: launch → login on test DC → open a chat (nightly, not per PR) |
 | Macrobenchmark | `benchmark/` | release build | Startup, chat-list scroll, conversation scroll; generates Baseline Profile |
-| Static | ktlint, detekt, Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
+| Static | ktlint, detekt (+ `PingogramHardcodedToken`), Android Lint (`abortOnError = true`, `warningsAsErrors = true`) | all | Every PR |
 
 ## Rules
 
@@ -37,6 +37,9 @@ saying why.
   build-logic included.
 - detekt: `config/detekt/detekt.yml` on top of detekt's default config; the stable detekt CLI runs in
   its own JVM, reports land in `<module>/build/reports/detekt/` (HTML, SARIF).
+- `PingogramHardcodedToken` (`build-logic/detekt-rules`) fails `:feature:*` production code that uses
+  literal colors, `sp`/`dp` values (except `0.dp`), corner shapes or animation specs instead of the
+  `MaterialTheme` tokens (`docs/DESIGN_SYSTEM.md` §1). Test sources and `core`/`app` are not checked.
 - Android Lint: every warning is an error; `NewApi`, `UnusedResources` and `MissingTranslation` are
   fatal. Checks that do not fit the project are disabled, each with its reason, in
   `AndroidLintConventionPlugin`.

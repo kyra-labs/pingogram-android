@@ -29,8 +29,8 @@ tasks.withType<DependencyUpdatesTask>().configureEach {
 fun String.isStableVersion(): Boolean =
     listOf("RELEASE", "FINAL", "GA").any { uppercase().contains(it) } || matches(Regex("""^[0-9,.v-]+(-r)?$"""))
 
-// build-logic (an included build) is checked by `./gradlew check` (unit tests, ktlint) and
-// formatted by `./gradlew ktlintFormat`, like the modules.
+// build-logic (an included build) is checked by `./gradlew check` (unit tests, detekt rule tests,
+// ktlint) and formatted by `./gradlew ktlintFormat`, like the modules.
 val buildLogic = gradle.includedBuild("build-logic")
 
 tasks.register("check") {
@@ -39,9 +39,11 @@ tasks.register("check") {
     dependsOn(tasks.ktlintCheck)
     dependsOn(buildLogic.task(":ktlintCheck"))
     dependsOn(buildLogic.task(":convention:check"))
+    dependsOn(buildLogic.task(":detekt-rules:check"))
 }
 
 tasks.ktlintFormat {
     dependsOn(buildLogic.task(":ktlintFormat"))
     dependsOn(buildLogic.task(":convention:ktlintFormat"))
+    dependsOn(buildLogic.task(":detekt-rules:ktlintFormat"))
 }
