@@ -16,9 +16,21 @@ style:
     # A named property is not a magic number. Literal design values in feature code are caught by
     # PingogramHardcodedToken instead.
     ignorePropertyDeclaration: true
+    # detekt's default test excludes, plus core:ui's theme package: it is where the design tokens
+    # (and the color science behind harmonization) are written down as literals.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/core/ui/src/main/kotlin/**/theme/**'
   UnusedPrivateMember:
-    # Private @Preview functions are only called by tooling.
-    ignoreAnnotated: ['Preview']
+    # Private previews are only called by tooling (@Preview or our multi-preview annotation).
+    ignoreAnnotated: ['Preview', 'PingogramPreviews']
 
 # Our own rules (build-logic/detekt-rules).
 pingogram:

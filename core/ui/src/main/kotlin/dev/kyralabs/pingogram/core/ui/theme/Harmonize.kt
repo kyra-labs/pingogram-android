@@ -19,6 +19,11 @@
  * target HCT color is found by bisection (CAM16 J for the tone, chroma for the sRGB gamut), which
  * matches the reference implementation to within one 8-bit channel step.
  */
+
+// Kept structurally close to the reference implementation so it can be diffed against upstream:
+// one small function per formula and the bisection's early exits.
+@file:Suppress("TooManyFunctions", "ReturnCount")
+
 package dev.kyralabs.pingogram.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
