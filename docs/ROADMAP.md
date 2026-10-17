@@ -22,7 +22,7 @@ the release workflow so the owner can install and test on a phone.
 - [ ] ktlint, detekt, lint config; `./gradlew check` green
 - [ ] CI workflow green on PR; TDLib workflow produces an AAR release; release workflow
       produces signed APKs on tag
-- [ ] README badges, CONTRIBUTING, issue templates in place
+- [x] README badges, CONTRIBUTING, issue templates in place
 
 ## M1 — Authentication → `v0.1.0`
 
