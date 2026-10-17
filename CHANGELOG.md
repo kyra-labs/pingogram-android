@@ -34,6 +34,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   spacing tokens; preview helpers; splash and window themes.
 - Roborazzi screenshot tests (Robolectric, native graphics) verified by `./gradlew check`.
 
+- Release builds produce one APK per ABI (`arm64-v8a`, `armeabi-v7a`, `x86_64`) plus a universal APK,
+  with distinct version codes.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.

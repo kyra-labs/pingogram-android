@@ -50,6 +50,11 @@
 | `pingogram-X.Y.Z.aab` | Play bundle (workflow artifact only, not attached to the release) |
 | `mapping.txt` | R8 mapping (workflow artifact, 90 days) |
 
+The per-ABI APKs come from ABI splits configured in `AndroidApplicationConventionPlugin`. AGP cannot
+build an app bundle while splits are on (https://issuetracker.google.com/402800800), so a Gradle
+invocation that runs a `bundle*` task builds without splits, and `release.yml` builds the APKs and
+the bundle in two separate invocations.
+
 Default flavor for GitHub releases is `foss`. A `gms` build is produced only if the owner
 enables it in the workflow input.
 
