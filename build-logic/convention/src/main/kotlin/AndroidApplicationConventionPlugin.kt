@@ -34,6 +34,20 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     buildConfigField("String", TelegramSecrets.API_HASH, "\"${secrets.apiHash}\"")
                 }
                 configureSigning(this)
+                // One APK per ABI plus a universal one, as published by the release workflow
+                // (docs/RELEASE.md). The ABIs are the ones TDLib is built for. AGP cannot build an app
+                // bundle while ABI splits are on (https://issuetracker.google.com/402800800), so a build
+                // that packages a bundle makes no split APKs; release.yml runs the two separately.
+                splits.abi {
+                    isEnable = !requestsBundle()
+                    reset()
+                    include(
+                        *PingogramVersion.ABI_INDEX.keys
+                            .filterNotNull()
+                            .toTypedArray(),
+                    )
+                    isUniversalApk = true
+                }
             }
 
             // Split APKs get their own code (ABI_INDEX); outputs without an ABI filter are universal.
@@ -115,6 +129,10 @@ private fun Project.failReleasePackaging(message: String) {
         if (requested.isNotEmpty()) throw GradleException("Cannot run ${requested.joinToString()}. $message")
     }
 }
+
+/** Whether the requested tasks build an app bundle (`bundleFossRelease`, `:app:bundle`, …). */
+private fun Project.requestsBundle(): Boolean =
+    gradle.startParameter.taskNames.any { it.substringAfterLast(':').startsWith("bundle") }
 
 /** Text of a file in the repository root, or null if it does not exist; tracked by the configuration cache. */
 private fun Project.rootFileText(name: String): String? =
