@@ -36,7 +36,7 @@ tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 # SHA-256 of tdlib-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release (docs/TDLIB.md).
 # Not a dependency version: build-logic (pingogram.tdlib) verifies the downloaded AAR against it. "unpinned" (the
 # catalog allows no empty value) fails the build with instructions, unless pingogram.tdlib.aar is set.
-tdlibAarSha256 = "unpinned"
+tdlibAarSha256 = "9984a3569df68d2d18a30b0d138021aa464f0fadcf1f0ec32edd19a5b3bccecd"
 turbine = "1.2.1"
 
 [libraries]
