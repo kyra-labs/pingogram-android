@@ -24,6 +24,17 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // The TDLib AAR, and nothing else from here: the pingogram.tdlib plugin (build-logic TdlibAar.REPOSITORY)
+        // downloads it into this git-ignored directory when :core:tdlib's dependencies are resolved (docs/TDLIB.md).
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "tdlib"
+                    url = uri("core/tdlib/libs/maven")
+                }
+            }
+            filter { includeGroup("org.drinkless") }
+        }
     }
 }
 

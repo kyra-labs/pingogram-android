@@ -96,5 +96,9 @@ gradlePlugin {
             id = libs.plugins.pingogram.ktlint.pluginId
             implementationClass = "KtlintConventionPlugin"
         }
+        register("tdlib") {
+            id = libs.plugins.pingogram.tdlib.pluginId
+            implementationClass = "TdlibConventionPlugin"
+        }
     }
 }

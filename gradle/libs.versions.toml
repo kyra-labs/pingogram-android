@@ -31,6 +31,10 @@ robolectric = "4.17"
 roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
 tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
+# SHA-256 of tdlib-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release (docs/TDLIB.md).
+# Not a dependency version: build-logic (pingogram.tdlib) verifies the downloaded AAR against it. "unpinned" (the
+# catalog allows no empty value) fails the build with instructions, unless pingogram.tdlib.aar is set.
+tdlibAarSha256 = "unpinned"
 
 [libraries]
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
@@ -100,3 +104,4 @@ pingogram-android-test = { id = "pingogram.android.test" }
 pingogram-detekt = { id = "pingogram.detekt" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
 pingogram-ktlint = { id = "pingogram.ktlint" }
+pingogram-tdlib = { id = "pingogram.tdlib" }

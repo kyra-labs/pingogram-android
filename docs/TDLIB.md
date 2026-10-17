@@ -28,9 +28,29 @@ per pinned commit in CI and reuse the AAR everywhere.
 4. The workflow uploads `tdlib-<sha>.aar` (+ `SHA256SUMS`) as a workflow artifact **and**
    attaches it to a GitHub Release tagged `tdlib-<short-sha>` marked pre-release, so the app
    build can download it deterministically.
-5. `core/tdlib/build.gradle.kts` has a Gradle task `fetchTdlib` that downloads that AAR into
-   `core/tdlib/libs/tdlib.aar` (git-ignored) if missing or checksum mismatches, then
-   `implementation(files("libs/tdlib.aar"))`. Local devs can also drop a self-built AAR there.
+5. The build fetches that AAR by itself (`pingogram.tdlib` convention plugin, applied by
+   `core/tdlib/build.gradle.kts`; logic in `build-logic/.../TdlibAar.kt`):
+   - The expected SHA-256 is pinned in `gradle/libs.versions.toml` as `tdlibAarSha256` (copy it
+     from `SHA256SUMS.txt` of the release). Until a release exists it is `"unpinned"` (version
+     catalogs allow no empty value), and the build fails with instructions.
+   - When `:core:tdlib` is configured, the AAR is downloaded from
+     `https://github.com/kyra-labs/pingogram-android/releases/download/tdlib-<short-sha>/tdlib-<short-sha>.aar`
+     if it is missing or does not match the pin, verified, and installed as `org.drinkless:tdlib:<sha>`
+     in a file-based Maven repository, `core/tdlib/libs/maven/` (git-ignored; delete it any time).
+     `settings.gradle.kts` declares that repository for the group `org.drinkless` only, and
+     `:core:tdlib` has it as an `api` dependency. A repository rather than
+     `files("libs/tdlib.aar")`, because AGP refuses direct local `.aar` dependencies in library
+     modules when it bundles their AAR.
+   - The check runs in a Gradle `ValueSource`: with the configuration cache, dependencies are
+     resolved while the cache entry is stored, so the AAR must exist at configuration time, and
+     Gradle obtains the value again before reusing an entry, so a deleted or modified AAR is
+     restored even on a cache hit. Offline (`--offline`) the build fails instead of downloading.
+   - `./gradlew :core:tdlib:fetchTdlib` does the same on demand (e.g. before going offline).
+   - **Self-built AAR:** set the Gradle property `pingogram.tdlib.aar` to its path (absolute, or
+     relative to the repository root), in `~/.gradle/gradle.properties` or with
+     `-Ppingogram.tdlib.aar=…`. It is installed as `org.drinkless:tdlib:<sha>-local`, without
+     download or checksum. A compile-only AAR without native libraries is enough to build and
+     run the unit tests, but not to run the app.
 6. Keep `android.useLegacyPackaging = false`; set
    `packaging { jniLibs { useLegacyPackaging = false } }`.
 
