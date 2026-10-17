@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.pingogram.android.application)
     alias(libs.plugins.pingogram.android.compose)
     alias(libs.plugins.pingogram.android.hilt)
+    alias(libs.plugins.pingogram.android.roborazzi)
     alias(libs.plugins.androidx.baselineprofile)
 }
 
@@ -61,7 +62,11 @@ baselineProfile {
 
 dependencies {
     baselineProfile(projects.benchmark)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.profileinstaller)
 
     implementation(projects.core.common)

@@ -3,9 +3,11 @@
 
 [versions]
 androidGradlePlugin = "9.4.1"
+androidxActivity = "1.13.0"
 # benchmark-macro-junit4 and the baselineprofile Gradle plugin ship together; keep them on one version
 androidxBenchmark = "1.5.0"
 androidxCoreSplashscreen = "1.2.0"
+androidxNavigation = "2.10.2"
 androidxProfileinstaller = "1.4.1"
 androidxTestExtJunit = "1.3.0"
 assertj = "3.27.7"
@@ -28,6 +30,8 @@ ktlintGradlePlugin = "14.2.0"
 # Pre-release allowed by CLAUDE.md rule 7: the BOM's material3 1.4.0 keeps the Expressive API
 # (MotionScheme.expressive(), MaterialShapes, the *Emphasized type styles, Shapes.largeIncreased
 # and friends) internal. 1.5.0-beta01 makes it public and needs only stable Compose 1.12.
+# material3-adaptive-navigation-suite uses this version too: it is released in lockstep with material3,
+# and the BOM's 1.4.0 suite would mix two material3 lines in one NavigationSuiteScaffold.
 material3 = "1.5.0-beta01"
 robolectric = "4.17"
 roborazzi = "1.76.0"
@@ -40,13 +44,17 @@ tdlibAarSha256 = "9984a3569df68d2d18a30b0d138021aa464f0fadcf1f0ec32edd19a5b3bcce
 turbine = "1.2.1"
 
 [libraries]
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive" }
+androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite", version.ref = "material3" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "androidxCoreSplashscreen" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "androidxProfileinstaller" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
