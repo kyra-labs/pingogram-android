@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -103,6 +104,8 @@ class TdlibAuthRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.FloodWait(30)), repository().checkCode("12345"))
         }
 
+    // advanceTimeBy/runCurrent drive virtual time; they are still experimental in kotlinx-coroutines-test.
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `a request without an answer in 30 seconds fails with Network`() =
         runTest {
