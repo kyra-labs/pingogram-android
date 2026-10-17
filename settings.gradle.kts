@@ -29,6 +29,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "pingogram"
 
+// Also a regular included build, so `libs.pingogram.detekt.rules` resolves to build-logic/detekt-rules.
+includeBuild("build-logic")
+
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(":app")

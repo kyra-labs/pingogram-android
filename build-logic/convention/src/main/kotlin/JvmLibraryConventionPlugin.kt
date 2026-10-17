@@ -9,6 +9,8 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "org.jetbrains.kotlin.jvm")
             apply(plugin = "pingogram.android.lint")
+            apply(plugin = "pingogram.detekt")
+            apply(plugin = "pingogram.ktlint")
             configureKotlinJvm()
         }
     }

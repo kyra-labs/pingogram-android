@@ -112,7 +112,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 - `build-logic/convention` with plugins: `pingogram.android.application`,
   `pingogram.android.library`, `pingogram.android.feature`, `pingogram.android.compose`,
-  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`.
+  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
+  `pingogram.detekt`. `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /
   `TELEGRAM_API_HASH` (String), parsed and validated in `build-logic` (`TelegramSecrets`, applied

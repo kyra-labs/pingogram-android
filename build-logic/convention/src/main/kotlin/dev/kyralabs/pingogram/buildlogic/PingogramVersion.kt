@@ -22,21 +22,26 @@ data class PingogramVersion(
     companion object {
         const val DEV_VERSION = "0.0.0-dev"
 
-        val ABI_INDEX: Map<String?, Int> = mapOf(
-            null to 0,
-            "armeabi-v7a" to 1,
-            "arm64-v8a" to 2,
-            "x86_64" to 3,
-        )
+        val ABI_INDEX: Map<String?, Int> =
+            mapOf(
+                null to 0,
+                "armeabi-v7a" to 1,
+                "arm64-v8a" to 2,
+                "x86_64" to 3,
+            )
 
         private val SEMVER = Regex("""(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?""")
+        private const val EXPECTED_FORMAT = "Expected MAJOR.MINOR.PATCH[-suffix], e.g. 0.2.0 or 1.0.0-beta.1"
 
         /** Parses `X.Y.Z` or `X.Y.Z-suffix` (a leading `v` is accepted); null or blank means [DEV_VERSION]. */
         fun parse(raw: String?): PingogramVersion {
             val name = raw?.trim()?.removePrefix("v")?.takeIf { it.isNotEmpty() } ?: DEV_VERSION
-            val match = SEMVER.matchEntire(name)
-                ?: error("Invalid -Pversion='$raw'. Expected MAJOR.MINOR.PATCH[-suffix], e.g. 0.2.0 or 1.0.0-beta.1")
-            val (major, minor, patch) = match.destructured.toList().take(3).map(String::toInt)
+            val match = SEMVER.matchEntire(name) ?: error("Invalid -Pversion='$raw'. $EXPECTED_FORMAT")
+            val (major, minor, patch) =
+                match.destructured
+                    .toList()
+                    .take(3)
+                    .map(String::toInt)
             require(minor < 100 && patch < 100) {
                 "Invalid -Pversion='$raw'. MINOR and PATCH must be below 100 to fit the versionCode formula"
             }

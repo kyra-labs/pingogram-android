@@ -17,6 +17,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "com.android.application")
             apply(plugin = "pingogram.android.lint")
+            apply(plugin = "pingogram.detekt")
+            apply(plugin = "pingogram.ktlint")
 
             val version = PingogramVersion.parse(providers.gradleProperty("version").orNull)
             val secrets = TelegramSecrets.parse(rootFileText(TelegramSecrets.FILE_NAME))
@@ -38,9 +40,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             extensions.configure<ApplicationAndroidComponentsExtension> {
                 onVariants { variant ->
                     variant.outputs.forEach { output ->
-                        val abi = output.filters
-                            .find { it.filterType == FilterConfiguration.FilterType.ABI }
-                            ?.identifier
+                        val abi =
+                            output.filters
+                                .find { it.filterType == FilterConfiguration.FilterType.ABI }
+                                ?.identifier
                         output.versionCode.set(version.versionCode(abi))
                     }
                 }
