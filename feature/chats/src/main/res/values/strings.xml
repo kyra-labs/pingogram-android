@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chats_placeholder_title">No chats yet</string>
+    <string name="chats_placeholder_body">Sign-in arrives in an upcoming release. Your conversations will show up here.</string>
+</resources>
