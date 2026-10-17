@@ -40,6 +40,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.core.splashscreen)
+
     implementation(projects.core.common)
     implementation(projects.core.data)
     implementation(projects.core.datastore)
