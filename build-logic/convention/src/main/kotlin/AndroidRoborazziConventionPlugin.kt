@@ -18,8 +18,9 @@ import org.gradle.kotlin.dsl.register
  * Roborazzi screenshot tests of Compose UI on Robolectric (`docs/TESTING.md`). Apply after
  * `pingogram.android.compose`.
  *
- * Goldens live in `src/test/snapshots`. `check` compares against them through `verifyRoborazziDebug`;
- * `recordRoborazziDebug` re-records them. Plain unit test runs skip the captures.
+ * Goldens live in `src/test/snapshots`. `check` compares against them through `verifyRoborazziDebug`
+ * (`verifyRoborazzi<Flavor>Debug` for each flavor of `:app`); `recordRoborazziDebug` (`:app:recordRoborazziFossDebug`)
+ * re-records them. Plain unit test runs skip the captures.
  */
 class AndroidRoborazziConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -33,7 +34,6 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
             extensions.configure<RoborazziExtension> {
                 outputDir.set(layout.projectDirectory.dir("src/test/snapshots"))
             }
-            tasks.named("check") { dependsOn("verifyRoborazziDebug") }
 
             extensions.getByType<CommonExtension>().testOptions.unitTests.apply {
                 isIncludeAndroidResources = true
@@ -50,6 +50,11 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
                 val unitTest =
                     (variant as? HasHostTests)?.hostTests?.get(HostTestBuilder.UNIT_TEST_TYPE) ?: return@onVariants
                 val variantName = variant.name.replaceFirstChar(Char::uppercaseChar)
+                // Every debug variant, i.e. both flavors of :app. `check` runs their unit tests anyway; verifying
+                // only switches those runs to compare mode, it adds none.
+                if (variant.buildType == "debug") {
+                    tasks.named("check") { dependsOn("verifyRoborazzi$variantName") }
+                }
                 val robolectricConfig =
                     tasks.register<RobolectricConfigTask>("generate${variantName}RobolectricConfig") {
                         sdk.set(PingogramAndroid.ROBOLECTRIC_SDK)

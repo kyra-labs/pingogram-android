@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.pingogram.android.application)
     alias(libs.plugins.pingogram.android.compose)
     alias(libs.plugins.pingogram.android.hilt)
+    alias(libs.plugins.pingogram.android.roborazzi)
     alias(libs.plugins.androidx.baselineprofile)
 }
 
