@@ -44,6 +44,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   `SetTdlibParameters` (honest client identification), database key wrapped by the Android Keystore and
   kept out of backups; `FakeTdlibClient` and TdApi fixtures for tests.
 
+- App shell: `MainActivity` (splash, edge-to-edge, predictive back) with type-safe navigation and an
+  adaptive `NavigationSuiteScaffold` — short navigation bar on phones, navigation rail on larger
+  screens — with Chats, Contacts and Settings placeholder tabs and Material Symbols Rounded icons.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
