@@ -1,0 +1,159 @@
+package dev.kyralabs.pingogram.feature.auth.ui
+
+import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.Country
+import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
+import dev.kyralabs.pingogram.core.domain.model.codeLength
+import kotlinx.collections.immutable.toImmutableList
+
+/** [AuthModel] → [AuthUiState]: which screen to show, and what it shows. */
+internal fun AuthModel.toUiState() =
+    AuthUiState(
+        step = screen(),
+        connection = connection,
+        floodWaitSeconds = floodWaitSeconds,
+        pendingAction = pendingAction,
+        canGoBack = backTarget() != null,
+    )
+
+private fun AuthModel.screen(): AuthStepUiState {
+    val step = step
+    return when {
+        restarting || step == AuthStep.Initializing || step == AuthStep.Closed -> AuthStepUiState.Loading
+        step == AuthStep.WaitPhoneNumber && !welcomeDone -> AuthStepUiState.Welcome
+        step == AuthStep.WaitPhoneNumber -> phoneScreen(isChangingNumber = false)
+        step is AuthStep.WaitOtherDeviceConfirmation -> AuthStepUiState.QrCode(step.link)
+        step == AuthStep.LoggingOut -> AuthStepUiState.LoggingOut
+        step == AuthStep.Ready -> AuthStepUiState.Done
+        editingPhone -> phoneScreen(isChangingNumber = true)
+        else -> laterStepScreen(step)
+    }
+}
+
+private fun AuthModel.laterStepScreen(step: AuthStep): AuthStepUiState =
+    when (step) {
+        is AuthStep.WaitCode -> {
+            AuthStepUiState.Code(
+                phoneNumber = displayPhoneNumber(step.phoneNumber),
+                type = step.type,
+                nextType = step.nextType,
+                code = code.code,
+                codeLength = step.type.codeLength,
+                resendInSeconds = code.resendInSeconds,
+                error = code.error,
+            )
+        }
+
+        is AuthStep.WaitPassword -> {
+            passwordScreen(step)
+        }
+
+        is AuthStep.WaitRegistration -> {
+            AuthStepUiState.Registration(
+                firstName = registration.firstName,
+                lastName = registration.lastName,
+                firstNameError = registration.firstNameError,
+                lastNameError = registration.lastNameError,
+                termsOfServiceText = step.termsOfService.text,
+                minUserAge = step.termsOfService.minUserAge,
+                termsAccepted = registration.termsAccepted,
+                isTermsOfServiceOpen = registration.isTermsOpen == true,
+            )
+        }
+
+        AuthStep.WaitEmailAddress -> {
+            AuthStepUiState.EmailAddress(email.emailAddress, email.error, isChangingAddress = false)
+        }
+
+        is AuthStep.WaitEmailCode -> {
+            if (editingEmail) {
+                AuthStepUiState.EmailAddress(email.emailAddress, email.error, isChangingAddress = true)
+            } else {
+                AuthStepUiState.EmailCode(
+                    emailAddressPattern = step.emailAddressPattern,
+                    code = email.code,
+                    codeLength = step.codeLength,
+                    error = email.codeError,
+                    reset = step.resetState?.toUiState(email.resetInSeconds),
+                )
+            }
+        }
+
+        is AuthStep.WaitPremiumPurchase -> {
+            AuthStepUiState.PremiumRequired(step.supportEmailAddress)
+        }
+
+        else -> {
+            AuthStepUiState.Loading
+        }
+    }
+
+private fun AuthModel.passwordScreen(step: AuthStep.WaitPassword): AuthStepUiState =
+    when (password.recovery) {
+        RecoveryStage.None -> {
+            AuthStepUiState.Password(
+                hint = step.hint,
+                password = password.password,
+                error = password.error,
+                showNoRecoveryEmailInfo = password.showNoRecoveryEmailInfo,
+            )
+        }
+
+        RecoveryStage.Code -> {
+            AuthStepUiState.PasswordRecoveryCode(
+                emailAddressPattern = step.recoveryEmailAddressPattern,
+                code = password.recoveryCode,
+                error = password.recoveryCodeError,
+            )
+        }
+
+        RecoveryStage.NewPassword -> {
+            AuthStepUiState.NewPassword(
+                password = password.newPassword,
+                confirmation = password.newPasswordConfirmation,
+                hint = password.newPasswordHint,
+            )
+        }
+    }
+
+private fun AuthModel.phoneScreen(isChangingNumber: Boolean) =
+    AuthStepUiState.PhoneNumber(
+        callingCode = phone.callingCode,
+        number = phone.number,
+        numberFormat = phone.numberFormat,
+        country = phone.country?.toUiModel(),
+        error = phone.error,
+        isChangingNumber = isChangingNumber,
+        countryPicker =
+            if (phone.isPickerOpen) {
+                CountryPickerUiState(phone.pickerQuery, phone.countries.matching(phone.pickerQuery))
+            } else {
+                null
+            },
+    )
+
+private fun AuthModel.displayPhoneNumber(raw: String): String =
+    code.formattedPhoneNumber?.takeIf { it.first == raw }?.second ?: "+${raw.filter(Char::isDigit)}"
+
+private fun EmailAddressResetState.toUiState(resetInSeconds: Long?): EmailResetUiState =
+    when (this) {
+        is EmailAddressResetState.Available -> EmailResetUiState.Available(waitPeriodSeconds.toLong())
+        is EmailAddressResetState.Pending -> EmailResetUiState.Pending(resetInSeconds ?: this.resetInSeconds.toLong())
+    }
+
+internal fun Country.toUiModel() = CountryUiModel(isoCode, name, flagEmoji, callingCodes.firstOrNull().orEmpty())
+
+/** The listed countries matching a picker query: by name, English name, ISO code or calling code. */
+private fun List<Country>.matching(query: String) =
+    query.trim().removePrefix("+").let { term ->
+        asSequence()
+            .filter { !it.isHidden }
+            .filter { country ->
+                term.isEmpty() ||
+                    country.name.contains(term, ignoreCase = true) ||
+                    country.englishName.contains(term, ignoreCase = true) ||
+                    country.isoCode.equals(term, ignoreCase = true) ||
+                    country.callingCodes.any { it.startsWith(term) }
+            }.map { it.toUiModel() }
+            .toImmutableList()
+    }
