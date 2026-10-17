@@ -37,6 +37,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Release builds produce one APK per ABI (`arm64-v8a`, `armeabi-v7a`, `x86_64`) plus a universal APK,
   with distinct version codes.
 
+- TDLib 1.8.68 for Android, built by the `Build TDLib` workflow and published as the `tdlib-a94b83d67a`
+  release; the build downloads it and verifies its pinned SHA-256 (`pingogram.tdlib.aar` overrides it with
+  a local AAR).
+- `core:tdlib`: coroutine `TdlibClient` with typed authorization and connection state, automatic
+  `SetTdlibParameters` (honest client identification), database key wrapped by the Android Keystore and
+  kept out of backups; `FakeTdlibClient` and TdApi fixtures for tests.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.

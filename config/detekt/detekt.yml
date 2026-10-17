@@ -7,9 +7,26 @@ naming:
     ignoreAnnotated: ['Composable']
 
 complexity:
+  CyclomaticComplexMethod:
+    # A function that is one exhaustive `when` over a TDLib sum type (e.g. AuthorizationState → AuthState) is
+    # a flat lookup table, not complex control flow.
+    ignoreSingleWhenExpression: true
   LongParameterList:
     # Composables take state, callbacks and an optional `modifier`; parameters with defaults are optional.
     ignoreDefaultParameters: true
+  TooManyFunctions:
+    # detekt's default test excludes, plus core:testing, which is test code too: fixture objects such as
+    # TdApiFixtures hold one builder per TDLib type.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/core/testing/src/main/**'
 
 style:
   MagicNumber:
@@ -17,7 +34,8 @@ style:
     # PingogramHardcodedToken instead.
     ignorePropertyDeclaration: true
     # detekt's default test excludes, plus core:ui's theme package: it is where the design tokens
-    # (and the color science behind harmonization) are written down as literals.
+    # (and the color science behind harmonization) are written down as literals; and core:testing, which is
+    # test code (fixture values).
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
@@ -28,6 +46,7 @@ style:
       - '**/jsTest/**'
       - '**/iosTest/**'
       - '**/core/ui/src/main/kotlin/**/theme/**'
+      - '**/core/testing/src/main/**'
   UnusedPrivateMember:
     # Private previews are only called by tooling (@Preview or our multi-preview annotation).
     ignoreAnnotated: ['Preview', 'PingogramPreviews']

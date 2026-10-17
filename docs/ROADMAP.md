@@ -15,13 +15,14 @@ the release workflow so the owner can install and test on a phone.
 - [ ] App icon (adaptive + monochrome) — waiting for the owner's artwork
 - [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
 - [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
-- [ ] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
+- [x] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
       database key in Keystore, parameters provider
 - [ ] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
       shell with placeholder tabs
 - [x] ktlint, detekt, lint config; `./gradlew check` green
-- [ ] CI workflow green on PR; TDLib workflow produces an AAR release; release workflow
-      produces signed APKs on tag
+- [x] CI workflow green on PR; TDLib workflow produces an AAR release
+- [ ] Release workflow produces signed APKs on tag — build verified locally with a throwaway key;
+      the first real run needs the owner's signing/API secrets and a `v0.0.1` tag
 - [x] README badges, CONTRIBUTING, issue templates in place
 
 ## M1 — Authentication → `v0.1.0`
