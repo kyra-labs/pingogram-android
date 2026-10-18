@@ -97,8 +97,8 @@ fun PingogramTheme(
 - Any extra semantic color (voice waveform, poll bars, reaction glow) is derived in
   `pingogramColors()` (`PingogramColors`, read with `MaterialTheme.pingogramColors`) from the
   scheme (tonal shifts, harmonization) — not hard-coded.
-- Surfaces use the tonal container ladder; **no shadow elevation** except FAB (level 3), menus
-  and dialogs (level 2/3) per M3 elevation tokens.
+- Surfaces use the tonal container ladder; **no shadow elevation** except FAB and floating toolbars
+  (level 3, incl. the floating navigation bar), menus and dialogs (level 2/3) per M3 elevation tokens.
 
 ### 2.3 State layers
 - Hover 8%, focus 10%, pressed 10%, dragged 16% of the content color, drawn as state layers
@@ -239,11 +239,12 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 
 | UI element | Component |
 |---|---|
-| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small), `SearchBar` docked → expanded |
+| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
+| Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s (scrollable); fallback `PrimaryScrollableTabRow` if > 6 |
-| Main navigation | `NavigationSuiteScaffold` → `ShortNavigationBar` (compact), `WideNavigationRail` collapsible (medium/expanded) |
-| New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton` |
+| Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
+| New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
 | Selection mode | `HorizontalFloatingToolbar` (expressive, `FloatingToolbarDefaults.vibrantFloatingToolbarColors()`) |
 | Composer | M3 `TextField` (outlined, `extraLarge` corners) inside `Surface(surfaceContainer)`; send = `SplitButton` (send / schedule · silent); voice record = `FilledIconButton` → morphs to pill with wavy indicator |
 | Attach menu | `ModalBottomSheet` + `HorizontalMultiBrowseCarousel` of recent photos + `ButtonGroup` of options |
@@ -264,6 +265,32 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Navigation drawer | not used (folders live in tabs) |
 | Empty states | `MaterialShapes` illustration + `headlineSmallEmphasized` + `bodyMedium` + `Button` |
 
+### 6.1 Floating navigation bar (compact windows)
+
+Google's Material 3 Expressive apps moved primary navigation into a floating pill (Google Photos,
+2026: tabs in a pill, search in a separate circle beside it). Material has no component for it;
+the nearest, the floating toolbar, is meant for page actions. Pingogram builds the pattern from
+Material parts (`app/.../ui/PingogramNavigationBar.kt`):
+
+- **Container**: `HorizontalFloatingToolbar` with `standardFloatingToolbarColors()`
+  (`surfaceContainer`), its default shape and level-3 elevation, `FloatingToolbarDefaults.ScreenOffset`
+  (16 dp) from the window sides and above the system navigation bar.
+- **Tabs**: one per top-level destination, `Role.Tab` in a `selectableGroup`. The selected tab shows
+  its filled icon and its label (`labelLargeEmphasized`) on a full-pill `secondaryContainer`
+  indicator in `onSecondaryContainer`; the others show only their label (`labelLarge`) in the
+  toolbar's content color. Where the labels do not fit (narrow phones, large font scales: measured,
+  never truncated), the other tabs show their outlined icon instead, named by the label for
+  TalkBack.
+- **Search**: `FloatingToolbarDefaults.StandardFloatingActionButton` beside the pill, a circle in the
+  toolbar's own colors, opening global search.
+- **Motion**: the indicator fades in on `defaultEffectsSpec` (read in the draw phase); the icon slides
+  in with `fastSpatialSpec` + `fastEffectsSpec`; the bar slides away on screens pushed above a tab
+  and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out).
+- **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
+  `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
+  margin below and the same margin above), so lists end clear of the bar.
+- Medium and wider windows keep the `WideNavigationRail`; the bar is for compact windows only.
+
 ## 7. Layout
 
 - `Scaffold` per screen; `contentWindowInsets`, `innerPadding`; `enableEdgeToEdge()`;
@@ -271,7 +298,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 - Spacing scale 4/8/12/16/24/32 dp; margins 16 dp compact, 24 dp medium+. Feature code reads
   them as tokens from `MaterialTheme.spacing` (`extraSmall`…`extraExtraLarge`,
   `windowMarginCompact`, `windowMarginMedium`), never as `dp` literals.
-- Window size classes via `currentWindowAdaptiveInfo()`: **compact** single pane + bottom bar;
+- Window size classes via `currentWindowAdaptiveInfo()`: **compact** single pane + floating navigation bar (§6.1);
   **medium** navigation rail; **expanded** `ListDetailPaneScaffold` (chats | conversation),
   `SupportingPaneScaffold` for profile/shared media. Canonical layouts only.
 - Pane behaviour on foldables: `FoldingFeature`-aware hinge avoidance (`material3-adaptive`).

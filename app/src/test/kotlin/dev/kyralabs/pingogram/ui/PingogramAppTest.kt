@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
+import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -165,6 +166,34 @@ class PingogramAppTest {
         tab(R.string.nav_settings).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
         text(SettingsR.string.settings_log_out).assertIsDisplayed()
+    }
+
+    // Search (FR-L6)
+
+    @Test
+    fun `the search button opens search full screen`() {
+        setApp()
+
+        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
+        text(ChatsR.string.search_placeholder_title).assertIsDisplayed()
+        assertNoNavigation()
+    }
+
+    @Test
+    fun `back from search returns to the tab and its navigation bar`() {
+        setApp()
+        tab(R.string.nav_contacts).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(string(ChatsR.string.search_back)).performClick()
+        composeRule.waitForIdle()
+
+        tab(R.string.nav_contacts).assertIsSelected()
+        text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
     }
 
     // Signed in or out (FR-A8)

@@ -9,6 +9,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- A floating navigation bar on phones, in the style of Google's Material 3 Expressive apps: the tabs in a
+  pill that floats over the content (the selected tab shows its icon and label, the others their label, or
+  their icon when the labels do not fit), with a round search button beside it. Tablets keep the
+  navigation rail, now with the search button at its top. Search itself arrives with the chat list.
+
+### Changed
+- The Chats and Contacts placeholders no longer say that sign-in is coming.
+
 ## [0.1.1] - 2026-10-18
 
 ### Fixed

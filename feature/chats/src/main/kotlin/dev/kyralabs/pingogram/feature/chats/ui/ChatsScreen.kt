@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.feature.chats.R
@@ -17,7 +18,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatsScreen(modifier: Modifier = Modifier) {
-    Scaffold(modifier) { innerPadding ->
+    // The floating navigation bar covers the bottom of top-level screens.
+    Scaffold(modifier, contentWindowInsets = screenContentWindowInsets()) { innerPadding ->
         EmptyState(
             illustration = MaterialShapes.Cookie9Sided,
             icon = UiR.drawable.ic_chat_filled,
