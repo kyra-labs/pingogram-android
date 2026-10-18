@@ -36,6 +36,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   it. The viewer can share what it shows with another app or save it to Pictures/Pingogram or Movies/Pingogram,
   unless the chat protects its content; on Android 8 and 9 saving first asks for storage access, with the reason.
   Tapping a downloaded document opens it in an app that can view it.
+- Search, from the round button beside the navigation bar or at the top of the rail. Before you type it shows the
+  people you message most and your recent searches, which you can remove one by one or clear. As you type it finds
+  your chats, your contacts, public chats and channels, and messages in all your chats, with the matching words
+  highlighted; more messages load as you scroll. Tapping a message opens its chat at that message.
 - On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
