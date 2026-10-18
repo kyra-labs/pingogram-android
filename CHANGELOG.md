@@ -32,6 +32,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
 
+### Fixed
+- A swipe on a chat runs its action once. Archiving a chat inside a folder no longer archives and unarchives
+  it over and over with its row stuck halfway, archiving in All chats no longer brings the chat straight back,
+  and "Undo" on "Chat archived" moves the chat back to the chat list again. A chat just marked as read or
+  unread by swiping can be swiped again at once, for example to unarchive it in Archived chats.
+
 ## [0.1.2] - 2026-10-18
 
 ### Added
