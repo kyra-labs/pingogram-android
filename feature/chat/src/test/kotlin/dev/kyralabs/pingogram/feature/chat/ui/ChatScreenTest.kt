@@ -78,7 +78,7 @@ class ChatScreenTest {
     fun `a list that shows its oldest message asks for older ones`() {
         setScreen(ChatPreviewData.privateChat)
 
-        assertEquals(ChatEvent.NearOldestChanged(true), events.last())
+        assertEquals(ChatEvent.NearOldestChanged(true), events.filterIsInstance<ChatEvent.NearOldestChanged>().last())
     }
 
     @Test
@@ -97,6 +97,32 @@ class ChatScreenTest {
         // "Message 1", the newest, is the last id; the oldest is far above.
         assertTrue(MESSAGES.toLong() in shown)
         assertFalse(1L in shown)
+    }
+
+    @Test
+    fun `a new message is reported once it shows at the bottom`() {
+        var state by mutableStateOf(longChat(unread = 0))
+        setScreen { state }
+
+        state = longChat(unread = 0, extra = 1)
+        composeRule.waitForIdle()
+
+        // "Message 0", the new one.
+        assertTrue(MESSAGES + 1L in events.filterIsInstance<ChatEvent.MessagesVisible>().last().messageIds)
+    }
+
+    @Test
+    fun `a new message out of view leaves what the list reports as it was`() {
+        // It opens at the unread divider, away from the newest message.
+        var state by mutableStateOf(longChat(unread = UNREAD))
+        setScreen { state }
+        val before = events.filterIsInstance<ChatEvent.MessagesVisible>().last().messageIds
+
+        state = longChat(unread = UNREAD, extra = 1)
+        composeRule.waitForIdle()
+
+        assertTrue(before.isNotEmpty())
+        assertEquals(before, events.filterIsInstance<ChatEvent.MessagesVisible>().last().messageIds)
     }
 
     @Test

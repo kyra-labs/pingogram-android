@@ -81,7 +81,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -278,7 +280,8 @@ private fun ChatItemRow(
 /**
  * Reports the messages of the entries [listState] shows, wholly or in part ([ChatEvent.MessagesVisible]): on every
  * change of them, as the list scrolls or messages come and go, and none once the list leaves the screen. Read from the
- * layout, outside the items (`docs/PERFORMANCE.md` §4).
+ * layout, outside the items (`docs/PERFORMANCE.md` §4). A frame of a scroll only compares the keys of the entries at
+ * both ends of the screen; the ids are gathered, by key, when those or the items change.
  */
 @Composable
 private fun ReportVisibleMessages(
@@ -290,15 +293,15 @@ private fun ReportVisibleMessages(
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState) {
         try {
-            snapshotFlow {
-                listState.layoutInfo.visibleItemsInfo.flatMapTo(HashSet()) { info ->
-                    // The layout and the items can be a frame apart; an entry counts once they agree.
-                    currentItems
-                        .getOrNull(info.index)
-                        ?.takeIf { it.key == info.key }
-                        ?.messageIds
-                        .orEmpty()
+            val ends =
+                snapshotFlow {
+                    val visible = listState.layoutInfo.visibleItemsInfo
+                    visible.firstOrNull()?.key to visible.lastOrNull()?.key
                 }
+            // By key, as the layout can be a frame behind the items: a new message shifts every index.
+            val itemsByKey = snapshotFlow { currentItems }.map { items -> items.associateBy { it.key } }
+            combine(ends, itemsByKey) { _, byKey ->
+                listState.layoutInfo.visibleItemsInfo.flatMapTo(HashSet()) { byKey[it.key]?.messageIds.orEmpty() }
             }.distinctUntilChanged()
                 .collect { currentOnEvent(ChatEvent.MessagesVisible(it)) }
         } finally {
