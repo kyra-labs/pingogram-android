@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-18
+
 ### Added
 - Tapping a chat opens the conversation (read-only for now). The top bar shows the avatar and name with
   "online", "last seen …", who is typing, or the number of members or subscribers. Messages load as you
@@ -177,7 +179,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kyra-labs/pingogram-android/releases/tag/v0.1.0
