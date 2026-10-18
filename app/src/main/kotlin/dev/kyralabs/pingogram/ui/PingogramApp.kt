@@ -70,6 +70,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * the chat list while chats are selected ([HideNavigationBar], through [navigationBarVisibility]). The bar's insets
  * stay meanwhile, so the screen's content keeps clearing the bottom.
  *
+ * The bar's insets ([LocalNavigationBarInsets]) depend only on the window, not on the destination: the local is
+ * static, so changing it recomposes everything below the `NavHost` without skipping, and pushing or popping a screen
+ * (a conversation, the archive) would do that in the frames that start and end its transition. Screens pushed on top
+ * of a tab do not read them.
+ *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
@@ -91,8 +96,9 @@ fun PingogramApp(
     }
     val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
     val floatingBar = adaptiveType.isNavigationBar()
-    // Where the floating bar goes; a screen may hide the bar itself there, never its space.
-    val floatingBarSlot = showNavigation && floatingBar && currentTab != null
+    // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
+    val floatingBarSpace = showNavigation && floatingBar
+    val floatingBarSlot = floatingBarSpace && currentTab != null
     val showRail = showNavigation && !floatingBar
     val openSearch = { navController.navigate(SearchRoute) { launchSingleTop = true } }
     NavigationSuiteScaffold(
@@ -105,7 +111,7 @@ fun PingogramApp(
         Box(Modifier.fillMaxSize()) {
             CompositionLocalProvider(
                 LocalNavigationBarInsets provides
-                    if (floatingBarSlot) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
+                    if (floatingBarSpace) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
                 LocalNavigationBarVisibility provides navigationBarVisibility,
             ) {
                 if (uiState == MainActivityUiState.Loading) {
