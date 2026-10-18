@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
  * @property avatarSmall an `Avatar` in a one- or two-line list item: contacts, members, search results (the M3 list
  *   item's leading avatar).
  * @property avatarMedium an `Avatar` in a chat list row, next to a title and a two-line preview.
+ * @property avatarLarge an `Avatar` heading a screen on its own: the account at the top of Settings.
  * @property avatarExtraSmall an `Avatar` beside the last of a group of messages in a group chat, next to its bubble.
  * @property inlineIcon an icon within a line of title text, e.g. the badges and mute icon after a chat's name.
  * @property inlineIconSmall an icon next to label text, e.g. read receipts beside a time, or a chat's pin.
@@ -52,6 +53,7 @@ data class PingogramSizes(
     val illustrationMaxSize: Dp = 280.dp,
     val avatarSmall: Dp = 40.dp,
     val avatarMedium: Dp = 56.dp,
+    val avatarLarge: Dp = 96.dp,
     val avatarExtraSmall: Dp = 32.dp,
     val inlineIcon: Dp = 18.dp,
     val inlineIconSmall: Dp = 16.dp,

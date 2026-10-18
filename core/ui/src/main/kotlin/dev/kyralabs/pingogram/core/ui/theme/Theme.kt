@@ -23,6 +23,9 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * The typography follows the system's "Bold text" setting (Android 12+) without doubling it; see
  * [pingogramTypography].
  *
+ * When a setting changes, every color role cross-fades to the new scheme on the motion scheme's default effects spring
+ * ([animateColorScheme]); the first scheme shows at once, so the app never starts with a crossfade.
+ *
  * Ripples are the Material 3 opacity state layers (hover 8%, focus 10%, pressed 10%, dragged 16%).
  * Reduced motion needs no extra code: Compose scales every animation, springs included, by the
  * system animator duration scale, and a scale of 0 makes them finish immediately.
@@ -40,12 +43,16 @@ fun PingogramTheme(
     content: @Composable () -> Unit,
 ) {
     val dark = themeMode.isDark()
-    val colorScheme = rememberPingogramColorScheme(dark, dynamicColor, contrast, amoled)
+    val colorScheme =
+        animateColorScheme(
+            target = rememberPingogramColorScheme(dark, dynamicColor, contrast, amoled),
+            animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
+        )
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
     val settings = remember(dynamicColor, contrast, amoled) { ThemeSettings(dynamicColor, contrast, amoled) }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
-        motionScheme = MotionScheme.expressive(),
+        motionScheme = ExpressiveMotionScheme,
         shapes = PingogramShapes,
         typography = pingogramTypography(dark, LocalConfiguration.current.fontWeightAdjustmentOrZero()),
     ) {
@@ -106,5 +113,6 @@ private fun Configuration.fontWeightAdjustmentOrZero(): Int =
         0
     }
 
+private val ExpressiveMotionScheme = MotionScheme.expressive()
 private val DefaultSpacing = PingogramSpacing()
 private val DefaultSizes = PingogramSizes()
