@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
+import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatPosition
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
@@ -65,6 +66,7 @@ object ChatListFixtures {
         draft = draft,
         hasProtectedContent = false,
         messageAutoDeleteTime = 0,
+        permissions = ChatPermissions.All,
     )
 
     fun message(

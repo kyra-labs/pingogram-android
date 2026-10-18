@@ -12,9 +12,9 @@ class GroupModelTest {
         val statuses =
             listOf(
                 ChatMemberStatus.Creator(isMember = true),
-                ChatMemberStatus.Administrator,
+                ChatMemberStatus.Administrator(canPostMessages = false),
                 ChatMemberStatus.Member,
-                ChatMemberStatus.Restricted(isMember = true),
+                ChatMemberStatus.Restricted(isMember = true, canSendBasicMessages = true),
             )
 
         assertTrue(statuses.all { it.isMember })
@@ -25,7 +25,7 @@ class GroupModelTest {
         val statuses =
             listOf(
                 ChatMemberStatus.Creator(isMember = false),
-                ChatMemberStatus.Restricted(isMember = false),
+                ChatMemberStatus.Restricted(isMember = false, canSendBasicMessages = false),
                 ChatMemberStatus.Left,
                 ChatMemberStatus.Banned,
             )

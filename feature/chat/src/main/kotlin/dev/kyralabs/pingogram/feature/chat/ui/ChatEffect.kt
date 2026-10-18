@@ -41,6 +41,11 @@ sealed interface ChatEffect {
      */
     data object MessageNotLoaded : ChatEffect
 
+    /** A message was scheduled for [at] (Unix time, seconds): a snackbar says when it will be sent. */
+    data class MessageScheduled(
+        val at: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,

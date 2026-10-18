@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
@@ -36,14 +37,17 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Sample conversations for previews and screenshot tests: a private chat with grouping, every outgoing state and the
  * unread divider; a group with sender names, avatars, replies, forwards, reactions and a link preview; a channel;
  * service messages; a message with every kind of formatting; media of every frame (photos, an album, a sticker, a
- * voice message, a document, a poll, a venue), with the voice message also playing; and the loading, empty, error
- * and not-found states.
+ * voice message, a document, a poll, a venue), with the voice message also playing; a group where the user may not
+ * write; and the loading, empty, error and not-found states. The composer shows where the user can write.
  * Items are listed newest first, as the reverse layout shows them.
  */
 internal object ChatPreviewData {
     private val today = UiText.resource(R.string.chat_date_today)
     private val yesterday = UiText.resource(R.string.chat_date_yesterday)
     private val you = UiText.resource(UiR.string.preview_sender_you)
+
+    /** The composer, where the user can write. */
+    private val canWrite = ComposerUiState.Available(canSchedule = true)
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */
     private val photo =
@@ -61,6 +65,7 @@ internal object ChatPreviewData {
 
     val privateChat =
         ChatUiState(
+            composer = canWrite,
             header =
                 ChatHeader(
                     chatId = ADA,
@@ -144,6 +149,7 @@ internal object ChatPreviewData {
 
     val groupChat =
         ChatUiState(
+            composer = canWrite,
             header =
                 ChatHeader(
                     chatId = -100L,
@@ -257,6 +263,7 @@ internal object ChatPreviewData {
 
     val serviceMessages =
         ChatUiState(
+            composer = canWrite,
             header = groupChat.header,
             content =
                 content(
@@ -309,6 +316,7 @@ internal object ChatPreviewData {
                     "val answer = 42" to TextEntityType.PreCode("kotlin"),
                 ).map { (part, type) -> TextEntity(text.indexOf(part), part.length, type) }
             return ChatUiState(
+                composer = canWrite,
                 header = privateChat.header,
                 content =
                     content(
@@ -339,6 +347,7 @@ internal object ChatPreviewData {
     /** Photos: one without a caption, one with, and an album of four, edge to edge in their bubbles. */
     val mediaPhotos =
         ChatUiState(
+            composer = canWrite,
             header = privateChat.header,
             content =
                 content(
@@ -382,6 +391,7 @@ internal object ChatPreviewData {
     /** A sticker, a voice message, a document as it downloads, a poll and a venue. */
     val mediaFiles =
         ChatUiState(
+            composer = canWrite,
             header = privateChat.header,
             content =
                 content(
@@ -445,11 +455,18 @@ internal object ChatPreviewData {
             playback = MessagePlayback(messageId = 63, playback = Playback(isPlaying = true, progress = { PLAYED })),
         )
 
-    val loading = ChatUiState(header = privateChat.header, content = ChatContent.Loading)
+    val loading = ChatUiState(header = privateChat.header, content = ChatContent.Loading, composer = canWrite)
 
-    val empty = ChatUiState(header = privateChat.header, content = ChatContent.Empty)
+    val empty = ChatUiState(header = privateChat.header, content = ChatContent.Empty, composer = canWrite)
 
-    val error = ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network))
+    val error =
+        ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network), composer = canWrite)
+
+    /** [groupChat] for a member the admins restricted: a label instead of the composer. */
+    val cannotWrite =
+        groupChat.copy(
+            composer = ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted)),
+        )
 
     val notFound = ChatUiState(content = ChatContent.NotFound)
 

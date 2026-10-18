@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
+import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -29,6 +31,9 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
@@ -49,6 +54,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -69,11 +75,11 @@ import java.time.ZoneId
 import java.util.Locale
 
 /**
- * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C3, FR-C8), read-only for now, as [uiState]. Events come
- * in through [onEvent].
+ * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8) as [uiState], and the text of its
+ * composer as [composerText]. Events come in through [onEvent].
  *
  * - **State**: one `combine` of the chat, its history, the users and the chats the messages name, the replied messages
- *   fetched for it, the member count of a group or channel, what people are doing in it, the minute
+ *   fetched for it, the basic group or supergroup of a group or channel, what people are doing in it, the minute
  *   ([WallClock.minutes], for "last seen" and "Today"), and the paging state. Items are mapped on [dispatcher] by a
  *   [ChatItemMapper], which reuses items whose message did not change. It runs while the screen collects, and 5 s
  *   after, so a rotation does not restart it.
@@ -108,8 +114,12 @@ import java.util.Locale
  * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
+ * - **Composer** ([ChatComposer]): shown where the user can write ([composerState], from the chat's permissions and the
+ *   user's membership), it sends the text ([ChatEvent.Send]) and keeps the chat's draft in step with it: filled from
+ *   the draft, saved a second after typing stops and when the screen stops, kept across process death.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
- *   opening a downloaded document in another app ([ChatEvent.OpenFile]), and a location in a maps app.
+ *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, and a scheduled
+ *   message's time.
  *
  * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
  * patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the
@@ -221,6 +231,25 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
+    private val composer =
+        ChatComposer(
+            chatId = chatId,
+            repository = messageRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            drafts =
+                chatRepository
+                    .chat(chatId)
+                    .filterNotNull()
+                    .map { it.draft }
+                    .distinctUntilChanged(),
+            onEffect = { effectChannel.trySend(it) },
+            log = log,
+        )
+
+    /** The text the composer edits, for its text field; the view model keeps it across rotations. */
+    val composerText: ComposerText get() = composer.text
+
     private val chat: Flow<ChatLookup> =
         chatAttempts
             .flatMapLatest {
@@ -246,16 +275,24 @@ class ChatViewModel internal constructor(
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
-    /** The member count of a group or channel, null for other chats and while unknown. */
-    private val memberCount: Flow<Int?> =
+    /** The basic group or supergroup of a group or channel: its member count, and the user's membership. */
+    private val group: Flow<ChatGroup> =
         chat
             .map { (it as? ChatLookup.Found)?.chat?.type }
             .distinctUntilChanged()
             .flatMapLatest { type ->
                 when (type) {
-                    is ChatType.BasicGroup -> groupRepository.basicGroup(type.basicGroupId).map { it?.memberCount }
-                    is ChatType.Supergroup -> groupRepository.supergroup(type.supergroupId).map { it?.memberCount }
-                    else -> flowOf(null)
+                    is ChatType.BasicGroup -> {
+                        groupRepository.basicGroup(type.basicGroupId).map { ChatGroup(basicGroup = it) }
+                    }
+
+                    is ChatType.Supergroup -> {
+                        groupRepository.supergroup(type.supergroupId).map { ChatGroup(supergroup = it) }
+                    }
+
+                    else -> {
+                        flowOf(ChatGroup())
+                    }
                 }
             }.distinctUntilChanged()
 
@@ -276,7 +313,7 @@ class ChatViewModel internal constructor(
     private val chatSources: Flow<ChatSources> =
         combine(
             chat,
-            memberCount,
+            group,
             chatActionRepository.actions(chatId),
             savedStateHandle.getStateFlow<Long?>(KEY_UNREAD_AFTER, null),
             ::ChatSources,
@@ -335,6 +372,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
+            is ChatEvent.Send -> composer.send(event.options)
+            is ChatEvent.ComposerFocusChanged -> composer.setFocused(event.isFocused)
         }
     }
 
@@ -342,12 +381,13 @@ class ChatViewModel internal constructor(
      * Opens or closes the chat in TDLib when that changes. Undispatched, so the request is sent before this returns:
      * a close as the screen leaves, right before the view model's scope is cancelled, still reaches TDLib. A failure
      * changes nothing: TDLib then just does not prioritize the chat. Stopping also pauses what plays: nothing plays in
-     * the background.
+     * the background; and it saves the composer's draft at once, also before the scope is cancelled.
      */
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
         isOpen = open
         if (!open) {
+            composer.flush()
             playback.pause()
             views.setOpen(false)
         }
@@ -477,10 +517,11 @@ class ChatViewModel internal constructor(
             return ChatUiState(content = (lookup as? ChatLookup.Failed)?.error.toContent())
         }
         val formatter = timeFormatter()
+        val group = chatSources.group
         val header =
             HeaderSources(
                 chat = chat,
-                memberCount = chatSources.memberCount,
+                memberCount = group.memberCount,
                 actions = chatSources.actions,
                 people = people,
                 now = now,
@@ -490,6 +531,7 @@ class ChatViewModel internal constructor(
             header = header,
             content = content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
+            composer = composerState(chat, chat.userId?.let(people.users::get), group.basicGroup, group.supergroup),
         )
     }
 
@@ -566,11 +608,20 @@ class ChatViewModel internal constructor(
 
     private class ChatSources(
         val chat: ChatLookup,
-        val memberCount: Int?,
+        val group: ChatGroup,
         val actions: List<SenderAction>,
         /** Null until the chat was first shown. */
         val unreadAfterId: Long?,
     )
+
+    /** The basic group or supergroup of a group or channel chat; neither for other chats, nor while unknown. */
+    private data class ChatGroup(
+        val basicGroup: BasicGroup? = null,
+        val supergroup: Supergroup? = null,
+    ) {
+        /** Null while unknown, and for other chats. */
+        val memberCount: Int? get() = basicGroup?.memberCount ?: supergroup?.memberCount
+    }
 
     private class MessageSources(
         val state: MessageState,

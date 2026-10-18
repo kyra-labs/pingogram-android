@@ -9,13 +9,15 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 
 /**
- * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C8): the header and the messages.
+ * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8): the header, the messages and
+ * the composer.
  *
  * @property header the top bar's chat; null until the chat is known, and for a chat that cannot be found.
  * @property content the messages, or why there are none.
@@ -23,6 +25,7 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property fileStates how far the files of the loaded voice messages, songs and documents are downloaded, by file id
  *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
  * @property playback the voice message or song in the player; null when none is.
+ * @property composer what the bottom of the screen shows: the composer, why the user cannot write, or nothing.
  */
 @Immutable
 data class ChatUiState(
@@ -31,6 +34,7 @@ data class ChatUiState(
     val unreadCount: Int = 0,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
+    val composer: ComposerUiState = ComposerUiState.Hidden,
 )
 
 /**

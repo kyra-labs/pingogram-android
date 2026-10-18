@@ -156,7 +156,7 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 
 `updateAuthorizationState`, `updateConnectionState`, `updateOption`,
 `updateNewChat`, `updateChatPosition`, `updateChatLastMessage`, `updateChatReadInbox/Outbox`,
-`updateChatUnreadMentionCount`, `updateChatDraftMessage`, `updateChatNotificationSettings`,
+`updateChatUnreadMentionCount`, `updateChatDraftMessage`, `updateChatPermissions`, `updateChatNotificationSettings`,
 `updateChatFolders`, `updateUser`, `updateUserStatus`, `updateBasicGroup`, `updateSupergroup`,
 `updateSecretChat`, `updateNewMessage`, `updateMessageSendSucceeded/Failed`,
 `updateMessageContent`, `updateMessageEdited`, `updateDeleteMessages`,

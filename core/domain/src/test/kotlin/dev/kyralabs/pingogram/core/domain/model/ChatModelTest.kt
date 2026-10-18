@@ -28,6 +28,7 @@ class ChatModelTest {
             draft = ChatDraft(DraftContent.Text(FormattedText("secret plans", persistentListOf())), date = 0),
             hasProtectedContent = false,
             messageAutoDeleteTime = 0,
+            permissions = ChatPermissions.All,
         )
 
     @Test

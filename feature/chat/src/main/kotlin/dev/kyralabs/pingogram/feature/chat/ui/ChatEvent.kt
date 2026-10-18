@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
+
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
     /** The screen is started (visible): the chat is opened in TDLib until [Stopped]. */
@@ -86,5 +88,15 @@ sealed interface ChatEvent {
     data class Seek(
         val messageId: Long,
         val fraction: Float,
+    ) : ChatEvent
+
+    /** Send the composer's text as [options] say: now, without sound, or at a time. */
+    data class Send(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** The composer's text field gained or lost the focus; a draft from another device only fills it unfocused. */
+    data class ComposerFocusChanged(
+        val isFocused: Boolean,
     ) : ChatEvent
 }

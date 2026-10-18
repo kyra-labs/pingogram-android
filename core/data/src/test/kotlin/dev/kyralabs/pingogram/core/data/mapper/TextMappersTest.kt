@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -127,6 +128,62 @@ class TextMappersTest {
             }
 
         assertEquals(TextEntityType.Unknown, newType.toTextEntityType())
+    }
+
+    @Test
+    fun `the formatting a sender may set goes back to TDLib as it came`() {
+        val sendable =
+            listOf(
+                TextEntityType.Bold,
+                TextEntityType.Italic,
+                TextEntityType.Underline,
+                TextEntityType.Strikethrough,
+                TextEntityType.Spoiler,
+                TextEntityType.Code,
+                TextEntityType.Pre,
+                TextEntityType.PreCode("kotlin"),
+                TextEntityType.BlockQuote,
+                TextEntityType.ExpandableBlockQuote,
+                TextEntityType.TextUrl("https://example.org"),
+                TextEntityType.MentionName(42),
+                TextEntityType.CustomEmoji(9),
+                TextEntityType.DateTime(1_700_000_000, DateTimeFormat.Relative),
+                TextEntityType.DateTime(
+                    1_700_000_000,
+                    DateTimeFormat.Absolute(DateTimePrecision.Short, DateTimePrecision.Long, showDayOfWeek = true),
+                ),
+                TextEntityType.DateTime(1_700_000_000, format = null),
+            )
+        val text = oneCharacterEach(sendable)
+
+        assertEquals(text, text.toTdFormattedText().toFormattedText())
+    }
+
+    @Test
+    fun `the formatting TDLib finds in the text itself is not sent`() {
+        val found =
+            listOf(
+                TextEntityType.Url,
+                TextEntityType.Mention,
+                TextEntityType.Hashtag,
+                TextEntityType.Cashtag,
+                TextEntityType.BotCommand,
+                TextEntityType.EmailAddress,
+                TextEntityType.PhoneNumber,
+                TextEntityType.BankCardNumber,
+                TextEntityType.TonAddress,
+                TextEntityType.MediaTimestamp(5),
+                TextEntityType.Unknown,
+            )
+        val text = oneCharacterEach(found)
+
+        assertEquals(0, text.toTdFormattedText().entities.size)
+    }
+
+    /** A text with an entity of each of [types] on a character of its own. */
+    private fun oneCharacterEach(types: List<TextEntityType>): FormattedText {
+        val entities = types.mapIndexed { index, type -> TextEntity(index, 1, type) }
+        return FormattedText("x".repeat(types.size), entities.toPersistentList())
     }
 
     private fun concreteTdApiSubclassesOf(type: Class<*>): Set<String> =

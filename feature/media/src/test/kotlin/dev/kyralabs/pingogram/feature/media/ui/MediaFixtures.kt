@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.media.ui
 
 import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -169,5 +170,6 @@ object MediaFixtures {
         draft = null,
         hasProtectedContent = false,
         messageAutoDeleteTime = 0,
+        permissions = ChatPermissions.All,
     )
 }
