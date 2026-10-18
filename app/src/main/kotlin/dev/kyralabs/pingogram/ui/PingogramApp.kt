@@ -89,9 +89,7 @@ fun PingogramApp(
 ) {
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
-    val inMainGraph by remember(currentEntry) {
-        derivedStateOf { currentEntry.value?.destination.isInMainGraph() }
-    }
+    val inMainGraph by remember(currentEntry) { derivedStateOf { currentEntry.value?.destination.isInMainGraph() } }
     val showNavigation by remember(currentEntry) {
         derivedStateOf {
             val destination = currentEntry.value?.destination
