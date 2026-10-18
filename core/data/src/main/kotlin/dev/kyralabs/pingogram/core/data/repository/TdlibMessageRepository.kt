@@ -6,8 +6,11 @@ import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +40,9 @@ import javax.inject.Singleton
  *
  * [repliedMessage] serves the reply quotes of messages whose replied message is older than the loaded ones; the window
  * keeps what it fetched.
+ *
+ * [sendText] and [setDraft] only send requests: the message being sent reaches the window through TDLib's updates, as
+ * every other new message does, and the draft reaches the chat through `updateChatDraftMessage`.
  */
 @Singleton
 class TdlibMessageRepository
@@ -99,6 +105,37 @@ class TdlibMessageRepository
 
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
+        /**
+         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview and
+         * [options]' notification and scheduling. TDLib puts the message into the chat as being sent
+         * (`updateNewMessage`) before it answers, so the window shows it at once (`docs/PERFORMANCE.md` §1: tap to
+         * bubble ≤ 50 ms); `updateMessageSendSucceeded` or `updateMessageSendFailed` replace it. The answer itself is
+         * not applied: the update has it.
+         */
+        override suspend fun sendText(
+            chatId: Long,
+            text: FormattedText,
+            options: SendOptions,
+        ): Outcome<Unit> {
+            val content = TdApi.InputMessageText(text.toTdFormattedText(), null, true)
+            return client.request(TdApi.SendMessage(chatId, null, null, options.toTdOptions(), null, content)).map {}
+        }
+
+        /**
+         * `setChatDraftMessage` of the chat itself (no topic) with a text draft, or none for an empty [text]. TDLib
+         * dates the draft itself, and reports it in `updateChatDraftMessage`.
+         */
+        override suspend fun setDraft(
+            chatId: Long,
+            text: FormattedText,
+        ): Outcome<Unit> {
+            val draft =
+                text.takeIf { it.text.isNotEmpty() }?.let {
+                    TdApi.DraftMessage(null, 0, TdApi.DraftMessageContentText(it.toTdFormattedText(), null), 0, null)
+                }
+            return client.request(TdApi.SetChatDraftMessage(chatId, null, draft)).map {}
+        }
+
         private suspend fun loadPage(chatId: Long): Outcome<Unit> {
             val loadId = loadIds.incrementAndGet()
             store.update { cache -> cache.startingLoad(chatId, loadId) }
@@ -144,6 +181,16 @@ class TdlibMessageRepository
 
 /** Messages per page, `docs/PERFORMANCE.md` §3. */
 private const val PAGE_SIZE = 50
+
+/**
+ * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until
+ * then (`messageSchedulingStateSendAtDate`, not repeated); everything else is TDLib's default for a user's message.
+ */
+private fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
+    TdApi.MessageSendOptions().also { options ->
+        options.disableNotification = silent
+        options.schedulingState = scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), 0) }
+    }
 
 /** The messages before [fromMessageId], all of them for 0. td_api.tl allows null entries in the list. */
 private fun TdApi.Messages.olderThan(fromMessageId: Long): List<Message> =

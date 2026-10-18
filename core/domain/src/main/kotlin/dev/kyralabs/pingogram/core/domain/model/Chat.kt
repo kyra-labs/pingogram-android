@@ -48,6 +48,11 @@ data class Chat(
      * Seconds after which new messages are deleted (in secret chats: after they were opened); 0 if they are not.
      */
     val messageAutoDeleteTime: Int,
+    /**
+     * What members without administrator rights may do; in a private or secret chat, what the current user may (TDLib
+     * restricts everything in the read-only service chats).
+     */
+    val permissions: ChatPermissions,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }
@@ -78,6 +83,20 @@ sealed interface ChatType {
         val supergroupId: Long,
         val isChannel: Boolean,
     ) : ChatType
+}
+
+/** What members without administrator rights may do in a chat (td_api.tl `chatPermissions`), as far as it is used. */
+data class ChatPermissions(
+    /** Send text messages (and contacts, locations, venues). */
+    val canSendBasicMessages: Boolean,
+) {
+    companion object {
+        /** Everything allowed, as in a private chat with a regular user. */
+        val All = ChatPermissions(canSendBasicMessages = true)
+
+        /** Nothing allowed. */
+        val None = ChatPermissions(canSendBasicMessages = false)
+    }
 }
 
 /** An unsent message the user left in a chat, saved by Telegram on every device; [date] is when it was saved. */

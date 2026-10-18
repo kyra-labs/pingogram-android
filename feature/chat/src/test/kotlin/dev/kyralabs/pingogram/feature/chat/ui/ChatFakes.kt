@@ -11,7 +11,9 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
@@ -204,6 +206,33 @@ class FakeMessageRepository : MessageRepository {
     }
 
     override fun trimMemory() = unused()
+
+    /** Every [sendText] call: the chat, the text and the options. */
+    val sent = mutableListOf<Triple<Long, FormattedText, SendOptions>>()
+
+    var onSendText: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** Every [setDraft] call: the chat and the text. */
+    val drafts = mutableListOf<Pair<Long, FormattedText>>()
+
+    var onSetDraft: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    override suspend fun sendText(
+        chatId: Long,
+        text: FormattedText,
+        options: SendOptions,
+    ): Outcome<Unit> {
+        sent += Triple(chatId, text, options)
+        return onSendText(text)
+    }
+
+    override suspend fun setDraft(
+        chatId: Long,
+        text: FormattedText,
+    ): Outcome<Unit> {
+        drafts += chatId to text
+        return onSetDraft(text)
+    }
 
     private companion object {
         val EMPTY = ChatHistory(persistentListOf(), reachedStart = false)

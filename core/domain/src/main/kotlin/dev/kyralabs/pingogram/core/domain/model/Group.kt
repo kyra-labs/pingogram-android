@@ -59,7 +59,13 @@ sealed interface ChatMemberStatus {
         override val isMember: Boolean,
     ) : ChatMemberStatus
 
-    data object Administrator : ChatMemberStatus {
+    /**
+     * With rights beyond a member's. Administrators can always write in a group; in a channel only with
+     * [canPostMessages] (td_api.tl `chatAdministratorRights.can_post_messages`).
+     */
+    data class Administrator(
+        val canPostMessages: Boolean,
+    ) : ChatMemberStatus {
         override val isMember = true
     }
 
@@ -67,9 +73,14 @@ sealed interface ChatMemberStatus {
         override val isMember = true
     }
 
-    /** With fewer rights than other members; also a former member who stays restricted on return ([isMember] false). */
+    /**
+     * With fewer rights than other members; also a former member who stays restricted on return ([isMember] false).
+     * [canSendBasicMessages] is whether the restriction still lets them send text; the chat's own [ChatPermissions] for
+     * every member apply on top of it.
+     */
     data class Restricted(
         override val isMember: Boolean,
+        val canSendBasicMessages: Boolean,
     ) : ChatMemberStatus
 
     data object Left : ChatMemberStatus {

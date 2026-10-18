@@ -2,13 +2,16 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import kotlinx.coroutines.flow.Flow
 
 /**
  * The history of chats, loaded a page at a time as the conversation scrolls back (`REQUIREMENTS.md` FR-C1) and kept up
- * to date with TDLib's updates. Only the chats being observed and the most recently used others stay in memory
- * (`docs/PERFORMANCE.md` §3); everything is dropped when TDLib closes (logout).
+ * to date with TDLib's updates, and what the composer sends and keeps as a draft (FR-C5). Only the chats being
+ * observed and the most recently used others stay in memory (`docs/PERFORMANCE.md` §3); everything is dropped when
+ * TDLib closes (logout).
  */
 interface MessageRepository {
     /**
@@ -40,4 +43,27 @@ interface MessageRepository {
 
     /** Forgets the history of every chat nobody observes, for `ComponentCallbacks2.onTrimMemory`. */
     fun trimMemory()
+
+    /**
+     * Sends [text] to chat [chatId] as [options] say, and clears the chat's draft. Succeeds once TDLib accepted the
+     * message, which it has then put into the [history] as being sent (a scheduled one stays out of it); whether it
+     * reaches Telegram shows in its sending state there. Only the formatting a sender may set is sent (bold, italic,
+     * underline, strikethrough, spoiler, code, links behind text, quotes); TDLib finds URLs, mentions and hashtags
+     * itself. Fails with `DomainError.FloodWait`, `DomainError.Network` for a request that gets no answer in time, or
+     * another `DomainError` when TDLib refuses it (no right to write, a text too long, a date too far ahead, …).
+     */
+    suspend fun sendText(
+        chatId: Long,
+        text: FormattedText,
+        options: SendOptions = SendOptions(),
+    ): Outcome<Unit>
+
+    /**
+     * Keeps [text] as the draft of chat [chatId] on every device of the account; an empty text removes the draft. The
+     * chat's draft (`Chat.draft`) follows through TDLib's update.
+     */
+    suspend fun setDraft(
+        chatId: Long,
+        text: FormattedText,
+    ): Outcome<Unit>
 }

@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toChat
 import dev.kyralabs.pingogram.core.data.mapper.toChatDraft
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolder
 import dev.kyralabs.pingogram.core.data.mapper.toChatListType
+import dev.kyralabs.pingogram.core.data.mapper.toChatPermissions
 import dev.kyralabs.pingogram.core.data.mapper.toChatPosition
 import dev.kyralabs.pingogram.core.data.mapper.toChatPositions
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
@@ -352,6 +353,10 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
 
         is TdApi.UpdateChatMessageAutoDeleteTime -> {
             ChatChange(update.chatId) { it.copy(messageAutoDeleteTime = update.messageAutoDeleteTime) }
+        }
+
+        is TdApi.UpdateChatPermissions -> {
+            ChatChange(update.chatId) { it.copy(permissions = update.permissions.toChatPermissions()) }
         }
 
         else -> {

@@ -92,4 +92,38 @@
         <item quantity="one">%d unread message</item>
         <item quantity="other">%d unread messages</item>
     </plurals>
+
+    <!-- Composer (ChatBottomBar) -->
+    <!-- The hint in the empty text field. -->
+    <string name="composer_placeholder">Message</string>
+    <string name="composer_send">Send</string>
+    <!-- The button that opens the menu of other ways to send. -->
+    <string name="composer_send_options">More send options</string>
+    <string name="composer_send_silently">Send without sound</string>
+    <string name="composer_schedule">Schedule message</string>
+    <!-- Instead of the composer, where the user may not write. -->
+    <string name="composer_restricted">You can\'t send messages in this chat</string>
+    <string name="composer_not_member">You\'re not a member of this group</string>
+    <!-- Formatting of selected text, in the text selection menu. -->
+    <string name="composer_format_bold">Bold</string>
+    <string name="composer_format_italic">Italic</string>
+    <string name="composer_format_underline">Underline</string>
+    <string name="composer_format_strikethrough">Strikethrough</string>
+    <string name="composer_format_monospace">Monospace</string>
+    <string name="composer_format_spoiler">Spoiler</string>
+    <string name="composer_format_link">Link</string>
+    <!-- The dialog that links the selected text to a web address. -->
+    <string name="composer_link_title">Add link</string>
+    <string name="composer_link_edit_title">Edit link</string>
+    <string name="composer_link_address">Address</string>
+    <string name="composer_link_save">Save</string>
+    <string name="composer_link_remove">Remove</string>
+    <string name="composer_cancel">Cancel</string>
+    <!-- The dialog that picks when a scheduled message is sent: a date, then a time. -->
+    <string name="composer_schedule_next">Next</string>
+    <string name="composer_schedule_back">Back</string>
+    <string name="composer_schedule_confirm">Schedule</string>
+    <string name="composer_schedule_past">Choose a time in the future</string>
+    <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
+    <string name="composer_scheduled">Message scheduled for %1$s</string>
 </resources>

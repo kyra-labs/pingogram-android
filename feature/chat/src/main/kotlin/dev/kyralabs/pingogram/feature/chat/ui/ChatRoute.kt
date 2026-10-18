@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +26,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -34,7 +39,8 @@ import java.util.Locale
  * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
  * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
- * ends up open. [onBack] leaves it; null shows no back button. The view model's [ChatEffect]s show snackbars, open a
+ * ends up open; the composer's text lives in the view model too. [onBack] leaves it; null shows no back button. The
+ * view model's [ChatEffect]s show snackbars, open a
  * downloaded document in another app or a location in a maps app, jump to a message ([MessageJumpState]), or open a
  * photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not know
  * each other).
@@ -65,15 +71,16 @@ internal fun ChatRoute(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         jumpState = jumpState,
+        composerText = viewModel.composerText,
     )
 }
 
 /**
  * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone, for
- * a found message that is not in the loaded history and for what is not there yet, the newest replacing the one
- * shown; a downloaded document opens in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile])
- * and a location in a maps app, or a snackbar says that no app can; a jump to a message goes to [jumpState]; media to
- * open goes to [onOpenMedia].
+ * a found message that is not in the loaded history, for a scheduled message's time ([scheduledTime]) and for what is
+ * not there yet, the newest replacing the one shown; a downloaded document opens in another app through [openFile]
+ * (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a snackbar says that no app can; a jump
+ * to a message goes to [jumpState]; media to open goes to [onOpenMedia].
  */
 @Composable
 internal fun ChatEffects(
@@ -105,16 +112,8 @@ internal fun ChatEffects(
                         }
                     }
 
-                    ChatEffect.PlaybackFailed -> {
-                        resources.getString(R.string.content_playback_failed)
-                    }
-
-                    ChatEffect.MessageUnavailable -> {
-                        resources.getString(R.string.chat_message_unavailable)
-                    }
-
-                    ChatEffect.MessageNotLoaded -> {
-                        resources.getString(R.string.chat_message_not_loaded)
+                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.MessageNotLoaded -> {
+                        resources.getString(effect.noticeText())
                     }
 
                     is ChatEffect.ScrollToMessage -> {
@@ -130,6 +129,10 @@ internal fun ChatEffects(
                         onOpenMedia(effect.messageId)
                         ""
                     }
+
+                    is ChatEffect.MessageScheduled -> {
+                        resources.getString(R.string.composer_scheduled, context.scheduledTime(effect.at))
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
@@ -138,6 +141,30 @@ internal fun ChatEffects(
             }
         }
     }
+}
+
+/** The text of a snackbar that only tells something. */
+private fun ChatEffect.noticeText(): Int =
+    when (this) {
+        ChatEffect.PlaybackFailed -> R.string.content_playback_failed
+        ChatEffect.MessageUnavailable -> R.string.chat_message_unavailable
+        else -> R.string.chat_message_not_loaded
+    }
+
+/**
+ * When a message scheduled for [epochSeconds] goes out, in the device's time zone, language and 12- or 24-hour clock:
+ * "Oct 19, 9:41 AM", with the year when it is not this year's.
+ */
+internal fun Context.scheduledTime(
+    epochSeconds: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): String {
+    val locale = resources.configuration.locales[0]
+    val time = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+    val date = if (time.year == ZonedDateTime.now(zone).year) "MMMd" else "yMMMd"
+    val clock = if (DateFormat.is24HourFormat(this)) "Hm" else "hm"
+    val pattern = DateFormat.getBestDateTimePattern(locale, date + clock)
+    return DateTimeFormatter.ofPattern(pattern, locale).format(time)
 }
 
 /** Opens [location] in a maps app with a `geo:` link, false if no app on the device handles one. */
