@@ -515,9 +515,9 @@ object TdApiFixtures {
     fun draftText(text: String = "Draft") = TdApi.DraftMessageContentText(formattedText(text), null)
 
     /**
-     * A read private chat with user 42 in the main list, with the default notification settings, that can be deleted
-     * for self or for both users; every other field is TDLib's "none". TdApi.Chat has 46 constructor parameters, so
-     * the builder sets fields by name instead.
+     * A read private chat with user 42 in the main list, with the default notification settings, where text can be
+     * sent, that can be deleted for self or for both users; every other field is TDLib's "none". TdApi.Chat has 46
+     * constructor parameters, so the builder sets fields by name instead.
      */
     fun chat(
         id: Long = 100,
@@ -538,6 +538,7 @@ object TdApiFixtures {
         messageAutoDeleteTime: Int = 0,
         canBeDeletedOnlyForSelf: Boolean = true,
         canBeDeletedForAllUsers: Boolean = true,
+        permissions: TdApi.ChatPermissions = TdApi.ChatPermissions().apply { canSendBasicMessages = true },
     ) = TdApi.Chat().also {
         it.id = id
         it.type = type
@@ -558,7 +559,7 @@ object TdApiFixtures {
         it.messageAutoDeleteTime = messageAutoDeleteTime
         it.canBeDeletedOnlyForSelf = canBeDeletedOnlyForSelf
         it.canBeDeletedForAllUsers = canBeDeletedForAllUsers
-        it.permissions = TdApi.ChatPermissions()
+        it.permissions = permissions
         it.profileAccentColorId = -1
         it.clientData = ""
     }

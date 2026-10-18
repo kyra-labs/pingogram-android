@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
+import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardInfo
@@ -52,6 +54,8 @@ object ChatFixtures {
         unreadCount: Int = 0,
         lastReadInboxMessageId: Long = 0,
         lastReadOutboxMessageId: Long = 0,
+        draft: ChatDraft? = null,
+        permissions: ChatPermissions = ChatPermissions.All,
     ) = Chat(
         id = id,
         type = type,
@@ -66,9 +70,10 @@ object ChatFixtures {
         lastReadOutboxMessageId = lastReadOutboxMessageId,
         isMarkedAsUnread = false,
         isMuted = false,
-        draft = null,
+        draft = draft,
         hasProtectedContent = false,
         messageAutoDeleteTime = 0,
+        permissions = permissions,
     )
 
     val groupChat = chat(id = GROUP_CHAT, type = ChatType.BasicGroup(BASIC_GROUP_ID), title = "Group")
@@ -164,23 +169,26 @@ object ChatFixtures {
         haveAccess = true,
     )
 
-    fun basicGroup(memberCount: Int) =
-        BasicGroup(
-            id = BASIC_GROUP_ID,
-            memberCount = memberCount,
-            status = ChatMemberStatus.Member,
-            isActive = true,
-            upgradedToSupergroupId = null,
-        )
+    fun basicGroup(
+        memberCount: Int,
+        status: ChatMemberStatus = ChatMemberStatus.Member,
+    ) = BasicGroup(
+        id = BASIC_GROUP_ID,
+        memberCount = memberCount,
+        status = status,
+        isActive = true,
+        upgradedToSupergroupId = null,
+    )
 
     fun supergroup(
         memberCount: Int,
         isChannel: Boolean = true,
+        status: ChatMemberStatus = ChatMemberStatus.Member,
     ) = Supergroup(
         id = SUPERGROUP_ID,
         usernames = persistentListOf(),
         memberCount = memberCount,
-        status = ChatMemberStatus.Member,
+        status = status,
         isChannel = isChannel,
         isForum = false,
         isVerified = false,

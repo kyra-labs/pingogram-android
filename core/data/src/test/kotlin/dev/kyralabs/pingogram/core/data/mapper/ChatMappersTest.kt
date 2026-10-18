@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatPosition
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
@@ -64,6 +65,7 @@ class ChatMappersTest {
                 draft = null,
                 hasProtectedContent = true,
                 messageAutoDeleteTime = 86_400,
+                permissions = ChatPermissions.All,
             ),
             tdChat.toChat(noMutedScopes),
         )
@@ -239,6 +241,13 @@ class ChatMappersTest {
             ),
             folder.toChatFolder(),
         )
+    }
+
+    @Test
+    fun `a chat where text may not be sent maps to permissions that forbid it`() {
+        val chat = chat(permissions = TdApi.ChatPermissions())
+
+        assertEquals(ChatPermissions.None, chat.toChat(noMutedScopes)?.permissions)
     }
 
     @Test
