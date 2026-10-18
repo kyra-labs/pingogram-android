@@ -13,8 +13,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 
 /**
  * Root theme of every Pingogram screen (`docs/DESIGN_SYSTEM.md` §1): Material 3 Expressive with the
- * expressive motion scheme, Google Sans Flex, the expressive shape scale, [PingogramColors] and
- * [PingogramSpacing].
+ * expressive motion scheme, Google Sans Flex, the expressive shape scale, [PingogramColors],
+ * [PingogramSpacing] and [PingogramSizes].
  *
  * Ripples are the Material 3 opacity state layers (hover 8%, focus 10%, pressed 10%, dragged 16%).
  * Reduced motion needs no extra code: Compose scales every animation, springs included, by the
@@ -44,6 +44,7 @@ fun PingogramTheme(
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,
             LocalPingogramSpacing provides DefaultSpacing,
+            LocalPingogramSizes provides DefaultSizes,
             LocalRippleThemeConfiguration provides RippleDefaults.OpacityFocusThemeConfiguration,
             content = content,
         )
@@ -60,3 +61,4 @@ fun ThemeMode.isDark(): Boolean =
     }
 
 private val DefaultSpacing = PingogramSpacing()
+private val DefaultSizes = PingogramSizes()

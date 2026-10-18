@@ -1,31 +1,30 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.announcedCountdownSeconds
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 
@@ -59,20 +58,14 @@ fun CodeScreen(
             )
         },
     ) {
-        TextField(
+        AuthCodeField(
             value = state.code,
             onValueChange = { onEvent(AuthEvent.CodeChanged(it)) },
-            modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.SmsOtpCode },
-            label = { Text(stringResource(R.string.auth_code_label)) },
-            isError = state.error != null,
-            supportingText = state.error?.let { error -> { Text(errorText(error)) } },
-            singleLine = true,
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = if (state.type.isNumeric) KeyboardType.NumberPassword else KeyboardType.Text,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions = KeyboardActions(onDone = { onEvent(AuthEvent.SubmitCode) }),
+            label = stringResource(R.string.auth_code_label),
+            error = state.error?.let { errorText(it) },
+            onDone = { onEvent(AuthEvent.SubmitCode) },
+            isNumeric = state.type.isNumeric,
+            contentType = ContentType.SmsOtpCode,
         )
         if (state.type is AuthCodeType.Fragment) {
             AuthTextButton(
@@ -84,6 +77,11 @@ fun CodeScreen(
     }
 }
 
+/**
+ * The resend countdown, then the button for a new code by [AuthStepUiState.Code.nextType]. A polite live region:
+ * screen readers hear the countdown at most every 15 seconds ([announcedCountdownSeconds]) and the button once it
+ * replaces it.
+ */
 @Composable
 private fun ResendCode(
     state: AuthStepUiState.Code,
@@ -92,19 +90,27 @@ private fun ResendCode(
     onEvent: (AuthEvent) -> Unit,
 ) {
     val nextType = state.nextType ?: return
-    if (state.canResend) {
-        AuthTextButton(
-            text = resendText(nextType),
-            onClick = { onEvent(AuthEvent.ResendCode) },
-            enabled = canSubmit,
-            inProgress = pendingAction == AuthAction.ResendCode,
-        )
-    } else {
-        Text(
-            text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Box(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+        if (state.canResend) {
+            AuthTextButton(
+                text = resendText(nextType),
+                onClick = { onEvent(AuthEvent.ResendCode) },
+                enabled = canSubmit,
+                inProgress = pendingAction == AuthAction.ResendCode,
+            )
+        } else {
+            val announcement =
+                stringResource(
+                    R.string.auth_code_resend_in,
+                    durationText(announcedCountdownSeconds(state.resendInSeconds)),
+                )
+            Text(
+                text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
+            )
+        }
     }
 }
 
@@ -181,52 +187,32 @@ private fun resendText(type: AuthCodeType): String =
         }
     }
 
-private const val PREVIEW_CODE_LENGTH = 5
-private const val PREVIEW_RESEND_SECONDS = 42L
-
-private fun codeState(
-    type: AuthCodeType = AuthCodeType.Sms(length = PREVIEW_CODE_LENGTH),
-    code: String = "",
-    resendInSeconds: Long = PREVIEW_RESEND_SECONDS,
-    error: DomainError? = null,
-) = AuthStepUiState.Code(
-    phoneNumber = "+44 7911 123456",
-    type = type,
-    nextType = AuthCodeType.Call(length = PREVIEW_CODE_LENGTH),
-    code = code,
-    codeLength = PREVIEW_CODE_LENGTH,
-    resendInSeconds = resendInSeconds,
-    error = error,
-)
-
 @PingogramPreviews
 @Composable
 private fun CodeScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(codeState(code = "123")))
+    AuthScreenPreview(AuthPreviewData.code)
 }
 
 @PingogramPreviews
 @Composable
 private fun CodeScreenResendPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            codeState(type = AuthCodeType.TelegramMessage(length = PREVIEW_CODE_LENGTH), resendInSeconds = 0),
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.codeResend)
 }
 
 @PingogramPreviews
 @Composable
 private fun CodeScreenErrorPreview() {
-    AuthScreenPreview(AuthPreviewData.state(codeState(code = "12345", error = DomainError.CodeInvalid)))
+    AuthScreenPreview(AuthPreviewData.codeError)
 }
 
 @PingogramPreviews
 @Composable
 private fun CodeScreenFragmentPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            codeState(type = AuthCodeType.Fragment("https://fragment.com", length = PREVIEW_CODE_LENGTH)),
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.codeFragment)
+}
+
+@PingogramPreviews
+@Composable
+private fun CodeScreenPhrasePreview() {
+    AuthScreenPreview(AuthPreviewData.codePhrase)
 }

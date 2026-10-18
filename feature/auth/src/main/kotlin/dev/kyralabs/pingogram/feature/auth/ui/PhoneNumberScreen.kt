@@ -25,8 +25,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
-import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -34,6 +32,7 @@ import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 
@@ -122,14 +121,19 @@ private fun PhoneNumberFields(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
         )
+        val error = state.error?.let { errorText(it) }
         TextField(
             value = state.number,
             onValueChange = { onEvent(AuthEvent.PhoneNumberChanged(it)) },
-            modifier = Modifier.weight(NUMBER_WEIGHT).semantics { contentType = ContentType.PhoneNumberNational },
+            modifier =
+                Modifier
+                    .weight(NUMBER_WEIGHT)
+                    .fieldError(error)
+                    .semantics { contentType = ContentType.PhoneNumberNational },
             label = { Text(stringResource(R.string.auth_phone_number)) },
             placeholder = state.numberFormat?.let { format -> { Text(format.replace('-', '0')) } },
-            isError = state.error != null,
-            supportingText = state.error?.let { error -> { Text(errorText(error)) } },
+            isError = error != null,
+            supportingText = error?.let { { Text(it) } },
             visualTransformation = transformation,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
@@ -160,47 +164,35 @@ internal data class PhoneNumberVisualTransformation(
 @PingogramPreviews
 @Composable
 private fun PhoneNumberScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthPreviewData.phoneNumber()))
+    AuthScreenPreview(AuthPreviewData.phoneNumber)
 }
 
 @PingogramPreviews
 @Composable
 private fun PhoneNumberScreenEmptyPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            AuthStepUiState.PhoneNumber("", "", null, null, null, isChangingNumber = false, countryPicker = null),
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.phoneNumberEmpty)
 }
 
 @PingogramPreviews
 @Composable
 private fun PhoneNumberScreenErrorPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(AuthPreviewData.phoneNumber(number = "791", error = DomainError.PhoneNumberInvalid)),
-    )
+    AuthScreenPreview(AuthPreviewData.phoneNumberError)
 }
 
 @PingogramPreviews
 @Composable
 private fun PhoneNumberScreenFloodWaitPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthPreviewData.phoneNumber(), floodWaitSeconds = 299))
+    AuthScreenPreview(AuthPreviewData.phoneNumberFloodWait)
 }
 
 @PingogramPreviews
 @Composable
 private fun PhoneNumberScreenSubmittingOfflinePreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            AuthPreviewData.phoneNumber(isChangingNumber = true),
-            connection = ConnectionStatus.WaitingForNetwork,
-            pendingAction = AuthAction.SubmitPhoneNumber,
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.phoneNumberSubmittingOffline)
 }
 
 @PingogramPreviews
 @Composable
 private fun CountryPickerPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthPreviewData.phoneNumber(pickerOpen = true)))
+    AuthScreenPreview(AuthPreviewData.countryPicker)
 }

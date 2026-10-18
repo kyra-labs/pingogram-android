@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -17,6 +18,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
@@ -66,20 +68,11 @@ internal fun CountryPickerSheet(
         }
         LazyColumn {
             items(state.countries, key = { it.isoCode }, contentType = { CONTENT_TYPE_COUNTRY }) { country ->
-                ListItem(
+                CountryItem(
+                    country = country,
                     onClick = { onEvent(AuthEvent.CountrySelected(country.isoCode)) },
                     modifier = Modifier.animateItem(),
-                    leadingContent = {
-                        Text(
-                            country.flagEmoji,
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.clearAndSetSemantics {},
-                        )
-                    },
-                    trailingContent = { Text("+${country.callingCode}", style = MaterialTheme.typography.labelLarge) },
-                ) {
-                    Text(country.name)
-                }
+                )
             }
             if (state.countries.isEmpty()) {
                 item(contentType = CONTENT_TYPE_EMPTY) {
@@ -92,6 +85,31 @@ internal fun CountryPickerSheet(
                 }
             }
         }
+    }
+}
+
+/** A country: its flag (decorative), name and calling code. */
+@Composable
+private fun CountryItem(
+    country: CountryUiModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ListItem(
+        onClick = onClick,
+        modifier = modifier,
+        // On the sheet's own surface; pressed and focused states still show as state layers.
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = {
+            Text(
+                country.flagEmoji,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        },
+        trailingContent = { Text("+${country.callingCode}", style = MaterialTheme.typography.labelLarge) },
+    ) {
+        Text(country.name)
     }
 }
 

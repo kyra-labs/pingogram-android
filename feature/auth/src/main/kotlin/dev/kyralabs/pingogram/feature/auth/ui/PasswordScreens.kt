@@ -8,18 +8,14 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentType
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthNotice
+import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPasswordField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
@@ -55,11 +51,11 @@ fun PasswordScreen(
             )
         },
     ) {
-        PasswordField(
+        AuthPasswordField(
             value = state.password,
             onValueChange = { onEvent(AuthEvent.PasswordChanged(it)) },
             label = stringResource(R.string.auth_password_label),
-            error = state.error,
+            error = state.error?.let { errorText(it) },
             supportingText =
                 state.hint.takeIf { it.isNotBlank() }?.let {
                     stringResource(
@@ -102,16 +98,12 @@ fun PasswordRecoveryCodeScreen(
             )
         },
     ) {
-        TextField(
+        AuthCodeField(
             value = state.code,
             onValueChange = { onEvent(AuthEvent.RecoveryCodeChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.auth_recovery_code_label)) },
-            isError = state.error != null,
-            supportingText = state.error?.let { error -> { Text(errorText(error)) } },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onEvent(AuthEvent.SubmitRecoveryCode) }),
+            label = stringResource(R.string.auth_recovery_code_label),
+            error = state.error?.let { errorText(it) },
+            onDone = { onEvent(AuthEvent.SubmitRecoveryCode) },
         )
     }
 }
@@ -138,20 +130,21 @@ fun NewPasswordScreen(
             )
         },
     ) {
-        PasswordField(
+        AuthPasswordField(
             value = state.password,
             onValueChange = { onEvent(AuthEvent.NewPasswordChanged(it)) },
             label = stringResource(R.string.auth_new_password_label),
             error = state.error,
             isNewPassword = true,
+            imeAction = ImeAction.Next,
         )
-        PasswordField(
+        AuthPasswordField(
             value = state.confirmation,
             onValueChange = { onEvent(AuthEvent.NewPasswordConfirmationChanged(it)) },
             label = stringResource(R.string.auth_new_password_confirmation_label),
+            error = if (state.isMismatch) stringResource(R.string.auth_new_password_mismatch) else null,
             isNewPassword = true,
-            supportingText = if (state.isMismatch) stringResource(R.string.auth_new_password_mismatch) else null,
-            isError = state.isMismatch,
+            imeAction = ImeAction.Next,
         )
         TextField(
             value = state.hint,
@@ -165,68 +158,32 @@ fun NewPasswordScreen(
     }
 }
 
-/** A password text field: masked, password keyboard and autofill hints, error text or [supportingText] below. */
-@Composable
-private fun PasswordField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    error: DomainError? = null,
-    supportingText: String? = null,
-    isError: Boolean = error != null,
-    isNewPassword: Boolean = false,
-    onDone: (() -> Unit)? = null,
-) {
-    val support = error?.let { errorText(it) } ?: supportingText
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .semantics { contentType = if (isNewPassword) ContentType.NewPassword else ContentType.Password },
-        label = { Text(label) },
-        isError = isError,
-        supportingText = support?.let { { Text(it) } },
-        visualTransformation = PasswordVisualTransformation(),
-        singleLine = true,
-        keyboardOptions =
-            KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = if (onDone != null) ImeAction.Done else ImeAction.Next,
-            ),
-        keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }),
-    )
-}
-
 @PingogramPreviews
 @Composable
 private fun PasswordScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthStepUiState.Password("my pet", "secret", null, false)))
+    AuthScreenPreview(AuthPreviewData.password)
 }
 
 @PingogramPreviews
 @Composable
 private fun PasswordScreenErrorPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthStepUiState.Password("", "wrong", DomainError.PasswordInvalid, false)))
+    AuthScreenPreview(AuthPreviewData.passwordError)
 }
 
 @PingogramPreviews
 @Composable
 private fun PasswordScreenNoRecoveryEmailPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(AuthStepUiState.Password("my pet", "", null, showNoRecoveryEmailInfo = true)),
-    )
+    AuthScreenPreview(AuthPreviewData.passwordNoRecoveryEmail)
 }
 
 @PingogramPreviews
 @Composable
 private fun PasswordRecoveryCodeScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthStepUiState.PasswordRecoveryCode("a***@example.org", "123", null)))
+    AuthScreenPreview(AuthPreviewData.passwordRecoveryCode)
 }
 
 @PingogramPreviews
 @Composable
 private fun NewPasswordScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthStepUiState.NewPassword("new secret", "new secre", "")))
+    AuthScreenPreview(AuthPreviewData.newPassword)
 }

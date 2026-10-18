@@ -11,6 +11,8 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -19,6 +21,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,6 +43,7 @@ import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 
@@ -99,13 +103,18 @@ private fun NameField(
     imeAction: ImeAction = ImeAction.Next,
     onDone: () -> Unit = {},
 ) {
+    val errorMessage = error?.let { errorText(it) }
     TextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth().semantics { this.contentType = contentType },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fieldError(errorMessage)
+                .semantics { this.contentType = contentType },
         label = { Text(label) },
-        isError = error != null,
-        supportingText = error?.let { { Text(errorText(it)) } },
+        isError = errorMessage != null,
+        supportingText = errorMessage?.let { { Text(it) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = imeAction),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
@@ -122,13 +131,18 @@ private fun TermsAcceptance(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .minimumInteractiveComponentSize()
                     .toggleable(value = accepted, role = Role.Checkbox) { onEvent(AuthEvent.TermsAcceptedChanged(it)) },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
             // The row toggles, so the checkbox itself takes no clicks.
             Checkbox(checked = accepted, onCheckedChange = null)
-            Text(text = stringResource(R.string.auth_accept_terms), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = stringResource(R.string.auth_accept_terms),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
         }
         AuthTextButton(
             text = stringResource(R.string.auth_read_terms),
@@ -177,50 +191,40 @@ private fun TermsOfServiceSheet(
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(vertical = spacing.medium),
                 horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                AuthTextButton(text = stringResource(R.string.auth_terms_decline), onClick = {
-                    onEvent(AuthEvent.DeclineTermsOfService)
-                })
                 AuthTextButton(
-                    text = stringResource(R.string.auth_terms_accept),
-                    onClick = { onEvent(AuthEvent.AcceptTermsOfService) },
+                    text = stringResource(R.string.auth_terms_decline),
+                    onClick = { onEvent(AuthEvent.DeclineTermsOfService) },
                 )
+                Button(
+                    onClick = { onEvent(AuthEvent.AcceptTermsOfService) },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Text(
+                        text = stringResource(R.string.auth_terms_accept),
+                        style = MaterialTheme.typography.labelLargeEmphasized,
+                    )
+                }
             }
         }
     }
 }
 
-private fun registrationState(
-    firstName: String = "Ada",
-    firstNameError: DomainError? = null,
-    termsOpen: Boolean = false,
-) = AuthStepUiState.Registration(
-    firstName = firstName,
-    lastName = "",
-    firstNameError = firstNameError,
-    lastNameError = null,
-    termsOfServiceText = "Telegram's terms of service.",
-    minUserAge = 16,
-    termsAccepted = !termsOpen,
-    isTermsOfServiceOpen = termsOpen,
-)
-
 @PingogramPreviews
 @Composable
 private fun RegistrationScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(registrationState()))
+    AuthScreenPreview(AuthPreviewData.registration)
 }
 
 @PingogramPreviews
 @Composable
 private fun RegistrationScreenErrorPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(registrationState(firstName = "", firstNameError = DomainError.FirstNameInvalid)),
-    )
+    AuthScreenPreview(AuthPreviewData.registrationError)
 }
 
 @PingogramPreviews
 @Composable
 private fun RegistrationTermsPreview() {
-    AuthScreenPreview(AuthPreviewData.state(registrationState(termsOpen = true)))
+    AuthScreenPreview(AuthPreviewData.registrationTerms)
 }

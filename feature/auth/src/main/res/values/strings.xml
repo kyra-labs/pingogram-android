@@ -65,6 +65,8 @@
     <string name="auth_password_title">Two-step verification</string>
     <string name="auth_password_description">Your account is protected with an additional password.</string>
     <string name="auth_password_label">Password</string>
+    <!-- The password visibility toggle; screen readers add whether it is on. -->
+    <string name="auth_password_show">Show password</string>
     <string name="auth_password_hint">Hint: %1$s</string>
     <string name="auth_forgot_password">Forgot password?</string>
     <string name="auth_password_no_recovery_email">This account has no recovery email, so its password can\'t be reset here. Try to remember it; the hint may help. Pingogram doesn\'t offer resetting the account.</string>
@@ -97,8 +99,11 @@
 
     <!-- QR code login (FR-A6) -->
     <string name="auth_qr_title">Log in with QR code</string>
-    <string name="auth_qr_instructions">1. Open Telegram on your phone.\n2. Go to Settings › Devices › Link Desktop Device.\n3. Scan this code.</string>
-    <string name="auth_qr_code_description">QR code for logging in</string>
+    <!-- The steps of Telegram's own QR login screens; "Telegram" names the user's other app (descriptive text). -->
+    <string name="auth_qr_step_open">Open Telegram on your phone</string>
+    <string name="auth_qr_step_settings">Go to Settings › Devices › Link Desktop Device</string>
+    <string name="auth_qr_step_confirm">Point your phone at this screen to confirm login</string>
+    <string name="auth_qr_code_description">QR code for logging in. Scan it with Telegram on your phone.</string>
     <string name="auth_qr_use_phone">Log in with phone number instead</string>
 
     <!-- Email address (FR-A7) -->
