@@ -9,11 +9,17 @@ internal class ChatListPreviewStates : PreviewParameterProvider<ChatListUiState>
         listOf(
             "Content with folders" to ChatListPreviewData.contentWithFolders,
             "Content" to ChatListPreviewData.content,
+            "Archive row" to ChatListPreviewData.contentWithArchive,
+            "Selecting" to ChatListPreviewData.selecting,
             "Connecting" to ChatListPreviewData.connecting,
             "Loading" to ChatListPreviewData.loading,
             "Empty" to ChatListPreviewData.empty,
             "Empty folder" to ChatListPreviewData.emptyFolder,
             "Error" to ChatListPreviewData.error,
+            "Archive" to ChatListPreviewData.archived,
+            "Archive empty" to ChatListPreviewData.archivedEmpty,
+            "Delete private chat" to ChatListPreviewData.deletePrivateChatDialog,
+            "Leave group" to ChatListPreviewData.leaveGroupDialog,
         )
 
     override val values: Sequence<ChatListUiState> = states.asSequence().map { it.second }

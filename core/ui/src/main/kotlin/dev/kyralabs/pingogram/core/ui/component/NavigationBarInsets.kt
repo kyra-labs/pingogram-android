@@ -1,7 +1,11 @@
 package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -9,7 +13,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 /**
  * The bottom of the window that the app's floating navigation bar covers, as insets (`docs/DESIGN_SYSTEM.md` §6–7).
  * The bar floats over the top-level screens so their content scrolls behind it; none where there is no bar: the login
- * flow, the navigation rail of larger windows, screens pushed on top of a tab.
+ * flow, the navigation rail of larger windows, screens pushed on top of a tab. A screen that hides the bar
+ * ([HideNavigationBar]) keeps these insets, as its own floating toolbar takes the bar's place.
  */
 val LocalNavigationBarInsets = staticCompositionLocalOf { WindowInsets(0, 0, 0, 0) }
 
@@ -20,3 +25,15 @@ val LocalNavigationBarInsets = staticCompositionLocalOf { WindowInsets(0, 0, 0, 
 @Composable
 fun screenContentWindowInsets(): WindowInsets =
     ScaffoldDefaults.contentWindowInsets.union(LocalNavigationBarInsets.current)
+
+/**
+ * The bottom that a floating toolbar takes at the bottom of the window, placed as the floating navigation bar is
+ * (`FloatingToolbarDefaults.ScreenOffset` above the system navigation bar): the system navigation bar, the toolbar and
+ * the margin below it, and the same margin again above it, so the end of a list rests clear of the toolbar.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun floatingToolbarInsets(): WindowInsets =
+    WindowInsets.navigationBars.add(
+        WindowInsets(bottom = FloatingToolbarDefaults.ContainerSize + FloatingToolbarDefaults.ScreenOffset * 2),
+    )

@@ -7,24 +7,43 @@ import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 
 /**
- * Everything the chat list shows (`REQUIREMENTS.md` FR-L1–L5): the chats of the selected list, the connection pill
- * and the folder tabs.
+ * Everything a chat list shows (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9): the chats of the selected list, the
+ * connection pill, the folder tabs, the archive row, the selection and the delete confirmation.
  *
+ * @property kind the Chats tab or the archive.
  * @property connection [ConnectionStatus.Ready] hides the connection pill.
  * @property folderTabs the tabs above the list, "All chats" among the user's folders; empty without folders, which
- *   shows no tabs.
+ *   shows no tabs, and in the archive.
  * @property selectedFolderId the folder whose chats are shown; null for the main list ("All chats").
+ * @property archive the "Archived chats" row at the top of the main list; null hides it: in folders, in the archive,
+ *   and while the archive is empty.
+ * @property selection the selected chats; null outside selection mode.
+ * @property deleteDialog the confirmation of a delete the user asked for; null while none is shown.
  */
 @Immutable
 data class ChatListUiState(
+    val kind: ChatListKind = ChatListKind.Chats,
     val content: ChatListContent = ChatListContent.Loading,
     val connection: ConnectionStatus = ConnectionStatus.Ready,
     val folderTabs: ImmutableList<FolderTab> = persistentListOf(),
     val selectedFolderId: Int? = null,
+    val archive: ArchiveEntry? = null,
+    val selection: ChatSelection? = null,
+    val deleteDialog: DeleteDialog? = null,
 )
+
+/** Which chats a chat list shows. */
+enum class ChatListKind {
+    /** The Chats tab: the main list or a folder, with the folder tabs and the archive row. */
+    Chats,
+
+    /** The archived chats, pushed above the Chats tab (`REQUIREMENTS.md` FR-L9). */
+    Archive,
+}
 
 /** The list itself. */
 @Immutable
@@ -32,7 +51,7 @@ sealed interface ChatListContent {
     /** No chats yet, and the first page is on its way. */
     data object Loading : ChatListContent
 
-    /** The list has no chats at all; [isFolder] for a folder, otherwise the main list. */
+    /** The list has no chats at all; [isFolder] for a folder, otherwise the main list or the archive. */
     data class Empty(
         val isFolder: Boolean,
     ) : ChatListContent
@@ -88,6 +107,8 @@ sealed interface FolderTab {
  * @property time when the last message was sent, formatted for the list; empty without a last message.
  * @property outgoingStatus the state of the last message if the current user sent it; null otherwise, in Saved
  *   Messages and in channels.
+ * @property actions what the user can do to the chat, in the order screen readers list them ([rowActions]); the row's
+ *   swipes are two of them ([startSwipeAction], [endSwipeAction]).
  */
 @Immutable
 data class ChatListItemModel(
@@ -107,6 +128,7 @@ data class ChatListItemModel(
     val time: String,
     val outgoingStatus: OutgoingStatus?,
     val preview: ChatPreview,
+    val actions: ImmutableList<ChatRowAction>,
 ) {
     /** Unread messages, or marked as unread: the title is emphasized. */
     val isUnread: Boolean get() = unreadCount > 0 || isMarkedAsUnread
@@ -164,4 +186,70 @@ sealed interface ChatPreview {
 
     /** The chat has no messages, or TDLib does not know its last message yet. */
     data object None : ChatPreview
+}
+
+/**
+ * The "Archived chats" row at the top of the main list (`REQUIREMENTS.md` FR-L3), which opens the archive.
+ *
+ * @property chatCount the chats in the archive, as TDLib estimates them.
+ * @property titles the names of the first archived chats TDLib has loaded, for the row's second line; empty until it
+ *   loaded any, and the row shows [chatCount] instead.
+ * @property unreadCount unread chats in the archive, for a badge that is always in the muted style; 0 shows none.
+ */
+@Immutable
+data class ArchiveEntry(
+    val chatCount: Int,
+    val titles: ImmutableList<String>,
+    val unreadCount: Int,
+) {
+    override fun toString() = "ArchiveEntry(chatCount=$chatCount, unreadCount=$unreadCount, …)"
+}
+
+/**
+ * Selection mode (`REQUIREMENTS.md` FR-L8): the selected chats among those shown, and what the selection toolbar does
+ * to them ([selectionActions]).
+ */
+@Immutable
+data class ChatSelection(
+    val chatIds: ImmutableSet<Long>,
+    val actions: ImmutableList<ChatRowAction>,
+)
+
+/** The confirmation before chats are deleted or left; confirming sends [ChatListEvent.ConfirmDelete]. */
+@Immutable
+sealed interface DeleteDialog {
+    /**
+     * One chat, [title] as its row shows it: what deleting it does ([kind]) and, where the user may also delete it for
+     * everyone, what that deletes ([forEveryone]).
+     */
+    data class Single(
+        val chatId: Long,
+        val title: UiText,
+        val kind: DeleteKind,
+        val forEveryone: DeleteForEveryone?,
+    ) : DeleteDialog
+
+    /** Several selected chats, each deleted or left for the current user only. */
+    data class Bulk(
+        val chatIds: ImmutableList<Long>,
+    ) : DeleteDialog
+}
+
+/** What deleting a chat does for the current user, for the dialog's title and its confirm button. */
+enum class DeleteKind {
+    DeleteChat,
+    LeaveGroup,
+    LeaveChannel,
+}
+
+/** What deleting a chat for everyone deletes, for the label of the dialog's check box. */
+enum class DeleteForEveryone {
+    /** The conversation for its other user too, named by the chat's title. */
+    OtherUser,
+
+    /** The group, for all of its members; offered to its owner. */
+    AllMembers,
+
+    /** The channel, for all of its subscribers; offered to its owner. */
+    AllSubscribers,
 }

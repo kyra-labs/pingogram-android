@@ -47,6 +47,7 @@ import kotlinx.collections.immutable.ImmutableList
  *
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
+ * @param enabled false disables every tab, e.g. in selection mode.
  */
 @Composable
 internal fun FolderTabs(
@@ -54,11 +55,12 @@ internal fun FolderTabs(
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     if (tabs.size > MAX_CONNECTED_TABS) {
-        FolderTabRow(tabs, selectedFolderId, onSelect, modifier)
+        FolderTabRow(tabs, selectedFolderId, onSelect, enabled, modifier)
     } else {
-        FolderButtonGroup(tabs, selectedFolderId, onSelect, modifier)
+        FolderButtonGroup(tabs, selectedFolderId, onSelect, enabled, modifier)
     }
 }
 
@@ -68,6 +70,7 @@ private fun FolderButtonGroup(
     tabs: ImmutableList<FolderTab>,
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val colors = ToggleButtonDefaults.colors()
@@ -95,6 +98,7 @@ private fun FolderButtonGroup(
                         role = Role.Tab
                         contentDescription = description
                     },
+                enabled = enabled,
                 shapes = connectedShapes(index, tabs.lastIndex),
                 colors = colors,
             ) {
@@ -137,6 +141,7 @@ private fun FolderTabRow(
     tabs: ImmutableList<FolderTab>,
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }.coerceAtLeast(0)
@@ -152,6 +157,7 @@ private fun FolderTabRow(
                 selected = index == selectedIndex,
                 onClick = { onSelect(tab.folderId) },
                 modifier = Modifier.semantics { contentDescription = description },
+                enabled = enabled,
             ) {
                 Row(
                     modifier =

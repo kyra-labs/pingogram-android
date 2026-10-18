@@ -15,8 +15,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of every chat list state on a compact phone (`docs/TESTING.md`), light and dark: chats with and without
- * folder tabs, rows in all their looks, the connection pill, loading, empty and error. Brand colors, so goldens do not
- * depend on a wallpaper.
+ * folder tabs, rows in all their looks, the archive row, selection mode with its toolbar, the connection pill, loading,
+ * empty and error; the archive with chats and empty; the delete dialogs. Brand colors, so goldens do not depend on a
+ * wallpaper.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -55,11 +56,17 @@ class ChatListScreenScreenshotTest(
             mapOf(
                 "contentWithFolders" to ChatListPreviewData.contentWithFolders,
                 "content" to ChatListPreviewData.content,
+                "archiveRow" to ChatListPreviewData.contentWithArchive,
+                "selecting" to ChatListPreviewData.selecting,
                 "connecting" to ChatListPreviewData.connecting,
                 "loading" to ChatListPreviewData.loading,
                 "empty" to ChatListPreviewData.empty,
                 "emptyFolder" to ChatListPreviewData.emptyFolder,
                 "error" to ChatListPreviewData.error,
+                "archive" to ChatListPreviewData.archived,
+                "archiveEmpty" to ChatListPreviewData.archivedEmpty,
+                "deletePrivateChat" to ChatListPreviewData.deletePrivateChatDialog,
+                "leaveGroup" to ChatListPreviewData.leaveGroupDialog,
             )
 
         @JvmStatic

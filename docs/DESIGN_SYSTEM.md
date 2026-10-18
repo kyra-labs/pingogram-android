@@ -289,6 +289,11 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
   `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
   margin below and the same margin above), so lists end clear of the bar.
+- **Stepping aside**: a top-level screen that shows a floating toolbar of its own in the bar's place
+  (the chat list's selection toolbar, as Google Photos does while selecting) hides the bar with
+  `HideNavigationBar(hidden)` (`core:ui`, honoured by `PingogramApp`). The bar returns as soon as the
+  screen stops asking or leaves the composition; `LocalNavigationBarInsets` stays meanwhile, and the
+  toolbar sits where the bar was (`floatingToolbarInsets()`).
 - Medium and wider windows keep the `WideNavigationRail`; the bar is for compact windows only.
 
 ## 7. Layout

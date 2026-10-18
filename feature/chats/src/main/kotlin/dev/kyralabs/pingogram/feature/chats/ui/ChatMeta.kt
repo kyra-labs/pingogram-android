@@ -111,7 +111,7 @@ private fun BadgeIcon(
 /** The count, capped at "999+" so the badge stays small. */
 @Composable
 @ReadOnlyComposable
-private fun unreadCountText(count: Int): String =
+internal fun unreadCountText(count: Int): String =
     if (count > MAX_UNREAD_SHOWN) {
         stringResource(R.string.chat_list_unread_overflow, MAX_UNREAD_SHOWN)
     } else {

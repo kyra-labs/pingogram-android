@@ -7,7 +7,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -40,7 +39,11 @@ import androidx.navigation.compose.rememberNavController
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
+import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
+import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
@@ -63,6 +66,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * `NavigationSuiteScaffold`. The `NavHost` keeps its place in the composition across both, so rotating or resizing
  * the window never resets its screens.
  *
+ * A top-level screen can hide the floating bar while it shows a floating toolbar of its own in the bar's place, e.g.
+ * the chat list while chats are selected ([HideNavigationBar], through [navigationBarVisibility]). The bar's insets
+ * stay meanwhile, so the screen's content keeps clearing the bottom.
+ *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
@@ -72,6 +79,7 @@ fun PingogramApp(
     uiState: MainActivityUiState,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
 ) {
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
@@ -83,7 +91,8 @@ fun PingogramApp(
     }
     val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
     val floatingBar = adaptiveType.isNavigationBar()
-    val showFloatingBar = showNavigation && floatingBar && currentTab != null
+    // Where the floating bar goes; a screen may hide the bar itself there, never its space.
+    val floatingBarSlot = showNavigation && floatingBar && currentTab != null
     val showRail = showNavigation && !floatingBar
     val openSearch = { navController.navigate(SearchRoute) { launchSingleTop = true } }
     NavigationSuiteScaffold(
@@ -96,7 +105,8 @@ fun PingogramApp(
         Box(Modifier.fillMaxSize()) {
             CompositionLocalProvider(
                 LocalNavigationBarInsets provides
-                    if (showFloatingBar) floatingBarInsets() else WindowInsets(0, 0, 0, 0),
+                    if (floatingBarSlot) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
+                LocalNavigationBarVisibility provides navigationBarVisibility,
             ) {
                 if (uiState == MainActivityUiState.Loading) {
                     // The same progress as the login flow's first step: TDLib is still starting.
@@ -107,7 +117,7 @@ fun PingogramApp(
             }
             val motionScheme = MaterialTheme.motionScheme
             AnimatedVisibility(
-                visible = showFloatingBar,
+                visible = floatingBarSlot && !navigationBarVisibility.isHidden,
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
@@ -128,17 +138,6 @@ fun PingogramApp(
         }
     }
 }
-
-/**
- * The bottom the floating navigation bar takes: the system navigation bar, the bar itself and the margin below it,
- * and the same margin again above it, so the end of a list rests clear of the bar.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun floatingBarInsets(): WindowInsets =
-    WindowInsets.navigationBars.add(
-        WindowInsets(bottom = FloatingToolbarDefaults.ContainerSize + FloatingToolbarDefaults.ScreenOffset * 2),
-    )
 
 /** Navigation bars (rather than rails or drawers) are what compact windows get; Pingogram floats them. */
 private fun NavigationSuiteType.isNavigationBar(): Boolean =

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
@@ -7,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.DeleteChatAction
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
@@ -34,7 +36,10 @@ import java.util.Locale
 
 // Fakes of the domain repositories the chat list reads, holding their state in flows the tests set.
 
-/** The chats of each list, the folders and their counts; [loadChats] answers with [onLoadChats] and is recorded. */
+/**
+ * The chats of each list, the folders and their counts; [loadChats] answers with [onLoadChats] and is recorded, and so
+ * is every action on a chat ([calls]), answered with [onCall].
+ */
 class FakeChatRepository : ChatRepository {
     val chats = MutableStateFlow<Map<ChatListType, List<Chat>>>(emptyMap())
     val folderList = MutableStateFlow<ImmutableList<ChatFolder>>(persistentListOf())
@@ -84,34 +89,89 @@ class FakeChatRepository : ChatRepository {
 
     override fun chat(id: Long): Flow<Chat?> = unused()
 
-    override suspend fun getChat(id: Long): Outcome<Chat> = unused()
+    /** A chat of any list, as the repository keeps them in memory; [DomainError.NotFound] otherwise. */
+    override suspend fun getChat(id: Long): Outcome<Chat> =
+        chats.value.values
+            .flatten()
+            .firstOrNull { it.id == id }
+            ?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
+
+    /** Every action on a chat, in order. */
+    val calls = mutableListOf<ChatCall>()
+
+    /** The answer to each action; succeeds by default. */
+    var onCall: suspend (ChatCall) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** The answer to [deleteOptions]: deleting the conversation for the current user only, by default. */
+    var onDeleteOptions: suspend (Long) -> Outcome<DeleteChatOptions> = {
+        Outcome.Success(DeleteChatOptions(DeleteChatAction.Delete, canDeleteForEveryone = false))
+    }
+
+    private suspend fun record(call: ChatCall): Outcome<Unit> {
+        calls += call
+        return onCall(call)
+    }
 
     override suspend fun setPinned(
         chatId: Long,
         list: ChatListType,
         isPinned: Boolean,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> = record(ChatCall.SetPinned(chatId, list, isPinned))
 
     override suspend fun setMuted(
         chatId: Long,
         isMuted: Boolean,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> = record(ChatCall.SetMuted(chatId, isMuted))
 
     override suspend fun setArchived(
         chatId: Long,
         isArchived: Boolean,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> = record(ChatCall.SetArchived(chatId, isArchived))
 
-    override suspend fun markAsRead(chatId: Long): Outcome<Unit> = unused()
+    override suspend fun markAsRead(chatId: Long): Outcome<Unit> = record(ChatCall.MarkAsRead(chatId))
 
-    override suspend fun markAsUnread(chatId: Long): Outcome<Unit> = unused()
+    override suspend fun markAsUnread(chatId: Long): Outcome<Unit> = record(ChatCall.MarkAsUnread(chatId))
 
-    override suspend fun deleteOptions(chatId: Long): Outcome<DeleteChatOptions> = unused()
+    override suspend fun deleteOptions(chatId: Long): Outcome<DeleteChatOptions> = onDeleteOptions(chatId)
 
     override suspend fun deleteChat(
         chatId: Long,
         forEveryone: Boolean,
-    ): Outcome<Unit> = unused()
+    ): Outcome<Unit> = record(ChatCall.DeleteChat(chatId, forEveryone))
+}
+
+/** An action [FakeChatRepository] was asked for. */
+sealed interface ChatCall {
+    val chatId: Long
+
+    data class SetPinned(
+        override val chatId: Long,
+        val list: ChatListType,
+        val isPinned: Boolean,
+    ) : ChatCall
+
+    data class SetMuted(
+        override val chatId: Long,
+        val isMuted: Boolean,
+    ) : ChatCall
+
+    data class SetArchived(
+        override val chatId: Long,
+        val isArchived: Boolean,
+    ) : ChatCall
+
+    data class MarkAsRead(
+        override val chatId: Long,
+    ) : ChatCall
+
+    data class MarkAsUnread(
+        override val chatId: Long,
+    ) : ChatCall
+
+    data class DeleteChat(
+        override val chatId: Long,
+        val forEveryone: Boolean,
+    ) : ChatCall
 }
 
 class FakeUserRepository : UserRepository {
