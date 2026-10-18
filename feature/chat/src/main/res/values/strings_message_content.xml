@@ -16,8 +16,12 @@
     <string name="content_not_played">Not played yet</string>
     <string name="content_download">Download</string>
     <string name="content_cancel_download">Cancel download</string>
-    <!-- A snackbar after tapping a downloaded file: Pingogram cannot hand files to other apps yet. -->
-    <string name="content_open_file_later">Opening files comes in a later version</string>
+    <!-- The title of the system's chooser of apps when a downloaded file has no known type. -->
+    <string name="content_open_with">Open with</string>
+    <!-- A snackbar after tapping a downloaded file when no app on the device opens files of its type. -->
+    <string name="content_no_app_for_file">No app can open this file</string>
+    <!-- A snackbar after tapping a downloaded file that is no longer on the device. -->
+    <string name="content_file_unavailable">This file isn\'t available</string>
     <!-- A snackbar after tapping a location when no app on the device shows maps. -->
     <string name="content_no_maps_app">No app on this device can show this location</string>
     <!-- A snackbar when the file of a voice message or song cannot be played (damaged, or in a format the device lacks). -->
