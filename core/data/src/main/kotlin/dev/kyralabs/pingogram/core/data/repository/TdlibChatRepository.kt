@@ -118,6 +118,9 @@ class TdlibChatRepository
         override val folders: Flow<ImmutableList<ChatFolder>> =
             store.state.map { it.folders }.distinctUntilChanged()
 
+        override val mainChatListPosition: Flow<Int> =
+            store.state.map { it.mainChatListPosition }.distinctUntilChanged()
+
         override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
             store.state.map { it.unreadChatCounts[list] ?: UnreadChatCount.None }.distinctUntilChanged()
 
@@ -192,6 +195,8 @@ private data class ChatCache(
     val chats: PersistentMap<Long, CachedChat> = persistentMapOf(),
     val mutedScopes: PersistentSet<NotificationScope> = persistentSetOf(),
     val folders: ImmutableList<ChatFolder> = persistentListOf(),
+    /** Where "All chats" goes among the [folders]; see [ChatRepository.mainChatListPosition]. */
+    val mainChatListPosition: Int = 0,
     /**
      * By chat list. Counts of deleted folders stay until TDLib closes: they are a few numbers, and TDLib may count a
      * new folder before `updateChatFolders` announces it.
@@ -203,7 +208,7 @@ private data class ChatCache(
             is TdApi.UpdateNewChat -> withNewChat(update.chat)
             is TdApi.UpdateChatNotificationSettings -> withSettings(update.chatId, update.notificationSettings)
             is TdApi.UpdateScopeNotificationSettings -> withScopeMute(update.scope, update.notificationSettings.isMuted)
-            is TdApi.UpdateChatFolders -> copy(folders = update.chatFolders.map { it.toChatFolder() }.toImmutableList())
+            is TdApi.UpdateChatFolders -> withFolders(update)
             is TdApi.UpdateUnreadChatCount -> withUnreadChatCount(update)
             else -> chatChange(update)?.let(::withChange) ?: this
         }
@@ -236,6 +241,12 @@ private data class ChatCache(
         val scopes = if (scopeMuted) mutedScopes.adding(scope) else mutedScopes.removing(scope)
         return if (scopes == mutedScopes) this else copy(chats = chats.withMutesResolved(scopes), mutedScopes = scopes)
     }
+
+    private fun withFolders(update: TdApi.UpdateChatFolders): ChatCache =
+        copy(
+            folders = update.chatFolders.map { it.toChatFolder() }.toImmutableList(),
+            mainChatListPosition = update.mainChatListPosition,
+        )
 
     private fun withUnreadChatCount(update: TdApi.UpdateUnreadChatCount): ChatCache {
         val list = update.chatList.toChatListType() ?: return this

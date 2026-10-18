@@ -5,4 +5,6 @@ plugins {
 dependencies {
     api(libs.javax.inject)
     api(libs.kotlinx.coroutines.core)
+
+    testImplementation(libs.kotlinx.coroutines.test)
 }

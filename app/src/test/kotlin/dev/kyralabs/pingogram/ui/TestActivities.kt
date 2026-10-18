@@ -17,13 +17,17 @@ class HiltTestActivity : Hilt_HiltTestActivity()
 
 /**
  * Declares [activity] to Robolectric so a compose rule can launch it. The usual `ui-test-manifest` would have to be a
- * debug dependency of the app, which ships the activity in debug APKs.
+ * debug dependency of the app, which ships the activity in debug APKs. Its theme has no action bar, so the content
+ * takes the whole window, as in the app's edge-to-edge activity, and screenshots match the device.
  */
 class ActivityRegistration(
     private val activity: Class<out Activity>,
 ) : ExternalResource() {
     override fun before() {
         val application = RuntimeEnvironment.getApplication()
-        shadowOf(application.packageManager).addActivityIfNotPresent(ComponentName(application, activity))
+        val packageManager = shadowOf(application.packageManager)
+        val info = packageManager.addActivityIfNotPresent(ComponentName(application, activity))
+        info.theme = android.R.style.Theme_Material_Light_NoActionBar
+        packageManager.addOrUpdateActivity(info)
     }
 }

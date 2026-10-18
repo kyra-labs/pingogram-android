@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
+import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
@@ -81,6 +82,8 @@ class PingogramAppTest {
     private val tdlib =
         FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready).apply {
             on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
+            // TDLib's answer once a chat list is loaded completely: the chat list is empty.
+            on(TdApi.LoadChats::class, TdResult.Failure(TdError(404, "Not Found")))
         }
 
     @BindValue
@@ -100,7 +103,7 @@ class PingogramAppTest {
         tab(R.string.nav_chats).assertIsSelected().assertHasClickAction()
         tab(R.string.nav_contacts).assertIsNotSelected().assertHasClickAction()
         tab(R.string.nav_settings).assertIsNotSelected().assertHasClickAction()
-        text(ChatsR.string.chats_placeholder_title).assertIsDisplayed()
+        awaitText(ChatsR.string.chat_list_empty_title)
     }
 
     @Test
@@ -113,7 +116,7 @@ class PingogramAppTest {
         tab(R.string.nav_contacts).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
         text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
-        text(ChatsR.string.chats_placeholder_title).assertDoesNotExist()
+        text(ChatsR.string.chat_list_empty_title).assertDoesNotExist()
     }
 
     @Test
@@ -152,7 +155,7 @@ class PingogramAppTest {
         pressBack()
 
         tab(R.string.nav_chats).assertIsSelected()
-        text(ChatsR.string.chats_placeholder_title).assertIsDisplayed()
+        awaitText(ChatsR.string.chat_list_empty_title)
     }
 
     @Test
@@ -232,7 +235,7 @@ class PingogramAppTest {
         composeRule.waitForIdle()
 
         tab(R.string.nav_chats).assertIsSelected()
-        text(ChatsR.string.chats_placeholder_title).assertIsDisplayed()
+        awaitText(ChatsR.string.chat_list_empty_title)
         assertEquals(1, backStackDestinations().size)
         pressBack()
         assertTrue("Back leaves the app", composeRule.activity.isFinishing)
@@ -315,7 +318,7 @@ class PingogramAppTest {
         composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
     }
 
-    /** Waits for [id]'s text: the login flow gets TDLib's step from a background dispatcher. */
+    /** Waits for [id]'s text: the login flow and the chat list get their state from a background dispatcher. */
     private fun awaitText(
         @StringRes id: Int,
     ) {

@@ -55,6 +55,14 @@ internal fun TdApi.MessageContent.toMessageContent(
             MessageContent.AnimatedEmoji(emoji, animatedEmoji.sticker?.toSticker())
         }
 
+        is TdApi.MessageGame -> {
+            MessageContent.Game(game.title.orEmpty())
+        }
+
+        is TdApi.MessageInvoice -> {
+            MessageContent.Invoice(productInfo.title.orEmpty())
+        }
+
         is TdApi.MessageStory -> {
             MessageContent.Story(storyPosterChatId, storyId)
         }
