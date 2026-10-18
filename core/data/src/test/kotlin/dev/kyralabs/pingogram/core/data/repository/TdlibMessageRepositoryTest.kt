@@ -673,6 +673,106 @@ class TdlibMessageRepositoryTest {
             assertEquals(emptyList<Long>(), repository.ids())
         }
 
+    // Replied messages
+
+    @Test
+    fun `repliedMessage asks TDLib for the message the given one replies to`() =
+        runTest {
+            client.on(TdApi.GetRepliedMessage::class, TdResult.Success(message(id = 3, chatId = CHAT)))
+
+            val replied = repository().repliedMessage(CHAT, 10)
+
+            val request = client.sentOf<TdApi.GetRepliedMessage>().single()
+            assertEquals(listOf(CHAT, 10L), listOf(request.chatId, request.messageId))
+            assertEquals(Outcome.Success(loaded(3)), replied)
+        }
+
+    @Test
+    fun `a replied message in the loaded history needs no request`() =
+        runTest {
+            val repository = repository()
+            answerHistory(message(id = 10, chatId = CHAT, replyTo = replyTo(3)), message(id = 3, chatId = CHAT))
+            repository.loadOlder(CHAT)
+
+            val replied = repository.repliedMessage(CHAT, 10)
+
+            assertEquals(Outcome.Success(loaded(3)), replied)
+            assertTrue(client.sentOf<TdApi.GetRepliedMessage>().isEmpty())
+        }
+
+    @Test
+    fun `a fetched replied message is kept with the chat's history`() =
+        runTest {
+            val repository = repositoryReplyingTo(3)
+
+            repository.repliedMessage(CHAT, 10)
+            val again = repository.repliedMessage(CHAT, 10)
+
+            assertEquals(Outcome.Success(loaded(3)), again)
+            assertEquals(1, client.sentOf<TdApi.GetRepliedMessage>().size)
+        }
+
+    @Test
+    fun `a kept replied message follows its edits`() =
+        runTest {
+            val repository = repositoryReplyingTo(3)
+            repository.repliedMessage(CHAT, 10)
+
+            client.emit(updateMessageContent(CHAT, 3, messageText("Edited")))
+
+            val replied = (repository.repliedMessage(CHAT, 10) as Outcome.Success).value
+            assertEquals(message(id = 3, chatId = CHAT, content = messageText("Edited")).toMessage(), replied)
+            assertEquals(1, client.sentOf<TdApi.GetRepliedMessage>().size)
+        }
+
+    @Test
+    fun `a deleted replied message is forgotten`() =
+        runTest {
+            val repository = repositoryReplyingTo(3)
+            repository.repliedMessage(CHAT, 10)
+
+            client.emit(updateDeleteMessages(CHAT, 3))
+            repository.repliedMessage(CHAT, 10)
+
+            assertEquals(2, client.sentOf<TdApi.GetRepliedMessage>().size)
+        }
+
+    @Test
+    fun `a replied message that does not exist fails with NotFound`() =
+        runTest {
+            client.on(TdApi.GetRepliedMessage::class, TdResult.Failure(TdError(404, "Not Found")))
+
+            val replied = repository().repliedMessage(CHAT, 10)
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), replied)
+        }
+
+    @Test
+    fun `a replied message of another chat is not kept`() =
+        runTest {
+            val repository = repositoryWith(10)
+            client.on(TdApi.GetRepliedMessage::class, TdResult.Success(message(id = 3, chatId = OTHER_CHAT)))
+
+            repository.repliedMessage(CHAT, 10)
+            repository.repliedMessage(CHAT, 10)
+
+            assertEquals(2, client.sentOf<TdApi.GetRepliedMessage>().size)
+        }
+
+    /**
+     * A repository with [CHAT]'s newest message 10 loaded, replying to [repliedId], which getRepliedMessage answers
+     * with.
+     */
+    private suspend fun TestScope.repositoryReplyingTo(repliedId: Long) =
+        repository().also { repository ->
+            answerHistory(message(id = 10, chatId = CHAT, replyTo = replyTo(repliedId)))
+            repository.loadOlder(CHAT)
+            client.on(TdApi.GetRepliedMessage::class, TdResult.Success(message(id = repliedId, chatId = CHAT)))
+        }
+
+    /** A reply to message [messageId] of [CHAT], without a quote. */
+    private fun replyTo(messageId: Long) = TdApi.MessageReplyToMessage(CHAT, messageId, null, 0, "", null, 0, null)
+
     private companion object {
         const val CHAT = 100L
         const val OTHER_CHAT = 200L

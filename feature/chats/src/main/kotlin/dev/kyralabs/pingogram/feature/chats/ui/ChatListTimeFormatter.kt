@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

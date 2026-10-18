@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
@@ -58,6 +59,19 @@ internal data class HistoryCache(
     /** Only the windows someone observes. */
     fun trimmed() = copy(windows = windows.filterValues { it.collectors > 0 }.toPersistentMap())
 
+    /**
+     * Keeps [message], fetched as the message a message of [chatId] replies to, with that chat's window, if it has one
+     * and the message belongs to the chat; a replied message of another chat gets none of this chat's updates.
+     */
+    fun keepingReplied(
+        chatId: Long,
+        message: Message,
+    ) = if (message.chatId == chatId) {
+        changing(chatId) { window -> window.copy(replied = window.replied.putting(message.id, message)) }
+    } else {
+        this
+    }
+
     /** Replaces the window of [chatId], created if missing, with [transform] of it, as the most recent use. */
     private inline fun using(
         chatId: Long,
@@ -100,6 +114,9 @@ internal data class HistoryCache(
  * after computing the answer can arrive first, when the message it concerns is not loaded yet. Each change sets a
  * state rather than modifying one, so applying again one that came before the answer is harmless.
  *
+ * [replied] holds the messages that loaded ones reply to, fetched because they are older than the loaded ones, by id;
+ * the chat's updates keep them current like the [messages]. They go with the window.
+ *
  * Windows are anchored at the newest message for now. A window around an older message (jumping to a reply) would
  * also need to know whether it reaches the newest message, and a way to load newer pages.
  */
@@ -110,6 +127,7 @@ internal data class HistoryWindow(
     val lastUsed: Long = 0,
     val loadId: Long? = null,
     val changesWhileLoading: PersistentList<HistoryChange> = persistentListOf(),
+    val replied: PersistentMap<Long, Message> = persistentMapOf(),
 ) {
     val history get() = ChatHistory(messages, reachedStart)
 
@@ -134,7 +152,34 @@ internal data class HistoryWindow(
             is HistoryChange.Edit -> editing(change.messageId, change.edit)
             is HistoryChange.Remove -> removing(change.messageIds)
             is HistoryChange.Unload -> unloading(change.messageIds)
-        }
+        }.applyingToReplied(change)
+
+    /**
+     * [change] on the [replied] messages: edits apply, and removed or unloaded ones go (TDLib sends no more updates of
+     * unloaded ones; fetching them again brings them back). New messages never concern them.
+     */
+    private fun applyingToReplied(change: HistoryChange): HistoryWindow {
+        if (replied.isEmpty()) return this
+        val changed =
+            when (change) {
+                is HistoryChange.Put -> {
+                    replied
+                }
+
+                is HistoryChange.Edit -> {
+                    replied[change.messageId]?.let { replied.putting(change.messageId, change.edit(it)) } ?: replied
+                }
+
+                is HistoryChange.Remove -> {
+                    replied.removingAll(change.messageIds)
+                }
+
+                is HistoryChange.Unload -> {
+                    replied.removingAll(change.messageIds)
+                }
+            }
+        return if (changed == replied) this else copy(replied = changed)
+    }
 
     /**
      * Puts [message] in its place by id, replacing [replacedId], a message being sent that got its final id or failed,
@@ -320,5 +365,18 @@ private fun PersistentList<Message>.upserting(message: Message): PersistentList<
     return if (index >= 0) replacingAt(index, message) else addingAt(-(index + 1), message)
 }
 
+/**
+ * The message that loaded message [messageId] replies to, if that is in the same chat and loaded or kept in
+ * [HistoryWindow.replied]; null otherwise.
+ */
+internal fun HistoryWindow.repliedTo(messageId: Long): Message? {
+    val message = messages.getOrNull(messages.indexOfId(messageId))
+    val replyTo = (message?.replyTo as? ReplyTo.Message)?.takeIf { it.chatId == message.chatId } ?: return null
+    return messages.getOrNull(messages.indexOfId(replyTo.messageId)) ?: replied[replyTo.messageId]
+}
+
 /** The index of message [id] in [this] (newest first), else `-(insertion point) - 1`, as `binarySearch` answers. */
 private fun List<Message>.indexOfId(id: Long) = binarySearch { id.compareTo(it.id) }
+
+private fun PersistentMap<Long, Message>.removingAll(ids: Set<Long>): PersistentMap<Long, Message> =
+    if (ids.none(::containsKey)) this else mutate { map -> ids.forEach(map::remove) }

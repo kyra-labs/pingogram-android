@@ -55,3 +55,18 @@ fun ColorScheme.avatarPlaceholderColors(id: Long): AvatarColors =
     }
 
 private const val AVATAR_COLOR_COUNT = 7
+
+/**
+ * The color of a sender's name in a group conversation and in reply quotes, chosen by the sender's [id] (a TDLib user
+ * or chat id, which can be negative) so a sender keeps one color: `primary`, `secondary` or `tertiary`. Roles of one
+ * scheme, so they are harmonized with each other and readable on every bubble container (§2.2), unlike Telegram's
+ * fixed palette of name colors.
+ */
+fun ColorScheme.senderNameColor(id: Long): Color =
+    when (id.mod(SENDER_COLOR_COUNT)) {
+        0 -> primary
+        1 -> secondary
+        else -> tertiary
+    }
+
+private const val SENDER_COLOR_COUNT = 3

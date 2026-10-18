@@ -20,8 +20,10 @@ import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
+import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.chatsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -63,11 +65,16 @@ internal fun PingogramNavHost(
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
-        chatsScreen(onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } })
+        val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
+        chatsScreen(
+            onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
+            onOpenChat = openChat,
+        )
         contactsScreen()
         settingsScreen()
         searchScreen(onBack = { navController.popBackStack() })
-        archiveScreen(onBack = { navController.popBackStack() })
+        archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+        chatScreen(onBack = { navController.popBackStack() })
     }
 }
 

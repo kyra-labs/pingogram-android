@@ -66,6 +66,17 @@ class PingogramColorsTest {
         assertEquals(scheme.avatarPlaceholderColors(supergroupId), scheme.avatarPlaceholderColors(supergroupId + 7))
     }
 
+    @Test
+    fun `picks sender name colors by id among primary, secondary and tertiary`() {
+        val scheme = brandColorScheme(dark = false, Contrast.Standard)
+
+        assertEquals(
+            listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.primary),
+            (0L..3L).map(scheme::senderNameColor),
+        )
+        assertEquals(scheme.tertiary, scheme.senderNameColor(-1))
+    }
+
     private fun String.toColor() = Color(toLong(radix = 16))
 
     private fun assertClose(

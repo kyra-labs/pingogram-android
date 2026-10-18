@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.Message
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -25,6 +26,17 @@ interface MessageRepository {
      * history as it was.
      */
     suspend fun loadOlder(chatId: Long): Outcome<Unit>
+
+    /**
+     * The message that message [messageId] of chat [chatId] replies to, for its reply quote when the replied message
+     * is not in the loaded [history]: from memory when it was fetched before, else from TDLib, which may ask the
+     * server. Replied messages of the same chat stay as up to date as the history while the chat is kept in memory.
+     * Fails with `DomainError.NotFound` when the replied message was deleted, or [messageId] replies to nothing.
+     */
+    suspend fun repliedMessage(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Message>
 
     /** Forgets the history of every chat nobody observes, for `ComponentCallbacks2.onTrimMemory`. */
     fun trimMemory()
