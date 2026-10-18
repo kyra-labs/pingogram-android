@@ -59,6 +59,10 @@ internal fun contentActions(
     }
 }
 
+/** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
+internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
+    bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }
+
 /** Open once downloaded, cancel while downloading, else download if TDLib can. */
 private fun documentAction(
     messageId: Long,

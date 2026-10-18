@@ -24,6 +24,14 @@ sealed interface ChatEvent {
         val messageIds: Set<Long>,
     ) : ChatEvent
 
+    /**
+     * The reply quote of a bubble was tapped: show the replied message [messageId] of this chat, loading older
+     * messages for it if needed.
+     */
+    data class OpenReply(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** "Try again" after finding the chat or loading messages failed. */
     data object Retry : ChatEvent
 

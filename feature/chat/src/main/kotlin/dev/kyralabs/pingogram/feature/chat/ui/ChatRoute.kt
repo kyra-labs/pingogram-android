@@ -29,8 +29,8 @@ import java.util.Locale
  * started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md` §3). The effect follows the
  * screen's lifecycle rather than the view model's: the screen stops when another screen covers it or the app goes to
  * the background, and stops and disposes when it is left. A rotation stops and starts it again with the same view
- * model, so the chat ends up open. [onBack] leaves it. The view model's [ChatEffect]s show snackbars or open a
- * location in a maps app.
+ * model, so the chat ends up open. [onBack] leaves it. The view model's [ChatEffect]s show snackbars, open a
+ * location in a maps app, or jump to a message ([MessageJumpState]).
  */
 @Composable
 internal fun ChatRoute(
@@ -44,24 +44,28 @@ internal fun ChatRoute(
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    ChatEffects(viewModel.effects, snackbarHostState)
+    val jumpState = rememberMessageJumpState()
+    ChatEffects(viewModel.effects, snackbarHostState, jumpState)
     ChatScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        jumpState = jumpState,
     )
 }
 
 /**
- * Handles [effects]: a snackbar for errors, for a file that cannot be played and for what is not there yet, the newest
- * replacing the one shown; a location opens in a maps app, or a snackbar says that no app can show it.
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone and
+ * for what is not there yet, the newest replacing the one shown; a location opens in a maps app, or a snackbar says
+ * that no app can show it; a jump to a message goes to [jumpState].
  */
 @Composable
 private fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
+    jumpState: MessageJumpState,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -81,6 +85,15 @@ private fun ChatEffects(
 
                     ChatEffect.PlaybackFailed -> {
                         resources.getString(R.string.content_playback_failed)
+                    }
+
+                    ChatEffect.MessageUnavailable -> {
+                        resources.getString(R.string.chat_message_unavailable)
+                    }
+
+                    is ChatEffect.ScrollToMessage -> {
+                        jumpState.jumpTo(effect.messageId)
+                        ""
                     }
 
                     is ChatEffect.OpenLocation -> {

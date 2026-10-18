@@ -76,7 +76,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *     `mediaOverlay` pill over the media's bottom end.
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
  * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
- *   the content's buttons as custom actions ([contentActions]).
+ *   the reply quote and the content's buttons as custom actions ([replyAction], [contentActions]).
+ * - **Reply quote**: tapping it shows the replied message ([ChatEvent.OpenReply]).
+ * - **Highlight**: after a jump to the bubble, a `secondaryContainer` band behind the row fades in and out
+ *   ([jumpHighlight]), read in the draw phase.
  * - Everything shown is in [bubble], mapped by the ViewModel, in [fileState], the file of a voice message, song or
  *   document, and in [playback], how a voice message or song plays; the text is built once per message
  *   ([AnnotatedTextCache]). No effects, no fixed heights, so it grows with the font scale (`docs/PERFORMANCE.md` §4).
@@ -91,13 +94,18 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
 ) {
     val description = bubbleDescription(bubble)
-    val actions = rememberContentActions(bubble, fileState, playback.isPlaying, onEvent)
+    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, onEvent)
+    val highlightColor = MaterialTheme.colorScheme.secondaryContainer
+    val highlightShape = MaterialTheme.shapes.medium
     Row(
         modifier =
-            modifier.fillMaxWidth().clearAndSetSemantics {
-                contentDescription = description
-                if (actions.isNotEmpty()) customActions = actions
-            },
+            modifier
+                .fillMaxWidth()
+                .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    if (actions.isNotEmpty()) customActions = actions
+                },
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -121,9 +129,9 @@ internal fun MessageBubbleRow(
     }
 }
 
-/** [contentActions] as the screen reader's custom actions, sending their events. */
+/** [replyAction] and [contentActions] as the screen reader's custom actions, sending their events. */
 @Composable
-private fun rememberContentActions(
+private fun rememberBubbleActions(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
     isPlaying: Boolean,
@@ -131,7 +139,7 @@ private fun rememberContentActions(
 ): List<CustomAccessibilityAction> {
     val resources = LocalResources.current
     return remember(bubble, fileState, isPlaying, onEvent, resources) {
-        contentActions(bubble, fileState, isPlaying).map { action ->
+        (listOfNotNull(replyAction(bubble)) + contentActions(bubble, fileState, isPlaying)).map { action ->
             CustomAccessibilityAction(resources.getString(action.label)) {
                 onEvent(action.event)
                 true
@@ -175,7 +183,7 @@ private fun MessageBubble(
                             .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
                 ) {
-                    BubbleHeader(bubble, style.colors)
+                    BubbleHeader(bubble, style.colors, onEvent)
                     MessageContentBody(bubble, fileState, playback, style.colors, onEvent)
                     BubbleBody(bubble, style, resources, onEvent)
                 }
@@ -200,7 +208,7 @@ private fun BareBubble(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         horizontalAlignment = if (bubble.isOutgoing) Alignment.End else Alignment.Start,
     ) {
-        BubbleHeader(bubble, colors)
+        BubbleHeader(bubble, colors, onEvent)
         Box {
             MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
             OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
@@ -237,7 +245,7 @@ private fun MediaBubble(
             Column(
                 modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-            ) { BubbleHeader(bubble, colors) }
+            ) { BubbleHeader(bubble, colors, onEvent) }
         }
         Box {
             MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
@@ -252,11 +260,15 @@ private fun MediaBubble(
     }
 }
 
-/** The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are. */
+/**
+ * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;
+ * the quote shows its message when tapped, if it opens one.
+ */
 @Composable
 private fun BubbleHeader(
     bubble: ChatItem.Bubble,
     colors: BubbleColors,
+    onEvent: (ChatEvent) -> Unit,
 ) {
     if (bubble.showsSenderName) {
         Text(
@@ -276,7 +288,11 @@ private fun BubbleHeader(
             style = MaterialTheme.typography.labelMedium,
         )
     }
-    bubble.reply?.let { ReplyQuoteBlock(it, colors) }
+    bubble.reply?.let { reply ->
+        val messageId = reply.messageId
+        val onOpen = remember(messageId, onEvent) { messageId?.let { { onEvent(ChatEvent.OpenReply(it)) } } }
+        ReplyQuoteBlock(reply, colors, onOpen)
+    }
 }
 
 /**

@@ -98,6 +98,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
  *   view, and scrolls back to it.
+ * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, centred, and highlights it
+ *   ([JumpToMessages]).
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -109,6 +111,7 @@ internal fun ChatScreen(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    jumpState: MessageJumpState = rememberMessageJumpState(),
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -154,7 +157,7 @@ internal fun ChatScreen(
 
             is ChatContent.Content -> {
                 Box(bodyModifier) {
-                    MessageList(content, state.fileStates, state.playback, listState, innerPadding, onEvent)
+                    MessageList(content, state.fileStates, state.playback, listState, jumpState, innerPadding, onEvent)
                     FloatingDatePill(
                         items = content.items,
                         listState = listState,
@@ -180,13 +183,15 @@ private fun MessageList(
     fileStates: ImmutableMap<Int, FileState>,
     playback: MessagePlayback?,
     listState: LazyListState,
+    jumpState: MessageJumpState,
     innerPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
-    val bubbleResources = remember(theme, texts, onLinkClick) { BubbleResources(theme, texts, onLinkClick) }
+    val bubbleResources =
+        remember(theme, texts, onLinkClick, jumpState) { BubbleResources(theme, texts, onLinkClick, jumpState) }
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
@@ -219,6 +224,7 @@ private fun MessageList(
     InitialScroll(content.items, listState)
     FollowNewestMessage(content.items.firstOrNull()?.key, listState)
     ReportVisibleMessages(content.items, listState, onEvent)
+    JumpToMessages(content.items, listState, jumpState, motionScheme)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState) {
         try {

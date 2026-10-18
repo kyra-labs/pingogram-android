@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -20,6 +21,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -28,19 +31,28 @@ import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.R
 
 // The blocks inside a bubble besides its text: the reply quote, the link preview and the reactions
 // (docs/DESIGN_SYSTEM.md §2.2: tonal blocks of the bubble's side, chosen reactions in secondaryContainer).
 
-/** The replied message: a tonal block with a bar in the sender's color, the name over one line of its text. */
+/**
+ * The replied message: a tonal block with a bar in the sender's color, the name over one line of its text. With
+ * [onOpen] it is a button that shows the replied message, with its state layer clipped to the block. Inside a bubble,
+ * screen readers reach it as the bubble's custom action instead ([replyAction]).
+ */
 @Composable
 internal fun ReplyQuoteBlock(
     reply: ReplyQuote,
     colors: BubbleColors,
+    onOpen: (() -> Unit)? = null,
 ) {
     val accent =
         reply.senderId?.let { MaterialTheme.colorScheme.senderNameColor(it) } ?: MaterialTheme.colorScheme.primary
-    QuoteBlock(colors.block, accent) {
+    val openLabel = stringResource(R.string.chat_reply_open)
+    val clickable =
+        onOpen?.let { Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = it) } ?: Modifier
+    QuoteBlock(colors.block, accent, clickable) {
         reply.sender?.let { sender ->
             Text(
                 text = sender.resolve(),
@@ -149,11 +161,15 @@ private fun CustomEmojiPlaceholder(color: Color) {
     )
 }
 
-/** A block inside a bubble: [container] in the small shape, with a bar of [accent] along its start edge. */
+/**
+ * A block inside a bubble: [container] in the small shape, with a bar of [accent] along its start edge; [modifier]
+ * goes inside the clip, so a click's state layer keeps the shape.
+ */
 @Composable
 private fun QuoteBlock(
     container: Color,
     accent: Color,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val barWidth = MaterialTheme.sizes.quoteBarWidth
@@ -162,6 +178,7 @@ private fun QuoteBlock(
         modifier =
             Modifier
                 .clip(MaterialTheme.shapes.small)
+                .then(modifier)
                 .background(container)
                 .leadingBar(accent, barWidth)
                 .padding(start = barWidth + spacing.small, end = spacing.small)

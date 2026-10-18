@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -18,8 +19,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the conversation as the user interacts with it (`docs/TESTING.md`), light and dark on a compact phone: a
- * voice message playing, its progress drawn from the player's position. Brand colors, so goldens do not depend on a
- * wallpaper; inspection mode, so Coil shows solid colors for the images ([PreviewImages]).
+ * voice message playing, its progress drawn from the player's position; and the message a reply quote was tapped for,
+ * highlighted at full strength. Brand colors, so goldens do not depend on a wallpaper; inspection mode, so Coil shows
+ * solid colors for the images ([PreviewImages]).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -43,11 +45,18 @@ class ChatInteractionScreenshotTest(
         variant: String,
         themeMode: ThemeMode,
     ) {
-        val state = STATES.getValue(stateName)
+        val sample = SAMPLES.getValue(stateName)
         composeRule.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
                 PingogramTheme(themeMode = themeMode, dynamicColor = false) {
-                    PreviewImages { ChatScreen(state = state, onEvent = {}, onBack = {}) }
+                    PreviewImages {
+                        ChatScreen(
+                            state = sample.state,
+                            onEvent = {},
+                            onBack = {},
+                            jumpState = remember { MessageJumpState(sample.highlightedId) },
+                        )
+                    }
                 }
             }
         }
@@ -55,14 +64,22 @@ class ChatInteractionScreenshotTest(
         captureScreenRoboImage(goldenPath(javaClass, "$stateName.$variant"))
     }
 
+    /** A conversation [state], with message [highlightedId] highlighted if not null. */
+    class Sample(
+        val state: ChatUiState,
+        val highlightedId: Long? = null,
+    )
+
     companion object {
-        val STATES =
+        val SAMPLES =
             mapOf(
-                "voicePlaying" to ChatPreviewData.voicePlaying,
+                "voicePlaying" to Sample(ChatPreviewData.voicePlaying),
+                // Linus's message, which the newest one replies to.
+                "replyHighlighted" to Sample(ChatPreviewData.groupChat, highlightedId = 25),
             )
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun states(): List<Array<Any>> = STATES.keys.map { arrayOf(it) }
+        fun samples(): List<Array<Any>> = SAMPLES.keys.map { arrayOf(it) }
     }
 }

@@ -50,6 +50,10 @@
     <string name="chat_reply_unavailable">Message unavailable</string>
     <!-- A replied message of another chat, known only by its sender. -->
     <string name="chat_reply_message">Message</string>
+    <!-- What tapping a reply quote does, for screen readers: scroll to the message it replies to. -->
+    <string name="chat_reply_open">Show replied message</string>
+    <!-- A snackbar after tapping a reply quote whose message was deleted, or is too far back in the history. -->
+    <string name="chat_message_unavailable">The message is no longer available</string>
     <string name="chat_empty_title">No messages here yet</string>
     <string name="chat_empty_body">Messages in this chat show up here.</string>
     <string name="chat_error_title">Messages couldn\'t be loaded</string>

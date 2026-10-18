@@ -168,6 +168,7 @@ internal object ChatPreviewData {
                                 UiText.Plain("Linus Torvalds"),
                                 LINUS,
                                 UiText.Plain("Here's the write-up on the new lazy layouts"),
+                                messageId = 25,
                             ),
                         reactions = reactions(ReactionChip(ReactionLabel.Emoji("👍"), 2, isChosen = false)),
                     ),
