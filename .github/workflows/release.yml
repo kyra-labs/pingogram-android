@@ -48,7 +48,10 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # The open-source cache: v6's default ("enhanced") is a closed-source service under Gradle's terms.
+          cache-provider: basic
 
       - name: Write secrets.properties
         env:
