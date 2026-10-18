@@ -70,10 +70,25 @@ class PingogramTypographyTest {
         }
     }
 
-    @Test
-    fun `every font sets wght to the weight it is registered with`() {
-        pingogramTypography(dark = false).styles().forEach { (name, style) ->
-            style.fonts().forEach { assertEquals(it.weight.weight.toFloat(), it.axis("wght"), name) }
+    @ParameterizedTest
+    @ValueSource(ints = [0, BOLD_TEXT])
+    fun `every font is registered at its wght plus the Bold text adjustment`(adjustment: Int) {
+        pingogramTypography(dark = false, adjustment).styles().forEach { (name, style) ->
+            style.fonts().forEach {
+                assertEquals(minOf(it.axis("wght").toInt() + adjustment, 1000), it.weight.weight, name)
+            }
+        }
+    }
+
+    // Compose asks the family for the style's weight plus the adjustment, and adds the adjustment to that font's wght.
+    @ParameterizedTest
+    @ValueSource(ints = [0, BOLD_TEXT])
+    fun `the font a style asks for has the style's own wght, with or without Bold text`(adjustment: Int) {
+        pingogramTypography(dark = false, adjustment).styles().forEach { (name, style) ->
+            val weight = style.fontWeight!!.weight
+            val requested = minOf(weight + adjustment, 1000)
+            val font = style.fonts().single { it.weight.weight == requested && it.style == FontStyle.Normal }
+            assertEquals(weight.toFloat(), font.axis("wght"), name)
         }
     }
 
@@ -126,9 +141,21 @@ class PingogramTypographyTest {
     }
 
     @Test
-    fun `builds the typography once per theme`() {
+    fun `builds the typography once per theme and Bold text adjustment`() {
         assertSame(pingogramTypography(dark = false), pingogramTypography(dark = false))
         assertSame(pingogramTypography(dark = true), pingogramTypography(dark = true))
+        assertSame(pingogramTypography(dark = false, BOLD_TEXT), pingogramTypography(dark = false, BOLD_TEXT))
+    }
+
+    @Test
+    fun `Bold text keeps the styles' weights and axes`() {
+        val plain = pingogramTypography(dark = false).styles()
+
+        pingogramTypography(dark = false, BOLD_TEXT).styles().forEach { (name, style) ->
+            val expected = plain.getValue(name)
+            assertEquals(expected.fontWeight, style.fontWeight, name)
+            assertEquals(expected.fonts().map { it.axes() }, style.fonts().map { it.axes() }, name)
+        }
     }
 
     private fun TextStyle.fonts(): List<Font> = (fontFamily as FontListFontFamily).fonts
@@ -139,41 +166,15 @@ class PingogramTypographyTest {
             .single { it.axisName == tag }
             .toVariationValue(null)
 
+    private fun Font.axes(): Map<String, Float> =
+        (this as ResourceFont).variationSettings.settings.associate { it.axisName to it.toVariationValue(null) }
+
     private fun String.isEmphasized() = endsWith("Emphasized")
 
     private fun String.category() = takeWhile { it.isLowerCase() }
 
-    private fun Typography.styles(): Map<String, TextStyle> =
-        mapOf(
-            "displayLarge" to displayLarge,
-            "displayMedium" to displayMedium,
-            "displaySmall" to displaySmall,
-            "headlineLarge" to headlineLarge,
-            "headlineMedium" to headlineMedium,
-            "headlineSmall" to headlineSmall,
-            "titleLarge" to titleLarge,
-            "titleMedium" to titleMedium,
-            "titleSmall" to titleSmall,
-            "bodyLarge" to bodyLarge,
-            "bodyMedium" to bodyMedium,
-            "bodySmall" to bodySmall,
-            "labelLarge" to labelLarge,
-            "labelMedium" to labelMedium,
-            "labelSmall" to labelSmall,
-            "displayLargeEmphasized" to displayLargeEmphasized,
-            "displayMediumEmphasized" to displayMediumEmphasized,
-            "displaySmallEmphasized" to displaySmallEmphasized,
-            "headlineLargeEmphasized" to headlineLargeEmphasized,
-            "headlineMediumEmphasized" to headlineMediumEmphasized,
-            "headlineSmallEmphasized" to headlineSmallEmphasized,
-            "titleLargeEmphasized" to titleLargeEmphasized,
-            "titleMediumEmphasized" to titleMediumEmphasized,
-            "titleSmallEmphasized" to titleSmallEmphasized,
-            "bodyLargeEmphasized" to bodyLargeEmphasized,
-            "bodyMediumEmphasized" to bodyMediumEmphasized,
-            "bodySmallEmphasized" to bodySmallEmphasized,
-            "labelLargeEmphasized" to labelLargeEmphasized,
-            "labelMediumEmphasized" to labelMediumEmphasized,
-            "labelSmallEmphasized" to labelSmallEmphasized,
-        )
+    private companion object {
+        /** Android's "Bold text" setting: `Configuration.fontWeightAdjustment` while it is on. */
+        const val BOLD_TEXT = 300
+    }
 }
