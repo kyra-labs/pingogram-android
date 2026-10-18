@@ -89,6 +89,9 @@ fun PingogramApp(
 ) {
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
+    val inMainGraph by remember(currentEntry) {
+        derivedStateOf { currentEntry.value?.destination.isInMainGraph() }
+    }
     val showNavigation by remember(currentEntry) {
         derivedStateOf {
             val destination = currentEntry.value?.destination
@@ -101,8 +104,8 @@ fun PingogramApp(
     val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
     val floatingBar = adaptiveType.isNavigationBar()
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
-    val floatingBarSpace = showNavigation && floatingBar
-    val floatingBarSlot = floatingBarSpace && currentTab != null
+    val floatingBarSpace = inMainGraph && floatingBar
+    val floatingBarSlot = showNavigation && floatingBar && currentTab != null
     val showRail = showNavigation && !floatingBar
     val openSearch = { navController.navigate(SearchRoute) { launchSingleTop = true } }
     NavigationSuiteScaffold(
