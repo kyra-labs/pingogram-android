@@ -94,6 +94,55 @@ class TdlibUserRepositoryTest {
         }
 
     @Test
+    fun `users holds every cached user by id`() =
+        runTest {
+            val repository = repository()
+
+            client.emit(updateUser(user(id = 1, firstName = "Ada")))
+            client.emit(updateUser(user(id = 2, firstName = "Grace")))
+
+            assertEquals(
+                mapOf(1L to "Ada", 2L to "Grace"),
+                repository.users.first().mapValues { (_, user) -> user.firstName },
+            )
+        }
+
+    @Test
+    fun `users emits the map again when any user changes`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 1)))
+
+            repository.users.test {
+                awaitItem()
+
+                client.emit(updateUserStatus(userId = 1, status = TdApiFixtures.onlineStatus(expires = 1_000)))
+
+                assertEquals(UserStatus.Online(expiresAtEpochSeconds = 1_000), awaitItem()[1]?.status)
+            }
+        }
+
+    @Test
+    fun `users emits nothing for updates that change no user`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateUser(user(id = 1, status = TdApi.UserStatusRecently(false))))
+
+            repository.users.test {
+                awaitItem()
+
+                // A field Pingogram does not keep, the same status again, and an option.
+                client.emit(
+                    updateUser(user(id = 1, status = TdApi.UserStatusRecently(false)).apply { accentColorId = 3 }),
+                )
+                client.emit(updateUserStatus(userId = 1, status = TdApi.UserStatusRecently(false)))
+                client.emit(myIdOption(1))
+
+                expectNoEvents()
+            }
+        }
+
+    @Test
     fun `getUser answers from the cache without a request`() =
         runTest {
             val repository = repository()
@@ -182,6 +231,7 @@ class TdlibUserRepositoryTest {
             client.emitAuthorizationState(TdApiFixtures.closed())
 
             assertNull(repository.user(1).first())
+            assertEquals(emptyMap<Long, Any>(), repository.users.first())
         }
 
     @Test
