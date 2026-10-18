@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
+import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
@@ -61,6 +62,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import dev.kyralabs.pingogram.feature.auth.R as AuthR
+import dev.kyralabs.pingogram.feature.chat.R as ChatR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 import dev.kyralabs.pingogram.feature.contacts.R as ContactsR
 import dev.kyralabs.pingogram.feature.settings.R as SettingsR
@@ -215,6 +217,24 @@ class PingogramAppTest {
         awaitText(ChatsR.string.chat_list_archive_empty_title)
         assertNoNavigation()
         composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // A conversation (FR-C1)
+
+    @Test
+    fun `a conversation opens above the chats tab, without the navigation bar`() {
+        // TDLib does not know the chat.
+        tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
+        setApp()
+
+        composeRule.runOnUiThread { navController.navigate(ChatRoute(chatId = 5)) }
+
+        awaitText(ChatR.string.chat_not_found_title)
+        assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == true)
+        assertNoNavigation()
+        composeRule.onNodeWithContentDescription(string(ChatR.string.chat_back)).performClick()
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
     }

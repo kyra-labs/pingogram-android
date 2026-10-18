@@ -31,13 +31,27 @@ class ChatListSelectionTest : ChatListViewModelHarness() {
         }
 
     @Test
-    fun `a tap outside selection mode selects nothing`() =
+    fun `a tap outside selection mode opens the chat and selects nothing`() =
         runTest {
             val viewModel = mainList()
+            val effects = effectsOf(viewModel)
 
             send(viewModel, ChatListEvent.ChatClicked(3))
 
             assertNull(viewModel.state.selection)
+            assertEquals(listOf(ChatListEffect.OpenChat(3)), effects)
+        }
+
+    @Test
+    fun `a tap in selection mode opens nothing`() =
+        runTest {
+            val viewModel = mainList()
+            send(viewModel, ChatListEvent.ChatLongClicked(2))
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatListEvent.ChatClicked(3))
+
+            assertEquals(emptyList<ChatListEffect>(), effects)
         }
 
     @Test

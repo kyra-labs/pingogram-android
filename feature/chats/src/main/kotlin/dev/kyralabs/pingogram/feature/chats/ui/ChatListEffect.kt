@@ -17,4 +17,9 @@ sealed interface ChatListEffect {
 
     /** Opens the archived chats. */
     data object OpenArchive : ChatListEffect
+
+    /** Opens the conversation of chat [chatId]. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatListEffect
 }

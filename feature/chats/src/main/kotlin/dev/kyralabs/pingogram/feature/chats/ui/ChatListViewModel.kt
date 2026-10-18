@@ -68,7 +68,8 @@ import java.util.Locale
  *   near again, tries again.
  * - **Selection** (FR-L8): the selected ids are kept in the [SavedStateHandle] ([SelectedChats]), for the list shown;
  *   selecting another folder clears them. A toolbar action applies to the selected chats it fits ([targetsOf]) and
- *   ends selection mode; delete ends it once confirmed.
+ *   ends selection mode; delete ends it once confirmed. Outside selection mode a tap opens the chat
+ *   ([ChatListEffect.OpenChat]).
  * - **Actions** (FR-L4) run one chat after another and stop at the first failure ([perform]), which a snackbar shows
  *   ([ChatListEffect.ShowError]). Their effect on the rows comes through TDLib's updates. Archiving offers to undo it
  *   ([ChatListEffect.ChatsArchived]). Deleting asks first ([ChatListUiState.deleteDialog]), with what TDLib allows for
@@ -273,7 +274,11 @@ class ChatListViewModel internal constructor(
 
             is ChatListEvent.ChatClicked -> {
                 val shown = uiState.value.shownChatIds
-                if (selection.isActive(shown)) selection.toggle(event.chatId, shown)
+                if (selection.isActive(shown)) {
+                    selection.toggle(event.chatId, shown)
+                } else {
+                    effectChannel.trySend(ChatListEffect.OpenChat(event.chatId))
+                }
             }
 
             is ChatListEvent.ChatLongClicked -> {
