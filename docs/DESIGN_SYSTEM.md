@@ -170,6 +170,11 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   = `LineHeightStyle(Alignment.Center, Trim.None)`; `platformStyle = PlatformTextStyle(includeFontPadding = false)`.
 - Font scaling: all sizes in `sp`; the chat "message text size" setting multiplies `bodyLarge`
   only (0.85–1.3) and re-derives `opsz`. Non-linear font scaling (Android 14) is respected.
+- Bold text (Android 12+): `PingogramTheme` passes `Configuration.fontWeightAdjustment` to
+  `pingogramTypography`, which registers each font at its weight plus the adjustment. Compose adds the
+  adjustment both when it picks a font from the family and to that font's `wght`, so fonts registered
+  at their plain weights would pick the heavier emphasized font and add the adjustment on top; this way
+  text gets bolder by the adjustment once (`GoogleSansFlexRenderingTest`).
 - Fallbacks: Android's font fallback chain renders glyphs Google Sans Flex lacks (CJK, Arabic,
   Devanagari, emoji) with the system fonts and Noto; no font files are bundled for them.
 - Tabular figures for times/counters: `fontFeatureSettings = "tnum"`.
@@ -217,8 +222,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   bar, list-detail pane) → spatial slow; color/alpha crossfades → effects default; reactions,
   typing dots, send confirmation → effects fast.
 - Navigation transitions: Material shared-axis X for sibling screens, shared-axis Y for
-  vertical flows (auth), fade-through for tab switches, container transform via
-  `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new chat.
+  vertical flows (auth), fade-through for tab switches and chat folder switches, container
+  transform via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new
+  chat.
 - Predictive back: screens use Navigation's default M3 predictive back; custom surfaces
   (media viewer, attach sheet, selection toolbar) implement `PredictiveBackHandler` and scale
   to 90% with the Expressive back-progress curve.
@@ -242,7 +248,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
 | Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
-| Folder tabs | `ButtonGroup` connected `ToggleButton`s (scrollable); fallback `PrimaryScrollableTabRow` if > 6 |
+| Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
 | New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
 | Selection mode | `HorizontalFloatingToolbar` (expressive, `FloatingToolbarDefaults.vibrantFloatingToolbarColors()`) |

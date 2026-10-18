@@ -130,7 +130,9 @@ private fun EmptyStatePreview() {
             icon = R.drawable.ic_chat_filled,
             title = "Nothing here yet",
             body = "Content shows up here as soon as there is some.",
-            action = { Button(onClick = {}) { Text("Refresh") } },
+            action = {
+                Button(onClick = {}) { Text("Refresh", style = MaterialTheme.typography.labelLargeEmphasized) }
+            },
         )
     }
 }
