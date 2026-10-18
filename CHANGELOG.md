@@ -58,6 +58,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   waits up to 300 ms for TDLib. Logging out (Settings → Log out, with confirmation), being logged out
   elsewhere, or a closed session returns to sign-in with nothing of the previous account left behind.
 
+- Sign-in screens polished: real QR code for QR login (ZXing), password visibility toggle, adaptive layout
+  for tablets, landscape and large fonts, shared-axis transitions and predictive back between steps,
+  screen-reader friendly countdowns and banners; screenshot tests for every step in light, dark and
+  dynamic color.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
