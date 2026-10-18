@@ -16,8 +16,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   newest. Bubbles group consecutive messages, show sender names and avatars in groups, the time, "edited",
   and sent, read, pending or failed status, forwarded-from headers, reply quotes, reactions and link
   previews. Text keeps its formatting: bold, italic, underline, strikethrough, code, quotes, spoilers (tap
-  to reveal) and links. Service messages appear as pills. Photos, voice messages and other media show a
-  short label until their own views land.
+  to reveal) and links. Service messages appear as pills.
+- Media in conversations. Photos fill their bubble with a blurred preview while they load, albums show as
+  one mosaic, and videos and GIFs show their thumbnail with the length. Stickers, animated emoji, dice and
+  round video messages appear without a bubble. Voice messages show their waveform and length; documents
+  show their name and size and download on tap, with progress and cancel. Music, polls with their results,
+  locations and venues (which open your maps app), contacts, games and invoices have their own cards.
+  Playing voice messages and opening media full screen come next.
 
 ## [0.1.2] - 2026-10-18
 
