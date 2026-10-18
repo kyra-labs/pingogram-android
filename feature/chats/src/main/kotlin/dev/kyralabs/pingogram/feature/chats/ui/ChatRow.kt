@@ -16,12 +16,12 @@ import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -60,7 +60,9 @@ import kotlin.math.abs
  * - **Swipes**: start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]); end to
  *   start archives it, or unarchives it in the archive ([endSwipeAction]). Both mirror in right-to-left layouts. The
  *   row never stays dismissed: past the threshold the action runs, with a `Confirm` haptic on Android 14 and later,
- *   and the row springs back. An archived chat then leaves the list through TDLib's update and `animateItem`.
+ *   and the row springs back. An archived chat then leaves the list through TDLib's update and `animateItem`; in a
+ *   folder that keeps archived chats it stays, its swipe turned to unarchive. One swipe runs one action
+ *   ([rememberOnSwiped]), and a row that comes back to the list is at rest: its swipe state is not saved.
  * - **Behind the row**: the action's icon and label on its tonal container ([swipeColors]), drawn only while the row
  *   is away from its place. The icon grows to full size on the motion scheme's fast spatial spring as the swipe
  *   crosses the threshold, and back when it returns, with a `TextHandleMove` haptic each way
@@ -83,10 +85,10 @@ internal fun ChatRow(
     val start = item.startSwipeAction
     val end = item.endSwipeAction
     val threshold = SwipeToDismissBoxDefaults.positionalThreshold
-    val state = rememberSwipeToDismissBoxState(positionalThreshold = threshold)
+    // Not rememberSwipeToDismissBoxState, which saves the state: a row that left the list while springing back (an
+    // archived chat) would come back with Undo swiped away, and run its swipe again at once.
+    val state = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, threshold) }
     val iconScale = remember { Animatable(SWIPE_ICON_RESTING_SCALE) }
-    val scope = rememberCoroutineScope()
-    val haptics = LocalHapticFeedback.current
     val resources = LocalResources.current
     SwipeToDismissBox(
         state = state,
@@ -99,15 +101,7 @@ internal fun ChatRow(
                 animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
             ),
         gesturesEnabled = !selectionMode,
-        onDismiss = { direction ->
-            // DESIGN_SYSTEM.md §5 keeps the Confirm haptic to Android 14 and later; none before.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-            }
-            val action = if (direction == SwipeToDismissBoxValue.StartToEnd) start else end
-            onEvent(ChatListEvent.RowAction(item.id, action))
-            scope.launch { state.reset() }
-        },
+        onDismiss = rememberOnSwiped(state, item.id, start, end, onEvent),
     ) {
         ChatListItem(
             item = item,
@@ -132,6 +126,52 @@ internal fun ChatRow(
             selected = selected,
             open = open,
         )
+    }
+}
+
+/**
+ * What [SwipeToDismissBox] calls once the row settled swiped away towards a direction: runs that side's action, [start]
+ * or [end] as the row shows it then, with a `Confirm` haptic on Android 14 and later (`docs/DESIGN_SYSTEM.md` §5), and
+ * springs the row back.
+ *
+ * One instance for the row's whole life, so one swipe runs one action. The box runs its `onDismiss` again whenever it
+ * gets another instance while the row is still away (material3 1.5.0-beta01 keys its effect on it), and the action
+ * changes the row while it springs back: a chat archived in a folder stays, its swipe turned to unarchive; a read
+ * chat's swipe turns to unread. A new instance would run the other action then, which turns the row back, and so on,
+ * restarting the spring each time, so the row stuck out while TDLib got a request per frame.
+ */
+@Composable
+private fun rememberOnSwiped(
+    state: SwipeToDismissBoxState,
+    chatId: Long,
+    start: ChatRowAction,
+    end: ChatRowAction,
+    onEvent: (ChatListEvent) -> Unit,
+): (SwipeToDismissBoxValue) -> Unit {
+    val scope = rememberCoroutineScope()
+    val haptics by rememberUpdatedState(LocalHapticFeedback.current)
+    val currentStart by rememberUpdatedState(start)
+    val currentEnd by rememberUpdatedState(end)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    return remember(state, chatId) {
+        { direction ->
+            val action =
+                when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> currentStart
+
+                    SwipeToDismissBoxValue.EndToStart -> currentEnd
+
+                    // Away from its place without a direction: only a restored state could be, and it is not saved.
+                    SwipeToDismissBoxValue.Settled -> null
+                }
+            if (action != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                }
+                currentOnEvent(ChatListEvent.RowAction(chatId, action))
+            }
+            scope.launch { state.reset() }
+        }
     }
 }
 
