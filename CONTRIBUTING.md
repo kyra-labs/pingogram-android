@@ -11,6 +11,16 @@ rules apply to humans and AI assistants.
 - Nothing that violates the Telegram API Terms of Service will be merged.
 - UI must be Jetpack Compose + Material 3 Expressive (`docs/DESIGN_SYSTEM.md`).
 
+## Local setup
+
+1. JDK 17 or newer, and an Android SDK with platform 37 (Android Studio installs it, or Gradle
+   downloads it once the SDK licenses are accepted). Point `local.properties` → `sdk.dir` at it.
+2. `cp secrets.properties.example secrets.properties` and fill in your own `api_id` /
+   `api_hash` from https://my.telegram.org. The build fails with a clear message without it.
+3. `./gradlew check` runs everything CI runs on a PR; `./gradlew :app:assembleFossDebug`
+   builds an installable debug APK. The first build downloads the prebuilt TDLib AAR from this
+   repository's GitHub releases; to use one you built, see `docs/TDLIB.md` (`pingogram.tdlib.aar`).
+
 ## Workflow
 
 1. Open or pick an issue; comment that you are working on it.

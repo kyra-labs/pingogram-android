@@ -83,17 +83,21 @@ Delete `keystore.b64` from disk afterwards.
 2. From the zip, copy the **variable** TTF (the single file with all axes, usually
    `GoogleSansFlex[...].ttf`) to `core/ui/src/main/res/font/google_sans_flex.ttf` — Android
    resource names must be lowercase letters, digits and underscores only.
-3. Copy `OFL.txt` from the zip next to it as `core/ui/src/main/res/font/google_sans_flex_ofl.txt`
-   (or into `core/ui/licenses/`). The license allows bundling and redistribution.
+3. Copy `OFL.txt` from the zip to `core/ui/src/main/assets/licenses/google_sans_flex_OFL.txt`
+   (not into `res/font/`: Android rejects non-font files there and the build fails). The
+   license allows bundling and redistribution; shipping it in `assets/` keeps it in the APK.
 4. Commit both files (`git add -f` is not needed; they are not ignored). Claude Code will wire
    the type scale when it starts M0.
 
 ## 6. Build TDLib once
 
 1. In GitHub → **Actions → Build TDLib → Run workflow** (takes ~30–60 min).
-2. It publishes a pre-release `tdlib-<sha>` with `tdlib-<sha>.aar`. Claude Code's `fetchTdlib`
-   Gradle task downloads it; CI needs this to exist before the app can build.
-3. Re-run only when you bump `TDLIB_COMMIT`.
+2. It publishes a pre-release `tdlib-<sha>` with `tdlib-<sha>.aar` and `SHA256SUMS.txt`. The
+   build downloads the AAR by itself (`docs/TDLIB.md`); CI needs it before the app can build.
+3. Copy the AAR's SHA-256 from `SHA256SUMS.txt` into `gradle/libs.versions.toml` →
+   `tdlibAarSha256` and commit it. The build verifies every download against it, and fails with
+   instructions while it is still `"unpinned"`.
+4. Re-run only when you bump `TDLIB_COMMIT` (then update `tdlibAarSha256` too).
 
 ## 7. Test on your phone
 

@@ -5,36 +5,36 @@ the release workflow so the owner can install and test on a phone.
 
 ## M0 — Project foundation → `v0.0.1`
 
-- [ ] Gradle project: version catalog, `build-logic` convention plugins, modules from
+- [x] Gradle project: version catalog, `build-logic` convention plugins, modules from
       `docs/ARCHITECTURE.md` (empty where needed), Kotlin 2.x, AGP latest stable, JDK 17
-- [ ] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
-- [ ] Debug keystore committed; release signing from env/`keystore.properties`
-- [ ] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
+- [x] `secrets.properties` loading with clear failure if missing; `secrets.properties.example`
+- [x] Debug keystore committed; release signing from env/`keystore.properties`
+- [x] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
       Google Sans Flex type scale (15 styles + 15 emphasized, variable axes per style), shapes
-      + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, app icon
-      (adaptive + monochrome), splash
-- [ ] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
-- [ ] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
-- [ ] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
+      + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, splash
+- [ ] App icon (adaptive + monochrome) — waiting for the owner's artwork
+- [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
+- [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
+- [x] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
       database key in Keystore, parameters provider
-- [ ] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
+- [x] `:app` — `MainActivity` with `enableEdgeToEdge`, `NavHost`, Hilt, `NavigationSuiteScaffold`
       shell with placeholder tabs
-- [ ] ktlint, detekt, lint config; `./gradlew check` green
-- [ ] CI workflow green on PR; TDLib workflow produces an AAR release; release workflow
-      produces signed APKs on tag
-- [ ] README badges, CONTRIBUTING, issue templates in place
+- [x] ktlint, detekt, lint config; `./gradlew check` green
+- [x] CI workflow green on PR; TDLib workflow produces an AAR release
+- [x] Release workflow produces signed APKs on tag (first release: `v0.1.0`, with M1)
+- [x] README badges, CONTRIBUTING, issue templates in place
 
 ## M1 — Authentication → `v0.1.0`
 
-- [ ] Welcome, phone + country picker, code entry (all code types), 2FA password, forgot
+- [x] Welcome, phone + country picker, code entry (all code types), 2FA password, forgot
       password, registration, QR login, email states, logout, `Closed` handling
-- [ ] FLOOD_WAIT countdown UI, offline banner, error mapping
-- [ ] Unit tests for `AuthViewModel` against `FakeTdlibClient` for every state transition
-- [ ] Screenshot tests for each auth screen (light/dark/dynamic)
+- [x] FLOOD_WAIT countdown UI, offline banner, error mapping
+- [x] Unit tests for `AuthViewModel` against `FakeTdlibClient` for every state transition
+- [x] Screenshot tests for each auth screen (light/dark/dynamic)
 
 ## M2 — Chat list + read-only conversation → `v0.2.0`
 
-- [ ] `ChatRepository`, `UserRepository`, `MessageRepository`, `FileRepository` with incremental
+- [x] `ChatRepository`, `UserRepository`, `MessageRepository`, `FileRepository` with incremental
       update application and tests
 - [ ] Chat list with folders, badges, typing/online, swipe actions, selection toolbar, archive
 - [ ] Global search (chats, contacts, messages)

@@ -3,8 +3,8 @@
 **An open-source Telegram client for Android, built the way a Google app would be: Material 3
 Expressive, dynamic color, adaptive layouts, and nothing else in the way.**
 
-[![CI](https://github.com/OWNER/pingogram-android/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/pingogram-android/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/OWNER/pingogram-android?include_prereleases&label=download)](https://github.com/OWNER/pingogram-android/releases/latest)
+[![CI](https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg)](https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/kyra-labs/pingogram-android?include_prereleases&label=download)](https://github.com/kyra-labs/pingogram-android/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 Pingogram is **not** affiliated with Telegram. It is a third-party client that uses Telegram's
@@ -22,11 +22,11 @@ notification and permission behaviour.
 ## Status
 
 Early development. See [docs/ROADMAP.md](docs/ROADMAP.md) for milestones and
-[Releases](https://github.com/OWNER/pingogram-android/releases) for test builds.
+[Releases](https://github.com/kyra-labs/pingogram-android/releases) for test builds.
 
 ## Download
 
-Grab the latest APK from the [Releases page](https://github.com/OWNER/pingogram-android/releases/latest).
+Grab the latest APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases/latest).
 Use `-universal.apk` unless you know your device's ABI. Verify with `SHA256SUMS.txt`.
 
 ## Features (planned for 1.0)
@@ -48,7 +48,7 @@ cp secrets.properties.example secrets.properties   # add your api_id / api_hash 
 ./gradlew assembleFossDebug
 ```
 
-Requirements: JDK 17, Android SDK 36, Android Studio (latest stable). The TDLib AAR is downloaded
+Requirements: JDK 17+, an Android SDK with platform 37 (compileSdk), Android Studio (latest stable). The TDLib AAR is downloaded
 automatically from this repo's `tdlib-*` releases (see [docs/TDLIB.md](docs/TDLIB.md)).
 
 ## Documentation

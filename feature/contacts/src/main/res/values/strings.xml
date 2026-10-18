@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="contacts_placeholder_title">No contacts yet</string>
+    <string name="contacts_placeholder_body">Your contacts arrive in an upcoming release. The people you talk to will show up here.</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chats_placeholder_title">No chats yet</string>
+    <string name="chats_placeholder_body">Your conversations arrive in an upcoming release and will show up here.</string>
+
+    <!-- Global search, until it lands with the chat list -->
+    <string name="search_title">Search</string>
+    <string name="search_back">Back</string>
+    <string name="search_placeholder_title">Search is on its way</string>
+    <string name="search_placeholder_body">Chats, contacts and messages will be searchable here once your chats arrive.</string>
+</resources>
