@@ -76,7 +76,7 @@ internal fun ChatListItem(
     val leading = @Composable { ChatAvatar(item, title, selected) }
     val trailing = @Composable { ChatMeta(item) }
     val supporting = @Composable { ChatPreviewText(preview) }
-    val headline = @Composable { ChatTitle(item, title) }
+    val headline = @Composable { ChatTitle(title, item.isSecret, item.badge, item.isMuted, item.isUnread) }
     if (onClick != null) {
         ListItem(
             onClick = onClick,
@@ -144,11 +144,17 @@ private fun ChatAvatar(
     )
 }
 
-/** The lock of a secret chat, the name, its badge, and the mute icon. */
+/**
+ * The lock of a secret chat ([isSecret]), the name ([title]), its [badge], and the mute icon ([isMuted]); the name in
+ * the emphasized style if [isUnread]. Also the title of a search result.
+ */
 @Composable
-private fun ChatTitle(
-    item: ChatListItemModel,
+internal fun ChatTitle(
     title: String,
+    isSecret: Boolean,
+    badge: TitleBadge?,
+    isMuted: Boolean,
+    isUnread: Boolean,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
@@ -156,16 +162,16 @@ private fun ChatTitle(
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (item.isSecret) InlineIcon(UiR.drawable.ic_lock, colors.primary, MaterialTheme.sizes.inlineIcon)
+        if (isSecret) InlineIcon(UiR.drawable.ic_lock, colors.primary, MaterialTheme.sizes.inlineIcon)
         Text(
             text = title,
             modifier = Modifier.weight(1f, fill = false),
             color = colors.onSurface,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
-            style = with(MaterialTheme.typography) { if (item.isUnread) titleMediumEmphasized else titleMedium },
+            style = with(MaterialTheme.typography) { if (isUnread) titleMediumEmphasized else titleMedium },
         )
-        when (item.badge) {
+        when (badge) {
             TitleBadge.Verified -> {
                 InlineIcon(
                     UiR.drawable.ic_verified_filled,
@@ -186,7 +192,7 @@ private fun ChatTitle(
                 Unit
             }
         }
-        if (item.isMuted) {
+        if (isMuted) {
             InlineIcon(UiR.drawable.ic_notifications_off, colors.onSurfaceVariant, MaterialTheme.sizes.inlineIconSmall)
         }
     }
