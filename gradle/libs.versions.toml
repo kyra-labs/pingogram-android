@@ -14,6 +14,9 @@ androidxNavigation = "2.10.2"
 androidxProfileinstaller = "1.4.1"
 androidxTestExtJunit = "1.3.0"
 assertj = "3.27.7"
+# Coil 3 image loading, without any coil-network-* artifact: images come only from TDLib's local files
+# (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
+coil = "3.6.3"
 composeBom = "2026.09.00"
 # detekt-cli runs in its own JVM (pingogram.detekt), so its embedded Kotlin compiler never meets ours.
 detekt = "1.23.8"
@@ -66,6 +69,8 @@ androidx-lifecycle-viewmodel-savedstate = { group = "androidx.lifecycle", name =
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidxNavigation" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "androidxProfileinstaller" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
+# AsyncImage and the singleton ImageLoader; brings coil-core (okio, coroutines). No network artifact (see coil above).
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 # Test-only: HiltTestApplication, @HiltAndroidTest and @BindValue for the Robolectric tests of :app
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
