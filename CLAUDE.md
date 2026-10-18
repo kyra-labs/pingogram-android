@@ -24,7 +24,7 @@ Read these before doing any work (they are the source of truth, in this order):
 2. **Branding.** The word "Telegram" never appears in: app name, `applicationId`, package names,
    launcher icon, notification channel names, or store/release titles. It is allowed only in
    descriptive text such as "a Telegram client" or "Telegram account". The app is **Pingogram**,
-   package root `app.pingogram`.
+   package root `dev.kyralabs.pingogram`.
 3. **Telegram API Terms of Service** (https://core.telegram.org/api/terms) are mandatory:
    no spam/automation features, no hiding or altering sponsored messages in channels, no
    scraping, no circumventing limits, no misrepresenting the client as official. Identify the

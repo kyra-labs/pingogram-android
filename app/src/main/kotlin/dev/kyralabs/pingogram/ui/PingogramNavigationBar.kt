@@ -1,0 +1,223 @@
+package dev.kyralabs.pingogram.ui
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.navigation.TopLevelDestination
+import dev.kyralabs.pingogram.core.ui.R as UiR
+
+/**
+ * The navigation bar of compact windows in the floating style of Google's Material 3 Expressive apps (Google Photos,
+ * 2026; `docs/DESIGN_SYSTEM.md` §6): a pill that floats over the content and holds the [TopLevelDestination]s as tabs,
+ * with the search button detached at its end.
+ *
+ * Material has no floating navigation bar component. A [HorizontalFloatingToolbar] with standard colors provides the
+ * container, its elevation and the adjacent button; the tabs are built from tokens. The selected tab shows its filled
+ * icon and label on a `secondaryContainer` pill, the others only their label. Where the labels do not fit (narrow
+ * phones, large font scales), the other tabs show their outlined icon instead, named for screen readers by the label.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun PingogramNavigationBar(
+    selected: TopLevelDestination?,
+    onSelect: (TopLevelDestination) -> Unit,
+    onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
+        val showLabels = labelsFit(maxWidth)
+        val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
+        val padding = FloatingToolbarDefaults.ContentPadding
+        // The toolbar does not fix its height; the tabs fill the inside of its standard container.
+        val tabHeight =
+            FloatingToolbarDefaults.ContainerSize - padding.calculateTopPadding() - padding.calculateBottomPadding()
+        HorizontalFloatingToolbar(
+            expanded = true,
+            floatingActionButton = {
+                // A circle in the toolbar's own colors, as in Google's floating navigation bars.
+                FloatingToolbarDefaults.StandardFloatingActionButton(
+                    onClick = onSearch,
+                    shape = CircleShape,
+                    containerColor = colors.toolbarContainerColor,
+                    contentColor = colors.toolbarContentColor,
+                ) {
+                    Icon(
+                        painter = painterResource(UiR.drawable.ic_search),
+                        contentDescription = stringResource(R.string.nav_search),
+                    )
+                }
+            },
+            colors = colors,
+        ) {
+            Row(Modifier.selectableGroup()) {
+                TopLevelDestination.entries.forEach { destination ->
+                    val isSelected = destination == selected
+                    NavigationTab(
+                        destination = destination,
+                        selected = isSelected,
+                        showLabel = showLabels || isSelected,
+                        onClick = { onSelect(destination) },
+                        modifier = Modifier.height(tabHeight),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One tab: a pill-shaped `Role.Tab` whose indicator fades in and whose icon slides in when it is selected, on the
+ * theme's motion scheme. The indicator's alpha is read in the draw phase, so the fade never recomposes.
+ */
+@Composable
+private fun NavigationTab(
+    destination: TopLevelDestination,
+    selected: Boolean,
+    showLabel: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    val colorScheme = MaterialTheme.colorScheme
+    val spacing = MaterialTheme.spacing
+    val label = stringResource(destination.label)
+    val indicatorColor = colorScheme.secondaryContainer
+    val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) colorScheme.onSecondaryContainer else LocalContentColor.current,
+        animationSpec = motionScheme.defaultEffectsSpec(),
+    )
+    Row(
+        modifier =
+            modifier
+                .clip(CircleShape)
+                .drawBehind {
+                    drawRoundRect(
+                        indicatorColor,
+                        cornerRadius = CornerRadius(size.height / 2),
+                        alpha = indicatorAlpha.value,
+                    )
+                }.selectable(
+                    selected = selected,
+                    onClick = onClick,
+                    role = Role.Tab,
+                    interactionSource = null,
+                    indication = ripple(),
+                ).padding(horizontal = if (selected) spacing.large else spacing.medium),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AnimatedVisibility(
+            visible = selected || !showLabel,
+            enter = expandHorizontally(motionScheme.fastSpatialSpec()) + fadeIn(motionScheme.fastEffectsSpec()),
+            exit = shrinkHorizontally(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+                    // Without a label, the icon names the tab.
+                    contentDescription = if (showLabel) null else label,
+                    tint = contentColor,
+                )
+                if (showLabel) Spacer(Modifier.width(spacing.small))
+            }
+        }
+        if (showLabel) {
+            val typography = MaterialTheme.typography
+            Text(
+                text = label,
+                color = contentColor,
+                style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/**
+ * Whether every tab can show its label in [maxWidth], the bar's width with the search button. Measured for the widest
+ * selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another tab
+ * never switches between labels and icons.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun labelsFit(maxWidth: Dp): Boolean {
+    val textMeasurer = rememberTextMeasurer()
+    val typography = MaterialTheme.typography
+    val spacing = MaterialTheme.spacing
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val labels = TopLevelDestination.entries.map { stringResource(it.label) }
+    return remember(textMeasurer, typography, spacing, density, layoutDirection, labels, maxWidth) {
+        with(density) {
+            fun width(
+                label: String,
+                emphasized: Boolean,
+            ): Int {
+                val style = if (emphasized) typography.labelLargeEmphasized else typography.labelLarge
+                return textMeasurer.measure(label, style, maxLines = 1).size.width
+            }
+            val labelsWidth = labels.sumOf { width(it, emphasized = false) }.toDp()
+            val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
+            val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
+            val icon = ICON_SIZE + spacing.small
+            val toolbarPadding =
+                FloatingToolbarDefaults.ContentPadding.calculateLeftPadding(layoutDirection) +
+                    FloatingToolbarDefaults.ContentPadding.calculateRightPadding(layoutDirection)
+            // The search button is about as large as the toolbar is high, a small gap away.
+            val searchButton = FloatingToolbarDefaults.ContainerSize + spacing.small
+            labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding + searchButton <= maxWidth
+        }
+    }
+}
+
+/** Material Symbols are 24 dp (`docs/DESIGN_SYSTEM.md` §8). */
+private val ICON_SIZE = 24.dp
+
+@PingogramPreviews
+@Composable
+private fun PingogramNavigationBarPreview() {
+    PingogramPreview {
+        PingogramNavigationBar(selected = TopLevelDestination.Chats, onSelect = {}, onSearch = {})
+    }
+}
