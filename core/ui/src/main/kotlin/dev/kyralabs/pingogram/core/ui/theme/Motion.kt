@@ -6,6 +6,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.material3.MotionScheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -33,6 +34,27 @@ fun fadeThroughExit(motionScheme: MotionScheme): ExitTransition = fadeOut(motion
 
 /** The scale incoming content grows from in a fade-through ([fadeThroughEnter]): 92%. */
 const val FADE_THROUGH_INITIAL_SCALE = 0.92f
+
+/**
+ * The screen a predictive back gesture leaves (§5): it shrinks to 90% on the [motionScheme]'s default spatial spring
+ * and dissolves on its slow effects spring, over the screen it goes back to, which shows as it is
+ * ([predictiveBackPopEnter]).
+ *
+ * Navigation seeks the transition with the gesture's progress, playing it as far into its springs' time as the gesture
+ * has come, and after the release plays the rest at the same pace. So the springs set how it follows the finger: the
+ * screen shrinks and fades early in the gesture, and what remains after the release is short and still visible, ending
+ * with the screen gone rather than cut. The default effects spring would have faded the screen to a fifth by 30% of
+ * the gesture, so the fade takes the slow one.
+ */
+fun predictiveBackPopExit(motionScheme: MotionScheme): ExitTransition =
+    scaleOut(motionScheme.defaultSpatialSpec(), targetScale = PREDICTIVE_BACK_MIN_SCALE) +
+        fadeOut(motionScheme.slowEffectsSpec())
+
+/**
+ * The screen a predictive back gesture goes back to ([predictiveBackPopExit]): already in place and opaque beneath the
+ * one leaving, so a single layer fades.
+ */
+fun predictiveBackPopEnter(): EnterTransition = EnterTransition.None
 
 /**
  * The scale of a surface that follows a predictive back gesture (§5): from 100% down to 90% as the gesture

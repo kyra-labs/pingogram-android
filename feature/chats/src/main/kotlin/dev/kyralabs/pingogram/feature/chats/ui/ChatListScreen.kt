@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -70,8 +71,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * [MediumFlexibleTopAppBar] that collapses as the list scrolls ([ChatListTopBar]), or the archive with a small one
  * ([ArchiveTopBar]); then the chats, each with its swipe actions ([ChatRow]), below the archive row on the main list.
  *
- * - **Insets**: the list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]);
- *   on medium and wider windows its rows keep a comfortable width, centered.
+ * - **Insets**: on the Chats tab the list draws behind the floating navigation bar and ends clear of it
+ *   ([screenContentWindowInsets]); the archive, pushed on top of the tab where the bar hides, keeps clear of the system
+ *   bars only. On medium and wider windows the rows keep a comfortable width, centered.
  * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load.
  * - **Folders**: selecting another folder replaces the list with that folder's, through Material's fade-through, where
  *   the user left it, or at its top the first time ([rememberShownList]).
@@ -125,11 +127,10 @@ internal fun ChatListScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             // The floating navigation bar, or the selection toolbar in its place, covers the bottom.
             contentWindowInsets =
-                if (selection != null) {
-                    screenContentWindowInsets().union(floatingToolbarInsets())
-                } else {
-                    screenContentWindowInsets()
-                },
+                when (state.kind) {
+                    ChatListKind.Chats -> screenContentWindowInsets()
+                    ChatListKind.Archive -> ScaffoldDefaults.contentWindowInsets
+                }.let { if (selection != null) it.union(floatingToolbarInsets()) else it },
         ) { innerPadding ->
             val shown = rememberShownList(state, listState, folderSwitch)
             ChatListBody(shown, onEvent, listState, innerPadding, openChatId, Modifier.fadeThrough(folderSwitch))
