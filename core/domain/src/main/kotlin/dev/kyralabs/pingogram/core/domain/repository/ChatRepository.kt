@@ -51,6 +51,13 @@ interface ChatRepository {
     /** The user's chat folders in their order, then every change; empty without folders. */
     val folders: Flow<ImmutableList<ChatFolder>>
 
+    /**
+     * Where the main list ("All chats") goes among the tabs of the [folders]: 0 before the first folder, up to the
+     * number of folders after the last one (td_api.tl `updateChatFolders.main_chat_list_position`). Then every change;
+     * 0 until TDLib reports the folders. Only Telegram Premium users can move it.
+     */
+    val mainChatListPosition: Flow<Int>
+
     /** How many chats of [list] are unread, then every change; [UnreadChatCount.None] until TDLib counted them. */
     fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount>
 

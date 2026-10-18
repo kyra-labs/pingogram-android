@@ -18,6 +18,7 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
+import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
@@ -54,6 +55,8 @@ class MainActivityTest {
     private val tdlib =
         FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready).apply {
             on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
+            // TDLib's answer once a chat list is loaded completely: the chat list is empty.
+            on(TdApi.LoadChats::class, TdResult.Failure(TdError(404, "Not Found")))
         }
 
     @BindValue
@@ -66,7 +69,7 @@ class MainActivityTest {
         composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
 
         tdlib(TdApiFixtures.ready())
-        awaitText(ChatsR.string.chats_placeholder_title)
+        awaitText(ChatsR.string.chat_list_empty_title)
         tab(R.string.nav_chats).assertIsSelected()
 
         tab(R.string.nav_settings).performClick()

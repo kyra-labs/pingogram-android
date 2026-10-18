@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -193,14 +192,9 @@ private fun PingogramNavigationItems(
     }
 }
 
-// The signed-out shell is the login flow, whose screens have their own previews; it needs Hilt for its view model.
-
-@PingogramPreviews
-@Preview(name = "Expanded", device = "spec:width=1280dp,height=800dp,dpi=240")
-@Composable
-private fun PingogramAppSignedInPreview() {
-    PingogramPreview { PingogramApp(uiState = MainActivityUiState.SignedIn) }
-}
+// Signed in or out, the shell shows a destination with a Hilt view model (the chat list, the login flow), which
+// previews cannot create: those screens have their own previews, and PingogramAppScreenshotTest captures the
+// signed-in shell. PingogramNavigationBar has its own preview too.
 
 @PingogramPreviews
 @Composable

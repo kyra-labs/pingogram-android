@@ -38,4 +38,141 @@
         <item quantity="one">%d hour</item>
         <item quantity="other">%d hours</item>
     </plurals>
+
+    <!-- Names (UserNames.kt) and the current user's own chat. -->
+    <string name="user_deleted_account">Deleted Account</string>
+    <string name="chat_saved_messages">Saved Messages</string>
+
+    <!-- Message previews (MessagePreview.kt): one line for a message in the chat list, replies and notifications. -->
+    <!-- The sender of a message by the current user, before its preview. -->
+    <string name="preview_sender_you">You</string>
+    <!-- Someone whose name is not known. -->
+    <string name="preview_someone">Someone</string>
+    <!-- %1$s is what kind of message it is ("Photo", "Poll"), %2$s its caption or text. -->
+    <string name="preview_with_text">%1$s · %2$s</string>
+    <string name="preview_photo">Photo</string>
+    <string name="preview_video">Video</string>
+    <string name="preview_gif">GIF</string>
+    <string name="preview_sticker">Sticker</string>
+    <!-- %1$s is the emoji the sticker stands for. -->
+    <string name="preview_sticker_emoji">%1$s Sticker</string>
+    <string name="preview_voice_message">Voice message</string>
+    <string name="preview_video_message">Video message</string>
+    <string name="preview_audio">Audio</string>
+    <!-- %1$s is the performer of a song, %2$s its title. -->
+    <string name="preview_audio_performer_title">%1$s – %2$s</string>
+    <string name="preview_file">File</string>
+    <string name="preview_location">Location</string>
+    <string name="preview_live_location">Live location</string>
+    <string name="preview_contact">Contact</string>
+    <string name="preview_poll">Poll</string>
+    <string name="preview_quiz">Quiz</string>
+    <string name="preview_game">Game</string>
+    <string name="preview_invoice">Invoice</string>
+    <string name="preview_story">Story</string>
+    <string name="preview_expired_photo">Photo expired</string>
+    <string name="preview_expired_video">Video expired</string>
+    <string name="preview_expired_voice_message">Voice message expired</string>
+    <string name="preview_expired_video_message">Video message expired</string>
+    <string name="preview_unsupported">Unsupported message</string>
+    <!-- A service message of a kind Pingogram does not describe yet (gifts, payments, forum topics, …). -->
+    <string name="preview_service_other">Chat event</string>
+
+    <!-- Service messages: %1$s is who did it (a first name or a chat's title); "you" strings are the current user's. -->
+    <string name="preview_created_group">%1$s created the group “%2$s”</string>
+    <string name="preview_you_created_group">You created the group “%1$s”</string>
+    <string name="preview_channel_created">Channel created</string>
+    <string name="preview_changed_title">%1$s changed the name to “%2$s”</string>
+    <string name="preview_you_changed_title">You changed the name to “%1$s”</string>
+    <string name="preview_changed_photo">%1$s changed the photo</string>
+    <string name="preview_you_changed_photo">You changed the photo</string>
+    <string name="preview_removed_photo">%1$s removed the photo</string>
+    <string name="preview_you_removed_photo">You removed the photo</string>
+    <string name="preview_joined">%1$s joined the group</string>
+    <string name="preview_you_joined">You joined the group</string>
+    <string name="preview_joined_by_link">%1$s joined via invite link</string>
+    <string name="preview_you_joined_by_link">You joined via invite link</string>
+    <string name="preview_left">%1$s left the group</string>
+    <string name="preview_you_left">You left the group</string>
+    <!-- %2$s is the member who was added. -->
+    <string name="preview_added_member">%1$s added %2$s</string>
+    <!-- %1$s is the member who was added. -->
+    <string name="preview_you_added_member">You added %1$s</string>
+    <string name="preview_added_you">%1$s added you</string>
+    <plurals name="preview_added_members">
+        <item quantity="one">%1$s added %2$d member</item>
+        <item quantity="other">%1$s added %2$d members</item>
+    </plurals>
+    <plurals name="preview_you_added_members">
+        <item quantity="one">You added %1$d member</item>
+        <item quantity="other">You added %1$d members</item>
+    </plurals>
+    <!-- %2$s is the member who was removed. -->
+    <string name="preview_removed_member">%1$s removed %2$s</string>
+    <!-- %1$s is the member who was removed. -->
+    <string name="preview_you_removed_member">You removed %1$s</string>
+    <string name="preview_removed_you">%1$s removed you</string>
+    <string name="preview_pinned">%1$s pinned a message</string>
+    <string name="preview_you_pinned">You pinned a message</string>
+    <string name="preview_took_screenshot">%1$s took a screenshot</string>
+    <string name="preview_you_took_screenshot">You took a screenshot</string>
+    <string name="preview_call_outgoing">Outgoing call</string>
+    <string name="preview_call_incoming">Incoming call</string>
+    <string name="preview_call_missed">Missed call</string>
+    <string name="preview_call_cancelled">Cancelled call</string>
+    <string name="preview_call_declined">Declined call</string>
+    <string name="preview_video_call_outgoing">Outgoing video call</string>
+    <string name="preview_video_call_incoming">Incoming video call</string>
+    <string name="preview_video_call_missed">Missed video call</string>
+    <string name="preview_video_call_cancelled">Cancelled video call</string>
+    <string name="preview_video_call_declined">Declined video call</string>
+    <string name="preview_upgraded">The group was upgraded to a supergroup</string>
+    <string name="preview_auto_delete_on">Auto-delete turned on</string>
+    <string name="preview_auto_delete_off">Auto-delete turned off</string>
+    <!-- One of the user's contacts created a Telegram account. -->
+    <string name="preview_contact_registered">%1$s joined Telegram</string>
+    <string name="preview_video_chat_scheduled">Video chat scheduled</string>
+    <string name="preview_video_chat_started">Video chat started</string>
+    <string name="preview_video_chat_ended">Video chat ended</string>
+    <string name="preview_invited_to_video_chat">%1$s invited members to the video chat</string>
+    <string name="preview_you_invited_to_video_chat">You invited members to the video chat</string>
+
+    <!-- What someone in a private chat is doing right now (ChatActionText.kt), in place of the last message. -->
+    <string name="action_typing">typing…</string>
+    <string name="action_recording_voice">recording a voice message…</string>
+    <string name="action_sending_voice">sending a voice message…</string>
+    <string name="action_recording_video">recording a video…</string>
+    <string name="action_sending_video">sending a video…</string>
+    <string name="action_recording_video_message">recording a video message…</string>
+    <string name="action_sending_video_message">sending a video message…</string>
+    <string name="action_sending_photo">sending a photo…</string>
+    <string name="action_sending_file">sending a file…</string>
+    <string name="action_choosing_sticker">choosing a sticker…</string>
+    <string name="action_choosing_location">choosing a location…</string>
+    <string name="action_choosing_contact">choosing a contact…</string>
+    <string name="action_playing_game">playing a game…</string>
+    <!-- %1$s is an animated emoji the other user tapped. -->
+    <string name="action_watching_animation">watching %1$s…</string>
+
+    <!-- The same in a group: %1$s is the first name of who is doing it. -->
+    <string name="named_action_typing">%1$s is typing…</string>
+    <string name="named_action_recording_voice">%1$s is recording a voice message…</string>
+    <string name="named_action_sending_voice">%1$s is sending a voice message…</string>
+    <string name="named_action_recording_video">%1$s is recording a video…</string>
+    <string name="named_action_sending_video">%1$s is sending a video…</string>
+    <string name="named_action_recording_video_message">%1$s is recording a video message…</string>
+    <string name="named_action_sending_video_message">%1$s is sending a video message…</string>
+    <string name="named_action_sending_photo">%1$s is sending a photo…</string>
+    <string name="named_action_sending_file">%1$s is sending a file…</string>
+    <string name="named_action_choosing_sticker">%1$s is choosing a sticker…</string>
+    <string name="named_action_choosing_location">%1$s is choosing a location…</string>
+    <string name="named_action_choosing_contact">%1$s is choosing a contact…</string>
+    <string name="named_action_playing_game">%1$s is playing a game…</string>
+    <!-- %2$s is an animated emoji the user tapped. -->
+    <string name="named_action_watching_animation">%1$s is watching %2$s…</string>
+    <string name="typing_two">%1$s and %2$s are typing…</string>
+    <plurals name="typing_many">
+        <item quantity="one">%d person is typing…</item>
+        <item quantity="other">%d people are typing…</item>
+    </plurals>
 </resources>

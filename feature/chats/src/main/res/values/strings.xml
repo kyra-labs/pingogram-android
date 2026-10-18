@@ -1,7 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="chats_placeholder_title">No chats yet</string>
-    <string name="chats_placeholder_body">Your conversations arrive in an upcoming release and will show up here.</string>
+    <!-- Chat list (ChatListScreen) -->
+    <string name="chat_list_title" translatable="false">Pingogram</string>
+    <!-- The connection pill under the title while not connected. -->
+    <string name="chat_list_waiting_for_network">Waiting for network…</string>
+    <string name="chat_list_connecting_to_proxy">Connecting to proxy…</string>
+    <string name="chat_list_connecting">Connecting…</string>
+    <string name="chat_list_updating">Updating…</string>
+    <!-- The folder tab of the main chat list. -->
+    <string name="chat_list_all_chats">All chats</string>
+    <string name="chat_list_empty_title">No chats yet</string>
+    <string name="chat_list_empty_body">When you start a conversation or join a group, it shows up here.</string>
+    <string name="chat_list_folder_empty_title">No chats in this folder</string>
+    <string name="chat_list_folder_empty_body">Chats that belong to this folder show up here.</string>
+    <string name="chat_list_error_title">Your chats couldn\'t be loaded</string>
+    <string name="chat_list_retry">Try again</string>
+
+    <!-- Rows of the chat list (ChatListItem) -->
+    <!-- Before the preview of a message in a group: %1$s is "You" or the sender's first name. -->
+    <string name="chat_list_sender">%1$s:</string>
+    <!-- Before the preview of a message the user started and did not send. -->
+    <string name="chat_list_draft">Draft:</string>
+    <!-- Warning badges after the name of a chat that many users reported. -->
+    <string name="chat_list_badge_scam">Scam</string>
+    <string name="chat_list_badge_fake">Fake</string>
+    <!-- An unread count in a badge. -->
+    <string name="chat_list_unread_count">%1$d</string>
+    <!-- An unread count above the badge's limit: %1$d is the limit, 999. -->
+    <string name="chat_list_unread_overflow">%1$d+</string>
+
+    <!-- What screen readers say for a row, after the chat's name. -->
+    <string name="chat_list_a11y_verified">Verified</string>
+    <string name="chat_list_a11y_secret">Secret chat</string>
+    <string name="chat_list_a11y_online">Online</string>
+    <string name="chat_list_a11y_muted">Muted</string>
+    <string name="chat_list_a11y_pinned">Pinned</string>
+    <string name="chat_list_a11y_pending">Sending</string>
+    <string name="chat_list_a11y_failed">Not sent</string>
+    <string name="chat_list_a11y_sent">Sent</string>
+    <string name="chat_list_a11y_read">Read</string>
+    <string name="chat_list_a11y_marked_unread">Marked as unread</string>
+    <string name="chat_list_a11y_mention">Unread mention</string>
+    <string name="chat_list_a11y_reaction">Unread reaction</string>
+    <plurals name="chat_list_a11y_unread">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+    <!-- A folder tab for screen readers: %1$s is its name, %2$s its unread chats ("2 unread chats"). -->
+    <string name="chat_list_a11y_tab">%1$s, %2$s</string>
+    <plurals name="chat_list_a11y_unread_chats">
+        <item quantity="one">%d unread chat</item>
+        <item quantity="other">%d unread chats</item>
+    </plurals>
 
     <!-- Global search, until it lands with the chat list -->
     <string name="search_title">Search</string>

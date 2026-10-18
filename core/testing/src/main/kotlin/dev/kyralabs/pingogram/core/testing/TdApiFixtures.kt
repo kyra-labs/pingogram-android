@@ -591,7 +591,10 @@ object TdApiFixtures {
     )
 
     /** The folders in order, with the main list first. */
-    fun updateChatFolders(vararg folders: TdApi.ChatFolderInfo) = TdApi.UpdateChatFolders(arrayOf(*folders), 0, false)
+    fun updateChatFolders(
+        vararg folders: TdApi.ChatFolderInfo,
+        mainChatListPosition: Int = 0,
+    ) = TdApi.UpdateChatFolders(arrayOf(*folders), mainChatListPosition, false)
 
     fun updateUnreadChatCount(
         list: TdApi.ChatList = TdApi.ChatListMain(),

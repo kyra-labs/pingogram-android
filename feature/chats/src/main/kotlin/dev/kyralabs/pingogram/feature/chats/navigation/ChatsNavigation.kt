@@ -4,12 +4,12 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
-import dev.kyralabs.pingogram.feature.chats.ui.ChatsScreen
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchScreen
 
-/** Adds the Chats tab, [ChatsRoute], to the graph. */
+/** Adds the Chats tab, [ChatsRoute]: the chat list. */
 fun NavGraphBuilder.chatsScreen() {
-    composable<ChatsRoute> { ChatsScreen() }
+    composable<ChatsRoute> { ChatListRoute() }
 }
 
 /** Adds global search, [SearchRoute], to the graph; [onBack] leaves it. */
