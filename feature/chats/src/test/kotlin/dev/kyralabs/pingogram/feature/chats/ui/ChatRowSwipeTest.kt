@@ -96,6 +96,7 @@ class ChatRowSwipeTest {
             Screen(applyActions = false, listState = listState) { scope.launch { listState.scrollToItem(LAST_ROW) } }
         }
 
+        val resting = row(ADA).fetchSemanticsNode().boundsInRoot.left
         row(ADA).performTouchInput { swipeLeft() }
         composeRule.waitForIdle()
         // Like Undo, the chat comes back.
@@ -103,7 +104,7 @@ class ChatRowSwipeTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(ChatListEvent.RowAction(ADA_ID, ChatRowAction.Archive)), actions)
-        assertEquals(0f, row(ADA).fetchSemanticsNode().boundsInRoot.left)
+        assertEquals(resting, row(ADA).fetchSemanticsNode().boundsInRoot.left)
     }
 
     private fun setScreen() = composeRule.setContent { Screen(applyActions = true) }

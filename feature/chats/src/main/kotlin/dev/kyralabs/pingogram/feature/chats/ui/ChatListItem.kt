@@ -3,8 +3,13 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -25,6 +30,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -44,11 +50,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
  * count included ([rowDescription], `docs/DESIGN_SYSTEM.md` §9). No fixed heights, so it grows with the font scale.
  *
- * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row takes the list item's selected container
- * (`secondaryContainer`) and its avatar morphs into a check. The colors come from the clickable list item's own
+ * The row's container sits in from its place in the list ([rowInsets]), while its content keeps the list item's
+ * padding ([insetContentPadding]): at rest nothing shows it, but a pressed, selected or open row stands apart from the
+ * edges of the list's sheet and from the rows around it (`docs/DESIGN_SYSTEM.md` §4, §6).
+ *
+ * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row turns into a pill (full corners) in the list item's selected
+ * container (`secondaryContainer`) and its avatar morphs into a check. The list item morphs its shape on the motion
+ * scheme's fast spatial spring and animates its container color. The colors come from the clickable list item's own
  * selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
- * variants on entering selection mode would recreate the rows and skip the avatar's morph. The list item animates the
- * container color.
+ * variants on entering selection mode would recreate the rows and skip the morphs.
  *
  * Open ([open]), its conversation showing beside the list on expanded windows, the row takes the same selected
  * container, in the list item's selected shape (`large` corners, where resting rows have `extraSmall` ones), and keeps
@@ -77,32 +87,65 @@ internal fun ChatListItem(
     val trailing = @Composable { ChatMeta(item) }
     val supporting = @Composable { ChatPreviewText(preview) }
     val headline = @Composable { ChatTitle(item, title) }
+    val insets = rowInsets()
+    val contentPadding = insetContentPadding(insets)
     if (onClick != null) {
         ListItem(
             onClick = onClick,
             modifier =
-                modifier.semantics {
-                    contentDescription = description
-                    if (open) this.selected = true
-                },
+                modifier
+                    .padding(insets)
+                    .semantics {
+                        contentDescription = description
+                        if (open) this.selected = true
+                    },
             leadingContent = leading,
             trailingContent = trailing,
             supportingContent = supporting,
             onLongClick = onLongClick,
             onLongClickLabel = onLongClickLabel,
-            shapes = listItemShapes(open),
+            shapes = listItemShapes(selected = selected, open = open),
             colors = listItemColors(selected || open),
+            contentPadding = contentPadding,
             content = headline,
         )
     } else {
         ListItem(
-            modifier = modifier.semantics(mergeDescendants = true) { contentDescription = description },
+            modifier =
+                modifier
+                    .padding(insets)
+                    .semantics(mergeDescendants = true) { contentDescription = description },
             leadingContent = leading,
             trailingContent = trailing,
             supportingContent = supporting,
+            contentPadding = contentPadding,
             content = headline,
         )
     }
+}
+
+/**
+ * How far a row's container sits in from its place in the list: [MaterialTheme.spacing]'s small step from the sides of
+ * the sheet, and half of Material's gap between segmented list items from the rows above and below, so the containers
+ * of two selected rows stay that gap apart.
+ */
+@Composable
+internal fun rowInsets(): PaddingValues =
+    PaddingValues(horizontal = MaterialTheme.spacing.small, vertical = ListItemDefaults.SegmentedGap / 2)
+
+/**
+ * The list item's content padding less [insets]: a row padded by [insets] keeps its content where the list item puts it
+ * without them.
+ */
+internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
+    val padding = ListItemDefaults.ContentPadding
+    val direction = LayoutDirection.Ltr
+    return PaddingValues(
+        start = padding.calculateStartPadding(direction) - insets.calculateStartPadding(direction),
+        top = padding.calculateTopPadding() - insets.calculateTopPadding(),
+        end = padding.calculateEndPadding(direction) - insets.calculateEndPadding(direction),
+        bottom = padding.calculateBottomPadding() - insets.calculateBottomPadding(),
+    )
 }
 
 /** The list item's colors, or its selected colors in place of its resting ones. */
@@ -119,11 +162,18 @@ private fun listItemColors(selected: Boolean): ListItemColors {
     )
 }
 
-/** The list item's shapes, or its selected shape in place of its resting one. */
+/** The list item's shapes, with a pill ([selected]) or its selected shape ([open]) in place of its resting one. */
 @Composable
-private fun listItemShapes(selected: Boolean): ListItemShapes {
+private fun listItemShapes(
+    selected: Boolean,
+    open: Boolean,
+): ListItemShapes {
     val shapes = ListItemDefaults.shapes()
-    return if (selected) shapes.copy(shape = shapes.selectedShape) else shapes
+    return when {
+        selected -> shapes.copy(shape = CircleShape)
+        open -> shapes.copy(shape = shapes.selectedShape)
+        else -> shapes
+    }
 }
 
 /** Decorative: the row's description names the chat, and its semantics say whether it is selected. */
