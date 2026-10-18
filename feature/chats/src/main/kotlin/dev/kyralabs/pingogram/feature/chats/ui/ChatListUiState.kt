@@ -97,6 +97,7 @@ sealed interface FolderTab {
  * @property photo the avatar's photo; null shows the placeholder.
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
+ * @property isSavedMessages the current user's own chat, Saved Messages.
  * @property isOnline a private or secret chat whose user is online now (not bots, not the current user).
  * @property isSecret an end-to-end encrypted chat, shown with a lock.
  * @property isPinned pinned in the list shown.
@@ -116,6 +117,7 @@ data class ChatListItemModel(
     val title: UiText,
     val photo: ProfilePhoto?,
     @param:DrawableRes val placeholderIcon: Int?,
+    val isSavedMessages: Boolean,
     val isOnline: Boolean,
     val badge: TitleBadge?,
     val isSecret: Boolean,

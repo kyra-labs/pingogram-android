@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -209,7 +210,7 @@ private fun MessageList(
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(MESSAGE_LIST_TEST_TAG),
         state = listState,
         contentPadding =
             PaddingValues(
@@ -443,6 +444,10 @@ private const val SERVICE = "service"
 private const val DATE = "date"
 private const val UNREAD = "unread"
 private const val OLDER_KEY = "older"
+
+// The conversation scroll benchmark and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list by
+// this tag, which `MainActivity` shows as a resource id.
+private const val MESSAGE_LIST_TEST_TAG = "message_list"
 
 @PingogramPreviews
 @Composable
