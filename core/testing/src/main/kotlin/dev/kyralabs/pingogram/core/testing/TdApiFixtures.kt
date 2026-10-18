@@ -449,4 +449,77 @@ object TdApiFixtures {
 
     /** The service message for users added to a group; a user who joins by themselves adds only their own id. */
     fun messageChatAddMembers(vararg memberUserIds: Long) = TdApi.MessageChatAddMembers(memberUserIds)
+
+    // Chat history: getChatHistory answers and the updates of messages.
+
+    /** A list of messages as getChatHistory answers it, newest first; td_api.tl allows null entries. */
+    fun messages(vararg messages: TdApi.Message?) = TdApi.Messages(messages.size, arrayOf(*messages))
+
+    /** A message being sent: it has a temporary id until updateMessageSendSucceeded or updateMessageSendFailed. */
+    fun pendingState() = TdApi.MessageSendingStatePending(0)
+
+    fun failedState(
+        error: TdApi.Error = error(),
+        canRetry: Boolean = false,
+    ) = TdApi.MessageSendingStateFailed(error, canRetry, false, false, false, 0, 0.0)
+
+    fun updateNewMessage(message: TdApi.Message) = TdApi.UpdateNewMessage(message)
+
+    fun updateMessageSendSucceeded(
+        message: TdApi.Message,
+        oldMessageId: Long,
+    ) = TdApi.UpdateMessageSendSucceeded(message, oldMessageId)
+
+    /** [message] carries the failed sending state and its new id. */
+    fun updateMessageSendFailed(
+        message: TdApi.Message,
+        oldMessageId: Long,
+        error: TdApi.Error = error(),
+    ) = TdApi.UpdateMessageSendFailed(message, oldMessageId, error)
+
+    fun updateMessageContent(
+        chatId: Long,
+        messageId: Long,
+        content: TdApi.MessageContent,
+    ) = TdApi.UpdateMessageContent(chatId, messageId, content)
+
+    fun updateMessageEdited(
+        chatId: Long,
+        messageId: Long,
+        editDate: Int,
+    ) = TdApi.UpdateMessageEdited(chatId, messageId, editDate, null)
+
+    fun updateMessageIsPinned(
+        chatId: Long,
+        messageId: Long,
+        isPinned: Boolean,
+    ) = TdApi.UpdateMessageIsPinned(chatId, messageId, isPinned)
+
+    fun updateMessageInteractionInfo(
+        chatId: Long,
+        messageId: Long,
+        interactionInfo: TdApi.MessageInteractionInfo?,
+    ) = TdApi.UpdateMessageInteractionInfo(chatId, messageId, interactionInfo)
+
+    fun updateMessageContentOpened(
+        chatId: Long,
+        messageId: Long,
+    ) = TdApi.UpdateMessageContentOpened(chatId, messageId)
+
+    fun updateMessageMentionRead(
+        chatId: Long,
+        messageId: Long,
+        unreadMentionCount: Int = 0,
+    ) = TdApi.UpdateMessageMentionRead(chatId, messageId, unreadMentionCount)
+
+    /**
+     * Messages deleted for good by default. Not [isPermanent]: they became inaccessible. [fromCache]: TDLib only
+     * unloaded them from memory.
+     */
+    fun updateDeleteMessages(
+        chatId: Long,
+        vararg messageIds: Long,
+        isPermanent: Boolean = true,
+        fromCache: Boolean = false,
+    ) = TdApi.UpdateDeleteMessages(chatId, messageIds, isPermanent, fromCache)
 }

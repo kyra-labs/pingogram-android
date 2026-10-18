@@ -9,12 +9,14 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 
 /**
@@ -46,4 +48,11 @@ interface RepositoryModule {
     @Binds
     @IntoSet
     fun fileCache(repository: TdlibFileRepository): TdlibUpdateCache
+
+    @Binds
+    fun messageRepository(repository: TdlibMessageRepository): MessageRepository
+
+    @Binds
+    @IntoSet
+    fun messageCache(repository: TdlibMessageRepository): TdlibUpdateCache
 }
