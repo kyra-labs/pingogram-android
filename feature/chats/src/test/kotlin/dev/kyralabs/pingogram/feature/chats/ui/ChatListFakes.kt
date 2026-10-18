@@ -138,6 +138,10 @@ class FakeChatRepository : ChatRepository {
         chatId: Long,
         forEveryone: Boolean,
     ): Outcome<Unit> = record(ChatCall.DeleteChat(chatId, forEveryone))
+
+    override suspend fun openChat(chatId: Long): Outcome<Unit> = unused()
+
+    override suspend fun closeChat(chatId: Long): Outcome<Unit> = unused()
 }
 
 /** An action [FakeChatRepository] was asked for. */

@@ -333,6 +333,40 @@ class TdlibChatRepositoryActionsTest {
             assertEquals(emptyList<String>(), sent())
         }
 
+    // openChat and closeChat
+
+    @Test
+    fun `openChat tells TDLib that the chat is open`() =
+        runTest {
+            client.on(TdApi.OpenChat::class, ok())
+
+            val result = repository().openChat(CHAT_ID)
+
+            assertEquals(listOf(CHAT_ID), client.sentOf<TdApi.OpenChat>().map { it.chatId })
+            assertEquals(Outcome.Success(Unit), result)
+        }
+
+    @Test
+    fun `closeChat tells TDLib that the chat is closed`() =
+        runTest {
+            client.on(TdApi.CloseChat::class, ok())
+
+            val result = repository().closeChat(CHAT_ID)
+
+            assertEquals(listOf(CHAT_ID), client.sentOf<TdApi.CloseChat>().map { it.chatId })
+            assertEquals(Outcome.Success(Unit), result)
+        }
+
+    @Test
+    fun `openChat reports an unknown chat as NotFound`() =
+        runTest {
+            client.on(TdApi.OpenChat::class, failure(TdApi.Error(400, "Chat not found")))
+
+            val result = repository().openChat(CHAT_ID)
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), result)
+        }
+
     private companion object {
         const val CHAT_ID = 100L
         const val LAST_MESSAGE_ID = 7L shl 20
