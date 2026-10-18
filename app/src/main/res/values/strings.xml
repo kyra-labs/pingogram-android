@@ -8,4 +8,8 @@
     <string name="nav_settings">Settings</string>
     <!-- The search button next to the navigation bar and at the top of the rail -->
     <string name="nav_search">Search</string>
+
+    <!-- The conversation pane beside the chat list on large screens, while no chat is open -->
+    <string name="chats_no_chat_selected_title">Select a chat to start reading</string>
+    <string name="chats_no_chat_selected_body">Its messages show here, beside your chats.</string>
 </resources>
