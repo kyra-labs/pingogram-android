@@ -97,13 +97,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
  *   view, and scrolls back to it.
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
+ *
+ * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatScreen(
     state: ChatUiState,
     onEvent: (ChatEvent) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },

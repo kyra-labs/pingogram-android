@@ -3,7 +3,9 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
@@ -26,7 +28,6 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
-import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import kotlinx.collections.immutable.ImmutableMap
@@ -62,7 +63,6 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
-import javax.inject.Inject
 
 /**
  * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C3, FR-C8), read-only for now, as [uiState]. Events come
@@ -95,11 +95,12 @@ import javax.inject.Inject
  * - **Effects** ([effects]): errors, opening a location in a maps app, and the note that opening files comes later.
  *
  * It takes one repository per kind of data the screen combines, plus the clock, dispatcher, language and time
- * patterns that tests replace, hence `LongParameterList` is suppressed. Hilt reads [chatId] from the route.
+ * patterns that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the detail
+ * pane of the Chats tab create it with their [chatId] through [Factory].
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
+@HiltViewModel(assistedFactory = ChatViewModel.Factory::class)
 class ChatViewModel internal constructor(
     private val chatId: Long,
     private val savedStateHandle: SavedStateHandle,
@@ -114,8 +115,9 @@ class ChatViewModel internal constructor(
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
 ) : ViewModel() {
-    @Inject
+    @AssistedInject
     constructor(
+        @Assisted chatId: Long,
         savedStateHandle: SavedStateHandle,
         chatRepository: ChatRepository,
         messageRepository: MessageRepository,
@@ -127,7 +129,7 @@ class ChatViewModel internal constructor(
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
     ) : this(
-        savedStateHandle.toRoute<ChatRoute>().chatId,
+        chatId,
         savedStateHandle,
         chatRepository,
         messageRepository,
@@ -140,6 +142,12 @@ class ChatViewModel internal constructor(
         dispatcher,
         Locale::getDefault,
     )
+
+    /** Creates the view model of chat `chatId`'s conversation. */
+    @AssistedFactory
+    interface Factory {
+        fun create(chatId: Long): ChatViewModel
+    }
 
     /** Each retry of finding the chat starts it again. */
     private val chatAttempts = MutableStateFlow(0)

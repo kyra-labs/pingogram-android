@@ -30,8 +30,9 @@ import dev.kyralabs.pingogram.feature.chats.R as ChatsR
 
 /**
  * The signed-in shell on the Chats tab: the floating navigation bar on a compact phone, also narrow and at 200% font
- * scale, and a collapsed wide navigation rail on an expanded window (`docs/TESTING.md`). The chat list runs its real
- * view model and repositories on a [FakeTdlibClient] bound with Hilt, with no chats.
+ * scale, and a collapsed wide navigation rail on an expanded window, beside the tab's list and empty detail panes
+ * (`docs/TESTING.md`; [ChatsListDetailScreenshotTest] has them with chats). The chat list runs its real view model and
+ * repositories on a [FakeTdlibClient] bound with Hilt, with no chats.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class)

@@ -75,7 +75,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   nested `ChatRoute(chatId, messageId?)`, `ProfileRoute(userId)`, etc.
 - Adaptive: on `WindowWidthSizeClass.Expanded` the Chats tab uses `ListDetailPaneScaffold`
   (`material3-adaptive`) so list + conversation show side by side; the same `ChatScreen`
-  composable is reused in the detail pane.
+  composable is reused in the detail pane. `:app` composes it (`ChatsListDetail`, a
+  `NavigableListDetailPaneScaffold`) from `feature:chats`' `ChatListPane` and `feature:chat`'s
+  `ChatPane`; the navigator holds the open chat. With one pane (compact, medium) a tap still pushes
+  `ChatRoute`, and the archive pushes it on every window.
 - Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection

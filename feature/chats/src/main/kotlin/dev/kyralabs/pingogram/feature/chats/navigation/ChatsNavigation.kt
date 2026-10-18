@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
@@ -10,14 +12,19 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchScreen
 
 /**
- * Adds the Chats tab, [ChatsRoute]: the chat list, whose archive row calls [onOpenArchive] and whose rows call
- * [onOpenChat] with their chat's id.
+ * The chat list of the Chats tab, [ChatsRoute], whose destination `:app` lays out: the list pane of a list-detail
+ * layout beside the conversation of [openChatId] on expanded windows, the whole screen otherwise
+ * (`docs/ARCHITECTURE.md`, Navigation). Its archive row calls [onOpenArchive], and its rows call [onOpenChat] with
+ * their chat's id; [openChatId]'s row looks and reads as selected.
  */
-fun NavGraphBuilder.chatsScreen(
+@Composable
+fun ChatListPane(
     onOpenArchive: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    modifier: Modifier = Modifier,
+    openChatId: Long? = null,
 ) {
-    composable<ChatsRoute> { ChatListRoute(onOpenArchive = onOpenArchive, onOpenChat = onOpenChat) }
+    ChatListRoute(onOpenArchive = onOpenArchive, onOpenChat = onOpenChat, modifier = modifier, openChatId = openChatId)
 }
 
 /** Adds the archived chats, [ArchiveRoute], to the graph; [onBack] leaves them, and a row calls [onOpenChat]. */

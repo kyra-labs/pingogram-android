@@ -15,20 +15,22 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
-import dev.kyralabs.pingogram.feature.chats.navigation.chatsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
+import dev.kyralabs.pingogram.ui.ChatsListDetail
 
 /**
  * The app's single `NavHost`: the login flow ([AuthRoute]) and the signed-in app ([MainGraph]). [uiState] (signed in
@@ -66,10 +68,13 @@ internal fun PingogramNavHost(
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
-        chatsScreen(
-            onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
-            onOpenChat = openChat,
-        )
+        // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
+        composable<ChatsRoute> {
+            ChatsListDetail(
+                onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
+                onOpenChat = openChat,
+            )
+        }
         contactsScreen()
         settingsScreen()
         searchScreen(onBack = { navController.popBackStack() })

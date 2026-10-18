@@ -32,7 +32,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The conversation's small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6): back, then the chat's avatar and a two-line
  * title, its name in `titleMedium` over the subtitle in `bodySmall`: `onSurfaceVariant`, or `primary` while someone
  * is typing. No actions yet, and the title does not open the profile yet (M4). Messages always scroll beneath it, so
- * it has the scrolled container color, `surfaceContainer`.
+ * it has the scrolled container color, `surfaceContainer`. Without [onBack] there is no back button: in the detail
+ * pane beside the chat list, which has nothing to go back to.
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
@@ -41,7 +42,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 @Composable
 internal fun ChatTopBar(
     header: ChatHeader?,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -49,11 +50,13 @@ internal fun ChatTopBar(
         title = { header?.let { ChatTitle(it) } },
         modifier = modifier,
         navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_arrow_back),
-                    contentDescription = stringResource(R.string.chat_back),
-                )
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        painter = painterResource(UiR.drawable.ic_arrow_back),
+                        contentDescription = stringResource(R.string.chat_back),
+                    )
+                }
             }
         },
         expandedHeight = titleHeight(),

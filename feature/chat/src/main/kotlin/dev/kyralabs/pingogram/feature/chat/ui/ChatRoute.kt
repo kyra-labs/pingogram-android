@@ -25,18 +25,21 @@ import java.net.URLEncoder
 import java.util.Locale
 
 /**
- * The conversation screen, pushed above the Chats tab: hoists its [ChatViewModel], and tells it when the screen is
- * started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md` §3). The effect follows the
- * screen's lifecycle rather than the view model's: the screen stops when another screen covers it or the app goes to
- * the background, and stops and disposes when it is left. A rotation stops and starts it again with the same view
- * model, so the chat ends up open. [onBack] leaves it. The view model's [ChatEffect]s show snackbars or open a
+ * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane: hoists its [ChatViewModel], and
+ * tells it when the screen is started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md`
+ * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
+ * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
+ * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
+ * ends up open. [onBack] leaves it; null shows no back button. The view model's [ChatEffect]s show snackbars or open a
  * location in a maps app.
  */
 @Composable
 internal fun ChatRoute(
-    onBack: () -> Unit,
+    chatId: Long,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    viewModel: ChatViewModel = hiltViewModel(),
+    viewModel: ChatViewModel =
+        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
