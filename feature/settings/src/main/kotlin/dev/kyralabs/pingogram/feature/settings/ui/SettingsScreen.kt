@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -98,6 +99,8 @@ internal fun SettingsScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // The floating navigation bar covers the bottom of top-level screens.
+        contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
         Column(
             modifier =

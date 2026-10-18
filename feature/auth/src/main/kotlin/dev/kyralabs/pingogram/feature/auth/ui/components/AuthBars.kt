@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Back navigation ([onBack], null when back leaves the flow) and, while not connected, the connection status as the
@@ -66,7 +67,7 @@ internal fun AuthTopBar(
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
+                        painter = painterResource(UiR.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.auth_back),
                     )
                 }

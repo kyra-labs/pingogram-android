@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.chatsScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 
@@ -53,16 +54,17 @@ internal fun PingogramNavHost(
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then. Navigating
         // here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph()
+        mainGraph(navController)
     }
     SessionNavigationEffect(navController, uiState)
 }
 
-private fun NavGraphBuilder.mainGraph() {
+private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         chatsScreen()
         contactsScreen()
         settingsScreen()
+        searchScreen(onBack = { navController.popBackStack() })
     }
 }
 

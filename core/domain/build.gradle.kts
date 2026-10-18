@@ -5,4 +5,6 @@ plugins {
 
 dependencies {
     api(projects.core.common)
+    // Models hold ImmutableList/ImmutableMap, so repositories emit immutable snapshots (docs/PERFORMANCE.md §3–4).
+    api(libs.kotlinx.collections.immutable)
 }

@@ -106,7 +106,8 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-L5 Must: Pull-to-refresh is *not* needed (TDLib pushes updates) — show a subtle connection
   state pill ("Connecting…", "Updating…", "Waiting for network") in the app bar instead.
 - FR-L6 Must: Search (global): chats, contacts, messages, via `searchChats`, `searchMessages`,
-  with recent searches, using M3 search bar (docked → expanded).
+  with recent searches, using the M3 search bar, opened from the search button beside the floating
+  navigation bar (the rail's button on larger windows; `docs/DESIGN_SYSTEM.md` §6.1).
 - FR-L7 Must: FAB → new message / new group / new channel / new contact as an **FAB menu**.
 - FR-L8 Should: Selection mode (long-press) with bulk actions in a **floating toolbar**.
 - FR-L9 Should: Archived chats screen with the same list component.

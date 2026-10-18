@@ -20,3 +20,10 @@ data object ContactsRoute
 /** Settings, `:feature:settings`. */
 @Serializable
 data object SettingsRoute
+
+/**
+ * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
+ * button of the navigation bar or rail.
+ */
+@Serializable
+data object SearchRoute

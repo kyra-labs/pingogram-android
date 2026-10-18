@@ -34,6 +34,10 @@ internal enum class TopLevelDestination(
     }
 }
 
+/** The tab this destination is, or null for any other destination, e.g. one pushed on top of a tab. */
+internal fun NavDestination?.topLevelDestination(): TopLevelDestination? =
+    TopLevelDestination.entries.firstOrNull { this?.hasRoute(it.route::class) == true }
+
 /** Whether this destination is [destination] or nested inside it. */
 internal fun NavDestination?.isInHierarchy(destination: TopLevelDestination): Boolean =
     this?.hierarchy?.any { it.hasRoute(destination.route::class) } == true
