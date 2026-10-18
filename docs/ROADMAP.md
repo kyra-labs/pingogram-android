@@ -41,7 +41,7 @@ the release workflow so the owner can install and test on a phone.
 - [x] Conversation: paginated history, date headers, bubbles with entities, read status,
       replies/forwards, photos/videos/GIFs/stickers (static)/voice (playback)/documents/polls
       (view)/service messages, reactions display, link previews
-- [ ] Media viewer with shared-element transition
+- [x] Media viewer with shared-element transition
 - [x] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
 - [ ] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated
 

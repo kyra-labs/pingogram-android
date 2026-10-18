@@ -32,6 +32,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   with "N of total" at the top; pinch or double-tap to zoom and drag to pan; videos play with play/pause and
   a seek slider, GIFs loop silently. The sender, date and caption show over the media; tap to hide them
   along with the system bars. Swipe down or go back to close. The viewer is always dark, like a photo app.
+- Photos, videos and GIFs grow out of their bubble into the media viewer and shrink back into it when you close
+  it. The viewer can share what it shows with another app or save it to Pictures/Pingogram or Movies/Pingogram,
+  unless the chat protects its content; on Android 8 and 9 saving first asks for storage access, with the reason.
+  Tapping a downloaded document opens it in an app that can view it.
 - On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
