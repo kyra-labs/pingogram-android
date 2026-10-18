@@ -7,6 +7,18 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
     override val values: Sequence<ChatUiState> =
         with(ChatPreviewData) {
-            sequenceOf(privateChat, groupChat, channel, serviceMessages, formattedText, loading, empty, error, notFound)
+            sequenceOf(
+                privateChat,
+                groupChat,
+                channel,
+                serviceMessages,
+                formattedText,
+                mediaPhotos,
+                mediaFiles,
+                loading,
+                empty,
+                error,
+                notFound,
+            )
         }
 }

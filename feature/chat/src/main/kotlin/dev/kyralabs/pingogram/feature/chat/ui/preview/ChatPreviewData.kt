@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Photo
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -15,20 +17,24 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.GroupPosition
 import dev.kyralabs.pingogram.feature.chat.ui.LinkPreviewCard
+import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
+import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Sample conversations for previews and screenshot tests: a private chat with grouping, every outgoing state and the
  * unread divider; a group with sender names, avatars, replies, forwards, reactions and a link preview; a channel;
- * service messages; a message with every kind of formatting; and the loading, empty, error and not-found states.
+ * service messages; a message with every kind of formatting; media of every frame (photos, an album, a sticker, a
+ * voice message, a document, a poll, a venue); and the loading, empty, error and not-found states.
  * Items are listed newest first, as the reverse layout shows them.
  */
 internal object ChatPreviewData {
@@ -323,6 +329,112 @@ internal object ChatPreviewData {
             )
         }
 
+    private val ada = UiText.Plain("Ada")
+    private val albumItems = ContentPreviewData.album(count = 4, minithumbnail = null)
+
+    /** Photos: one without a caption, one with, and an album of four, edge to edge in their bubbles. */
+    val mediaPhotos =
+        ChatUiState(
+            header = privateChat.header,
+            content =
+                content(
+                    bubble(
+                        53,
+                        "",
+                        time = "9:44 AM",
+                        sender = ada,
+                        senderId = ADA,
+                        content = albumItems.first(),
+                        contentLabel = UiText.plural(R.plurals.content_album_media, albumItems.size, albumItems.size),
+                        album = MessageAlbum(id = 77, messageIds = (50L..53L).toList().toImmutableList(), albumItems),
+                    ),
+                    bubble(
+                        49,
+                        "Sunset from the ferry 🌅",
+                        time = "9:41 AM",
+                        isOutgoing = true,
+                        status = OutgoingStatus.Read,
+                        content =
+                            ContentPreviewData
+                                .photo(minithumbnail = null, width = PORTRAIT_WIDTH, height = PORTRAIT_HEIGHT)
+                                .copy(caption = FormattedText("Sunset from the ferry 🌅", persistentListOf())),
+                        contentLabel = UiText.resource(UiR.string.preview_photo),
+                    ),
+                    bubble(
+                        48,
+                        "",
+                        time = "9:40 AM",
+                        sender = ada,
+                        senderId = ADA,
+                        content = ContentPreviewData.photo(minithumbnail = null, firstFileId = SECOND_PHOTO_FILE_ID),
+                        contentLabel = UiText.resource(UiR.string.preview_photo),
+                    ),
+                    ChatItem.DateSeparator(epochDay = 2, date = today),
+                ),
+        )
+
+    private val sampleDocument = ContentPreviewData.document("photos-from-the-trip.zip", "application/zip")
+
+    /** A sticker, a voice message, a document as it downloads, a poll and a venue. */
+    val mediaFiles =
+        ChatUiState(
+            header = privateChat.header,
+            content =
+                content(
+                    bubble(
+                        66,
+                        "",
+                        time = "10:05 AM",
+                        isOutgoing = true,
+                        status = OutgoingStatus.Sent,
+                        content = ContentPreviewData.venue,
+                        contentLabel = UiText.resource(UiR.string.preview_location),
+                    ),
+                    bubble(
+                        65,
+                        "",
+                        time = "10:04 AM",
+                        sender = ada,
+                        senderId = ADA,
+                        content = ContentPreviewData.poll(voted = true),
+                        contentLabel = UiText.Plain("Best season?"),
+                    ),
+                    bubble(
+                        64,
+                        "",
+                        time = "10:02 AM",
+                        sender = ada,
+                        senderId = ADA,
+                        content = sampleDocument,
+                        contentLabel = UiText.Plain(sampleDocument.document.fileName),
+                    ),
+                    bubble(
+                        63,
+                        "",
+                        time = "10:01 AM",
+                        isOutgoing = true,
+                        status = OutgoingStatus.Read,
+                        content = ContentPreviewData.voiceNote(isListened = true),
+                        contentLabel = UiText.resource(UiR.string.preview_voice_message),
+                    ),
+                    bubble(
+                        62,
+                        "",
+                        time = "10:00 AM",
+                        sender = ada,
+                        senderId = ADA,
+                        content = ContentPreviewData.sticker(StickerFormat.Webp),
+                        contentLabel = UiText.resource(UiR.string.preview_sticker),
+                    ),
+                    ChatItem.DateSeparator(epochDay = 2, date = today),
+                ),
+            fileStates =
+                persistentMapOf(
+                    sampleDocument.document.file.id to
+                        FileState.Downloading(DOWNLOADED_BYTES, sampleDocument.document.file.size, isActive = true),
+                ),
+        )
+
     val loading = ChatUiState(header = privateChat.header, content = ChatContent.Loading)
 
     val empty = ChatUiState(header = privateChat.header, content = ChatContent.Empty)
@@ -330,6 +442,11 @@ internal object ChatPreviewData {
     val error = ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network))
 
     val notFound = ChatUiState(content = ChatContent.NotFound)
+
+    private const val PORTRAIT_WIDTH = 960
+    private const val PORTRAIT_HEIGHT = 1280
+    private const val SECOND_PHOTO_FILE_ID = 40
+    private const val DOWNLOADED_BYTES = 1_700_000L
 
     private const val LINK = "https://developer.android.com/compose"
     private const val LINK_TEXT = "Here's the write-up on the new lazy layouts: $LINK"
@@ -372,6 +489,7 @@ internal object ChatPreviewData {
         linkPreview: LinkPreviewCard? = null,
         reactions: ImmutableList<ReactionChip> = persistentListOf(),
         date: UiText = today,
+        album: MessageAlbum? = null,
     ): ChatItem.Bubble {
         val formatted = FormattedText(text, entities.toImmutableList())
         val showsSender = groupChat && !isOutgoing
@@ -396,6 +514,7 @@ internal object ChatPreviewData {
             linkPreview = linkPreview,
             reactions = reactions,
             date = date,
+            album = album,
         )
     }
 }

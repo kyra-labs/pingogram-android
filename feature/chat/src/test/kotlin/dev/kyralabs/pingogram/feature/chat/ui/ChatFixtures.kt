@@ -89,6 +89,7 @@ object ChatFixtures {
         replyTo: ReplyTo? = null,
         forwardInfo: ForwardInfo? = null,
         interactionInfo: InteractionInfo? = null,
+        mediaAlbumId: Long = 0,
     ) = Message(
         id = id,
         chatId = chatId,
@@ -100,7 +101,7 @@ object ChatFixtures {
         isPinned = false,
         isChannelPost = false,
         containsUnreadMention = false,
-        mediaAlbumId = 0,
+        mediaAlbumId = mediaAlbumId,
         authorSignature = "",
         viaBotUserId = 0,
         replyTo = replyTo,

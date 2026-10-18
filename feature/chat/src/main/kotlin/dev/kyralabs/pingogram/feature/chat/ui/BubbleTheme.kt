@@ -5,81 +5,62 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
+import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 
 /**
- * The colors of one side's bubbles (`docs/DESIGN_SYSTEM.md` §2.2).
- *
- * @property container the bubble: `primaryContainer` outgoing, `surfaceContainerHigh` incoming.
- * @property content its text: `onPrimaryContainer`, `onSurface`.
- * @property secondaryContent the time, "edited", "Forwarded from …" and the kind of media: `onPrimaryContainer`,
- *   `onSurfaceVariant`.
- * @property block reply quotes, link previews and reactions inside the bubble, a tone that stands out from
- *   [container]: `surfaceContainerLow` outgoing, `surfaceContainerHighest` incoming.
- * @property blockContent the text in a [block]: `onSurfaceVariant`.
- * @property text the look of entities in the bubble's text, with code and spoilers in tones of this side.
+ * How one side's bubbles look (`docs/DESIGN_SYSTEM.md` §2.2): their [colors], `core:ui`'s [BubbleColors] from
+ * `MaterialTheme.pingogramColors` (the one source of bubble colors, for the bubble and the media in it), and the look
+ * of entities in their [text], with code on the side's block tone and spoilers in its secondary content color.
  */
 @Immutable
-internal class BubbleColors(
-    val container: Color,
-    val content: Color,
-    val secondaryContent: Color,
-    val block: Color,
-    val blockContent: Color,
+internal class BubbleStyle(
+    val colors: BubbleColors,
     val text: FormattedTextStyles,
 )
 
-/** The [BubbleColors] of both sides, built once per theme for the whole list. */
+/** The [BubbleStyle] of both sides, built once per theme for the whole list. */
 @Immutable
 internal class BubbleTheme(
-    val incoming: BubbleColors,
-    val outgoing: BubbleColors,
+    val incoming: BubbleStyle,
+    val outgoing: BubbleStyle,
 ) {
-    fun colorsOf(isOutgoing: Boolean): BubbleColors = if (isOutgoing) outgoing else incoming
+    fun styleOf(isOutgoing: Boolean): BubbleStyle = if (isOutgoing) outgoing else incoming
 }
 
 @Composable
 internal fun rememberBubbleTheme(): BubbleTheme {
-    val colors = MaterialTheme.colorScheme
+    val bubbles = MaterialTheme.pingogramColors
+    val incoming = bubbles.incomingBubble
+    val outgoing = bubbles.outgoingBubble
     val incomingText =
-        rememberFormattedTextStyles(
-            codeBackground = colors.surfaceContainerHighest,
-            spoilerColor = colors.onSurfaceVariant,
-        )
+        rememberFormattedTextStyles(codeBackground = incoming.block, spoilerColor = incoming.secondaryContent)
     val outgoingText =
-        rememberFormattedTextStyles(
-            codeBackground = colors.surfaceContainerLow,
-            spoilerColor = colors.onPrimaryContainer,
-        )
-    return remember(colors, incomingText, outgoingText) {
+        rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.secondaryContent)
+    return remember(incoming, outgoing, incomingText, outgoingText) {
         BubbleTheme(
-            incoming =
-                BubbleColors(
-                    container = colors.surfaceContainerHigh,
-                    content = colors.onSurface,
-                    secondaryContent = colors.onSurfaceVariant,
-                    block = colors.surfaceContainerHighest,
-                    blockContent = colors.onSurfaceVariant,
-                    text = incomingText,
-                ),
-            outgoing =
-                BubbleColors(
-                    container = colors.primaryContainer,
-                    content = colors.onPrimaryContainer,
-                    secondaryContent = colors.onPrimaryContainer,
-                    block = colors.surfaceContainerLow,
-                    blockContent = colors.onSurfaceVariant,
-                    text = outgoingText,
-                ),
+            incoming = BubbleStyle(incoming, incomingText),
+            outgoing = BubbleStyle(outgoing, outgoingText),
         )
     }
 }
+
+/**
+ * What every bubble of the list shares: the [theme], the [texts] cache, and what tapping a link does
+ * ([onLinkClick]).
+ */
+@Stable
+internal class BubbleResources(
+    val theme: BubbleTheme,
+    val texts: AnnotatedTextCache,
+    val onLinkClick: LinkInteractionListener,
+)
 
 /**
  * The texts of the bubbles as [AnnotatedString]s (`docs/PERFORMANCE.md` §4), built in composition, where the theme's

@@ -2,9 +2,9 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,16 +22,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
@@ -40,44 +41,61 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
+import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
+import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import kotlin.math.ceil
 import kotlin.math.max
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A message in the conversation (`REQUIREMENTS.md` FR-C2, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at the
- * end for outgoing messages, at the start for incoming ones, beside the sender's avatar in group chats.
+ * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at
+ * the end for outgoing messages, at the start for incoming ones, beside the sender's avatar in group chats.
  *
- * - **Bubble**: [BubbleColors] of its side, a shape from the shape scale by its place in the group
+ * - **Bubble**: the [BubbleColors] of its side, a shape from the shape scale by its place in the group
  *   ([messageBubble]), at most [MaterialTheme.sizes]' share of the width. From top to bottom: the sender's name
  *   (first of a group in group chats), "Forwarded from …", the reply quote, the content ([MessageContentBody]), the
  *   text with its formatting, the link preview and the reactions, with the time and state of the message at the bottom
  *   end, after the last line when it fits ([TrailingMeta]).
- * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]).
- * - Everything shown is in [bubble], mapped by the ViewModel; the text is built once per message ([texts]). No
- *   effects, no fixed heights, so it grows with the font scale (`docs/PERFORMANCE.md` §4).
- *
- * @param onLinkClick opens a link of the text; the same for every bubble.
+ * - **Frames**, as the content asks:
+ *   - *Bare* content ([isBare]: stickers, animated emoji, dice, video messages) has no bubble; the time and state sit
+ *     on a `mediaOverlay` pill at its bottom end.
+ *   - *Edge-to-edge* media ([isEdgeToEdge]: photos, videos, GIFs, albums) fills a bubble as wide as itself, clipped to
+ *     the bubble's shape. A caption follows below with the usual padding and meta; without one, the meta sits on a
+ *     `mediaOverlay` pill over the media's bottom end.
+ *   - *Padded* content (everything else) sits in the bubble's padding like text.
+ * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
+ *   the content's buttons as custom actions ([contentActions]).
+ * - Everything shown is in [bubble], mapped by the ViewModel, and in [fileState], the file of a voice message, song or
+ *   document; the text is built once per message ([AnnotatedTextCache]). No effects, no fixed heights, so it grows
+ *   with the font scale (`docs/PERFORMANCE.md` §4).
  */
 @Composable
 internal fun MessageBubbleRow(
     bubble: ChatItem.Bubble,
-    theme: BubbleTheme,
-    texts: AnnotatedTextCache,
-    onLinkClick: LinkInteractionListener,
+    fileState: FileState?,
+    resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val description = bubbleDescription(bubble)
+    val actions = rememberContentActions(bubble, fileState, onEvent)
     Row(
-        modifier = modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = description },
+        modifier =
+            modifier.fillMaxWidth().clearAndSetSemantics {
+                contentDescription = description
+                if (actions.isNotEmpty()) customActions = actions
+            },
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -97,18 +115,36 @@ internal fun MessageBubbleRow(
             }
             Spacer(Modifier.width(MaterialTheme.spacing.small))
         }
-        MessageBubble(bubble, theme.colorsOf(bubble.isOutgoing), texts, onLinkClick, onEvent)
+        MessageBubble(bubble, fileState, resources, onEvent)
+    }
+}
+
+/** [contentActions] as the screen reader's custom actions, sending their events. */
+@Composable
+private fun rememberContentActions(
+    bubble: ChatItem.Bubble,
+    fileState: FileState?,
+    onEvent: (ChatEvent) -> Unit,
+): List<CustomAccessibilityAction> {
+    val resources = LocalResources.current
+    return remember(bubble, fileState, onEvent, resources) {
+        contentActions(bubble, fileState).map { action ->
+            CustomAccessibilityAction(resources.getString(action.label)) {
+                onEvent(action.event)
+                true
+            }
+        }
     }
 }
 
 @Composable
 private fun MessageBubble(
     bubble: ChatItem.Bubble,
-    colors: BubbleColors,
-    texts: AnnotatedTextCache,
-    onLinkClick: LinkInteractionListener,
+    fileState: FileState?,
+    resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
 ) {
+    val style = resources.theme.styleOf(bubble.isOutgoing)
     val shapes = MaterialTheme.shapes
     val position = bubble.position
     val shape =
@@ -116,39 +152,127 @@ private fun MessageBubble(
             shapes.messageBubble(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
         }
     val sizes = MaterialTheme.sizes
-    val spacing = MaterialTheme.spacing
-    CompositionLocalProvider(LocalContentColor provides colors.content) {
-        Column(
-            modifier =
-                Modifier
-                    .maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
-                    .background(colors.container, shape)
-                    .padding(horizontal = spacing.medium, vertical = spacing.small),
-            verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-        ) {
-            if (bubble.showsSenderName) {
-                Text(
-                    text = bubble.sender.resolve(),
-                    color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                )
+    val bubbleModifier = Modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
+    CompositionLocalProvider(LocalContentColor provides style.colors.content) {
+        when {
+            bubble.album == null && bubble.content.isBare -> {
+                BareBubble(bubble, style.colors, onEvent, bubbleModifier)
             }
-            bubble.forwardedFrom?.let { forwarded ->
-                Text(
-                    text = forwarded.resolve(),
-                    color = colors.secondaryContent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium,
-                )
+
+            bubble.album != null || bubble.content.isEdgeToEdge -> {
+                MediaBubble(bubble, style, shape, resources, onEvent, bubbleModifier)
             }
-            bubble.reply?.let { ReplyQuoteBlock(it, colors) }
-            MessageContentBody(content = bubble.content, label = bubble.contentLabel, colors = colors)
-            BubbleBody(bubble, colors, texts, onLinkClick, onEvent)
+
+            else -> {
+                Column(
+                    modifier =
+                        bubbleModifier
+                            .background(style.colors.container, shape)
+                            .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                ) {
+                    BubbleHeader(bubble, style.colors)
+                    MessageContentBody(bubble, fileState, style.colors, onEvent)
+                    BubbleBody(bubble, style, resources, onEvent)
+                }
+            }
         }
     }
+}
+
+/**
+ * Bare content: no bubble, the name, forward and reply above it, the meta on a pill over its bottom end, the
+ * reactions below.
+ */
+@Composable
+private fun BareBubble(
+    bubble: ChatItem.Bubble,
+    colors: BubbleColors,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+        horizontalAlignment = if (bubble.isOutgoing) Alignment.End else Alignment.Start,
+    ) {
+        BubbleHeader(bubble, colors)
+        Box {
+            MessageContentBody(bubble, fileState = null, colors = colors, onEvent = onEvent)
+            OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
+        }
+        if (bubble.reactions.isNotEmpty()) ReactionsRow(bubble, colors)
+    }
+}
+
+/**
+ * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape]: the name, forward and reply
+ * above it with the usual padding; below it the caption, link preview and reactions with the meta; without any of
+ * them, the meta on a pill over the media's bottom end.
+ */
+@Composable
+private fun MediaBubble(
+    bubble: ChatItem.Bubble,
+    style: BubbleStyle,
+    shape: Shape,
+    resources: BubbleResources,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = style.colors
+    val spacing = MaterialTheme.spacing
+    val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
+    val metaOnMedia = bubble.text.text.isEmpty() && bubble.linkPreview == null && bubble.reactions.isEmpty()
+    Column(
+        modifier
+            .width(edgeToEdgeWidth(bubble.content, isAlbum = bubble.album != null))
+            .clip(shape)
+            .background(colors.container),
+    ) {
+        if (hasHeader) {
+            Column(
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+            ) { BubbleHeader(bubble, colors) }
+        }
+        Box {
+            MessageContentBody(bubble, fileState = null, colors = colors, onEvent = onEvent)
+            if (metaOnMedia) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
+        }
+        if (!metaOnMedia) {
+            Column(
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+            ) { BubbleBody(bubble, style, resources, onEvent) }
+        }
+    }
+}
+
+/** The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are. */
+@Composable
+private fun BubbleHeader(
+    bubble: ChatItem.Bubble,
+    colors: BubbleColors,
+) {
+    if (bubble.showsSenderName) {
+        Text(
+            text = bubble.sender.resolve(),
+            color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+    bubble.forwardedFrom?.let { forwarded ->
+        Text(
+            text = forwarded.resolve(),
+            color = colors.secondaryContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+    bubble.reply?.let { ReplyQuoteBlock(it, colors) }
 }
 
 /**
@@ -158,11 +282,11 @@ private fun MessageBubble(
 @Composable
 private fun ColumnScope.BubbleBody(
     bubble: ChatItem.Bubble,
-    colors: BubbleColors,
-    texts: AnnotatedTextCache,
-    onLinkClick: LinkInteractionListener,
+    style: BubbleStyle,
+    resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
 ) {
+    val colors = style.colors
     val hasText = bubble.text.text.isNotEmpty()
     val linkPreview = bubble.linkPreview
     val hasReactions = bubble.reactions.isNotEmpty()
@@ -171,18 +295,18 @@ private fun ColumnScope.BubbleBody(
         hasText && linkPreview == null && !hasReactions -> {
             val layout = remember { TextLayoutHolder() }
             TrailingMeta(meta = meta, lastLineWidth = layout::lastLineWidth) {
-                BubbleText(bubble, colors, texts, onLinkClick, onEvent) { layout.result = it }
+                BubbleText(bubble, style, resources, onEvent) { layout.result = it }
             }
         }
 
         hasReactions -> {
-            if (hasText) BubbleText(bubble, colors, texts, onLinkClick, onEvent)
+            if (hasText) BubbleText(bubble, style, resources, onEvent)
             linkPreview?.let { LinkPreviewBlock(it, colors) }
             TrailingMeta(meta = meta, lastLineWidth = { null }) { ReactionsRow(bubble, colors) }
         }
 
         else -> {
-            if (hasText) BubbleText(bubble, colors, texts, onLinkClick, onEvent)
+            if (hasText) BubbleText(bubble, style, resources, onEvent)
             linkPreview?.let { LinkPreviewBlock(it, colors) }
             BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
         }
@@ -193,17 +317,16 @@ private fun ColumnScope.BubbleBody(
 @Composable
 private fun BubbleText(
     bubble: ChatItem.Bubble,
-    colors: BubbleColors,
-    texts: AnnotatedTextCache,
-    onLinkClick: LinkInteractionListener,
+    style: BubbleStyle,
+    resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
     Text(
-        text = texts.get(bubble, colors.text, onSpoilerClick, onLinkClick),
-        color = colors.content,
+        text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick),
+        color = style.colors.content,
         style = MaterialTheme.typography.bodyLarge,
         onTextLayout = onTextLayout,
     )
@@ -230,82 +353,6 @@ private class TextLayoutHolder {
             ).toInt()
         }
     }
-}
-
-/**
- * [content] with [meta] at its bottom end: after the last line of [content] when there is room for it there
- * ([lastLineWidth] of the content, or its whole width when that returns null), otherwise on a line of its own. One
- * layout rather than nested rows (`docs/PERFORMANCE.md` §4).
- */
-@Composable
-private fun TrailingMeta(
-    meta: @Composable () -> Unit,
-    lastLineWidth: (LayoutDirection) -> Int?,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    val gap = MaterialTheme.spacing.small
-    Layout(
-        contents = listOf(content, meta),
-        modifier = modifier,
-    ) { (contentMeasurables, metaMeasurables), constraints ->
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val contentPlaceable = contentMeasurables.firstOrNull()?.measure(loose)
-        val metaPlaceable = metaMeasurables.first().measure(loose)
-        val contentWidth = contentPlaceable?.width ?: 0
-        val contentHeight = contentPlaceable?.height ?: 0
-        val lineWidth = if (contentPlaceable == null) 0 else lastLineWidth(layoutDirection) ?: contentWidth
-        val inlineWidth = if (lineWidth > 0) lineWidth + gap.roundToPx() + metaPlaceable.width else metaPlaceable.width
-        val inline = inlineWidth <= constraints.maxWidth
-        val width = max(contentWidth, if (inline) inlineWidth else metaPlaceable.width)
-        val height = if (inline) max(contentHeight, metaPlaceable.height) else contentHeight + metaPlaceable.height
-        val size = constraints.constrain(IntSize(width, height))
-        layout(size.width, size.height) {
-            contentPlaceable?.placeRelative(0, 0)
-            metaPlaceable.placeRelative(size.width - metaPlaceable.width, size.height - metaPlaceable.height)
-        }
-    }
-}
-
-/** "edited", the time, and the state of an outgoing message, in `labelSmall` with tabular figures. */
-@Composable
-private fun BubbleMeta(
-    bubble: ChatItem.Bubble,
-    colors: BubbleColors,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val style = MaterialTheme.typography.labelSmall
-        if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = colors.secondaryContent, style = style)
-        Text(bubble.time, color = colors.secondaryContent, maxLines = 1, style = style)
-        bubble.status?.let { StatusIcon(it, colors) }
-    }
-}
-
-/** A clock while sending, an error when it failed, one check once sent, two in `primary` once read. */
-@Composable
-private fun StatusIcon(
-    status: OutgoingStatus,
-    colors: BubbleColors,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val (icon, tint) =
-        when (status) {
-            OutgoingStatus.Pending -> UiR.drawable.ic_schedule to colors.secondaryContent
-            OutgoingStatus.Failed -> UiR.drawable.ic_error to scheme.error
-            OutgoingStatus.Sent -> UiR.drawable.ic_done to colors.secondaryContent
-            OutgoingStatus.Read -> UiR.drawable.ic_done_all to scheme.primary
-        }
-    Icon(
-        painter = painterResource(icon),
-        contentDescription = null,
-        modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
-        tint = tint,
-    )
 }
 
 /** At most [fraction] of the available width, and at most [max]. */

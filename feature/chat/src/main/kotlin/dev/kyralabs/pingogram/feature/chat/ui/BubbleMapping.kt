@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardInfo
 import dev.kyralabs.pingogram.core.domain.model.LinkPreview
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.Reaction
@@ -33,11 +34,13 @@ internal fun ItemInputs.toItem(): ChatItem {
 /**
  * A bubble: in group chats with the sender's name on the first of a group and the avatar beside the last, for
  * incoming messages; the outgoing state; the forward's origin, the reply quote, the text or caption, the kind of
- * media, the link preview and the reactions.
+ * media, the link preview and the reactions. An album's bubble takes its time, state and reactions from its newest
+ * item.
  */
 private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
     val senderName = senderName()
+    val newest = album.lastOrNull() ?: message
     return ChatItem.Bubble(
         id = message.id,
         isOutgoing = message.isOutgoing,
@@ -47,23 +50,48 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         showsSenderName = showsSender && !position.joinsPrevious,
         avatar = if (showsSender && !position.joinsNext) avatar(senderName) else null,
         hasAvatarColumn = showsSender,
-        time = timeFormatter.time(message.date),
+        time = timeFormatter.time(newest.date),
         isEdited = message.editDate > 0,
-        status = status(),
+        status = status(newest),
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
-        contentLabel = if (content is MessageContent.Text) null else contentKindText(content),
+        contentLabel =
+            when {
+                album.isNotEmpty() -> albumLabel(album)
+                content is MessageContent.Text -> null
+                else -> contentKindText(content)
+            },
         text = content.text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
         reactions =
-            message.interactionInfo
+            newest.interactionInfo
                 ?.reactions
                 ?.map(::reactionChip)
                 ?.toImmutableList() ?: persistentListOf(),
         date = date,
+        album =
+            album.takeIf { it.isNotEmpty() }?.let { items ->
+                MessageAlbum(
+                    id = items.first().mediaAlbumId,
+                    messageIds = items.map { it.id }.toImmutableList(),
+                    items = items.map { it.content }.toImmutableList(),
+                )
+            },
     )
+}
+
+/** "4 photos", "2 videos", or "3 photos and videos", for screen readers. */
+private fun albumLabel(album: List<Message>): UiText {
+    val photos = album.count { it.content is MessageContent.Photo }
+    val plural =
+        when (photos) {
+            album.size -> ChatR.plurals.content_album_photos
+            0 -> ChatR.plurals.content_album_videos
+            else -> ChatR.plurals.content_album_media
+        }
+    return UiText.plural(plural, album.size, album.size)
 }
 
 /** "You" for the current user's messages; otherwise the sender's full name, or the chat's title. */
@@ -83,8 +111,10 @@ private fun ItemInputs.avatar(name: UiText): SenderAvatar =
         placeholderIcon = if ((sender as? User)?.isDeleted == true) R.drawable.ic_person_filled else null,
     )
 
-/** Null for incoming messages, in channels and in Saved Messages, where nobody else reads them. */
-private fun ItemInputs.status(): OutgoingStatus? =
+/**
+ * Where [message] is: null for incoming messages, in channels and in Saved Messages, where nobody else reads them.
+ */
+private fun ItemInputs.status(message: Message): OutgoingStatus? =
     when {
         !message.isOutgoing || kind == ChatKind.Channel || kind == ChatKind.SavedMessages -> null
         message.sendingState is SendingState.Pending -> OutgoingStatus.Pending

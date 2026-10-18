@@ -9,20 +9,26 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
+import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
@@ -32,6 +38,7 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,6 +52,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
@@ -79,6 +88,11 @@ import javax.inject.Inject
  *   screen's lifecycle (started and stopped, or left), each once per change. They are sent before [onEvent] returns,
  *   so a close sent as the screen leaves is not lost with the view model's scope.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
+ * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
+ *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
+ *   download and cancel on request; playing a voice message or song downloads its file until the player comes.
+ *   Failures go out as [ChatEffect.ShowError] snackbars.
+ * - **Effects** ([effects]): errors, opening a location in a maps app, and the note that opening files comes later.
  *
  * It takes one repository per kind of data the screen combines, plus the clock, dispatcher, language and time
  * patterns that tests replace, hence `LongParameterList` is suppressed. Hilt reads [chatId] from the route.
@@ -94,6 +108,7 @@ class ChatViewModel internal constructor(
     userRepository: UserRepository,
     groupRepository: GroupRepository,
     chatActionRepository: ChatActionRepository,
+    fileRepository: FileRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -107,6 +122,7 @@ class ChatViewModel internal constructor(
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatActionRepository: ChatActionRepository,
+        fileRepository: FileRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -118,6 +134,7 @@ class ChatViewModel internal constructor(
         userRepository,
         groupRepository,
         chatActionRepository,
+        fileRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -143,6 +160,13 @@ class ChatViewModel internal constructor(
 
     private val mapper = ChatItemMapper()
     private var timeFormatter: ChatTimeFormatter? = null
+
+    private val effectChannel = Channel<ChatEffect>(Channel.BUFFERED)
+
+    /** One-off effects for the screen: snackbars and opening a location. */
+    val effects: Flow<ChatEffect> = effectChannel.receiveAsFlow()
+
+    private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
 
     private val chat: Flow<ChatLookup> =
         chatAttempts
@@ -215,6 +239,7 @@ class ChatViewModel internal constructor(
 
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, ::state)
+            .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -240,6 +265,13 @@ class ChatViewModel internal constructor(
             is ChatEvent.NearOldestChanged -> onNearOldestChanged(event.isNearOldest)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
+            is ChatEvent.OpenMedia -> Unit
+            is ChatEvent.DownloadFile -> files.download(event.fileId)
+            is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
+            is ChatEvent.OpenFile -> effectChannel.trySend(ChatEffect.FileOpeningUnavailable)
+            is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
+            is ChatEvent.PlayPause -> files.playPause(event.fileId, uiState.value.fileStates[event.fileId])
+            is ChatEvent.Seek -> Unit
         }
     }
 
@@ -435,6 +467,31 @@ class ChatViewModel internal constructor(
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
         private const val STOP_TIMEOUT_MILLIS = 5_000L
+    }
+}
+
+/**
+ * The location or venue of loaded message [messageId], as the effect that shows it in a maps app, named after the
+ * venue; null for other messages.
+ */
+private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
+    val bubble =
+        (content as? ChatContent.Content)
+            ?.items
+            ?.firstOrNull { it is ChatItem.Bubble && it.id == messageId } as? ChatItem.Bubble
+    return when (val message = bubble?.content) {
+        is MessageContent.Location -> {
+            ChatEffect.OpenLocation(message.location.latitude, message.location.longitude, label = null)
+        }
+
+        is MessageContent.Venue -> {
+            val venue = message.venue
+            ChatEffect.OpenLocation(venue.location.latitude, venue.location.longitude, venue.title.ifBlank { null })
+        }
+
+        else -> {
+            null
+        }
     }
 }
 
