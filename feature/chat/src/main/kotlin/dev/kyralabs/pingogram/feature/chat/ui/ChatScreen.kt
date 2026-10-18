@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -88,8 +90,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] over the
- * messages, newest at the bottom. Read-only for now: there is no composer, only the system bars' insets at the bottom.
+ * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
+ * `surfaceContainer` over the messages, newest at the bottom, on a rounded `surface` sheet ([ContentSheet]) that they
+ * scroll in. Read-only for now: there is no composer, only the system bars' insets at the bottom.
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
@@ -124,6 +127,7 @@ internal fun ChatScreen(
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             JumpToBottomButton(
@@ -134,44 +138,47 @@ internal fun ChatScreen(
             )
         },
     ) { innerPadding ->
-        val bodyModifier =
-            Modifier
-                .fillMaxSize()
-                .consumeWindowInsets(innerPadding)
-        when (content) {
-            ChatContent.Loading -> {
-                Box(bodyModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
-            }
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+            ChatBody(state, onEvent, listState, jumpState, contentPadding)
+        }
+    }
+}
 
-            ChatContent.Empty -> {
-                ChatEmpty(bodyModifier.padding(innerPadding))
-            }
+/** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BoxScope.ChatBody(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+    listState: LazyListState,
+    jumpState: MessageJumpState,
+    contentPadding: PaddingValues,
+) {
+    val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
+    when (val content = state.content) {
+        ChatContent.Loading -> {
+            Box(bodyModifier, contentAlignment = Alignment.Center) { LoadingIndicator() }
+        }
 
-            is ChatContent.Error -> {
-                ChatError(
-                    content,
-                    onRetry = { onEvent(ChatEvent.Retry) },
-                    modifier = bodyModifier.padding(innerPadding),
-                )
-            }
+        ChatContent.Empty -> {
+            ChatEmpty(bodyModifier)
+        }
 
-            ChatContent.NotFound -> {
-                ChatNotFound(bodyModifier.padding(innerPadding))
-            }
+        is ChatContent.Error -> {
+            ChatError(content, onRetry = { onEvent(ChatEvent.Retry) }, modifier = bodyModifier)
+        }
 
-            is ChatContent.Content -> {
-                Box(bodyModifier) {
-                    MessageList(content, state.fileStates, state.playback, listState, jumpState, innerPadding, onEvent)
-                    FloatingDatePill(
-                        items = content.items,
-                        listState = listState,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = innerPadding.calculateTopPadding() + MaterialTheme.spacing.small),
-                    )
-                }
-            }
+        ChatContent.NotFound -> {
+            ChatNotFound(bodyModifier)
+        }
+
+        is ChatContent.Content -> {
+            MessageList(content, state.fileStates, state.playback, listState, jumpState, contentPadding, onEvent)
+            FloatingDatePill(
+                items = content.items,
+                listState = listState,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = MaterialTheme.spacing.small),
+            )
         }
     }
 }
@@ -180,7 +187,7 @@ internal fun ChatScreen(
  * The entries of [content], newest first in a reverse layout, then the state of older pages above the oldest one.
  * Each entry animates to its new place and fades in and out on the motion scheme's springs.
  */
-@Suppress("LongParameterList") // What the list shows, its state and the screen's padding, all from ChatScreen.
+@Suppress("LongParameterList") // What the list shows, its state and the sheet's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
     content: ChatContent.Content,
@@ -188,7 +195,7 @@ private fun MessageList(
     playback: MessagePlayback?,
     listState: LazyListState,
     jumpState: MessageJumpState,
-    innerPadding: PaddingValues,
+    contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val theme = rememberBubbleTheme()
@@ -204,10 +211,10 @@ private fun MessageList(
         state = listState,
         contentPadding =
             PaddingValues(
-                start = innerPadding.calculateStartPadding(layoutDirection) + spacing.medium,
-                top = innerPadding.calculateTopPadding() + spacing.small,
-                end = innerPadding.calculateEndPadding(layoutDirection) + spacing.medium,
-                bottom = innerPadding.calculateBottomPadding() + spacing.small,
+                start = contentPadding.calculateStartPadding(layoutDirection) + spacing.medium,
+                top = contentPadding.calculateTopPadding(),
+                end = contentPadding.calculateEndPadding(layoutDirection) + spacing.medium,
+                bottom = contentPadding.calculateBottomPadding() + spacing.small,
             ),
         reverseLayout = true,
     ) {
@@ -366,25 +373,6 @@ private fun FollowNewestMessage(
         shownNewestKey = newestKey
         // Entries may have come with it (a date separator), so the previous newest one is looked up by key.
         if (listState.layoutInfo.visibleItemsInfo.any { it.key == previousKey }) listState.requestScrollToItem(0)
-    }
-}
-
-/**
- * Opens a link of a message with the platform's handler. A link no app opens (a `tg://` link on a device without an
- * app for it) does nothing; Pingogram resolves Telegram's own links itself later (M4).
- */
-@Composable
-private fun rememberLinkOpener(): LinkInteractionListener {
-    val uriHandler = LocalUriHandler.current
-    return remember(uriHandler) {
-        LinkInteractionListener { link ->
-            val url = (link as? LinkAnnotation.Url)?.url ?: return@LinkInteractionListener
-            try {
-                uriHandler.openUri(url)
-            } catch (_: IllegalArgumentException) {
-                // No app on the device opens it.
-            }
-        }
     }
 }
 
