@@ -58,6 +58,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "PHONE_CODE_EXPIRED" to DomainError.CodeExpired,
         "CODE_EXPIRED" to DomainError.CodeExpired,
         "EMAIL_CODE_EXPIRED" to DomainError.CodeExpired,
+        // account.verifyEmail, which checks the email code of an address entered during login.
+        "EMAIL_VERIFY_EXPIRED" to DomainError.CodeExpired,
         "PASSWORD_HASH_INVALID" to DomainError.PasswordInvalid,
         "FIRSTNAME_INVALID" to DomainError.FirstNameInvalid,
         "LASTNAME_INVALID" to DomainError.LastNameInvalid,
@@ -77,4 +79,6 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Invalid recovery code" to DomainError.CodeInvalid,
         "First name must be non-empty" to DomainError.FirstNameInvalid,
         "Email address must be non-empty" to DomainError.EmailInvalid,
+        // The 2-step verification password uses an algorithm this TDLib does not know.
+        "Application update is needed to log in" to DomainError.AppUpdateRequired,
     )
