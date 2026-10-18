@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -78,11 +79,14 @@ import javax.inject.Inject
  *   on the device and the screen is started; it pauses when the page changes or the screen stops, and the player is
  *   released with the view model.
  * - **Spoilers**: hidden until tapped ([MediaViewerEvent.RevealSpoiler]), except the opened item's.
+ * - **Share and Save** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's file goes
+ *   to the share sheet ([MediaViewerEffect.ShareFile]) or into the gallery through [MediaFileActions], once it is
+ *   downloaded, after the storage permission on Android 8–9.
  * - **Items** are mapped on [dispatcher] by a [MediaItemMapper]: senders' names, and dates in the zone, the language
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
  *
- * It takes one repository per kind of data, plus the player, clock, dispatcher, scope, language and time patterns
- * that tests replace, hence `LongParameterList` is suppressed.
+ * It takes one repository per kind of data, plus the player, file actions, clock, dispatcher, scope, language and
+ * time patterns that tests replace, hence `LongParameterList` is suppressed.
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -100,6 +104,7 @@ class MediaViewerViewModel internal constructor(
     private val applicationScope: CoroutineScope,
     locale: () -> Locale,
     private val videoPlayer: VideoPlayer,
+    fileActions: MediaFileActions,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -113,6 +118,7 @@ class MediaViewerViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
+        fileActions: MediaFileActions,
     ) : this(
         savedStateHandle.toRoute<MediaViewerRoute>(),
         savedStateHandle,
@@ -126,6 +132,7 @@ class MediaViewerViewModel internal constructor(
         applicationScope,
         Locale::getDefault,
         videoPlayer,
+        fileActions,
     )
 
     private val chatId = route.chatId
@@ -148,7 +155,21 @@ class MediaViewerViewModel internal constructor(
     /** One-off effects for the screen: snackbars. */
     val effects: Flow<MediaViewerEffect> = effectChannel.receiveAsFlow()
 
-    private val downloads = MediaDownloads(fileRepository, viewModelScope, effectChannel::showError)
+    private val sharing =
+        MediaSharing(
+            canBeSaved = { messageId -> mediaRepository.canBeSaved(chatId, messageId) },
+            isProtected = chatRepository.chat(chatId).map { chat -> chat?.hasProtectedContent != false },
+            fileActions = fileActions,
+            savedStateHandle = savedStateHandle,
+            scope = viewModelScope,
+            effects = effectChannel,
+        )
+
+    private val downloads =
+        MediaDownloads(fileRepository, viewModelScope) { error ->
+            sharing.onDownloadFailed()
+            effectChannel.showError(error)
+        }
 
     private val playback =
         MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }
@@ -193,8 +214,15 @@ class MediaViewerViewModel internal constructor(
      */
     internal val surfacePlayer: Player? get() = videoPlayer.surfacePlayer
 
+    /** The current item's message id while it is loaded. */
+    private val currentId: Flow<Long?> =
+        viewer
+            .map { viewer ->
+                viewer.currentId.takeIf { (viewer.window?.indexOf(it) ?: -1) >= 0 }
+            }.distinctUntilChanged()
+
     val uiState: StateFlow<MediaViewerUiState> =
-        combine(listing, files, playback.state, ::uiStateOf)
+        combine(listing, files, playback.state, sharing.state(currentId), ::uiStateOf)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), MediaViewerUiState.Loading)
 
     init {
@@ -218,6 +246,11 @@ class MediaViewerViewModel internal constructor(
             is MediaViewerEvent.RevealSpoiler -> revealedSpoilers.update { it.adding(event.messageId) }
             MediaViewerEvent.PlayPause -> playback.playPause()
             is MediaViewerEvent.Seek -> playback.seek(event.fraction)
+            MediaViewerEvent.Share -> sharing.start(MediaAction.Share)
+            MediaViewerEvent.Save -> sharing.start(MediaAction.Save)
+            is MediaViewerEvent.StoragePermissionChecked -> sharing.permission.onChecked(event.showRationale)
+            is MediaViewerEvent.StorageRationaleAnswered -> sharing.permission.onRationaleAnswered(event.proceed)
+            is MediaViewerEvent.StoragePermissionResult -> sharing.permission.onResult(event.granted)
         }
     }
 
@@ -327,7 +360,10 @@ class MediaViewerViewModel internal constructor(
         }
     }
 
-    /** Downloads around the current item, and puts its video or GIF in the player once its file is on the device. */
+    /**
+     * Downloads around the current item, puts its video or GIF in the player once its file is on the device, and
+     * tells [sharing] which item is current.
+     */
     private fun focus(
         viewer: Viewer,
         files: ImmutableMap<Int, FileState>,
@@ -336,11 +372,14 @@ class MediaViewerViewModel internal constructor(
         val index = window?.indexOf(viewer.currentId) ?: -1
         if (window == null || index < 0) {
             playback.show(null)
+            sharing.focus(null, files)
             return
         }
         downloads.focus(window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 }, index, files)
         val message = window.messages[index]
-        playback.show(message.content.toViewerMedia()?.playTarget(message.id, files))
+        val media = message.content.toViewerMedia()
+        playback.show(media?.playTarget(message.id, files))
+        sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
     }
 
     private fun updateWindow(transform: (MediaWindow) -> MediaWindow) =
@@ -444,11 +483,12 @@ private enum class Edge {
     Newer,
 }
 
-/** The state of [listing], with the [files] and the [playback] of the moment. */
+/** The state of [listing], with the [files], the [playback] and the [actions] of the moment. */
 private fun uiStateOf(
     listing: Listing,
     files: ImmutableMap<Int, FileState>,
     playback: VideoPlayback?,
+    actions: MediaActions,
 ): MediaViewerUiState =
     when (val load = listing.load) {
         MediaLoad.Loading -> {
@@ -474,6 +514,7 @@ private fun uiStateOf(
                     count = load.window.count(),
                     files = files,
                     playback = playback,
+                    actions = actions,
                 )
             }
         }

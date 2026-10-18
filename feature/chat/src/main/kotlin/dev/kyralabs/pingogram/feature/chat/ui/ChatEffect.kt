@@ -10,10 +10,16 @@ sealed interface ChatEffect {
     ) : ChatEffect
 
     /**
-     * A downloaded file was to be opened. Opening it with another app needs a `FileProvider`, which is not there yet,
-     * so a snackbar says that this comes later; replacing this effect is all it takes once it is.
+     * Open the downloaded document at [path] in another app, as [mimeType] (the document's, null if it names none); a
+     * snackbar if no app takes it.
      */
-    data object FileOpeningUnavailable : ChatEffect
+    data class OpenFile(
+        val path: String,
+        val mimeType: String?,
+    ) : ChatEffect {
+        // The path ends in the document's name, which can be personal.
+        override fun toString() = "OpenFile(mimeType=$mimeType, …)"
+    }
 
     /** The file of a voice message or song could not be played: a snackbar says so. */
     data object PlaybackFailed : ChatEffect

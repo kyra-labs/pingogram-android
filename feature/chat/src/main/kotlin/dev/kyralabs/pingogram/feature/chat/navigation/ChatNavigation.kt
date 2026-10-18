@@ -9,19 +9,23 @@ import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.ui.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 
 /**
  * Adds the conversation of a chat, [ChatDestination], to the graph; [onBack] leaves it, and [onOpenMedia] opens a
- * tapped photo, video or GIF of the chat in the media viewer.
+ * tapped photo, video or GIF of the chat in the media viewer, which it grows into (the destination provides its
+ * animated visibility scope for that container transform).
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
 ) {
     composable<ChatDestination> { entry ->
-        ChatRoute(chatId = entry.toRoute<ChatDestination>().chatId, onBack = onBack, onOpenMedia = onOpenMedia)
+        ProvideNavAnimatedVisibilityScope(this) {
+            ChatRoute(chatId = entry.toRoute<ChatDestination>().chatId, onBack = onBack, onOpenMedia = onOpenMedia)
+        }
     }
 }
 

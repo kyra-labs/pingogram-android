@@ -51,6 +51,17 @@ interface ChatMediaRepository {
         messageId: Long,
     ): Outcome<Int>
 
+    /**
+     * Whether the content of message [messageId] of chat [chatId] may leave Telegram: be saved to the device or shared
+     * with other apps (`REQUIREMENTS.md` FR-C6, FR-C10). False where the chat protects its content
+     * (`Chat.hasProtectedContent`), and where the sender or the current user protects the message, as TDLib says;
+     * the media viewer offers Share and Save only when it is true.
+     */
+    suspend fun canBeSaved(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Boolean>
+
     /** The ids of the messages of chat [chatId] deleted for good, a batch at a time, for as long as it is collected. */
     fun deletedMessages(chatId: Long): Flow<Set<Long>>
 }

@@ -20,6 +20,8 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.files.GalleryItem
+import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -42,7 +44,8 @@ import java.util.Locale
 
 /**
  * A chat's media, served as TDLib pages them ([serve]), or answered by the tests ([onAround], [onOlder], [onNewer],
- * [onPosition]). Every request is recorded in [calls]; [deletions] emits deleted messages.
+ * [onPosition]). Every request is recorded in [calls]; [deletions] emits deleted messages. Whether a message can be
+ * saved is [onCanBeSaved]'s answer, yes unless a test says otherwise; the messages asked about go to [saveChecks].
  */
 class FakeChatMediaRepository : ChatMediaRepository {
     /** `around:<id>`, `older:<filter>:<id>`, `newer:<filter>:<id>` and `position:<filter>:<id>`, in order. */
@@ -52,6 +55,8 @@ class FakeChatMediaRepository : ChatMediaRepository {
     var onOlder: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onNewer: suspend (Long) -> Outcome<ChatMediaPage> = { Outcome.Failure(DomainError.NotFound) }
     var onPosition: suspend (Long) -> Outcome<Int> = { Outcome.Failure(DomainError.Unknown(400, "No position")) }
+    var onCanBeSaved: suspend (Long) -> Outcome<Boolean> = { Outcome.Success(true) }
+    val saveChecks = mutableListOf<Long>()
 
     val deletions = MutableSharedFlow<Set<Long>>()
 
@@ -128,6 +133,14 @@ class FakeChatMediaRepository : ChatMediaRepository {
     ): Outcome<Int> {
         calls += "position:$filter:$messageId"
         return onPosition(messageId)
+    }
+
+    override suspend fun canBeSaved(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Boolean> {
+        saveChecks += messageId
+        return onCanBeSaved(messageId)
     }
 
     override fun deletedMessages(chatId: Long): Flow<Set<Long>> = deletions
@@ -324,6 +337,23 @@ internal class FakeVideoPlayer : VideoPlayer {
     fun pauseBySystem() = listener?.onPlayingChanged(false)
 
     fun fail() = listener?.onError()
+}
+
+/**
+ * Saving into a gallery that does what tests say: [needsPermission] as on Android 8–9 without the permission, and
+ * [onSave] answering each copy, which goes to [saved] first.
+ */
+class FakeMediaFileActions : MediaFileActions {
+    var needsPermission = false
+    var onSave: suspend (GalleryItem) -> Boolean = { true }
+    val saved = mutableListOf<GalleryItem>()
+
+    override fun needsStoragePermission(): Boolean = needsPermission
+
+    override suspend fun saveToGallery(item: GalleryItem): Boolean {
+        saved += item
+        return onSave(item)
+    }
 }
 
 private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the media viewer")

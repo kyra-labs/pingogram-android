@@ -16,6 +16,8 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
+import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
@@ -32,8 +34,9 @@ import java.util.Locale
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
  * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
  * ends up open. [onBack] leaves it; null shows no back button. The view model's [ChatEffect]s show snackbars, open a
- * location in a maps app, jump to a message ([MessageJumpState]), or open a photo, video or GIF in the media viewer
- * through [onOpenMedia], which the app navigates with (features do not know each other).
+ * downloaded document in another app or a location in a maps app, jump to a message ([MessageJumpState]), or open a
+ * photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not know
+ * each other).
  */
 @Composable
 internal fun ChatRoute(
@@ -64,16 +67,19 @@ internal fun ChatRoute(
 }
 
 /**
- * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone and
- * for what is not there yet, the newest replacing the one shown; a location opens in a maps app, or a snackbar says
- * that no app can show it; a jump to a message goes to [jumpState]; media to open goes to [onOpenMedia].
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played and for a replied message that is gone,
+ * the newest replacing the one shown; a downloaded document opens in another app through [openFile] (the app's
+ * `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a snackbar says that no app can; a jump to a
+ * message goes to [jumpState]; media to open goes to [onOpenMedia].
  */
 @Composable
-private fun ChatEffects(
+internal fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
     jumpState: MessageJumpState,
     onOpenMedia: (messageId: Long) -> Unit,
+    openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
+        Context::viewTdlibFile,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -87,8 +93,13 @@ private fun ChatEffects(
                         errorMessage(resources, effect.error, showErrorDetails)
                     }
 
-                    ChatEffect.FileOpeningUnavailable -> {
-                        resources.getString(R.string.content_open_file_later)
+                    is ChatEffect.OpenFile -> {
+                        val chooserTitle = resources.getString(R.string.content_open_with)
+                        when (context.openFile(effect.path, effect.mimeType, chooserTitle)) {
+                            ExternalFileResult.Started -> ""
+                            ExternalFileResult.NoApp -> resources.getString(R.string.content_no_app_for_file)
+                            ExternalFileResult.Unavailable -> resources.getString(R.string.content_file_unavailable)
+                        }
                     }
 
                     ChatEffect.PlaybackFailed -> {
