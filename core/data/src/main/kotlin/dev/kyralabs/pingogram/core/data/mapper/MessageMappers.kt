@@ -110,7 +110,8 @@ private fun TdApi.MessageOrigin.toMessageOrigin(): MessageOrigin =
         else -> MessageOrigin.HiddenUser(name = "")
     }
 
-private fun TdApi.MessageInteractionInfo.toInteractionInfo() =
+/** For messages, and for `updateMessageInteractionInfo`. */
+internal fun TdApi.MessageInteractionInfo.toInteractionInfo() =
     InteractionInfo(
         viewCount = viewCount,
         forwardCount = forwardCount,
