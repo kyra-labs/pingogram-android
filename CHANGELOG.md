@@ -9,6 +9,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
+  and storage, and About pages; Log out moved to the end.
+- Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper
+  (Android 12+) and contrast (on Android 14+ it follows your device's setting). Changes apply at once with a
+  smooth color fade, and the app always opens in the theme you chose.
+- Data and storage: how much space downloaded files and the database use, and "Clear cache" to remove downloaded
+  photos, videos, voice messages, music and files. Your chats and secret chats are not affected; files download
+  again when you open them.
+- About: the app version, a link to the source code, the license and a note that Pingogram is an unofficial
+  Telegram client.
+
 ## [0.2.0] - 2026-10-18
 
 ### Added
