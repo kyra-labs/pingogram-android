@@ -449,4 +449,143 @@ object TdApiFixtures {
 
     /** The service message for users added to a group; a user who joins by themselves adds only their own id. */
     fun messageChatAddMembers(vararg memberUserIds: Long) = TdApi.MessageChatAddMembers(memberUserIds)
+
+    // Chats. The default chat, 100, is the private chat with user 42 that message() puts its messages in.
+
+    /** A position in [list]; order 0 is how TDLib takes a chat out of a list. */
+    fun chatPosition(
+        list: TdApi.ChatList = TdApi.ChatListMain(),
+        order: Long = 1_000,
+        isPinned: Boolean = false,
+    ) = TdApi.ChatPosition(list, order, isPinned, null)
+
+    /** Settings that follow the defaults of the chat's scope; [useDefaultMuteFor] false gives it a mute setting. */
+    fun chatNotificationSettings(
+        useDefaultMuteFor: Boolean = true,
+        muteFor: Int = 0,
+    ) = TdApi.ChatNotificationSettings(
+        useDefaultMuteFor,
+        muteFor,
+        true,
+        0,
+        true,
+        true,
+        true,
+        false,
+        true,
+        0,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+    )
+
+    /** Unmuted defaults; a positive [muteFor] (seconds) mutes the scope. */
+    fun scopeNotificationSettings(muteFor: Int = 0) =
+        TdApi.ScopeNotificationSettings(muteFor, 0, true, true, false, 0, true, false, false)
+
+    fun chatPhotoInfo(
+        smallFileId: Int = 12,
+        bigFileId: Int = 13,
+        minithumbnail: TdApi.Minithumbnail? = minithumbnail(),
+    ) = TdApi.ChatPhotoInfo(file(smallFileId), file(bigFileId), minithumbnail, false, false)
+
+    fun draftMessage(
+        content: TdApi.DraftMessageContent = draftText(),
+        date: Int = 1_700_000_000,
+    ) = TdApi.DraftMessage(null, date, content, 0, null)
+
+    fun draftText(text: String = "Draft") = TdApi.DraftMessageContentText(formattedText(text), null)
+
+    /**
+     * A read private chat with user 42 in the main list, with the default notification settings; every other field
+     * is TDLib's "none". TdApi.Chat has 46 constructor parameters, so the builder sets fields by name instead.
+     */
+    fun chat(
+        id: Long = 100,
+        type: TdApi.ChatType = TdApi.ChatTypePrivate(42),
+        title: String = "Ada",
+        photo: TdApi.ChatPhotoInfo? = null,
+        lastMessage: TdApi.Message? = null,
+        positions: Array<TdApi.ChatPosition> = arrayOf(chatPosition()),
+        unreadCount: Int = 0,
+        unreadMentionCount: Int = 0,
+        unreadReactionCount: Int = 0,
+        lastReadInboxMessageId: Long = 0,
+        lastReadOutboxMessageId: Long = 0,
+        isMarkedAsUnread: Boolean = false,
+        notificationSettings: TdApi.ChatNotificationSettings = chatNotificationSettings(),
+        draftMessage: TdApi.DraftMessage? = null,
+        hasProtectedContent: Boolean = false,
+        messageAutoDeleteTime: Int = 0,
+    ) = TdApi.Chat().also {
+        it.id = id
+        it.type = type
+        it.title = title
+        it.photo = photo
+        it.lastMessage = lastMessage
+        it.positions = positions
+        it.chatLists = positions.map { position -> position.list }.toTypedArray()
+        it.unreadCount = unreadCount
+        it.unreadMentionCount = unreadMentionCount
+        it.unreadReactionCount = unreadReactionCount
+        it.lastReadInboxMessageId = lastReadInboxMessageId
+        it.lastReadOutboxMessageId = lastReadOutboxMessageId
+        it.isMarkedAsUnread = isMarkedAsUnread
+        it.notificationSettings = notificationSettings
+        it.draftMessage = draftMessage
+        it.hasProtectedContent = hasProtectedContent
+        it.messageAutoDeleteTime = messageAutoDeleteTime
+        it.permissions = TdApi.ChatPermissions()
+        it.profileAccentColorId = -1
+        it.clientData = ""
+    }
+
+    fun updateNewChat(chat: TdApi.Chat = chat()) = TdApi.UpdateNewChat(chat)
+
+    fun updateChatPosition(
+        chatId: Long,
+        position: TdApi.ChatPosition,
+    ) = TdApi.UpdateChatPosition(chatId, position)
+
+    fun updateScopeNotificationSettings(
+        scope: TdApi.NotificationSettingsScope,
+        muteFor: Int,
+    ) = TdApi.UpdateScopeNotificationSettings(scope, scopeNotificationSettings(muteFor))
+
+    /** A folder without a color tag; [colorId] 0–6 gives it one. */
+    fun chatFolderInfo(
+        id: Int = 1,
+        title: String = "Work",
+        iconName: String = "Work",
+        colorId: Int = -1,
+    ) = TdApi.ChatFolderInfo(
+        id,
+        TdApi.ChatFolderName(formattedText(title), false),
+        TdApi.ChatFolderIcon(iconName),
+        colorId,
+        false,
+        false,
+    )
+
+    /** The folders in order, with the main list first. */
+    fun updateChatFolders(vararg folders: TdApi.ChatFolderInfo) = TdApi.UpdateChatFolders(arrayOf(*folders), 0, false)
+
+    fun updateUnreadChatCount(
+        list: TdApi.ChatList = TdApi.ChatListMain(),
+        totalCount: Int = 0,
+        unreadCount: Int = 0,
+        unreadUnmutedCount: Int = 0,
+        markedAsUnreadCount: Int = 0,
+        markedAsUnreadUnmutedCount: Int = 0,
+    ) = TdApi.UpdateUnreadChatCount(
+        list,
+        totalCount,
+        unreadCount,
+        unreadUnmutedCount,
+        markedAsUnreadCount,
+        markedAsUnreadUnmutedCount,
+    )
 }
