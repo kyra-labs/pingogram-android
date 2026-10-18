@@ -13,7 +13,7 @@ import org.drinkless.tdlib.TdApi
 /**
  * A repository that caches state from TDLib's updates (`docs/ARCHITECTURE.md`, Repositories). TDLib introduces each
  * user and chat only once (`updateUser`, `updateNewChat`, …), and [TdlibClient.updates] replays nothing, so such a
- * repository must exist before TDLib starts: `RepositoryModule` binds each one into a set that `PingogramApplication`
+ * repository must exist before TDLib starts: `UpdateCacheModule` binds each one into a set that `PingogramApplication`
  * injects before it calls [TdlibClient.start]. The repository keeps its state in an [UpdateStore].
  */
 interface TdlibUpdateCache

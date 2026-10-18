@@ -58,7 +58,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
   `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
-  (`@Binds @IntoSet` in `RepositoryModule`) that `PingogramApplication` injects before
+  (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
   `TdlibClient.start()`. Every new caching repository must join that set.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
