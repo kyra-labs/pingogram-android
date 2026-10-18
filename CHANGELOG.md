@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-18
+
 ### Fixed
 - The app could not connect to Telegram and stayed on "Connecting…": it did not request the internet
   permission.
@@ -78,5 +80,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kyra-labs/pingogram-android/releases/tag/v0.1.0
