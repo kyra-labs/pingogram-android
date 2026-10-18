@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-18
+
 ### Added
 - The chat list. The top bar shows the connection state ("Connecting…", "Waiting for network…") while not
   connected. Your chat folders are tabs with unread counts, with "All chats" where you placed it. Each chat
@@ -112,6 +114,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kyra-labs/pingogram-android/releases/tag/v0.1.0
