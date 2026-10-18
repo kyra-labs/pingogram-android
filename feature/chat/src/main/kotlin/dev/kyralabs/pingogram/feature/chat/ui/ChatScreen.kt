@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -138,48 +139,46 @@ internal fun ChatScreen(
         },
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            val bodyModifier = Modifier.fillMaxSize()
-            when (content) {
-                ChatContent.Loading -> {
-                    Box(
-                        bodyModifier.padding(contentPadding),
-                        contentAlignment = Alignment.Center,
-                    ) { LoadingIndicator() }
-                }
+            ChatBody(state, onEvent, listState, jumpState, contentPadding)
+        }
+    }
+}
 
-                ChatContent.Empty -> {
-                    ChatEmpty(bodyModifier.padding(contentPadding))
-                }
+/** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BoxScope.ChatBody(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+    listState: LazyListState,
+    jumpState: MessageJumpState,
+    contentPadding: PaddingValues,
+) {
+    val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
+    when (val content = state.content) {
+        ChatContent.Loading -> {
+            Box(bodyModifier, contentAlignment = Alignment.Center) { LoadingIndicator() }
+        }
 
-                is ChatContent.Error -> {
-                    ChatError(
-                        content,
-                        onRetry = { onEvent(ChatEvent.Retry) },
-                        modifier = bodyModifier.padding(contentPadding),
-                    )
-                }
+        ChatContent.Empty -> {
+            ChatEmpty(bodyModifier)
+        }
 
-                ChatContent.NotFound -> {
-                    ChatNotFound(bodyModifier.padding(contentPadding))
-                }
+        is ChatContent.Error -> {
+            ChatError(content, onRetry = { onEvent(ChatEvent.Retry) }, modifier = bodyModifier)
+        }
 
-                is ChatContent.Content -> {
-                    MessageList(
-                        content = content,
-                        fileStates = state.fileStates,
-                        playback = state.playback,
-                        listState = listState,
-                        jumpState = jumpState,
-                        contentPadding = contentPadding,
-                        onEvent = onEvent,
-                    )
-                    FloatingDatePill(
-                        items = content.items,
-                        listState = listState,
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = MaterialTheme.spacing.small),
-                    )
-                }
-            }
+        ChatContent.NotFound -> {
+            ChatNotFound(bodyModifier)
+        }
+
+        is ChatContent.Content -> {
+            MessageList(content, state.fileStates, state.playback, listState, jumpState, contentPadding, onEvent)
+            FloatingDatePill(
+                items = content.items,
+                listState = listState,
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = MaterialTheme.spacing.small),
+            )
         }
     }
 }
@@ -374,25 +373,6 @@ private fun FollowNewestMessage(
         shownNewestKey = newestKey
         // Entries may have come with it (a date separator), so the previous newest one is looked up by key.
         if (listState.layoutInfo.visibleItemsInfo.any { it.key == previousKey }) listState.requestScrollToItem(0)
-    }
-}
-
-/**
- * Opens a link of a message with the platform's handler. A link no app opens (a `tg://` link on a device without an
- * app for it) does nothing; Pingogram resolves Telegram's own links itself later (M4).
- */
-@Composable
-private fun rememberLinkOpener(): LinkInteractionListener {
-    val uriHandler = LocalUriHandler.current
-    return remember(uriHandler) {
-        LinkInteractionListener { link ->
-            val url = (link as? LinkAnnotation.Url)?.url ?: return@LinkInteractionListener
-            try {
-                uriHandler.openUri(url)
-            } catch (_: IllegalArgumentException) {
-                // No app on the device opens it.
-            }
-        }
     }
 }
 
