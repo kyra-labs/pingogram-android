@@ -21,7 +21,7 @@ gradleVersionsPlugin = "0.54.0"
 hilt = "2.60.1"
 # javax.inject annotations (@Qualifier for core:common's @Dispatcher); the API's only release
 javaxInject = "1"
-junit = "5.14.4"
+junit = "6.1.3"
 junit4 = "4.13.2"
 kotlin = "2.4.21"
 kotlinxCollectionsImmutable = "0.5.2"
