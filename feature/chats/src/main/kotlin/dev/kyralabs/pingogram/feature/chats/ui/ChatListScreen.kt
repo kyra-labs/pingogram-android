@@ -49,6 +49,7 @@ import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
@@ -403,7 +404,7 @@ private fun ChatList(
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val motionScheme = MaterialTheme.motionScheme
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.testTag(CHAT_LIST_TEST_TAG),
         state = listState,
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -425,7 +426,10 @@ private fun ChatList(
                 selectionMode = selection != null,
                 open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
-                modifier = Modifier.listRow(this, maxWidth, motionScheme.takeIf { animateRows }),
+                modifier =
+                    Modifier
+                        .listRow(this, maxWidth, motionScheme.takeIf { animateRows })
+                        .then(if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier),
             )
         }
     }
@@ -551,6 +555,11 @@ private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
 private const val ARCHIVE_ROW = "archive"
+
+// The Macrobenchmarks and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list and the row they
+// scroll and open by these tags, which `MainActivity` shows as resource ids.
+private const val CHAT_LIST_TEST_TAG = "chat_list"
+private const val SAVED_MESSAGES_TEST_TAG = "saved_messages"
 
 @PingogramPreviews
 @Composable

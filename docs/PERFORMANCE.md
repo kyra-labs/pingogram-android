@@ -131,8 +131,16 @@ regresses by more than 10%.
   uninstall a release-signed Pingogram from the device first.
 - Regenerate the Baseline + Startup Profile with `./gradlew :app:generateBaselineProfile` (device on
   API 33+, or rooted on API 28+) and commit `app/src/main/generated/baselineProfiles/`; both
-  flavors ship it. Do this before benchmarking: the `*BaselineProfile` startup benchmarks
-  require a profile.
+  flavors ship it. Do this before benchmarking: the `*BaselineProfile` benchmarks require a profile.
+- The journeys (`benchmark/.../Journeys.kt`) need a signed-in app: past the start they scroll the
+  chat list and open and scroll Saved Messages. They open no other chat, because opening one marks its
+  messages as read, so give Saved Messages a few screens of messages with media. Sign in once:
+  `./gradlew :app:installFossNonMinifiedRelease`, open Pingogram on the device, sign in and wait for
+  the chats. Then pass `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true` to the
+  generate and benchmark commands; without it Gradle uninstalls the app after the run and the next
+  one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
+  installing one over the other keeps the session. The screens are found by test tags, which
+  `MainActivity` shows as resource ids (`testTagsAsResourceId`).
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
