@@ -1,67 +1,62 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
-import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** The Settings screen with and without the log out confirmation; screen captures, so the dialog's window shows. */
+/**
+ * The Settings screen: with the account, before TDLib has announced it, on an expanded window, and with the log out
+ * confirmation; screen captures, so the dialog's window shows.
+ */
 @RunWith(RobolectricTestRunner::class)
-@Config(qualifiers = "w411dp-h891dp-xxhdpi")
+@Config(qualifiers = COMPACT)
 class SettingsScreenScreenshotTest {
     @get:Rule(order = 0)
-    val activityRegistration =
-        object : ExternalResource() {
-            // Declares ComponentActivity to Robolectric (ui-test-manifest is not a dependency), without the platform
-            // action bar, which would show in screen captures.
-            override fun before() {
-                val application = RuntimeEnvironment.getApplication()
-                val activity =
-                    ActivityInfo().apply {
-                        name = ComponentActivity::class.java.name
-                        packageName = application.packageName
-                        theme = android.R.style.Theme_DeviceDefault_NoActionBar
-                    }
-                shadowOf(application.packageManager).addOrUpdateActivity(activity)
-            }
-        }
+    val activityRegistration = ComponentActivityRegistration()
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun light() = capture(ThemeMode.Light, SettingsUiState())
+    fun light() = capture("light", ThemeMode.Light, SettingsPreviewData.content)
 
     @Test
-    fun dark() = capture(ThemeMode.Dark, SettingsUiState())
+    fun dark() = capture("dark", ThemeMode.Dark, SettingsPreviewData.content)
 
     @Test
-    fun logOutDialogLight() = capture(ThemeMode.Light, SettingsUiState(isLogOutDialogOpen = true))
+    @Config(qualifiers = EXPANDED)
+    fun expandedLight() = capture("expandedLight", ThemeMode.Light, SettingsPreviewData.content)
 
     @Test
-    fun logOutDialogDark() = capture(ThemeMode.Dark, SettingsUiState(isLogOutDialogOpen = true))
+    fun noAccountLight() = capture("noAccountLight", ThemeMode.Light, SettingsUiState())
 
-    // captureScreenRoboImage captures the dialog window too; Roborazzi still marks it experimental.
-    @OptIn(ExperimentalRoborazziApi::class)
+    @Test
+    fun loggingOutLight() =
+        capture("loggingOutLight", ThemeMode.Light, SettingsPreviewData.content.copy(isLoggingOut = true))
+
+    @Test
+    fun logOutDialogLight() =
+        capture("logOutDialogLight", ThemeMode.Light, SettingsPreviewData.content.copy(isLogOutDialogOpen = true))
+
+    @Test
+    fun logOutDialogDark() =
+        capture("logOutDialogDark", ThemeMode.Dark, SettingsPreviewData.content.copy(isLogOutDialogOpen = true))
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() = capture("fontScale200", ThemeMode.Light, SettingsPreviewData.content)
+
     private fun capture(
+        name: String,
         themeMode: ThemeMode,
         state: SettingsUiState,
-    ) {
-        composeRule.setContent {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) { SettingsScreen(state = state, onEvent = {}) }
-        }
-        composeRule.waitForIdle()
-        captureScreenRoboImage()
+    ) = composeRule.captureScreen(javaClass, name, themeMode) {
+        SettingsScreen(state = state, onEvent = {}, onOpenPage = {})
     }
 }

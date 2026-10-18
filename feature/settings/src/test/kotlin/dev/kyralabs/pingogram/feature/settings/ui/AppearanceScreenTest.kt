@@ -1,0 +1,199 @@
+package dev.kyralabs.pingogram.feature.settings.ui
+
+import androidx.activity.ComponentActivity
+import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.settings.R
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+
+/**
+ * What the Appearance page shows and sends: the theme and contrast choices, the switches (whole rows, read as
+ * switches), dynamic color only where the device has it, and the contrast level that follows the system on Android
+ * 14+. The screen is stateless: these check its events.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = COMPACT)
+class AppearanceScreenTest {
+    @get:Rule(order = 0)
+    val activityRegistration = ComponentActivityRegistration()
+
+    @get:Rule(order = 1)
+    val composeRule = createAndroidComposeRule<ComponentActivity>()
+
+    private val events = mutableListOf<AppearanceEvent>()
+
+    private fun setScreen(
+        settings: AppearanceSettings = AppearanceSettings(),
+        dynamicColorAvailable: Boolean = true,
+        systemContrast: Contrast? = null,
+    ) {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                AppearanceScreen(
+                    state = AppearanceUiState.Content(settings),
+                    onEvent = { events += it },
+                    onBack = {},
+                    dynamicColorAvailable = dynamicColorAvailable,
+                    systemContrast = systemContrast,
+                )
+            }
+        }
+    }
+
+    private fun string(
+        @StringRes id: Int,
+    ) = RuntimeEnvironment.getApplication().getString(id)
+
+    private fun node(
+        @StringRes id: Int,
+    ) = composeRule.onNodeWithText(string(id), useUnmergedTree = false)
+
+    /** The row of a switch: the node with the switch's role and [title]. */
+    private fun switchRow(
+        @StringRes title: Int,
+    ) = composeRule.onNode(
+        hasText(string(title)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch),
+    )
+
+    @Test
+    fun `shows the saved theme selected`() {
+        setScreen(AppearanceSettings(themeMode = ThemeMode.Dark))
+
+        node(R.string.settings_theme_dark).assertIsSelected()
+        node(R.string.settings_theme_system).assertIsNotSelected()
+    }
+
+    @Test
+    fun `the choices are segmented buttons side by side where their labels fit`() {
+        setScreen()
+
+        val system = node(R.string.settings_theme_system).getUnclippedBoundsInRoot()
+        val light = node(R.string.settings_theme_light).getUnclippedBoundsInRoot()
+        assertEquals(system.top, light.top)
+    }
+
+    @Test
+    fun `choosing another theme saves it`() {
+        setScreen()
+
+        node(R.string.settings_theme_light).performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetThemeMode(ThemeMode.Light)), events)
+    }
+
+    @Test
+    fun `choosing the selected theme again changes nothing`() {
+        setScreen()
+
+        node(R.string.settings_theme_system).performClick()
+
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `the AMOLED row toggles AMOLED black`() {
+        setScreen()
+
+        switchRow(R.string.settings_amoled).assertIsOff().performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetAmoled(true)), events)
+    }
+
+    @Test
+    fun `the dynamic color row toggles dynamic color`() {
+        setScreen(AppearanceSettings(dynamicColor = true))
+
+        switchRow(R.string.settings_dynamic_color).assertIsOn().performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetDynamicColor(false)), events)
+    }
+
+    @Test
+    fun `dynamic color is not offered below Android 12`() {
+        setScreen(dynamicColorAvailable = false)
+
+        node(R.string.settings_dynamic_color).assertDoesNotExist()
+    }
+
+    @Test
+    fun `choosing a contrast level saves it`() {
+        setScreen()
+
+        node(R.string.settings_contrast_high).assertIsEnabled().performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetContrast(Contrast.High)), events)
+    }
+
+    @Test
+    fun `on Android 14 and later the contrast follows the system and cannot be changed`() {
+        setScreen(AppearanceSettings(contrast = Contrast.Standard), systemContrast = Contrast.Medium)
+
+        node(R.string.settings_contrast_follows_system).assertExists()
+        node(R.string.settings_contrast_medium).assertIsSelected().assertIsNotEnabled()
+        node(R.string.settings_contrast_high).assertIsNotEnabled().performClick()
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `medium contrast with dynamic color says it uses the brand colors`() {
+        setScreen(AppearanceSettings(dynamicColor = true, contrast = Contrast.Medium))
+
+        node(R.string.settings_contrast_brand_colors).assertExists()
+    }
+
+    @Test
+    fun `standard contrast needs no note`() {
+        setScreen(AppearanceSettings(contrast = Contrast.Standard))
+
+        node(R.string.settings_contrast_brand_colors).assertDoesNotExist()
+        node(R.string.settings_contrast_follows_system).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun `at a font scale where the segments are too narrow the choices are radio buttons that work alike`() {
+        setScreen()
+
+        // One below the other rather than side by side.
+        val system = node(R.string.settings_theme_system).getUnclippedBoundsInRoot()
+        val light = node(R.string.settings_theme_light).getUnclippedBoundsInRoot()
+        assertTrue(light.top >= system.bottom)
+        node(R.string.settings_theme_system).assertIsSelected()
+        node(R.string.settings_contrast_standard).assertIsSelected()
+        node(R.string.settings_theme_dark).performClick()
+
+        assertEquals(listOf(AppearanceEvent.SetThemeMode(ThemeMode.Dark)), events)
+    }
+
+    @Test
+    fun `the switches are read as switches`() {
+        setScreen()
+
+        switchRow(R.string.settings_amoled).assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
+    }
+}

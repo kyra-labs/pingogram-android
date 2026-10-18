@@ -7,6 +7,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
@@ -40,11 +42,14 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.navigation.AboutRoute
+import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
+import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
@@ -266,6 +271,42 @@ class PingogramAppTest {
         composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // Settings pages (FR-S1)
+
+    @Test
+    fun `settings pages open above the settings tab, without the navigation bar`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_data_storage).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<DataStorageRoute>() == true)
+        assertNoNavigation()
+        composeRule.onNodeWithContentDescription(string(SettingsR.string.settings_back)).performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_about).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
+        assertNoNavigation()
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_appearance).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<AppearanceRoute>() == true)
+        // The page's segmented buttons are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
     }
 
     // A conversation (FR-C1)
