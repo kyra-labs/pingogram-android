@@ -39,18 +39,27 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     └──── UiState (StateFlow) ◀─────────────────┴──── Flow<Update> ◀┘
 ```
 
-- **TdlibClient** (`core:tdlib`) owns exactly one `org.drinkless.tdlib.Client` per logged-in
-  account. It exposes:
-  - `suspend fun <T : TdApi.Object> send(fn: TdApi.Function<T>): TdResult<T>` — wraps
+- **TdlibClient** (`core:tdlib`, an interface; `DefaultTdlibClient` in production,
+  `FakeTdlibClient` in tests) owns exactly one `org.drinkless.tdlib.Client` per logged-in
+  account. It exposes (details in `docs/TDLIB.md`):
+  - `suspend fun <T : TdApi.Object> send(function: TdApi.Function<T>): TdResult<T>` — wraps
     `Client.send` in `suspendCancellableCoroutine`; maps `TdApi.Error` to `TdError(code, message)`.
-  - `val updates: SharedFlow<TdApi.Update>` — hot, buffered (`extraBufferCapacity = 1024`,
-    `DROP_OLDEST` never — use `SUSPEND`), collected by repositories on `Dispatchers.Default`.
+  - `val updates: SharedFlow<TdApi.Update>` — hot, no replay, buffered
+    (`extraBufferCapacity = 4096`, `SUSPEND`, never dropping), collected by repositories on
+    `Dispatchers.Default`.
   - `val authState: StateFlow<AuthState>` — typed mirror of `updateAuthorizationState`.
   - `val connectionState: StateFlow<ConnectionState>`.
+  - `fun start()` — called once by `PingogramApplication`; creates the client in the background.
 - **Repositories** (`core:data`) keep in-memory caches keyed by TDLib ids (chat, user, message)
   as `MutableStateFlow<Map<Long, Chat>>` and apply updates incrementally. They never expose
   `TdApi` types upward; they map to domain models (`core:domain`). TDLib already persists
   everything in its SQLite DB, so **we do not add Room**.
+  TDLib introduces each user and chat only once and `updates` replays nothing, so caches subscribe
+  at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
+  `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from
+  every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
+  (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
+  `TdlibClient.start()`. Every new caching repository must join that set.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -78,7 +87,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Dispatchers.Default`. Nothing TDLib-related touches `Main` except state emission.
 - File IO (saving media) on `Dispatchers.IO`. Image decoding via Coil's own threads.
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
-  `StandardTestDispatcher`.
+  `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
+  provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
 
 ## Files and media
 
@@ -112,11 +122,15 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 - `build-logic/convention` with plugins: `pingogram.android.application`,
   `pingogram.android.library`, `pingogram.android.feature`, `pingogram.android.compose`,
-  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`.
+  `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
+  `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`).
+  `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /
-  `TELEGRAM_API_HASH` (String) via the secrets-gradle-plugin or a small custom task. CI writes the
-  file from GitHub secrets. Missing values fail configuration with a readable message.
+  `TELEGRAM_API_HASH` (String), parsed and validated in `build-logic` (`TelegramSecrets`, applied
+  by `pingogram.android.application`). CI writes the file from GitHub secrets. A missing file or
+  key, a non-integer id or a hash that is not 32 hex characters fails configuration with a
+  readable message that names the key but never its value.
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
   for GitHub releases: `foss`. Build types: `debug` (suffix `.debug`, debuggable), `release`
   (R8 full mode, resource shrinking, Baseline Profiles).

@@ -12,6 +12,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = "com.android.library")
             apply(plugin = "pingogram.android.lint")
+            apply(plugin = "pingogram.detekt")
+            apply(plugin = "pingogram.ktlint")
 
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)

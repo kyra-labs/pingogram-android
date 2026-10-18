@@ -29,21 +29,27 @@ fun PingogramTheme(
 ) {
     val dark = themeMode.isDark()
     val colorScheme = rememberPingogramColorScheme(dark, dynamicColor, contrast, amoled)
+    val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
 
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
-        typography = pingogramTypography(dark),   // Google Sans Flex, §3
         shapes = PingogramShapes,                 // §4
+        typography = pingogramTypography(dark),   // Google Sans Flex, §3
     ) {
         CompositionLocalProvider(
-            LocalPingogramColors provides pingogramExtendedColors(colorScheme),
-            LocalRippleConfiguration provides PingogramRipple,   // M3 state-layer ripple
+            LocalPingogramColors provides pingogramColors,          // §2.2, MaterialTheme.pingogramColors
+            LocalPingogramSpacing provides DefaultSpacing,          // §7, MaterialTheme.spacing
+            LocalRippleThemeConfiguration provides RippleDefaults.OpacityFocusThemeConfiguration, // §2.3
             content = content,
         )
     }
 }
 ```
+
+- The Expressive API (`MotionScheme.expressive()`, `MaterialShapes`, the `*Emphasized` styles,
+  `Shapes.largeIncreased`…) is public from material3 1.5; 1.4.0 keeps it internal. `MaterialShapes`
+  and `toShape()` still need `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`.
 
 - Root is always `MaterialExpressiveTheme`. `MaterialTheme` (non-expressive) is forbidden.
 - Everything reads tokens via `MaterialTheme.colorScheme`, `MaterialTheme.typography`,
@@ -54,9 +60,11 @@ fun PingogramTheme(
 ## 2. Color system
 
 ### 2.1 Scheme generation
-- Brand seed: `#E8457C` (placeholder; owner decides once). Generate with the Material Theme
-  Builder: light + dark × standard/medium/high contrast = 6 schemes committed to
-  `core/ui/theme/Color.kt`. Regenerate, never hand-edit.
+- Brand seed: `#E8457C` (placeholder; owner decides once). `tools/theme/generate.mjs` generates
+  the 6 schemes (light + dark × standard/medium/high contrast) with material-color-utilities, the
+  Material Theme Builder algorithm (`SchemeTonalSpot`, contrast 0 / 0.5 / 1), into
+  `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
+  never hand-edit the output.
 - Dynamic color (Material You) on Android 12+ by default: `dynamicLightColorScheme` /
   `dynamicDarkColorScheme`. User toggle to fall back to brand schemes.
 - Contrast follows the system setting on Android 14+ (`UiModeManager.contrast`), otherwise the
@@ -87,13 +95,16 @@ fun PingogramTheme(
 | Disabled | content 38% `onSurface`, container 12% `onSurface` |
 
 - Any extra semantic color (voice waveform, poll bars, reaction glow) is derived in
-  `pingogramExtendedColors()` from the scheme (tonal shifts, harmonization) — not hard-coded.
-- Surfaces use the tonal container ladder; **no shadow elevation** except FAB (level 3), menus
-  and dialogs (level 2/3) per M3 elevation tokens.
+  `pingogramColors()` (`PingogramColors`, read with `MaterialTheme.pingogramColors`) from the
+  scheme (tonal shifts, harmonization) — not hard-coded.
+- Surfaces use the tonal container ladder; **no shadow elevation** except FAB and floating toolbars
+  (level 3, incl. the floating navigation bar), menus and dialogs (level 2/3) per M3 elevation tokens.
 
 ### 2.3 State layers
 - Hover 8%, focus 10%, pressed 10%, dragged 16% of the content color, drawn as state layers
-  (Compose `ripple()` with M3 `RippleConfiguration`). No custom pressed colors.
+  (Compose `ripple()`). These are the material3 defaults; `PingogramTheme` pins the opacity-based
+  focus indication with `LocalRippleThemeConfiguration` (per-ripple `RippleAlpha` overrides are
+  deprecated since material3 1.5). No custom pressed colors.
 
 ## 3. Typography — Google Sans Flex (variable)
 
@@ -115,6 +126,12 @@ fun PingogramTheme(
 | Slant | `slnt` | 0; italic = `slnt −10` (true variable slant, never fake italic) |
 | Round | `ROND` | **100 for display/headline/title** (the "Rounded" look Material 3 Expressive uses), 0 for body/label |
 
+- Ranges in the bundled file (read from its `fvar` table): `opsz` 6–144, `wdth` 25–151,
+  `wght` 1–1000, `GRAD` **0–100**, `ROND` 0–100, `slnt` −10–0. Because `GRAD` has no negative
+  range, the platform clamps the dark theme's −25 to 0, so only emphasized styles get lighter in
+  dark (25 → 0). **Open question for the owner:** keep −25 (a no-op until a file with negative
+  grades ships) or shift the scale up (light 25 / dark 0, emphasized +25).
+
 ### 3.2 Compose implementation
 ```kotlin
 private fun gsf(weight: Int, opsz: Float, rond: Float, grad: Int = 0, wdth: Float = 100f, slnt: Float = 0f) =
@@ -133,12 +150,16 @@ private fun gsf(weight: Int, opsz: Float, rond: Float, grad: Int = 0, wdth: Floa
     )
 
 // One FontFamily per type style so opsz/ROND/GRAD match that style exactly.
-fun gsfFamily(opsz: Float, rond: Float, grad: Int) = FontFamily(
-    listOf(300, 400, 500, 600, 700, 800).flatMap { w ->
+fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFamily(
+    weights.flatMap { w ->
         listOf(gsf(w, opsz, rond, grad), gsf(w, opsz, rond, grad, slnt = -10f))
     },
 )
 ```
+- Every distinct variation setting becomes its own Typeface when first used, so families stay
+  small: a regular style holds its weight and its emphasized weight (what a bold span resolves to,
+  instead of a synthesized bold), an emphasized style only its own weight, each upright and
+  italic. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
 - `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD = if (dark) -25 else 0`.
@@ -149,8 +170,8 @@ fun gsfFamily(opsz: Float, rond: Float, grad: Int) = FontFamily(
   = `LineHeightStyle(Alignment.Center, Trim.None)`; `platformStyle = PlatformTextStyle(includeFontPadding = false)`.
 - Font scaling: all sizes in `sp`; the chat "message text size" setting multiplies `bodyLarge`
   only (0.85–1.3) and re-derives `opsz`. Non-linear font scaling (Android 14) is respected.
-- Fallbacks: `FontFamily` ends with `FontFamily.Default` so missing glyphs (CJK, Arabic,
-  Devanagari, emoji) fall through to system fonts and Noto; no font files are bundled for them.
+- Fallbacks: Android's font fallback chain renders glyphs Google Sans Flex lacks (CJK, Arabic,
+  Devanagari, emoji) with the system fonts and Noto; no font files are bundled for them.
 - Tabular figures for times/counters: `fontFeatureSettings = "tnum"`.
 
 ### 3.3 Style assignment
@@ -218,11 +239,12 @@ fun gsfFamily(opsz: Float, rond: Float, grad: Int) = FontFamily(
 
 | UI element | Component |
 |---|---|
-| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small), `SearchBar` docked → expanded |
+| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
+| Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s (scrollable); fallback `PrimaryScrollableTabRow` if > 6 |
-| Main navigation | `NavigationSuiteScaffold` → `ShortNavigationBar` (compact), `WideNavigationRail` collapsible (medium/expanded) |
-| New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton` |
+| Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
+| New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
 | Selection mode | `HorizontalFloatingToolbar` (expressive, `FloatingToolbarDefaults.vibrantFloatingToolbarColors()`) |
 | Composer | M3 `TextField` (outlined, `extraLarge` corners) inside `Surface(surfaceContainer)`; send = `SplitButton` (send / schedule · silent); voice record = `FilledIconButton` → morphs to pill with wavy indicator |
 | Attach menu | `ModalBottomSheet` + `HorizontalMultiBrowseCarousel` of recent photos + `ButtonGroup` of options |
@@ -243,12 +265,40 @@ fun gsfFamily(opsz: Float, rond: Float, grad: Int) = FontFamily(
 | Navigation drawer | not used (folders live in tabs) |
 | Empty states | `MaterialShapes` illustration + `headlineSmallEmphasized` + `bodyMedium` + `Button` |
 
+### 6.1 Floating navigation bar (compact windows)
+
+Google's Material 3 Expressive apps moved primary navigation into a floating pill (Google Photos,
+2026: tabs in a pill, search in a separate circle beside it). Material has no component for it;
+the nearest, the floating toolbar, is meant for page actions. Pingogram builds the pattern from
+Material parts (`app/.../ui/PingogramNavigationBar.kt`):
+
+- **Container**: `HorizontalFloatingToolbar` with `standardFloatingToolbarColors()`
+  (`surfaceContainer`), its default shape and level-3 elevation, `FloatingToolbarDefaults.ScreenOffset`
+  (16 dp) from the window sides and above the system navigation bar.
+- **Tabs**: one per top-level destination, `Role.Tab` in a `selectableGroup`. The selected tab shows
+  its filled icon and its label (`labelLargeEmphasized`) on a full-pill `secondaryContainer`
+  indicator in `onSecondaryContainer`; the others show only their label (`labelLarge`) in the
+  toolbar's content color. Where the labels do not fit (narrow phones, large font scales: measured,
+  never truncated), the other tabs show their outlined icon instead, named by the label for
+  TalkBack.
+- **Search**: `FloatingToolbarDefaults.StandardFloatingActionButton` beside the pill, a circle in the
+  toolbar's own colors, opening global search.
+- **Motion**: the indicator fades in on `defaultEffectsSpec` (read in the draw phase); the icon slides
+  in with `fastSpatialSpec` + `fastEffectsSpec`; the bar slides away on screens pushed above a tab
+  and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out).
+- **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
+  `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
+  margin below and the same margin above), so lists end clear of the bar.
+- Medium and wider windows keep the `WideNavigationRail`; the bar is for compact windows only.
+
 ## 7. Layout
 
 - `Scaffold` per screen; `contentWindowInsets`, `innerPadding`; `enableEdgeToEdge()`;
   transparent system bars; `viewport-fit`-style safe handling of display cutouts.
-- Spacing scale 4/8/12/16/24/32 dp; margins 16 dp compact, 24 dp medium+.
-- Window size classes via `currentWindowAdaptiveInfo()`: **compact** single pane + bottom bar;
+- Spacing scale 4/8/12/16/24/32 dp; margins 16 dp compact, 24 dp medium+. Feature code reads
+  them as tokens from `MaterialTheme.spacing` (`extraSmall`…`extraExtraLarge`,
+  `windowMarginCompact`, `windowMarginMedium`), never as `dp` literals.
+- Window size classes via `currentWindowAdaptiveInfo()`: **compact** single pane + floating navigation bar (§6.1);
   **medium** navigation rail; **expanded** `ListDetailPaneScaffold` (chats | conversation),
   `SupportingPaneScaffold` for profile/shared media. Canonical layouts only.
 - Pane behaviour on foldables: `FoldingFeature`-aware hinge avoidance (`material3-adaptive`).

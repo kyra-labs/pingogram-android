@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Pingogram</string>
+
+    <!-- Navigation bar and rail labels -->
+    <string name="nav_chats">Chats</string>
+    <string name="nav_contacts">Contacts</string>
+    <string name="nav_settings">Settings</string>
+    <!-- The search button next to the navigation bar and at the top of the rail -->
+    <string name="nav_search">Search</string>
 </resources>

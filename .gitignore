@@ -22,6 +22,9 @@ captures/
 *.aab
 mapping.txt
 
+# Node (tools/theme)
+node_modules/
+
 # IDE
 .idea/
 *.iml
@@ -31,3 +34,4 @@ local.properties
 
 # Claude Code local state
 .claude/settings.local.json
+.claude/worktrees/

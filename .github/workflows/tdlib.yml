@@ -26,7 +26,8 @@ env:
   TDLIB_COMMIT: "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
   ANDROID_API: "26"
   ABIS: "arm64-v8a armeabi-v7a x86_64"
-  # NDK r28+ produces 16 KB page-size aligned .so files (required on Android 15+).
+  # NDK r28+ aligns 64-bit .so files to 16 KB pages (required on Android 15+); 32-bit ABIs keep
+  # 4 KB pages, the only page size their devices use.
   ANDROID_NDK_VERSION: "28.1.13356709"
   # androidx.annotation is on the compile classpath because TDLib adds @IntDef to TdApi.java.
   ANNOTATION_VERSION: "1.4.0"
@@ -129,7 +130,7 @@ jobs:
           unzip -l "dist/tdlib-${SHORT}.aar"
           ls -la dist
 
-      - name: Verify 16 KB page alignment
+      - name: Verify 16 KB page alignment (64-bit ABIs)
         run: |
           set -euo pipefail
           mkdir -p check && ( cd check && unzip -oq "../${{ steps.collect.outputs.aar }}" )
@@ -138,7 +139,10 @@ jobs:
           for so in $(find check -name '*.so'); do
             ALIGN=$("$READELF" -lW "$so" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')
             echo "$so → LOAD align: $ALIGN"
-            if [[ "$ALIGN" != *0x4000* ]]; then echo "::error::$so is not 16 KB aligned"; FAIL=1; fi
+            case "$so" in
+              */arm64-v8a/*|*/x86_64/*)
+                if [[ "$ALIGN" != *0x4000* ]]; then echo "::error::$so is not 16 KB aligned"; FAIL=1; fi ;;
+            esac
           done
           exit $FAIL
 
@@ -159,7 +163,7 @@ jobs:
             Prebuilt TDLib for Android.
             - tdlib/td commit: `${{ steps.sha.outputs.full }}`
             - ABIs: ${{ env.ABIS }} · min API ${{ env.ANDROID_API }}
-            - Built with NDK ${{ env.ANDROID_NDK_VERSION }} (16 KB page aligned)
+            - Built with NDK ${{ env.ANDROID_NDK_VERSION }} (64-bit libraries 16 KB page aligned)
             - License: Boost Software License 1.0 (https://github.com/tdlib/td)
 
             Consumed by `core/tdlib` via the `fetchTdlib` Gradle task.

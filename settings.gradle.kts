@@ -24,14 +24,29 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // The TDLib AAR, and nothing else from here: the pingogram.tdlib plugin (build-logic TdlibAar.REPOSITORY)
+        // downloads it into this git-ignored directory when :core:tdlib's dependencies are resolved (docs/TDLIB.md).
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "tdlib"
+                    url = uri("core/tdlib/libs/maven")
+                }
+            }
+            filter { includeGroup("org.drinkless") }
+        }
     }
 }
 
 rootProject.name = "pingogram"
 
+// Also a regular included build, so `libs.pingogram.detekt.rules` resolves to build-logic/detekt-rules.
+includeBuild("build-logic")
+
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(":app")
+include(":benchmark")
 
 include(":core:common")
 include(":core:data")

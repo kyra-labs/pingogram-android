@@ -6,4 +6,7 @@ plugins {
 dependencies {
     api(projects.core.domain)
     api(projects.core.tdlib)
+
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }

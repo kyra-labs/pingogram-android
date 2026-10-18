@@ -92,9 +92,12 @@ Delete `keystore.b64` from disk afterwards.
 ## 6. Build TDLib once
 
 1. In GitHub → **Actions → Build TDLib → Run workflow** (takes ~30–60 min).
-2. It publishes a pre-release `tdlib-<sha>` with `tdlib-<sha>.aar`. Claude Code's `fetchTdlib`
-   Gradle task downloads it; CI needs this to exist before the app can build.
-3. Re-run only when you bump `TDLIB_COMMIT`.
+2. It publishes a pre-release `tdlib-<sha>` with `tdlib-<sha>.aar` and `SHA256SUMS.txt`. The
+   build downloads the AAR by itself (`docs/TDLIB.md`); CI needs it before the app can build.
+3. Copy the AAR's SHA-256 from `SHA256SUMS.txt` into `gradle/libs.versions.toml` →
+   `tdlibAarSha256` and commit it. The build verifies every download against it, and fails with
+   instructions while it is still `"unpinned"`.
+4. Re-run only when you bump `TDLIB_COMMIT` (then update `tdlibAarSha256` too).
 
 ## 7. Test on your phone
 

@@ -75,9 +75,10 @@ jobs:
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        # Two invocations: AGP cannot build the bundle while ABI splits (per-ABI APKs) are on.
         run: |
-          ./gradlew :app:assembleFossRelease :app:bundleFossRelease \
-            -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
+          ./gradlew :app:assembleFossRelease -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
+          ./gradlew :app:bundleFossRelease -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
 
       - name: Build gms flavor (optional)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_gms }}
