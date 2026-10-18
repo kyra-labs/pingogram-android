@@ -31,3 +31,12 @@ data object SearchRoute
 /** The archived chats (`REQUIREMENTS.md` FR-L9), `:feature:chats`, pushed above the Chats tab from its archive row. */
 @Serializable
 data object ArchiveRoute
+
+/**
+ * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C8), `:feature:chat`, pushed above the Chats tab from a
+ * row of the chat list or the archive.
+ */
+@Serializable
+data class ChatRoute(
+    val chatId: Long,
+)
