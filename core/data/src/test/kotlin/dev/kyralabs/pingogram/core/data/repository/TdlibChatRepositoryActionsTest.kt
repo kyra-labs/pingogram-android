@@ -367,6 +367,35 @@ class TdlibChatRepositoryActionsTest {
             assertEquals(Outcome.Failure(DomainError.NotFound), result)
         }
 
+    // viewMessages
+
+    @Test
+    fun `viewMessages reports the messages as viewed in the open chat's history, without forcing them read`() =
+        runTest {
+            client.on(TdApi.ViewMessages::class, ok())
+
+            val result = repository().viewMessages(CHAT_ID, listOf(LAST_MESSAGE_ID, LAST_MESSAGE_ID - (1L shl 20)))
+
+            assertEquals(
+                listOf(
+                    "ViewMessages($CHAT_ID, [$LAST_MESSAGE_ID, ${LAST_MESSAGE_ID - (1L shl 20)}], " +
+                        "MessageSourceChatHistory, forceRead=false)",
+                ),
+                sent(),
+            )
+            assertEquals(Outcome.Success(Unit), result)
+        }
+
+    @Test
+    fun `viewMessages reports a failure`() =
+        runTest {
+            client.on(TdApi.ViewMessages::class, failure(TdApi.Error(400, "Chat not found")))
+
+            val result = repository().viewMessages(CHAT_ID, listOf(LAST_MESSAGE_ID))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), result)
+        }
+
     private companion object {
         const val CHAT_ID = 100L
         const val LAST_MESSAGE_ID = 7L shl 20

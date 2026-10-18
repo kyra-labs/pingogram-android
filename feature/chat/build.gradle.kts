@@ -6,6 +6,8 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    // Plays voice messages and music from TDLib's local files (ui/player); see the catalog entry.
+    implementation(libs.media3.exoplayer)
 
     // ChatViewModel is tested against fakes of the domain repositories and a fake clock.
     testImplementation(libs.kotlinx.coroutines.test)

@@ -76,6 +76,16 @@ class ContentActionsTest {
     }
 
     @Test
+    fun `a voice message that plays pauses`() {
+        val voice = ContentPreviewData.voiceNote(isListened = true)
+
+        assertEquals(
+            listOf(ContentAction(R.string.content_pause, ChatEvent.PlayPause(MESSAGE, voice.voiceNote.file.id))),
+            contentActions(bubble(voice), null, isPlaying = true),
+        )
+    }
+
+    @Test
     fun `a document downloads, cancels or opens as far as it is downloaded`() {
         val download = ContentAction(R.string.content_download, ChatEvent.DownloadFile(documentFile))
 

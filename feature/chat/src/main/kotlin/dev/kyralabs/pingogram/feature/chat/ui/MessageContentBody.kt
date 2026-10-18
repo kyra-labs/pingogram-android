@@ -41,20 +41,22 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
  * with square corners here.
  *
  * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum]; tapping an item opens it by its own message.
- * - **Voice messages, songs and documents** show their file's [fileState]. Playback comes with the player: until
- *   then they show [Playback.Stopped], and play and seek go out as events for it.
+ * - **Voice messages, songs and documents** show their file's [fileState]; voice messages and songs also how they
+ *   play ([playback]), and send play and seek as events for the ViewModel's player.
  * - **Text messages** show nothing here: the bubble shows their text and link preview itself, as it does the caption
  *   of any media. Service messages never come here; they are pills. Content Pingogram cannot show yet shows its
  *   [ChatItem.Bubble.contentLabel] in one line.
  *
  * @param fileState the state of the file of a voice message, song or document ([downloadableFileId]); null while
  *   unknown and for other content.
+ * @param playback how a voice message or song plays; [Playback.Stopped] unless it is the one in the player.
  * @param colors the colors of the bubble's side, for content that draws on the bubble.
  */
 @Composable
 internal fun MessageContentBody(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    playback: Playback,
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -76,7 +78,7 @@ internal fun MessageContentBody(
         }
 
         content.downloadableFileId != null -> {
-            FileContent(bubble, fileState, colors, onEvent, modifier)
+            FileContent(bubble, fileState, playback, colors, onEvent, modifier)
         }
 
         else -> {
@@ -106,14 +108,15 @@ private fun MediaContent(
     }
 }
 
-/** Voice messages, songs and documents, with their file's state. */
+/** Voice messages, songs and documents, with their file's state; voice messages and songs with their [playback]. */
 @Composable
 private fun FileContent(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    playback: Playback,
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     val messageId = bubble.id
     val content = bubble.content
@@ -122,11 +125,11 @@ private fun FileContent(
     val onSeek = { fraction: Float -> onEvent(ChatEvent.Seek(messageId, fraction)) }
     when (content) {
         is MessageContent.VoiceNote -> {
-            MessageVoiceNote(content, fileState, Playback.Stopped, onPlayPause, onSeek, modifier, colors)
+            MessageVoiceNote(content, fileState, playback, onPlayPause, onSeek, modifier, colors)
         }
 
         is MessageContent.Audio -> {
-            MessageAudio(content, fileState, Playback.Stopped, onPlayPause, onSeek, modifier, colors)
+            MessageAudio(content, fileState, playback, onPlayPause, onSeek, modifier, colors)
         }
 
         is MessageContent.Document -> {

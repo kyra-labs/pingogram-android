@@ -2,12 +2,14 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -20,6 +22,7 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property unreadCount unread incoming messages, for the badge of the jump-to-bottom button; 0 shows none.
  * @property fileStates how far the files of the loaded voice messages, songs and documents are downloaded, by file id
  *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
+ * @property playback the voice message or song in the player; null when none is.
  */
 @Immutable
 data class ChatUiState(
@@ -27,6 +30,18 @@ data class ChatUiState(
     val content: ChatContent = ChatContent.Loading,
     val unreadCount: Int = 0,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
+    val playback: MessagePlayback? = null,
+)
+
+/**
+ * Message [messageId] in the player, playing or paused as [playback] says; every other message shows
+ * [Playback.Stopped]. It changes only when the message or whether it plays does: the progress is snapshot state that
+ * [Playback.progress] reads, so the position moving re-emits nothing.
+ */
+@Stable
+data class MessagePlayback(
+    val messageId: Long,
+    val playback: Playback,
 )
 
 /**
@@ -249,14 +264,18 @@ enum class OutgoingStatus {
 /**
  * The quote of the replied message at the top of a bubble: [sender]'s name, colored by [senderId], over one line of
  * [text]. Without a sender while the replied message loads, when it was deleted, or for a story.
+ *
+ * @property messageId the replied message of this chat, which tapping the quote shows ([ChatEvent.OpenReply]); null
+ *   for a story or a message of another chat, which it does not open.
  */
 @Immutable
 data class ReplyQuote(
     val sender: UiText?,
     val senderId: Long?,
     val text: UiText,
+    val messageId: Long? = null,
 ) {
-    override fun toString() = "ReplyQuote(senderId=$senderId, …)"
+    override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, …)"
 }
 
 /** The preview of a link in a message's text; each text may be empty. */

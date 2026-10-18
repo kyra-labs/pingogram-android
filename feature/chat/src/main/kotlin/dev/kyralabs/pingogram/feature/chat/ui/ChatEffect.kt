@@ -15,6 +15,20 @@ sealed interface ChatEffect {
      */
     data object FileOpeningUnavailable : ChatEffect
 
+    /** The file of a voice message or song could not be played: a snackbar says so. */
+    data object PlaybackFailed : ChatEffect
+
+    /**
+     * Scroll the list to message [messageId], which the items hold now, and highlight it: the replied message of a
+     * tapped quote ([ChatEvent.OpenReply]).
+     */
+    data class ScrollToMessage(
+        val messageId: Long,
+    ) : ChatEffect
+
+    /** The replied message of a tapped quote was deleted, or is too far back: a snackbar says so. */
+    data object MessageUnavailable : ChatEffect
+
     /** Show the point at [latitude], [longitude] (in degrees) in a maps app, named [label] if there is one. */
     data class OpenLocation(
         val latitude: Double,
