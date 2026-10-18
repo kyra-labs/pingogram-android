@@ -54,15 +54,18 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped. Until the player
-     * comes, it only downloads the file if it is not on the device.
+     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped: it plays, or
+     * pauses, downloading the file first if it is not on the device.
      */
     data class PlayPause(
         val messageId: Long,
         val fileId: Int,
     ) : ChatEvent
 
-    /** The voice message or song [messageId] is to play from [fraction] (0–1) of its length; for the player. */
+    /**
+     * The voice message or song [messageId] is to play from [fraction] (0–1) of its length: the one in the player
+     * moves there, another one starts there.
+     */
     data class Seek(
         val messageId: Long,
         val fraction: Float,

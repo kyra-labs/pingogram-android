@@ -5,6 +5,16 @@
     <!-- TDLib's connection to Telegram's data centers. Every permission needs the owner's approval
          (CLAUDE.md) and is pinned by AppManifestTest. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Media3 ExoPlayer (feature:chat) declares these for streaming and wake locks. Pingogram plays only files
+         TDLib downloaded and sets no wake mode, and ExoPlayer handles the missing network permission, so they are
+         left out. A dependency that needs one (WorkManager needs WAKE_LOCK) must drop its line here, with the owner's
+         approval. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK"
+        tools:node="remove" />
 
     <!-- enableOnBackInvokedCallback: predictive back (REQUIREMENTS.md §7). -->
     <application

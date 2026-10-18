@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
 
 /**
  * The files of a conversation's voice messages, songs and documents, for [ChatViewModel]: their states through
- * [FileRepository.observe], and downloads at visible priority in [scope]. A failed request goes to [onError].
+ * [FileRepository.observe], and downloads at visible priority in [scope]. A failed request goes to [onError]. Playing
+ * a voice message or song downloads its file through [ChatPlayback].
  */
 internal class ChatFiles(
     private val repository: FileRepository,
@@ -53,18 +54,6 @@ internal class ChatFiles(
     fun download(fileId: Int) = request { download(fileId, DownloadPriority.Visible) }
 
     fun cancelDownload(fileId: Int) = request { cancelDownload(fileId) }
-
-    /**
-     * Until the player comes, playing a voice message or song downloads its file if it is not on the device and not
-     * already downloading ([state]).
-     */
-    fun playPause(
-        fileId: Int,
-        state: FileState?,
-    ) {
-        val downloading = state is FileState.Downloading && state.isActive
-        if (state !is FileState.Downloaded && !downloading) download(fileId)
-    }
 
     private fun request(call: suspend FileRepository.() -> Outcome<Unit>) {
         scope.launch { repository.call().onFailure(onError) }

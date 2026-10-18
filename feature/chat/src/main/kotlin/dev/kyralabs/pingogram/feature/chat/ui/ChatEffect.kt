@@ -15,6 +15,9 @@ sealed interface ChatEffect {
      */
     data object FileOpeningUnavailable : ChatEffect
 
+    /** The file of a voice message or song could not be played: a snackbar says so. */
+    data object PlaybackFailed : ChatEffect
+
     /** Show the point at [latitude], [longitude] (in degrees) in a maps app, named [label] if there is one. */
     data class OpenLocation(
         val latitude: Double,

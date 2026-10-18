@@ -23,6 +23,8 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chat.ui.player.AudioKind
+import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -332,6 +334,62 @@ class FakeFileRepository : FileRepository {
         calls += "cancel:$fileId"
         return onCancel(fileId)
     }
+}
+
+/**
+ * A player that plays nothing: it records what it is told ([calls]), plays at [positionMillis] of [durationMillis],
+ * which tests set, and tells its listener what tests make it do: [end], [pauseBySystem], [fail].
+ */
+internal class FakeAudioPlayer : AudioPlayer {
+    override var listener: AudioPlayer.Listener? = null
+
+    override var positionMillis = 0L
+
+    override var durationMillis: Long? = null
+
+    /** `play:<path>:<kind>:<position>`, `pause`, `resume`, `seek:<position>`, `stop` and `release`, in order. */
+    val calls = mutableListOf<String>()
+
+    override fun play(
+        path: String,
+        kind: AudioKind,
+        positionMillis: Long,
+    ) {
+        calls += "play:$path:$kind:$positionMillis"
+        this.positionMillis = positionMillis
+    }
+
+    override fun pause() {
+        calls += "pause"
+    }
+
+    override fun resume() {
+        calls += "resume"
+    }
+
+    override fun seekTo(positionMillis: Long) {
+        calls += "seek:$positionMillis"
+        this.positionMillis = positionMillis
+    }
+
+    override fun stop() {
+        calls += "stop"
+    }
+
+    override fun release() {
+        calls += "release"
+    }
+
+    /** The file played to its end. */
+    fun end() {
+        positionMillis = durationMillis ?: positionMillis
+        listener?.onEnded()
+    }
+
+    /** The system paused it: audio focus lost, headphones unplugged. */
+    fun pauseBySystem() = listener?.onPlayingChanged(false)
+
+    fun fail() = listener?.onError()
 }
 
 private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the conversation")

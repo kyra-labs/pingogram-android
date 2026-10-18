@@ -55,8 +55,8 @@ internal fun ChatRoute(
 }
 
 /**
- * Handles [effects]: a snackbar for errors and for what is not there yet, the newest replacing the one shown; a
- * location opens in a maps app, or a snackbar says that no app can show it.
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played and for what is not there yet, the newest
+ * replacing the one shown; a location opens in a maps app, or a snackbar says that no app can show it.
  */
 @Composable
 private fun ChatEffects(
@@ -77,6 +77,10 @@ private fun ChatEffects(
 
                     ChatEffect.FileOpeningUnavailable -> {
                         resources.getString(R.string.content_open_file_later)
+                    }
+
+                    ChatEffect.PlaybackFailed -> {
+                        resources.getString(R.string.content_playback_failed)
                     }
 
                     is ChatEffect.OpenLocation -> {

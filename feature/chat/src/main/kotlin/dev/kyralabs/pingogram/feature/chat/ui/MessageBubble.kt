@@ -51,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
@@ -76,20 +77,21 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
  * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
  *   the content's buttons as custom actions ([contentActions]).
- * - Everything shown is in [bubble], mapped by the ViewModel, and in [fileState], the file of a voice message, song or
- *   document; the text is built once per message ([AnnotatedTextCache]). No effects, no fixed heights, so it grows
- *   with the font scale (`docs/PERFORMANCE.md` §4).
+ * - Everything shown is in [bubble], mapped by the ViewModel, in [fileState], the file of a voice message, song or
+ *   document, and in [playback], how a voice message or song plays; the text is built once per message
+ *   ([AnnotatedTextCache]). No effects, no fixed heights, so it grows with the font scale (`docs/PERFORMANCE.md` §4).
  */
 @Composable
 internal fun MessageBubbleRow(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    playback: Playback,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val description = bubbleDescription(bubble)
-    val actions = rememberContentActions(bubble, fileState, onEvent)
+    val actions = rememberContentActions(bubble, fileState, playback.isPlaying, onEvent)
     Row(
         modifier =
             modifier.fillMaxWidth().clearAndSetSemantics {
@@ -115,7 +117,7 @@ internal fun MessageBubbleRow(
             }
             Spacer(Modifier.width(MaterialTheme.spacing.small))
         }
-        MessageBubble(bubble, fileState, resources, onEvent)
+        MessageBubble(bubble, fileState, playback, resources, onEvent)
     }
 }
 
@@ -124,11 +126,12 @@ internal fun MessageBubbleRow(
 private fun rememberContentActions(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    isPlaying: Boolean,
     onEvent: (ChatEvent) -> Unit,
 ): List<CustomAccessibilityAction> {
     val resources = LocalResources.current
-    return remember(bubble, fileState, onEvent, resources) {
-        contentActions(bubble, fileState).map { action ->
+    return remember(bubble, fileState, isPlaying, onEvent, resources) {
+        contentActions(bubble, fileState, isPlaying).map { action ->
             CustomAccessibilityAction(resources.getString(action.label)) {
                 onEvent(action.event)
                 true
@@ -141,6 +144,7 @@ private fun rememberContentActions(
 private fun MessageBubble(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    playback: Playback,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
 ) {
@@ -172,7 +176,7 @@ private fun MessageBubble(
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
                 ) {
                     BubbleHeader(bubble, style.colors)
-                    MessageContentBody(bubble, fileState, style.colors, onEvent)
+                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent)
                     BubbleBody(bubble, style, resources, onEvent)
                 }
             }
@@ -198,7 +202,7 @@ private fun BareBubble(
     ) {
         BubbleHeader(bubble, colors)
         Box {
-            MessageContentBody(bubble, fileState = null, colors = colors, onEvent = onEvent)
+            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
             OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
         }
         if (bubble.reactions.isNotEmpty()) ReactionsRow(bubble, colors)
@@ -236,7 +240,7 @@ private fun MediaBubble(
             ) { BubbleHeader(bubble, colors) }
         }
         Box {
-            MessageContentBody(bubble, fileState = null, colors = colors, onEvent = onEvent)
+            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
             if (metaOnMedia) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
         }
         if (!metaOnMedia) {

@@ -18,12 +18,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.GroupPosition
 import dev.kyralabs.pingogram.feature.chat.ui.LinkPreviewCard
 import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
+import dev.kyralabs.pingogram.feature.chat.ui.MessagePlayback
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -34,7 +36,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Sample conversations for previews and screenshot tests: a private chat with grouping, every outgoing state and the
  * unread divider; a group with sender names, avatars, replies, forwards, reactions and a link preview; a channel;
  * service messages; a message with every kind of formatting; media of every frame (photos, an album, a sticker, a
- * voice message, a document, a poll, a venue); and the loading, empty, error and not-found states.
+ * voice message, a document, a poll, a venue), with the voice message also playing; and the loading, empty, error
+ * and not-found states.
  * Items are listed newest first, as the reverse layout shows them.
  */
 internal object ChatPreviewData {
@@ -435,6 +438,12 @@ internal object ChatPreviewData {
                 ),
         )
 
+    /** [mediaFiles] while its voice message plays, two fifths in. */
+    val voicePlaying =
+        mediaFiles.copy(
+            playback = MessagePlayback(messageId = 63, playback = Playback(isPlaying = true, progress = { PLAYED })),
+        )
+
     val loading = ChatUiState(header = privateChat.header, content = ChatContent.Loading)
 
     val empty = ChatUiState(header = privateChat.header, content = ChatContent.Empty)
@@ -447,6 +456,7 @@ internal object ChatPreviewData {
     private const val PORTRAIT_HEIGHT = 1280
     private const val SECOND_PHOTO_FILE_ID = 40
     private const val DOWNLOADED_BYTES = 1_700_000L
+    private const val PLAYED = 0.4f
 
     private const val LINK = "https://developer.android.com/compose"
     private const val LINK_TEXT = "Here's the write-up on the new lazy layouts: $LINK"

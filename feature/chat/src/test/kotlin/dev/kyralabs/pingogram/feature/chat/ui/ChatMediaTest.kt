@@ -29,7 +29,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Duration
 
-/** Media in [ChatViewModel]: the files it follows, what tapping media does, and albums as one bubble. */
+/**
+ * Media in [ChatViewModel]: the files it follows, what tapping media does, and albums as one bubble. Playback is in
+ * [ChatPlaybackTest].
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatMediaTest : ChatViewModelHarness() {
     private val voice = ContentPreviewData.voiceNote(isListened = true)
@@ -115,32 +118,6 @@ class ChatMediaTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.CancelDownload(documentFile))
                 assertEquals(ChatEffect.ShowError(DomainError.NotFound), awaitItem())
             }
-        }
-
-    @Test
-    fun `playing a voice message downloads its file when it is not on the device`() =
-        runTest {
-            files.setFile(voiceFile, FileState.NotDownloaded(size = 4, canBeDownloaded = true))
-            val viewModel = showing(chat(), history(message(1, content = voice)))
-
-            send(viewModel, ChatEvent.PlayPause(messageId = 1, fileId = voiceFile))
-
-            assertEquals(listOf("download:$voiceFile:Visible"), files.calls)
-        }
-
-    @Test
-    fun `playing a voice message that is downloaded or downloading starts no download`() =
-        runTest {
-            val viewModel = showing(chat(), history(message(1, content = voice)))
-
-            files.setFile(voiceFile, FileState.Downloaded(path = "/voice.ogg", size = 4))
-            runCurrent()
-            send(viewModel, ChatEvent.PlayPause(messageId = 1, fileId = voiceFile))
-            files.setFile(voiceFile, FileState.Downloading(downloadedSize = 1, size = 4, isActive = true))
-            runCurrent()
-            send(viewModel, ChatEvent.PlayPause(messageId = 1, fileId = voiceFile), ChatEvent.Seek(1, 0.5f))
-
-            assertTrue(files.calls.isEmpty())
         }
 
     @Test

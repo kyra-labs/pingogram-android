@@ -16,12 +16,14 @@ internal data class ContentAction(
 )
 
 /**
- * The actions of [bubble]'s content: open media (an album's first item), play a voice message or song, download,
- * cancel or open a document as far as its [fileState] goes, open a location; none for other content.
+ * The actions of [bubble]'s content: open media (an album's first item), play or pause a voice message or song as
+ * [isPlaying] says, download, cancel or open a document as far as its [fileState] goes, open a location; none for
+ * other content.
  */
 internal fun contentActions(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
+    isPlaying: Boolean = false,
 ): List<ContentAction> {
     val album = bubble.album
     val content = bubble.content
@@ -51,7 +53,8 @@ internal fun contentActions(
         }
 
         else -> {
-            listOf(ContentAction(R.string.content_play, ChatEvent.PlayPause(bubble.id, fileId)))
+            val label = if (isPlaying) R.string.content_pause else R.string.content_play
+            listOf(ContentAction(label, ChatEvent.PlayPause(bubble.id, fileId)))
         }
     }
 }

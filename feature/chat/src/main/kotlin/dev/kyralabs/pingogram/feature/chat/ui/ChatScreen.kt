@@ -73,6 +73,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
@@ -152,7 +153,7 @@ internal fun ChatScreen(
 
             is ChatContent.Content -> {
                 Box(bodyModifier) {
-                    MessageList(content, state.fileStates, listState, innerPadding, onEvent)
+                    MessageList(content, state.fileStates, state.playback, listState, innerPadding, onEvent)
                     FloatingDatePill(
                         items = content.items,
                         listState = listState,
@@ -171,10 +172,12 @@ internal fun ChatScreen(
  * The entries of [content], newest first in a reverse layout, then the state of older pages above the oldest one.
  * Each entry animates to its new place and fades in and out on the motion scheme's springs.
  */
+@Suppress("LongParameterList") // What the list shows, its state and the screen's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
     content: ChatContent.Content,
     fileStates: ImmutableMap<Int, FileState>,
+    playback: MessagePlayback?,
     listState: LazyListState,
     innerPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
@@ -200,7 +203,7 @@ private fun MessageList(
     ) {
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, bubbleResources, onEvent, itemModifier)
+            ChatItemRow(item, fileStates, playback, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             item(key = OLDER_KEY, contentType = OLDER_KEY) {
@@ -230,11 +233,15 @@ private fun MessageList(
     }
 }
 
-/** One entry of the list: a message with the state of its file, a service message, a date or the unread divider. */
+/**
+ * One entry of the list: a message with the state of its file and its playback (only the message in the player has
+ * one), a service message, a date or the unread divider.
+ */
 @Composable
 private fun ChatItemRow(
     item: ChatItem,
     fileStates: ImmutableMap<Int, FileState>,
+    playback: MessagePlayback?,
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -242,7 +249,8 @@ private fun ChatItemRow(
     when (item) {
         is ChatItem.Bubble -> {
             val fileState = item.content.downloadableFileId?.let(fileStates::get)
-            MessageBubbleRow(item, fileState, bubbleResources, onEvent, modifier)
+            val bubblePlayback = playback?.takeIf { it.messageId == item.id }?.playback ?: Playback.Stopped
+            MessageBubbleRow(item, fileState, bubblePlayback, bubbleResources, onEvent, modifier)
         }
 
         is ChatItem.Service -> {

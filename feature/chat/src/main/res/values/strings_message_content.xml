@@ -20,6 +20,8 @@
     <string name="content_open_file_later">Opening files comes in a later version</string>
     <!-- A snackbar after tapping a location when no app on the device shows maps. -->
     <string name="content_no_maps_app">No app on this device can show this location</string>
+    <!-- A snackbar when the file of a voice message or song cannot be played (damaged, or in a format the device lacks). -->
+    <string name="content_playback_failed">This can\'t be played</string>
     <!-- An album of photos and videos, for screen readers: %1$d is how many it holds. -->
     <plurals name="content_album_photos">
         <item quantity="one">%1$d photo</item>

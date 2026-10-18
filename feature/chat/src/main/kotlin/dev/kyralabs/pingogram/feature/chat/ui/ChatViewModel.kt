@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
@@ -90,12 +91,14 @@ import javax.inject.Inject
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
  *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
- *   download and cancel on request; playing a voice message or song downloads its file until the player comes.
- *   Failures go out as [ChatEffect.ShowError] snackbars.
+ *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
+ * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
+ *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
+ *   Stopping the screen pauses, and the player is released with the view model.
  * - **Effects** ([effects]): errors, opening a location in a maps app, and the note that opening files comes later.
  *
- * It takes one repository per kind of data the screen combines, plus the clock, dispatcher, language and time
- * patterns that tests replace, hence `LongParameterList` is suppressed. Hilt reads [chatId] from the route.
+ * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
+ * patterns and log that tests replace, hence `LongParameterList` is suppressed. Hilt reads [chatId] from the route.
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -113,6 +116,8 @@ class ChatViewModel internal constructor(
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
+    audioPlayer: AudioPlayer,
+    private val log: ChatLog,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -126,6 +131,7 @@ class ChatViewModel internal constructor(
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
+        audioPlayer: AudioPlayer,
     ) : this(
         savedStateHandle.toRoute<ChatRoute>().chatId,
         savedStateHandle,
@@ -139,6 +145,8 @@ class ChatViewModel internal constructor(
         timePatterns,
         dispatcher,
         Locale::getDefault,
+        audioPlayer,
+        AndroidChatLog,
     )
 
     /** Each retry of finding the chat starts it again. */
@@ -167,6 +175,17 @@ class ChatViewModel internal constructor(
     val effects: Flow<ChatEffect> = effectChannel.receiveAsFlow()
 
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
+
+    private val playback =
+        ChatPlayback(
+            player = audioPlayer,
+            files = fileRepository,
+            scope = viewModelScope,
+            history = { messageRepository.history(chatId).first() },
+            onError = { effectChannel.trySend(ChatEffect.ShowError(it)) },
+            onPlaybackFailed = { effectChannel.trySend(ChatEffect.PlaybackFailed) },
+            log = log,
+        )
 
     private val chat: Flow<ChatLookup> =
         chatAttempts
@@ -240,10 +259,13 @@ class ChatViewModel internal constructor(
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, ::state)
             .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
+            .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
     init {
+        // Leaving the screen frees the player.
+        addCloseable { playback.release() }
         viewModelScope.launch {
             // The divider stays where it was when the chat was first shown, also after process death.
             val chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat }.first()
@@ -270,19 +292,21 @@ class ChatViewModel internal constructor(
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> effectChannel.trySend(ChatEffect.FileOpeningUnavailable)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
-            is ChatEvent.PlayPause -> files.playPause(event.fileId, uiState.value.fileStates[event.fileId])
-            is ChatEvent.Seek -> Unit
+            is ChatEvent.PlayPause -> playback.playPause(event.messageId)
+            is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
         }
     }
 
     /**
      * Opens or closes the chat in TDLib when that changes. Undispatched, so the request is sent before this returns:
      * a close as the screen leaves, right before the view model's scope is cancelled, still reaches TDLib. A failure
-     * changes nothing: TDLib then just does not prioritize the chat.
+     * changes nothing: TDLib then just does not prioritize the chat. Stopping also pauses what plays: nothing plays in
+     * the background.
      */
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
         isOpen = open
+        if (!open) playback.pause()
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             if (open) chatRepository.openChat(chatId) else chatRepository.closeChat(chatId)
         }
