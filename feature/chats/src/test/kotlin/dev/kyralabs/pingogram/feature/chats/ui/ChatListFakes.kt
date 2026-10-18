@@ -143,6 +143,11 @@ class FakeChatRepository : ChatRepository {
     override suspend fun openChat(chatId: Long): Outcome<Unit> = unused()
 
     override suspend fun closeChat(chatId: Long): Outcome<Unit> = unused()
+
+    override suspend fun viewMessages(
+        chatId: Long,
+        messageIds: List<Long>,
+    ): Outcome<Unit> = unused()
 }
 
 /** An action [FakeChatRepository] was asked for. */

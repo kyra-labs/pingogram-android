@@ -41,12 +41,20 @@ import java.util.Locale
 
 // Fakes of the domain repositories the conversation reads, holding their state in flows the tests set.
 
-/** The chats TDLib announced ([chats]); [getChat] answers with [onGetChat]; opening and closing are recorded. */
+/**
+ * The chats TDLib announced ([chats]); [getChat] answers with [onGetChat]; opening and closing are recorded, and so
+ * are the messages viewed, which [onViewMessages] answers.
+ */
 class FakeChatRepository : ChatRepository {
     val chats = MutableStateFlow<Map<Long, Chat>>(emptyMap())
 
     /** `open:<id>` and `close:<id>`, in order. */
     val openCalls = mutableListOf<String>()
+
+    /** The message ids of every [viewMessages] call, in order. */
+    val viewed = mutableListOf<List<Long>>()
+
+    var onViewMessages: suspend (List<Long>) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** Every [getChat] call. */
     val getChatRequests = mutableListOf<Long>()
@@ -75,6 +83,14 @@ class FakeChatRepository : ChatRepository {
     override suspend fun closeChat(chatId: Long): Outcome<Unit> {
         openCalls += "close:$chatId"
         return Outcome.Success(Unit)
+    }
+
+    override suspend fun viewMessages(
+        chatId: Long,
+        messageIds: List<Long>,
+    ): Outcome<Unit> {
+        viewed += messageIds
+        return onViewMessages(messageIds)
     }
 
     override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> = unused()

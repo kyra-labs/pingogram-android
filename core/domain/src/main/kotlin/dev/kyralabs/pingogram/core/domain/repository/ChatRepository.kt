@@ -120,6 +120,16 @@ interface ChatRepository {
     /** Tells TDLib that the conversation of chat [chatId] left the screen; the counterpart of [openChat]. */
     suspend fun closeChat(chatId: Long): Outcome<Unit>
 
+    /**
+     * Tells TDLib that messages [messageIds] of chat [chatId] are on screen in its conversation, which must be open
+     * ([openChat]): TDLib marks incoming ones read, counts views in channels, and updates the chat's unread counts.
+     * Report each message once per time the conversation shows it, a batch at a time (`docs/PERFORMANCE.md` §3).
+     */
+    suspend fun viewMessages(
+        chatId: Long,
+        messageIds: List<Long>,
+    ): Outcome<Unit>
+
     companion object {
         /** Chats per [loadChats] page after the first. */
         const val PAGE_SIZE = 50
