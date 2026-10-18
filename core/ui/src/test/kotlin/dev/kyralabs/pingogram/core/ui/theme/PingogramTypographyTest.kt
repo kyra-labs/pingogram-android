@@ -5,9 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.text.style.LineHeightStyle
-import dev.kyralabs.pingogram.core.ui.R
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -25,7 +23,7 @@ class PingogramTypographyTest {
 
         assertEquals(30, styles.size)
         styles.forEach { (name, style) ->
-            assertTrue(style.fonts().all { it is ResourceFont && it.resId == R.font.google_sans_flex }, name)
+            assertTrue(style.fonts().all { it is GoogleSansFlexFont }, name)
         }
     }
 
@@ -161,13 +159,13 @@ class PingogramTypographyTest {
     private fun TextStyle.fonts(): List<Font> = (fontFamily as FontListFontFamily).fonts
 
     private fun Font.axis(tag: String): Float =
-        (this as ResourceFont)
+        (this as GoogleSansFlexFont)
             .variationSettings.settings
             .single { it.axisName == tag }
             .toVariationValue(null)
 
     private fun Font.axes(): Map<String, Float> =
-        (this as ResourceFont).variationSettings.settings.associate { it.axisName to it.toVariationValue(null) }
+        (this as GoogleSansFlexFont).variationSettings.settings.associate { it.axisName to it.toVariationValue(null) }
 
     private fun String.isEmphasized() = endsWith("Emphasized")
 

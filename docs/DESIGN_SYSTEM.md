@@ -160,6 +160,10 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   small: a regular style holds its weight and its emphasized weight (what a bold span resolves to,
   instead of a synthesized bold), an emphasized style only its own weight, each upright and
   italic. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
+- The fonts are `GoogleSansFlexFont`s (`core/ui/.../theme/GoogleSansFlexFont.kt`) rather than
+  `Font(R.font.google_sans_flex, …)`: their loader makes each typeface once per process. Compose's
+  own typeface caches hold 16 entries, fewer than the fonts a list and a conversation use, and each
+  reload made a new typeface whose text the platform laid out and rasterized again.
 - `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD = if (dark) -25 else 0`.
