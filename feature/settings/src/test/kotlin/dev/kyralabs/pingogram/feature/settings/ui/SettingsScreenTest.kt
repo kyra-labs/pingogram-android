@@ -64,10 +64,11 @@ class SettingsScreenTest {
     fun `the rows open their pages`() {
         setScreen()
 
+        node(R.string.settings_appearance).assertHasClickAction().performClick()
         node(R.string.settings_data_storage).assertHasClickAction().performClick()
-        node(R.string.settings_about).performClick()
+        node(R.string.settings_about).assertHasClickAction().performClick()
 
-        assertEquals(listOf(SettingsPage.DataStorage, SettingsPage.About), pages)
+        assertEquals(listOf(SettingsPage.Appearance, SettingsPage.DataStorage, SettingsPage.About), pages)
     }
 
     @Test

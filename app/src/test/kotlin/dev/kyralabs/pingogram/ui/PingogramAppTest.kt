@@ -7,6 +7,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
@@ -41,6 +43,7 @@ import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
+import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
@@ -291,6 +294,17 @@ class PingogramAppTest {
 
         assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
         assertNoNavigation()
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_appearance).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<AppearanceRoute>() == true)
+        // The page's segmented buttons are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
     }

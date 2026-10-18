@@ -24,8 +24,9 @@ regresses by more than 10%.
 
 ## 2. Startup
 
-- `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber`
-  **or** 300 ms, whichever is first; then render cached chats immediately.
+- `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber` and the
+  Appearance settings are read from DataStore (a few ms), **or** 300 ms, whichever is first; then
+  render cached chats immediately.
 - Hilt: `@Singleton` only for `TdlibClient`, repositories and DataStore; everything else
   scoped. No heavy work in `Application.onCreate()`; use `App Startup` initializers that are
   lazy except TDLib and WorkManager.

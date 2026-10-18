@@ -98,6 +98,14 @@ internal fun ColorScheme.withAmoledSurfaces(): ColorScheme =
         surfaceContainerHighest = surfaceContainerHigh,
     )
 
+/**
+ * The system's contrast level, which the theme follows instead of the app's setting on Android 14+
+ * ([rememberPingogramColorScheme]), updated when it changes; null before Android 14, which has none.
+ */
+@Composable
+fun systemContrastOrNull(): Contrast? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) systemContrast() else null
+
 /** Maps `UiModeManager.getContrast()` (0 standard, 0.5 medium, 1 high) like Material Components does. */
 internal fun contrastFromSystemLevel(level: Float): Contrast =
     when {

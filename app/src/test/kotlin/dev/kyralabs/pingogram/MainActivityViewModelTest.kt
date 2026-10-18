@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.tdlib.AuthState
+import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +20,7 @@ import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,6 +33,9 @@ class MainActivityViewModelTest {
     private val client = FakeTdlibClient()
     private val timeSource = TestTimeSource()
 
+    // The settings are read already unless a test says otherwise.
+    private val appearance = FakeAppearanceRepository(initial = AppearanceSettings())
+
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
@@ -40,9 +47,12 @@ class MainActivityViewModelTest {
     }
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
-    private fun TestScope.viewModel(): MainActivityViewModel =
+    private fun TestScope.viewModel(
+        appearanceRepository: FakeAppearanceRepository = appearance,
+    ): MainActivityViewModel =
         MainActivityViewModel(
             TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+            appearanceRepository,
             timeSource,
         ).also { runCurrent() }
 
@@ -156,6 +166,55 @@ class MainActivityViewModelTest {
 
             tdlib(TdApiFixtures.waitPhoneNumber())
 
+            assertFalse(viewModel.keepSplashScreen())
+        }
+
+    @Test
+    fun `has no appearance until the settings are read`() =
+        runTest {
+            val unread = FakeAppearanceRepository()
+
+            assertNull(viewModel(unread).appearance.value)
+        }
+
+    @Test
+    fun `follows the appearance settings`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(AppearanceSettings(), viewModel.appearance.value)
+
+            appearance.save(AppearanceSettings(themeMode = ThemeMode.Dark, amoled = true))
+            runCurrent()
+
+            assertEquals(AppearanceSettings(themeMode = ThemeMode.Dark, amoled = true), viewModel.appearance.value)
+        }
+
+    @Test
+    fun `keeps the splash screen until the settings are read, for at most 300 ms`() =
+        runTest {
+            client.authState.value = AuthState.Ready
+            val unread = FakeAppearanceRepository()
+            val viewModel = viewModel(unread)
+            assertTrue(viewModel.keepSplashScreen())
+
+            timeSource += 299.milliseconds
+            assertTrue(viewModel.keepSplashScreen())
+
+            timeSource += 1.milliseconds
+            assertFalse(viewModel.keepSplashScreen())
+        }
+
+    @Test
+    fun `releases the splash screen once both the login step and the settings are known`() =
+        runTest {
+            val unread = FakeAppearanceRepository()
+            val viewModel = viewModel(unread)
+
+            tdlib(TdApiFixtures.waitPhoneNumber())
+            assertTrue(viewModel.keepSplashScreen())
+
+            unread.save(AppearanceSettings(themeMode = ThemeMode.Light))
+            runCurrent()
             assertFalse(viewModel.keepSplashScreen())
         }
 

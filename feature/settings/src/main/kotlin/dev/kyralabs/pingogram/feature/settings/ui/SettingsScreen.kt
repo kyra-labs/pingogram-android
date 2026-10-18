@@ -104,6 +104,12 @@ internal fun SettingsScreen(
             state.account?.let { AccountHeader(it) }
             SettingsSection(stringResource(R.string.settings_section_general)) {
                 PageItem(
+                    title = stringResource(R.string.settings_appearance),
+                    summary = stringResource(R.string.settings_appearance_summary),
+                    icon = R.drawable.ic_palette,
+                    onClick = { onOpenPage(SettingsPage.Appearance) },
+                )
+                PageItem(
                     title = stringResource(R.string.settings_data_storage),
                     summary = stringResource(R.string.settings_data_storage_summary),
                     icon = R.drawable.ic_storage,

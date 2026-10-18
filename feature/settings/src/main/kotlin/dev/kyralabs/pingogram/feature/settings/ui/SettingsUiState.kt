@@ -40,6 +40,7 @@ data class AccountUiModel(
 
 /** The pages Settings opens, each pushed above the Settings tab. */
 enum class SettingsPage {
+    Appearance,
     DataStorage,
     About,
 }

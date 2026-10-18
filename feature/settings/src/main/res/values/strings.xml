@@ -10,6 +10,8 @@
 
     <!-- Settings home -->
     <string name="settings_section_general">General</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_summary">Theme, colors and contrast</string>
     <string name="settings_data_storage">Data and storage</string>
     <string name="settings_data_storage_summary">Storage usage, clear cache</string>
     <string name="settings_about">About</string>
@@ -27,6 +29,27 @@
     <string name="settings_log_out_dialog_text">Pingogram will delete this account\'s data from this device, including secret chats, which exist only here. Your other chats stay in your Telegram account, and you can log in again at any time.</string>
     <string name="settings_log_out_dialog_confirm">Log out</string>
     <string name="settings_log_out_dialog_dismiss">Cancel</string>
+
+    <!-- Appearance (FR-S2) -->
+    <!-- Spoken by screen readers for the progress indicator while the settings load. -->
+    <string name="settings_appearance_loading">Loading appearance settings</string>
+    <string name="settings_section_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_amoled">AMOLED black</string>
+    <string name="settings_amoled_summary">Pure black backgrounds in dark theme</string>
+    <string name="settings_section_colors">Colors</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_summary">Colors from your wallpaper</string>
+    <string name="settings_contrast">Contrast</string>
+    <string name="settings_contrast_standard">Standard</string>
+    <string name="settings_contrast_medium">Medium</string>
+    <string name="settings_contrast_high">High</string>
+    <!-- Android 14+, where the system's contrast setting applies to every app. -->
+    <string name="settings_contrast_follows_system">Follows your device\'s contrast setting</string>
+    <!-- Before Android 14, wallpaper colors have no contrast levels. -->
+    <string name="settings_contrast_brand_colors">Medium and high contrast use Pingogram\'s colors instead of your wallpaper\'s</string>
 
     <!-- Data and storage -->
     <string name="settings_section_storage_usage">Storage usage</string>
