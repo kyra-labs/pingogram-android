@@ -130,6 +130,8 @@ sealed interface AuthStepUiState {
         val password: String,
         val confirmation: String,
         val hint: String,
+        /** Telegram rejected the new password ([DomainError.InputRejected]). */
+        val error: DomainError? = null,
     ) : AuthStepUiState {
         /** Whether the confirmation differs from the password, once the user typed one. */
         val isMismatch: Boolean get() = confirmation.isNotEmpty() && confirmation != password
@@ -185,8 +187,14 @@ sealed interface AuthStepUiState {
         val error: DomainError?,
         /** Whether, and when, the email address can be reset to continue with a code sent to the phone. */
         val reset: EmailResetUiState?,
+        /**
+         * Whether a new code can be requested: only for an address entered in this login. TDLib keeps none to resend to
+         * for an address the account already had.
+         */
+        val canResendCode: Boolean = false,
     ) : AuthStepUiState {
-        override fun toString() = "EmailCode(codeLength=$codeLength, error=$error, reset=$reset, …)"
+        override fun toString() =
+            "EmailCode(codeLength=$codeLength, error=$error, reset=$reset, canResendCode=$canResendCode, …)"
     }
 
     /**

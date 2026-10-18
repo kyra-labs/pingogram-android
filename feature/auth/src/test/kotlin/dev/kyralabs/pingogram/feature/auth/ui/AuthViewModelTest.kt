@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.AuthTestFixtures.ok
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -59,11 +60,17 @@ class AuthViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun TestScope.authRepository() =
+        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+
     // Through the real TDLib repositories on FakeTdlibClient, as the app wires them.
-    private fun TestScope.viewModel(handle: SavedStateHandle = savedState): AuthViewModel =
+    private fun TestScope.viewModel(
+        handle: SavedStateHandle = savedState,
+        authRepository: TdlibAuthRepository = authRepository(),
+    ): AuthViewModel =
         AuthViewModel(
             savedStateHandle = handle,
-            authRepository = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+            authRepository = authRepository,
             countryRepository = TdlibCountryRepository(client),
             connectionRepository = TdlibConnectionRepository(client),
             timeSource = testScheduler.timeSource,
@@ -103,6 +110,19 @@ class AuthViewModelTest {
     /** A view model on phone number entry with the UK number typed. */
     private fun TestScope.onPhoneNumberEntry(): AuthViewModel =
         viewModel().also { send(it, AuthEvent.StartMessaging, AuthEvent.PhoneNumberChanged(UK_NUMBER)) }
+
+    /** The SMS code step for [phoneNumber], as TDLib reports it after `setAuthenticationPhoneNumber`. */
+    private fun waitCodeFor(phoneNumber: String) =
+        TdApiFixtures.waitCode(
+            TdApiFixtures.authenticationCodeInfo(
+                phoneNumber = phoneNumber,
+                type = TdApi.AuthenticationCodeTypeSms(5),
+                nextType = TdApi.AuthenticationCodeTypeCall(5),
+                timeoutSeconds = 60,
+            ),
+        )
+
+    private fun SavedStateHandle.values(): List<Any?> = keys().map { get<Any>(it) }
 
     private fun failure(
         message: String,
@@ -304,6 +324,7 @@ class AuthViewModelTest {
 
                 send(viewModel, AuthEvent.SubmitPhoneNumber)
                 val whileSending = viewModel.state
+                tdlib(waitCodeFor(UK_INTERNATIONAL))
                 answer.complete(ok())
                 runCurrent()
 
@@ -311,6 +332,41 @@ class AuthViewModelTest {
                 assertEquals(AuthAction.SubmitPhoneNumber, whileSending.pendingAction)
                 assertFalse(whileSending.canSubmit)
                 assertNull(viewModel.state.pendingAction)
+                assertInstanceOf(AuthStepUiState.Code::class.java, viewModel.state.step)
+            }
+
+        // TDLib's answer and the step it leads to come on separate paths, in either order.
+        @Test
+        fun `when TDLib answers before reporting the code step, progress stays and nothing is sent twice`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, ok())
+                val viewModel = onPhoneNumberEntry()
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                val answered = viewModel.state
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                tdlib(waitCodeFor(UK_INTERNATIONAL))
+
+                assertEquals(AuthAction.SubmitPhoneNumber, answered.pendingAction)
+                assertInstanceOf(AuthStepUiState.PhoneNumber::class.java, answered.step)
+                assertEquals(1, client.sentOf<TdApi.SetAuthenticationPhoneNumber>().size)
+                assertNull(viewModel.state.pendingAction)
+                assertInstanceOf(AuthStepUiState.Code::class.java, viewModel.state.step)
+            }
+
+        @Test
+        fun `when TDLib reports the code step before answering, progress ends with the answer`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class) {
+                    client.emitAuthorizationState(waitCodeFor(UK_INTERNATIONAL))
+                    ok()
+                }
+                val viewModel = onPhoneNumberEntry()
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+
+                assertNull(viewModel.state.pendingAction)
+                assertInstanceOf(AuthStepUiState.Code::class.java, viewModel.state.step)
             }
 
         @Test
@@ -408,10 +464,30 @@ class AuthViewModelTest {
                 val effects = effectsOf(viewModel)
 
                 send(viewModel, AuthEvent.SubmitPhoneNumber)
-                advanceSeconds(30)
+                advanceSeconds(89)
+                val stillWaiting = viewModel.state.pendingAction
+                advanceSeconds(1)
 
+                assertEquals(AuthAction.SubmitPhoneNumber, stillWaiting)
                 assertEquals(listOf(AuthEffect.ShowError(DomainError.Network)), effects)
                 assertNull(viewModel.state.pendingAction)
+            }
+
+        @Test
+        fun `an answer within TDLib's own 60 seconds is awaited`() =
+            runTest {
+                client.on(TdApi.SetAuthenticationPhoneNumber::class) {
+                    delay(60.seconds)
+                    failure("PHONE_NUMBER_INVALID")
+                }
+                val viewModel = onPhoneNumberEntry()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.SubmitPhoneNumber)
+                advanceSeconds(60)
+
+                assertTrue(effects.isEmpty())
+                assertEquals(DomainError.PhoneNumberInvalid, viewModel.step<AuthStepUiState.PhoneNumber>().error)
             }
 
         @Test
@@ -440,16 +516,43 @@ class AuthViewModelTest {
             }
 
         @Test
-        fun `a 406 error shows nothing`() =
+        fun `a 406 asks to check the field being submitted, without TDLib's text`() =
             runTest {
-                client.on(TdApi.SetAuthenticationPhoneNumber::class, failure("UPDATE_APP_TO_LOGIN", code = 406))
+                // A number one digit short passes the local length check; Telegram answers 406.
+                client.on(TdApi.SetAuthenticationPhoneNumber::class, failure("PHONE_NUMBER_INVALID", code = 406))
                 val viewModel = onPhoneNumberEntry()
                 val effects = effectsOf(viewModel)
 
                 send(viewModel, AuthEvent.SubmitPhoneNumber)
 
                 assertTrue(effects.isEmpty())
-                assertNull(viewModel.step<AuthStepUiState.PhoneNumber>().error)
+                assertEquals(DomainError.InputRejected, viewModel.step<AuthStepUiState.PhoneNumber>().error)
+                assertNull(viewModel.state.pendingAction)
+            }
+
+        @Test
+        fun `a 406 for a request without a field shows the same neutral text in a snackbar`() =
+            runTest {
+                client.on(TdApi.RequestQrCodeAuthentication::class, failure("UPDATE_APP_TO_LOGIN", code = 406))
+                val viewModel = onPhoneNumberEntry()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.LogInWithQrCode)
+
+                assertEquals(listOf(AuthEffect.ShowError(DomainError.InputRejected)), effects)
+            }
+
+        @Test
+        fun `TDLib's own request for an app update is reported as such`() =
+            runTest {
+                client.authState.value = AuthState.from(TdApiFixtures.waitPassword())!!
+                client.on(TdApi.CheckAuthenticationPassword::class, failure("Application update is needed to log in"))
+                val viewModel = viewModel()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.PasswordChanged("secret"), AuthEvent.SubmitPassword)
+
+                assertEquals(listOf(AuthEffect.ShowError(DomainError.AppUpdateRequired)), effects)
             }
     }
 
@@ -574,6 +677,7 @@ class AuthViewModelTest {
                 val early = client.sentOf<TdApi.ResendAuthenticationCode>().size
                 advanceSeconds(3)
                 send(viewModel, AuthEvent.CodeChanged("12"), AuthEvent.ResendCode)
+                tdlib(waitCodeFor(UK_INTERNATIONAL))
 
                 val reason = client.sentOf<TdApi.ResendAuthenticationCode>().single().reason
                 assertEquals(0, early)
@@ -657,9 +761,58 @@ class AuthViewModelTest {
                     AuthEvent.PhoneNumberChanged("15123456789"),
                     AuthEvent.SubmitPhoneNumber,
                 )
+                // Answered, but TDLib has not reported the new code yet: the old code must not come back.
+                val answered = viewModel.step<AuthStepUiState.PhoneNumber>()
+                tdlib(waitCodeFor("+4915123456789"))
 
                 assertEquals("+4915123456789", client.sentOf<TdApi.SetAuthenticationPhoneNumber>().single().phoneNumber)
-                assertInstanceOf(AuthStepUiState.Code::class.java, viewModel.state.step)
+                assertTrue(answered.isChangingNumber)
+                assertEquals("+49 1512 3456789", viewModel.step<AuthStepUiState.Code>().phoneNumber)
+            }
+
+        @Test
+        fun `a rejected code is not submitted again by itself`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_INVALID"))
+                val viewModel = onCode()
+
+                send(viewModel, AuthEvent.CodeChanged("12345"))
+                // A sixth digit is dropped, which leaves the rejected code.
+                send(viewModel, AuthEvent.CodeChanged("123456"))
+                val afterExtraDigit = viewModel.step<AuthStepUiState.Code>()
+                send(viewModel, AuthEvent.CodeChanged("1234"), AuthEvent.CodeChanged("12345"))
+                val attemptsWithRejectedCode = client.sentOf<TdApi.CheckAuthenticationCode>().size
+                send(viewModel, AuthEvent.CodeChanged("1234"), AuthEvent.CodeChanged("12346"))
+
+                assertEquals(DomainError.CodeInvalid, afterExtraDigit.error)
+                assertEquals(1, attemptsWithRejectedCode)
+                assertEquals(listOf("12345", "12346"), client.sentOf<TdApi.CheckAuthenticationCode>().map { it.code })
+            }
+
+        @Test
+        fun `a code answered with 406 asks to check it and is not submitted again by itself`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_INVALID", code = 406))
+                val viewModel = onCode()
+
+                send(viewModel, AuthEvent.CodeChanged("12345"), AuthEvent.CodeChanged("123456"))
+
+                assertEquals(DomainError.InputRejected, viewModel.step<AuthStepUiState.Code>().error)
+                assertEquals(1, client.sentOf<TdApi.CheckAuthenticationCode>().size)
+            }
+
+        @Test
+        fun `a screen created later counts down from when the code was sent`() =
+            runTest {
+                client.authState.value =
+                    AuthState.from(TdApiFixtures.waitCode(TdApiFixtures.authenticationCodeInfo(timeoutSeconds = 60)))!!
+                val repository = authRepository()
+                viewModel(authRepository = repository)
+                advanceSeconds(20)
+
+                val recreated = viewModel(handle = SavedStateHandle(), authRepository = repository)
+
+                assertEquals(40L, recreated.step<AuthStepUiState.Code>().resendInSeconds)
             }
 
         @Test
@@ -719,6 +872,26 @@ class AuthViewModelTest {
                 assertEquals(AuthStepUiState.Loading, restarting)
                 assertEquals(AuthStepUiState.Loading, whileRestarting)
                 assertEquals(UK_NUMBER, viewModel.step<AuthStepUiState.PhoneNumber>().number)
+            }
+    }
+
+    @Nested
+    inner class QrCodeLeaving {
+        @Test
+        fun `a login arriving while leaving QR login does not count`() =
+            runTest {
+                client.on(TdApi.RequestQrCodeAuthentication::class, ok())
+                client.on(TdApi.LogOut::class, ok())
+                val viewModel = onPhoneNumberEntry()
+                send(viewModel, AuthEvent.LogInWithQrCode)
+                tdlib(TdApiFixtures.waitOtherDeviceConfirmation())
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.CancelQrCode)
+                tdlib(TdApiFixtures.ready())
+
+                assertTrue(effects.isEmpty())
+                assertEquals(AuthStepUiState.Loading, viewModel.state.step)
             }
     }
 
@@ -847,6 +1020,27 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `a new password answered with 406 asks to check it`() =
+            runTest {
+                client.on(TdApi.RequestAuthenticationPasswordRecovery::class, ok())
+                client.on(TdApi.CheckAuthenticationPasswordRecoveryCode::class, ok())
+                client.on(TdApi.RecoverAuthenticationPassword::class, failure("NEW_PASSWORD_INVALID", code = 406))
+                val viewModel = onPassword()
+
+                send(
+                    viewModel,
+                    AuthEvent.ForgotPassword,
+                    AuthEvent.RecoveryCodeChanged("123456"),
+                    AuthEvent.SubmitRecoveryCode,
+                    AuthEvent.NewPasswordChanged("new secret"),
+                    AuthEvent.NewPasswordConfirmationChanged("new secret"),
+                    AuthEvent.SubmitNewPassword,
+                )
+
+                assertEquals(DomainError.InputRejected, viewModel.step<AuthStepUiState.NewPassword>().error)
+            }
+
+        @Test
         fun `back from recovery returns to the password`() =
             runTest {
                 client.on(TdApi.RequestAuthenticationPasswordRecovery::class, ok())
@@ -942,6 +1136,22 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `declining the terms un-accepts them, dismissing keeps the choice`() =
+            runTest {
+                val viewModel = onRegistration()
+
+                send(viewModel, AuthEvent.TermsAcceptedChanged(true), AuthEvent.ShowTermsOfService)
+                send(viewModel, AuthEvent.DismissTermsOfService)
+                val dismissed = viewModel.step<AuthStepUiState.Registration>()
+                send(viewModel, AuthEvent.ShowTermsOfService, AuthEvent.DeclineTermsOfService)
+                val declined = viewModel.step<AuthStepUiState.Registration>()
+
+                assertTrue(dismissed.termsAccepted)
+                assertFalse(declined.termsAccepted)
+                assertFalse(declined.isTermsOfServiceOpen)
+            }
+
+        @Test
         fun `names are capped at Telegram's limit`() =
             runTest {
                 val viewModel = onRegistration()
@@ -1019,14 +1229,55 @@ class AuthViewModelTest {
             }
 
         @Test
-        fun `the email code can be resent`() =
+        fun `the code for an address entered in this login can be resent`() =
             runTest {
+                client.authState.value = AuthState.WaitEmailAddress(allowAppleId = false, allowGoogleId = false)
+                client.on(TdApi.SetAuthenticationEmailAddress::class, ok())
                 client.on(TdApi.ResendAuthenticationCode::class, ok())
+                val viewModel = viewModel()
+
+                send(viewModel, AuthEvent.EmailAddressChanged("ada@example.org"), AuthEvent.SubmitEmailAddress)
+                tdlib(TdApiFixtures.waitEmailCode("a***@example.org", 6))
+                val step = viewModel.step<AuthStepUiState.EmailCode>()
+                send(viewModel, AuthEvent.ResendEmailCode)
+
+                assertTrue(step.canResendCode)
+                assertEquals(1, client.sentOf<TdApi.ResendAuthenticationCode>().size)
+            }
+
+        // TDLib keeps no address to resend to for the address the account already had (td/telegram/AuthManager.cpp).
+        @Test
+        fun `the code for the account's existing address cannot be resent`() =
+            runTest {
                 val viewModel = onEmailCode()
 
                 send(viewModel, AuthEvent.ResendEmailCode)
 
-                assertEquals(1, client.sentOf<TdApi.ResendAuthenticationCode>().size)
+                assertFalse(viewModel.step<AuthStepUiState.EmailCode>().canResendCode)
+                assertTrue(client.sentOf<TdApi.ResendAuthenticationCode>().isEmpty())
+            }
+
+        @Test
+        fun `an expired email verification shows the expired code error`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationEmailCode::class, failure("EMAIL_VERIFY_EXPIRED"))
+                val viewModel = onEmailCode()
+
+                send(viewModel, AuthEvent.EmailCodeChanged("123456"))
+
+                assertEquals(DomainError.CodeExpired, viewModel.step<AuthStepUiState.EmailCode>().error)
+            }
+
+        @Test
+        fun `a rejected email code is not submitted again by itself`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationEmailCode::class, failure("EMAIL_CODE_INVALID"))
+                val viewModel = onEmailCode()
+
+                send(viewModel, AuthEvent.EmailCodeChanged("123456"), AuthEvent.EmailCodeChanged("1234567"))
+                send(viewModel, AuthEvent.EmailCodeChanged("12345"), AuthEvent.EmailCodeChanged("123456"))
+
+                assertEquals(1, client.sentOf<TdApi.CheckAuthenticationEmailCode>().size)
             }
 
         @Test
@@ -1075,10 +1326,11 @@ class AuthViewModelTest {
                 send(viewModel, AuthEvent.ChangeEmailAddress)
                 val changing = viewModel.step<AuthStepUiState.EmailAddress>()
                 send(viewModel, AuthEvent.EmailAddressChanged("ada@example.org"), AuthEvent.SubmitEmailAddress)
+                tdlib(TdApiFixtures.waitEmailCode("a***@example.org", 6))
 
                 assertTrue(changing.isChangingAddress)
                 assertEquals(1, client.sentOf<TdApi.SetAuthenticationEmailAddress>().size)
-                assertInstanceOf(AuthStepUiState.EmailCode::class.java, viewModel.state.step)
+                assertTrue(viewModel.step<AuthStepUiState.EmailCode>().canResendCode)
             }
     }
 
@@ -1145,7 +1397,11 @@ class AuthViewModelTest {
                 assertEquals(AuthStepUiState.LoggingOut, loggingOut)
                 assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
                 send(viewModel, AuthEvent.StartMessaging)
-                assertEquals("", viewModel.step<AuthStepUiState.PhoneNumber>().number)
+                val phone = viewModel.step<AuthStepUiState.PhoneNumber>()
+                assertEquals("", phone.number)
+                // The current country is looked up again for the new session.
+                assertEquals(UK_CALLING_CODE, phone.callingCode)
+                assertEquals(2, client.sentOf<TdApi.GetCountryCode>().size)
             }
     }
 
@@ -1166,7 +1422,7 @@ class AuthViewModelTest {
             }
 
         @Test
-        fun `changing the number and the typed code are restored`() =
+        fun `changing the number is restored, a typed code is not`() =
             runTest {
                 client.authState.value = AuthState.from(TdApiFixtures.waitCode())!!
                 val first = viewModel()
@@ -1178,23 +1434,38 @@ class AuthViewModelTest {
                 val coding = viewModel(handle = withCode)
 
                 assertTrue(changing.step<AuthStepUiState.PhoneNumber>().isChangingNumber)
-                assertEquals("12", coding.step<AuthStepUiState.Code>().code)
+                assertFalse("12" in withCode.values())
+                assertEquals("", coding.step<AuthStepUiState.Code>().code)
             }
 
         @Test
-        fun `passwords are not saved, the recovery code stage is`() =
+        fun `passwords and recovery codes are not saved, the recovery step comes back empty`() =
             runTest {
                 client.on(TdApi.RequestAuthenticationPasswordRecovery::class, ok())
                 client.authState.value = AuthState.from(TdApiFixtures.waitPassword(hasRecoveryEmailAddress = true))!!
                 val first = viewModel()
                 send(first, AuthEvent.PasswordChanged("secret"))
-                val passwordSaved = savedState.keys().any { savedState.get<Any>(it) == "secret" }
+                val passwordSaved = "secret" in savedState.values()
                 send(first, AuthEvent.ForgotPassword, AuthEvent.RecoveryCodeChanged("123456"))
 
                 val restored = viewModel(handle = savedState)
 
                 assertFalse(passwordSaved)
-                assertEquals("123456", restored.step<AuthStepUiState.PasswordRecoveryCode>().code)
+                assertFalse("123456" in savedState.values())
+                assertEquals("", restored.step<AuthStepUiState.PasswordRecoveryCode>().code)
+            }
+
+        @Test
+        fun `an email code is not saved`() =
+            runTest {
+                client.authState.value = AuthState.from(TdApiFixtures.waitEmailCode("a***@example.org", 6))!!
+                val first = viewModel()
+                send(first, AuthEvent.EmailCodeChanged("123"))
+
+                val restored = viewModel(handle = savedState)
+
+                assertFalse("123" in savedState.values())
+                assertEquals("", restored.step<AuthStepUiState.EmailCode>().code)
             }
 
         @Test

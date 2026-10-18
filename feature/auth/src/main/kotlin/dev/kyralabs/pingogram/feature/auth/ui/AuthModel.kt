@@ -40,6 +40,8 @@ internal data class PhoneForm(
     val error: DomainError? = null,
     val isPickerOpen: Boolean = false,
     val pickerQuery: String = "",
+    /** The country of the IP address was looked up for this session (once, and only for an empty calling code). */
+    val isCountryDetected: Boolean = false,
 ) {
     val country: Country? get() = countryIso?.let { iso -> countries.find { it.isoCode == iso } }
 
@@ -50,6 +52,8 @@ internal data class PhoneForm(
 internal data class CodeForm(
     val code: String = "",
     val error: DomainError? = null,
+    /** The last code Telegram rejected; it is not submitted again by itself. */
+    val rejectedCode: String? = null,
     val resendInSeconds: Long = 0,
     /** TDLib's raw number of the current code and its display form, once formatted. */
     val formattedPhoneNumber: Pair<String, String>? = null,
@@ -67,6 +71,7 @@ internal data class PasswordForm(
     val newPassword: String = "",
     val newPasswordConfirmation: String = "",
     val newPasswordHint: String = "",
+    val newPasswordError: DomainError? = null,
 )
 
 internal data class RegistrationForm(
@@ -82,9 +87,16 @@ internal data class RegistrationForm(
 internal data class EmailForm(
     val emailAddress: String = "",
     val error: DomainError? = null,
+    /**
+     * The address was entered in this login. Only then can TDLib resend the email code: for an address the account
+     * already had, it keeps none to resend to (td/telegram/AuthManager.cpp, `sentCodeTypeEmailCode`).
+     */
+    val addressEntered: Boolean = false,
     val code: String = "",
     val codeError: DomainError? = null,
-    /** Seconds left of a pending reset, counted down locally: TDLib reports it only once. */
+    /** The last code Telegram rejected; it is not submitted again by itself. */
+    val rejectedCode: String? = null,
+    /** Seconds left of a pending reset, counted down to its deadline. */
     val resetInSeconds: Long? = null,
 )
 
@@ -92,17 +104,34 @@ internal data class EmailForm(
 internal fun AuthModel.withStep(step: AuthStep): AuthModel {
     // The first step after the ViewModel was (re)created keeps the restored inputs and navigation.
     val keepLocal = this.step::class == step::class || this.step == AuthStep.Initializing
-    val base = copy(step = step, editingPhone = editingPhone && keepLocal, editingEmail = editingEmail && keepLocal)
+    val base =
+        copy(
+            step = step,
+            editingPhone = editingPhone && keepLocal,
+            editingEmail = editingEmail && keepLocal,
+            email = if (step.isEmailLogin) email else email.copy(addressEntered = false),
+        )
     return when (step) {
         AuthStep.WaitPhoneNumber -> base.atPhoneNumber()
+
+        is AuthStep.WaitCode -> base.copy(code = base.code.copy(resendInSeconds = step.resendAvailableAt.secondsLeft()))
+
         is AuthStep.WaitPassword -> if (keepLocal) base else base.copy(password = PasswordForm())
+
         is AuthStep.WaitRegistration -> base.withTermsOfService(step.termsOfService.mustShowPopup)
-        is AuthStep.WaitEmailCode -> base.copy(email = email.copy(resetInSeconds = step.pendingResetSeconds()))
-        AuthStep.Ready -> base.cleared()
-        AuthStep.Closed -> if (restarting) base else base.cleared()
+
+        is AuthStep.WaitEmailCode -> base.copy(email = base.email.copy(resetInSeconds = step.resetSecondsLeft()))
+
+        // While leaving QR login, TDLib is being logged out anyway: a late login must not count.
+        AuthStep.Ready, AuthStep.Closed -> if (restarting) base else base.cleared()
+
         else -> base
     }
 }
+
+/** Steps of the email login, during which an address entered in it stays known (and TDLib starting up). */
+private val AuthStep.isEmailLogin: Boolean
+    get() = this == AuthStep.WaitEmailAddress || this is AuthStep.WaitEmailCode || this == AuthStep.Initializing
 
 /** The terms open by themselves the first time, when Telegram requires them and they are not accepted yet. */
 private fun AuthModel.withTermsOfService(mustShowPopup: Boolean): AuthModel {
@@ -110,10 +139,10 @@ private fun AuthModel.withTermsOfService(mustShowPopup: Boolean): AuthModel {
     return copy(registration = registration.copy(isTermsOpen = isOpen))
 }
 
-private fun AuthStep.WaitEmailCode.pendingResetSeconds(): Long? =
-    (resetState as? EmailAddressResetState.Pending)?.resetInSeconds?.toLong()
+private fun AuthStep.WaitEmailCode.resetSecondsLeft(): Long? =
+    (resetState as? EmailAddressResetState.Pending)?.resetAt?.secondsLeft()
 
-/** Nothing typed during a login outlives it; only the country list stays. */
+/** Nothing typed during a login outlives it; only the country list stays (the current country is looked up again). */
 private fun AuthModel.cleared() =
     AuthModel(step = step, connection = connection, phone = PhoneForm(countries = phone.countries))
 
@@ -153,9 +182,36 @@ internal enum class ErrorField(
 
     /** Requesting a reset that has to wait: TDLib answers "already requested" and reports the pending reset. */
     EmailReset(setOf(DomainError.AlreadyRequested)),
+
+    /** Setting the new password; an expired recovery code leads back to entering the code. */
+    NewPassword(RecoveryCode.inlineErrors),
 }
 
 internal fun AuthModel.withFieldError(
+    field: ErrorField,
+    error: DomainError,
+): AuthModel = if (error == DomainError.InputRejected) withRejectedInput(field) else withInlineError(field, error)
+
+/**
+ * A 406 during login: td_api.tl forbids showing or interpreting its message, so the field being submitted asks to
+ * check the input instead.
+ */
+private fun AuthModel.withRejectedInput(field: ErrorField): AuthModel {
+    val error = DomainError.InputRejected
+    return when (field) {
+        ErrorField.None -> this
+        ErrorField.Phone -> copy(phone = phone.copy(error = error))
+        ErrorField.Code -> copy(code = code.copy(error = error))
+        ErrorField.Password, ErrorField.PasswordRecovery -> copy(password = password.copy(error = error))
+        ErrorField.RecoveryCode -> copy(password = password.copy(recoveryCodeError = error))
+        ErrorField.NewPassword -> copy(password = password.copy(newPasswordError = error))
+        ErrorField.Registration -> copy(registration = registration.copy(firstNameError = error))
+        ErrorField.EmailAddress -> copy(email = email.copy(error = error))
+        ErrorField.EmailCode, ErrorField.EmailReset -> copy(email = email.copy(codeError = error))
+    }
+}
+
+private fun AuthModel.withInlineError(
     field: ErrorField,
     error: DomainError,
 ): AuthModel =
@@ -181,7 +237,7 @@ internal fun AuthModel.withFieldError(
         }
 
         // Also when setting the new password: the code may have expired meanwhile.
-        ErrorField.RecoveryCode -> {
+        ErrorField.RecoveryCode, ErrorField.NewPassword -> {
             copy(password = password.copy(recovery = RecoveryStage.Code, recoveryCodeError = error))
         }
 
@@ -204,40 +260,4 @@ internal fun AuthModel.withFieldError(
                 copy(registration = registration.copy(firstNameError = error))
             }
         }
-    }
-
-/** Where system back leads within the flow; null when back leaves it. */
-internal enum class BackTarget {
-    Welcome,
-    CloseCountryPicker,
-    StopChangingNumber,
-    ChangeNumber,
-    LeaveRecovery,
-    CloseTermsOfService,
-    StopChangingEmail,
-    CancelQrCode,
-}
-
-internal fun AuthModel.backTarget(): BackTarget? =
-    when {
-        restarting -> null
-        (step == AuthStep.WaitPhoneNumber || editingPhone) && phone.isPickerOpen -> BackTarget.CloseCountryPicker
-        else -> stepBackTarget()
-    }
-
-private fun AuthModel.stepBackTarget(): BackTarget? =
-    when (step) {
-        AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready -> null
-        AuthStep.WaitPhoneNumber -> BackTarget.Welcome.takeIf { welcomeDone }
-        is AuthStep.WaitOtherDeviceConfirmation -> BackTarget.CancelQrCode
-        else -> laterStepBackTarget()
-    }
-
-private fun AuthModel.laterStepBackTarget(): BackTarget =
-    when {
-        editingPhone -> BackTarget.StopChangingNumber
-        step is AuthStep.WaitPassword && password.recovery != RecoveryStage.None -> BackTarget.LeaveRecovery
-        step is AuthStep.WaitRegistration && registration.isTermsOpen == true -> BackTarget.CloseTermsOfService
-        step is AuthStep.WaitEmailCode && editingEmail -> BackTarget.StopChangingEmail
-        else -> BackTarget.ChangeNumber
     }

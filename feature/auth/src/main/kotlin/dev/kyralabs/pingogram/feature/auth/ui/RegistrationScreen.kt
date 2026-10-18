@@ -179,7 +179,7 @@ private fun TermsOfServiceSheet(
                 horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
             ) {
                 AuthTextButton(text = stringResource(R.string.auth_terms_decline), onClick = {
-                    onEvent(AuthEvent.DismissTermsOfService)
+                    onEvent(AuthEvent.DeclineTermsOfService)
                 })
                 AuthTextButton(
                     text = stringResource(R.string.auth_terms_accept),

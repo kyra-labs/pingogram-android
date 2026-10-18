@@ -75,6 +75,7 @@ private fun AuthModel.laterStepScreen(step: AuthStep): AuthStepUiState =
                     codeLength = step.codeLength,
                     error = email.codeError,
                     reset = step.resetState?.toUiState(email.resetInSeconds),
+                    canResendCode = email.addressEntered,
                 )
             }
         }
@@ -112,6 +113,7 @@ private fun AuthModel.passwordScreen(step: AuthStep.WaitPassword): AuthStepUiSta
                 password = password.newPassword,
                 confirmation = password.newPasswordConfirmation,
                 hint = password.newPasswordHint,
+                error = password.newPasswordError,
             )
         }
     }
@@ -138,7 +140,7 @@ private fun AuthModel.displayPhoneNumber(raw: String): String =
 private fun EmailAddressResetState.toUiState(resetInSeconds: Long?): EmailResetUiState =
     when (this) {
         is EmailAddressResetState.Available -> EmailResetUiState.Available(waitPeriodSeconds.toLong())
-        is EmailAddressResetState.Pending -> EmailResetUiState.Pending(resetInSeconds ?: this.resetInSeconds.toLong())
+        is EmailAddressResetState.Pending -> EmailResetUiState.Pending(resetInSeconds ?: resetAt.secondsLeft())
     }
 
 internal fun Country.toUiModel() = CountryUiModel(isoCode, name, flagEmoji, callingCodes.firstOrNull().orEmpty())

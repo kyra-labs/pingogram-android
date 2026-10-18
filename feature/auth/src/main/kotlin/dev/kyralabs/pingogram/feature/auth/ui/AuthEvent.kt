@@ -134,9 +134,13 @@ sealed interface AuthEvent {
     /** Shows the full terms of service. */
     data object ShowTermsOfService : AuthEvent
 
+    /** Closes the terms (back, swipe, outside tap) without changing whether they are accepted. */
     data object DismissTermsOfService : AuthEvent
 
     data object AcceptTermsOfService : AuthEvent
+
+    /** Declines the terms: closes them and un-accepts them. */
+    data object DeclineTermsOfService : AuthEvent
 
     data object SubmitRegistration : AuthEvent
 

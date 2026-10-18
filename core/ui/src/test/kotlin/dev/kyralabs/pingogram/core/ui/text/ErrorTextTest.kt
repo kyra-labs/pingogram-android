@@ -49,6 +49,7 @@ class ErrorTextTest {
                 DomainError.NotFound,
                 DomainError.AlreadyRequested,
                 DomainError.AppUpdateRequired,
+                DomainError.InputRejected,
                 DomainError.PhoneNumberInvalid,
                 DomainError.PhoneNumberBanned,
                 DomainError.PhoneNumberFlood,

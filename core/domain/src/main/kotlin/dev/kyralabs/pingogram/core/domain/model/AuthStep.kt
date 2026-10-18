@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
+import kotlin.time.ComparableTimeMark
+
 /**
  * Where the login is, as TDLib reports it (`docs/TDLIB.md`, Authorization state machine): one step per screen of
  * `feature:auth`. Plain data, mapped from TDLib's authorization states by `core:data`.
@@ -15,15 +17,16 @@ sealed interface AuthStep {
 
     /**
      * A login code was sent. [nextType] is how a new code would be sent, if there is another way; it can be
-     * requested after [resendTimeoutSeconds] (counted from when this step was reported).
+     * requested once [resendAvailableAt] has passed (`resendAvailableAt.hasPassedNow()`). The mark is fixed when the
+     * step is first seen, so a screen created later counts down from the same moment.
      */
     data class WaitCode(
         val phoneNumber: String,
         val type: AuthCodeType,
         val nextType: AuthCodeType?,
-        val resendTimeoutSeconds: Int,
+        val resendAvailableAt: ComparableTimeMark,
     ) : AuthStep {
-        override fun toString() = "WaitCode(type=$type, nextType=$nextType, resendTimeoutSeconds=$resendTimeoutSeconds)"
+        override fun toString() = "WaitCode(type=$type, nextType=$nextType)"
     }
 
     /** QR code login: another logged-in device scans [link]. TDLib replaces the link every few seconds. */
@@ -164,8 +167,8 @@ sealed interface EmailAddressResetState {
         val waitPeriodSeconds: Int,
     ) : EmailAddressResetState
 
-    /** A reset was requested and happens in [resetInSeconds]. */
+    /** A reset was requested and happens at [resetAt], fixed when TDLib's state was first seen. */
     data class Pending(
-        val resetInSeconds: Int,
+        val resetAt: ComparableTimeMark,
     ) : EmailAddressResetState
 }

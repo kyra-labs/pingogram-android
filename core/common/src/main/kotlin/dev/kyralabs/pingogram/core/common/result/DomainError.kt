@@ -19,8 +19,17 @@ sealed interface DomainError {
 
     data object NotFound : DomainError
 
-    /** TDLib error 406: the request failed, and td_api.tl requires that nothing is shown to the user. */
+    /**
+     * TDLib error 406: the request failed, and td_api.tl requires that its message is neither processed nor shown.
+     * Features decide what a failed request means for them; the login flow shows [InputRejected] instead.
+     */
     data object Silent : DomainError
+
+    /**
+     * Telegram rejected what was entered without a reason that may be shown (a 406 during login, e.g. for a phone
+     * number of the wrong length): ask the user to check the input.
+     */
+    data object InputRejected : DomainError
 
     /** An earlier, identical request is still being processed (`TASK_ALREADY_EXISTS`). */
     data object AlreadyRequested : DomainError

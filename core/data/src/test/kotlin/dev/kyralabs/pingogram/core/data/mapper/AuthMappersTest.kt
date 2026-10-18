@@ -13,13 +13,17 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class AuthMappersTest {
+    private val now = TimeSource.Monotonic.markNow()
+
     @Test
     fun `every authorization state maps to a step`() {
         val steps =
             (listOf(AuthState.Initializing) + TdApiFixtures.allAuthorizationStates().map { AuthState.from(it)!! })
-                .map { it.toAuthStep()::class.simpleName }
+                .map { it.toAuthStep(now)::class.simpleName }
 
         assertEquals(
             listOf(
@@ -52,14 +56,14 @@ class AuthMappersTest {
                 timeoutSeconds = 45,
             )
 
-        val step = AuthState.WaitCode(codeInfo).toAuthStep()
+        val step = AuthState.WaitCode(codeInfo).toAuthStep(now)
 
-        assertEquals(AuthStep.WaitCode("+999662", AuthCodeType.Sms(5), AuthCodeType.Call(5), 45), step)
+        assertEquals(AuthStep.WaitCode("+999662", AuthCodeType.Sms(5), AuthCodeType.Call(5), now + 45.seconds), step)
     }
 
     @Test
     fun `WaitCode without a next type`() {
-        val step = AuthState.WaitCode(TdApiFixtures.authenticationCodeInfo(nextType = null)).toAuthStep()
+        val step = AuthState.WaitCode(TdApiFixtures.authenticationCodeInfo(nextType = null)).toAuthStep(now)
 
         assertEquals(null, (step as AuthStep.WaitCode).nextType)
     }
@@ -99,7 +103,7 @@ class AuthMappersTest {
 
     @Test
     fun `WaitPassword carries the hint and recovery details`() {
-        val step = AuthState.from(TdApiFixtures.waitPassword("cat", true, false, "a***@example.org"))!!.toAuthStep()
+        val step = AuthState.from(TdApiFixtures.waitPassword("cat", true, false, "a***@example.org"))!!.toAuthStep(now)
 
         assertEquals(AuthStep.WaitPassword("cat", true, "a***@example.org"), step)
     }
@@ -108,7 +112,7 @@ class AuthMappersTest {
     fun `WaitRegistration carries the terms of service`() {
         val terms = TdApi.TermsOfService(TdApiFixtures.formattedText("Be nice"), 16, true)
 
-        val step = AuthState.WaitRegistration(terms).toAuthStep()
+        val step = AuthState.WaitRegistration(terms).toAuthStep(now)
 
         assertEquals(AuthStep.WaitRegistration(TermsOfService("Be nice", 16, mustShowPopup = true)), step)
     }
@@ -120,14 +124,14 @@ class AuthMappersTest {
                 .map { reset ->
                     AuthState
                         .from(TdApiFixtures.waitEmailCode("a***@example.org", 6, emailAddressResetState = reset))!!
-                        .toAuthStep()
+                        .toAuthStep(now)
                 }
 
         assertEquals(
             listOf(
                 AuthStep.WaitEmailCode("a***@example.org", 6, null),
                 AuthStep.WaitEmailCode("a***@example.org", 6, EmailAddressResetState.Available(3600)),
-                AuthStep.WaitEmailCode("a***@example.org", 6, EmailAddressResetState.Pending(120)),
+                AuthStep.WaitEmailCode("a***@example.org", 6, EmailAddressResetState.Pending(now + 120.seconds)),
             ),
             states,
         )
@@ -135,7 +139,7 @@ class AuthMappersTest {
 
     @Test
     fun `WaitPremiumPurchase keeps only the support contact`() {
-        val step = AuthState.from(TdApiFixtures.waitPremiumPurchase())!!.toAuthStep()
+        val step = AuthState.from(TdApiFixtures.waitPremiumPurchase())!!.toAuthStep(now)
 
         assertEquals(AuthStep.WaitPremiumPurchase("support@example.org", "Login"), step)
     }

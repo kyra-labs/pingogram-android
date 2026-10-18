@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.TimeSource
 
 class AuthModelTest {
     @Test
@@ -52,7 +53,7 @@ class AuthModelTest {
     fun `toString leaves out phone numbers, links, hints and email patterns`() {
         val printed =
             listOf(
-                AuthStep.WaitCode("+999662", AuthCodeType.Sms(5), null, 60),
+                AuthStep.WaitCode("+999662", AuthCodeType.Sms(5), null, TimeSource.Monotonic.markNow()),
                 AuthStep.WaitOtherDeviceConfirmation("tg://login?token=secret"),
                 AuthStep.WaitPassword("my dog", true, "a***@example.org"),
                 AuthStep.WaitEmailCode("b***@example.org", 6, null),

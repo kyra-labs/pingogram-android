@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -14,6 +15,8 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -31,7 +34,8 @@ import kotlin.time.Duration.Companion.seconds
 class TdlibAuthRepositoryTest {
     private val client = FakeTdlibClient(authState = AuthState.WaitPhoneNumber)
 
-    private fun TestScope.repository() = TdlibAuthRepository(client, StandardTestDispatcher(testScheduler))
+    private fun TestScope.repository() =
+        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
 
     private fun ok() = TdResult.Success(TdApi.Ok())
 
@@ -107,20 +111,87 @@ class TdlibAuthRepositoryTest {
     // advanceTimeBy/runCurrent drive virtual time; they are still experimental in kotlinx-coroutines-test.
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `a request without an answer in 30 seconds fails with Network`() =
+    fun `a request waits longer than TDLib's own 60 seconds before failing with Network`() =
         runTest {
             val never = CompletableDeferred<TdResult<TdApi.Ok>>()
             client.on(TdApi.CheckAuthenticationPassword::class) { never.await() }
             val repository = repository()
 
             val result = async { repository.checkPassword("secret") }
-            advanceTimeBy(29.seconds)
+            advanceTimeBy(89.seconds)
             runCurrent()
-            assertFalse(result.isCompleted)
+            val completedEarly = result.isCompleted
             advanceTimeBy(1.seconds)
             runCurrent()
 
+            assertFalse(completedEarly)
             assertEquals(Outcome.Failure(DomainError.Network), result.await())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `an answer after TDLib's flood wait resends, within its 60 seconds, still arrives`() =
+        runTest {
+            client.on(TdApi.SetAuthenticationPhoneNumber::class) {
+                delay(60.seconds)
+                ok()
+            }
+
+            val result = async { repository().setPhoneNumber("+999662") }
+            advanceTimeBy(61.seconds)
+            runCurrent()
+
+            assertEquals(Outcome.Success(Unit), result.await())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `the resend deadline counts from when the state was first seen, also for a later collector`() =
+        runTest {
+            val repository = repository()
+            client.authState.value =
+                AuthState.WaitCode(TdApiFixtures.authenticationCodeInfo(timeoutSeconds = 60))
+            val first = repository.authStep.first() as AuthStep.WaitCode
+
+            advanceTimeBy(20.seconds)
+            val later = repository.authStep.first() as AuthStep.WaitCode
+
+            assertEquals(first.resendAvailableAt, later.resendAvailableAt)
+            assertEquals(40.seconds, -later.resendAvailableAt.elapsedNow())
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `a new report of the state starts a new deadline`() =
+        runTest {
+            val repository = repository()
+            client.authState.value =
+                AuthState.WaitCode(TdApiFixtures.authenticationCodeInfo(timeoutSeconds = 60))
+            val first = repository.authStep.first() as AuthStep.WaitCode
+
+            advanceTimeBy(20.seconds)
+            client.authState.value =
+                AuthState.WaitCode(TdApiFixtures.authenticationCodeInfo(timeoutSeconds = 60))
+            val resent = repository.authStep.first() as AuthStep.WaitCode
+
+            assertEquals(20.seconds, resent.resendAvailableAt - first.resendAvailableAt)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `a pending email reset becomes a deadline`() =
+        runTest {
+            val repository = repository()
+            client.authState.value =
+                AuthState.from(
+                    TdApiFixtures.waitEmailCode(emailAddressResetState = TdApi.EmailAddressResetStatePending(120)),
+                )!!
+            val step = repository.authStep.first() as AuthStep.WaitEmailCode
+
+            advanceTimeBy(30.seconds)
+
+            val pending = step.resetState as EmailAddressResetState.Pending
+            assertEquals(90.seconds, -pending.resetAt.elapsedNow())
         }
 
     @Test

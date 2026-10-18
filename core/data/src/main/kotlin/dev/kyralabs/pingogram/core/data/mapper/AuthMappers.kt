@@ -10,9 +10,15 @@ import dev.kyralabs.pingogram.core.domain.model.TermsOfService
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import org.drinkless.tdlib.TdApi
+import kotlin.time.ComparableTimeMark
+import kotlin.time.Duration.Companion.seconds
 import dev.kyralabs.pingogram.core.domain.model.flagEmoji as flagEmojiOf
 
-internal fun AuthState.toAuthStep(): AuthStep =
+/**
+ * The step for this state. TDLib's timeouts (code resend, email reset) count from when it reported the state;
+ * [receivedAt] is when that was first seen, so they become fixed deadlines.
+ */
+internal fun AuthState.toAuthStep(receivedAt: ComparableTimeMark): AuthStep =
     when (this) {
         AuthState.Initializing, AuthState.WaitTdlibParameters -> {
             AuthStep.Initializing
@@ -27,7 +33,7 @@ internal fun AuthState.toAuthStep(): AuthStep =
                 phoneNumber = codeInfo.phoneNumber,
                 type = codeInfo.type.toAuthCodeType(),
                 nextType = codeInfo.nextType?.toAuthCodeType(),
-                resendTimeoutSeconds = codeInfo.timeout.coerceAtLeast(0),
+                resendAvailableAt = receivedAt + codeInfo.timeout.coerceAtLeast(0).seconds,
             )
         }
 
@@ -56,7 +62,7 @@ internal fun AuthState.toAuthStep(): AuthStep =
             AuthStep.WaitEmailCode(
                 emailAddressPattern = codeInfo.emailAddressPattern,
                 codeLength = codeInfo.length,
-                resetState = emailAddressResetState?.toEmailAddressResetState(),
+                resetState = emailAddressResetState?.toEmailAddressResetState(receivedAt),
             )
         }
 
@@ -110,11 +116,21 @@ internal fun TdApi.TermsOfService.toTermsOfService() =
         mustShowPopup = showPopup,
     )
 
-internal fun TdApi.EmailAddressResetState.toEmailAddressResetState(): EmailAddressResetState? =
+internal fun TdApi.EmailAddressResetState.toEmailAddressResetState(
+    receivedAt: ComparableTimeMark,
+): EmailAddressResetState? =
     when (this) {
-        is TdApi.EmailAddressResetStateAvailable -> EmailAddressResetState.Available(waitPeriod.coerceAtLeast(0))
-        is TdApi.EmailAddressResetStatePending -> EmailAddressResetState.Pending(resetIn.coerceAtLeast(0))
-        else -> null
+        is TdApi.EmailAddressResetStateAvailable -> {
+            EmailAddressResetState.Available(waitPeriod.coerceAtLeast(0))
+        }
+
+        is TdApi.EmailAddressResetStatePending -> {
+            EmailAddressResetState.Pending(receivedAt + resetIn.coerceAtLeast(0).seconds)
+        }
+
+        else -> {
+            null
+        }
     }
 
 internal fun TdApi.CountryInfo.toCountry() =

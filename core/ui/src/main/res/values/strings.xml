@@ -8,6 +8,7 @@
     <string name="error_already_requested">This was already requested. Please wait.</string>
     <string name="error_app_update_required">Telegram requires a newer app to log in. Update Pingogram and try again.</string>
     <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_input_rejected">Telegram didn\'t accept this. Check what you entered and try again.</string>
     <!-- Debug builds only: %1$d is TDLib's error code, %2$s its message. -->
     <string name="error_unknown_details">Something went wrong (%1$d: %2$s).</string>
     <string name="error_phone_number_invalid">Enter a valid phone number.</string>

@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
@@ -34,8 +35,9 @@ import kotlin.time.TimeSource
  * driven by TDLib's [AuthStep]s plus local navigation (welcome screen, changing the number or email address, password
  * recovery), and [effects] for one-off actions. Events come in through [onEvent].
  *
- * Countdowns (flood wait, code resend, email reset) tick here, against [timeSource], so tests control time. Typed
- * input and local navigation survive process death through the [SavedStateHandle]; passwords do not.
+ * Countdowns (flood wait, code resend, email reset) tick here, towards deadlines on [timeSource] or from the steps, so
+ * tests control time. Typed input and local navigation survive process death through the [SavedStateHandle];
+ * passwords and codes do not.
  *
  * It has one handler per event of a thirteen-screen flow, hence `TooManyFunctions` is suppressed.
  */
@@ -66,10 +68,17 @@ class AuthViewModel internal constructor(
     val effects: Flow<AuthEffect> = effectChannel.receiveAsFlow()
 
     private var countriesJob: Job? = null
+    private var countryDetectionJob: Job? = null
     private var phoneNumberInfoJob: Job? = null
     private var floodWaitJob: Job? = null
     private var resendJob: Job? = null
     private var emailResetJob: Job? = null
+
+    /** How many steps TDLib reported, to tell whether one arrived while a request ran. */
+    private var stepCount = 0
+
+    /** The success handling of a request that TDLib answered before reporting the step it led to. */
+    private var awaitingStep: (() -> Unit)? = null
 
     init {
         viewModelScope.launch { authRepository.authStep.collect(::onAuthStep) }
@@ -106,7 +115,7 @@ class AuthViewModel internal constructor(
             AuthEvent.ForgotPassword -> forgotPassword()
             is AuthEvent.RecoveryCodeChanged -> onRecoveryCodeChanged(event.code)
             AuthEvent.SubmitRecoveryCode -> submitRecoveryCode()
-            is AuthEvent.NewPasswordChanged -> updatePassword { it.copy(newPassword = event.password) }
+            is AuthEvent.NewPasswordChanged -> onNewPasswordChanged(event.password)
             is AuthEvent.NewPasswordConfirmationChanged -> onNewPasswordConfirmationChanged(event.confirmation)
             is AuthEvent.NewPasswordHintChanged -> updatePassword { it.copy(newPasswordHint = event.hint) }
             AuthEvent.SubmitNewPassword -> submitNewPassword()
@@ -115,7 +124,8 @@ class AuthViewModel internal constructor(
             is AuthEvent.TermsAcceptedChanged -> updateRegistration { it.copy(termsAccepted = event.accepted) }
             AuthEvent.ShowTermsOfService -> updateRegistration { it.copy(isTermsOpen = true) }
             AuthEvent.DismissTermsOfService -> updateRegistration { it.copy(isTermsOpen = false) }
-            AuthEvent.AcceptTermsOfService -> acceptTermsOfService()
+            AuthEvent.AcceptTermsOfService -> closeTermsOfService(accepted = true)
+            AuthEvent.DeclineTermsOfService -> closeTermsOfService(accepted = false)
             AuthEvent.SubmitRegistration -> submitRegistration()
             is AuthEvent.EmailAddressChanged -> onEmailAddressChanged(event.emailAddress)
             AuthEvent.SubmitEmailAddress -> submitEmailAddress()
@@ -132,29 +142,40 @@ class AuthViewModel internal constructor(
 
     private fun onAuthStep(step: AuthStep) {
         val previous = model.step
+        stepCount++
         if (step == AuthStep.Closed && !model.restarting) cancelCountdowns()
         update { it.withStep(step) }
+        completeAwaitedStep()
         when (step) {
             is AuthStep.WaitCode -> onWaitCode(step)
+
             is AuthStep.WaitEmailCode -> onWaitEmailCode(step)
-            AuthStep.Ready -> if (previous != AuthStep.Ready) onAuthorized()
+
+            // While leaving QR login TDLib is logged out anyway, so a login arriving meanwhile does not count.
+            AuthStep.Ready -> if (previous != AuthStep.Ready && !model.restarting) onAuthorized()
+
             else -> Unit
         }
         loadCountries()
     }
 
+    private fun completeAwaitedStep() {
+        val onSuccess = awaitingStep ?: return
+        awaitingStep = null
+        update { it.copy(pendingAction = null) }
+        onSuccess()
+    }
+
     private fun onWaitCode(step: AuthStep.WaitCode) {
         resendJob?.cancel()
-        resendJob =
-            countdown(step.resendTimeoutSeconds.toLong()) { left -> updateCode { it.copy(resendInSeconds = left) } }
+        resendJob = countdownTo(step.resendAvailableAt) { left -> updateCode { it.copy(resendInSeconds = left) } }
         formatCodePhoneNumber(step.phoneNumber)
     }
 
     private fun onWaitEmailCode(step: AuthStep.WaitEmailCode) {
         emailResetJob?.cancel()
         val pending = step.resetState as? EmailAddressResetState.Pending ?: return
-        emailResetJob =
-            countdown(pending.resetInSeconds.toLong()) { left -> updateEmail { it.copy(resetInSeconds = left) } }
+        emailResetJob = countdownTo(pending.resetAt) { left -> updateEmail { it.copy(resetInSeconds = left) } }
     }
 
     private fun onAuthorized() {
@@ -181,6 +202,7 @@ class AuthViewModel internal constructor(
                 number = (split?.second ?: phone.number).take(MAX_PHONE_NUMBER_DIGITS - callingCode.length),
                 countryIso = countryForCallingCode(callingCode, phone.country, phone.countries)?.isoCode,
                 error = null,
+                isCountryDetected = true,
             )
         }
         requestPhoneNumberInfo()
@@ -197,6 +219,7 @@ class AuthViewModel internal constructor(
                     number = split.second,
                     countryIso = countryForCallingCode(split.first, phone.country, phone.countries)?.isoCode,
                     error = null,
+                    isCountryDetected = true,
                 )
             } else {
                 phone.copy(number = digits.take(MAX_PHONE_NUMBER_DIGITS - phone.callingCode.length), error = null)
@@ -225,6 +248,7 @@ class AuthViewModel internal constructor(
                 isPickerOpen = false,
                 pickerQuery = "",
                 error = null,
+                isCountryDetected = true,
             )
         }
         requestPhoneNumberInfo()
@@ -236,15 +260,23 @@ class AuthViewModel internal constructor(
             updatePhone { it.copy(error = DomainError.PhoneNumberInvalid) }
             return
         }
-        launchAction(AuthAction.SubmitPhoneNumber, ErrorField.Phone, {
-            authRepository.setPhoneNumber(phone.internationalNumber)
-        }) {
-            update { it.copy(editingPhone = false, code = it.code.copy(code = "", error = null)) }
+        launchAction(
+            AuthAction.SubmitPhoneNumber,
+            ErrorField.Phone,
+            { authRepository.setPhoneNumber(phone.internationalNumber) },
+            awaitsStep = true,
+        ) {
+            update {
+                it.copy(
+                    editingPhone = false,
+                    code = it.code.copy(code = "", error = null, rejectedCode = null),
+                )
+            }
         }
     }
 
     private fun requestQrCode() {
-        launchAction(AuthAction.RequestQrCode, ErrorField.None, authRepository::requestQrCode) {
+        launchAction(AuthAction.RequestQrCode, ErrorField.None, authRepository::requestQrCode, awaitsStep = true) {
             update { it.copy(editingPhone = false) }
         }
     }
@@ -256,29 +288,53 @@ class AuthViewModel internal constructor(
         viewModelScope.launch {
             val outcome = authRepository.cancelQrCode()
             update { it.copy(pendingAction = null, restarting = it.restarting && outcome is Outcome.Success) }
-            if (outcome is Outcome.Failure) onFailure(outcome.error, ErrorField.None)
+            if (outcome is Outcome.Failure) handleFailure(outcome.error, ErrorField.None)
         }
     }
 
-    /** Countries for the picker, and the current country by IP for a calling code nobody typed yet. */
+    /** The country list, once; then the current country for this session ([detectCountry]). */
     private fun loadCountries() {
         // TDLib answers once it has its parameters, and not while it closes or after login.
         val canAsk = model.step !in setOf(AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready)
-        if (!canAsk || model.phone.countries.isNotEmpty() || countriesJob?.isActive == true) return
-        countriesJob =
+        when {
+            !canAsk -> {
+                Unit
+            }
+
+            model.phone.countries.isNotEmpty() -> {
+                detectCountry()
+            }
+
+            countriesJob?.isActive != true -> {
+                countriesJob =
+                    viewModelScope.launch {
+                        val countries = countryRepository.countries().getOrNull() ?: return@launch
+                        updatePhone { it.copy(countries = countries) }
+                        detectCountry()
+                        requestPhoneNumberInfo()
+                    }
+            }
+        }
+    }
+
+    /**
+     * The country of the IP address, for a calling code nobody typed yet: once per session, so again after logging
+     * out, but never over what the user typed or picked.
+     */
+    private fun detectCountry() {
+        val phone = model.phone
+        val wanted = !phone.isCountryDetected && phone.callingCode.isEmpty() && phone.countries.isNotEmpty()
+        if (!wanted || countryDetectionJob?.isActive == true) return
+        countryDetectionJob =
             viewModelScope.launch {
-                val countries = countryRepository.countries().getOrNull() ?: return@launch
-                updatePhone { it.copy(countries = countries) }
-                if (model.phone.callingCode.isEmpty()) {
-                    val isoCode = countryRepository.currentCountryCode().getOrNull()
-                    val country = countries.find { it.isoCode.equals(isoCode, ignoreCase = true) }
-                    if (country != null && model.phone.callingCode.isEmpty()) {
-                        updatePhone {
-                            it.copy(
-                                countryIso = country.isoCode,
-                                callingCode = country.callingCodes.firstOrNull().orEmpty(),
-                            )
-                        }
+                val isoCode = countryRepository.currentCountryCode().getOrNull() ?: return@launch
+                updatePhone { current ->
+                    val country = current.countries.find { it.isoCode.equals(isoCode, ignoreCase = true) }
+                    if (country == null || current.callingCode.isNotEmpty()) {
+                        current.copy(isCountryDetected = true)
+                    } else {
+                        val callingCode = country.callingCodes.firstOrNull().orEmpty()
+                        current.copy(isCountryDetected = true, countryIso = country.isoCode, callingCode = callingCode)
                     }
                 }
                 requestPhoneNumberInfo()
@@ -303,25 +359,37 @@ class AuthViewModel internal constructor(
 
     // Login code
 
+    /**
+     * Submits a complete code by itself, unless it is unchanged (e.g. a digit typed past the length is dropped) or
+     * Telegram already rejected it: every attempt counts against the account.
+     */
     private fun onCodeChanged(input: String) {
         val type = (model.step as? AuthStep.WaitCode)?.type ?: return
         val length = type.codeLength
         val code = if (type.isNumeric) input.filter(Char::isDigit).take(length ?: input.length) else input
+        val form = model.code
+        if (code == form.code) return
         updateCode { it.copy(code = code, error = null) }
-        if (length != null && code.length == length) submitCode()
+        if (length != null && code.length == length && code != form.rejectedCode) submitCode()
     }
 
     private fun submitCode() {
         val code = model.code.code.trim()
         if (model.step !is AuthStep.WaitCode || code.isEmpty()) return
-        launchAction(AuthAction.SubmitCode, ErrorField.Code, { authRepository.checkCode(code) })
+        launchAction(
+            AuthAction.SubmitCode,
+            ErrorField.Code,
+            { authRepository.checkCode(code) },
+            awaitsStep = true,
+            onFailure = { error -> if (error.rejectsCode) updateCode { it.copy(rejectedCode = code) } },
+        )
     }
 
     private fun resendCode() {
         val step = model.step as? AuthStep.WaitCode ?: return
         if (step.nextType == null || model.code.resendInSeconds > 0) return
-        launchAction(AuthAction.ResendCode, ErrorField.Code, authRepository::resendCode) {
-            updateCode { it.copy(code = "", error = null) }
+        launchAction(AuthAction.ResendCode, ErrorField.Code, authRepository::resendCode, awaitsStep = true) {
+            updateCode { it.copy(code = "", error = null, rejectedCode = null) }
         }
     }
 
@@ -360,9 +428,12 @@ class AuthViewModel internal constructor(
     private fun submitPassword() {
         val password = model.password.password
         if (model.step !is AuthStep.WaitPassword || password.isEmpty()) return
-        launchAction(AuthAction.SubmitPassword, ErrorField.Password, { authRepository.checkPassword(password) }) {
-            updatePassword { it.copy(password = "") }
-        }
+        launchAction(
+            AuthAction.SubmitPassword,
+            ErrorField.Password,
+            { authRepository.checkPassword(password) },
+            awaitsStep = true,
+        ) { updatePassword { it.copy(password = "") } }
     }
 
     /** FR-A4: by recovery email; without one, explain that the password cannot be recovered (no account reset). */
@@ -376,9 +447,7 @@ class AuthViewModel internal constructor(
             AuthAction.RequestPasswordRecovery,
             ErrorField.PasswordRecovery,
             authRepository::requestPasswordRecovery,
-        ) {
-            updatePassword { it.copy(recovery = RecoveryStage.Code, recoveryCode = "", recoveryCodeError = null) }
-        }
+        ) { updatePassword { it.copy(recovery = RecoveryStage.Code, recoveryCode = "", recoveryCodeError = null) } }
     }
 
     private fun onRecoveryCodeChanged(input: String) {
@@ -388,11 +457,15 @@ class AuthViewModel internal constructor(
     private fun submitRecoveryCode() {
         val code = model.password.recoveryCode
         if (model.step !is AuthStep.WaitPassword || code.isEmpty()) return
-        launchAction(AuthAction.SubmitRecoveryCode, ErrorField.RecoveryCode, {
-            authRepository.checkPasswordRecoveryCode(code)
-        }) {
-            updatePassword { it.copy(recovery = RecoveryStage.NewPassword) }
-        }
+        launchAction(
+            AuthAction.SubmitRecoveryCode,
+            ErrorField.RecoveryCode,
+            { authRepository.checkPasswordRecoveryCode(code) },
+        ) { updatePassword { it.copy(recovery = RecoveryStage.NewPassword) } }
+    }
+
+    private fun onNewPasswordChanged(input: String) {
+        updatePassword { it.copy(newPassword = input, newPasswordError = null) }
     }
 
     private fun onNewPasswordConfirmationChanged(input: String) {
@@ -405,8 +478,9 @@ class AuthViewModel internal constructor(
         if (model.step !is AuthStep.WaitPassword || !isComplete) return
         launchAction(
             AuthAction.SubmitNewPassword,
-            ErrorField.RecoveryCode,
+            ErrorField.NewPassword,
             { authRepository.recoverPassword(form.recoveryCode, form.newPassword, form.newPasswordHint) },
+            awaitsStep = true,
         ) { updatePassword { PasswordForm() } }
     }
 
@@ -420,8 +494,9 @@ class AuthViewModel internal constructor(
         updateRegistration { it.copy(lastName = input.take(MAX_NAME_LENGTH), lastNameError = null) }
     }
 
-    private fun acceptTermsOfService() {
-        updateRegistration { it.copy(termsAccepted = true, isTermsOpen = false) }
+    /** Accepting or declining the terms closes them; declining un-accepts them. */
+    private fun closeTermsOfService(accepted: Boolean) {
+        updateRegistration { it.copy(termsAccepted = accepted, isTermsOpen = false) }
     }
 
     private fun submitRegistration() {
@@ -438,9 +513,12 @@ class AuthViewModel internal constructor(
             }
 
             else -> {
-                launchAction(AuthAction.SubmitRegistration, ErrorField.Registration, {
-                    authRepository.register(form.firstName.trim(), form.lastName.trim())
-                })
+                launchAction(
+                    AuthAction.SubmitRegistration,
+                    ErrorField.Registration,
+                    { authRepository.register(form.firstName.trim(), form.lastName.trim()) },
+                    awaitsStep = true,
+                )
             }
         }
     }
@@ -463,8 +541,12 @@ class AuthViewModel internal constructor(
             AuthAction.SubmitEmailAddress,
             ErrorField.EmailAddress,
             { authRepository.setEmailAddress(address) },
+            awaitsStep = true,
         ) {
-            update { it.copy(editingEmail = false, email = it.email.copy(code = "", codeError = null)) }
+            update {
+                val email = it.email.copy(addressEntered = true, code = "", codeError = null, rejectedCode = null)
+                it.copy(editingEmail = false, email = email)
+            }
         }
     }
 
@@ -473,24 +555,34 @@ class AuthViewModel internal constructor(
         update { it.copy(editingEmail = true, email = it.email.copy(error = null)) }
     }
 
+    /** Like [onCodeChanged]: an unchanged or already rejected code is not submitted again by itself. */
     private fun onEmailCodeChanged(input: String) {
         val step = model.step as? AuthStep.WaitEmailCode ?: return
         val length = step.codeLength.takeIf { it > 0 }
         val code = input.filter(Char::isDigit).take(length ?: input.length)
+        val form = model.email
+        if (code == form.code) return
         updateEmail { it.copy(code = code, codeError = null) }
-        if (length != null && code.length == length) submitEmailCode()
+        if (length != null && code.length == length && code != form.rejectedCode) submitEmailCode()
     }
 
     private fun submitEmailCode() {
         val code = model.email.code
         if (model.step !is AuthStep.WaitEmailCode || model.editingEmail || code.isEmpty()) return
-        launchAction(AuthAction.SubmitEmailCode, ErrorField.EmailCode, { authRepository.checkEmailCode(code) })
+        launchAction(
+            AuthAction.SubmitEmailCode,
+            ErrorField.EmailCode,
+            { authRepository.checkEmailCode(code) },
+            awaitsStep = true,
+            onFailure = { error -> if (error.rejectsCode) updateEmail { it.copy(rejectedCode = code) } },
+        )
     }
 
+    /** Only for an address entered in this login: TDLib has no address to resend to otherwise. */
     private fun resendEmailCode() {
-        if (model.step !is AuthStep.WaitEmailCode) return
-        launchAction(AuthAction.ResendEmailCode, ErrorField.EmailCode, authRepository::resendCode) {
-            updateEmail { it.copy(code = "", codeError = null) }
+        if (model.step !is AuthStep.WaitEmailCode || !model.email.addressEntered) return
+        launchAction(AuthAction.ResendEmailCode, ErrorField.EmailCode, authRepository::resendCode, awaitsStep = true) {
+            updateEmail { it.copy(code = "", codeError = null, rejectedCode = null) }
         }
     }
 
@@ -526,59 +618,79 @@ class AuthViewModel internal constructor(
 
     /**
      * Sends one request at a time, and none while Telegram asks to wait; [action] shows progress until it answers.
-     * Failures go next to [errorField] when they concern it, to a flood wait countdown, or to a snackbar.
+     * Failures go next to [errorField] when they concern it, to a flood wait countdown, or to a snackbar; [onFailure]
+     * then sees the raw error.
+     *
+     * With [awaitsStep], success means TDLib moves on to another (or a renewed) step. Its answer and that step arrive
+     * on separate paths, in either order; when the answer comes first, progress stays until the step arrives, so the
+     * old step neither reappears nor accepts the same request again.
      */
     private fun launchAction(
         action: AuthAction,
         errorField: ErrorField,
         request: suspend () -> Outcome<Unit>,
+        awaitsStep: Boolean = false,
+        onFailure: (DomainError) -> Unit = {},
         onSuccess: () -> Unit = {},
     ) {
         if (model.pendingAction != null || model.floodWaitSeconds != null) return
         update { it.copy(pendingAction = action) }
+        val stepsBefore = stepCount
         viewModelScope.launch {
             val outcome = request()
+            if (outcome is Outcome.Success && awaitsStep && stepCount == stepsBefore) {
+                awaitingStep = onSuccess
+                return@launch
+            }
             update { it.copy(pendingAction = null) }
             when (outcome) {
-                is Outcome.Success -> onSuccess()
-                is Outcome.Failure -> onFailure(outcome.error, errorField)
+                is Outcome.Success -> {
+                    onSuccess()
+                }
+
+                is Outcome.Failure -> {
+                    handleFailure(outcome.error, errorField)
+                    onFailure(outcome.error)
+                }
             }
         }
     }
 
-    private fun onFailure(
+    private fun handleFailure(
         error: DomainError,
         errorField: ErrorField,
     ) {
         when {
             error is DomainError.FloodWait -> startFloodWait(error.seconds)
-            error == DomainError.Silent -> Unit
+
+            // td_api.tl: a 406's message is neither shown nor interpreted; the input is reported as not accepted.
+            error == DomainError.Silent && errorField == ErrorField.None -> showError(DomainError.InputRejected)
+
+            error == DomainError.Silent -> update { it.withFieldError(errorField, DomainError.InputRejected) }
+
             error in errorField.inlineErrors -> update { it.withFieldError(errorField, error) }
-            else -> sendEffect(AuthEffect.ShowError(error))
+
+            else -> showError(error)
         }
     }
 
     private fun startFloodWait(seconds: Long) {
         floodWaitJob?.cancel()
-        floodWaitJob = countdown(seconds) { left -> update { it.copy(floodWaitSeconds = left.takeIf { s -> s > 0 }) } }
+        floodWaitJob =
+            countdownTo(timeSource.markNow() + seconds.seconds) { left ->
+                update { it.copy(floodWaitSeconds = left.takeIf { s -> s > 0 }) }
+            }
     }
 
-    /** Calls [onTick] with the whole seconds left (rounded up) each time they change, down to 0. */
-    private fun countdown(
-        seconds: Long,
+    /** Calls [onTick] with the whole seconds left until [deadline] (rounded up) each time they change, down to 0. */
+    private fun countdownTo(
+        deadline: ComparableTimeMark,
         onTick: (Long) -> Unit,
     ): Job =
         viewModelScope.launch {
-            val end = timeSource.markNow() + seconds.seconds
             do {
-                val left = -end.elapsedNow()
-                val wholeSeconds =
-                    if (left.isPositive()) {
-                        (left.inWholeNanoseconds + NANOS_PER_SECOND - 1) /
-                            NANOS_PER_SECOND
-                    } else {
-                        0
-                    }
+                val left = deadline.timeLeft()
+                val wholeSeconds = left.wholeSecondsRoundedUp()
                 onTick(wholeSeconds)
                 if (wholeSeconds > 0) delay(left - (wholeSeconds - 1).seconds)
             } while (wholeSeconds > 0)
@@ -587,6 +699,8 @@ class AuthViewModel internal constructor(
     private fun cancelCountdowns() {
         listOf(floodWaitJob, resendJob, emailResetJob).forEach { it?.cancel() }
     }
+
+    private fun showError(error: DomainError) = sendEffect(AuthEffect.ShowError(error))
 
     private fun sendEffect(effect: AuthEffect) {
         effectChannel.trySend(effect)
@@ -603,9 +717,7 @@ class AuthViewModel internal constructor(
     private fun updateCode(transform: (CodeForm) -> CodeForm) = update { it.copy(code = transform(it.code)) }
 
     private fun updatePassword(transform: (PasswordForm) -> PasswordForm) =
-        update {
-            it.copy(password = transform(it.password))
-        }
+        update { it.copy(password = transform(it.password)) }
 
     private fun updateRegistration(transform: (RegistrationForm) -> RegistrationForm) =
         update { it.copy(registration = transform(it.registration)) }
@@ -618,6 +730,9 @@ class AuthViewModel internal constructor(
 
         /** Telegram's limit for first and last names (td/telegram/AuthManager.h). */
         const val MAX_NAME_LENGTH = 64
-        private val NANOS_PER_SECOND = 1.seconds.inWholeNanoseconds
     }
 }
+
+/** Telegram rejected the code itself (a 406 included): the same code must not be submitted again by itself. */
+private val DomainError.rejectsCode: Boolean
+    get() = this == DomainError.CodeInvalid || this == DomainError.CodeExpired || this == DomainError.Silent

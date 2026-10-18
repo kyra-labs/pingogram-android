@@ -103,12 +103,14 @@ fun EmailCodeScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onEvent(AuthEvent.SubmitEmailCode) }),
         )
-        AuthTextButton(
-            text = stringResource(R.string.auth_email_resend),
-            onClick = { onEvent(AuthEvent.ResendEmailCode) },
-            enabled = canSubmit,
-            inProgress = pendingAction == AuthAction.ResendEmailCode,
-        )
+        if (state.canResendCode) {
+            AuthTextButton(
+                text = stringResource(R.string.auth_email_resend),
+                onClick = { onEvent(AuthEvent.ResendEmailCode) },
+                enabled = canSubmit,
+                inProgress = pendingAction == AuthAction.ResendEmailCode,
+            )
+        }
         state.reset?.let {
             EmailReset(
                 reset = it,

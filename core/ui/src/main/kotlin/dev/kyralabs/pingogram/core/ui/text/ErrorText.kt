@@ -57,6 +57,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.NotFound -> R.string.error_not_found
         DomainError.AlreadyRequested -> R.string.error_already_requested
         DomainError.AppUpdateRequired -> R.string.error_app_update_required
+        DomainError.InputRejected -> R.string.error_input_rejected
         DomainError.PhoneNumberInvalid -> R.string.error_phone_number_invalid
         DomainError.PhoneNumberBanned -> R.string.error_phone_number_banned
         DomainError.PhoneNumberFlood -> R.string.error_phone_number_flood
