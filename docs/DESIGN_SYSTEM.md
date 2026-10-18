@@ -170,6 +170,11 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   = `LineHeightStyle(Alignment.Center, Trim.None)`; `platformStyle = PlatformTextStyle(includeFontPadding = false)`.
 - Font scaling: all sizes in `sp`; the chat "message text size" setting multiplies `bodyLarge`
   only (0.85–1.3) and re-derives `opsz`. Non-linear font scaling (Android 14) is respected.
+- Bold text (Android 12+): `PingogramTheme` passes `Configuration.fontWeightAdjustment` to
+  `pingogramTypography`, which registers each font at its weight plus the adjustment. Compose adds the
+  adjustment both when it picks a font from the family and to that font's `wght`, so fonts registered
+  at their plain weights would pick the heavier emphasized font and add the adjustment on top; this way
+  text gets bolder by the adjustment once (`GoogleSansFlexRenderingTest`).
 - Fallbacks: Android's font fallback chain renders glyphs Google Sans Flex lacks (CJK, Arabic,
   Devanagari, emoji) with the system fonts and Noto; no font files are bundled for them.
 - Tabular figures for times/counters: `fontFeatureSettings = "tnum"`.
