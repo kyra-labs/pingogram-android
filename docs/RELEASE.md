@@ -53,7 +53,9 @@
 The per-ABI APKs come from ABI splits configured in `AndroidApplicationConventionPlugin`. AGP cannot
 build an app bundle while splits are on (https://issuetracker.google.com/402800800), so a Gradle
 invocation that runs a `bundle*` task builds without splits, and `release.yml` builds the APKs and
-the bundle in two separate invocations.
+the bundle in two separate invocations. Native code for other ABIs (32-bit x86, riscv64), which some
+AndroidX libraries ship, is left out of every APK and the bundle, so devices with those ABIs are refused
+at install instead of crashing when TDLib loads.
 
 Default flavor for GitHub releases is `foss`. A `gms` build is produced only if the owner
 enables it in the workflow input.

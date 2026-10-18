@@ -37,7 +37,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Roborazzi screenshot tests (Robolectric, native graphics) verified by `./gradlew check`.
 
 - Release builds produce one APK per ABI (`arm64-v8a`, `armeabi-v7a`, `x86_64`) plus a universal APK,
-  with distinct version codes.
+  with distinct version codes. Native code for other ABIs is left out, so devices that only support
+  32-bit x86 cannot install the app.
 
 - TDLib 1.8.68 for Android, built by the `Build TDLib` workflow and published as the `tdlib-a94b83d67a`
   release; the build downloads it and verifies its pinned SHA-256 (`pingogram.tdlib.aar` overrides it with
