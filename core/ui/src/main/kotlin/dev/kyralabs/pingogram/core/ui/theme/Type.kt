@@ -9,7 +9,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
-import dev.kyralabs.pingogram.core.ui.R
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
@@ -155,9 +154,9 @@ private fun TextStyle.withGoogleSansFlex(
 
 /**
  * Variation settings shared by every font of one style's family. Each distinct setting becomes its
- * own Typeface when first used, so a family holds only the weights its style needs, upright and with
- * a true variable slant for italics. Glyphs the font lacks (CJK, Arabic, Devanagari, emoji…) fall back
- * to the system fonts automatically.
+ * own Typeface when first used, kept for the process ([GoogleSansFlexTypefaces]), so a family holds
+ * only the weights its style needs, upright and with a true variable slant for italics. Glyphs the
+ * font lacks (CJK, Arabic, Devanagari, emoji…) fall back to the system fonts automatically.
  */
 private class FontInstance(
     val opticalSize: Float,
@@ -171,8 +170,7 @@ private class FontInstance(
         registeredWeight: FontWeight,
         italic: Boolean,
     ): Font =
-        Font(
-            resId = R.font.google_sans_flex,
+        GoogleSansFlexFont(
             weight = registeredWeight,
             style = if (italic) FontStyle.Italic else FontStyle.Normal,
             variationSettings =
