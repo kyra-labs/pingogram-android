@@ -25,14 +25,18 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 
 /**
- * Where the conversation jumps to when a reply's quote is tapped (`ChatEffect.ScrollToMessage`): the message to show
- * ([jumpTo]), and the one highlighted once it is there, and how strongly, read in the draw phase.
+ * Where the conversation jumps to when a reply's quote is tapped, or to the message it was opened at
+ * (`ChatEffect.ScrollToMessage`): the message to show ([jumpTo]), and the one highlighted once it is there, and how
+ * strongly, read in the draw phase.
  *
  * @param highlightedId a message highlighted at full strength from the start, for previews and goldens.
+ * @property opensAtMessage the conversation opens at a message (found by search) that a jump will show, so the list
+ *   does not scroll to the unread divider when it first shows.
  */
 @Stable
 internal class MessageJumpState(
     highlightedId: Long? = null,
+    val opensAtMessage: Boolean = false,
 ) {
     /** The message to scroll to next; [JumpToMessages] takes it. */
     var request: JumpRequest? by mutableStateOf(null)
@@ -91,7 +95,8 @@ internal class MessageJumpState(
 }
 
 @Composable
-internal fun rememberMessageJumpState(): MessageJumpState = remember { MessageJumpState() }
+internal fun rememberMessageJumpState(opensAtMessage: Boolean = false): MessageJumpState =
+    remember { MessageJumpState(opensAtMessage = opensAtMessage) }
 
 /** The entry shows message [messageId]: a bubble its own or one of its album's, a service message its own. */
 internal fun ChatItem.showsMessage(messageId: Long): Boolean =

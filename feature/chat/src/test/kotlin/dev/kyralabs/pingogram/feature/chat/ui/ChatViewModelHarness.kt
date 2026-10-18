@@ -61,10 +61,11 @@ abstract class ChatViewModelHarness {
         Dispatchers.resetMain()
     }
 
-    /** A view model of [chatId] whose state is collected, as by the screen. */
+    /** A view model of [chatId], opened at [messageId] if not null, whose state is collected, as by the screen. */
     protected fun TestScope.viewModel(
         chatId: Long = ChatFixtures.PRIVATE_CHAT,
         handle: SavedStateHandle = savedState,
+        messageId: Long? = null,
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
@@ -82,6 +83,7 @@ abstract class ChatViewModelHarness {
                 locale = { Locale.US },
                 audioPlayer = player,
                 log = { logged += it },
+                initialMessageId = messageId,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

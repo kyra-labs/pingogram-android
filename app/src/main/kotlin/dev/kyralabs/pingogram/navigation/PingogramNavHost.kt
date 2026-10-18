@@ -146,7 +146,15 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         }
         contactsScreen()
         settingsScreen()
-        searchScreen(onBack = { navController.popBackStack() })
+        // Results push the conversation above search on every window, as the archive does: search is not a pane of
+        // the Chats tab (it opens from every tab), and back returns to the results.
+        searchScreen(
+            onBack = { navController.popBackStack() },
+            onOpenChat = openChat,
+            onOpenMessage = { chatId, messageId ->
+                navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
+            },
+        )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
         mediaViewerScreen(onBack = { navController.popBackStack() })
