@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -49,11 +54,14 @@ import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewStates
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -63,8 +71,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **Insets**: the list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]);
  *   on medium and wider windows its rows keep a comfortable width, centered.
- * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load, and scrolls to
- *   the top when another folder is selected.
+ * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load.
+ * - **Folders**: selecting another folder replaces the list with that folder's, scrolled to its top, through Material's
+ *   fade-through ([rememberShownList]).
  * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
@@ -92,6 +101,7 @@ internal fun ChatListScreen(
             ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
             ChatListKind.Archive -> TopAppBarDefaults.pinnedScrollBehavior()
         }
+    val folderSwitch = remember { FolderSwitch() }
     Box(modifier) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -119,7 +129,10 @@ internal fun ChatListScreen(
                 } else {
                     screenContentWindowInsets()
                 },
-        ) { innerPadding -> ChatListBody(state, onEvent, listState, innerPadding, openChatId) }
+        ) { innerPadding ->
+            val shown = rememberShownList(state, listState, folderSwitch)
+            ChatListBody(shown, onEvent, listState, innerPadding, openChatId, Modifier.fadeThrough(folderSwitch))
+        }
         SelectionToolbarHost(
             selection = selection,
             backProgress = { backProgress.value },
@@ -127,7 +140,6 @@ internal fun ChatListScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
-    ScrollToTopOnFolderChange(state.selectedFolderId, listState)
     state.deleteDialog?.let { dialog ->
         DeleteChatDialog(
             dialog = dialog,
@@ -145,9 +157,10 @@ private fun ChatListBody(
     listState: LazyListState,
     innerPadding: PaddingValues,
     openChatId: Long?,
+    modifier: Modifier = Modifier,
 ) {
     val contentModifier =
-        Modifier
+        modifier
             .fillMaxSize()
             .consumeWindowInsets(innerPadding)
     when (val content = state.content) {
@@ -186,21 +199,62 @@ private fun ChatListBody(
 }
 
 /**
- * Scrolls [listState] to the top when another folder is selected. The folder last scrolled for is saved, so a
- * rotation or process death keeps the restored position.
+ * The fade-through between the lists of two folders (`docs/DESIGN_SYSTEM.md` §5): the list shown fades out, and the
+ * selected folder's list fades in while it grows from [FADE_THROUGH_INITIAL_SCALE] ([rememberShownList]). Read in the
+ * draw phase ([fadeThrough]), so the animation never recomposes.
+ */
+@Stable
+private class FolderSwitch {
+    val alpha = Animatable(1f)
+    val scale = Animatable(1f)
+}
+
+private fun Modifier.fadeThrough(folderSwitch: FolderSwitch): Modifier =
+    graphicsLayer {
+        alpha = folderSwitch.alpha.value
+        scaleX = folderSwitch.scale.value
+        scaleY = folderSwitch.scale.value
+    }
+
+/**
+ * The state whose list shows: [state], except while another folder's list fades out after a folder was selected.
+ * Material's fade-through runs in sequence, so the new list never shows over the old one: the old list fades out on
+ * the motion scheme's fast effects spring, then the selected folder's list replaces it, scrolled to its top, and fades
+ * in on the default effects spring while it grows on the default spatial spring. The tabs follow the selection at
+ * once. Selecting yet another folder meanwhile carries on from where the animation is; selecting the folder shown
+ * again fades it back in. With animations off (reduced motion) the lists swap without fading: ending the springs at
+ * once, as Compose does then, would still blank the list for the frames between them.
+ *
+ * The folder shown is saved, so a rotation or process death keeps the restored position instead of scrolling up.
  */
 @Composable
-private fun ScrollToTopOnFolderChange(
-    selectedFolderId: Int?,
+private fun rememberShownList(
+    state: ChatListUiState,
     listState: LazyListState,
-) {
-    var shownFolderId by rememberSaveable { mutableStateOf(selectedFolderId) }
-    LaunchedEffect(selectedFolderId) {
-        if (selectedFolderId != shownFolderId) {
+    folderSwitch: FolderSwitch,
+): ChatListUiState {
+    var shownFolderId by rememberSaveable { mutableStateOf(state.selectedFolderId) }
+    // The last state of the folder shown, for its list to fade out with; read only then, so updating it recomposes
+    // nothing.
+    val lastShown = remember { mutableStateOf(state) }
+    val isShown = state.selectedFolderId == shownFolderId
+    SideEffect { if (isShown) lastShown.value = state }
+    val motionScheme = MaterialTheme.motionScheme
+    LaunchedEffect(state.selectedFolderId) {
+        // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
+        val animated = coroutineContext[MotionDurationScale]?.scaleFactor != 0f
+        if (state.selectedFolderId != shownFolderId) {
+            if (animated) folderSwitch.alpha.animateTo(0f, motionScheme.fastEffectsSpec())
             listState.scrollToItem(0)
-            shownFolderId = selectedFolderId
+            shownFolderId = state.selectedFolderId
+            if (animated) folderSwitch.scale.snapTo(FADE_THROUGH_INITIAL_SCALE)
+        }
+        coroutineScope {
+            launch { folderSwitch.scale.animateTo(1f, motionScheme.defaultSpatialSpec()) }
+            folderSwitch.alpha.animateTo(1f, motionScheme.defaultEffectsSpec())
         }
     }
+    return if (isShown) state else lastShown.value
 }
 
 /**

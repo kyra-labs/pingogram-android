@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.theme
 
+import android.content.res.Configuration
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalRippleThemeConfiguration
 import androidx.compose.material3.MaterialExpressiveTheme
@@ -8,6 +10,7 @@ import androidx.compose.material3.RippleDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 
@@ -15,6 +18,9 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * Root theme of every Pingogram screen (`docs/DESIGN_SYSTEM.md` §1): Material 3 Expressive with the
  * expressive motion scheme, Google Sans Flex, the expressive shape scale, [PingogramColors],
  * [PingogramSpacing] and [PingogramSizes].
+ *
+ * The typography follows the system's "Bold text" setting (Android 12+) without doubling it; see
+ * [pingogramTypography].
  *
  * Ripples are the Material 3 opacity state layers (hover 8%, focus 10%, pressed 10%, dragged 16%).
  * Reduced motion needs no extra code: Compose scales every animation, springs included, by the
@@ -39,7 +45,7 @@ fun PingogramTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
         shapes = PingogramShapes,
-        typography = pingogramTypography(dark),
+        typography = pingogramTypography(dark, LocalConfiguration.current.fontWeightAdjustmentOrZero()),
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,
@@ -58,6 +64,16 @@ fun ThemeMode.isDark(): Boolean =
         ThemeMode.System -> isSystemInDarkTheme()
         ThemeMode.Light -> false
         ThemeMode.Dark -> true
+    }
+
+/** The "Bold text" weight adjustment of Android 12+ (300 while it is on), or 0. */
+private fun Configuration.fontWeightAdjustmentOrZero(): Int =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        fontWeightAdjustment != Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED
+    ) {
+        fontWeightAdjustment
+    } else {
+        0
     }
 
 private val DefaultSpacing = PingogramSpacing()

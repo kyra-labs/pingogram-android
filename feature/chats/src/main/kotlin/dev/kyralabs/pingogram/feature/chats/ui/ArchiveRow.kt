@@ -28,7 +28,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The "Archived chats" row at the top of the main list (`REQUIREMENTS.md` FR-L3), which opens the archive: an archive
  * on a neutral avatar placeholder, the names of the first archived chats TDLib has loaded or else how many chats the
  * archive has, and its unread chats in a badge that is always in the muted style, as the archive mostly holds chats
- * the user put out of the way. It cannot be swiped or selected; in selection mode it is disabled ([enabled]).
+ * the user put out of the way. Its title is emphasized while it has unread chats, as a chat's is
+ * (`docs/DESIGN_SYSTEM.md` §3.3). It cannot be swiped or selected; in selection mode it is disabled ([enabled]).
  *
  * For screen readers it is one node: "Archived chats, Ada, Grace and Alan, 2 unread chats".
  */
@@ -90,7 +91,8 @@ internal fun ArchiveRow(
             color = colors.onSurface,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
-            style = MaterialTheme.typography.titleMedium,
+            style =
+                with(MaterialTheme.typography) { if (entry.unreadCount > 0) titleMediumEmphasized else titleMedium },
         )
     }
 }

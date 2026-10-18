@@ -32,6 +32,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
 
+### Changed
+- Folder tabs respond like Material 3 Expressive button groups: a pressed folder grows and nudges its
+  neighbours, and the selected folder turns into a pill with a bold label. Every folder stays a tab; the row
+  scrolls sideways when they do not fit. Switching folders fades the list out and the new folder's list in,
+  from its top; with animations turned off, the lists swap at once.
+- "Archived chats" is bold while it holds unread chats, like any unread chat.
+
+### Fixed
+- A swipe on a chat runs its action once. Archiving a chat inside a folder no longer archives and unarchives
+  it over and over with its row stuck halfway, archiving in All chats no longer brings the chat straight back,
+  and "Undo" on "Chat archived" moves the chat back to the chat list again. A chat just marked as read or
+  unread by swiping can be swiped again at once, for example to unarchive it in Archived chats.
+- With Android's "Bold text" setting on, text is one step bolder instead of nearly black, and unread chat
+  names still stand out from read ones.
+
 ## [0.1.2] - 2026-10-18
 
 ### Added
