@@ -27,6 +27,8 @@ import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
+import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
@@ -69,18 +71,22 @@ internal fun PingogramNavHost(
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
+        // Full screen above everything, the list-detail layout too.
+        val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
         // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
         composable<ChatsRoute> {
             ChatsListDetail(
                 onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
                 onOpenChat = openChat,
+                onOpenMedia = openMedia,
             )
         }
         contactsScreen()
         settingsScreen()
         searchScreen(onBack = { navController.popBackStack() })
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
-        chatScreen(onBack = { navController.popBackStack() })
+        chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
+        mediaViewerScreen(onBack = { navController.popBackStack() })
     }
 }
 

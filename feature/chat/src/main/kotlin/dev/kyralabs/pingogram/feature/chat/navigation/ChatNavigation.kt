@@ -12,17 +12,24 @@ import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.feature.chat.ui.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 
-/** Adds the conversation of a chat, [ChatDestination], to the graph; [onBack] leaves it. */
-fun NavGraphBuilder.chatScreen(onBack: () -> Unit) {
+/**
+ * Adds the conversation of a chat, [ChatDestination], to the graph; [onBack] leaves it, and [onOpenMedia] opens a
+ * tapped photo, video or GIF of the chat in the media viewer.
+ */
+fun NavGraphBuilder.chatScreen(
+    onBack: () -> Unit,
+    onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
+) {
     composable<ChatDestination> { entry ->
-        ChatRoute(chatId = entry.toRoute<ChatDestination>().chatId, onBack = onBack)
+        ChatRoute(chatId = entry.toRoute<ChatDestination>().chatId, onBack = onBack, onOpenMedia = onOpenMedia)
     }
 }
 
 /**
  * The conversation of chat [chatId] in the detail pane of the Chats tab's list-detail layout (`docs/ARCHITECTURE.md`,
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
- * i.e. when the pane shows alone.
+ * i.e. when the pane shows alone. [onOpenMedia] opens a tapped photo, video or GIF in the media viewer, full screen
+ * above the whole layout.
  *
  * Each chat gets a fresh composition and view model: its own saved UI state (the scroll position), and a
  * [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own ([rememberViewModelStoreOwner]), which
@@ -35,11 +42,12 @@ fun NavGraphBuilder.chatScreen(onBack: () -> Unit) {
 fun ChatPane(
     chatId: Long,
     onBack: (() -> Unit)?,
+    onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     key(chatId) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
-            ChatRoute(chatId = chatId, onBack = onBack, modifier = modifier)
+            ChatRoute(chatId = chatId, onBack = onBack, onOpenMedia = onOpenMedia, modifier = modifier)
         }
     }
 }

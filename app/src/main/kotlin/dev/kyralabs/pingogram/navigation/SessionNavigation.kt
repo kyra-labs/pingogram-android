@@ -7,10 +7,17 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.navOptions
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
+import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.feature.auth.navigation.navigateToAuth
 
 /** Whether this destination belongs to the signed-in app, [MainGraph]. */
 internal fun NavDestination?.isInMainGraph(): Boolean = this?.hierarchy?.any { it.hasRoute<MainGraph>() } == true
+
+/**
+ * Whether this destination of the signed-in app takes the whole window, without the navigation bar or rail: the media
+ * viewer, [MediaViewerRoute].
+ */
+internal fun NavDestination?.isFullScreen(): Boolean = this?.hasRoute<MediaViewerRoute>() == true
 
 /** Whether this destination is the login flow, [AuthRoute]. */
 internal fun NavDestination?.isAuth(): Boolean = this?.hasRoute<AuthRoute>() == true
