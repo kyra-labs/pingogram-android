@@ -48,6 +48,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     )
                     isUniversalApk = true
                 }
+                // Some AndroidX libraries (androidx.graphics:graphics-path) also ship native code for ABIs
+                // TDLib is not built for. Packaging it would let such devices install the app and crash
+                // when TDLib loads, instead of refusing the install.
+                packaging.jniLibs.excludes += UNSUPPORTED_ABIS.map { "lib/$it/**" }
             }
 
             // Split APKs get their own code (ABI_INDEX); outputs without an ABI filter are universal.
@@ -129,6 +133,9 @@ private fun Project.failReleasePackaging(message: String) {
         if (requested.isNotEmpty()) throw GradleException("Cannot run ${requested.joinToString()}. $message")
     }
 }
+
+/** ABIs that dependencies may ship native code for, but TDLib (and so the app) does not support. */
+private val UNSUPPORTED_ABIS = listOf("x86", "riscv64")
 
 /** Whether the requested tasks build an app bundle (`bundleFossRelease`, `:app:bundle`, …). */
 private fun Project.requestsBundle(): Boolean =
