@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
@@ -39,6 +40,7 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,6 +61,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -80,23 +83,30 @@ import java.util.Locale
  *   failure shows [ChatContent.Error] while there are no messages, [ChatContent.Content.olderError] otherwise; nothing
  *   is retried by itself: [ChatEvent.Retry], or the oldest message coming near again, tries again.
  * - **Replies** whose replied message is not loaded fetch it once ([MessageRepository.repliedMessage]); the quote
- *   shows that it loads, or that the message was deleted.
+ *   shows that it loads, or that the message was deleted. Tapping a quote ([ChatEvent.OpenReply]) scrolls to the
+ *   replied message ([ChatEffect.ScrollToMessage]), loading older pages for it first, up to [MAX_REPLY_PAGES], as the
+ *   older pages' indicator shows; [ChatEffect.MessageUnavailable] when it is not found. A new tap, or leaving the
+ *   screen, cancels the search.
  * - **Unread divider**: before the first incoming message after the last one read when the chat was first shown
  *   (`lastReadInboxMessageId`, if anything was unread), kept in the [SavedStateHandle], so it stays where it was
  *   while the screen lives, also across process death, whatever arrives or is read meanwhile.
  * - **Open and close**: [ChatEvent.Started] opens the chat in TDLib and [ChatEvent.Stopped] closes it, from the
  *   screen's lifecycle (started and stopped, or left), each once per change. They are sent before [onEvent] returns,
  *   so a close sent as the screen leaves is not lost with the view model's scope.
+ * - **Read** ([MessageViews]): the messages the screen shows ([ChatEvent.MessagesVisible]) go to TDLib as viewed while
+ *   the chat is open, which reads them; [Chat.unreadCount], the jump button's badge, follows.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
  *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
- *   download and cancel on request; playing a voice message or song downloads its file until the player comes.
- *   Failures go out as [ChatEffect.ShowError] snackbars.
+ *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
+ * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
+ *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
+ *   Stopping the screen pauses, and the player is released with the view model.
  * - **Effects** ([effects]): errors, opening a location in a maps app, and the note that opening files comes later.
  *
- * It takes one repository per kind of data the screen combines, plus the clock, dispatcher, language and time
- * patterns that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the detail
- * pane of the Chats tab create it with their [chatId] through [Factory].
+ * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
+ * patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the
+ * detail pane of the Chats tab create it with their [chatId] through [Factory].
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -114,6 +124,8 @@ class ChatViewModel internal constructor(
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
+    audioPlayer: AudioPlayer,
+    private val log: ChatLog,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -128,6 +140,7 @@ class ChatViewModel internal constructor(
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
+        audioPlayer: AudioPlayer,
     ) : this(
         chatId,
         savedStateHandle,
@@ -141,6 +154,8 @@ class ChatViewModel internal constructor(
         timePatterns,
         dispatcher,
         Locale::getDefault,
+        audioPlayer,
+        AndroidChatLog,
     )
 
     /** Creates the view model of chat `chatId`'s conversation. */
@@ -163,6 +178,9 @@ class ChatViewModel internal constructor(
     /** The screen shows the oldest message, or close to it ([ChatEvent.NearOldestChanged]); main thread only. */
     private var isNearOldest = false
 
+    /** The search for a tapped quote's message ([ChatEvent.OpenReply]); main thread only. */
+    private var replySearch: Job? = null
+
     /** Whether the chat is open in TDLib ([ChatEvent.Started]); main thread only. */
     private var isOpen = false
 
@@ -175,6 +193,19 @@ class ChatViewModel internal constructor(
     val effects: Flow<ChatEffect> = effectChannel.receiveAsFlow()
 
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
+
+    private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
+
+    private val playback =
+        ChatPlayback(
+            player = audioPlayer,
+            files = fileRepository,
+            scope = viewModelScope,
+            history = { messageRepository.history(chatId).first() },
+            onError = { effectChannel.trySend(ChatEffect.ShowError(it)) },
+            onPlaybackFailed = { effectChannel.trySend(ChatEffect.PlaybackFailed) },
+            log = log,
+        )
 
     private val chat: Flow<ChatLookup> =
         chatAttempts
@@ -248,10 +279,13 @@ class ChatViewModel internal constructor(
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, ::state)
             .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
+            .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
     init {
+        // Leaving the screen frees the player.
+        addCloseable { playback.release() }
         viewModelScope.launch {
             // The divider stays where it was when the chat was first shown, also after process death.
             val chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat }.first()
@@ -271,6 +305,8 @@ class ChatViewModel internal constructor(
             ChatEvent.Started -> setOpen(true)
             ChatEvent.Stopped -> setOpen(false)
             is ChatEvent.NearOldestChanged -> onNearOldestChanged(event.isNearOldest)
+            is ChatEvent.MessagesVisible -> views.setVisible(event.messageIds)
+            is ChatEvent.OpenReply -> openReply(event.messageId)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.OpenMedia -> Unit
@@ -278,22 +314,29 @@ class ChatViewModel internal constructor(
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> effectChannel.trySend(ChatEffect.FileOpeningUnavailable)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
-            is ChatEvent.PlayPause -> files.playPause(event.fileId, uiState.value.fileStates[event.fileId])
-            is ChatEvent.Seek -> Unit
+            is ChatEvent.PlayPause -> playback.playPause(event.messageId)
+            is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
         }
     }
 
     /**
      * Opens or closes the chat in TDLib when that changes. Undispatched, so the request is sent before this returns:
      * a close as the screen leaves, right before the view model's scope is cancelled, still reaches TDLib. A failure
-     * changes nothing: TDLib then just does not prioritize the chat.
+     * changes nothing: TDLib then just does not prioritize the chat. Stopping also pauses what plays: nothing plays in
+     * the background.
      */
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
         isOpen = open
+        if (!open) {
+            playback.pause()
+            views.setOpen(false)
+        }
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             if (open) chatRepository.openChat(chatId) else chatRepository.closeChat(chatId)
         }
+        // Once openChat is sent: TDLib reads the messages viewed in an open chat only.
+        if (open) views.setOpen(true)
     }
 
     /** The oldest message coming near loads the next page, also after a failure; once at the start nothing. */
@@ -301,6 +344,42 @@ class ChatViewModel internal constructor(
         isNearOldest = nearOldest
         val reachedStart = (uiState.value.content as? ChatContent.Content)?.reachedStart == true
         if (nearOldest && !reachedStart) loadPage()
+    }
+
+    /**
+     * Shows message [messageId] once the items hold it ([ChatEffect.ScrollToMessage]), after loading older pages for
+     * it ([findMessage]) with the older pages' indicator; [ChatEffect.MessageUnavailable] if it is not found, the error
+     * if a page fails. Replaces a search still running. Started lazily, so [replySearch] names it before it runs: a
+     * replaced search, ending as it is cancelled, then leaves the indicator to this one.
+     */
+    private fun openReply(messageId: Long) {
+        replySearch?.cancel()
+        val search =
+            viewModelScope.launch(start = CoroutineStart.LAZY) {
+                pageLoad.update { it.copy(isFindingMessage = true) }
+                val found =
+                    try {
+                        messageRepository.findMessage(chatId, messageId)
+                    } finally {
+                        if (replySearch === coroutineContext.job) pageLoad.update { it.copy(isFindingMessage = false) }
+                    }
+                when {
+                    found is Outcome.Failure -> {
+                        effectChannel.trySend(ChatEffect.ShowError(found.error))
+                    }
+
+                    found == Outcome.Success(true) -> {
+                        uiState.first { state -> state.items.any { it.showsMessage(messageId) } }
+                        effectChannel.trySend(ChatEffect.ScrollToMessage(messageId))
+                    }
+
+                    else -> {
+                        effectChannel.trySend(ChatEffect.MessageUnavailable)
+                    }
+                }
+            }
+        replySearch = search
+        search.start()
     }
 
     /** Finds the chat again if that failed, and loads the page that failed. */
@@ -323,7 +402,7 @@ class ChatViewModel internal constructor(
             val result = messageRepository.loadOlder(chatId)
             // The repository has applied the page by now; a fresh look tells whether it reached the start.
             val reachedStart = result is Outcome.Success && messageRepository.history(chatId).first().reachedStart
-            pageLoad.value = PageLoad(isLoading = false, error = (result as? Outcome.Failure)?.error)
+            pageLoad.update { it.copy(isLoading = false, error = (result as? Outcome.Failure)?.error) }
             if (result is Outcome.Success && !reachedStart && isNearOldest) loadPage()
         }
     }
@@ -413,7 +492,7 @@ class ChatViewModel internal constructor(
                             timeFormatter = formatter,
                         ),
                     )
-                ChatContent.Content(items, history.reachedStart, load.isLoading, error)
+                ChatContent.Content(items, history.reachedStart, load.isLoading || load.isFindingMessage, error)
             }
 
             error != null -> {
@@ -439,10 +518,11 @@ class ChatViewModel internal constructor(
             ?: ChatTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
     }
 
-    /** How far older pages have loaded. */
+    /** How far older pages have loaded, and whether older pages load to find a tapped quote's message. */
     private data class PageLoad(
         val isLoading: Boolean = false,
         val error: DomainError? = null,
+        val isFindingMessage: Boolean = false,
     )
 
     /** The chat, or why it is not there (yet). */
@@ -474,6 +554,9 @@ class ChatViewModel internal constructor(
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
+
+        /** How many older pages a tapped quote's message is looked for in, about 500 messages. */
+        const val MAX_REPLY_PAGES = 10
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
@@ -502,6 +585,36 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
         }
     }
 }
+
+/** The items shown, none while there is no content. */
+private val ChatUiState.items: List<ChatItem>
+    get() = (content as? ChatContent.Content)?.items.orEmpty()
+
+/**
+ * Whether message [messageId] is in the history of chat [chatId], loading older pages until it is, the start is
+ * reached, or [ChatViewModel.MAX_REPLY_PAGES] pages were loaded; a page that fails ends the search with its error. A
+ * message newer than the oldest loaded one that is not there was deleted, as ids grow with time.
+ */
+private suspend fun MessageRepository.findMessage(
+    chatId: Long,
+    messageId: Long,
+): Outcome<Boolean> {
+    var loaded = history(chatId).first()
+    var pages = 0
+    while (loaded.messages.findById(messageId) == null && loaded.olderPagesMayHold(messageId) &&
+        pages < ChatViewModel.MAX_REPLY_PAGES
+    ) {
+        val page = loadOlder(chatId)
+        if (page is Outcome.Failure) return page
+        pages++
+        loaded = history(chatId).first()
+    }
+    return Outcome.Success(loaded.messages.findById(messageId) != null)
+}
+
+/** Message [messageId] is older than every loaded message, and older ones are left to load. */
+private fun ChatHistory.olderPagesMayHold(messageId: Long): Boolean =
+    !reachedStart && messages.lastOrNull().let { oldest -> oldest == null || messageId < oldest.id }
 
 /** The title and photo of chat [id], then every change of them; null while TDLib has not announced the chat. */
 private fun ChatRepository.chatRef(id: Long): Flow<ChatRef?> =

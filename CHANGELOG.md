@@ -22,7 +22,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   round video messages appear without a bubble. Voice messages show their waveform and length; documents
   show their name and size and download on tap, with progress and cancel. Music, polls with their results,
   locations and venues (which open your maps app), contacts, games and invoices have their own cards.
-  Playing voice messages and opening media full screen come next.
+  Opening media full screen comes next.
+- Voice messages and music play in the conversation, one at a time: the waveform fills as it plays, tapping
+  it seeks, and voice messages play on to the next one. A file that isn't downloaded yet downloads first.
+  Playback pauses when you leave the chat or unplug headphones.
+- Messages you see in a conversation are marked as read, and the unread count follows.
+- Tapping a reply quote jumps to the original message and highlights it, loading older messages if needed.
 - On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.

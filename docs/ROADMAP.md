@@ -38,11 +38,11 @@ the release workflow so the owner can install and test on a phone.
       update application and tests
 - [x] Chat list with folders, badges, typing/online, swipe actions, selection toolbar, archive
 - [ ] Global search (chats, contacts, messages)
-- [ ] Conversation: paginated history, date headers, bubbles with entities, read status,
+- [x] Conversation: paginated history, date headers, bubbles with entities, read status,
       replies/forwards, photos/videos/GIFs/stickers (static)/voice (playback)/documents/polls
       (view)/service messages, reactions display, link previews
 - [ ] Media viewer with shared-element transition
-- [ ] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
+- [x] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
 - [ ] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated
 
 ## M3 — Full messaging, settings, notifications → `v0.3.0`

@@ -16,6 +16,22 @@ sealed interface ChatEvent {
         val isNearOldest: Boolean,
     ) : ChatEvent
 
+    /**
+     * The messages the list shows now, wholly or in part, by id (every item of an album); reported whenever that
+     * changes, and empty when the list leaves the screen. They go to TDLib as viewed, which reads them.
+     */
+    data class MessagesVisible(
+        val messageIds: Set<Long>,
+    ) : ChatEvent
+
+    /**
+     * The reply quote of a bubble was tapped: show the replied message [messageId] of this chat, loading older
+     * messages for it if needed.
+     */
+    data class OpenReply(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** "Try again" after finding the chat or loading messages failed. */
     data object Retry : ChatEvent
 
@@ -54,15 +70,18 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped. Until the player
-     * comes, it only downloads the file if it is not on the device.
+     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped: it plays, or
+     * pauses, downloading the file first if it is not on the device.
      */
     data class PlayPause(
         val messageId: Long,
         val fileId: Int,
     ) : ChatEvent
 
-    /** The voice message or song [messageId] is to play from [fraction] (0–1) of its length; for the player. */
+    /**
+     * The voice message or song [messageId] is to play from [fraction] (0–1) of its length: the one in the player
+     * moves there, another one starts there.
+     */
     data class Seek(
         val messageId: Long,
         val fraction: Float,
