@@ -1,4 +1,6 @@
 version: 2
+# No `labels`: Dependabot then applies its default labels ("dependencies" and one per ecosystem) and creates them
+# itself; custom labels must already exist in the repository, or the pull request carries none.
 updates:
   - package-ecosystem: gradle
     directory: /
@@ -12,13 +14,11 @@ updates:
         patterns: ["org.jetbrains.kotlin*", "org.jetbrains.kotlinx*"]
       compose:
         patterns: ["androidx.compose*"]
-    labels: ["dependencies"]
     commit-message:
       prefix: "chore(deps)"
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    labels: ["ci"]
     commit-message:
       prefix: "ci"
