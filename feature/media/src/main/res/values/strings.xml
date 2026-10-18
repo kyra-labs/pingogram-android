@@ -29,4 +29,22 @@
     <string name="media_caption_collapse">Show less of the caption</string>
     <string name="media_downloading">Downloading</string>
     <string name="media_playback_failed">This video can\'t be played</string>
+    <!-- The bottom app bar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
+    <string name="media_share">Share</string>
+    <string name="media_save">Save to gallery</string>
+    <!-- State of the Share button while the file downloads before it is shared -->
+    <string name="media_share_pending">Preparing to share</string>
+    <!-- State of the Save button while the file downloads or is copied into the gallery -->
+    <string name="media_save_pending">Saving</string>
+    <string name="media_share_failed">This file can\'t be shared</string>
+    <string name="media_no_share_app">No app can share this file</string>
+    <string name="media_saved">Saved to gallery</string>
+    <string name="media_save_failed">Couldn\'t save to the gallery</string>
+    <!-- Android 8–9: the storage permission was refused; the action opens the app's settings -->
+    <string name="media_storage_denied">Saving to the gallery needs access to storage</string>
+    <string name="media_storage_settings">Settings</string>
+    <string name="media_storage_rationale_title">Allow access to storage?</string>
+    <string name="media_storage_rationale_body">On this version of Android, Pingogram needs access to storage to add photos and videos to your gallery. It only adds the ones you save.</string>
+    <string name="media_storage_rationale_not_now">Not now</string>
+    <string name="media_storage_rationale_continue">Continue</string>
 </resources>

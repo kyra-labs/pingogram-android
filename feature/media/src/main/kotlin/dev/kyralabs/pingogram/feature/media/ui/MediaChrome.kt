@@ -148,7 +148,8 @@ internal fun positionText(position: MediaPosition): String =
 /**
  * The bottom of the viewer's chrome, over a gradient of `mediaOverlay` rising from the bottom: the current item's
  * caption ([ExpandableCaption]), a video's controls ([VideoControls]) once it is in the player, and [actions] below
- * them: the slot of the bottom app bar's actions, empty for now. Nothing at all when there is nothing to show.
+ * them: the slot of the bottom app bar's actions (Share and Save, `ViewerActions`). Nothing at all when there is
+ * nothing to show.
  */
 @Composable
 internal fun ViewerBottomBar(

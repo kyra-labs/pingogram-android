@@ -9,7 +9,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasContentDescription
@@ -279,6 +281,57 @@ class MediaViewerScreenTest {
         setScreen(MediaPreviewData.unavailable)
 
         composeRule.onNode(hasText(string(R.string.media_unavailable_title))).assertIsDisplayed()
+    }
+
+    // Share and Save
+
+    @Test
+    fun `Share and Save send their events`() {
+        setScreen(MediaPreviewData.withActions)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_share))).assertHasClickAction().performClick()
+        composeRule.onNode(hasContentDescription(string(R.string.media_save))).assertHasClickAction().performClick()
+
+        assertEquals(listOf(MediaViewerEvent.Share, MediaViewerEvent.Save), events.takeLast(2))
+    }
+
+    @Test
+    fun `a chat that protects its content shows neither`() {
+        setScreen(MediaPreviewData.protectedContent)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_share))).assertDoesNotExist()
+        composeRule.onNode(hasContentDescription(string(R.string.media_save))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `while Share waits for the file, it says so and both are disabled`() {
+        setScreen(MediaPreviewData.sharing)
+
+        val share = composeRule.onNode(hasContentDescription(string(R.string.media_share)))
+        share.assertStateDescription(string(R.string.media_share_pending))
+        share.assertIsNotEnabled()
+        composeRule.onNode(hasContentDescription(string(R.string.media_save))).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the reason for the storage permission answers with Continue or Not now`() {
+        val rationale =
+            MediaPreviewData.withActions.copy(
+                actions = MediaActions(canSave = true, showsStorageRationale = true),
+            )
+        setScreen(rationale)
+
+        composeRule.onNode(hasText(string(R.string.media_storage_rationale_title))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_storage_rationale_continue))).performClick()
+        composeRule.onNode(hasText(string(R.string.media_storage_rationale_not_now))).performClick()
+
+        assertEquals(
+            listOf(
+                MediaViewerEvent.StorageRationaleAnswered(proceed = true),
+                MediaViewerEvent.StorageRationaleAnswered(proceed = false),
+            ),
+            events.filterIsInstance<MediaViewerEvent.StorageRationaleAnswered>(),
+        )
     }
 
     private fun SemanticsNodeInteraction.performCustomAction(label: String) {

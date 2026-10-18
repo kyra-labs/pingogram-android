@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.activity.BackEventCompat
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
@@ -7,12 +8,17 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipeLeft
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -55,6 +61,10 @@ import dev.kyralabs.pingogram.feature.media.R as MediaR
  * conversation on compact windows and above the whole list-detail layout on expanded ones; back returns. The chats of
  * [ChatsScript], Ada's history with a photo as its newest message, run their real view models and repositories on a
  * [FakeTdlibClient] bound with Hilt, and so does the viewer.
+ *
+ * The `NavHost` is a `SharedTransitionLayout`, so the photo grows out of its bubble and shrinks back into it
+ * (`sharedMediaBounds`): opening and every way of closing (the back button, predictive back, a swipe down, a zoomed
+ * photo, a photo paged to) end on the right screen with the bubble back in the conversation.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class)
@@ -78,29 +88,40 @@ class MediaViewerNavigationTest {
             content = TdApiFixtures.messagePhoto(),
         )
 
+    /** A photo sent after [photo], for the tests that page in the viewer. */
+    private val newerPhoto =
+        TdApiFixtures.message(
+            id = PHOTO_MESSAGE + 1,
+            chatId = ADA,
+            sender = TdApi.MessageSenderUser(ADA),
+            content = TdApiFixtures.messagePhoto(),
+        )
+
+    /** Ada's history, newest first: what the conversation and the viewer's search find. */
+    private var photos = listOf(photo)
+
     private val tdlib =
         FakeTdlibClient(authState = AuthState.Ready, connectionState = ConnectionState.Ready).also { tdlib ->
             ChatsScript.install(tdlib)
-            // Only Ada's conversation opens here: its history is the photo.
+            // Only Ada's conversation opens here: its history is the photos.
             tdlib.on(TdApi.GetChatHistory::class) { request ->
                 val messages =
                     if (request.chatId == ADA &&
                         request.fromMessageId == 0L
                     ) {
-                        arrayOf(photo)
+                        photos.toTypedArray()
                     } else {
                         emptyArray()
                     }
                 TdResult.Success(TdApi.Messages(messages.size, messages))
             }
             tdlib.on(TdApi.GetMessage::class) { request ->
-                if (request.messageId == PHOTO_MESSAGE) {
-                    TdResult.Success(photo)
-                } else {
-                    TdResult.Failure(TdError(404, "Not Found"))
-                }
+                photos.firstOrNull { it.id == request.messageId }?.let { TdResult.Success(it) }
+                    ?: TdResult.Failure(TdError(404, "Not Found"))
             }
-            tdlib.on(TdApi.SearchChatMessages::class, TdResult.Success(TdApi.FoundChatMessages(1, arrayOf(photo), 0)))
+            tdlib.on(TdApi.SearchChatMessages::class) {
+                TdResult.Success(TdApi.FoundChatMessages(photos.size, photos.toTypedArray(), 0))
+            }
         }
 
     @BindValue
@@ -145,6 +166,94 @@ class MediaViewerNavigationTest {
         assertTrue(navController.currentDestination?.hasRoute<MediaViewerRoute>() == false)
     }
 
+    @Test
+    fun `predictive back shrinks the photo back into the conversation`() {
+        setApp()
+        openAdaAndTapPhoto()
+        awaitNode(photoPage)
+
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(BACK_SWIPE, 0f, 1f, BackEventCompat.EDGE_LEFT))
+        }
+        composeRule.waitForIdle()
+        composeRule.runOnUiThread { dispatcher.onBackPressed() }
+
+        awaitConversation()
+    }
+
+    @Test
+    fun `a swipe down hands the photo back to the conversation`() {
+        setApp()
+        openAdaAndTapPhoto()
+        awaitNode(photoPage)
+
+        composeRule.onRoot().performTouchInput { swipeDown(startY = centerY, endY = bottom) }
+
+        awaitConversation()
+    }
+
+    @Test
+    fun `a zoomed photo closes too, fading`() {
+        setApp()
+        openAdaAndTapPhoto()
+        awaitNode(photoPage)
+        composeRule.onNode(photoPage).performTouchInput { doubleClick() }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasContentDescription(string(MediaR.string.media_back))).performClick()
+
+        awaitConversation()
+    }
+
+    @Test
+    fun `closing on a photo paged to returns to the conversation`() {
+        photos = listOf(newerPhoto, photo)
+        setApp()
+        openAdaAndTapPhoto(index = 1)
+        awaitNode(hasContentDescription("Photo, 1 of 2, Ada Lovelace", substring = true))
+
+        composeRule.onRoot().performTouchInput { swipeLeft() }
+        awaitNode(hasContentDescription("Photo, 2 of 2, Ada Lovelace", substring = true))
+        composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+
+        awaitConversation()
+    }
+
+    /** The viewer's page of the photo, described with its position among Ada's photos. */
+    private val photoPage = hasContentDescription("Photo, 1 of 1, Ada Lovelace", substring = true)
+
+    /**
+     * Back in the conversation once the viewer is gone: its route, its photo bubbles (which offer to open the photo)
+     * on screen, and none of the viewer's pages left.
+     */
+    private fun awaitConversation() {
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == true)
+        awaitPhotoBubbles()
+        composeRule.onAllNodes(viewerPage).assertCountEquals(0)
+    }
+
+    /** A photo's bubble in the conversation, which offers to open the photo. */
+    private val photoBubble get() = hasCustomAction(string(ChatR.string.content_open))
+
+    /** Waits for the bubbles of all of Ada's photos. */
+    private fun awaitPhotoBubbles() {
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(photoBubble).fetchSemanticsNodes().size == photos.size
+        }
+    }
+
+    /** A page of the viewer, whose description starts with what it shows (a bubble's starts with the sender). */
+    private val viewerPage =
+        SemanticsMatcher("is a viewer page") { node ->
+            node.config
+                .getOrElseNullable(SemanticsProperties.ContentDescription) { null }
+                ?.firstOrNull()
+                ?.startsWith("Photo, ") == true
+        }
+
     /** Ada's row in the chat list, named by its description, which starts with the title (the viewer's does not). */
     private val adaRow =
         SemanticsMatcher("is Ada's row") { node ->
@@ -166,16 +275,20 @@ class MediaViewerNavigationTest {
         }
     }
 
-    /** Opens Ada's conversation from the chat list and opens its photo, as the bubble's "Open" action does. */
-    private fun openAdaAndTapPhoto() {
+    /**
+     * Opens Ada's conversation from the chat list and opens a photo, the bubble's at [index] (0 for the newest), as
+     * its "Open" action does.
+     */
+    private fun openAdaAndTapPhoto(index: Int = 0) {
         awaitNode(adaRow)
         composeRule.onNode(adaRow).performClick()
-        val bubble = hasCustomAction(string(ChatR.string.content_open))
-        awaitNode(bubble)
+        val bubble = photoBubble
+        awaitPhotoBubbles()
         val open =
             composeRule
-                .onNode(bubble)
-                .fetchSemanticsNode()
+                .onAllNodes(bubble)
+                .fetchSemanticsNodes()
+                .sortedByDescending { it.boundsInRoot.top }[index]
                 .config[SemanticsActions.CustomActions]
                 .single { it.label == string(ChatR.string.content_open) }
         composeRule.runOnUiThread { open.action() }
@@ -199,6 +312,9 @@ class MediaViewerNavigationTest {
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
         const val PHOTO_MESSAGE = ADA * 1_000 + 10
+
+        /** How far a predictive back gesture travels, in pixels; its progress is what counts. */
+        const val BACK_SWIPE = 300f
     }
 }
 

@@ -11,6 +11,9 @@ dependencies {
     api(libs.coil.compose)
     // PingogramTheme takes ThemeMode and Contrast from the domain model.
     api(projects.core.domain)
+    // FileProvider, for the content URIs of TDLib files handed to other apps (file/TdlibFiles.kt). Already in the app
+    // through Compose; the catalog pins the version it resolves to.
+    implementation(libs.androidx.core)
 
     testImplementation(libs.kotlinx.coroutines.test)
 }

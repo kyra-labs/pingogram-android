@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.IntRect
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -44,6 +47,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   their blurred minithumbnail. Other content, which albums never hold, shows as a tonal cell.
  * - Tapping an item calls [onOpen] with its index in [items]. Telegram albums hold at most [MAX_ALBUM_ITEMS]; more are
  *   left out.
+ * - Each item grows into the media viewer and shrinks back into its cell ([sharedMediaBounds]) by its own message, of
+ *   [messageIds] (in the order of [items]; none in previews), from and to its `extraSmall` corners.
  *
  * The caption, if any, is the bubble's: Telegram shows the caption of the album's one captioned item below it.
  */
@@ -54,6 +59,7 @@ internal fun MediaAlbum(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
     maxWidth: Dp = MaterialTheme.sizes.mediaMaxWidth,
+    messageIds: ImmutableList<Long> = persistentListOf(),
 ) {
     val density = LocalDensity.current
     val widthPx = with(density) { maxWidth.roundToPx() }
@@ -67,12 +73,18 @@ internal fun MediaAlbum(
             shown.forEachIndexed { index, item ->
                 val cell = layout.cells[index]
                 val cellSize = with(density) { DpSize(cell.width.toDp(), cell.height.toDp()) }
+                val messageId = messageIds.getOrNull(index)
                 AlbumItem(
                     item = item,
                     displaySize = cellSize,
                     modifier =
                         Modifier
-                            .clip(cellShape)
+                            .sharedMediaBounds(
+                                messageId = messageId ?: 0L,
+                                shape = cellShape,
+                                counterpartShape = FullBleedShape,
+                                enabled = messageId != null && item.opensInViewer,
+                            ).clip(cellShape)
                             .clickable(onClickLabel = openLabel) { onOpen(index) },
                 )
             }

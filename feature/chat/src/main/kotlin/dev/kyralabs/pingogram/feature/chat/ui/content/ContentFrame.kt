@@ -46,6 +46,19 @@ internal val MessageContent.isEdgeToEdge: Boolean
         }
 
 /**
+ * A photo, video or GIF that is not self-destructing: what the media viewer shows, and what grows into it from the
+ * bubble.
+ */
+internal val MessageContent.opensInViewer: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Photo -> !isSecret
+            is MessageContent.Video -> !isSecret
+            is MessageContent.Animation -> !isSecret
+            else -> false
+        }
+
+/**
  * How wide edge-to-edge content is shown, at most [maxWidth]: a photo's, video's or GIF's width ([mediaDisplaySize]),
  * or [maxWidth] for an album ([isAlbum]). The bubble takes this width, so a caption below wraps within the media.
  */

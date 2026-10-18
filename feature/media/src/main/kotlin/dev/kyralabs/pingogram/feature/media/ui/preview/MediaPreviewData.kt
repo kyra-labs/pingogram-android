@@ -27,6 +27,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.media.ui.MediaAction
+import dev.kyralabs.pingogram.feature.media.ui.MediaActions
 import dev.kyralabs.pingogram.feature.media.ui.MediaCount
 import dev.kyralabs.pingogram.feature.media.ui.MediaItem
 import dev.kyralabs.pingogram.feature.media.ui.MediaViewerUiState
@@ -36,8 +38,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 
 /**
- * The viewer's states for previews and screenshot tests: a photo with a caption, a video in the player, a photo still
- * downloading, a hidden spoiler, and the error, unavailable and loading states. Images come from [PreviewImages].
+ * The viewer's states for previews and screenshot tests: a photo with a caption (with Share and Save, or in a chat
+ * that protects its content), a video in the player, a photo still downloading (and waiting to be shared), a hidden
+ * spoiler, and the error, unavailable and loading states. Images come from [PreviewImages].
  */
 internal object MediaPreviewData {
     private const val PHOTO = 1L
@@ -126,6 +129,16 @@ internal object MediaPreviewData {
     val downloading: MediaViewerUiState.Content =
         photo.copy(files = persistentMapOf(11 to FileState.Downloading(96_000, 240_000, isActive = true)))
 
+    /** The photo in a chat that lets its content leave Telegram: Share and Save in the bottom app bar. */
+    val withActions: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = true))
+
+    /** The photo in a chat that protects its content: no Share, no Save. */
+    val protectedContent: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = false))
+
+    /** Share tapped while the full size downloads: the button shows the download's progress. */
+    val sharing: MediaViewerUiState.Content =
+        downloading.copy(actions = MediaActions(canSave = true, pending = MediaAction.Share))
+
     /** The video in the player, a third played, its first frame not on the (absent) surface. */
     val video: MediaViewerUiState.Content =
         MediaViewerUiState.Content(
@@ -183,5 +196,7 @@ internal fun PreviewImages(
 /** Every state of the media viewer, for its previews. */
 internal class MediaViewerPreviewStates : PreviewParameterProvider<MediaViewerUiState> {
     override val values: Sequence<MediaViewerUiState> =
-        with(MediaPreviewData) { sequenceOf(photo, video, downloading, spoiler, loading, error, unavailable) }
+        with(MediaPreviewData) {
+            sequenceOf(photo, withActions, sharing, video, downloading, spoiler, loading, error, unavailable)
+        }
 }

@@ -15,6 +15,12 @@
     <uses-permission
         android:name="android.permission.WAKE_LOCK"
         tools:node="remove" />
+    <!-- Saving a photo or video from the media viewer into the gallery on Android 8–9 (approved by the owner on
+         2026-10-18), asked for at run time when first needed. Android 10 and later save through MediaStore
+         without any permission, so it is not requested there. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- enableOnBackInvokedCallback: predictive back (REQUIREMENTS.md §7). -->
     <application
@@ -37,6 +43,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Hands TDLib's downloaded files to the app the user picks, with a read grant for one URI at a time:
+             sharing from the media viewer, opening documents (approved by the owner on 2026-10-18). Only the
+             directories in res/xml/file_paths.xml. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
