@@ -17,6 +17,7 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -177,7 +178,9 @@ private fun rememberOnSwiped(
 
 /**
  * What a swipe reveals: the container of the action of the side the row moves away from, with its icon and label at
- * that side. Decorative: screen readers get the actions on the row.
+ * that side. Decorative: screen readers get the actions on the row. The icons and labels are composed only while the
+ * row is away from its place: at rest nothing shows them, and every row of a list would compose and lay out two of
+ * each, when a folder's rows replace another's or the list comes back from another screen.
  */
 @Composable
 private fun SwipeBackground(
@@ -188,6 +191,7 @@ private fun SwipeBackground(
 ) {
     val startColors = start.swipeColors()
     val endColors = end.swipeColors()
+    val swiping by remember(state) { derivedStateOf { state.dismissDirection != SwipeToDismissBoxValue.Settled } }
     Box(
         Modifier
             .fillMaxSize()
@@ -200,18 +204,20 @@ private fun SwipeBackground(
                 }
             },
     ) {
-        SwipeActionLabel(
-            action = start,
-            color = startColors.content,
-            iconScale = iconScale,
-            modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
-        )
-        SwipeActionLabel(
-            action = end,
-            color = endColors.content,
-            iconScale = iconScale,
-            modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
-        )
+        if (swiping) {
+            SwipeActionLabel(
+                action = start,
+                color = startColors.content,
+                iconScale = iconScale,
+                modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
+            )
+            SwipeActionLabel(
+                action = end,
+                color = endColors.content,
+                iconScale = iconScale,
+                modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
+            )
+        }
     }
 }
 
