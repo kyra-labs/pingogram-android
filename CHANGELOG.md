@@ -42,6 +42,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   scrolls sideways when they do not fit. Switching folders fades the list out and the new folder's list in,
   from its top; with animations turned off, the lists swap at once.
 - "Archived chats" is bold while it holds unread chats, like any unread chat.
+- The chat list, the archive and conversations sit on a sheet with rounded top corners below their top bar, in the
+  style of Google's Material 3 Expressive apps; chats and messages scroll inside it. Selected chats turn into
+  rounded pills set in from the edges, and swiping a chat reveals its action on a rounded card.
 
 ### Fixed
 - A swipe on a chat runs its action once. Archiving a chat inside a folder no longer archives and unarchives

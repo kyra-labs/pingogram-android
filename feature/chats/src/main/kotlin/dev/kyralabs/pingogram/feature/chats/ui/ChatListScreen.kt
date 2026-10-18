@@ -52,6 +52,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
@@ -73,6 +74,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab with a
  * [MediumFlexibleTopAppBar] that collapses as the list scrolls ([ChatListTopBar]), or the archive with a small one
  * ([ArchiveTopBar]); then the chats, each with its swipe actions ([ChatRow]), below the archive row on the main list.
+ * The bar sits on `surfaceContainer` and the list on a rounded `surface` sheet below it ([ContentSheet]), which the
+ * rows scroll in.
  *
  * - **Insets**: on the Chats tab the list draws behind the floating navigation bar and ends clear of it
  *   ([screenContentWindowInsets]); the archive, pushed on top of the tab where the bar hides, keeps clear of the system
@@ -101,7 +104,6 @@ internal fun ChatListScreen(
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
     val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
-    val clearSelection = { onEvent(ChatListEvent.ClearSelection) }
     val scrollBehavior =
         when (state.kind) {
             ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -111,22 +113,9 @@ internal fun ChatListScreen(
     Box(modifier) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                when (state.kind) {
-                    ChatListKind.Chats -> {
-                        ChatListTopBar(
-                            state = state,
-                            scrollBehavior = scrollBehavior,
-                            onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
-                            onClearSelection = clearSelection,
-                        )
-                    }
-
-                    ChatListKind.Archive -> {
-                        ArchiveTopBar(selection?.chatIds?.size, scrollBehavior, onBack, clearSelection)
-                    }
-                }
-            },
+            // The top bar's container; the list sits on a sheet below it (ContentSheet).
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack) },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
@@ -186,42 +175,43 @@ private fun ChatListBody(
     animateRows: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val contentModifier =
-        modifier
-            .fillMaxSize()
-            .consumeWindowInsets(innerPadding)
-    when (val content = state.content) {
-        ChatListContent.Loading -> {
-            Box(contentModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
-        }
-
-        is ChatListContent.Empty -> {
-            Column(contentModifier.padding(innerPadding)) {
-                // The archive stays in reach when every chat is archived.
-                state.archive?.let { ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) }) }
-                ChatListEmpty(kind = state.kind, isFolder = content.isFolder, modifier = Modifier.weight(1f))
+    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+        val contentModifier = modifier.fillMaxSize()
+        when (val content = state.content) {
+            ChatListContent.Loading -> {
+                Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
             }
-        }
 
-        is ChatListContent.Error -> {
-            ChatListError(
-                content = content,
-                onRetry = { onEvent(ChatListEvent.Retry) },
-                modifier = contentModifier.padding(innerPadding),
-            )
-        }
+            is ChatListContent.Empty -> {
+                Column(contentModifier.padding(contentPadding)) {
+                    // The archive stays in reach when every chat is archived.
+                    state.archive?.let {
+                        ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) })
+                    }
+                    ChatListEmpty(kind = state.kind, isFolder = content.isFolder, modifier = Modifier.weight(1f))
+                }
+            }
 
-        is ChatListContent.Content -> {
-            ChatList(
-                items = content.items,
-                state = state,
-                listState = listState,
-                contentPadding = innerPadding,
-                openChatId = openChatId,
-                animateRows = animateRows,
-                onEvent = onEvent,
-                modifier = contentModifier,
-            )
+            is ChatListContent.Error -> {
+                ChatListError(
+                    content = content,
+                    onRetry = { onEvent(ChatListEvent.Retry) },
+                    modifier = contentModifier.padding(contentPadding),
+                )
+            }
+
+            is ChatListContent.Content -> {
+                ChatList(
+                    items = content.items,
+                    state = state,
+                    listState = listState,
+                    contentPadding = contentPadding,
+                    openChatId = openChatId,
+                    animateRows = animateRows,
+                    onEvent = onEvent,
+                    modifier = contentModifier,
+                )
+            }
         }
     }
 }

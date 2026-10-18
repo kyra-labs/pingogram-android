@@ -79,6 +79,8 @@ fun PingogramTheme(
 | App background / list | `background` / `surface` |
 | Cards, sheets, dialogs | `surfaceContainerLow` → `surfaceContainerHighest` ladder by prominence |
 | Top app bar (scrolled) | `surfaceContainer` |
+| Chat list and conversation | top bar on `surfaceContainer` (the `Scaffold`'s container); content on a `surface` sheet with `extraLarge` top corners below it (`ContentSheet`, `core:ui`) |
+| Selected chat row | `secondaryContainer` / `onSecondaryContainer`, full-pill shape, inset `spacing.small` from the sheet's sides and `ListItemDefaults.SegmentedGap` apart |
 | Navigation bar / rail | `surfaceContainer`; active indicator `secondaryContainer` / `onSecondaryContainer` |
 | Primary actions (FAB, send, CTA) | `primaryContainer` / `onPrimaryContainer` (FAB), `primary` / `onPrimary` (filled button) |
 | Outgoing bubble | `primaryContainer` / `onPrimaryContainer` |
@@ -204,6 +206,13 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 - **Shape morphing** (`Morph`, `MaterialShapes.*.toShape()`, `animateFloatAsState` with a
   spatial spring): FAB press (`Circle → Cookie9Sided`), toggle buttons (`Circle ↔ Square`),
   selected avatar, record button while recording, reaction added.
+- Content sheets (chat list, conversation): `extraLarge` top corners, square at the bottom edge of
+  the window; content scrolls inside them, clipped to the corners.
+- List rows in a sheet sit `spacing.small` in from its sides and half of
+  `ListItemDefaults.SegmentedGap` from the rows around (their content keeps the list item's
+  padding): at rest `ListItem`'s `extraSmall`, pressed and open `large`, selected in selection mode
+  a full pill (`CircleShape`), morphing on the list item's fast spatial spring. Swipe actions reveal
+  the same inset container with `large` corners.
 - Message bubbles: `large` with the tail-side corner `small`; grouped messages use `medium`
   between members of a group; user-adjustable 12–24 dp in Appearance settings.
 - Components keep their M3 default shape tokens (buttons pill, cards `medium`, sheets
@@ -250,9 +259,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 
 | UI element | Component |
 |---|---|
-| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
+| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`); search opens from the navigation's search button |
 | Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
-| Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
+| Conversation top bar | `TopAppBar` small, avatar + two-line title, on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`); `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
 | New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
@@ -261,7 +270,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Attach menu | `ModalBottomSheet` + `HorizontalMultiBrowseCarousel` of recent photos + `ButtonGroup` of options |
 | Message actions | `ModalBottomSheet`; quick reactions as `ToggleButton` row with shape morph |
 | Reactions picker | `HorizontalUncontainedCarousel` of reaction chips; full grid in sheet |
-| Chat list row | `ListItem` (leading avatar, trailing time + badge); swipe `SwipeToDismissBox` |
+| Chat list row | `ListItem` (leading avatar, trailing time + badge), inset in its sheet, a full pill when selected (§4); swipe `SwipeToDismissBox` |
 | Chips (filters, mentions) | `FilterChip`, `AssistChip`, `SuggestionChip` |
 | Settings rows | `ListItem` in `Card(colors = surfaceContainer)`; `Switch`, `Slider` (expressive track/thumb), `SegmentedButton`, `RadioButton` |
 | Buttons | M3 Expressive sizes: `ButtonDefaults.ExtraSmall…ExtraLarge` container heights; `FilledTonalButton` for secondary, `OutlinedButton` rare, `TextButton` in dialogs |

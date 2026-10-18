@@ -32,9 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,10 +47,37 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
+/** The Chats tab's top bar with the folder tabs ([ChatListTopBar]), or the archive's ([ArchiveTopBar]). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ChatListScreenTopBar(
+    state: ChatListUiState,
+    scrollBehavior: TopAppBarScrollBehavior,
+    onEvent: (ChatListEvent) -> Unit,
+    onBack: () -> Unit,
+) {
+    val clearSelection = { onEvent(ChatListEvent.ClearSelection) }
+    when (state.kind) {
+        ChatListKind.Chats -> {
+            ChatListTopBar(
+                state = state,
+                scrollBehavior = scrollBehavior,
+                onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
+                onClearSelection = clearSelection,
+            )
+        }
+
+        ChatListKind.Archive -> {
+            ArchiveTopBar(state.selection?.chatIds?.size, scrollBehavior, onBack, clearSelection)
+        }
+    }
+}
+
 /**
- * The top bar of the Chats tab, and the folder tabs below it on the same container. The bar's expanded height makes
- * room for the connection pill on the motion scheme's spatial spring: a parameter, so the bar recomposes for those few
- * frames of a connection change, while scrolling only redraws.
+ * The top bar of the Chats tab, and the folder tabs below it, on the screen's `surfaceContainer` above the list's sheet
+ * (`docs/DESIGN_SYSTEM.md` §2.2). The bar's expanded height makes room for the connection pill on the motion scheme's
+ * spatial spring: a parameter, so the bar recomposes for those few frames of a connection change, while scrolling only
+ * relayouts.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
@@ -67,7 +92,6 @@ internal fun ChatListTopBar(
     onClearSelection: () -> Unit,
 ) {
     val selectedCount = state.selection?.chatIds?.size
-    val colors = MaterialTheme.colorScheme
     val showPill = state.connection != ConnectionStatus.Ready
     val expandedHeight by animateDpAsState(
         targetValue =
@@ -79,15 +103,7 @@ internal fun ChatListTopBar(
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "expandedHeight",
     )
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .drawBehind {
-                    drawRect(lerp(colors.surface, colors.surfaceContainer, scrollBehavior.state.collapsedFraction))
-                },
-        contentAlignment = Alignment.TopCenter,
-    ) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
             MediumFlexibleTopAppBar(
@@ -132,9 +148,9 @@ private fun ChatListTitle(selectedCount: Int?) {
 }
 
 /**
- * The archive's top bar (`REQUIREMENTS.md` FR-L9): a small [TopAppBar] with back and "Archived chats", turning
- * `surfaceContainer` when the list scrolls under it. In selection mode it shows how many chats are selected, with a
- * button that clears the selection in place of back.
+ * The archive's top bar (`REQUIREMENTS.md` FR-L9): a small [TopAppBar] with back and "Archived chats", on the screen's
+ * `surfaceContainer` above the list's sheet. In selection mode it shows how many chats are selected, with a button
+ * that clears the selection in place of back.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -164,6 +180,11 @@ internal fun ArchiveTopBar(
                 }
             }
         },
+        colors =
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            ),
         scrollBehavior = scrollBehavior,
     )
 }

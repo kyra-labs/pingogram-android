@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.icu.text.ListFormatter
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
@@ -52,10 +53,13 @@ internal fun ArchiveRow(
         }
     val description = listOfNotNull(title, supporting, unread).joinToString(", ")
     val colors = MaterialTheme.colorScheme
+    val insets = rowInsets()
     ListItem(
         onClick = onClick,
-        modifier = modifier.semantics { contentDescription = description },
+        // Inset like the chats' rows ([ChatListItem]).
+        modifier = modifier.padding(insets).semantics { contentDescription = description },
         enabled = enabled,
+        contentPadding = insetContentPadding(insets),
         leadingContent = {
             Avatar(
                 photo = null,

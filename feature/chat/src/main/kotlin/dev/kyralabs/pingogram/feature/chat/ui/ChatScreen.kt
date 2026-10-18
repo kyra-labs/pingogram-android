@@ -66,6 +66,7 @@ import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -88,8 +89,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] over the
- * messages, newest at the bottom. Read-only for now: there is no composer, only the system bars' insets at the bottom.
+ * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
+ * `surfaceContainer` over the messages, newest at the bottom, on a rounded `surface` sheet ([ContentSheet]) that they
+ * scroll in. Read-only for now: there is no composer, only the system bars' insets at the bottom.
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
@@ -124,6 +126,7 @@ internal fun ChatScreen(
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             JumpToBottomButton(
@@ -134,41 +137,46 @@ internal fun ChatScreen(
             )
         },
     ) { innerPadding ->
-        val bodyModifier =
-            Modifier
-                .fillMaxSize()
-                .consumeWindowInsets(innerPadding)
-        when (content) {
-            ChatContent.Loading -> {
-                Box(bodyModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
-            }
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+            val bodyModifier = Modifier.fillMaxSize()
+            when (content) {
+                ChatContent.Loading -> {
+                    Box(
+                        bodyModifier.padding(contentPadding),
+                        contentAlignment = Alignment.Center,
+                    ) { LoadingIndicator() }
+                }
 
-            ChatContent.Empty -> {
-                ChatEmpty(bodyModifier.padding(innerPadding))
-            }
+                ChatContent.Empty -> {
+                    ChatEmpty(bodyModifier.padding(contentPadding))
+                }
 
-            is ChatContent.Error -> {
-                ChatError(
-                    content,
-                    onRetry = { onEvent(ChatEvent.Retry) },
-                    modifier = bodyModifier.padding(innerPadding),
-                )
-            }
+                is ChatContent.Error -> {
+                    ChatError(
+                        content,
+                        onRetry = { onEvent(ChatEvent.Retry) },
+                        modifier = bodyModifier.padding(contentPadding),
+                    )
+                }
 
-            ChatContent.NotFound -> {
-                ChatNotFound(bodyModifier.padding(innerPadding))
-            }
+                ChatContent.NotFound -> {
+                    ChatNotFound(bodyModifier.padding(contentPadding))
+                }
 
-            is ChatContent.Content -> {
-                Box(bodyModifier) {
-                    MessageList(content, state.fileStates, state.playback, listState, jumpState, innerPadding, onEvent)
+                is ChatContent.Content -> {
+                    MessageList(
+                        content = content,
+                        fileStates = state.fileStates,
+                        playback = state.playback,
+                        listState = listState,
+                        jumpState = jumpState,
+                        contentPadding = contentPadding,
+                        onEvent = onEvent,
+                    )
                     FloatingDatePill(
                         items = content.items,
                         listState = listState,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = innerPadding.calculateTopPadding() + MaterialTheme.spacing.small),
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = MaterialTheme.spacing.small),
                     )
                 }
             }
@@ -180,7 +188,7 @@ internal fun ChatScreen(
  * The entries of [content], newest first in a reverse layout, then the state of older pages above the oldest one.
  * Each entry animates to its new place and fades in and out on the motion scheme's springs.
  */
-@Suppress("LongParameterList") // What the list shows, its state and the screen's padding, all from ChatScreen.
+@Suppress("LongParameterList") // What the list shows, its state and the sheet's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
     content: ChatContent.Content,
@@ -188,7 +196,7 @@ private fun MessageList(
     playback: MessagePlayback?,
     listState: LazyListState,
     jumpState: MessageJumpState,
-    innerPadding: PaddingValues,
+    contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val theme = rememberBubbleTheme()
@@ -204,10 +212,10 @@ private fun MessageList(
         state = listState,
         contentPadding =
             PaddingValues(
-                start = innerPadding.calculateStartPadding(layoutDirection) + spacing.medium,
-                top = innerPadding.calculateTopPadding() + spacing.small,
-                end = innerPadding.calculateEndPadding(layoutDirection) + spacing.medium,
-                bottom = innerPadding.calculateBottomPadding() + spacing.small,
+                start = contentPadding.calculateStartPadding(layoutDirection) + spacing.medium,
+                top = contentPadding.calculateTopPadding(),
+                end = contentPadding.calculateEndPadding(layoutDirection) + spacing.medium,
+                bottom = contentPadding.calculateBottomPadding() + spacing.small,
             ),
         reverseLayout = true,
     ) {
