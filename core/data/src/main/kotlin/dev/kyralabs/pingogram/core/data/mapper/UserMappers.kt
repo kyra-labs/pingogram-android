@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
-import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -44,9 +43,6 @@ internal fun TdApi.UserStatus?.toUserStatus(): UserStatus =
         // UserStatusEmpty, and statuses a newer TDLib may add.
         else -> UserStatus.Empty
     }
-
-internal fun TdApi.ProfilePhoto.toProfilePhoto() =
-    ProfilePhoto(small = small.toFileRef(), big = big.toFileRef(), minithumbnail = minithumbnail?.toMinithumbnail())
 
 private fun TdApi.UserType?.toUserType(): UserType =
     when (this) {
