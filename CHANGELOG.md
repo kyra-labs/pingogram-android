@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- You can write and send messages. Format selected text as bold, italic, underlined, strikethrough, monospace,
+  spoiler or a link (from the selection menu, or Ctrl+B, I, U and K on a keyboard). Send without sound, or
+  schedule a message for later. Unsent text is kept as a draft that syncs with your other devices. Where you
+  can't write in a chat, a short note says why; channels you only read show no composer.
 - Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
   and storage, and About pages; Log out moved to the end.
 - Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper
