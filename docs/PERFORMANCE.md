@@ -39,7 +39,9 @@ regresses by more than 10%.
 ## 3. TDLib usage patterns
 
 - One `Client`; **never** block on `send`. All waits are suspend functions with 30 s timeouts
-  and `FLOOD_WAIT` back-off (exponential, capped at the server-provided seconds).
+  and `FLOOD_WAIT` back-off (exponential, capped at the server-provided seconds). Exception:
+  authentication requests wait 90 s, because TDLib itself retries them through `FLOOD_WAIT` for up
+  to 60 s (`total_timeout_limit`) before answering, and giving up earlier makes a retry worsen the flood.
 - `openChat` on enter / `closeChat` on leave so TDLib can prioritize; `viewMessages` batched
   (max once per 300 ms) with `forceRead=false`.
 - History paging: `getChatHistory(limit=50, onlyLocal=true)` first, then network fill; prefetch

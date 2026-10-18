@@ -48,6 +48,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   adaptive `NavigationSuiteScaffold` — short navigation bar on phones, navigation rail on larger
   screens — with Chats, Contacts and Settings placeholder tabs and Material Symbols Rounded icons.
 
+- Sign-in flow (`feature:auth`): welcome, phone number with country picker and live formatting, login
+  codes of every type with resend countdown, two-step verification password with recovery by email,
+  registration with terms of service, QR code login, email address and email code, and an explanation when
+  an account needs Telegram Premium to sign in (no purchase flow). Rate limits show a countdown and an
+  offline banner appears while there is no connection; errors map to readable messages.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
