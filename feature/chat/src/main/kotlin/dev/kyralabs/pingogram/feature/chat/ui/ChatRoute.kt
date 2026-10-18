@@ -28,7 +28,8 @@ import java.net.URLEncoder
 import java.util.Locale
 
 /**
- * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane: hoists its [ChatViewModel], and
+ * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane, opened at [messageId] when
+ * search found it there (the list then jumps to it instead of the unread divider): hoists its [ChatViewModel], and
  * tells it when the screen is started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md`
  * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
@@ -44,8 +45,9 @@ internal fun ChatRoute(
     onBack: (() -> Unit)?,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    messageId: Long? = null,
     viewModel: ChatViewModel =
-        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId) },
+        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
@@ -53,7 +55,7 @@ internal fun ChatRoute(
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val jumpState = rememberMessageJumpState()
+    val jumpState = rememberMessageJumpState(opensAtMessage = messageId != null)
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     ChatEffects(viewModel.effects, snackbarHostState, jumpState, onOpenMedia = { currentOnOpenMedia(chatId, it) })
     ChatScreen(
@@ -67,10 +69,11 @@ internal fun ChatRoute(
 }
 
 /**
- * Handles [effects]: a snackbar for errors, for a file that cannot be played and for a replied message that is gone,
- * the newest replacing the one shown; a downloaded document opens in another app through [openFile] (the app's
- * `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a snackbar says that no app can; a jump to a
- * message goes to [jumpState]; media to open goes to [onOpenMedia].
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone, for
+ * a found message that is not in the loaded history and for what is not there yet, the newest replacing the one
+ * shown; a downloaded document opens in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile])
+ * and a location in a maps app, or a snackbar says that no app can; a jump to a message goes to [jumpState]; media to
+ * open goes to [onOpenMedia].
  */
 @Composable
 internal fun ChatEffects(
@@ -108,6 +111,10 @@ internal fun ChatEffects(
 
                     ChatEffect.MessageUnavailable -> {
                         resources.getString(R.string.chat_message_unavailable)
+                    }
+
+                    ChatEffect.MessageNotLoaded -> {
+                        resources.getString(R.string.chat_message_not_loaded)
                     }
 
                     is ChatEffect.ScrollToMessage -> {

@@ -112,9 +112,44 @@
     <string name="chat_list_archive_empty_title">No archived chats</string>
     <string name="chat_list_archive_empty_body">Chats you archive show up here, out of your way.</string>
 
-    <!-- Global search, until it lands with the chat list -->
-    <string name="search_title">Search</string>
+    <!-- Global search (SearchScreen, FR-L6): the search field. -->
+    <string name="search_placeholder">Search chats, people and messages</string>
     <string name="search_back">Back</string>
-    <string name="search_placeholder_title">Search is on its way</string>
-    <string name="search_placeholder_body">Chats, contacts and messages will be searchable here once your chats arrive.</string>
+    <string name="search_clear">Clear search</string>
+    <!-- Section headers. -->
+    <string name="search_section_people">People</string>
+    <string name="search_section_recent">Recent</string>
+    <string name="search_section_chats">Chats</string>
+    <string name="search_section_contacts">Contacts</string>
+    <!-- Public chats, channels and users found by username, outside the user's chats and contacts. -->
+    <string name="search_section_global">Global search</string>
+    <string name="search_section_messages">Messages</string>
+    <!-- Recent searches: the button that empties them, and the button that removes one (%1$s is its name). -->
+    <string name="search_clear_recents">Clear all</string>
+    <string name="search_remove_recent">Remove %1$s from recent searches</string>
+    <!-- The second line of a result: a username, or how many members or subscribers ("1,204"). -->
+    <string name="search_username" translatable="false">\@%1$s</string>
+    <plurals name="search_members">
+        <item quantity="one">%1$s member</item>
+        <item quantity="other">%1$s members</item>
+    </plurals>
+    <plurals name="search_subscribers">
+        <item quantity="one">%1$s subscriber</item>
+        <item quantity="other">%1$s subscribers</item>
+    </plurals>
+    <!-- Before anything is typed, without recent searches. -->
+    <string name="search_hint_title">Find anything</string>
+    <string name="search_hint_body">Search your chats and contacts, public channels and groups by their username, and the messages in all your chats.</string>
+    <!-- A query that found nothing: %1$s is the query. -->
+    <string name="search_no_results_title">No results for “%1$s”</string>
+    <string name="search_no_results_body">Check the spelling, or try other words.</string>
+    <string name="search_retry">Try again</string>
+    <!-- A section that is still searching, for screen readers. -->
+    <string name="search_searching">Searching…</string>
+    <!-- How many results a query found, announced to screen readers once every section has searched. -->
+    <plurals name="search_a11y_results">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
+    <string name="search_a11y_no_results">No results</string>
 </resources>

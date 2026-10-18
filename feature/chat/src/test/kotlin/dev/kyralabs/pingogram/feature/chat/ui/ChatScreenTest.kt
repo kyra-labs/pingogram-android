@@ -156,6 +156,25 @@ class ChatScreenTest {
     }
 
     @Test
+    fun `opened at a message, the list does not scroll to the unread divider`() {
+        setScreen(longChat(unread = UNREAD), MessageJumpState(opensAtMessage = true))
+
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.chat_unread_divider)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `opened at a message, the list jumps there past the unread divider`() {
+        val jumpState = MessageJumpState(opensAtMessage = true)
+        // "Message 50", far older than the unread divider above "Message 30".
+        jumpState.jumpTo(MESSAGES - 50 + 1L)
+
+        setScreen(longChat(unread = UNREAD), jumpState)
+
+        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Message 50").assertIsDisplayed()
+    }
+
+    @Test
     fun `the jump button scrolls to the newest message`() {
         setScreen(longChat(unread = UNREAD))
 

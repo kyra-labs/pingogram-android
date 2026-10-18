@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
@@ -23,9 +24,14 @@ import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 
-/** Binds the repositories to their interfaces. Caching ones also join the set in [UpdateCacheModule]. */
+/**
+ * Binds the repositories to their interfaces. Caching ones also join the set in [UpdateCacheModule]. One binding per
+ * repository, hence `TooManyFunctions` is suppressed.
+ */
+@Suppress("TooManyFunctions")
 @Module
 @InstallIn(SingletonComponent::class)
 interface RepositoryModule {
@@ -58,4 +64,7 @@ interface RepositoryModule {
 
     @Binds
     fun groupRepository(repository: TdlibGroupRepository): GroupRepository
+
+    @Binds
+    fun searchRepository(repository: TdlibSearchRepository): SearchRepository
 }
