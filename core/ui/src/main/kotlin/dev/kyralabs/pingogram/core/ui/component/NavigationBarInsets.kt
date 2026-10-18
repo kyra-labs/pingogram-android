@@ -11,10 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
- * The bottom of the window that the app's floating navigation bar covers, as insets (`docs/DESIGN_SYSTEM.md` §6–7).
- * The bar floats over the top-level screens so their content scrolls behind it; none where there is no bar: the login
- * flow, the navigation rail of larger windows, screens pushed on top of a tab. A screen that hides the bar
- * ([HideNavigationBar]) keeps these insets, as its own floating toolbar takes the bar's place.
+ * The bottom of the window that the app's floating navigation bar covers on the top-level screens, as insets
+ * (`docs/DESIGN_SYSTEM.md` §6–7). The bar floats over them so their content scrolls behind it; none where there is no
+ * bar: the login flow, the navigation rail of larger windows. Screens pushed on top of a tab, which hide the bar, do
+ * not read them: they stay the same whatever the destination, because changing this static local recomposes every
+ * screen. A screen that hides the bar ([HideNavigationBar]) keeps these insets, as its own floating toolbar takes the
+ * bar's place.
  */
 val LocalNavigationBarInsets = staticCompositionLocalOf { WindowInsets(0, 0, 0, 0) }
 

@@ -17,6 +17,7 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
@@ -176,8 +178,11 @@ private fun rememberOnSwiped(
 }
 
 /**
- * What a swipe reveals: the container of the action of the side the row moves away from, with its icon and label at
- * that side. Decorative: screen readers get the actions on the row.
+ * What a swipe reveals: the container of the action of the side the row moves away from, inset like the row's and
+ * with `large` corners, with its icon and label at that side. Decorative: screen readers get the actions on the row.
+ * The icons and labels are composed only while the row is away from its place: at rest nothing shows them, and every
+ * row of a list would compose and lay out two of each, when a folder's rows replace another's or the list comes back
+ * from another screen.
  */
 @Composable
 private fun SwipeBackground(
@@ -188,30 +193,37 @@ private fun SwipeBackground(
 ) {
     val startColors = start.swipeColors()
     val endColors = end.swipeColors()
+    val swiping by remember(state) { derivedStateOf { state.dismissDirection != SwipeToDismissBoxValue.Settled } }
+    val shape = MaterialTheme.shapes.large
     Box(
         Modifier
             .fillMaxSize()
+            .padding(rowInsets())
             .clearAndSetSemantics {}
             .drawBehind {
-                when (state.dismissDirection) {
-                    SwipeToDismissBoxValue.StartToEnd -> drawRect(startColors.container)
-                    SwipeToDismissBoxValue.EndToStart -> drawRect(endColors.container)
-                    SwipeToDismissBoxValue.Settled -> Unit
-                }
+                val color =
+                    when (state.dismissDirection) {
+                        SwipeToDismissBoxValue.StartToEnd -> startColors.container
+                        SwipeToDismissBoxValue.EndToStart -> endColors.container
+                        SwipeToDismissBoxValue.Settled -> return@drawBehind
+                    }
+                drawOutline(shape.createOutline(size, layoutDirection, this), color)
             },
     ) {
-        SwipeActionLabel(
-            action = start,
-            color = startColors.content,
-            iconScale = iconScale,
-            modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
-        )
-        SwipeActionLabel(
-            action = end,
-            color = endColors.content,
-            iconScale = iconScale,
-            modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
-        )
+        if (swiping) {
+            SwipeActionLabel(
+                action = start,
+                color = startColors.content,
+                iconScale = iconScale,
+                modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
+            )
+            SwipeActionLabel(
+                action = end,
+                color = endColors.content,
+                iconScale = iconScale,
+                modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
+            )
+        }
     }
 }
 

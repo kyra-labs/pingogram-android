@@ -42,6 +42,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   scrolls sideways when they do not fit. Switching folders fades the list out and the new folder's list in,
   from its top; with animations turned off, the lists swap at once.
 - "Archived chats" is bold while it holds unread chats, like any unread chat.
+- The chat list, the archive and conversations sit on a sheet with rounded top corners below their top bar, in the
+  style of Google's Material 3 Expressive apps; chats and messages scroll inside it. Selected chats turn into
+  rounded pills set in from the edges, and swiping a chat reveals its action on a rounded card.
 
 ### Fixed
 - A swipe on a chat runs its action once. Archiving a chat inside a folder no longer archives and unarchives
@@ -53,6 +56,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Switching back to a chat folder shows its list where you left it, or at its top the first time, instead of
   jumping to the chat that was first in the other folder.
 - The navigation bar stays in place when you switch tabs, instead of sliding sideways and back.
+- Going back from a chat, the archive or another tab with the back gesture is smoother: the screen you leave
+  shrinks a little and fades away over the one you go back to, instead of shrinking far, waiting and vanishing at
+  once. Opening and leaving a chat no longer redraws every screen behind it, which caused stutters.
+- Switching chat folders no longer stutters: the new folder's chats appear in their places instead of sliding in
+  from where the other folder had them, and the chat list does less work per chat.
+- Fewer stutters when going between screens: each text style's font is prepared once, instead of again whenever
+  enough other styles had been shown since.
 
 ## [0.1.2] - 2026-10-18
 

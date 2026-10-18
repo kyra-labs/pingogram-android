@@ -82,7 +82,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
-  mode; everything else relies on Navigation's built-in support.
+  mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
+  pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
 
 ## Threading
 
