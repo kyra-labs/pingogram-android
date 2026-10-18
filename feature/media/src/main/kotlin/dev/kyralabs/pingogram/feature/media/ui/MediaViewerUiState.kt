@@ -41,6 +41,7 @@ sealed interface MediaViewerUiState {
      * @property files the states of the files of the shown item and its neighbours, by file id: each item's full file
      *   ([ViewerMedia.fileId]) and a photo's other sizes; a file TDLib has not reported yet is missing.
      * @property playback the video or GIF in the player; null when none is.
+     * @property actions what the bottom app bar offers for the current item: Share and Save.
      */
     data class Content(
         val items: ImmutableList<MediaItem>,
@@ -48,9 +49,34 @@ sealed interface MediaViewerUiState {
         val count: MediaCount?,
         val files: ImmutableMap<Int, FileState> = persistentMapOf(),
         val playback: VideoPlayback? = null,
+        val actions: MediaActions = MediaActions(),
     ) : MediaViewerUiState {
         val current: MediaItem get() = items[currentIndex]
     }
+}
+
+/**
+ * Share and Save of the current item (`REQUIREMENTS.md` FR-C6, FR-C10), from `MediaSharing`.
+ *
+ * @property canSave both show: Telegram lets the content leave it (the chat does not protect its content, and TDLib
+ *   says the message can be saved). False while that is not known.
+ * @property pending the action waiting for the item's file to download, or copying it into the gallery; null if none.
+ * @property showsStorageRationale Android 8–9: why saving needs the storage permission shows, before asking for it.
+ */
+@Immutable
+data class MediaActions(
+    val canSave: Boolean = false,
+    val pending: MediaAction? = null,
+    val showsStorageRationale: Boolean = false,
+)
+
+/** What the bottom app bar does with the current item's file. */
+enum class MediaAction {
+    /** Hand it to another app through the system's share sheet. */
+    Share,
+
+    /** Copy it into the gallery, `Pictures/Pingogram` or `Movies/Pingogram`. */
+    Save,
 }
 
 /**
@@ -181,6 +207,30 @@ sealed interface MediaViewerEvent {
     data class Seek(
         val fraction: Float,
     ) : MediaViewerEvent
+
+    /** Share was tapped: the current item's file goes to the share sheet, once it is downloaded. */
+    data object Share : MediaViewerEvent
+
+    /** Save was tapped: the current item's file is copied into the gallery, once it is downloaded. */
+    data object Save : MediaViewerEvent
+
+    /**
+     * The screen checked, after [MediaViewerEffect.CheckStoragePermission], whether the system wants the reason for
+     * the storage permission shown first ([showRationale]).
+     */
+    data class StoragePermissionChecked(
+        val showRationale: Boolean,
+    ) : MediaViewerEvent
+
+    /** The reason for the storage permission was answered: ask for it ([proceed]), or leave it. */
+    data class StorageRationaleAnswered(
+        val proceed: Boolean,
+    ) : MediaViewerEvent
+
+    /** The system's answer to the storage permission request ([MediaViewerEffect.RequestStoragePermission]). */
+    data class StoragePermissionResult(
+        val granted: Boolean,
+    ) : MediaViewerEvent
 }
 
 /** One-off effects of [MediaViewerViewModel], handled by the screen once each. */
@@ -192,4 +242,37 @@ sealed interface MediaViewerEffect {
 
     /** The video or GIF could not be played: a snackbar says so. */
     data object PlaybackFailed : MediaViewerEffect
+
+    /**
+     * Hand the downloaded file at [path] to the system's share sheet, as the type its extension names, else
+     * [mimeType].
+     */
+    data class ShareFile(
+        val path: String,
+        val mimeType: String,
+    ) : MediaViewerEffect {
+        // The path ends in the file's name.
+        override fun toString() = "ShareFile(mimeType=$mimeType, …)"
+    }
+
+    /** The file could not be shared (TDLib cannot download it): a snackbar says so. */
+    data object ShareFailed : MediaViewerEffect
+
+    /** The file is in the gallery: a snackbar says so. */
+    data object SavedToGallery : MediaViewerEffect
+
+    /** The file could not be saved into the gallery: a snackbar says so. */
+    data object SaveFailed : MediaViewerEffect
+
+    /**
+     * Android 8–9, saving needs the storage permission: check whether the system wants its reason shown first, and
+     * tell [MediaViewerEvent.StoragePermissionChecked].
+     */
+    data object CheckStoragePermission : MediaViewerEffect
+
+    /** Ask for the storage permission, and tell [MediaViewerEvent.StoragePermissionResult]. */
+    data object RequestStoragePermission : MediaViewerEffect
+
+    /** The storage permission was refused: a snackbar says saving needs it, and offers the app's settings. */
+    data object StoragePermissionDenied : MediaViewerEffect
 }

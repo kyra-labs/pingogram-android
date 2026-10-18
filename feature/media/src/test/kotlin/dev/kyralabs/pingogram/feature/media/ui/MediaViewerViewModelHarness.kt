@@ -25,8 +25,8 @@ import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
 /**
- * The fakes and helpers the tests of [MediaViewerViewModel] share: the view model on fakes of the domain repositories
- * and of the player, a clock stopped at [NOW] in UTC and fixed English time patterns.
+ * The fakes and helpers the tests of [MediaViewerViewModel] share: the view model on fakes of the domain repositories,
+ * of the player and of the gallery, a clock stopped at [NOW] in UTC and fixed English time patterns.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class MediaViewerViewModelHarness {
@@ -35,6 +35,7 @@ abstract class MediaViewerViewModelHarness {
     protected val users = FakeUserRepository()
     protected val chats = FakeChatRepository()
     internal val player = FakeVideoPlayer()
+    protected val fileActions = FakeMediaFileActions()
 
     /** The view models the test made, cleared when it ends. */
     private val created = mutableListOf<MediaViewerViewModel>()
@@ -68,6 +69,7 @@ abstract class MediaViewerViewModelHarness {
                 applicationScope = backgroundScope,
                 locale = { Locale.US },
                 videoPlayer = player,
+                fileActions = fileActions,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

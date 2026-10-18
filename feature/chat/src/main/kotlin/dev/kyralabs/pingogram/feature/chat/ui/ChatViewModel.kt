@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
@@ -108,7 +109,7 @@ import java.util.Locale
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
- *   opening a location in a maps app, and the note that opening files comes later.
+ *   opening a downloaded document in another app ([ChatEvent.OpenFile]), and a location in a maps app.
  *
  * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
  * patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the
@@ -330,7 +331,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.DownloadFile -> files.download(event.fileId)
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
-            is ChatEvent.OpenFile -> effectChannel.trySend(ChatEffect.FileOpeningUnavailable)
+            is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
@@ -621,6 +622,18 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
 }
 
 /**
+ * The document of the loaded message that [event] names, its file downloaded, as the effect that opens it in another
+ * app; null for other messages and for files not on the device. Documents of chats that protect their content open
+ * too: Telegram lets them be viewed, only not saved (`has_protected_content`), and Pingogram offers no saving here.
+ */
+private fun ChatUiState.fileToOpen(event: ChatEvent.OpenFile): ChatEffect.OpenFile? {
+    val bubble = items.firstOrNull { it is ChatItem.Bubble && it.id == event.messageId } as? ChatItem.Bubble
+    val document = (bubble?.content as? MessageContent.Document)?.document?.takeIf { it.file.id == event.fileId }
+    val path = (fileStates[event.fileId] as? FileState.Downloaded)?.path ?: return null
+    return document?.let { ChatEffect.OpenFile(path, it.mimeType.ifBlank { null }) }
+}
+
+/**
  * The photo, video or GIF of loaded message [messageId], an album's item too, as the effect that opens it in the media
  * viewer; null for other messages. Video messages stay where they are, and so does self-destructing media, which needs
  * a viewer of its own (a timer once opened, screenshots blocked).
@@ -638,16 +651,6 @@ private fun ChatUiState.mediaToOpen(messageId: Long): ChatEffect.OpenMedia? {
         }
     return if (content?.opensInViewer == true) ChatEffect.OpenMedia(messageId) else null
 }
-
-/** A photo, video or GIF that is not self-destructing: what the media viewer shows. */
-private val MessageContent.opensInViewer: Boolean
-    get() =
-        when (this) {
-            is MessageContent.Photo -> !isSecret
-            is MessageContent.Video -> !isSecret
-            is MessageContent.Animation -> !isSecret
-            else -> false
-        }
 
 /** The items shown, none while there is no content. */
 private val ChatUiState.items: List<ChatItem>

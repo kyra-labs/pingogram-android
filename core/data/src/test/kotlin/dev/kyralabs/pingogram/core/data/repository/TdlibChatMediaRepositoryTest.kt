@@ -318,6 +318,29 @@ class TdlibChatMediaRepositoryTest {
             assertTrue(position is Outcome.Failure)
         }
 
+    // Saving
+
+    @Test
+    fun `a message can be saved as its properties say`() =
+        runTest {
+            client.on(TdApi.GetMessageProperties::class) { request ->
+                TdResult.Success(TdApi.MessageProperties().apply { canBeSaved = request.messageId == 42L })
+            }
+
+            assertEquals(Outcome.Success(true), repository.canBeSaved(CHAT, 42))
+            assertEquals(Outcome.Success(false), repository.canBeSaved(CHAT, 43))
+            val request = client.sentOf<TdApi.GetMessageProperties>().first()
+            assertEquals(listOf(CHAT, 42L), listOf(request.chatId, request.messageId))
+        }
+
+    @Test
+    fun `whether a message can be saved fails as its properties fail`() =
+        runTest {
+            client.on(TdApi.GetMessageProperties::class, TdResult.Failure(TdError(404, "Not Found")))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository.canBeSaved(CHAT, 42))
+        }
+
     // Deletions
 
     @Test

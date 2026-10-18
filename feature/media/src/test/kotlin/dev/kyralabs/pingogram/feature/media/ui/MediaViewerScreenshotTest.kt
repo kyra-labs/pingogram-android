@@ -21,8 +21,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the media viewer (`docs/TESTING.md`), light and dark on a compact phone and light on an expanded window:
- * a photo with its chrome and caption, a video with its controls, a photo still downloading, the chrome hidden, and
- * the error. The viewer is dark in either theme, so light and dark differ only where the app's theme shows through
+ * a photo with its chrome and caption, a video with its controls, a photo still downloading, the chrome hidden, the
+ * error, and the bottom app bar: Share and Save, Share waiting for the download, and none in a chat that protects its
+ * content. The viewer is dark in either theme, so light and dark differ only where the app's theme shows through
  * (none here). Inspection mode, so Coil shows solid colors for the images ([PreviewImages]) instead of loading TDLib
  * files; the downloading photo stays loading.
  */
@@ -87,6 +88,9 @@ class MediaViewerScreenshotTest(
                 "downloading" to Shot(MediaPreviewData.downloading, imagesLoading = true),
                 "chromeHidden" to Shot(MediaPreviewData.photo, hideChrome = true),
                 "error" to Shot(MediaPreviewData.error),
+                "actions" to Shot(MediaPreviewData.withActions),
+                "sharing" to Shot(MediaPreviewData.sharing, imagesLoading = true),
+                "protectedContent" to Shot(MediaPreviewData.protectedContent),
             )
 
         @JvmStatic

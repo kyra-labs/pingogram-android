@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -10,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimatedEmoji
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimation
@@ -33,6 +36,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 
 /**
  * What a bubble shows of its message's content above the text or caption (`REQUIREMENTS.md` FR-C4): the one place
@@ -41,6 +45,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
  * with square corners here.
  *
  * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum]; tapping an item opens it by its own message.
+ * - **Photos, videos and GIFs**, an album's items too, grow into the media viewer and shrink back into the bubble
+ *   ([sharedMediaBounds], by their own message), from and to [mediaShape], the corners they show in the bubble.
  * - **Voice messages, songs and documents** show their file's [fileState]; voice messages and songs also how they
  *   play ([playback]), and send play and seek as events for the ViewModel's player.
  * - **Text messages** show nothing here: the bubble shows their text and link preview itself, as it does the caption
@@ -51,6 +57,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
  *   unknown and for other content.
  * @param playback how a voice message or song plays; [Playback.Stopped] unless it is the one in the player.
  * @param colors the colors of the bubble's side, for content that draws on the bubble.
+ * @param mediaShape the corners edge-to-edge media shows in the bubble, which clips it: the bubble's own where the
+ *   media meets its edge, square where a header or a caption follows. The container transform starts and ends there.
  */
 @Composable
 internal fun MessageContentBody(
@@ -60,6 +68,7 @@ internal fun MessageContentBody(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
 ) {
     val album = bubble.album
     val content = bubble.content
@@ -67,6 +76,7 @@ internal fun MessageContentBody(
         album != null -> {
             MediaAlbum(
                 items = album.items,
+                messageIds = album.messageIds,
                 onOpen = { index -> onEvent(ChatEvent.OpenMedia(album.messageIds[index])) },
                 modifier = modifier,
                 shape = RectangleShape,
@@ -74,7 +84,7 @@ internal fun MessageContentBody(
         }
 
         content.isEdgeToEdge || content.isBare -> {
-            MediaContent(bubble.id, content, onEvent, modifier)
+            MediaContent(bubble.id, content, onEvent, modifier, mediaShape)
         }
 
         content.downloadableFileId != null -> {
@@ -87,19 +97,25 @@ internal fun MessageContentBody(
     }
 }
 
-/** Photos, videos and GIFs, edge to edge; stickers, animated emoji, dice and video messages, bare. */
+/**
+ * Photos, videos and GIFs, edge to edge, sharing their bounds with the media viewer (from [mediaShape]); stickers,
+ * animated emoji, dice and video messages, bare.
+ */
 @Composable
 private fun MediaContent(
     messageId: Long,
     content: MessageContent,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
+    mediaShape: CornerBasedShape,
 ) {
     val onOpen = { onEvent(ChatEvent.OpenMedia(messageId)) }
+    // Only what the viewer shows (no self-destructing media) shares its bounds with it.
+    val shared = modifier.sharedMediaBounds(messageId, mediaShape, FullBleedShape, enabled = content.opensInViewer)
     when (content) {
-        is MessageContent.Photo -> MessagePhoto(content, onOpen, modifier, shape = RectangleShape)
-        is MessageContent.Video -> MessageVideo(content, onOpen, modifier, shape = RectangleShape)
-        is MessageContent.Animation -> MessageAnimation(content, onOpen, modifier, shape = RectangleShape)
+        is MessageContent.Photo -> MessagePhoto(content, onOpen, shared, shape = RectangleShape)
+        is MessageContent.Video -> MessageVideo(content, onOpen, shared, shape = RectangleShape)
+        is MessageContent.Animation -> MessageAnimation(content, onOpen, shared, shape = RectangleShape)
         is MessageContent.VideoNote -> MessageVideoNote(content, onOpen, modifier)
         is MessageContent.Sticker -> MessageSticker(content, modifier)
         is MessageContent.AnimatedEmoji -> MessageAnimatedEmoji(content, modifier)

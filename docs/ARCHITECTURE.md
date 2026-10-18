@@ -84,6 +84,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
+- Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
+  down as `LocalSharedTransitionScope`; destinations that share content provide their animated
+  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.sharedMediaBounds` (a no-op
+  without both) runs the container transform of a photo, video or GIF between the conversation
+  (pushed or in the detail pane) and the media viewer, keyed by message id.
 
 ## Threading
 
@@ -106,6 +111,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Files leave the app only on the user's request and only through `:app`'s `FileProvider`
+  (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
+  never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
+  The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
+  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), behind `MediaFileActions`.
 
 ## Notifications
 

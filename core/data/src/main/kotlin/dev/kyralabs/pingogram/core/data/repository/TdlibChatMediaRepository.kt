@@ -32,6 +32,8 @@ import javax.inject.Singleton
  *   at all counts as reached, as in [TdlibMessageRepository].
  * - **The filter** of [around] comes from the message itself (`getMessage`, which TDLib answers from memory for a
  *   message on screen); a deleted message fails with TDLib's 404, `DomainError.NotFound`.
+ * - **Saving** ([canBeSaved]) is `getMessageProperties`' `can_be_saved`, which TDLib works out locally, as it is when
+ *   asked: the chat's protection may change while the message is loaded.
  */
 @Singleton
 class TdlibChatMediaRepository
@@ -102,6 +104,11 @@ class TdlibChatMediaRepository
             messageId: Long,
         ): Outcome<Int> =
             client.request(TdApi.GetChatMessagePosition(chatId, null, filter.tdlibFilter(), messageId)).map { it.count }
+
+        override suspend fun canBeSaved(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<Boolean> = client.request(TdApi.GetMessageProperties(chatId, messageId)).map { it.canBeSaved }
 
         override fun deletedMessages(chatId: Long): Flow<Set<Long>> =
             client.updates
