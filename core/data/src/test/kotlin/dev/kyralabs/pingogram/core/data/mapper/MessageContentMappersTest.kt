@@ -401,6 +401,20 @@ class MessageContentMappersTest {
     }
 
     @Test
+    fun `a game keeps its title`() {
+        val game = TdApi.Game().apply { title = "Lumberjack" }
+
+        assertEquals(MessageContent.Game("Lumberjack"), TdApi.MessageGame(game).map())
+    }
+
+    @Test
+    fun `an invoice keeps the title of its product`() {
+        val content = TdApi.MessageInvoice().apply { productInfo = TdApi.ProductInfo("Coffee beans", null, null) }
+
+        assertEquals(MessageContent.Invoice("Coffee beans"), content.map())
+    }
+
+    @Test
     fun `a forwarded story keeps its poster and id`() {
         assertEquals(MessageContent.Story(-1003, 12), TdApi.MessageStory(-1003, 12, false).map())
     }
@@ -435,10 +449,8 @@ class MessageContentMappersTest {
             listOf(
                 TdApi.MessageRichMessage::class.java,
                 TdApi.MessagePaidMedia::class.java,
-                TdApi.MessageGame::class.java,
                 TdApi.MessageStakeDice::class.java,
                 TdApi.MessageChecklist::class.java,
-                TdApi.MessageInvoice::class.java,
                 TdApi.MessageGiveaway::class.java,
                 TdApi.MessageGiveawayWinners::class.java,
                 TdApi.MessageUnsupported::class.java,

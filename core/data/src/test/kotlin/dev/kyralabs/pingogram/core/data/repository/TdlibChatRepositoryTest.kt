@@ -642,6 +642,22 @@ class TdlibChatRepositoryTest {
         }
 
     @Test
+    fun `All chats comes first until TDLib reports the folders`() =
+        runTest {
+            assertEquals(0, repository().mainChatListPosition.first())
+        }
+
+    @Test
+    fun `the position of All chats follows updateChatFolders`() =
+        runTest {
+            val repository = repository()
+
+            client.emit(updateChatFolders(chatFolderInfo(id = 1), chatFolderInfo(id = 2), mainChatListPosition = 1))
+
+            assertEquals(1, repository.mainChatListPosition.first())
+        }
+
+    @Test
     fun `unreadChatCount is None before TDLib counted the list`() =
         runTest {
             assertEquals(UnreadChatCount.None, repository().unreadChatCount(ChatListType.Main).first())
@@ -804,12 +820,13 @@ class TdlibChatRepositoryTest {
     fun `forgets the folders and unread counts when TDLib closes`() =
         runTest {
             val repository = repository()
-            client.emit(updateChatFolders(chatFolderInfo()))
+            client.emit(updateChatFolders(chatFolderInfo(), mainChatListPosition = 1))
             client.emit(updateUnreadChatCount(main, unreadCount = 3))
 
             client.emitAuthorizationState(TdApiFixtures.closed())
 
             assertEquals(emptyList<ChatFolder>(), repository.folders.first())
+            assertEquals(0, repository.mainChatListPosition.first())
             assertEquals(UnreadChatCount.None, repository.unreadChatCount(ChatListType.Main).first())
         }
 

@@ -110,6 +110,26 @@ sealed interface MessageContent {
         val sticker: dev.kyralabs.pingogram.core.domain.model.Sticker?,
     ) : MessageContent
 
+    /**
+     * A game a bot sent, played in a web view, which Pingogram does not open yet; only its [title] is kept, for
+     * previews. `toString()` leaves it out.
+     */
+    data class Game(
+        val title: String,
+    ) : MessageContent {
+        override fun toString() = "Game(…)"
+    }
+
+    /**
+     * An invoice from a bot or a business, which Pingogram does not pay (`REQUIREMENTS.md` §1.2); only its [title] is
+     * kept, for previews. `toString()` leaves it out.
+     */
+    data class Invoice(
+        val title: String,
+    ) : MessageContent {
+        override fun toString() = "Invoice(…)"
+    }
+
     /** A forwarded story. */
     data class Story(
         val storyPosterChatId: Long,
@@ -126,7 +146,7 @@ sealed interface MessageContent {
         val action: ServiceAction,
     ) : MessageContent
 
-    /** Content Pingogram cannot show (yet): games, invoices, paid media, giveaways, checklists, …. */
+    /** Content Pingogram cannot show (yet): paid media, giveaways, checklists, …. */
     data object Unsupported : MessageContent
 }
 

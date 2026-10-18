@@ -201,6 +201,8 @@ class ServiceActionMappersTest {
                 "MessagePoll",
                 "MessageDice",
                 "MessageAnimatedEmoji",
+                "MessageGame",
+                "MessageInvoice",
                 "MessageStory",
                 "MessageExpiredPhoto",
                 "MessageExpiredVideo",
