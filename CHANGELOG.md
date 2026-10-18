@@ -10,10 +10,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- The chat list. The top bar shows the connection state ("Connecting…", "Waiting for network…") while not
+  connected. Your chat folders are tabs with unread counts, with "All chats" where you placed it. Each chat
+  shows its avatar with an online dot, verified or scam badges, a lock for secret chats, who is typing, your
+  draft or the last message with its sender, the time in your 12- or 24-hour format, read ticks, and unread,
+  mention, reaction, muted and pinned markers. Saved Messages and deleted accounts get their own icons. More
+  chats load as you scroll. Opening a chat comes with the conversation screen.
 - A floating navigation bar on phones, in the style of Google's Material 3 Expressive apps: the tabs in a
   pill that floats over the content (the selected tab shows its icon and label, the others their label, or
   their icon when the labels do not fit), with a round search button beside it. Tablets keep the
-  navigation rail, now with the search button at its top. Search itself arrives with the chat list.
+  navigation rail, now with the search button at its top. Search itself is not built yet.
 - Data layer for the chat list and conversations (no screens yet): chats with lists, folders, unread counts and
   mute state; users and their online status; paged chat history kept current by TDLib's updates, with at most
   three chats' messages in memory; files with download priorities; and a message model covering every content,
@@ -27,7 +33,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   online dot.
 
 ### Changed
-- The Chats and Contacts placeholders no longer say that sign-in is coming.
+- The Contacts placeholder no longer says that sign-in is coming.
 
 ## [0.1.1] - 2026-10-18
 
