@@ -1,6 +1,10 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
@@ -16,15 +20,18 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.reflect.KClass
+import kotlin.reflect.cast
 
 /**
- * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories, a fake
- * wall clock at [NOW] in UTC and fixed English time patterns.
+ * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories and of
+ * the player, a fake wall clock at [NOW] in UTC, fixed English time patterns and a log that keeps what it is told.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatViewModelHarness {
@@ -36,6 +43,13 @@ abstract class ChatViewModelHarness {
     protected val files = FakeFileRepository()
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
+    internal val player = FakeAudioPlayer()
+
+    /** Every message logged, in order. */
+    protected val logged = mutableListOf<String>()
+
+    /** The view models the test made, for [runViewModelTest]. */
+    private val created = mutableListOf<ChatViewModel>()
 
     @BeforeEach
     fun setUp() {
@@ -66,11 +80,28 @@ abstract class ChatViewModelHarness {
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
+                audioPlayer = player,
+                log = { logged += it },
             )
+        created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
     }
+
+    /**
+     * [runTest] that clears every view model the test made once [testBody] ends, which stops what still runs in their
+     * scopes: [runTest] runs every task left before it returns, and the progress ticker of something playing never
+     * runs out.
+     */
+    protected fun runViewModelTest(testBody: suspend TestScope.() -> Unit) =
+        runTest {
+            try {
+                testBody()
+            } finally {
+                created.forEach(::clear)
+            }
+        }
 
     /** A view model of [chat] showing [history]. */
     protected fun TestScope.showing(
@@ -90,6 +121,20 @@ abstract class ChatViewModelHarness {
             viewModel.onEvent(it)
             runCurrent()
         }
+    }
+
+    /** Clears [viewModel] as leaving the screen does: through a [ViewModelStore], which closes what it holds. */
+    protected fun clear(viewModel: ChatViewModel) {
+        val store = ViewModelStore()
+        val factory =
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(
+                    modelClass: KClass<T>,
+                    extras: CreationExtras,
+                ): T = modelClass.cast(viewModel)
+            }
+        ViewModelProvider.create(store, factory)[ChatViewModel::class]
+        store.clear()
     }
 
     protected val ChatViewModel.state get() = uiState.value

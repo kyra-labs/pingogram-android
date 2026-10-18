@@ -73,6 +73,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
@@ -80,7 +81,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -90,12 +93,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
- *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]), and opens at the unread divider, near the
- *   top, if there is one, else at the newest message; a rotation keeps the position.
+ *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]) and which messages it shows
+ *   ([ChatEvent.MessagesVisible]), and opens at the unread divider, near the top, if there is one, else at the newest
+ *   message; a rotation keeps the position.
  * - **Date pill**: while the list scrolls, the date of the topmost message floats at the top, fading in and out on the
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
  *   view, and scrolls back to it.
+ * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, centred, and highlights it
+ *   ([JumpToMessages]).
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
@@ -109,6 +115,7 @@ internal fun ChatScreen(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    jumpState: MessageJumpState = rememberMessageJumpState(),
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -154,7 +161,7 @@ internal fun ChatScreen(
 
             is ChatContent.Content -> {
                 Box(bodyModifier) {
-                    MessageList(content, state.fileStates, listState, innerPadding, onEvent)
+                    MessageList(content, state.fileStates, state.playback, listState, jumpState, innerPadding, onEvent)
                     FloatingDatePill(
                         items = content.items,
                         listState = listState,
@@ -173,18 +180,22 @@ internal fun ChatScreen(
  * The entries of [content], newest first in a reverse layout, then the state of older pages above the oldest one.
  * Each entry animates to its new place and fades in and out on the motion scheme's springs.
  */
+@Suppress("LongParameterList") // What the list shows, its state and the screen's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
     content: ChatContent.Content,
     fileStates: ImmutableMap<Int, FileState>,
+    playback: MessagePlayback?,
     listState: LazyListState,
+    jumpState: MessageJumpState,
     innerPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
-    val bubbleResources = remember(theme, texts, onLinkClick) { BubbleResources(theme, texts, onLinkClick) }
+    val bubbleResources =
+        remember(theme, texts, onLinkClick, jumpState) { BubbleResources(theme, texts, onLinkClick, jumpState) }
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
@@ -202,7 +213,7 @@ private fun MessageList(
     ) {
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, bubbleResources, onEvent, itemModifier)
+            ChatItemRow(item, fileStates, playback, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             item(key = OLDER_KEY, contentType = OLDER_KEY) {
@@ -216,6 +227,8 @@ private fun MessageList(
     }
     InitialScroll(content.items, listState)
     FollowNewestMessage(content.items.firstOrNull()?.key, listState)
+    ReportVisibleMessages(content.items, listState, onEvent)
+    JumpToMessages(content.items, listState, jumpState, motionScheme)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState) {
         try {
@@ -232,11 +245,15 @@ private fun MessageList(
     }
 }
 
-/** One entry of the list: a message with the state of its file, a service message, a date or the unread divider. */
+/**
+ * One entry of the list: a message with the state of its file and its playback (only the message in the player has
+ * one), a service message, a date or the unread divider.
+ */
 @Composable
 private fun ChatItemRow(
     item: ChatItem,
     fileStates: ImmutableMap<Int, FileState>,
+    playback: MessagePlayback?,
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -244,7 +261,8 @@ private fun ChatItemRow(
     when (item) {
         is ChatItem.Bubble -> {
             val fileState = item.content.downloadableFileId?.let(fileStates::get)
-            MessageBubbleRow(item, fileState, bubbleResources, onEvent, modifier)
+            val bubblePlayback = playback?.takeIf { it.messageId == item.id }?.playback ?: Playback.Stopped
+            MessageBubbleRow(item, fileState, bubblePlayback, bubbleResources, onEvent, modifier)
         }
 
         is ChatItem.Service -> {
@@ -260,6 +278,48 @@ private fun ChatItemRow(
         }
     }
 }
+
+/**
+ * Reports the messages of the entries [listState] shows, wholly or in part ([ChatEvent.MessagesVisible]): on every
+ * change of them, as the list scrolls or messages come and go, and none once the list leaves the screen. Read from the
+ * layout, outside the items (`docs/PERFORMANCE.md` §4). A frame of a scroll only compares the keys of the entries at
+ * both ends of the screen; the ids are gathered, by key, when those or the items change.
+ */
+@Composable
+private fun ReportVisibleMessages(
+    items: ImmutableList<ChatItem>,
+    listState: LazyListState,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val currentItems by rememberUpdatedState(items)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(listState) {
+        try {
+            val ends =
+                snapshotFlow {
+                    val visible = listState.layoutInfo.visibleItemsInfo
+                    visible.firstOrNull()?.key to visible.lastOrNull()?.key
+                }
+            // By key, as the layout can be a frame behind the items: a new message shifts every index.
+            val itemsByKey = snapshotFlow { currentItems }.map { items -> items.associateBy { it.key } }
+            combine(ends, itemsByKey) { _, byKey ->
+                listState.layoutInfo.visibleItemsInfo.flatMapTo(HashSet()) { byKey[it.key]?.messageIds.orEmpty() }
+            }.distinctUntilChanged()
+                .collect { currentOnEvent(ChatEvent.MessagesVisible(it)) }
+        } finally {
+            currentOnEvent(ChatEvent.MessagesVisible(emptySet()))
+        }
+    }
+}
+
+/** The messages an entry shows: a message, every item of an album; none for dates and the divider. */
+private val ChatItem.messageIds: List<Long>
+    get() =
+        when (this) {
+            is ChatItem.Bubble -> album?.messageIds ?: listOf(id)
+            is ChatItem.Service -> listOf(id)
+            is ChatItem.DateSeparator, is ChatItem.UnreadDivider -> emptyList()
+        }
 
 /**
  * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it

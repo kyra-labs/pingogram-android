@@ -450,7 +450,7 @@ class ChatItemsTest : ChatViewModelHarness() {
                 )
 
             assertEquals(
-                ReplyQuote(UiText.Plain("Ada Lovelace"), ADA, UiText.Plain("The original")),
+                ReplyQuote(UiText.Plain("Ada Lovelace"), ADA, UiText.Plain("The original"), messageId = 1),
                 viewModel.bubble(2).reply,
             )
             assertTrue(messages.repliedRequests.isEmpty())
@@ -480,7 +480,7 @@ class ChatItemsTest : ChatViewModelHarness() {
             val answer = CompletableDeferred<Outcome<dev.kyralabs.pingogram.core.domain.model.Message>>()
             messages.onRepliedMessage = { _, _ -> answer.await() }
             val viewModel = showing(chat(), history(outgoing(5).copy(replyTo = replyTo(1)), reachedStart = false))
-            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_loading)), viewModel.bubble(5).reply)
+            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_loading), 1), viewModel.bubble(5).reply)
 
             answer.complete(Outcome.Success(message(1, content = MessageContent.Text(text("Long ago"), null))))
             runCurrent()
@@ -490,7 +490,7 @@ class ChatItemsTest : ChatViewModelHarness() {
             )
             runCurrent()
 
-            assertEquals(ReplyQuote(UiText.Plain("Ada"), ADA, UiText.Plain("Long ago")), viewModel.bubble(5).reply)
+            assertEquals(ReplyQuote(UiText.Plain("Ada"), ADA, UiText.Plain("Long ago"), 1), viewModel.bubble(5).reply)
             assertEquals(listOf(PRIVATE_CHAT to 5L), messages.repliedRequests)
         }
 
@@ -507,8 +507,9 @@ class ChatItemsTest : ChatViewModelHarness() {
                     history(message(5, replyTo = replyTo(1)), message(6, replyTo = replyTo(2)), reachedStart = false),
                 )
 
-            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_deleted)), viewModel.bubble(5).reply)
-            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_unavailable)), viewModel.bubble(6).reply)
+            // A tap still looks for the message, and then says that it is gone.
+            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_deleted), 1), viewModel.bubble(5).reply)
+            assertEquals(ReplyQuote(null, null, res(R.string.chat_reply_unavailable), 2), viewModel.bubble(6).reply)
         }
 
     @Test

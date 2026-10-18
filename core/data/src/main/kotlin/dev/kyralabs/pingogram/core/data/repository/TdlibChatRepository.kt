@@ -184,6 +184,19 @@ class TdlibChatRepository
 
         /** `closeChat`. */
         override suspend fun closeChat(chatId: Long): Outcome<Unit> = client.request(TdApi.CloseChat(chatId)).map {}
+
+        /**
+         * `viewMessages` from the chat's history without `force_read`: TDLib reads them because the chat is open,
+         * as the official apps do while the conversation shows.
+         */
+        override suspend fun viewMessages(
+            chatId: Long,
+            messageIds: List<Long>,
+        ): Outcome<Unit> =
+            client
+                .request(
+                    TdApi.ViewMessages(chatId, messageIds.toLongArray(), TdApi.MessageSourceChatHistory(), false),
+                ).map {}
     }
 
 /**
