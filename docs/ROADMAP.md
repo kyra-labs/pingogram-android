@@ -34,7 +34,7 @@ the release workflow so the owner can install and test on a phone.
 
 ## M2 — Chat list + read-only conversation → `v0.2.0`
 
-- [ ] `ChatRepository`, `UserRepository`, `MessageRepository`, `FileRepository` with incremental
+- [x] `ChatRepository`, `UserRepository`, `MessageRepository`, `FileRepository` with incremental
       update application and tests
 - [ ] Chat list with folders, badges, typing/online, swipe actions, selection toolbar, archive
 - [ ] Global search (chats, contacts, messages)

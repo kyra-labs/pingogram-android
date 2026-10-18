@@ -14,6 +14,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   pill that floats over the content (the selected tab shows its icon and label, the others their label, or
   their icon when the labels do not fit), with a round search button beside it. Tablets keep the
   navigation rail, now with the search button at its top. Search itself arrives with the chat list.
+- Data layer for the chat list and conversations (no screens yet): chats with lists, folders, unread counts and
+  mute state; users and their online status; paged chat history kept current by TDLib's updates, with at most
+  three chats' messages in memory; files with download priorities; and a message model covering every content,
+  formatting and service message type of the TDLib version in use. All of it starts listening before TDLib
+  starts, so no update is missed.
 
 ### Changed
 - The Chats and Contacts placeholders no longer say that sign-in is coming.
