@@ -303,12 +303,14 @@ class AuthViewModel internal constructor(
 
     // Login code
 
+    /** Submits once the code becomes complete; typing past its length leaves it, and does not send it again. */
     private fun onCodeChanged(input: String) {
         val type = (model.step as? AuthStep.WaitCode)?.type ?: return
         val length = type.codeLength
         val code = if (type.isNumeric) input.filter(Char::isDigit).take(length ?: input.length) else input
+        val previous = model.code.code
         updateCode { it.copy(code = code, error = null) }
-        if (length != null && code.length == length) submitCode()
+        if (length != null && code.length == length && code != previous) submitCode()
     }
 
     private fun submitCode() {
@@ -477,8 +479,9 @@ class AuthViewModel internal constructor(
         val step = model.step as? AuthStep.WaitEmailCode ?: return
         val length = step.codeLength.takeIf { it > 0 }
         val code = input.filter(Char::isDigit).take(length ?: input.length)
+        val previous = model.email.code
         updateEmail { it.copy(code = code, codeError = null) }
-        if (length != null && code.length == length) submitEmailCode()
+        if (length != null && code.length == length && code != previous) submitEmailCode()
     }
 
     private fun submitEmailCode() {

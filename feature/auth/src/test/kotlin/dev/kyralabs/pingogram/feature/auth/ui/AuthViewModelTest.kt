@@ -509,6 +509,34 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `typing past a complete code does not send it again`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_INVALID"))
+                val viewModel = onCode()
+
+                send(viewModel, AuthEvent.CodeChanged("12345"), AuthEvent.CodeChanged("123456"))
+
+                assertEquals("12345", viewModel.step<AuthStepUiState.Code>().code)
+                assertEquals(1, client.sentOf<TdApi.CheckAuthenticationCode>().size)
+            }
+
+        @Test
+        fun `a code completed again after an edit is sent again`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_INVALID"))
+                val viewModel = onCode()
+
+                send(
+                    viewModel,
+                    AuthEvent.CodeChanged("12345"),
+                    AuthEvent.CodeChanged("1234"),
+                    AuthEvent.CodeChanged("12346"),
+                )
+
+                assertEquals(listOf("12345", "12346"), client.sentOf<TdApi.CheckAuthenticationCode>().map { it.code })
+            }
+
+        @Test
         fun `an incomplete code is not submitted`() =
             runTest {
                 val viewModel = onCode()
@@ -1005,6 +1033,17 @@ class AuthViewModelTest {
                 val code = client.sentOf<TdApi.CheckAuthenticationEmailCode>().single().code
                 assertEquals("a***@example.org" to 6, step.emailAddressPattern to step.codeLength)
                 assertEquals("123456", (code as TdApi.EmailAddressAuthenticationCode).code)
+            }
+
+        @Test
+        fun `typing past a complete email code does not send it again`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationEmailCode::class, failure("EMAIL_CODE_INVALID"))
+                val viewModel = onEmailCode()
+
+                send(viewModel, AuthEvent.EmailCodeChanged("123456"), AuthEvent.EmailCodeChanged("1234567"))
+
+                assertEquals(1, client.sentOf<TdApi.CheckAuthenticationEmailCode>().size)
             }
 
         @Test
