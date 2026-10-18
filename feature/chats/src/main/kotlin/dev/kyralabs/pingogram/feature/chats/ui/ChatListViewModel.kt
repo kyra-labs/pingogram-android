@@ -328,7 +328,7 @@ class ChatListViewModel internal constructor(
     private fun loadPage(list: ChatListType) {
         val load = loads.value[list] ?: ListLoad()
         if (load.isLoading || load.isComplete) return
-        loads.update { it.put(list, load.copy(isLoading = true, error = null)) }
+        loads.update { it.putting(list, load.copy(isLoading = true, error = null)) }
         val limit = if (load.hasLoadedPage) ChatRepository.PAGE_SIZE else FIRST_PAGE_SIZE
         viewModelScope.launch {
             val result = chatRepository.loadChats(list, limit)
@@ -339,7 +339,7 @@ class ChatListViewModel internal constructor(
                         is Outcome.Success -> current.copy(hasLoadedPage = true, isComplete = !result.value)
                         is Outcome.Failure -> current.copy(error = result.error)
                     }
-                loads.put(list, loaded.copy(isLoading = false))
+                loads.putting(list, loaded.copy(isLoading = false))
             }
             val hasMore = (result as? Outcome.Success)?.value == true
             if (hasMore && isNearEnd && list == currentList) loadPage(list)

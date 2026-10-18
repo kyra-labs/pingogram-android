@@ -16,6 +16,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   draft or the last message with its sender, the time in your 12- or 24-hour format, read ticks, and unread,
   mention, reaction, muted and pinned markers. Saved Messages and deleted accounts get their own icons. More
   chats load as you scroll. Opening a chat comes with the conversation screen.
+- Chat actions in the chat list. Swipe a chat right to mark it as read or unread, or left to archive it (with
+  Undo). Long-press to select chats: a floating toolbar takes the navigation bar's place to pin, mute, mark
+  as read or unread, archive or delete them all at once, and the selected avatars turn into a check. Deleting
+  asks first and offers "Also delete for …" or "Delete for all members" where Telegram allows it; leaving a
+  group or channel is worded as such. An "Archived chats" row at the top of All chats opens the archive, which
+  works like the chat list. Screen readers get every action on each chat, so none needs a swipe.
 - A floating navigation bar on phones, in the style of Google's Material 3 Expressive apps: the tabs in a
   pill that floats over the content (the selected tab shows its icon and label, the others their label, or
   their icon when the labels do not fit), with a round search button beside it. Tablets keep the

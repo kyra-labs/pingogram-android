@@ -36,7 +36,7 @@ the release workflow so the owner can install and test on a phone.
 
 - [x] `ChatRepository`, `UserRepository`, `MessageRepository`, `FileRepository` with incremental
       update application and tests
-- [ ] Chat list with folders, badges, typing/online, swipe actions, selection toolbar, archive
+- [x] Chat list with folders, badges, typing/online, swipe actions, selection toolbar, archive
 - [ ] Global search (chats, contacts, messages)
 - [ ] Conversation: paginated history, date headers, bubbles with entities, read status,
       replies/forwards, photos/videos/GIFs/stickers (static)/voice (playback)/documents/polls
