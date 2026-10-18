@@ -154,4 +154,64 @@ object TdApiFixtures {
         height: Int = 30,
         data: ByteArray = byteArrayOf(1, 2, 3),
     ) = TdApi.Minithumbnail(width, height, data)
+
+    /** A regular user with a test-DC phone number (digits only, as TDLib reports it), no photo and no status. */
+    fun user(
+        id: Long = 1,
+        firstName: String = "Ada",
+        lastName: String = "",
+        usernames: List<String> = emptyList(),
+        phoneNumber: String = "9996621234",
+        status: TdApi.UserStatus = TdApi.UserStatusEmpty(),
+        profilePhoto: TdApi.ProfilePhoto? = null,
+        verificationStatus: TdApi.VerificationStatus? = null,
+        isPremium: Boolean = false,
+        isContact: Boolean = false,
+        isMutualContact: Boolean = false,
+        isSupport: Boolean = false,
+        haveAccess: Boolean = true,
+        type: TdApi.UserType = TdApi.UserTypeRegular(),
+    ) = TdApi.User().also {
+        it.id = id
+        it.firstName = firstName
+        it.lastName = lastName
+        it.usernames =
+            TdApi.Usernames(usernames.toTypedArray(), emptyArray(), usernames.firstOrNull().orEmpty(), emptyArray(), "")
+        it.phoneNumber = phoneNumber
+        it.status = status
+        it.profilePhoto = profilePhoto
+        it.verificationStatus = verificationStatus
+        it.isPremium = isPremium
+        it.isContact = isContact
+        it.isMutualContact = isMutualContact
+        it.isSupport = isSupport
+        it.haveAccess = haveAccess
+        it.type = type
+        it.languageCode = "en"
+    }
+
+    fun profilePhoto(
+        smallFileId: Int = 10,
+        bigFileId: Int = 11,
+        minithumbnail: TdApi.Minithumbnail? = minithumbnail(),
+    ) = TdApi.ProfilePhoto(1, file(smallFileId), file(bigFileId), minithumbnail, false, false)
+
+    /** Online until [expires], a Unix time. */
+    fun onlineStatus(expires: Int) = TdApi.UserStatusOnline(expires)
+
+    /** Last online at [wasOnline], a Unix time. */
+    fun offlineStatus(wasOnline: Int) = TdApi.UserStatusOffline(wasOnline)
+
+    fun updateUser(user: TdApi.User = user()) = TdApi.UpdateUser(user)
+
+    fun updateUserStatus(
+        userId: Long,
+        status: TdApi.UserStatus,
+    ) = TdApi.UpdateUserStatus(userId, status)
+
+    /** The option that tells the logged-in user's id; [userId] null for the empty value of a removed option. */
+    fun myIdOption(userId: Long?) =
+        TdApi.UpdateOption("my_id", userId?.let { TdApi.OptionValueInteger(it) } ?: TdApi.OptionValueEmpty())
+
+    fun updateFile(file: TdApi.File) = TdApi.UpdateFile(file)
 }
