@@ -34,6 +34,13 @@ fun messagePreviewText(
         else -> contentPreviewText(content)
     }
 
+/**
+ * What kind of message [content] is, in one line, without its caption: "Photo", "Voice message", a file's name, a
+ * poll's question; the text of a text message. For a place that the caption follows with its own formatting, such as
+ * a bubble. Service messages need their message to name who did what: see [messagePreviewText].
+ */
+fun contentKindText(content: MessageContent): UiText = contentPreviewText(content.withoutCaption())
+
 /** The preview of an unsent [draft]'s content. */
 fun draftPreviewText(draft: DraftContent): UiText =
     when (draft) {
@@ -57,3 +64,15 @@ internal fun previewLine(text: String): String {
 }
 
 private val LINE_BREAKS = Regex("""\s*[\r\n]+\s*""")
+
+/** [this] content with an empty caption, if it has one. */
+private fun MessageContent.withoutCaption(): MessageContent =
+    when (this) {
+        is MessageContent.Photo -> copy(caption = FormattedText.Empty)
+        is MessageContent.Video -> copy(caption = FormattedText.Empty)
+        is MessageContent.Animation -> copy(caption = FormattedText.Empty)
+        is MessageContent.VoiceNote -> copy(caption = FormattedText.Empty)
+        is MessageContent.Audio -> copy(caption = FormattedText.Empty)
+        is MessageContent.Document -> copy(caption = FormattedText.Empty)
+        else -> this
+    }

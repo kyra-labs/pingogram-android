@@ -9,6 +9,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Tapping a chat opens the conversation (read-only for now). The top bar shows the avatar and name with
+  "online", "last seen …", who is typing, or the number of members or subscribers. Messages load as you
+  scroll back, with date pills, a divider before the first unread message and a button that jumps to the
+  newest. Bubbles group consecutive messages, show sender names and avatars in groups, the time, "edited",
+  and sent, read, pending or failed status, forwarded-from headers, reply quotes, reactions and link
+  previews. Text keeps its formatting: bold, italic, underline, strikethrough, code, quotes, spoilers (tap
+  to reveal) and links. Service messages appear as pills. Photos, voice messages and other media show a
+  short label until their own views land.
+
 ## [0.1.2] - 2026-10-18
 
 ### Added

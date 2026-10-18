@@ -67,6 +67,17 @@ class PingogramColorsTest {
     }
 
     @Test
+    fun `picks sender name colors by id among primary, secondary and tertiary`() {
+        val scheme = brandColorScheme(dark = false, Contrast.Standard)
+
+        assertEquals(
+            listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.primary),
+            (0L..3L).map(scheme::senderNameColor),
+        )
+        assertEquals(scheme.tertiary, scheme.senderNameColor(-1))
+    }
+
+    @Test
     fun `measures contrast like WCAG`() {
         assertEquals(21f, Color.White.contrastWith(Color.Black), 0.01f)
         assertEquals(1f, OnlineLight.contrastWith(OnlineLight), 0.01f)

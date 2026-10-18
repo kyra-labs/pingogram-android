@@ -24,30 +24,35 @@ import kotlinx.coroutines.launch
 /**
  * The Chats tab: hoists its [ChatListViewModel], and reports the app fully drawn once the chat list shows its chats or
  * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Tapping a row
- * opens nothing until the conversation screen lands; [onOpenArchive] opens the archive.
+ * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive.
  */
 @Composable
 internal fun ChatListRoute(
     onOpenArchive: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
-    ChatListDestination(state, viewModel, onOpenArchive = onOpenArchive, onBack = {}, modifier = modifier)
+    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier = modifier)
 }
 
-/** The archived chats (`REQUIREMENTS.md` FR-L9), pushed above the Chats tab; [onBack] returns to it. */
+/**
+ * The archived chats (`REQUIREMENTS.md` FR-L9), pushed above the Chats tab; [onBack] returns to it, and tapping a row
+ * calls [onOpenChat].
+ */
 @Composable
 internal fun ArchivedChatsRoute(
     onBack: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Archive) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ChatListDestination(state, viewModel, onOpenArchive = {}, onBack = onBack, modifier = modifier)
+    ChatListDestination(state, viewModel, onOpenArchive = {}, onOpenChat, onBack = onBack, modifier = modifier)
 }
 
 @Composable
@@ -55,11 +60,12 @@ private fun ChatListDestination(
     state: ChatListUiState,
     viewModel: ChatListViewModel,
     onOpenArchive: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    ChatListEffects(viewModel.effects, snackbarHostState, onOpenArchive = onOpenArchive, onEvent = viewModel::onEvent)
+    ChatListEffects(viewModel.effects, snackbarHostState, onOpenArchive, onOpenChat, onEvent = viewModel::onEvent)
     ChatListScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -71,18 +77,20 @@ private fun ChatListDestination(
 
 /**
  * Handles [effects]: snackbars, the newest replacing the one shown (archiving chat after chat keeps one "Undo", for
- * the last), and opening the archive. A snackbar with "Undo" stays long, so there is time to reach it.
+ * the last), and opening the archive or a chat. A snackbar with "Undo" stays long, so there is time to reach it.
  */
 @Composable
 private fun ChatListEffects(
     effects: Flow<ChatListEffect>,
     snackbarHostState: SnackbarHostState,
     onOpenArchive: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
     onEvent: (ChatListEvent) -> Unit,
 ) {
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val currentOnOpenArchive by rememberUpdatedState(onOpenArchive)
+    val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
@@ -102,6 +110,11 @@ private fun ChatListEffects(
                 ChatListEffect.OpenArchive -> {
                     message = ""
                     currentOnOpenArchive()
+                }
+
+                is ChatListEffect.OpenChat -> {
+                    message = ""
+                    currentOnOpenChat(effect.chatId)
                 }
             }
             if (message.isNotEmpty()) {

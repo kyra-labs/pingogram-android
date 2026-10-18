@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -138,6 +139,10 @@ class FakeChatRepository : ChatRepository {
         chatId: Long,
         forEveryone: Boolean,
     ): Outcome<Unit> = record(ChatCall.DeleteChat(chatId, forEveryone))
+
+    override suspend fun openChat(chatId: Long): Outcome<Unit> = unused()
+
+    override suspend fun closeChat(chatId: Long): Outcome<Unit> = unused()
 }
 
 /** An action [FakeChatRepository] was asked for. */

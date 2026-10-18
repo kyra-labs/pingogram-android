@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.chats.ui
+package dev.kyralabs.pingogram.core.ui.time
 
 import android.provider.Settings
 import org.junit.Assert.assertEquals

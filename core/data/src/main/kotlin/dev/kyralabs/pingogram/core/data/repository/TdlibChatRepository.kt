@@ -61,8 +61,8 @@ import javax.inject.Singleton
  * update would cost more code and memory than it saves. Updates that change no chat (folders, counts) sort nothing.
  *
  * Actions on chats only send requests: TDLib applies each change locally and reports it in an update before it tells
- * Telegram, so the cache follows without guessing. One function per action, as in [ChatRepository] (hence
- * `TooManyFunctions`).
+ * Telegram, so the cache follows without guessing; so do opening and closing a chat. One function per action, as in
+ * [ChatRepository] (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
 @Singleton
@@ -178,6 +178,12 @@ class TdlibChatRepository
                 is Outcome.Success -> client.requestAll(deletion.value.requests(forEveryone))
                 is Outcome.Failure -> deletion
             }
+
+        /** `openChat`. */
+        override suspend fun openChat(chatId: Long): Outcome<Unit> = client.request(TdApi.OpenChat(chatId)).map {}
+
+        /** `closeChat`. */
+        override suspend fun closeChat(chatId: Long): Outcome<Unit> = client.request(TdApi.CloseChat(chatId)).map {}
     }
 
 /**
