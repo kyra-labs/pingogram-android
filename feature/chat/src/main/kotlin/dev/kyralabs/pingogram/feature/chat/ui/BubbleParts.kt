@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing

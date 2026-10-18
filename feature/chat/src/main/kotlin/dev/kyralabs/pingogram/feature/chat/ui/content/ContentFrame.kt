@@ -1,6 +1,10 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 
 // How the bubble frames each content component of this package. The components draw the content only; the bubble
 // adds its background, padding, caption, time and reactions. Three frames:
@@ -39,4 +43,41 @@ internal val MessageContent.isEdgeToEdge: Boolean
             -> true
 
             else -> false
+        }
+
+/**
+ * How wide edge-to-edge content is shown, at most [maxWidth]: a photo's, video's or GIF's width ([mediaDisplaySize]),
+ * or [maxWidth] for an album ([isAlbum]). The bubble takes this width, so a caption below wraps within the media.
+ */
+@Composable
+internal fun edgeToEdgeWidth(
+    content: MessageContent,
+    isAlbum: Boolean,
+    maxWidth: Dp = MaterialTheme.sizes.mediaMaxWidth,
+): Dp {
+    val (width, height) = content.mediaDimensions()?.takeUnless { isAlbum } ?: return maxWidth
+    val sizes = MaterialTheme.sizes
+    return mediaDisplaySize(width, height, maxWidth, sizes.mediaMaxHeight, sizes.mediaMinSize).width
+}
+
+/** A photo's (its largest size), video's or GIF's width and height in pixels; null for other content. */
+private fun MessageContent.mediaDimensions(): Pair<Int, Int>? =
+    when (this) {
+        is MessageContent.Photo -> largestPhotoSize(photo.sizes).let { (it?.width ?: 0) to (it?.height ?: 0) }
+        is MessageContent.Video -> video.width to video.height
+        is MessageContent.Animation -> animation.width to animation.height
+        else -> null
+    }
+
+/**
+ * The file of a voice message, a song or a document, whose download the conversation follows and shows; null for
+ * other content, whose images Coil loads by itself.
+ */
+internal val MessageContent.downloadableFileId: Int?
+    get() =
+        when (this) {
+            is MessageContent.VoiceNote -> voiceNote.file.id
+            is MessageContent.Audio -> audio.file.id
+            is MessageContent.Document -> document.file.id
+            else -> null
         }

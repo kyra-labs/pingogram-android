@@ -86,9 +86,13 @@ internal const val NO_UNREAD_DIVIDER = Long.MAX_VALUE
 internal const val GROUP_GAP_SECONDS = 5 * 60L
 
 /**
- * Maps a chat's history to [ChatItem]s, newest first (`REQUIREMENTS.md` FR-C1–C2): bubbles grouped by sender, service
- * messages, a date separator above the first message of each day, and the unread divider above the first message that
- * was unread when the chat was opened. What each item shows is mapped in `BubbleMapping.kt`.
+ * Maps a chat's history to [ChatItem]s, newest first (`REQUIREMENTS.md` FR-C1–C2, FR-C4): bubbles grouped by sender,
+ * service messages, a date separator above the first message of each day, and the unread divider above the first
+ * message that was unread when the chat was opened. What each item shows is mapped in `BubbleMapping.kt`.
+ *
+ * Consecutive photos and videos with the same `mediaAlbumId` are one bubble ([ChatItem.Bubble.album]), keyed by the
+ * album, so it stays one item as older pages bring in more of it ([itemUnits]); for grouping, dates and the divider
+ * the album counts as one message from its oldest to its newest item.
  *
  * A message is mapped again only when something it shows changed (`docs/PERFORMANCE.md` §4): the previous item is
  * reused when its inputs ([ItemInputs]) are equal, compared mostly by identity, as the repositories keep unchanged
@@ -97,7 +101,7 @@ internal const val GROUP_GAP_SECONDS = 5 * 60L
  * Not thread-safe: one flow collection uses it at a time.
  */
 internal class ChatItemMapper {
-    private var previous: Map<Long, MappedItem> = emptyMap()
+    private var previous: Map<Any, MappedItem> = emptyMap()
 
     fun map(sources: ItemSources): ImmutableList<ChatItem> {
         val messages = sources.history.messages
@@ -105,28 +109,31 @@ internal class ChatItemMapper {
             previous = emptyMap()
             return persistentListOf()
         }
+        val units = itemUnits(messages)
         val formatter = sources.timeFormatter
-        val days = messages.map { formatter.day(it.date) }
+        val days = units.map { formatter.day(it.newest.date) }
         val dateLabels = HashMap<LocalDate, UiText>()
-        val firstUnreadId = sources.firstUnreadId()
-        val mapped = HashMap<Long, MappedItem>(messages.size * 2)
-        val items = ArrayList<ChatItem>(messages.size + messages.size / 2)
-        for (index in messages.indices) {
-            val message = messages[index]
+        // An unread album starts at its oldest item, where the divider goes.
+        val firstUnreadId = sources.firstUnreadId()?.let { id -> units.firstOrNull { it.contains(id) }?.oldest?.id }
+        val mapped = HashMap<Any, MappedItem>(units.size * 2)
+        val items = ArrayList<ChatItem>(units.size + units.size / 2)
+        for (index in units.indices) {
+            val unit = units[index]
             val day = days[index]
             val date = dateLabels.getOrPut(day) { formatter.dateLabel(day, sources.today) }
-            val older = messages.getOrNull(index + 1)
-            val newer = messages.getOrNull(index - 1)
+            val older = units.getOrNull(index + 1)
+            val newer = units.getOrNull(index - 1)
             val position =
                 groupPosition(
-                    joinsPrevious = older != null && joins(older, days[index + 1], message, day, firstUnreadId),
-                    joinsNext = newer != null && joins(message, day, newer, days[index - 1], firstUnreadId),
+                    joinsPrevious =
+                        older != null && joins(older.newest, days[index + 1], unit.oldest, day, firstUnreadId),
+                    joinsNext = newer != null && joins(unit.newest, day, newer.oldest, days[index - 1], firstUnreadId),
                 )
-            val inputs = sources.inputsOf(message, position, date)
-            val item = previous[message.id]?.takeIf { it.inputs == inputs } ?: MappedItem(inputs, inputs.toItem())
-            mapped[message.id] = item
+            val inputs = sources.inputsOf(unit, position, date)
+            val item = previous[unit.key]?.takeIf { it.inputs == inputs } ?: MappedItem(inputs, inputs.toItem())
+            mapped[unit.key] = item
             items += item.item
-            if (message.id == firstUnreadId) items += ChatItem.UnreadDivider(date)
+            if (unit.oldest.id == firstUnreadId) items += ChatItem.UnreadDivider(date)
             if (older == null || days[index + 1] != day) items += ChatItem.DateSeparator(day.toEpochDay(), date)
         }
         previous = mapped
@@ -138,6 +145,48 @@ internal class ChatItemMapper {
         val item: ChatItem,
     )
 }
+
+/**
+ * The messages of one item, newest first: one message, or the loaded photos and videos of an album. [key] is the
+ * message's id, or the album's for an album, also while only one of its items is loaded.
+ */
+internal class ItemUnit(
+    val messages: List<Message>,
+) {
+    val newest: Message get() = messages.first()
+    val oldest: Message get() = messages.last()
+    val isAlbum: Boolean get() = newest.isAlbumItem
+    val key: Any get() = if (isAlbum) albumKey(newest.mediaAlbumId) else newest.id
+
+    fun contains(messageId: Long): Boolean = messages.any { it.id == messageId }
+}
+
+/** The list key of the album [mediaAlbumId]'s bubble ([ChatItem.Bubble.key]). */
+internal fun albumKey(mediaAlbumId: Long): String = "album:$mediaAlbumId"
+
+/**
+ * [messages] (newest first) in items: consecutive photos and videos of one album together, every other message on
+ * its own. Telegram also groups documents and songs in albums; those stay separate bubbles.
+ */
+internal fun itemUnits(messages: List<Message>): List<ItemUnit> {
+    val units = ArrayList<ItemUnit>(messages.size)
+    var album = ArrayList<Message>()
+    for (message in messages) {
+        if (album.isNotEmpty() && (!message.isAlbumItem || message.mediaAlbumId != album.first().mediaAlbumId)) {
+            units += ItemUnit(album)
+            album = ArrayList()
+        }
+        if (message.isAlbumItem) album += message else units += ItemUnit(listOf(message))
+    }
+    if (album.isNotEmpty()) units += ItemUnit(album)
+    return units
+}
+
+/** A photo or video of an album, which shares a bubble with the album's other items. */
+private val Message.isAlbumItem: Boolean
+    get() =
+        mediaAlbumId != 0L &&
+            (content is MessageContent.Photo || content is MessageContent.Video || content is MessageContent.Animation)
 
 /** The oldest loaded incoming message after [ItemSources.unreadAfterId]; null if none is loaded. */
 private fun ItemSources.firstUnreadId(): Long? {

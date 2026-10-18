@@ -228,21 +228,20 @@ private fun downloading(fraction: Float) =
     )
 
 /**
- * [sample] in its bubbles, as in a conversation: incoming at the start, outgoing at the end, with the window margins.
- * Coil shows solid colors from the theme for images, or keeps them loading for [ContentSample.imagesLoading]; both
- * only in inspection mode (previews, screenshot tests).
+ * Images for previews and screenshot tests, which Coil takes from `LocalAsyncImagePreviewHandler` in inspection mode
+ * only: TDLib files as solid colors of the theme, picked by file id so neighbouring images differ, or, with
+ * [loading], kept loading, so the placeholders show.
  */
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-internal fun ContentSampleFrame(
-    sample: ContentSample,
-    modifier: Modifier = Modifier,
+internal fun PreviewImages(
+    loading: Boolean = false,
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val previewHandler =
-        remember(colorScheme, sample.imagesLoading) {
-            if (sample.imagesLoading) {
-                // Keeps every image loading, so the placeholders show.
+        remember(colorScheme, loading) {
+            if (loading) {
                 object : AsyncImagePreviewHandler {
                     override suspend fun handle(
                         imageLoader: ImageLoader,
@@ -265,8 +264,20 @@ internal fun ContentSampleFrame(
                 }
             }
         }
+    CompositionLocalProvider(LocalAsyncImagePreviewHandler provides previewHandler, content = content)
+}
+
+/**
+ * [sample] in its bubbles, as in a conversation: incoming at the start, outgoing at the end, with the window margins,
+ * and the images of [PreviewImages].
+ */
+@Composable
+internal fun ContentSampleFrame(
+    sample: ContentSample,
+    modifier: Modifier = Modifier,
+) {
     val bubbles = MaterialTheme.pingogramColors
-    CompositionLocalProvider(LocalAsyncImagePreviewHandler provides previewHandler) {
+    PreviewImages(loading = sample.imagesLoading) {
         Column(
             modifier =
                 modifier

@@ -33,6 +33,7 @@ abstract class ChatViewModelHarness {
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
     protected val actions = FakeChatActionRepository()
+    protected val files = FakeFileRepository()
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
 
@@ -60,6 +61,7 @@ abstract class ChatViewModelHarness {
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,
+                fileRepository = files,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

@@ -23,4 +23,48 @@ sealed interface ChatEvent {
     data class RevealSpoilers(
         val messageId: Long,
     ) : ChatEvent
+
+    /**
+     * The photo, video, GIF or video message [messageId] (an album's item, by its own message) was tapped. It is for
+     * the media viewer, the next item of the roadmap; until it comes, nothing happens.
+     */
+    data class OpenMedia(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** Download the file [fileId] of a document, at visible priority. */
+    data class DownloadFile(
+        val fileId: Int,
+    ) : ChatEvent
+
+    /** Stop downloading the file [fileId]; what was downloaded stays. */
+    data class CancelDownload(
+        val fileId: Int,
+    ) : ChatEvent
+
+    /** The downloaded document [fileId] of message [messageId] was tapped, to open it with another app. */
+    data class OpenFile(
+        val messageId: Long,
+        val fileId: Int,
+    ) : ChatEvent
+
+    /** The location or venue of message [messageId] was tapped, to show it in a maps app. */
+    data class OpenLocation(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * The play button of the voice message or song [messageId], whose file is [fileId], was tapped. Until the player
+     * comes, it only downloads the file if it is not on the device.
+     */
+    data class PlayPause(
+        val messageId: Long,
+        val fileId: Int,
+    ) : ChatEvent
+
+    /** The voice message or song [messageId] is to play from [fraction] (0–1) of its length; for the player. */
+    data class Seek(
+        val messageId: Long,
+        val fraction: Float,
+    ) : ChatEvent
 }

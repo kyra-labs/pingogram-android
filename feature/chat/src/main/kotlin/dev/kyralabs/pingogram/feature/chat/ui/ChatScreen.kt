@@ -35,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -63,6 +65,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -70,8 +73,13 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
+import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
+import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -98,6 +106,7 @@ internal fun ChatScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -106,6 +115,7 @@ internal fun ChatScreen(
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             JumpToBottomButton(
                 visible = content is ChatContent.Content && showJump,
@@ -142,7 +152,7 @@ internal fun ChatScreen(
 
             is ChatContent.Content -> {
                 Box(bodyModifier) {
-                    MessageList(content, listState, innerPadding, onEvent)
+                    MessageList(content, state.fileStates, listState, innerPadding, onEvent)
                     FloatingDatePill(
                         items = content.items,
                         listState = listState,
@@ -164,6 +174,7 @@ internal fun ChatScreen(
 @Composable
 private fun MessageList(
     content: ChatContent.Content,
+    fileStates: ImmutableMap<Int, FileState>,
     listState: LazyListState,
     innerPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
@@ -171,6 +182,7 @@ private fun MessageList(
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
+    val bubbleResources = remember(theme, texts, onLinkClick) { BubbleResources(theme, texts, onLinkClick) }
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
@@ -188,12 +200,7 @@ private fun MessageList(
     ) {
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            when (item) {
-                is ChatItem.Bubble -> MessageBubbleRow(item, theme, texts, onLinkClick, onEvent, itemModifier)
-                is ChatItem.Service -> ServiceMessageRow(item, itemModifier)
-                is ChatItem.DateSeparator -> DateSeparatorRow(item, itemModifier)
-                is ChatItem.UnreadDivider -> UnreadDividerRow(itemModifier)
-            }
+            ChatItemRow(item, fileStates, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             item(key = OLDER_KEY, contentType = OLDER_KEY) {
@@ -219,6 +226,35 @@ private fun MessageList(
         } finally {
             // Leaving the screen, or the list.
             currentOnEvent(ChatEvent.NearOldestChanged(false))
+        }
+    }
+}
+
+/** One entry of the list: a message with the state of its file, a service message, a date or the unread divider. */
+@Composable
+private fun ChatItemRow(
+    item: ChatItem,
+    fileStates: ImmutableMap<Int, FileState>,
+    bubbleResources: BubbleResources,
+    onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (item) {
+        is ChatItem.Bubble -> {
+            val fileState = item.content.downloadableFileId?.let(fileStates::get)
+            MessageBubbleRow(item, fileState, bubbleResources, onEvent, modifier)
+        }
+
+        is ChatItem.Service -> {
+            ServiceMessageRow(item, modifier)
+        }
+
+        is ChatItem.DateSeparator -> {
+            DateSeparatorRow(item, modifier)
+        }
+
+        is ChatItem.UnreadDivider -> {
+            UnreadDividerRow(modifier)
         }
     }
 }
@@ -316,17 +352,38 @@ private fun ChatItem.topSpacing(
 private val ChatItem.contentType: Any
     get() =
         when (this) {
-            is ChatItem.Bubble -> if (isOutgoing) OUTGOING_BUBBLE else INCOMING_BUBBLE
+            is ChatItem.Bubble -> BubbleContentType.of(this)
             is ChatItem.Service -> SERVICE
             is ChatItem.DateSeparator -> DATE
             is ChatItem.UnreadDivider -> UNREAD
         }
 
+/** The content types of bubbles: their side and their frame, whose layouts differ the most. */
+private enum class BubbleContentType {
+    IncomingPadded,
+    OutgoingPadded,
+    IncomingMedia,
+    OutgoingMedia,
+    IncomingBare,
+    OutgoingBare,
+    ;
+
+    companion object {
+        fun of(bubble: ChatItem.Bubble): BubbleContentType {
+            val content = bubble.content
+            val outgoing = bubble.isOutgoing
+            return when {
+                bubble.album == null && content.isBare -> if (outgoing) OutgoingBare else IncomingBare
+                bubble.album != null || content.isEdgeToEdge -> if (outgoing) OutgoingMedia else IncomingMedia
+                else -> if (outgoing) OutgoingPadded else IncomingPadded
+            }
+        }
+    }
+}
+
 /** How close to the oldest message the list asks for older ones: about half a page of entries ahead. */
 private const val LOAD_MORE_THRESHOLD = 20
 
-private const val INCOMING_BUBBLE = "incoming"
-private const val OUTGOING_BUBBLE = "outgoing"
 private const val SERVICE = "service"
 private const val DATE = "date"
 private const val UNREAD = "unread"
@@ -337,5 +394,5 @@ private const val OLDER_KEY = "older"
 private fun ChatScreenPreview(
     @PreviewParameter(ChatPreviewStates::class) state: ChatUiState,
 ) {
-    PingogramPreview { ChatScreen(state = state, onEvent = {}, onBack = {}) }
+    PingogramPreview { PreviewImages { ChatScreen(state = state, onEvent = {}, onBack = {}) } }
 }

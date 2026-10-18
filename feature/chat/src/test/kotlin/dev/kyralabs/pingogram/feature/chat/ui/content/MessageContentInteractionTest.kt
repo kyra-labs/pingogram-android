@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
-import android.content.ComponentName
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
@@ -13,14 +12,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** What the content components report as the user taps them, and what screen readers can do with them. */
@@ -28,7 +25,7 @@ import org.robolectric.annotation.Config
 @Config(qualifiers = "w411dp-h891dp-xxhdpi")
 class MessageContentInteractionTest {
     @get:Rule(order = 0)
-    val activityRegistration = ContentActivityRegistration()
+    val activityRegistration = ComponentActivityRegistration()
 
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
@@ -125,19 +122,5 @@ class MessageContentInteractionTest {
             onCancel = { calls += "cancel" },
             onOpen = { calls += "open" },
         )
-    }
-}
-
-/**
- * Declares [ComponentActivity] to Robolectric so a compose rule can launch it, as in `:feature:chats`' tests, without
- * the platform action bar.
- */
-class ContentActivityRegistration : ExternalResource() {
-    override fun before() {
-        val application = RuntimeEnvironment.getApplication()
-        val packageManager = shadowOf(application.packageManager)
-        val activity = packageManager.addActivityIfNotPresent(ComponentName(application, ComponentActivity::class.java))
-        activity.theme = android.R.style.Theme_Material_Light_NoActionBar
-        packageManager.addOrUpdateActivity(activity)
     }
 }
