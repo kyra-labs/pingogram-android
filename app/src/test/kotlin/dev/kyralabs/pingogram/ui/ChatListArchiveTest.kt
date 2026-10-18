@@ -178,9 +178,10 @@ class ChatListArchiveTest {
     }
 
     private fun openArchive() {
-        composeRule
-            .onNode(hasContentDescription(string(ChatsR.string.chat_list_archived_chats), substring = true))
-            .performClick()
+        // The archive row comes with the archive's first chats, which may load after the main list's.
+        val archive = string(ChatsR.string.chat_list_archived_chats)
+        awaitRow(archive)
+        row(archive).performClick()
         awaitRow(ALAN_TITLE)
     }
 

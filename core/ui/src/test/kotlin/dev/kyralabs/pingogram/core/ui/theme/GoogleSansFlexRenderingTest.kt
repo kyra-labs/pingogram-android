@@ -29,9 +29,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.ui.R
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -230,8 +230,8 @@ class GoogleSansFlexRenderingTest {
         updateConfiguration(configuration, displayMetrics)
     }
 
-    private fun TextStyle.fonts(): List<ResourceFont> =
-        (fontFamily as FontListFontFamily).fonts.map { it as ResourceFont }
+    private fun TextStyle.fonts(): List<GoogleSansFlexFont> =
+        (fontFamily as FontListFontFamily).fonts.map { it as GoogleSansFlexFont }
 
     /** This style with [tag] set to [value] in every font of its family. */
     private fun TextStyle.withAxis(
@@ -244,30 +244,34 @@ class GoogleSansFlexRenderingTest {
                     font.variationSettings.settings.map {
                         if (it.axisName == tag) FontVariation.Setting(tag, value) else it
                     }
-                font.withSettings(font.weight, FontVariation.Settings(*settings.toTypedArray()))
+                GoogleSansFlexFont(font.weight, font.style, FontVariation.Settings(*settings.toTypedArray()))
             }
         return copy(fontFamily = FontFamily(fonts))
     }
 
     /**
-     * The upright font of this style alone, at `wght` [wght] and without synthesis, so the family has nothing to match.
-     * Registered at weight 1, which no family of the type scale uses: the typeface cache, which outlives each test,
-     * then never hands back a typeface that was loaded without the Bold text adjustment.
+     * The upright font of this style alone, at `wght` [wght] and without synthesis, so the family has nothing to match,
+     * loaded the way Compose loads a font resource rather than through [GoogleSansFlexTypefaces]. Registered at weight
+     * 1, which no family of the type scale uses: Compose's typeface cache, which outlives each test, then never hands
+     * back a typeface that was loaded without the Bold text adjustment.
      */
     private fun TextStyle.fontAlone(wght: Float): TextStyle {
         val font = withAxis("wght", wght).fonts().first { it.weight == fontWeight && it.style == FontStyle.Normal }
         return copy(
-            fontFamily = FontFamily(font.withSettings(FontWeight(1), font.variationSettings)),
+            fontFamily =
+                FontFamily(
+                    Font(
+                        R.font.google_sans_flex,
+                        FontWeight(1),
+                        font.style,
+                        variationSettings = font.variationSettings,
+                    ),
+                ),
             fontSynthesis = FontSynthesis.None,
         )
     }
 
-    private fun ResourceFont.withSettings(
-        registeredWeight: FontWeight,
-        settings: FontVariation.Settings,
-    ): Font = Font(resId, registeredWeight, style, variationSettings = settings)
-
-    private fun ResourceFont.axis(tag: String): Float =
+    private fun GoogleSansFlexFont.axis(tag: String): Float =
         variationSettings.settings
             .single { it.axisName == tag }
             .toVariationValue(null)

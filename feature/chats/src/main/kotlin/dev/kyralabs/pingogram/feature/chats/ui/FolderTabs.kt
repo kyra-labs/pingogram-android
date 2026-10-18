@@ -84,7 +84,8 @@ private fun FolderButtonGroup(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val colors = ToggleButtonDefaults.colors()
+    // The bar is surfaceContainer, the default unchecked container: the next step of the ladder keeps the tabs apart.
+    val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
     ButtonGroup(

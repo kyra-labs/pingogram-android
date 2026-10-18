@@ -79,6 +79,8 @@ fun PingogramTheme(
 | App background / list | `background` / `surface` |
 | Cards, sheets, dialogs | `surfaceContainerLow` → `surfaceContainerHighest` ladder by prominence |
 | Top app bar (scrolled) | `surfaceContainer` |
+| Chat list and conversation | top bar on `surfaceContainer` (the `Scaffold`'s container); content on a `surface` sheet with `extraLarge` top corners below it (`ContentSheet`, `core:ui`) |
+| Selected chat row | `secondaryContainer` / `onSecondaryContainer`, full-pill shape, inset `spacing.small` from the sheet's sides and `ListItemDefaults.SegmentedGap` apart |
 | Navigation bar / rail | `surfaceContainer`; active indicator `secondaryContainer` / `onSecondaryContainer` |
 | Primary actions (FAB, send, CTA) | `primaryContainer` / `onPrimaryContainer` (FAB), `primary` / `onPrimary` (filled button) |
 | Outgoing bubble | `primaryContainer` / `onPrimaryContainer` |
@@ -160,6 +162,10 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   small: a regular style holds its weight and its emphasized weight (what a bold span resolves to,
   instead of a synthesized bold), an emphasized style only its own weight, each upright and
   italic. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
+- The fonts are `GoogleSansFlexFont`s (`core/ui/.../theme/GoogleSansFlexFont.kt`) rather than
+  `Font(R.font.google_sans_flex, …)`: their loader makes each typeface once per process. Compose's
+  own typeface caches hold 16 entries, fewer than the fonts a list and a conversation use, and each
+  reload made a new typeface whose text the platform laid out and rasterized again.
 - `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD = if (dark) -25 else 0`.
@@ -204,6 +210,13 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 - **Shape morphing** (`Morph`, `MaterialShapes.*.toShape()`, `animateFloatAsState` with a
   spatial spring): FAB press (`Circle → Cookie9Sided`), toggle buttons (`Circle ↔ Square`),
   selected avatar, record button while recording, reaction added.
+- Content sheets (chat list, conversation): `extraLarge` top corners, square at the bottom edge of
+  the window; content scrolls inside them, clipped to the corners.
+- List rows in a sheet sit `spacing.small` in from its sides and half of
+  `ListItemDefaults.SegmentedGap` from the rows around (their content keeps the list item's
+  padding): at rest `ListItem`'s `extraSmall`, pressed and open `large`, selected in selection mode
+  a full pill (`CircleShape`), morphing on the list item's fast spatial spring. Swipe actions reveal
+  the same inset container with `large` corners.
 - Message bubbles: `large` with the tail-side corner `small`; grouped messages use `medium`
   between members of a group; user-adjustable 12–24 dp in Appearance settings.
 - Components keep their M3 default shape tokens (buttons pill, cards `medium`, sheets
@@ -225,7 +238,12 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   vertical flows (auth), fade-through for tab switches and chat folder switches, container
   transform via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new
   chat.
-- Predictive back: screens use Navigation's default M3 predictive back; custom surfaces
+- Predictive back: Navigation's predictive back with our transitions (`predictiveBackPopExit`,
+  `core:ui`): the screen being left scales to 90% on `defaultSpatialSpec` and fades on
+  `slowEffectsSpec` over the destination beneath, which shows at full opacity. Navigation seeks the
+  transition with the gesture's progress and plays the rest after release at the same pace, so the
+  springs' curves are the gesture's curve. Navigation's default (scale to 70% without fading)
+  leaves an opaque card that is cut at the end. Custom surfaces
   (media viewer, attach sheet, selection toolbar) implement `PredictiveBackHandler` and scale
   to 90% with the Expressive back-progress curve.
 - Lists: `Modifier.animateItem()` on every `LazyColumn` item; new message enters with a spatial
@@ -245,9 +263,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 
 | UI element | Component |
 |---|---|
-| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
+| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`); search opens from the navigation's search button |
 | Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
-| Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
+| Conversation top bar | `TopAppBar` small, avatar + two-line title, on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`); `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
 | New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
@@ -256,7 +274,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Attach menu | `ModalBottomSheet` + `HorizontalMultiBrowseCarousel` of recent photos + `ButtonGroup` of options |
 | Message actions | `ModalBottomSheet`; quick reactions as `ToggleButton` row with shape morph |
 | Reactions picker | `HorizontalUncontainedCarousel` of reaction chips; full grid in sheet |
-| Chat list row | `ListItem` (leading avatar, trailing time + badge); swipe `SwipeToDismissBox` |
+| Chat list row | `ListItem` (leading avatar, trailing time + badge), inset in its sheet, a full pill when selected (§4); swipe `SwipeToDismissBox` |
 | Chips (filters, mentions) | `FilterChip`, `AssistChip`, `SuggestionChip` |
 | Settings rows | `ListItem` in `Card(colors = surfaceContainer)`; `Switch`, `Slider` (expressive track/thumb), `SegmentedButton`, `RadioButton` |
 | Buttons | M3 Expressive sizes: `ButtonDefaults.ExtraSmall…ExtraLarge` container heights; `FilledTonalButton` for secondary, `OutlinedButton` rare, `TextButton` in dialogs |
@@ -294,7 +312,9 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out).
 - **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
   `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
-  margin below and the same margin above), so lists end clear of the bar.
+  margin below and the same margin above), so lists end clear of the bar. The insets depend on the
+  window only, never on the destination: changing that static local recomposes every screen.
+  Screens pushed above a tab, where the bar hides, do not read it.
 - **Stepping aside**: a top-level screen that shows a floating toolbar of its own in the bar's place
   (the chat list's selection toolbar, as Google Photos does while selecting) hides the bar with
   `HideNavigationBar(hidden)` (`core:ui`, honoured by `PingogramApp`). The bar returns as soon as the
