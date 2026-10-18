@@ -75,6 +75,9 @@ class TdErrorMappingTest {
                 Arguments.of(401, "Unauthorized", DomainError.Unauthorized),
                 Arguments.of(401, "SESSION_PASSWORD_NEEDED", DomainError.Unauthorized),
                 Arguments.of(404, "Not Found", DomainError.NotFound),
+                Arguments.of(400, "User not found", DomainError.NotFound),
+                Arguments.of(400, "Chat info not found", DomainError.NotFound),
+                Arguments.of(400, "Message not found by the filter", DomainError.NotFound),
                 Arguments.of(500, "Network is unreachable", DomainError.Network),
                 Arguments.of(500, "Request aborted", DomainError.Unknown(500, "Request aborted")),
                 Arguments.of(

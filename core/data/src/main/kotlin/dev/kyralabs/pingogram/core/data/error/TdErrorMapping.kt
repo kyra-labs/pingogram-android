@@ -25,7 +25,7 @@ internal fun TdError.toDomainError(): DomainError {
 private fun TdError.byCode(): DomainError =
     when {
         code == UNAUTHORIZED -> DomainError.Unauthorized
-        code == NOT_FOUND -> DomainError.NotFound
+        code == NOT_FOUND || TDLIB_NOT_FOUND.containsMatchIn(message) -> DomainError.NotFound
         NETWORK.containsMatchIn(message) -> DomainError.Network
         else -> DomainError.Unknown(code, message)
     }
@@ -44,6 +44,9 @@ private const val SILENT = 406
 private val ERROR_NAME = Regex("""^[A-Z][A-Z0-9_]*(?![a-z])""")
 
 private val NETWORK = Regex("""network|connection|timeout""", RegexOption.IGNORE_CASE)
+
+/** TDLib's own 400 texts for unknown ids (td/telegram), e.g. "User not found", "Chat info not found". */
+private val TDLIB_NOT_FOUND = Regex("""^[A-Z][a-z][a-z ]* not found\b""")
 
 private val TELEGRAM_ERRORS: Map<String, DomainError> =
     mapOf(
