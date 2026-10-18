@@ -56,6 +56,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Going back from a chat, the archive or another tab with the back gesture is smoother: the screen you leave
   shrinks a little and fades away over the one you go back to, instead of shrinking far, waiting and vanishing at
   once. Opening and leaving a chat no longer redraws every screen behind it, which caused stutters.
+- Switching chat folders no longer stutters: the new folder's chats appear in their places instead of sliding in
+  from where the other folder had them, and the chat list does less work per chat.
 
 ## [0.1.2] - 2026-10-18
 
