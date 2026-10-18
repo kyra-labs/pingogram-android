@@ -54,6 +54,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   an account needs Telegram Premium to sign in (no purchase flow). Rate limits show a countdown and an
   offline banner appears while there is no connection; errors map to readable messages.
 
+- The app opens on the sign-in flow when logged out and on the chats when logged in; the splash screen
+  waits up to 300 ms for TDLib. Logging out (Settings → Log out, with confirmation), being logged out
+  elsewhere, or a closed session returns to sign-in with nothing of the previous account left behind.
+
 ### Changed
 - Package root and `applicationId` are `dev.kyralabs.pingogram` (debug: `dev.kyralabs.pingogram.debug`).
 - `compileSdk` is 37 (needed by Compose 1.12); `targetSdk` stays 36.
