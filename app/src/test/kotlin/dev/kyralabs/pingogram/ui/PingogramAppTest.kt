@@ -11,7 +11,9 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -35,10 +37,12 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
+import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -73,7 +77,10 @@ class PingogramAppTest {
     @get:Rule(order = 2)
     val composeRule = createAndroidComposeRule<HiltTestActivity>()
 
-    private val tdlib = FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready)
+    private val tdlib =
+        FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready).apply {
+            on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
+        }
 
     @BindValue
     @JvmField
@@ -157,7 +164,7 @@ class PingogramAppTest {
 
         tab(R.string.nav_settings).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
-        text(SettingsR.string.settings_placeholder_title).assertIsDisplayed()
+        text(SettingsR.string.settings_log_out).assertIsDisplayed()
     }
 
     // Signed in or out (FR-A8)
@@ -200,6 +207,27 @@ class PingogramAppTest {
         assertEquals(1, backStackDestinations().size)
         pressBack()
         assertTrue("Back leaves the app", composeRule.activity.isFinishing)
+    }
+
+    @Test
+    fun `logging out in settings returns to a new login flow`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_log_out).performClick()
+        composeRule
+            .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
+            .performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, tdlib.sentOf<TdApi.LogOut>().size)
+
+        // TDLib reports that it is logging out.
+        tdlib.authState.value = AuthState.LoggingOut
+        uiState = MainActivityUiState.SignedOut
+
+        awaitText(AuthR.string.auth_logging_out)
+        assertNoNavigation()
+        assertEquals(listOf(true), backStackDestinations().map { it.isAuthRoute() })
     }
 
     @Test

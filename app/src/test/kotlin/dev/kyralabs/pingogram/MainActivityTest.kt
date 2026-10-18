@@ -4,9 +4,13 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -14,12 +18,14 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
+import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.runBlocking
 import org.drinkless.tdlib.TdApi
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +34,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import dev.kyralabs.pingogram.feature.auth.R as AuthR
 import dev.kyralabs.pingogram.feature.chats.R as ChatsR
+import dev.kyralabs.pingogram.feature.settings.R as SettingsR
 
 /**
  * [MainActivity] end to end on a [FakeTdlibClient]: TDLib's login steps, through the real repositories and
@@ -44,7 +51,10 @@ class MainActivityTest {
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
-    private val tdlib = FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready)
+    private val tdlib =
+        FakeTdlibClient(authState = AuthState.WaitPhoneNumber, connectionState = ConnectionState.Ready).apply {
+            on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
+        }
 
     @BindValue
     @JvmField
@@ -59,7 +69,14 @@ class MainActivityTest {
         awaitText(ChatsR.string.chats_placeholder_title)
         tab(R.string.nav_chats).assertIsSelected()
 
-        // Logged out on another device, for example.
+        tab(R.string.nav_settings).performClick()
+        composeRule.onNodeWithText(string(SettingsR.string.settings_log_out)).performClick()
+        composeRule
+            .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
+            .performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, tdlib.sentOf<TdApi.LogOut>().size)
+
         tdlib(TdApiFixtures.loggingOut())
         awaitText(AuthR.string.auth_logging_out)
         composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
