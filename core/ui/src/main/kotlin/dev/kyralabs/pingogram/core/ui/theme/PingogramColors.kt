@@ -31,7 +31,8 @@ data class PingogramColors(
 )
 
 /**
- * A message bubble's roles (§2.2) and the colors of the content in it: voice messages, polls, files.
+ * A message bubble's roles (§2.2) and the colors of the content in it: text, reply quotes, voice messages, polls,
+ * files. The one source of bubble colors, for the bubble frame and the content components alike.
  *
  * Text in a bubble is in [content]. The accents are `primary` (and the harmonized green and `error` of quizzes)
  * wherever they keep 3:1 against [container]; where they do not, as on `primaryContainer` in the medium and high
@@ -39,6 +40,11 @@ data class PingogramColors(
  *
  * @property container the bubble: `surfaceContainerHigh` incoming, `primaryContainer` outgoing.
  * @property content text and icons on [container]: `onSurface` incoming, `onPrimaryContainer` outgoing.
+ * @property secondaryContent the time, "edited", "Forwarded from …": `onSurfaceVariant` incoming,
+ *   `onPrimaryContainer` outgoing.
+ * @property block reply quotes, link previews and reactions inside the bubble, a tone that stands out from
+ *   [container]: `surfaceContainerHighest` incoming, `surfaceContainerLow` outgoing.
+ * @property blockContent the text in a [block]: `onSurfaceVariant`.
  * @property accent play buttons, the played part of a voice message's waveform, poll bars, progress, the chosen
  *   answer of a poll, the circles behind content icons.
  * @property onAccent icons on [accent].
@@ -53,6 +59,9 @@ data class PingogramColors(
 data class BubbleColors(
     val container: Color,
     val content: Color,
+    val secondaryContent: Color,
+    val block: Color,
+    val blockContent: Color,
     val accent: Color,
     val onAccent: Color,
     val waveformUnplayed: Color,
@@ -69,25 +78,57 @@ internal fun pingogramColors(
     return PingogramColors(
         online = green,
         incomingBubble =
-            bubbleColors(colorScheme, colorScheme.surfaceContainerHigh, colorScheme.onSurface, green),
+            bubbleColors(
+                colorScheme = colorScheme,
+                roles =
+                    BubbleRoles(
+                        container = colorScheme.surfaceContainerHigh,
+                        content = colorScheme.onSurface,
+                        secondaryContent = colorScheme.onSurfaceVariant,
+                        block = colorScheme.surfaceContainerHighest,
+                    ),
+                green = green,
+            ),
         outgoingBubble =
-            bubbleColors(colorScheme, colorScheme.primaryContainer, colorScheme.onPrimaryContainer, green),
+            bubbleColors(
+                colorScheme = colorScheme,
+                roles =
+                    BubbleRoles(
+                        container = colorScheme.primaryContainer,
+                        content = colorScheme.onPrimaryContainer,
+                        secondaryContent = colorScheme.onPrimaryContainer,
+                        block = colorScheme.surfaceContainerLow,
+                    ),
+                green = green,
+            ),
         mediaOverlay = colorScheme.scrim.copy(alpha = MEDIA_OVERLAY_ALPHA),
         onMediaOverlay = if (dark) colorScheme.onSurface else colorScheme.inverseOnSurface,
     )
 }
 
+/** The roles of one side's bubble, from which [bubbleColors] derives the rest. */
+private class BubbleRoles(
+    val container: Color,
+    val content: Color,
+    val secondaryContent: Color,
+    val block: Color,
+)
+
 private fun bubbleColors(
     colorScheme: ColorScheme,
-    container: Color,
-    content: Color,
+    roles: BubbleRoles,
     green: Color,
 ): BubbleColors {
+    val container = roles.container
+    val content = roles.content
     val primaryIsReadable = colorScheme.primary.contrastWith(container) >= MIN_GRAPHICS_CONTRAST
     val accent = if (primaryIsReadable) colorScheme.primary else content
     return BubbleColors(
         container = container,
         content = content,
+        secondaryContent = roles.secondaryContent,
+        block = roles.block,
+        blockContent = colorScheme.onSurfaceVariant,
         accent = accent,
         onAccent = if (primaryIsReadable) colorScheme.onPrimary else container,
         waveformUnplayed = content.copy(alpha = DISABLED_CONTENT_ALPHA),

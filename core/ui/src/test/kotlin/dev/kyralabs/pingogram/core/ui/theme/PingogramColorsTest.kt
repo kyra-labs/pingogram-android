@@ -92,8 +92,12 @@ class PingogramColorsTest {
 
             assertEquals(scheme.surfaceContainerHigh, colors.incomingBubble.container)
             assertEquals(scheme.onSurface, colors.incomingBubble.content)
+            assertEquals(scheme.onSurfaceVariant, colors.incomingBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerHighest, colors.incomingBubble.block)
             assertEquals(scheme.primaryContainer, colors.outgoingBubble.container)
             assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.content)
+            assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerLow, colors.outgoingBubble.block)
             listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
                 assertEquals(scheme.primary, bubble.accent)
                 assertEquals(scheme.onPrimary, bubble.onAccent)
