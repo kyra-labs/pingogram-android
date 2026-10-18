@@ -88,6 +88,8 @@ import javax.inject.Inject
  * - **Open and close**: [ChatEvent.Started] opens the chat in TDLib and [ChatEvent.Stopped] closes it, from the
  *   screen's lifecycle (started and stopped, or left), each once per change. They are sent before [onEvent] returns,
  *   so a close sent as the screen leaves is not lost with the view model's scope.
+ * - **Read** ([MessageViews]): the messages the screen shows ([ChatEvent.MessagesVisible]) go to TDLib as viewed while
+ *   the chat is open, which reads them; [Chat.unreadCount], the jump button's badge, follows.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
  *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
@@ -175,6 +177,8 @@ class ChatViewModel internal constructor(
     val effects: Flow<ChatEffect> = effectChannel.receiveAsFlow()
 
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
+
+    private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
 
     private val playback =
         ChatPlayback(
@@ -285,6 +289,7 @@ class ChatViewModel internal constructor(
             ChatEvent.Started -> setOpen(true)
             ChatEvent.Stopped -> setOpen(false)
             is ChatEvent.NearOldestChanged -> onNearOldestChanged(event.isNearOldest)
+            is ChatEvent.MessagesVisible -> views.setVisible(event.messageIds)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.OpenMedia -> Unit
@@ -306,10 +311,15 @@ class ChatViewModel internal constructor(
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
         isOpen = open
-        if (!open) playback.pause()
+        if (!open) {
+            playback.pause()
+            views.setOpen(false)
+        }
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             if (open) chatRepository.openChat(chatId) else chatRepository.closeChat(chatId)
         }
+        // Once openChat is sent: TDLib reads the messages viewed in an open chat only.
+        if (open) views.setOpen(true)
     }
 
     /** The oldest message coming near loads the next page, also after a failure; once at the start nothing. */

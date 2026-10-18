@@ -91,8 +91,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
- *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]), and opens at the unread divider, near the
- *   top, if there is one, else at the newest message; a rotation keeps the position.
+ *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]) and which messages it shows
+ *   ([ChatEvent.MessagesVisible]), and opens at the unread divider, near the top, if there is one, else at the newest
+ *   message; a rotation keeps the position.
  * - **Date pill**: while the list scrolls, the date of the topmost message floats at the top, fading in and out on the
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
@@ -217,6 +218,7 @@ private fun MessageList(
     }
     InitialScroll(content.items, listState)
     FollowNewestMessage(content.items.firstOrNull()?.key, listState)
+    ReportVisibleMessages(content.items, listState, onEvent)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState) {
         try {
@@ -266,6 +268,47 @@ private fun ChatItemRow(
         }
     }
 }
+
+/**
+ * Reports the messages of the entries [listState] shows, wholly or in part ([ChatEvent.MessagesVisible]): on every
+ * change of them, as the list scrolls or messages come and go, and none once the list leaves the screen. Read from the
+ * layout, outside the items (`docs/PERFORMANCE.md` §4).
+ */
+@Composable
+private fun ReportVisibleMessages(
+    items: ImmutableList<ChatItem>,
+    listState: LazyListState,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val currentItems by rememberUpdatedState(items)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(listState) {
+        try {
+            snapshotFlow {
+                listState.layoutInfo.visibleItemsInfo.flatMapTo(HashSet()) { info ->
+                    // The layout and the items can be a frame apart; an entry counts once they agree.
+                    currentItems
+                        .getOrNull(info.index)
+                        ?.takeIf { it.key == info.key }
+                        ?.messageIds
+                        .orEmpty()
+                }
+            }.distinctUntilChanged()
+                .collect { currentOnEvent(ChatEvent.MessagesVisible(it)) }
+        } finally {
+            currentOnEvent(ChatEvent.MessagesVisible(emptySet()))
+        }
+    }
+}
+
+/** The messages an entry shows: a message, every item of an album; none for dates and the divider. */
+private val ChatItem.messageIds: List<Long>
+    get() =
+        when (this) {
+            is ChatItem.Bubble -> album?.messageIds ?: listOf(id)
+            is ChatItem.Service -> listOf(id)
+            is ChatItem.DateSeparator, is ChatItem.UnreadDivider -> emptyList()
+        }
 
 /**
  * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it

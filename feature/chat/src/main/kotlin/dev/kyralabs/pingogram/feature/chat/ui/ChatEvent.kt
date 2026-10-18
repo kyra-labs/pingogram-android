@@ -16,6 +16,14 @@ sealed interface ChatEvent {
         val isNearOldest: Boolean,
     ) : ChatEvent
 
+    /**
+     * The messages the list shows now, wholly or in part, by id (every item of an album); reported whenever that
+     * changes, and empty when the list leaves the screen. They go to TDLib as viewed, which reads them.
+     */
+    data class MessagesVisible(
+        val messageIds: Set<Long>,
+    ) : ChatEvent
+
     /** "Try again" after finding the chat or loading messages failed. */
     data object Retry : ChatEvent
 

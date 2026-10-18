@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -74,6 +75,24 @@ class ChatScreenTest {
         setScreen(ChatPreviewData.privateChat)
 
         assertEquals(ChatEvent.NearOldestChanged(true), events.last())
+    }
+
+    @Test
+    fun `the list reports the messages it shows, every item of an album`() {
+        setScreen(ChatPreviewData.mediaPhotos)
+
+        val shown = events.filterIsInstance<ChatEvent.MessagesVisible>().last().messageIds
+        assertEquals(setOf(48L, 49L, 50L, 51L, 52L, 53L), shown)
+    }
+
+    @Test
+    fun `the list reports only the messages on screen`() {
+        setScreen(longChat(unread = 0))
+
+        val shown = events.filterIsInstance<ChatEvent.MessagesVisible>().last().messageIds
+        // "Message 1", the newest, is the last id; the oldest is far above.
+        assertTrue(MESSAGES.toLong() in shown)
+        assertFalse(1L in shown)
     }
 
     @Test
