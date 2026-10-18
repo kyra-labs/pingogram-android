@@ -3,11 +3,14 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C8): the header and the messages.
@@ -15,12 +18,15 @@ import kotlinx.collections.immutable.ImmutableList
  * @property header the top bar's chat; null until the chat is known, and for a chat that cannot be found.
  * @property content the messages, or why there are none.
  * @property unreadCount unread incoming messages, for the badge of the jump-to-bottom button; 0 shows none.
+ * @property fileStates how far the files of the loaded voice messages, songs and documents are downloaded, by file id
+ *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
  */
 @Immutable
 data class ChatUiState(
     val header: ChatHeader? = null,
     val content: ChatContent = ChatContent.Loading,
     val unreadCount: Int = 0,
+    val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
 )
 
 /**
@@ -124,6 +130,10 @@ sealed interface ChatItem {
      * @property spoilersRevealed the text's spoilers were tapped and show ([ChatEvent.RevealSpoilers]).
      * @property linkPreview the preview of a link in the text; null if none.
      * @property reactions the reactions in TDLib's order; empty if there are none.
+     * @property album the photos and videos when the message is one of an album, shown as one bubble; null otherwise.
+     *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
+     *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
+     *   older pages bring in more of the album.
      */
     data class Bubble(
         val id: Long,
@@ -146,8 +156,9 @@ sealed interface ChatItem {
         val linkPreview: LinkPreviewCard?,
         val reactions: ImmutableList<ReactionChip>,
         override val date: UiText,
+        val album: MessageAlbum? = null,
     ) : ChatItem {
-        override val key: Any get() = id
+        override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
         override fun toString() = "Bubble(id=$id, isOutgoing=$isOutgoing, position=$position, status=$status, …)"
     }
@@ -182,6 +193,17 @@ sealed interface ChatItem {
         const val UNREAD_DIVIDER_KEY = "unread"
     }
 }
+
+/**
+ * The items of an album (`Message.mediaAlbumId` [id]), oldest first, as sent: their message ids and their photos and
+ * videos, for `MediaAlbum`.
+ */
+@Immutable
+data class MessageAlbum(
+    val id: Long,
+    val messageIds: ImmutableList<Long>,
+    val items: ImmutableList<MessageContent>,
+)
 
 /** Where a bubble is in its group, from top to bottom: its shape and what it shows follow from it. */
 enum class GroupPosition {

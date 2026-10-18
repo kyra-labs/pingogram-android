@@ -15,9 +15,13 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
  * message names, the replied message and its sender, the forward's origin, as the [User], [ChatRef] or null that was
  * looked up for it), and the chat's state it depends on. [toItem] looks up nothing else, so equal inputs make equal
  * items, and [ChatItemMapper] reuses the item.
+ *
+ * For an album, [message] is the item whose caption the bubble shows (the newest item when none has one) and [album]
+ * holds every loaded item, oldest first; it is empty for any other message.
  */
 internal data class ItemInputs(
     val message: Message,
+    val album: List<Message>,
     val position: GroupPosition,
     val date: UiText,
     val kind: ChatKind,
@@ -49,12 +53,15 @@ internal data class ReplyInputs(
 )
 
 internal fun ItemSources.inputsOf(
-    message: Message,
+    unit: ItemUnit,
     position: GroupPosition,
     date: UiText,
-): ItemInputs =
-    ItemInputs(
+): ItemInputs {
+    val newest = unit.newest
+    val message = if (unit.isAlbum) unit.messages.firstOrNull { it.content.hasCaption } ?: newest else newest
+    return ItemInputs(
         message = message,
+        album = if (unit.isAlbum) unit.messages.reversed() else emptyList(),
         position = position,
         date = date,
         kind = chatKind,
@@ -62,11 +69,22 @@ internal fun ItemSources.inputsOf(
         members = memberIdsOf(message.content).map(users::get),
         reply = message.replyTo?.let { replyInputs(message, it) },
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
-        isRead = message.isOutgoing && message.id <= chat.lastReadOutboxMessageId,
+        isRead = newest.isOutgoing && newest.id <= chat.lastReadOutboxMessageId,
         spoilersRevealed = message.id in messages.revealedSpoilers,
         myUserId = myUserId,
         timeFormatter = timeFormatter,
     )
+}
+
+/** A photo, video or GIF with a caption, which an album's bubble shows. */
+private val MessageContent.hasCaption: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Photo -> caption.text.isNotEmpty()
+            is MessageContent.Video -> caption.text.isNotEmpty()
+            is MessageContent.Animation -> caption.text.isNotEmpty()
+            else -> false
+        }
 
 private val ItemSources.chatKind: ChatKind
     get() =

@@ -77,6 +77,61 @@ class PingogramColorsTest {
         assertEquals(scheme.tertiary, scheme.senderNameColor(-1))
     }
 
+    @Test
+    fun `measures contrast like WCAG`() {
+        assertEquals(21f, Color.White.contrastWith(Color.Black), 0.01f)
+        assertEquals(1f, OnlineLight.contrastWith(OnlineLight), 0.01f)
+        assertEquals(4.98f, "FF8D4A5B".toColor().contrastWith("FFFFD9E0".toColor()), 0.01f)
+    }
+
+    @Test
+    fun `bubbles take their roles and accent content with primary in the standard schemes`() {
+        listOf(false, true).forEach { dark ->
+            val scheme = brandColorScheme(dark, Contrast.Standard)
+            val colors = pingogramColors(scheme, dark)
+
+            assertEquals(scheme.surfaceContainerHigh, colors.incomingBubble.container)
+            assertEquals(scheme.onSurface, colors.incomingBubble.content)
+            assertEquals(scheme.onSurfaceVariant, colors.incomingBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerHighest, colors.incomingBubble.block)
+            assertEquals(scheme.primaryContainer, colors.outgoingBubble.container)
+            assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.content)
+            assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerLow, colors.outgoingBubble.block)
+            listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
+                assertEquals(scheme.primary, bubble.accent)
+                assertEquals(scheme.onPrimary, bubble.onAccent)
+                assertEquals(scheme.error, bubble.wrong)
+            }
+        }
+    }
+
+    @Test
+    fun `an outgoing bubble accents with its content color where primary loses contrast`() {
+        val scheme = brandColorScheme(dark = false, Contrast.High)
+        val outgoing = pingogramColors(scheme, dark = false).outgoingBubble
+
+        assertEquals(scheme.onPrimaryContainer, outgoing.accent)
+        assertEquals(scheme.primaryContainer, outgoing.onAccent)
+        assertEquals(scheme.onPrimaryContainer, outgoing.wrong)
+    }
+
+    @ParameterizedTest
+    @CsvSource("false, Standard", "false, Medium", "false, High", "true, Standard", "true, Medium", "true, High")
+    fun `every bubble accent keeps 3 to 1 against its bubble`(
+        dark: Boolean,
+        contrast: Contrast,
+    ) {
+        val colors = pingogramColors(brandColorScheme(dark, contrast), dark)
+
+        listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
+            listOf(bubble.accent, bubble.correct, bubble.wrong).forEach { accent ->
+                assertTrue(accent.contrastWith(bubble.container) >= 3f, "$accent on ${bubble.container}")
+            }
+            assertTrue(bubble.onAccent.contrastWith(bubble.accent) >= 3f)
+        }
+    }
+
     private fun String.toColor() = Color(toLong(radix = 16))
 
     private fun assertClose(

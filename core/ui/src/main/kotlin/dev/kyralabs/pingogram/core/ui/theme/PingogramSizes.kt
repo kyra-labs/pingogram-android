@@ -29,6 +29,22 @@ import androidx.compose.ui.unit.dp
  * @property bubbleMaxWidth the widest a message bubble gets on wide windows, where [bubbleMaxWidthFraction] would make
  *   lines too long to read comfortably; the width of [contentMaxWidth].
  * @property quoteBarWidth the bar at the start of a reply quote or link preview inside a bubble.
+ * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll.
+ * @property mediaMaxHeight the tallest a photo or a video gets in a message.
+ * @property mediaMinSize the shortest side of a photo or a video in a message: panoramas and tall screenshots are
+ *   cropped to it rather than shown as slivers.
+ * @property mediaAlbumGap the gap between the photos and videos of an album.
+ * @property playBadge the round badge on a video's or a GIF's thumbnail that says it plays.
+ * @property sticker the square a sticker fits in, keeping its aspect ratio.
+ * @property largeEmoji the square an emoji shown on its own fits in: an animated emoji, a die.
+ * @property videoNote the diameter of a round video message.
+ * @property contentIcon the circle behind the icon of a document, a location, a game or a story in a message.
+ * @property waveformMinWidth the width of the waveform of a short voice message; longer ones get wider, up to
+ *   [waveformMaxWidth] for a minute and more.
+ * @property waveformMaxWidth the width of the waveform of a voice message of a minute or more.
+ * @property waveformHeight the height of a voice message's waveform: its loudest bars.
+ * @property waveformBarWidth the width of one bar of a voice message's waveform.
+ * @property waveformBarGap the gap between two bars of a voice message's waveform.
  */
 @Immutable
 data class PingogramSizes(
@@ -44,6 +60,20 @@ data class PingogramSizes(
     val bubbleMaxWidthFraction: Float = 0.8f,
     val bubbleMaxWidth: Dp = 560.dp,
     val quoteBarWidth: Dp = 3.dp,
+    val mediaMaxWidth: Dp = 280.dp,
+    val mediaMaxHeight: Dp = 360.dp,
+    val mediaMinSize: Dp = 120.dp,
+    val mediaAlbumGap: Dp = 2.dp,
+    val playBadge: Dp = 48.dp,
+    val sticker: Dp = 160.dp,
+    val largeEmoji: Dp = 112.dp,
+    val videoNote: Dp = 200.dp,
+    val contentIcon: Dp = 40.dp,
+    val waveformMinWidth: Dp = 96.dp,
+    val waveformMaxWidth: Dp = 192.dp,
+    val waveformHeight: Dp = 24.dp,
+    val waveformBarWidth: Dp = 3.dp,
+    val waveformBarGap: Dp = 2.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

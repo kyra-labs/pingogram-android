@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
+import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
@@ -16,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -269,6 +273,48 @@ class FakeTimePatterns : TimePatterns {
                 "MMMd" to "MMM d",
                 "yMd" to "M/d/y",
             )
+    }
+}
+
+/**
+ * Files by id ([files]): [observe] follows a file's entry and emits nothing while it has none, as TDLib does for a file
+ * it has not reported. Downloads and cancels are recorded and answered with [onDownload] and [onCancel].
+ */
+class FakeFileRepository : FileRepository {
+    val files = MutableStateFlow<Map<Int, FileState>>(emptyMap())
+
+    /** `download:<id>:<priority>` and `cancel:<id>`, in order. */
+    val calls = mutableListOf<String>()
+
+    /** The ids every [observe] call asked for, in order. */
+    val observed = mutableListOf<Int>()
+
+    var onDownload: suspend (Int) -> Outcome<Unit> = { Outcome.Success(Unit) }
+    var onCancel: suspend (Int) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    fun setFile(
+        fileId: Int,
+        state: FileState,
+    ) {
+        files.value += fileId to state
+    }
+
+    override fun observe(fileId: Int): Flow<FileState> {
+        observed += fileId
+        return files.mapNotNull { it[fileId] }.distinctUntilChanged()
+    }
+
+    override suspend fun download(
+        fileId: Int,
+        priority: DownloadPriority,
+    ): Outcome<Unit> {
+        calls += "download:$fileId:$priority"
+        return onDownload(fileId)
+    }
+
+    override suspend fun cancelDownload(fileId: Int): Outcome<Unit> {
+        calls += "cancel:$fileId"
+        return onCancel(fileId)
     }
 }
 
