@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
+import dev.kyralabs.pingogram.navigation.isFullScreen
 import dev.kyralabs.pingogram.navigation.isInHierarchy
 import dev.kyralabs.pingogram.navigation.isInMainGraph
 import dev.kyralabs.pingogram.navigation.navigateToTopLevelDestination
@@ -64,7 +65,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
  * them; in medium and wider windows a collapsed `WideNavigationRail` with the search button at its top, from a
  * `NavigationSuiteScaffold`. The `NavHost` keeps its place in the composition across both, so rotating or resizing
- * the window never resets its screens.
+ * the window never resets its screens. Full-screen destinations (the media viewer) show neither.
  *
  * A top-level screen can hide the floating bar while it shows a floating toolbar of its own in the bar's place, e.g.
  * the chat list while chats are selected ([HideNavigationBar], through [navigationBarVisibility]). The bar's insets
@@ -84,7 +85,10 @@ fun PingogramApp(
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
     val showNavigation by remember(currentEntry) {
-        derivedStateOf { currentEntry.value?.destination.isInMainGraph() }
+        derivedStateOf {
+            val destination = currentEntry.value?.destination
+            destination.isInMainGraph() && !destination.isFullScreen()
+        }
     }
     val currentTab by remember(currentEntry) {
         derivedStateOf { currentEntry.value?.destination.topLevelDestination() }
