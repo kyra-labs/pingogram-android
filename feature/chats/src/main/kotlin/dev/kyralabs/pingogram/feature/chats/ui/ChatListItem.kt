@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,8 +42,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
  * count included ([rowDescription], `docs/DESIGN_SYSTEM.md` §9). No fixed heights, so it grows with the font scale.
  *
- * @param onClick opens the chat; null makes the row not clickable (nothing to open yet).
+ * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row takes the list item's selected container
+ * (`secondaryContainer`) and its avatar morphs into a check. The colors come from the clickable list item's own
+ * selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
+ * variants on entering selection mode would recreate the rows and skip the avatar's morph. The list item animates the
+ * container color.
+ *
+ * @param onClick opens the chat, or selects it in selection mode; null makes the row not clickable.
  * @param onLongClick e.g. starts selection; only with [onClick].
+ * @param onLongClickLabel what [onLongClick] does, for screen readers.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -50,11 +59,13 @@ internal fun ChatListItem(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
+    selected: Boolean = false,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
     val description = rowDescription(item, title, preview.text)
-    val leading = @Composable { ChatAvatar(item, title) }
+    val leading = @Composable { ChatAvatar(item, title, selected) }
     val trailing = @Composable { ChatMeta(item) }
     val supporting = @Composable { ChatPreviewText(preview) }
     val headline = @Composable { ChatTitle(item, title) }
@@ -66,6 +77,8 @@ internal fun ChatListItem(
             trailingContent = trailing,
             supportingContent = supporting,
             onLongClick = onLongClick,
+            onLongClickLabel = onLongClickLabel,
+            colors = listItemColors(selected),
             content = headline,
         )
     } else {
@@ -79,11 +92,26 @@ internal fun ChatListItem(
     }
 }
 
-/** Decorative: the row's description names the chat. */
+/** The list item's colors, or its selected colors in place of its resting ones. */
+@Composable
+private fun listItemColors(selected: Boolean): ListItemColors {
+    val colors = ListItemDefaults.colors()
+    if (!selected) return colors
+    return colors.copy(
+        containerColor = colors.selectedContainerColor,
+        contentColor = colors.selectedContentColor,
+        leadingContentColor = colors.selectedLeadingContentColor,
+        trailingContentColor = colors.selectedTrailingContentColor,
+        supportingContentColor = colors.selectedSupportingContentColor,
+    )
+}
+
+/** Decorative: the row's description names the chat, and its semantics say whether it is selected. */
 @Composable
 private fun ChatAvatar(
     item: ChatListItemModel,
     title: String,
+    selected: Boolean,
 ) {
     Avatar(
         photo = item.photo,
@@ -92,6 +120,7 @@ private fun ChatAvatar(
         size = MaterialTheme.sizes.avatarMedium,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
+        selected = selected,
     )
 }
 

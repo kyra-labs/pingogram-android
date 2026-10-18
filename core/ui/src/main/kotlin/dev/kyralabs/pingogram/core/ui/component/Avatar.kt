@@ -71,6 +71,8 @@ import kotlinx.coroutines.launch
  *   everywhere, and they cycle with coprime lengths, so a shape does not always come with the same colors.
  * - **Online**: a dot in `MaterialTheme.pingogramColors.online` at the bottom end, set off from the avatar by a ring of
  *   [onlineRingColor]. It grows in and shrinks away on the motion scheme's fast spatial spring.
+ * - **Selected**: the avatar's shape morphs into a [MaterialShapes] burst in `primary` with a check in `onPrimary`
+ *   ([avatarSelection]) on the motion scheme's default spatial spring, e.g. for a chat selected in the chat list.
  *
  * Decorative by default, since list rows merge their own semantics (name, preview, online state): screen readers skip
  * it, initials included. Pass [contentDescription] where the avatar stands alone, e.g. in a profile header.
@@ -88,7 +90,9 @@ import kotlinx.coroutines.launch
  *   Messages or a deleted account.
  * @param contentDescription what the avatar shows, for screen readers; null keeps it decorative.
  * @param onlineRingColor the color behind the avatar (a row's container color), which sets the online dot off.
+ * @param selected shows the selected look instead of the avatar.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun Avatar(
     photo: ProfilePhoto?,
@@ -100,15 +104,23 @@ fun Avatar(
     @DrawableRes placeholderIcon: Int? = null,
     contentDescription: String? = null,
     onlineRingColor: Color = MaterialTheme.colorScheme.surface,
+    selected: Boolean = false,
 ) {
     val fileId = photo?.small?.id
     // From 0 while the photo loads to 1 once it shows; starts over for another photo.
     val photoAlpha = if (fileId != null) remember(fileId) { Animatable(0f) } else null
+    val colors = MaterialTheme.colorScheme
     Box(
         modifier
             .size(size)
             .avatarSemantics(contentDescription)
-            .onlineIndicator(
+            // Outside the online dot, which fades out with the avatar.
+            .avatarSelection(
+                selected = selected,
+                avatarShape = if (fileId != null) MaterialShapes.Circle else avatarPlaceholderPolygon(id),
+                mark = SelectedMark(painterResource(R.drawable.ic_check), colors.primary, colors.onPrimary),
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            ).onlineIndicator(
                 online = isOnline,
                 dotColor = MaterialTheme.pingogramColors.online,
                 ringColor = onlineRingColor,
@@ -259,8 +271,8 @@ private const val ICON_SIZE_RATIO = 0.55f
 
 /**
  * Avatar variants for previews and screenshot tests: initials in every color pair and placeholder shape, a person and
- * an icon placeholder, photos, online dots, and the sizes the type scale steps through. Photos are a solid color,
- * which Coil shows in inspection mode (previews) instead of loading from TDLib.
+ * an icon placeholder, photos, online dots, selected avatars, and the sizes the type scale steps through. Photos are a
+ * solid color, which Coil shows in inspection mode (previews) instead of loading from TDLib.
  */
 @OptIn(ExperimentalCoilApi::class)
 @Composable
@@ -285,6 +297,12 @@ internal fun AvatarShowcase(modifier: Modifier = Modifier) {
                 Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, isOnline = true)
                 Avatar(photo = SamplePhoto, name = "Ada Lovelace", id = 10, size = medium)
                 Avatar(photo = SamplePhoto, name = "Ada Lovelace", id = 11, size = medium, isOnline = true)
+            }
+            ShowcaseRow {
+                Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, selected = true)
+                Avatar(photo = null, name = "Émile Zola", id = 1, size = medium, selected = true)
+                Avatar(photo = SamplePhoto, name = "Ada Lovelace", id = 10, size = medium, selected = true)
+                Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, isOnline = true, selected = true)
             }
             ShowcaseRow {
                 listOf(ProfileSize, medium, BetweenSize, MaterialTheme.sizes.avatarSmall, TinySize).forEach { size ->

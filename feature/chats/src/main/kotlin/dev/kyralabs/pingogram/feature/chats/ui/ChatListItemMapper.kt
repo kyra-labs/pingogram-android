@@ -138,6 +138,7 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     val name = senderNames(sources.snapshot.users)
     val preview = preview(isSavedMessages, name)
     val lastMessage = chat.lastMessage
+    val isPinned = chat.positionIn(list)?.isPinned == true
     return ChatListItemModel(
         id = chat.id,
         title = title(isSavedMessages, isDeletedAccount),
@@ -147,7 +148,7 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         badge = badge,
         isSecret = chat.type is ChatType.Secret,
         isMuted = chat.isMuted,
-        isPinned = chat.positionIn(list)?.isPinned == true,
+        isPinned = isPinned,
         unreadCount = chat.unreadCount,
         hasUnreadMention = chat.unreadMentionCount > 0,
         hasUnreadReactions = chat.unreadReactionCount > 0,
@@ -158,6 +159,15 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
                 ?.takeIf { preview !is ChatPreview.Draft && !isSavedMessages && !chat.isChannel }
                 ?.outgoingStatus(chat.lastReadOutboxMessageId),
         preview = preview,
+        actions =
+            rowActions(
+                isUnread = chat.unreadCount > 0 || chat.isMarkedAsUnread,
+                // A folder can hold archived chats too.
+                isArchived = chat.positionIn(ChatListType.Archive) != null,
+                isPinned = isPinned,
+                isMuted = chat.isMuted,
+                canMute = !isSavedMessages,
+            ),
     )
 }
 

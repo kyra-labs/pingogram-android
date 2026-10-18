@@ -14,8 +14,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The chat list on an expanded window, where its rows keep a comfortable width (`docs/DESIGN_SYSTEM.md` §7), and at
- * 200% font scale, where rows grow instead of clipping (`REQUIREMENTS.md` §6.3).
+ * The chat list on an expanded window, where its rows keep a comfortable width (`docs/DESIGN_SYSTEM.md` §7) and the
+ * selection toolbar floats at the bottom of the list, and at 200% font scale, where rows grow instead of clipping
+ * (`REQUIREMENTS.md` §6.3).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -35,6 +36,10 @@ class ChatListAdaptiveScreenshotTest {
     fun expandedDark() = capture("expandedDark", ThemeMode.Dark)
 
     @Test
+    @Config(qualifiers = EXPANDED)
+    fun selectingExpanded() = capture("selectingExpanded", ThemeMode.Light, ChatListPreviewData.selecting)
+
+    @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() = capture("fontScale200", ThemeMode.Light)
 
@@ -42,10 +47,11 @@ class ChatListAdaptiveScreenshotTest {
     private fun capture(
         name: String,
         themeMode: ThemeMode,
+        state: ChatListUiState = ChatListPreviewData.contentWithFolders,
     ) {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
-                ChatListScreen(state = ChatListPreviewData.contentWithFolders, onEvent = {})
+                ChatListScreen(state = state, onEvent = {})
             }
         }
         composeRule.waitForIdle()
