@@ -110,6 +110,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Files leave the app only on the user's request and only through `:app`'s `FileProvider`
+  (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
+  never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
+  The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
+  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), behind `MediaFileActions`.
 
 ## Notifications
 

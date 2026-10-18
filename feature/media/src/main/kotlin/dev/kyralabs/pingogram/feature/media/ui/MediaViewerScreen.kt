@@ -68,8 +68,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   in front keeps the page shown; newer media to the end. Each page is a [MediaPage]. The page the pager settles on
  *   goes to the view model ([MediaViewerEvent.PageSettled]). While the photo is zoomed in, the pager does not turn.
  * - **Chrome**: [ViewerTopBar] (back, sender and date, "3 of 120") and [ViewerBottomBar] (caption, a video's controls,
- *   and [bottomActions], the slot of the bottom app bar's actions), faded in and out on the motion scheme's effects
- *   springs when the media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]).
+ *   and in the slot of the bottom app bar's actions, [ViewerActions]: Share and Save, where Telegram allows them),
+ *   faded in and out on the motion scheme's effects springs when the media is tapped; hidden, the system bars hide too
+ *   ([ImmersiveSystemBars]). On Android 8–9 the reason for the storage permission shows when the state asks for it
+ *   ([StorageRationaleDialog]).
  * - **Leaving**: predictive back ([PredictiveBackDismiss]) shrinks the content towards 90% and fades the background
  *   with the gesture; a swipe down (or up) while not zoomed moves the content with the finger and fades the background,
  *   closing past a threshold or with a fling, else springing back on the default spatial spring ([DismissState]).
@@ -82,7 +84,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * @param videoSurface draws the player's video in the page of the item in the player; the route passes Media3's
  *   `PlayerSurface`, previews and tests nothing.
- * @param bottomActions the actions of the bottom app bar (Share, Save), below the caption; none yet.
  */
 @Composable
 internal fun MediaViewerScreen(
@@ -92,7 +93,6 @@ internal fun MediaViewerScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     videoSurface: @Composable (Modifier) -> Unit = {},
-    bottomActions: (@Composable () -> Unit)? = null,
 ) {
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
@@ -114,7 +114,12 @@ internal fun MediaViewerScreen(
                 bottomBar = {
                     if (content != null) {
                         Chrome(visible = chrome.visible, dismiss, height) {
-                            ViewerBottomBar(content.current, content.playback, onEvent, actions = bottomActions)
+                            ViewerBottomBar(
+                                content.current,
+                                content.playback,
+                                onEvent,
+                                actions = actionsOf(content, onEvent),
+                            )
                         }
                     }
                 },
@@ -129,7 +134,24 @@ internal fun MediaViewerScreen(
                 }
             }
         }
+        if (content?.actions?.showsStorageRationale == true) {
+            StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
+        }
     }
+}
+
+/**
+ * The bottom app bar's actions for the current item of [content] ([ViewerActions]), with its full file's state for a
+ * Share or Save that waits for it; none where Telegram does not let the content leave it.
+ */
+private fun actionsOf(
+    content: MediaViewerUiState.Content,
+    onEvent: (MediaViewerEvent) -> Unit,
+): (@Composable () -> Unit)? {
+    val actions = content.actions
+    if (!actions.canSave) return null
+    val fileState = content.files[content.current.media.fileId]
+    return { ViewerActions(actions, fileState, onEvent) }
 }
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */
