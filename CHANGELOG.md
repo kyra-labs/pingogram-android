@@ -50,6 +50,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   unread by swiping can be swiped again at once, for example to unarchive it in Archived chats.
 - With Android's "Bold text" setting on, text is one step bolder instead of nearly black, and unread chat
   names still stand out from read ones.
+- Switching back to a chat folder shows its list where you left it, or at its top the first time, instead of
+  jumping to the chat that was first in the other folder.
 
 ## [0.1.2] - 2026-10-18
 
