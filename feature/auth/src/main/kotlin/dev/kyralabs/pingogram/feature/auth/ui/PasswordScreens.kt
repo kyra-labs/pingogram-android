@@ -134,7 +134,7 @@ fun NewPasswordScreen(
             value = state.password,
             onValueChange = { onEvent(AuthEvent.NewPasswordChanged(it)) },
             label = stringResource(R.string.auth_new_password_label),
-            error = state.error,
+            error = state.error?.let { errorText(it) },
             isNewPassword = true,
             imeAction = ImeAction.Next,
         )

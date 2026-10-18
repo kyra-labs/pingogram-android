@@ -143,6 +143,19 @@ internal object AuthPreviewData {
                 reset = EmailResetUiState.Available(waitSeconds = RESET_WAIT_SECONDS),
             ),
         )
+
+    // An address entered during this login: its code can be sent again.
+    val emailCodeNewAddress =
+        state(
+            AuthStepUiState.EmailCode(
+                emailAddressPattern = "a***@example.org",
+                code = "",
+                codeLength = EMAIL_CODE_LENGTH,
+                error = null,
+                reset = null,
+                canResendCode = true,
+            ),
+        )
     val emailCodeResetPending =
         state(
             AuthStepUiState.EmailCode(
@@ -184,6 +197,7 @@ internal object AuthPreviewData {
             "registrationTerms" to registrationTerms,
             "emailAddress" to emailAddress,
             "emailCode" to emailCode,
+            "emailCodeNewAddress" to emailCodeNewAddress,
             "emailCodeResetPending" to emailCodeResetPending,
             "premiumRequired" to premiumRequired,
         )
