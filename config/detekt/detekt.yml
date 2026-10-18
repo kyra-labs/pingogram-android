@@ -1,0 +1,60 @@
+# detekt config for every module (convention plugin `pingogram.detekt`). It is applied on top of
+# detekt's default config (`--build-upon-default-config`), so list only deviations, each with a reason.
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase, matching the ktlint exception in .editorconfig.
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  CyclomaticComplexMethod:
+    # A function that is one exhaustive `when` over a TDLib sum type (e.g. AuthorizationState → AuthState) is
+    # a flat lookup table, not complex control flow.
+    ignoreSingleWhenExpression: true
+  LongParameterList:
+    # Composables take state, callbacks and an optional `modifier`; parameters with defaults are optional.
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    # detekt's default test excludes, plus core:testing, which is test code too: fixture objects such as
+    # TdApiFixtures hold one builder per TDLib type.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/core/testing/src/main/**'
+
+style:
+  MagicNumber:
+    # A named property is not a magic number. Literal design values in feature code are caught by
+    # PingogramHardcodedToken instead.
+    ignorePropertyDeclaration: true
+    # detekt's default test excludes, plus core:ui's theme package: it is where the design tokens
+    # (and the color science behind harmonization) are written down as literals; and core:testing, which is
+    # test code (fixture values).
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/core/ui/src/main/kotlin/**/theme/**'
+      - '**/core/testing/src/main/**'
+  UnusedPrivateMember:
+    # Private previews are only called by tooling (@Preview or our multi-preview annotation).
+    ignoreAnnotated: ['Preview', 'PingogramPreviews']
+
+# Our own rules (build-logic/detekt-rules).
+pingogram:
+  active: true
+  PingogramHardcodedToken:
+    # Literal colors, text sizes, sizes, shapes and animation specs in :feature:* production code
+    # (CLAUDE.md hard rule 4, docs/DESIGN_SYSTEM.md §1).
+    active: true
