@@ -1,12 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,8 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -45,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
+import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -108,7 +107,8 @@ internal fun PingogramNavigationBar(
 
 /**
  * One tab: a pill-shaped `Role.Tab` whose indicator fades in and whose icon slides in when it is selected, on the
- * theme's motion scheme. The indicator's alpha is read in the draw phase, so the fade never recomposes.
+ * theme's motion scheme. The indicator's alpha is read in the draw phase and the icon's width in the layout phase
+ * ([revealHorizontally]), so neither recomposes.
  */
 @Composable
 private fun NavigationTab(
@@ -147,20 +147,23 @@ private fun NavigationTab(
                 ).padding(horizontal = if (selected) spacing.large else spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AnimatedVisibility(
-            visible = selected || !showLabel,
-            enter = expandHorizontally(motionScheme.fastSpatialSpec()) + fadeIn(motionScheme.fastEffectsSpec()),
-            exit = shrinkHorizontally(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+        val iconShown = selected || !showLabel
+        val iconWidth = animateFloatAsState(if (iconShown) 1f else 0f, motionScheme.fastSpatialSpec())
+        val iconAlpha = animateFloatAsState(if (iconShown) 1f else 0f, motionScheme.fastEffectsSpec())
+        Row(
+            modifier =
+                Modifier
+                    .revealHorizontally { iconWidth.value }
+                    .graphicsLayer { alpha = iconAlpha.value },
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
-                    // Without a label, the icon names the tab.
-                    contentDescription = if (showLabel) null else label,
-                    tint = contentColor,
-                )
-                if (showLabel) Spacer(Modifier.width(spacing.small))
-            }
+            Icon(
+                painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+                // Without a label, the icon names the tab.
+                contentDescription = if (showLabel) null else label,
+                tint = contentColor,
+            )
+            if (showLabel) Spacer(Modifier.width(spacing.small))
         }
         if (showLabel) {
             val typography = MaterialTheme.typography
@@ -210,6 +213,21 @@ private fun labelsFit(maxWidth: Dp): Boolean {
         }
     }
 }
+
+/**
+ * Shows this content at [fraction] of its width (0 hides it, values past 1 leave room after it), clipped, the fraction
+ * read in the layout phase. Unlike `AnimatedVisibility`'s horizontal expand and shrink, whose intrinsic width stays
+ * the content's full width, its intrinsic width is the width it takes: [HorizontalFloatingToolbar] sizes itself from
+ * its content's intrinsic width and aligns the content to its end, so while one tab's icon shrank and another's grew
+ * the toolbar was wider than its content and pushed it towards the search button, moving the whole bar until the
+ * shrinking icon was gone.
+ */
+private fun Modifier.revealHorizontally(fraction: () -> Float): Modifier =
+    clipToBounds().layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints.copy(minWidth = 0))
+        val width = (placeable.width * fraction()).roundToInt().coerceAtLeast(0)
+        layout(width, placeable.height) { placeable.placeRelative(0, 0) }
+    }
 
 /** Material Symbols are 24 dp (`docs/DESIGN_SYSTEM.md` §8). */
 private val ICON_SIZE = 24.dp

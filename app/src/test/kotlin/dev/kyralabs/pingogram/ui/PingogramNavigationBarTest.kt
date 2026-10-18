@@ -3,6 +3,13 @@ package dev.kyralabs.pingogram.ui
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
@@ -10,10 +17,12 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -76,6 +85,50 @@ class PingogramNavigationBarTest {
         assertEquals(1, searches)
     }
 
+    @Test
+    fun `switching tabs keeps the bar in place`() {
+        var selected by mutableStateOf(TopLevelDestination.Chats)
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                // Centred at the bottom, as in the app.
+                Box(Modifier.fillMaxSize()) {
+                    PingogramNavigationBar(
+                        selected = selected,
+                        onSelect = {},
+                        onSearch = {},
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val before = searchButtonLeft()
+        composeRule.mainClock.autoAdvance = false
+
+        selected = TopLevelDestination.Contacts
+        val during =
+            List(SWITCH_FRAMES) {
+                composeRule.mainClock.advanceTimeByFrame()
+                composeRule.waitForIdle()
+                searchButtonLeft()
+            }
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        val after = searchButtonLeft()
+
+        // The labels' widths differ a little, so the bar may settle a few pixels away; on the way it stays between,
+        // give or take the spring's overshoot.
+        val tolerance = with(composeRule.density) { OVERSHOOT_TOLERANCE.toPx() }
+        val range = (minOf(before, after) - tolerance)..(maxOf(before, after) + tolerance)
+        assertTrue("$before → $during → $after", during.all { it in range })
+    }
+
+    private fun searchButtonLeft(): Float =
+        composeRule
+            .onNode(hasContentDescription(string(R.string.nav_search)))
+            .fetchSemanticsNode()
+            .boundsInRoot.left
+
     private fun setBar(selected: TopLevelDestination) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -98,5 +151,11 @@ class PingogramNavigationBarTest {
 
     private companion object {
         const val LARGE_FONT_SCALE = 2f
+
+        /** Enough frames for the tabs' springs to play out. */
+        const val SWITCH_FRAMES = 40
+
+        /** How far the fast spatial spring's overshoot may widen the bar, half of it on each side. */
+        val OVERSHOOT_TOLERANCE = 3.dp
     }
 }
