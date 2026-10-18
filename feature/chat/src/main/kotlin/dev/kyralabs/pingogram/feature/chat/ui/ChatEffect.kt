@@ -29,6 +29,11 @@ sealed interface ChatEffect {
     /** The replied message of a tapped quote was deleted, or is too far back: a snackbar says so. */
     data object MessageUnavailable : ChatEffect
 
+    /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
+    data class OpenMedia(
+        val messageId: Long,
+    ) : ChatEffect
+
     /** Show the point at [latitude], [longitude] (in degrees) in a maps app, named [label] if there is one. */
     data class OpenLocation(
         val latitude: Double,

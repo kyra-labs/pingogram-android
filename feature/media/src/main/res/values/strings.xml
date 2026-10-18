@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Media viewer (REQUIREMENTS.md FR-C10) -->
+    <string name="media_back">Back</string>
+    <!-- Where the shown photo or video is among the chat's: "3 of 120" -->
+    <string name="media_position">%1$d of %2$d</string>
+    <!-- Joins the parts of a page's description for screen readers: "Photo, 3 of 120" -->
+    <string name="media_description_part">%1$s, %2$s</string>
+    <string name="media_loading">Loading media</string>
+    <string name="media_error_title">Couldn\'t load this media</string>
+    <string name="media_retry">Try again</string>
+    <string name="media_unavailable_title">This media is no longer available</string>
+    <string name="media_unavailable_body">It was deleted, or it can\'t be shown here.</string>
+    <!-- A hidden spoiler photo or video -->
+    <string name="media_spoiler">Spoiler</string>
+    <string name="media_spoiler_reveal">Tap to show</string>
+    <string name="media_show_spoiler">Show spoiler</string>
+    <string name="media_show_controls">Show controls</string>
+    <string name="media_hide_controls">Hide controls</string>
+    <string name="media_zoom_in">Zoom in</string>
+    <string name="media_zoom_out">Zoom out</string>
+    <string name="media_zoomed_in">Zoomed in</string>
+    <string name="media_show_older">Show older</string>
+    <string name="media_show_newer">Show newer</string>
+    <string name="media_play">Play</string>
+    <string name="media_pause">Pause</string>
+    <string name="media_seek">Playback position</string>
+    <string name="media_caption_expand">Show the whole caption</string>
+    <string name="media_caption_collapse">Show less of the caption</string>
+    <string name="media_downloading">Downloading</string>
+    <string name="media_playback_failed">This video can\'t be played</string>
+</resources>

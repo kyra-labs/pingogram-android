@@ -10,6 +10,7 @@ import androidx.compose.material3.RippleDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
@@ -41,6 +42,7 @@ fun PingogramTheme(
     val dark = themeMode.isDark()
     val colorScheme = rememberPingogramColorScheme(dark, dynamicColor, contrast, amoled)
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
+    val settings = remember(dynamicColor, contrast, amoled) { ThemeSettings(dynamicColor, contrast, amoled) }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
@@ -52,10 +54,38 @@ fun PingogramTheme(
             LocalPingogramSpacing provides DefaultSpacing,
             LocalPingogramSizes provides DefaultSizes,
             LocalRippleThemeConfiguration provides RippleDefaults.OpacityFocusThemeConfiguration,
+            LocalThemeSettings provides settings,
             content = content,
         )
     }
 }
+
+/**
+ * [content] in the dark theme of the enclosing [PingogramTheme], with its dynamic color, contrast and AMOLED settings,
+ * whatever the theme mode: for immersive media, such as the media viewer, which shows photos and videos on black in
+ * light theme too, as Google Photos does, so its chrome and components are legible on the `scrim` behind them.
+ */
+@Composable
+fun PingogramDarkTheme(content: @Composable () -> Unit) {
+    val settings = LocalThemeSettings.current
+    PingogramTheme(
+        themeMode = ThemeMode.Dark,
+        dynamicColor = settings.dynamicColor,
+        contrast = settings.contrast,
+        amoled = settings.amoled,
+        content = content,
+    )
+}
+
+/** What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme]. */
+private data class ThemeSettings(
+    val dynamicColor: Boolean,
+    val contrast: Contrast,
+    val amoled: Boolean,
+)
+
+private val LocalThemeSettings =
+    staticCompositionLocalOf { ThemeSettings(dynamicColor = true, contrast = Contrast.Standard, amoled = false) }
 
 /** Whether this mode resolves to the dark theme right now. */
 @Composable
