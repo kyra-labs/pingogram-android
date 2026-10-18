@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -127,12 +128,7 @@ internal fun ChatListScreen(
                 }
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            // The floating navigation bar, or the selection toolbar in its place, covers the bottom.
-            contentWindowInsets =
-                when (state.kind) {
-                    ChatListKind.Chats -> screenContentWindowInsets()
-                    ChatListKind.Archive -> ScaffoldDefaults.contentWindowInsets
-                }.let { if (selection != null) it.union(floatingToolbarInsets()) else it },
+            contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
             val shown = rememberShownList(state, listState, folderSwitch)
             ChatListBody(
@@ -159,6 +155,23 @@ internal fun ChatListScreen(
             onDismiss = { onEvent(ChatListEvent.DismissDelete) },
         )
     }
+}
+
+/**
+ * The bottom the list keeps clear of: on the Chats tab the floating navigation bar's, in selection mode the selection
+ * toolbar's in its place; the archive, pushed on top of the tab where the bar hides, only the system bars'.
+ */
+@Composable
+private fun contentWindowInsets(
+    kind: ChatListKind,
+    selectionMode: Boolean,
+): WindowInsets {
+    val insets =
+        when (kind) {
+            ChatListKind.Chats -> screenContentWindowInsets()
+            ChatListKind.Archive -> ScaffoldDefaults.contentWindowInsets
+        }
+    return if (selectionMode) insets.union(floatingToolbarInsets()) else insets
 }
 
 @Suppress("LongParameterList") // The list, its state and padding, the open chat, and whether its rows animate.
