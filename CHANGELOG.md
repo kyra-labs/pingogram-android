@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+- The app could not connect to Telegram and stayed on "Connecting…": it did not request the internet
+  permission.
+
 ## [0.1.0] - 2026-10-18
 
 ### Added
