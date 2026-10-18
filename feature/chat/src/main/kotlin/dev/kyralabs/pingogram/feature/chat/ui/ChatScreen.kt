@@ -75,6 +75,8 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
@@ -90,9 +92,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
+ * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
  * `surfaceContainer` over the messages, newest at the bottom, on a rounded `surface` sheet ([ContentSheet]) that they
- * scroll in. Read-only for now: there is no composer, only the system bars' insets at the bottom.
+ * scroll in, and the composer below them ([ChatBottomBar]), above the keyboard and the system bars.
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
@@ -108,6 +110,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   ([MessageJumpState.opensAtMessage]), the list does not scroll to the unread divider first, so the two never pull
  *   the list both ways.
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
+ * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
+ *   message now scrolls to the newest one, where it shows. Where they cannot, a label says why; in a channel they only
+ *   read, there is nothing.
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -121,6 +126,7 @@ internal fun ChatScreen(
     listState: LazyListState = rememberLazyListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     jumpState: MessageJumpState = rememberMessageJumpState(),
+    composerText: ComposerText = remember { ComposerText() },
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -129,6 +135,20 @@ internal fun ChatScreen(
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
+        bottomBar = {
+            ChatBottomBar(
+                composer = state.composer,
+                text = composerText,
+                onSend = { options ->
+                    onEvent(ChatEvent.Send(options))
+                    // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
+                    if (options.scheduledAt == null && content is ChatContent.Content) {
+                        scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
+                    }
+                },
+                onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
+            )
+        },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {

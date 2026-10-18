@@ -16,6 +16,7 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 mediaPhotos,
                 mediaFiles,
                 voicePlaying,
+                cannotWrite,
                 loading,
                 empty,
                 error,

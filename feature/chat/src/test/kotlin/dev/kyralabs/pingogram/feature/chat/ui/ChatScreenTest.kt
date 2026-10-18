@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import kotlinx.collections.immutable.persistentListOf
@@ -54,6 +56,7 @@ class ChatScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<ChatEvent>()
+    private var composerText = ComposerText()
     private var backPressed = false
 
     @Test
@@ -181,6 +184,19 @@ class ChatScreenTest {
         composeRule.onNodeWithContentDescription(string(R.string.chat_jump_to_bottom), substring = true).performClick()
         composeRule.waitForIdle()
 
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+    }
+
+    @Test
+    fun `sending a message scrolls to the newest one`() {
+        composerText = ComposerText(FormattedText("See you there", persistentListOf()))
+        // It opens at the unread divider, away from the newest message.
+        setScreen(longChat(unread = UNREAD).copy(composer = ComposerUiState.Available(canSchedule = true)))
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ChatEvent.Send()), events.filterIsInstance<ChatEvent.Send>())
         composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
     }
 
@@ -320,6 +336,7 @@ class ChatScreenTest {
                     onEvent = { events += it },
                     onBack = { backPressed = true },
                     jumpState = jumpState,
+                    composerText = composerText,
                 )
             }
         }
