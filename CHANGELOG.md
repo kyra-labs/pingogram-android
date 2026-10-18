@@ -27,6 +27,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
 
+### Changed
+- Folder tabs respond like Material 3 Expressive button groups: a pressed folder grows and nudges its
+  neighbours, and the selected folder turns into a pill with a bold label. Every folder stays a tab; the row
+  scrolls sideways when they do not fit. Switching folders fades the list out and the new folder's list in,
+  from its top; with animations turned off, the lists swap at once.
+
 ## [0.1.2] - 2026-10-18
 
 ### Added

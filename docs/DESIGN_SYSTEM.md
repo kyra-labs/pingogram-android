@@ -217,8 +217,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   bar, list-detail pane) → spatial slow; color/alpha crossfades → effects default; reactions,
   typing dots, send confirmation → effects fast.
 - Navigation transitions: Material shared-axis X for sibling screens, shared-axis Y for
-  vertical flows (auth), fade-through for tab switches, container transform via
-  `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new chat.
+  vertical flows (auth), fade-through for tab switches and chat folder switches, container
+  transform via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new
+  chat.
 - Predictive back: screens use Navigation's default M3 predictive back; custom surfaces
   (media viewer, attach sheet, selection toolbar) implement `PredictiveBackHandler` and scale
   to 90% with the Expressive back-progress curve.
@@ -242,7 +243,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small); search opens from the navigation's search button |
 | Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title; `DropdownMenu` overflow |
-| Folder tabs | `ButtonGroup` connected `ToggleButton`s (scrollable); fallback `PrimaryScrollableTabRow` if > 6 |
+| Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
 | New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
 | Selection mode | `HorizontalFloatingToolbar` (expressive, `FloatingToolbarDefaults.vibrantFloatingToolbarColors()`) |
