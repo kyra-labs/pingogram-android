@@ -54,6 +54,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   as `MutableStateFlow<Map<Long, Chat>>` and apply updates incrementally. They never expose
   `TdApi` types upward; they map to domain models (`core:domain`). TDLib already persists
   everything in its SQLite DB, so **we do not add Room**.
+  TDLib introduces each user and chat only once and `updates` replays nothing, so caches subscribe
+  at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
+  `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from
+  every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
+  (`@Binds @IntoSet` in `RepositoryModule`) that `PingogramApplication` injects before
+  `TdlibClient.start()`. Every new caching repository must join that set.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
