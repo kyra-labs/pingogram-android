@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,16 +15,21 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
 /**
- * Whether the account is logged in ([uiState]), from TDLib's login steps, and how long the splash screen stays
- * ([keepSplashScreen]). Nothing to restore after process death: TDLib reports the current step again.
+ * Whether the account is logged in ([uiState]), from TDLib's login steps; the Appearance settings the app's theme
+ * follows ([appearance]); and how long the splash screen stays ([keepSplashScreen]). Nothing to restore after process
+ * death: TDLib reports the current step again, and the settings are saved.
  */
 @HiltViewModel
 class MainActivityViewModel internal constructor(
     authRepository: AuthRepository,
+    appearanceRepository: AppearanceRepository,
     timeSource: TimeSource,
 ) : ViewModel() {
     @Inject
-    constructor(authRepository: AuthRepository) : this(authRepository, TimeSource.Monotonic)
+    constructor(
+        authRepository: AuthRepository,
+        appearanceRepository: AppearanceRepository,
+    ) : this(authRepository, appearanceRepository, TimeSource.Monotonic)
 
     private val createdAt = timeSource.markNow()
 
@@ -32,12 +39,22 @@ class MainActivityViewModel internal constructor(
             .stateIn(viewModelScope, SharingStarted.Eagerly, MainActivityUiState.Loading)
 
     /**
-     * Whether the splash screen stays on screen: while the login state is unknown, but no longer than
-     * [SPLASH_SCREEN_TIMEOUT] after this view model was created (`docs/PERFORMANCE.md` §2); `PingogramApp` shows
-     * progress after that. The splash screen asks before every frame it holds back.
+     * The Appearance settings, then every change; null until they are read, which takes a few milliseconds on the IO
+     * dispatcher, started when this view model is created. Not part of [uiState]: the theme around the whole app
+     * follows it, not one screen.
+     */
+    val appearance: StateFlow<AppearanceSettings?> =
+        appearanceRepository.appearance.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = null)
+
+    /**
+     * Whether the splash screen stays on screen: while the login state or the Appearance settings are unknown, but no
+     * longer than [SPLASH_SCREEN_TIMEOUT] after this view model was created (`docs/PERFORMANCE.md` §2). After that,
+     * `PingogramApp` shows progress for a login state still unknown, and the window's background stands in for settings
+     * still being read. The splash screen asks before every frame it holds back.
      */
     fun keepSplashScreen(): Boolean =
-        uiState.value == MainActivityUiState.Loading && createdAt.elapsedNow() < SPLASH_SCREEN_TIMEOUT
+        (uiState.value == MainActivityUiState.Loading || appearance.value == null) &&
+            createdAt.elapsedNow() < SPLASH_SCREEN_TIMEOUT
 
     internal companion object {
         val SPLASH_SCREEN_TIMEOUT = 300.milliseconds

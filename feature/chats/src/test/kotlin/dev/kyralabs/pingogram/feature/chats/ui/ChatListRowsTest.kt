@@ -223,6 +223,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             assertEquals(res(UiR.string.chat_saved_messages), row.title)
             assertEquals(UiR.drawable.ic_bookmark_filled, row.placeholderIcon)
+            assertTrue(row.isSavedMessages)
             assertFalse(row.isOnline)
             assertNull(row.outgoingStatus)
             assertTrue(row.preview is ChatPreview.Message)
@@ -246,6 +247,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             assertEquals(UiText.Plain("Ada"), row.title)
             assertNull(row.placeholderIcon)
+            assertFalse(row.isSavedMessages)
         }
 
     // Online

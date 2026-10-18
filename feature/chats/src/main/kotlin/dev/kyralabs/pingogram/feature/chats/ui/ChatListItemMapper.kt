@@ -144,6 +144,7 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
         title = chatTitle(chat, isSavedMessages, isDeletedAccount),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
+        isSavedMessages = isSavedMessages,
         isOnline = !isSavedMessages && user?.showsOnlineAt(now) == true,
         badge = titleBadge(user, supergroup),
         isSecret = chat.type is ChatType.Secret,

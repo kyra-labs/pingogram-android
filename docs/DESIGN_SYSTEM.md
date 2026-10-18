@@ -52,6 +52,9 @@ fun PingogramTheme(
   and `toShape()` still need `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`.
 
 - Root is always `MaterialExpressiveTheme`. `MaterialTheme` (non-expressive) is forbidden.
+- `MainActivity` passes the Appearance settings (FR-S2) to `PingogramTheme`. When one changes, every
+  color role cross-fades to the new scheme on `defaultEffectsSpec()` (§5, `animateColorScheme`); the
+  first scheme shows at once.
 - Everything reads tokens via `MaterialTheme.colorScheme`, `MaterialTheme.typography`,
   `MaterialTheme.shapes`, `MaterialTheme.motionScheme`. **No literal `Color(0xFF…)`, `sp`
   font sizes, `dp` radii or `tween()` in feature modules.** Lint rule `PingogramHardcodedToken`

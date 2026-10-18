@@ -47,6 +47,7 @@ internal object ChatListPreviewData {
         title = UiText.Plain(title),
         photo = null,
         placeholderIcon = null,
+        isSavedMessages = false,
         isOnline = isOnline,
         badge = badge,
         isSecret = false,

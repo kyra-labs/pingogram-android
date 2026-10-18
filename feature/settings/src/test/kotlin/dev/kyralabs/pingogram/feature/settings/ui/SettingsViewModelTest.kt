@@ -3,11 +3,14 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,6 +28,7 @@ import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -45,10 +49,32 @@ class SettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
-    private fun TestScope.viewModel(handle: SavedStateHandle = savedState): SettingsViewModel =
-        SettingsViewModel(handle, TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)))
-            .also { runCurrent() }
+    // Through the real TDLib repositories on FakeTdlibClient, as the app wires them. The user repository subscribes to
+    // TDLib's updates before the test emits any, as it does at app start.
+    private fun TestScope.viewModel(
+        handle: SavedStateHandle = savedState,
+        users: TdlibUserRepository = TdlibUserRepository(client, backgroundScope),
+    ): SettingsViewModel =
+        SettingsViewModel(
+            handle,
+            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)),
+            users,
+            TdlibCountryRepository(client),
+        ).also { runCurrent() }
+
+    private suspend fun TestScope.announceMe(user: TdApi.User) {
+        client.emit(TdApiFixtures.updateUser(user))
+        client.emit(TdApiFixtures.myIdOption(user.id))
+        runCurrent()
+    }
+
+    private fun answerPhoneNumberInfo(
+        callingCode: String,
+        formattedNumber: String,
+    ) = client.on(
+        TdApi.GetPhoneNumberInfo::class,
+        TdResult.Success(TdApi.PhoneNumberInfo(null, callingCode, formattedNumber, false)),
+    )
 
     private fun TestScope.effectsOf(viewModel: SettingsViewModel): List<SettingsEffect> {
         val effects = mutableListOf<SettingsEffect>()
@@ -208,6 +234,122 @@ class SettingsViewModelTest {
 
             assertEquals(2, client.sentOf<TdApi.LogOut>().size)
             assertTrue(viewModel.state.isLoggingOut)
+        }
+
+    @Test
+    fun `shows no account until TDLib announces the logged-in user`() =
+        runTest {
+            val users = TdlibUserRepository(client, backgroundScope)
+            val viewModel = viewModel(users = users)
+            client.emit(TdApiFixtures.updateUser(TdApiFixtures.user(id = 7)))
+            runCurrent()
+
+            assertNull(viewModel.state.account)
+        }
+
+    @Test
+    fun `shows the logged-in account with its phone number formatted by TDLib`() =
+        runTest {
+            answerPhoneNumberInfo(callingCode = "44", formattedNumber = "7911 123456")
+            val viewModel = viewModel()
+
+            announceMe(
+                TdApiFixtures.user(
+                    id = 7,
+                    firstName = "Ada",
+                    lastName = "Lovelace",
+                    usernames = listOf("ada", "countess"),
+                    phoneNumber = "447911123456",
+                ),
+            )
+
+            assertEquals(
+                AccountUiModel(
+                    userId = 7,
+                    name = "Ada Lovelace",
+                    photo = null,
+                    phoneNumber = "+44 7911 123456",
+                    username = "ada",
+                ),
+                viewModel.state.account,
+            )
+            assertEquals("447911123456", client.sentOf<TdApi.GetPhoneNumberInfo>().single().phoneNumberPrefix)
+        }
+
+    @Test
+    fun `shows the phone number's digits while TDLib formats it`() =
+        runTest {
+            val answer = CompletableDeferred<TdResult<TdApi.PhoneNumberInfo>>()
+            client.on(TdApi.GetPhoneNumberInfo::class) { answer.await() }
+            val viewModel = viewModel()
+
+            announceMe(TdApiFixtures.user(id = 7, phoneNumber = "447911123456"))
+
+            assertEquals("+447911123456", viewModel.state.account?.phoneNumber)
+        }
+
+    @Test
+    fun `keeps the phone number's digits when TDLib cannot format it`() =
+        runTest {
+            answerPhoneNumberInfo(callingCode = "", formattedNumber = "")
+            val viewModel = viewModel()
+
+            announceMe(TdApiFixtures.user(id = 7, phoneNumber = "8881234"))
+
+            assertEquals("+8881234", viewModel.state.account?.phoneNumber)
+        }
+
+    @Test
+    fun `keeps the phone number's digits when TDLib fails`() =
+        runTest {
+            val viewModel = viewModel()
+
+            announceMe(TdApiFixtures.user(id = 7, phoneNumber = "447911123456"))
+
+            assertEquals("+447911123456", viewModel.state.account?.phoneNumber)
+        }
+
+    @Test
+    fun `an account without a username or phone number shows neither`() =
+        runTest {
+            val viewModel = viewModel()
+
+            announceMe(TdApiFixtures.user(id = 7, firstName = "Ada", usernames = emptyList(), phoneNumber = ""))
+
+            val account = viewModel.state.account
+            assertEquals("Ada" to "", account?.name to account?.phoneNumber)
+            assertNull(account?.username)
+            assertTrue(client.sentOf<TdApi.GetPhoneNumberInfo>().isEmpty())
+        }
+
+    @Test
+    fun `follows changes of the account and formats each phone number once`() =
+        runTest {
+            answerPhoneNumberInfo(callingCode = "44", formattedNumber = "7911 123456")
+            val viewModel = viewModel()
+            announceMe(TdApiFixtures.user(id = 7, firstName = "Ada", phoneNumber = "447911123456"))
+
+            client.emit(TdApiFixtures.updateUserStatus(userId = 7, status = TdApiFixtures.onlineStatus(expires = 99)))
+            client.emit(
+                TdApiFixtures.updateUser(TdApiFixtures.user(id = 7, firstName = "Grace", phoneNumber = "447911123456")),
+            )
+            runCurrent()
+
+            val account = viewModel.state.account
+            assertEquals("Grace" to "+44 7911 123456", account?.name to account?.phoneNumber)
+            assertEquals(1, client.sentOf<TdApi.GetPhoneNumberInfo>().size)
+        }
+
+    @Test
+    fun `the account goes when TDLib forgets the logged-in user`() =
+        runTest {
+            val viewModel = viewModel()
+            announceMe(TdApiFixtures.user(id = 7))
+
+            client.emit(TdApiFixtures.myIdOption(null))
+            runCurrent()
+
+            assertNull(viewModel.state.account)
         }
 
     @Test

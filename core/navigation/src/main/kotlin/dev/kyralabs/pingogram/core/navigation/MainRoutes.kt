@@ -22,6 +22,27 @@ data object ContactsRoute
 data object SettingsRoute
 
 /**
+ * Appearance settings (`REQUIREMENTS.md` FR-S2): theme, dynamic color, AMOLED black and contrast, `:feature:settings`,
+ * pushed above the Settings tab.
+ */
+@Serializable
+data object AppearanceRoute
+
+/**
+ * Data and storage settings (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes and clearing its cache,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object DataStorageRoute
+
+/**
+ * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code and license, `:feature:settings`, pushed above the
+ * Settings tab.
+ */
+@Serializable
+data object AboutRoute
+
+/**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.
  */
