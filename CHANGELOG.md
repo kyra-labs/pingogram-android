@@ -23,6 +23,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   show their name and size and download on tap, with progress and cancel. Music, polls with their results,
   locations and venues (which open your maps app), contacts, games and invoices have their own cards.
   Playing voice messages and opening media full screen come next.
+- On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
+  the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
+  returns to the list.
 
 ## [0.1.2] - 2026-10-18
 
