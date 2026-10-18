@@ -49,6 +49,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Switching back to a chat folder shows its list where you left it, or at its top the first time, instead of
   jumping to the chat that was first in the other folder.
 - The navigation bar stays in place when you switch tabs, instead of sliding sideways and back.
+- Fewer stutters when going between screens: each text style's font is prepared once, instead of again whenever
+  enough other styles had been shown since.
 
 ## [0.1.2] - 2026-10-18
 
