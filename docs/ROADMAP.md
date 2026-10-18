@@ -44,6 +44,8 @@ the release workflow so the owner can install and test on a phone.
 - [x] Media viewer with shared-element transition
 - [x] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
 - [ ] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated
+      (benchmarks and profile journeys are in place; generating the profile and the first numbers
+      need the owner's signed-in phone, `docs/PERFORMANCE.md` §9)
 
 ## M3 — Full messaging, settings, notifications → `v0.3.0`
 
