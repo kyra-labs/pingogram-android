@@ -296,11 +296,8 @@ class AuthViewModel internal constructor(
     private fun loadCountries() {
         // TDLib answers once it has its parameters, and not while it closes or after login.
         val canAsk = model.step !in setOf(AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready)
+        if (!canAsk) return
         when {
-            !canAsk -> {
-                Unit
-            }
-
             model.phone.countries.isNotEmpty() -> {
                 detectCountry()
             }

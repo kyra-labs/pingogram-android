@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TestTimeSource
+import kotlin.time.TimeSource
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainActivityViewModelTest {
@@ -40,8 +41,10 @@ class MainActivityViewModelTest {
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
     private fun TestScope.viewModel(): MainActivityViewModel =
-        MainActivityViewModel(TdlibAuthRepository(client, StandardTestDispatcher(testScheduler)), timeSource)
-            .also { runCurrent() }
+        MainActivityViewModel(
+            TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+            timeSource,
+        ).also { runCurrent() }
 
     private suspend fun TestScope.tdlib(state: TdApi.AuthorizationState) {
         client.emitAuthorizationState(state)

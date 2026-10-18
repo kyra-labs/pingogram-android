@@ -232,7 +232,7 @@ class SettingsViewModelTest {
         }
 
     private companion object {
-        /** `REQUEST_TIMEOUT` of `core:data`: how long a request may wait for TDLib. */
-        val REQUEST_TIMEOUT = 30.seconds
+        /** `AUTH_REQUEST_TIMEOUT` of `core:data`: logging out is an authentication request. */
+        val REQUEST_TIMEOUT = 90.seconds
     }
 }

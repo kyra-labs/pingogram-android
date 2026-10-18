@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import android.content.pm.ActivityInfo
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -51,6 +52,8 @@ class SettingsScreenScreenshotTest {
     @Test
     fun logOutDialogDark() = capture(ThemeMode.Dark, SettingsUiState(isLogOutDialogOpen = true))
 
+    // captureScreenRoboImage captures the dialog window too; Roborazzi still marks it experimental.
+    @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         themeMode: ThemeMode,
         state: SettingsUiState,
