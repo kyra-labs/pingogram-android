@@ -175,8 +175,7 @@ object TdApiFixtures {
         it.id = id
         it.firstName = firstName
         it.lastName = lastName
-        it.usernames =
-            TdApi.Usernames(usernames.toTypedArray(), emptyArray(), usernames.firstOrNull().orEmpty(), emptyArray(), "")
+        it.usernames = usernames(usernames)
         it.phoneNumber = phoneNumber
         it.status = status
         it.profilePhoto = profilePhoto
@@ -189,6 +188,10 @@ object TdApiFixtures {
         it.type = type
         it.languageCode = "en"
     }
+
+    /** [active] usernames, the first one editable. */
+    fun usernames(active: List<String>) =
+        TdApi.Usernames(active.toTypedArray(), emptyArray(), active.firstOrNull().orEmpty(), emptyArray(), "")
 
     fun profilePhoto(
         smallFileId: Int = 10,
@@ -459,17 +462,24 @@ object TdApiFixtures {
         isPinned: Boolean = false,
     ) = TdApi.ChatPosition(list, order, isPinned, null)
 
-    /** Settings that follow the defaults of the chat's scope; [useDefaultMuteFor] false gives it a mute setting. */
+    /**
+     * Settings that follow the defaults of the chat's scope; [useDefaultMuteFor] false gives the chat a mute setting of
+     * its own, [useDefaultSound] and [useDefaultShowPreview] false a sound or preview setting.
+     */
     fun chatNotificationSettings(
         useDefaultMuteFor: Boolean = true,
         muteFor: Int = 0,
+        useDefaultSound: Boolean = true,
+        soundId: Long = 0,
+        useDefaultShowPreview: Boolean = true,
+        showPreview: Boolean = true,
     ) = TdApi.ChatNotificationSettings(
         useDefaultMuteFor,
         muteFor,
-        true,
-        0,
-        true,
-        true,
+        useDefaultSound,
+        soundId,
+        useDefaultShowPreview,
+        showPreview,
         true,
         false,
         true,
@@ -481,6 +491,11 @@ object TdApiFixtures {
         true,
         false,
     )
+
+    fun updateChatNotificationSettings(
+        chatId: Long,
+        settings: TdApi.ChatNotificationSettings,
+    ) = TdApi.UpdateChatNotificationSettings(chatId, settings)
 
     /** Unmuted defaults; a positive [muteFor] (seconds) mutes the scope. */
     fun scopeNotificationSettings(muteFor: Int = 0) =
@@ -500,8 +515,9 @@ object TdApiFixtures {
     fun draftText(text: String = "Draft") = TdApi.DraftMessageContentText(formattedText(text), null)
 
     /**
-     * A read private chat with user 42 in the main list, with the default notification settings; every other field
-     * is TDLib's "none". TdApi.Chat has 46 constructor parameters, so the builder sets fields by name instead.
+     * A read private chat with user 42 in the main list, with the default notification settings, that can be deleted
+     * for self or for both users; every other field is TDLib's "none". TdApi.Chat has 46 constructor parameters, so
+     * the builder sets fields by name instead.
      */
     fun chat(
         id: Long = 100,
@@ -520,6 +536,8 @@ object TdApiFixtures {
         draftMessage: TdApi.DraftMessage? = null,
         hasProtectedContent: Boolean = false,
         messageAutoDeleteTime: Int = 0,
+        canBeDeletedOnlyForSelf: Boolean = true,
+        canBeDeletedForAllUsers: Boolean = true,
     ) = TdApi.Chat().also {
         it.id = id
         it.type = type
@@ -538,6 +556,8 @@ object TdApiFixtures {
         it.draftMessage = draftMessage
         it.hasProtectedContent = hasProtectedContent
         it.messageAutoDeleteTime = messageAutoDeleteTime
+        it.canBeDeletedOnlyForSelf = canBeDeletedOnlyForSelf
+        it.canBeDeletedForAllUsers = canBeDeletedForAllUsers
         it.permissions = TdApi.ChatPermissions()
         it.profileAccentColorId = -1
         it.clientData = ""
@@ -588,6 +608,68 @@ object TdApiFixtures {
         markedAsUnreadCount,
         markedAsUnreadUnmutedCount,
     )
+
+    // Groups and channels. The default basic group is 5 and the default supergroup 6, as in chat types of tests.
+
+    /** The owner; one who left ([isMember] false) stays the owner. */
+    fun creatorStatus(isMember: Boolean = true) = TdApi.ChatMemberStatusCreator(false, isMember)
+
+    fun administratorStatus() = TdApi.ChatMemberStatusAdministrator(false, TdApi.ChatAdministratorRights())
+
+    fun memberStatus() = TdApi.ChatMemberStatusMember(0)
+
+    fun restrictedStatus(isMember: Boolean = true) =
+        TdApi.ChatMemberStatusRestricted(isMember, 0, TdApi.ChatPermissions())
+
+    fun leftStatus() = TdApi.ChatMemberStatusLeft()
+
+    fun bannedStatus() = TdApi.ChatMemberStatusBanned(0)
+
+    /** An active basic group of 3 members, the current user among them. */
+    fun basicGroup(
+        id: Long = 5,
+        memberCount: Int = 3,
+        status: TdApi.ChatMemberStatus = memberStatus(),
+        isActive: Boolean = true,
+        upgradedToSupergroupId: Long = 0,
+    ) = TdApi.BasicGroup(id, memberCount, status, isActive, upgradedToSupergroupId)
+
+    /**
+     * A private supergroup of unknown size, the current user a member, without badges; [isChannel] for a channel.
+     * TdApi.Supergroup has 25 constructor parameters, so the builder sets fields by name instead.
+     */
+    fun supergroup(
+        id: Long = 6,
+        usernames: List<String> = emptyList(),
+        memberCount: Int = 0,
+        status: TdApi.ChatMemberStatus = memberStatus(),
+        isChannel: Boolean = false,
+        isForum: Boolean = false,
+        verificationStatus: TdApi.VerificationStatus? = null,
+    ) = TdApi.Supergroup().also {
+        it.id = id
+        it.usernames = usernames(usernames)
+        it.date = 1_700_000_000
+        it.status = status
+        it.memberCount = memberCount
+        it.isChannel = isChannel
+        it.isForum = isForum
+        it.verificationStatus = verificationStatus
+    }
+
+    fun updateBasicGroup(group: TdApi.BasicGroup = basicGroup()) = TdApi.UpdateBasicGroup(group)
+
+    fun updateSupergroup(group: TdApi.Supergroup = supergroup()) = TdApi.UpdateSupergroup(group)
+
+    // Chat actions ("typing…").
+
+    /** [action] of user 42 in chat 100 itself; a [topicId] reports it for a thread or topic of the chat. */
+    fun updateChatAction(
+        action: TdApi.ChatAction = TdApi.ChatActionTyping(),
+        chatId: Long = 100,
+        sender: TdApi.MessageSender = TdApi.MessageSenderUser(42),
+        topicId: TdApi.MessageTopic? = null,
+    ) = TdApi.UpdateChatAction(chatId, topicId, sender, action)
 
     // Chat history: getChatHistory answers and the updates of messages.
 
