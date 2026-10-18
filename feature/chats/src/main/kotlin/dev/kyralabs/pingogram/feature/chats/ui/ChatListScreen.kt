@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -72,8 +73,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Insets**: the list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]);
  *   on medium and wider windows its rows keep a comfortable width, centered.
  * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load.
- * - **Folders**: selecting another folder replaces the list with that folder's, scrolled to its top, through Material's
- *   fade-through ([rememberShownList]).
+ * - **Folders**: selecting another folder replaces the list with that folder's, through Material's fade-through, where
+ *   the user left it, or at its top the first time ([rememberShownList]).
  * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
@@ -219,13 +220,13 @@ private fun Modifier.fadeThrough(folderSwitch: FolderSwitch): Modifier =
 /**
  * The state whose list shows: [state], except while another folder's list fades out after a folder was selected.
  * Material's fade-through runs in sequence, so the new list never shows over the old one: the old list fades out on
- * the motion scheme's fast effects spring, then the selected folder's list replaces it, scrolled to its top, and fades
- * in on the default effects spring while it grows on the default spatial spring. The tabs follow the selection at
- * once. Selecting yet another folder meanwhile carries on from where the animation is; selecting the folder shown
- * again fades it back in. With animations off (reduced motion) the lists swap without fading: ending the springs at
- * once, as Compose does then, would still blank the list for the frames between them.
+ * the motion scheme's fast effects spring, then the selected folder's list replaces it where the user left it
+ * ([FolderPositions]), and fades in on the default effects spring while it grows on the default spatial spring. The
+ * tabs follow the selection at once. Selecting yet another folder meanwhile carries on from where the animation is;
+ * selecting the folder shown again fades it back in. With animations off (reduced motion) the lists swap without
+ * fading: ending the springs at once, as Compose does then, would still blank the list for the frames between them.
  *
- * The folder shown is saved, so a rotation or process death keeps the restored position instead of scrolling up.
+ * The folder shown and where each folder was left are saved, so a rotation or process death keeps them.
  */
 @Composable
 private fun rememberShownList(
@@ -234,19 +235,24 @@ private fun rememberShownList(
     folderSwitch: FolderSwitch,
 ): ChatListUiState {
     var shownFolderId by rememberSaveable { mutableStateOf(state.selectedFolderId) }
+    val positions = rememberSaveable(saver = FolderPositions.Saver) { FolderPositions() }
     // The last state of the folder shown, for its list to fade out with; read only then, so updating it recomposes
     // nothing.
     val lastShown = remember { mutableStateOf(state) }
     val isShown = state.selectedFolderId == shownFolderId
     SideEffect { if (isShown) lastShown.value = state }
+    val currentState by rememberUpdatedState(state)
     val motionScheme = MaterialTheme.motionScheme
     LaunchedEffect(state.selectedFolderId) {
         // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
         val animated = coroutineContext[MotionDurationScale]?.scaleFactor != 0f
         if (state.selectedFolderId != shownFolderId) {
             if (animated) folderSwitch.alpha.animateTo(0f, motionScheme.fastEffectsSpec())
-            listState.scrollToItem(0)
+            positions.save(shownFolderId, listState)
             shownFolderId = state.selectedFolderId
+            // Applied in the layout pass that brings the selected folder's rows, so the list does not keep the row
+            // that was first in the old list.
+            positions.restore(currentState, listState)
             if (animated) folderSwitch.scale.snapTo(FADE_THROUGH_INITIAL_SCALE)
         }
         coroutineScope {
@@ -256,6 +262,83 @@ private fun rememberShownList(
     }
     return if (isShown) state else lastShown.value
 }
+
+/**
+ * Where the user left each folder's list (`null` for "All chats"): its first visible row and how far it is scrolled
+ * past it. A row is found again by its key, wherever it moved since; one that left the list gives way to the row now at
+ * its index. A folder not shown before starts at its top. Not observed: only the folder switch reads and writes it.
+ */
+private class FolderPositions(
+    private val positions: MutableMap<Int?, ListPosition> = HashMap(),
+) {
+    /** Keeps where [folderId]'s list, shown by [listState], is now. */
+    fun save(
+        folderId: Int?,
+        listState: LazyListState,
+    ) {
+        val index = listState.firstVisibleItemIndex
+        // Not the first of visibleItemsInfo, which may be a row drawn in the content padding behind the top bar.
+        val first = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return
+        positions[folderId] = ListPosition(first.key, index, listState.firstVisibleItemScrollOffset)
+    }
+
+    /** Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass. */
+    fun restore(
+        state: ChatListUiState,
+        listState: LazyListState,
+    ) {
+        val position = positions[state.selectedFolderId]
+        if (position == null) {
+            listState.requestScrollToItem(0)
+            return
+        }
+        val items = (state.content as? ChatListContent.Content)?.items.orEmpty()
+        val rowsAbove = if (state.archive != null) 1 else 0
+        val index =
+            when (val key = position.key) {
+                ARCHIVE_ROW -> 0.takeIf { state.archive != null }
+                else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
+            }
+        if (index != null) {
+            listState.requestScrollToItem(index, position.offset)
+        } else {
+            listState.requestScrollToItem(position.index)
+        }
+    }
+
+    companion object {
+        /** Each position as four values: the folder ([NO_FOLDER] for "All chats"), the row's key, index and offset. */
+        val Saver =
+            listSaver<FolderPositions, Any>(
+                save = { saved ->
+                    saved.positions.flatMap { (folderId, position) ->
+                        listOf(folderId ?: NO_FOLDER, position.key, position.index, position.offset)
+                    }
+                },
+                restore = { values ->
+                    val positions =
+                        values.chunked(VALUES_PER_POSITION).associateTo(HashMap()) { saved ->
+                            val folderId = (saved[0] as Int).takeIf { it != NO_FOLDER }
+                            folderId to ListPosition(key = saved[1], index = saved[2] as Int, offset = saved[3] as Int)
+                        }
+                    FolderPositions(positions)
+                },
+            )
+
+        /** Stands for "All chats" when saved; TDLib's folder ids are positive. */
+        private const val NO_FOLDER = -1
+        private const val VALUES_PER_POSITION = 4
+    }
+}
+
+/**
+ * A list's first visible row: its [key] (a chat id, or [ARCHIVE_ROW]), its [index], and the [offset] scrolled past it.
+ */
+private class ListPosition(
+    val key: Any,
+    val index: Int,
+    val offset: Int,
+)
 
 /**
  * The archive row of [state], if any, then its chats ([items]), keyed by id, each row animating to its new place when
