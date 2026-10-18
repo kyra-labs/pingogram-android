@@ -34,11 +34,13 @@ data object ArchiveRoute
 
 /**
  * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C8), `:feature:chat`, pushed above the Chats tab from a
- * row of the chat list or the archive.
+ * row of the chat list, the archive or search. With [messageId] (a message found by search) it opens at that message,
+ * highlighted; without, at the newest messages or the first unread one.
  */
 @Serializable
 data class ChatRoute(
     val chatId: Long,
+    val messageId: Long? = null,
 )
 
 /**

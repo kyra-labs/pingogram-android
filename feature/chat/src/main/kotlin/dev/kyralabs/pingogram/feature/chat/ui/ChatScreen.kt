@@ -100,8 +100,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
  *   view, and scrolls back to it.
- * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, centred, and highlights it
- *   ([JumpToMessages]).
+ * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, or to the message the
+ *   conversation was opened at, centred, and highlights it ([JumpToMessages]). Opened at a message
+ *   ([MessageJumpState.opensAtMessage]), the list does not scroll to the unread divider first, so the two never pull
+ *   the list both ways.
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
@@ -225,7 +227,7 @@ private fun MessageList(
             }
         }
     }
-    InitialScroll(content.items, listState)
+    InitialScroll(content.items, listState, toUnread = !jumpState.opensAtMessage)
     FollowNewestMessage(content.items.firstOrNull()?.key, listState)
     ReportVisibleMessages(content.items, listState, onEvent)
     JumpToMessages(content.items, listState, jumpState, motionScheme)
@@ -323,13 +325,15 @@ private val ChatItem.messageIds: List<Long>
 
 /**
  * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it
- * downwards; without one the list stays at the newest message, where the reverse layout starts. Saved, so a rotation
- * or process death keeps the restored position.
+ * downwards; without one, or not [toUnread] (the conversation opened at a message, which the jump scrolls to), the list
+ * stays at the newest message, where the reverse layout starts. Saved, so a rotation or process death keeps the
+ * restored position.
  */
 @Composable
 private fun InitialScroll(
     items: ImmutableList<ChatItem>,
     listState: LazyListState,
+    toUnread: Boolean,
 ) {
     var done by rememberSaveable { mutableStateOf(false) }
     val currentItems by rememberUpdatedState(items)
@@ -337,6 +341,7 @@ private fun InitialScroll(
     LaunchedEffect(listState) {
         if (done) return@LaunchedEffect
         done = true
+        if (!toUnread) return@LaunchedEffect
         val dividerIndex = currentItems.indexOfFirst { it is ChatItem.UnreadDivider }
         if (dividerIndex < 0) return@LaunchedEffect
         // Measured at once: the divider at the bottom, then moved up by the viewport's height less its own.

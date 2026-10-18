@@ -13,15 +13,16 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 
 /**
- * Adds the conversation of a chat, [ChatDestination], to the graph; [onBack] leaves it, and [onOpenMedia] opens a
- * tapped photo, video or GIF of the chat in the media viewer.
+ * Adds the conversation of a chat, [ChatDestination], to the graph, opened at its message if the route names one;
+ * [onBack] leaves it, and [onOpenMedia] opens a tapped photo, video or GIF of the chat in the media viewer.
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
 ) {
     composable<ChatDestination> { entry ->
-        ChatRoute(chatId = entry.toRoute<ChatDestination>().chatId, onBack = onBack, onOpenMedia = onOpenMedia)
+        val route = entry.toRoute<ChatDestination>()
+        ChatRoute(chatId = route.chatId, messageId = route.messageId, onBack = onBack, onOpenMedia = onOpenMedia)
     }
 }
 
