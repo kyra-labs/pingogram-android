@@ -18,9 +18,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.chatsScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
@@ -61,10 +63,11 @@ internal fun PingogramNavHost(
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
-        chatsScreen()
+        chatsScreen(onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } })
         contactsScreen()
         settingsScreen()
         searchScreen(onBack = { navController.popBackStack() })
+        archiveScreen(onBack = { navController.popBackStack() })
     }
 }
 

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -32,6 +33,7 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
@@ -43,6 +45,9 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
@@ -197,6 +202,48 @@ class PingogramAppTest {
 
         tab(R.string.nav_contacts).assertIsSelected()
         text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
+    }
+
+    // The archive (FR-L9)
+
+    @Test
+    fun `the archive opens above the chats tab, without the navigation bar`() {
+        setApp()
+
+        composeRule.runOnUiThread { navController.navigate(ArchiveRoute) }
+
+        awaitText(ChatsR.string.chat_list_archive_empty_title)
+        assertNoNavigation()
+        composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // A screen hiding the floating navigation bar, as the chat list does while chats are selected
+
+    @Test
+    fun `a screen can hide the floating navigation bar until it stops asking`() {
+        val visibility = NavigationBarVisibility()
+        var hide by mutableStateOf(true)
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                PingogramApp(
+                    uiState = uiState,
+                    navController = rememberNavController().also { navController = it },
+                    navigationBarVisibility = visibility,
+                )
+                CompositionLocalProvider(LocalNavigationBarVisibility provides visibility) {
+                    if (hide) HideNavigationBar(hidden = true)
+                }
+            }
+        }
+        awaitText(ChatsR.string.chat_list_empty_title)
+        assertNoNavigation()
+
+        hide = false
+        composeRule.waitForIdle()
+
+        tab(R.string.nav_chats).assertIsSelected()
     }
 
     // Signed in or out (FR-A8)

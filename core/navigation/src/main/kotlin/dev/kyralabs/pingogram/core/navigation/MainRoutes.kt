@@ -27,3 +27,7 @@ data object SettingsRoute
  */
 @Serializable
 data object SearchRoute
+
+/** The archived chats (`REQUIREMENTS.md` FR-L9), `:feature:chats`, pushed above the Chats tab from its archive row. */
+@Serializable
+data object ArchiveRoute

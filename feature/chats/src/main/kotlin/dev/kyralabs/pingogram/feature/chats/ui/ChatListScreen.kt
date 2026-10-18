@@ -1,14 +1,16 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
-import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,13 +21,17 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -35,9 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -50,85 +57,127 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The Chats tab: hoists [ChatListViewModel], and reports the app fully drawn once the chat list shows its chats or
- * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Rows are not
- * clickable until the conversation screen lands.
- */
-@Composable
-internal fun ChatListRoute(
-    modifier: Modifier = Modifier,
-    viewModel: ChatListViewModel = hiltViewModel(),
-) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
-    ChatListScreen(state = state, onEvent = viewModel::onEvent, modifier = modifier)
-}
-
-/**
- * The chat list (`REQUIREMENTS.md` FR-L1–L5, `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses
- * as the list scrolls, with the connection pill below the title while not connected, the folder tabs when the user has
- * folders, and the chats. The bar and the tabs share one container, `surface` turning into `surfaceContainer` as the
- * bar collapses, read in the draw phase.
+ * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab with a
+ * [MediumFlexibleTopAppBar] that collapses as the list scrolls ([ChatListTopBar]), or the archive with a small one
+ * ([ArchiveTopBar]); then the chats, each with its swipe actions ([ChatRow]), below the archive row on the main list.
  *
- * The list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]); on medium and
- * wider windows its rows keep a comfortable width, centered. It reports whether its end is within
- * [LOAD_MORE_THRESHOLD] rows, so more chats load, and scrolls to the top when another folder is selected.
+ * - **Insets**: the list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]);
+ *   on medium and wider windows its rows keep a comfortable width, centered.
+ * - **Paging**: it reports whether its end is within [LOAD_MORE_THRESHOLD] rows, so more chats load, and scrolls to
+ *   the top when another folder is selected.
+ * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
+ *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
+ *   following the gesture) and the top bar's close button leave it.
+ * - **Snackbars** show above the floating bar or toolbar; the delete confirmation is a dialog ([DeleteChatDialog]).
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatListScreen(
     state: ChatListUiState,
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    onBack: () -> Unit = {},
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            ChatListTopBar(
-                state = state,
-                scrollBehavior = scrollBehavior,
-                onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
-            )
-        },
-        // The floating navigation bar covers the bottom of top-level screens.
-        contentWindowInsets = screenContentWindowInsets(),
-    ) { innerPadding ->
-        val contentModifier =
-            Modifier
-                .fillMaxSize()
-                .consumeWindowInsets(innerPadding)
-        when (val content = state.content) {
-            ChatListContent.Loading -> {
-                Box(contentModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
-            }
-
-            is ChatListContent.Empty -> {
-                ChatListEmpty(isFolder = content.isFolder, modifier = contentModifier.padding(innerPadding))
-            }
-
-            is ChatListContent.Error -> {
-                ChatListError(
-                    content = content,
-                    onRetry = { onEvent(ChatListEvent.Retry) },
-                    modifier = contentModifier.padding(innerPadding),
-                )
-            }
-
-            is ChatListContent.Content -> {
-                ChatList(
-                    items = content.items,
-                    folderId = state.selectedFolderId,
-                    listState = listState,
-                    contentPadding = innerPadding,
-                    onNearEndChanged = { onEvent(ChatListEvent.NearEndChanged(it)) },
-                    modifier = contentModifier,
-                )
-            }
+    val selection = state.selection
+    HideNavigationBar(hidden = selection != null)
+    val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
+    val clearSelection = { onEvent(ChatListEvent.ClearSelection) }
+    val scrollBehavior =
+        when (state.kind) {
+            ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            ChatListKind.Archive -> TopAppBarDefaults.pinnedScrollBehavior()
         }
+    Box(modifier) {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                when (state.kind) {
+                    ChatListKind.Chats -> {
+                        ChatListTopBar(
+                            state = state,
+                            scrollBehavior = scrollBehavior,
+                            onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
+                            onClearSelection = clearSelection,
+                        )
+                    }
+
+                    ChatListKind.Archive -> {
+                        ArchiveTopBar(selection?.chatIds?.size, scrollBehavior, onBack, clearSelection)
+                    }
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            // The floating navigation bar, or the selection toolbar in its place, covers the bottom.
+            contentWindowInsets =
+                if (selection != null) {
+                    screenContentWindowInsets().union(floatingToolbarInsets())
+                } else {
+                    screenContentWindowInsets()
+                },
+        ) { innerPadding -> ChatListBody(state, onEvent, listState, innerPadding) }
+        SelectionToolbarHost(
+            selection = selection,
+            backProgress = { backProgress.value },
+            onAction = { onEvent(ChatListEvent.SelectionAction(it)) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
     ScrollToTopOnFolderChange(state.selectedFolderId, listState)
+    state.deleteDialog?.let { dialog ->
+        DeleteChatDialog(
+            dialog = dialog,
+            onConfirm = { onEvent(ChatListEvent.ConfirmDelete(it)) },
+            onDismiss = { onEvent(ChatListEvent.DismissDelete) },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ChatListBody(
+    state: ChatListUiState,
+    onEvent: (ChatListEvent) -> Unit,
+    listState: LazyListState,
+    innerPadding: PaddingValues,
+) {
+    val contentModifier =
+        Modifier
+            .fillMaxSize()
+            .consumeWindowInsets(innerPadding)
+    when (val content = state.content) {
+        ChatListContent.Loading -> {
+            Box(contentModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
+        }
+
+        is ChatListContent.Empty -> {
+            Column(contentModifier.padding(innerPadding)) {
+                // The archive stays in reach when every chat is archived.
+                state.archive?.let { ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) }) }
+                ChatListEmpty(kind = state.kind, isFolder = content.isFolder, modifier = Modifier.weight(1f))
+            }
+        }
+
+        is ChatListContent.Error -> {
+            ChatListError(
+                content = content,
+                onRetry = { onEvent(ChatListEvent.Retry) },
+                modifier = contentModifier.padding(innerPadding),
+            )
+        }
+
+        is ChatListContent.Content -> {
+            ChatList(
+                items = content.items,
+                state = state,
+                listState = listState,
+                contentPadding = innerPadding,
+                onEvent = onEvent,
+                modifier = contentModifier,
+            )
+        }
+    }
 }
 
 /**
@@ -150,44 +199,61 @@ private fun ScrollToTopOnFolderChange(
 }
 
 /**
- * The chats, keyed by id, each row animating to its new place when the order changes. Reports to [onNearEndChanged]
- * whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh for another folder
- * ([folderId]), and false when the list leaves the screen.
+ * The archive row of [state], if any, then its chats ([items]), keyed by id, each row animating to its new place when
+ * the order changes and fading out when it leaves (archived, deleted). Reports to [ChatListEvent.NearEndChanged]
+ * whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh for another folder, and false
+ * when the list leaves the screen. An archive row that appears above the first chat while the list shows its top is
+ * scrolled into view.
  */
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
-    folderId: Int?,
+    state: ChatListUiState,
     listState: LazyListState,
     contentPadding: PaddingValues,
-    onNearEndChanged: (Boolean) -> Unit,
+    onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val motionScheme = MaterialTheme.motionScheme
+    val archive = state.archive
+    val selection = state.selection
+    val folderId = state.selectedFolderId
+    val selectedIds = selection?.chatIds
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
+    val motionScheme = MaterialTheme.motionScheme
     LazyColumn(
         modifier = modifier,
         state = listState,
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (archive != null) {
+            item(key = ARCHIVE_ROW, contentType = ARCHIVE_ROW) {
+                ArchiveRow(
+                    entry = archive,
+                    enabled = selection == null,
+                    onClick = { onEvent(ChatListEvent.OpenArchive) },
+                    modifier = Modifier.listRow(this, maxWidth, motionScheme),
+                )
+            }
+        }
         items(items, key = { it.id }, contentType = { CHAT_ROW }) { item ->
-            ChatListItem(
+            ChatRow(
                 item = item,
-                onClick = null,
-                modifier =
-                    Modifier
-                        .widthIn(max = maxWidth)
-                        .fillMaxWidth()
-                        .animateItem(
-                            fadeInSpec = motionScheme.defaultEffectsSpec(),
-                            placementSpec = motionScheme.defaultSpatialSpec(),
-                            fadeOutSpec = motionScheme.fastEffectsSpec(),
-                        ),
+                selected = selectedIds?.contains(item.id) == true,
+                selectionMode = selection != null,
+                onEvent = onEvent,
+                modifier = Modifier.listRow(this, maxWidth, motionScheme),
             )
         }
     }
-    val nearEndChanged by rememberUpdatedState(onNearEndChanged)
+    val hasArchive = archive != null
+    LaunchedEffect(hasArchive) {
+        // Inserted above the first chat, which the list keeps in place: show the row if the list was at its top.
+        if (hasArchive && listState.firstVisibleItemIndex == 1 && listState.firstVisibleItemScrollOffset == 0) {
+            listState.scrollToItem(0)
+        }
+    }
+    val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId) {
         try {
             snapshotFlow {
@@ -195,27 +261,71 @@ private fun ChatList(
                 val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
                 layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 1 - LOAD_MORE_THRESHOLD
             }.distinctUntilChanged()
-                .collect { nearEndChanged(it) }
+                .collect { currentOnEvent(ChatListEvent.NearEndChanged(it)) }
         } finally {
             // Leaving the screen, or another folder that reports afresh.
-            nearEndChanged(false)
+            currentOnEvent(ChatListEvent.NearEndChanged(false))
         }
     }
 }
 
+/** A row of [scope] at most [maxWidth] wide, animating as the list changes on the [motionScheme]'s springs. */
+private fun Modifier.listRow(
+    scope: LazyItemScope,
+    maxWidth: Dp,
+    motionScheme: MotionScheme,
+): Modifier =
+    with(scope) {
+        this@listRow
+            .widthIn(max = maxWidth)
+            .fillMaxWidth()
+            .animateItem(
+                fadeInSpec = motionScheme.defaultEffectsSpec(),
+                placementSpec = motionScheme.defaultSpatialSpec(),
+                fadeOutSpec = motionScheme.fastEffectsSpec(),
+            )
+    }
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChatListEmpty(
+    kind: ChatListKind,
     isFolder: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    EmptyState(
-        illustration = if (isFolder) MaterialShapes.Clover4Leaf else MaterialShapes.Cookie9Sided,
-        icon = UiR.drawable.ic_chat_filled,
-        title = stringResource(if (isFolder) R.string.chat_list_folder_empty_title else R.string.chat_list_empty_title),
-        body = stringResource(if (isFolder) R.string.chat_list_folder_empty_body else R.string.chat_list_empty_body),
-        modifier = modifier,
-    )
+    when {
+        kind == ChatListKind.Archive -> {
+            EmptyState(
+                illustration = MaterialShapes.Pill,
+                icon = UiR.drawable.ic_archive,
+                title = stringResource(R.string.chat_list_archive_empty_title),
+                body = stringResource(R.string.chat_list_archive_empty_body),
+                modifier = modifier,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+        }
+
+        isFolder -> {
+            EmptyState(
+                illustration = MaterialShapes.Clover4Leaf,
+                icon = UiR.drawable.ic_chat_filled,
+                title = stringResource(R.string.chat_list_folder_empty_title),
+                body = stringResource(R.string.chat_list_folder_empty_body),
+                modifier = modifier,
+            )
+        }
+
+        else -> {
+            EmptyState(
+                illustration = MaterialShapes.Cookie9Sided,
+                icon = UiR.drawable.ic_chat_filled,
+                title = stringResource(R.string.chat_list_empty_title),
+                body = stringResource(R.string.chat_list_empty_body),
+                modifier = modifier,
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -248,6 +358,7 @@ private fun ChatListError(
 private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
+private const val ARCHIVE_ROW = "archive"
 
 @PingogramPreviews
 @Composable

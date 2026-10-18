@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -53,26 +54,32 @@ abstract class ChatListViewModelHarness {
     }
 
     /** A view model whose state is collected, as by the screen. */
-    protected fun TestScope.viewModel(handle: SavedStateHandle = savedState): ChatListViewModel {
-        val viewModel = createViewModel(handle)
+    protected fun TestScope.viewModel(
+        handle: SavedStateHandle = savedState,
+        kind: ChatListKind = ChatListKind.Chats,
+    ): ChatListViewModel {
+        val viewModel = createViewModel(handle, kind)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
     }
 
-    protected fun TestScope.createViewModel(handle: SavedStateHandle = savedState) =
-        ChatListViewModel(
-            savedStateHandle = handle,
-            chatRepository = chats,
-            userRepository = users,
-            groupRepository = groups,
-            chatActionRepository = actions,
-            connectionRepository = connection,
-            clock = clock,
-            timePatterns = timePatterns,
-            dispatcher = StandardTestDispatcher(testScheduler),
-            locale = { Locale.US },
-        )
+    protected fun TestScope.createViewModel(
+        handle: SavedStateHandle = savedState,
+        kind: ChatListKind = ChatListKind.Chats,
+    ) = ChatListViewModel(
+        kind = kind,
+        savedStateHandle = handle,
+        chatRepository = chats,
+        userRepository = users,
+        groupRepository = groups,
+        chatActionRepository = actions,
+        connectionRepository = connection,
+        clock = clock,
+        timePatterns = timePatterns,
+        dispatcher = StandardTestDispatcher(testScheduler),
+        locale = { Locale.US },
+    )
 
     protected fun TestScope.send(
         viewModel: ChatListViewModel,
@@ -82,6 +89,13 @@ abstract class ChatListViewModelHarness {
             viewModel.onEvent(it)
             runCurrent()
         }
+    }
+
+    /** The effects [viewModel] sends from now on, collected as the screen does. */
+    protected fun TestScope.effectsOf(viewModel: ChatListViewModel): List<ChatListEffect> {
+        val effects = mutableListOf<ChatListEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.effects.toList(effects) }
+        return effects
     }
 
     /** A view model showing [chat] alone in the main list, and its row. */
