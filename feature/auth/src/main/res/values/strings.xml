@@ -65,6 +65,8 @@
     <string name="auth_password_title">Two-step verification</string>
     <string name="auth_password_description">Your account is protected with an additional password.</string>
     <string name="auth_password_label">Password</string>
+    <!-- The password visibility toggle; screen readers add whether it is on. -->
+    <string name="auth_password_show">Show password</string>
     <string name="auth_password_hint">Hint: %1$s</string>
     <string name="auth_forgot_password">Forgot password?</string>
     <string name="auth_password_no_recovery_email">This account has no recovery email, so its password can\'t be reset here. Try to remember it; the hint may help. Pingogram doesn\'t offer resetting the account.</string>

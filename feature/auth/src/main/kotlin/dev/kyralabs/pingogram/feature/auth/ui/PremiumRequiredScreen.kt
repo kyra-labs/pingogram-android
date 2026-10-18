@@ -49,5 +49,5 @@ fun PremiumRequiredScreen(
 @PingogramPreviews
 @Composable
 private fun PremiumRequiredScreenPreview() {
-    AuthScreenPreview(AuthPreviewData.state(AuthStepUiState.PremiumRequired("support@example.org")))
+    AuthScreenPreview(AuthPreviewData.premiumRequired)
 }

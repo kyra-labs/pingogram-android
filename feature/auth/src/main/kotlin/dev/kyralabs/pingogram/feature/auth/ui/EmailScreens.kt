@@ -15,14 +15,15 @@ import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
+import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 
@@ -51,15 +52,25 @@ fun EmailAddressScreen(
             )
         },
     ) {
+        val error = state.error?.let { errorText(it) }
         TextField(
             value = state.emailAddress,
             onValueChange = { onEvent(AuthEvent.EmailAddressChanged(it)) },
-            modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.EmailAddress },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fieldError(error)
+                    .semantics { contentType = ContentType.EmailAddress },
             label = { Text(stringResource(R.string.auth_email_label)) },
-            isError = state.error != null,
-            supportingText = state.error?.let { error -> { Text(errorText(error)) } },
+            isError = error != null,
+            supportingText = error?.let { { Text(it) } },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    autoCorrectEnabled = false,
+                    imeAction = ImeAction.Done,
+                ),
             keyboardActions = KeyboardActions(onDone = { onEvent(AuthEvent.SubmitEmailAddress) }),
         )
     }
@@ -92,16 +103,12 @@ fun EmailCodeScreen(
             )
         },
     ) {
-        TextField(
+        AuthCodeField(
             value = state.code,
             onValueChange = { onEvent(AuthEvent.EmailCodeChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.auth_code_label)) },
-            isError = state.error != null,
-            supportingText = state.error?.let { error -> { Text(errorText(error)) } },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onEvent(AuthEvent.SubmitEmailCode) }),
+            label = stringResource(R.string.auth_code_label),
+            error = state.error?.let { errorText(it) },
+            onDone = { onEvent(AuthEvent.SubmitEmailCode) },
         )
         AuthTextButton(
             text = stringResource(R.string.auth_email_resend),
@@ -153,46 +160,20 @@ private fun EmailReset(
     )
 }
 
-private const val PREVIEW_CODE_LENGTH = 6
-private const val PREVIEW_RESET_WAIT_SECONDS = 604_800L
-private const val PREVIEW_RESET_PENDING_SECONDS = 3_600L
-
 @PingogramPreviews
 @Composable
 private fun EmailAddressScreenPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(AuthStepUiState.EmailAddress("ada@example", DomainError.EmailInvalid, false)),
-    )
+    AuthScreenPreview(AuthPreviewData.emailAddress)
 }
 
 @PingogramPreviews
 @Composable
 private fun EmailCodeScreenPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            AuthStepUiState.EmailCode(
-                emailAddressPattern = "a***@example.org",
-                code = "12",
-                codeLength = PREVIEW_CODE_LENGTH,
-                error = null,
-                reset = EmailResetUiState.Available(waitSeconds = PREVIEW_RESET_WAIT_SECONDS),
-            ),
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.emailCode)
 }
 
 @PingogramPreviews
 @Composable
 private fun EmailCodeScreenResetPendingPreview() {
-    AuthScreenPreview(
-        AuthPreviewData.state(
-            AuthStepUiState.EmailCode(
-                emailAddressPattern = "a***@example.org",
-                code = "",
-                codeLength = PREVIEW_CODE_LENGTH,
-                error = DomainError.CodeInvalid,
-                reset = EmailResetUiState.Pending(resetInSeconds = PREVIEW_RESET_PENDING_SECONDS),
-            ),
-        ),
-    )
+    AuthScreenPreview(AuthPreviewData.emailCodeResetPending)
 }
