@@ -65,6 +65,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "androidxProfileinstaller" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+# Test-only: HiltTestApplication, @HiltAndroidTest and @BindValue for the Robolectric tests of :app
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }

@@ -18,7 +18,8 @@ object TdlibConfigModule {
             apiHash = BuildConfig.TELEGRAM_API_HASH,
             appVersionName = BuildConfig.VERSION_NAME,
             isDebug = BuildConfig.DEBUG,
-            // The debug-only test DC toggle (REQUIREMENTS.md FR-A9) comes with the auth screens in M1.
+            // The debug-only test DC toggle (REQUIREMENTS.md FR-A9, a "Should") is not built yet: it needs the choice
+            // persisted and TDLib restarted with it, while TdlibConfig is fixed for the life of the process.
             useTestDc = false,
         )
 }
