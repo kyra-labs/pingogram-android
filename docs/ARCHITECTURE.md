@@ -83,6 +83,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support.
+- Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
+  down as `LocalSharedTransitionScope`; destinations that share content provide their animated
+  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.sharedMediaBounds` (a no-op
+  without both) runs the container transform of a photo, video or GIF between the conversation
+  (pushed or in the detail pane) and the media viewer, keyed by message id.
 
 ## Threading
 

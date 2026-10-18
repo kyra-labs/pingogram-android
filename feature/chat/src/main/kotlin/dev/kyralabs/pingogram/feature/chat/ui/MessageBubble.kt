@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalResources
@@ -220,13 +221,14 @@ private fun BareBubble(
 /**
  * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape]: the name, forward and reply
  * above it with the usual padding; below it the caption, link preview and reactions with the meta; without any of
- * them, the meta on a pill over the media's bottom end.
+ * them, the meta on a pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media
+ * viewer's container transform starts and ends.
  */
 @Composable
 private fun MediaBubble(
     bubble: ChatItem.Bubble,
     style: BubbleStyle,
-    shape: Shape,
+    shape: CornerBasedShape,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -235,6 +237,7 @@ private fun MediaBubble(
     val spacing = MaterialTheme.spacing
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
     val metaOnMedia = bubble.text.text.isEmpty() && bubble.linkPreview == null && bubble.reactions.isEmpty()
+    val mediaShape = remember(shape, hasHeader, metaOnMedia) { shape.mediaCorners(hasHeader, hasFooter = !metaOnMedia) }
     Column(
         modifier
             .width(edgeToEdgeWidth(bubble.content, isAlbum = bubble.album != null))
@@ -248,7 +251,7 @@ private fun MediaBubble(
             ) { BubbleHeader(bubble, colors, onEvent) }
         }
         Box {
-            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
+            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent, mediaShape = mediaShape)
             if (metaOnMedia) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
         }
         if (!metaOnMedia) {
@@ -259,6 +262,21 @@ private fun MediaBubble(
         }
     }
 }
+
+/**
+ * The corners media shows in a bubble of this shape: the bubble's own, except square at the top below a header
+ * ([hasHeader]) and at the bottom above a caption, link preview or reactions ([hasFooter]).
+ */
+private fun CornerBasedShape.mediaCorners(
+    hasHeader: Boolean,
+    hasFooter: Boolean,
+): CornerBasedShape =
+    copy(
+        topStart = if (hasHeader) ZeroCornerSize else topStart,
+        topEnd = if (hasHeader) ZeroCornerSize else topEnd,
+        bottomEnd = if (hasFooter) ZeroCornerSize else bottomEnd,
+        bottomStart = if (hasFooter) ZeroCornerSize else bottomStart,
+    )
 
 /**
  * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;

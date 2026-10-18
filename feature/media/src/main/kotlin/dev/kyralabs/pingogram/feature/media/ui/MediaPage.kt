@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +41,8 @@ import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomBounds
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
@@ -59,6 +62,10 @@ import kotlinx.collections.immutable.ImmutableMap
  *   on the device; once the item is in the player ([playback]), [videoSurface] under them, uncovered when the first
  *   frame shows. The screen stays on while a video plays.
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
+ * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
+ *   conversation ([sharedMediaBounds]), growing out of it as the viewer opens and shrinking back into it as it
+ *   closes, from the bubble's `large` corners to square ones. Not while zoomed in: the zoomed photo fades out with the
+ *   screen instead. The layers crop to the moving bounds, so a photo cropped in its bubble uncrops as it grows.
  *
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a double tap waits for the second tap only
  * where it zooms. Screen readers get no semantics from here: the pager describes the page.
@@ -86,7 +93,14 @@ internal fun MediaPage(
         val fitted = fittedSize(media.width, media.height, container)
         val fittedDp = with(LocalDensity.current) { DpSize(fitted.width.toDp(), fitted.height.toDp()) }
         if (zoomState != null) SideEffect { zoomState.bounds = ZoomBounds(container, fitted) }
-        Box(Modifier.align(Alignment.Center).size(fittedDp).zoomedBy(zoomState)) {
+        val zoomed by remember(zoomState) { derivedStateOf { zoomState?.isZoomed == true } }
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .size(fittedDp)
+                .sharedMediaBounds(item.messageId, FullBleedShape, MaterialTheme.shapes.large, enabled = !zoomed)
+                .zoomedBy(zoomState),
+        ) {
             MediaLayers(item, files, playback, videoSurface, fittedDp)
         }
         if (item.isHidden) {

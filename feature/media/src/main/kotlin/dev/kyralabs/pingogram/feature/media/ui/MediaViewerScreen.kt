@@ -170,6 +170,7 @@ private fun DismissibleContent(
             Modifier
                 .fillMaxSize()
                 .followingDismiss(dismiss)
+                .layoutFollowingDismiss(dismiss)
                 .draggable(
                     state = dismiss.draggableState,
                     orientation = Orientation.Vertical,

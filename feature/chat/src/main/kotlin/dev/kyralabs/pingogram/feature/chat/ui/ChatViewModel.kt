@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
@@ -605,16 +606,6 @@ private fun ChatUiState.mediaToOpen(messageId: Long): ChatEffect.OpenMedia? {
         }
     return if (content?.opensInViewer == true) ChatEffect.OpenMedia(messageId) else null
 }
-
-/** A photo, video or GIF that is not self-destructing: what the media viewer shows. */
-private val MessageContent.opensInViewer: Boolean
-    get() =
-        when (this) {
-            is MessageContent.Photo -> !isSecret
-            is MessageContent.Video -> !isSecret
-            is MessageContent.Animation -> !isSecret
-            else -> false
-        }
 
 /** The items shown, none while there is no content. */
 private val ChatUiState.items: List<ChatItem>
