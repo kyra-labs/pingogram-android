@@ -132,16 +132,38 @@ class ChatMediaTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `opening media does nothing until the media viewer comes`() =
+    fun `photos, videos and GIFs open in the media viewer`() =
         runTest {
-            val photo = ContentPreviewData.photo(minithumbnail = null)
-            val viewModel = showing(chat(), history(message(1, content = photo)))
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        message(1, content = ContentPreviewData.photo(minithumbnail = null)),
+                        message(2, content = ContentPreviewData.video(minithumbnail = null)),
+                        message(3, content = ContentPreviewData.animation(minithumbnail = null)),
+                    ),
+                )
 
             viewModel.effects.test {
-                send(viewModel, ChatEvent.OpenMedia(messageId = 1))
-                expectNoEvents()
+                send(viewModel, ChatEvent.OpenMedia(1), ChatEvent.OpenMedia(2), ChatEvent.OpenMedia(3))
+                assertEquals(ChatEffect.OpenMedia(1), awaitItem())
+                assertEquals(ChatEffect.OpenMedia(2), awaitItem())
+                assertEquals(ChatEffect.OpenMedia(3), awaitItem())
             }
             assertTrue(files.calls.isEmpty())
+        }
+
+    @Test
+    fun `video messages and self-destructing media do not open in the media viewer`() =
+        runTest {
+            val secret = ContentPreviewData.photo(minithumbnail = null).copy(isSecret = true)
+            val videoNote = ContentPreviewData.videoNote(minithumbnail = null, isViewed = false)
+            val viewModel = showing(chat(), history(message(1, content = secret), message(2, content = videoNote)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenMedia(1), ChatEvent.OpenMedia(2), ChatEvent.OpenMedia(99))
+                expectNoEvents()
+            }
         }
 
     // Locations
@@ -233,6 +255,18 @@ class ChatMediaTest : ChatViewModelHarness() {
 
             assertEquals(listOf(2L), viewModel.bubbles.map { it.id })
             assertEquals(FormattedText.Empty.text, viewModel.bubble(2).text.text)
+        }
+
+    @Test
+    fun `each item of an album opens in the media viewer by its own message`() =
+        runTest {
+            val viewModel = showing(chat(), history(albumPhoto(1), albumPhoto(2, caption = "Our trip"), albumPhoto(3)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenMedia(1), ChatEvent.OpenMedia(3))
+                assertEquals(ChatEffect.OpenMedia(1), awaitItem())
+                assertEquals(ChatEffect.OpenMedia(3), awaitItem())
+            }
         }
 
     @Test

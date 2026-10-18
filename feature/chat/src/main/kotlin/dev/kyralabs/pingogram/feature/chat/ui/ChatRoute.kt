@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -31,12 +32,14 @@ import java.util.Locale
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
  * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
  * ends up open. [onBack] leaves it; null shows no back button. The view model's [ChatEffect]s show snackbars, open a
- * location in a maps app, or jump to a message ([MessageJumpState]).
+ * location in a maps app, jump to a message ([MessageJumpState]), or open a photo, video or GIF in the media viewer
+ * through [onOpenMedia], which the app navigates with (features do not know each other).
  */
 @Composable
 internal fun ChatRoute(
     chatId: Long,
     onBack: (() -> Unit)?,
+    onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId) },
@@ -48,7 +51,8 @@ internal fun ChatRoute(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
-    ChatEffects(viewModel.effects, snackbarHostState, jumpState)
+    val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
+    ChatEffects(viewModel.effects, snackbarHostState, jumpState, onOpenMedia = { currentOnOpenMedia(chatId, it) })
     ChatScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -62,13 +66,14 @@ internal fun ChatRoute(
 /**
  * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone and
  * for what is not there yet, the newest replacing the one shown; a location opens in a maps app, or a snackbar says
- * that no app can show it; a jump to a message goes to [jumpState].
+ * that no app can show it; a jump to a message goes to [jumpState]; media to open goes to [onOpenMedia].
  */
 @Composable
 private fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
     jumpState: MessageJumpState,
+    onOpenMedia: (messageId: Long) -> Unit,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -101,6 +106,11 @@ private fun ChatEffects(
 
                     is ChatEffect.OpenLocation -> {
                         if (context.openMap(effect)) "" else resources.getString(R.string.content_no_maps_app)
+                    }
+
+                    is ChatEffect.OpenMedia -> {
+                        onOpenMedia(effect.messageId)
+                        ""
                     }
                 }
             if (message.isNotEmpty()) {
