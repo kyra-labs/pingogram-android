@@ -20,7 +20,7 @@ sealed interface ChatListEvent {
     /** "Try again" after loading the chats failed. */
     data object Retry : ChatListEvent
 
-    /** A row was tapped: selects or deselects the chat in selection mode; opens nothing yet otherwise. */
+    /** A row was tapped: selects or deselects the chat in selection mode; otherwise opens its conversation. */
     data class ChatClicked(
         val chatId: Long,
     ) : ChatListEvent

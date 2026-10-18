@@ -17,6 +17,15 @@ fun User.shortName(): UiText {
     }
 }
 
+/**
+ * The full name of [this] user, where there is room for it: a sender's name in a group conversation, "Forwarded
+ * from …". The first and last names; "Deleted Account" as for [shortName].
+ */
+fun User.fullName(): UiText {
+    val name = listOf(firstName, lastName).filter(String::isNotBlank).joinToString(" ")
+    return if (isDeleted || name.isBlank()) UiText.resource(R.string.user_deleted_account) else UiText.Plain(name)
+}
+
 /** Whether [this] user is a deleted account, shown with a placeholder avatar and "Deleted Account". */
 val User.isDeleted: Boolean
     get() = type == UserType.Deleted || type == UserType.Unknown

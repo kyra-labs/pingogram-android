@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Conversation top bar (ChatTopBar) -->
+    <string name="chat_back">Back</string>
+    <!-- Under a user's name: what Telegram tells about when they were last online. -->
+    <string name="chat_subtitle_online">online</string>
+    <string name="chat_subtitle_last_seen_just_now">last seen just now</string>
+    <plurals name="chat_subtitle_last_seen_minutes">
+        <item quantity="one">last seen %d minute ago</item>
+        <item quantity="other">last seen %d minutes ago</item>
+    </plurals>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="chat_subtitle_last_seen_today">last seen today at %1$s</string>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="chat_subtitle_last_seen_yesterday">last seen yesterday at %1$s</string>
+    <!-- %1$s is a date, "Mar 17" or "3/17/2024". -->
+    <string name="chat_subtitle_last_seen_date">last seen %1$s</string>
+    <!-- The user's privacy settings hide when they were last online; Telegram tells roughly. -->
+    <string name="chat_subtitle_last_seen_recently">last seen recently</string>
+    <string name="chat_subtitle_last_seen_week">last seen within a week</string>
+    <string name="chat_subtitle_last_seen_month">last seen within a month</string>
+    <string name="chat_subtitle_last_seen_long_ago">last seen a long time ago</string>
+    <string name="chat_subtitle_bot">bot</string>
+    <plurals name="chat_subtitle_members">
+        <item quantity="one">%,d member</item>
+        <item quantity="other">%,d members</item>
+    </plurals>
+    <plurals name="chat_subtitle_subscribers">
+        <item quantity="one">%,d subscriber</item>
+        <item quantity="other">%,d subscribers</item>
+    </plurals>
+    <!-- Under a group's or channel's name while its member count is not known. -->
+    <string name="chat_subtitle_group">group</string>
+    <string name="chat_subtitle_channel">channel</string>
+
+    <!-- Messages (ChatScreen, MessageBubble) -->
+    <string name="chat_date_today">Today</string>
+    <string name="chat_date_yesterday">Yesterday</string>
+    <!-- Above the first message that was unread when the chat was opened. -->
+    <string name="chat_unread_divider">Unread messages</string>
+    <!-- Before the time of a message that was edited. -->
+    <string name="chat_edited">edited</string>
+    <!-- %1$s is who originally sent a forwarded message. -->
+    <string name="chat_forwarded_from">Forwarded from %1$s</string>
+    <!-- A channel or chat a message was forwarded from (%1$s), with the signature of its author (%2$s). -->
+    <string name="chat_forwarded_name_signed">%1$s (%2$s)</string>
+    <!-- Reply quotes whose replied message cannot be shown (yet). -->
+    <string name="chat_reply_loading">Loading…</string>
+    <string name="chat_reply_deleted">Deleted message</string>
+    <string name="chat_reply_unavailable">Message unavailable</string>
+    <!-- A replied message of another chat, known only by its sender. -->
+    <string name="chat_reply_message">Message</string>
+    <string name="chat_empty_title">No messages here yet</string>
+    <string name="chat_empty_body">Messages in this chat show up here.</string>
+    <string name="chat_error_title">Messages couldn\'t be loaded</string>
+    <string name="chat_not_found_title">Chat not found</string>
+    <string name="chat_not_found_body">This chat doesn\'t exist, or you no longer have access to it.</string>
+    <string name="chat_retry">Try again</string>
+    <!-- Above the oldest loaded message when older ones could not be loaded. -->
+    <string name="chat_older_error">Older messages couldn\'t be loaded</string>
+    <string name="chat_jump_to_bottom">Scroll to newest messages</string>
+    <!-- The unread count in the badge of the button that scrolls to the newest messages. -->
+    <string name="chat_unread_badge">%1$d</string>
+    <!-- An unread count above the badge's limit: %1$d is the limit, 999. -->
+    <string name="chat_unread_badge_overflow">%1$d+</string>
+
+    <!-- Screen readers: a message bubble read as one ("Alice, 9:41 AM: Hello, read"). -->
+    <!-- %1$s is the sender, %2$s the time, %3$s the content, %4$s the state of an outgoing message. -->
+    <string name="chat_bubble_description">%1$s, %2$s: %3$s, %4$s</string>
+    <!-- The same for incoming messages: %1$s is the sender, %2$s the time, %3$s the content. -->
+    <string name="chat_bubble_description_incoming">%1$s, %2$s: %3$s</string>
+    <!-- The time of an edited message: %1$s is the time. -->
+    <string name="chat_bubble_time_edited">%1$s, edited</string>
+    <!-- A reply quote in the description: %1$s is the replied message's sender, %2$s its text. -->
+    <string name="chat_bubble_reply">Reply to %1$s: %2$s</string>
+    <!-- A reaction in the description: %1$s is the emoji, %2$d how often it was added. -->
+    <string name="chat_bubble_reaction">%1$s %2$d</string>
+    <string name="chat_bubble_spoiler">spoiler</string>
+    <string name="chat_status_pending">sending</string>
+    <string name="chat_status_failed">not sent</string>
+    <string name="chat_status_sent">sent</string>
+    <string name="chat_status_read">read</string>
+    <string name="chat_reaction_custom_emoji">custom emoji</string>
+    <string name="chat_reaction_paid">Star</string>
+    <plurals name="chat_unread_count">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+</resources>

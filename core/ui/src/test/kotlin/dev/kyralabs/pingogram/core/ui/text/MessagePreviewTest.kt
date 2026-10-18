@@ -93,6 +93,18 @@ class MessagePreviewTest {
     }
 
     @Test
+    fun contentKindLeavesTheCaptionOut() {
+        val kinds =
+            listOf(
+                MessageContent.Photo(photo, text("Sunset"), false, false, false),
+                MessageContent.Document(document("report.pdf"), text("Q3")),
+                MessageContent.Text(text("Hello"), linkPreview = null),
+            ).map { contentKindText(it).resolve(resources) }
+
+        assertEquals(listOf("Photo", "report.pdf", "Hello"), kinds)
+    }
+
+    @Test
     fun stickersShowTheirEmoji() {
         assertEquals("😀 Sticker", preview(MessageContent.Sticker(sticker("😀"))))
         assertEquals("Sticker", preview(MessageContent.Sticker(sticker(""))))

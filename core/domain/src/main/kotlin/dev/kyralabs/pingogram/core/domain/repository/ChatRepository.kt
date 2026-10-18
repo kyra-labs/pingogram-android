@@ -109,6 +109,17 @@ interface ChatRepository {
         forEveryone: Boolean,
     ): Outcome<Unit>
 
+    /**
+     * Tells TDLib that the conversation of chat [chatId] is on screen, until [closeChat]: TDLib then gives the chat
+     * priority, and sends every update of a supergroup or channel, which it otherwise leaves out
+     * (`docs/PERFORMANCE.md` §3). TDLib has the request once the call first suspends, so a caller started undispatched
+     * and cancelled right after has still opened the chat.
+     */
+    suspend fun openChat(chatId: Long): Outcome<Unit>
+
+    /** Tells TDLib that the conversation of chat [chatId] left the screen; the counterpart of [openChat]. */
+    suspend fun closeChat(chatId: Long): Outcome<Unit>
+
     companion object {
         /** Chats per [loadChats] page after the first. */
         const val PAGE_SIZE = 50

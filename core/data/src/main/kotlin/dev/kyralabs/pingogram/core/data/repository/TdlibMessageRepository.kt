@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -33,6 +34,9 @@ import javax.inject.Singleton
  * only what TDLib has locally, then, when that is nothing, from the server. The page is loaded in the application
  * scope, so a caller that leaves does not cancel it for the others waiting for it, and it still ends up in the window;
  * TDLib could not cancel the request anyway.
+ *
+ * [repliedMessage] serves the reply quotes of messages whose replied message is older than the loaded ones; the window
+ * keeps what it fetched.
  */
 @Singleton
 class TdlibMessageRepository
@@ -74,6 +78,23 @@ class TdlibMessageRepository
                 }
             load.start()
             return load.await()
+        }
+
+        /**
+         * The replied message from the chat's window, loaded or kept there, else `getRepliedMessage`, whose answer the
+         * window keeps when it is a message of the chat. An update that overtakes that answer is not applied to it:
+         * the quote may show the replied message as it was until its next change.
+         */
+        override suspend fun repliedMessage(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<Message> {
+            store.state.value.windows[chatId]
+                ?.repliedTo(messageId)
+                ?.let { return Outcome.Success(it) }
+            val replied = client.request(TdApi.GetRepliedMessage(chatId, messageId)).map { it.toMessage() }
+            replied.onSuccess { message -> store.update { cache -> cache.keepingReplied(chatId, message) } }
+            return replied
         }
 
         override fun trimMemory() = store.update { cache -> cache.trimmed() }

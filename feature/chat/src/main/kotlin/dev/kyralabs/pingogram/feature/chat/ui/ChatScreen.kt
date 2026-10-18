@@ -1,0 +1,341 @@
+package dev.kyralabs.pingogram.feature.chat.ui
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import dev.kyralabs.pingogram.core.ui.R as UiR
+
+/**
+ * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] over the
+ * messages, newest at the bottom. Read-only for now: there is no composer, only the system bars' insets at the bottom.
+ *
+ * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
+ *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
+ *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]), and opens at the unread divider, near the
+ *   top, if there is one, else at the newest message; a rotation keeps the position.
+ * - **Date pill**: while the list scrolls, the date of the topmost message floats at the top, fading in and out on the
+ *   motion scheme's effects springs, read in the draw phase.
+ * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
+ *   view, and scrolls back to it.
+ * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun ChatScreen(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
+) {
+    val content = state.content
+    val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
+    val scope = rememberCoroutineScope()
+    val motionScheme = MaterialTheme.motionScheme
+    Scaffold(
+        modifier = modifier,
+        topBar = { ChatTopBar(state.header, onBack) },
+        floatingActionButton = {
+            JumpToBottomButton(
+                visible = content is ChatContent.Content && showJump,
+                unreadCount = state.unreadCount,
+                motionScheme = motionScheme,
+                onClick = { scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) } },
+            )
+        },
+    ) { innerPadding ->
+        val bodyModifier =
+            Modifier
+                .fillMaxSize()
+                .consumeWindowInsets(innerPadding)
+        when (content) {
+            ChatContent.Loading -> {
+                Box(bodyModifier.padding(innerPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
+            }
+
+            ChatContent.Empty -> {
+                ChatEmpty(bodyModifier.padding(innerPadding))
+            }
+
+            is ChatContent.Error -> {
+                ChatError(
+                    content,
+                    onRetry = { onEvent(ChatEvent.Retry) },
+                    modifier = bodyModifier.padding(innerPadding),
+                )
+            }
+
+            ChatContent.NotFound -> {
+                ChatNotFound(bodyModifier.padding(innerPadding))
+            }
+
+            is ChatContent.Content -> {
+                Box(bodyModifier) {
+                    MessageList(content, listState, innerPadding, onEvent)
+                    FloatingDatePill(
+                        items = content.items,
+                        listState = listState,
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = innerPadding.calculateTopPadding() + MaterialTheme.spacing.small),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The entries of [content], newest first in a reverse layout, then the state of older pages above the oldest one.
+ * Each entry animates to its new place and fades in and out on the motion scheme's springs.
+ */
+@Composable
+private fun MessageList(
+    content: ChatContent.Content,
+    listState: LazyListState,
+    innerPadding: PaddingValues,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val theme = rememberBubbleTheme()
+    val texts = remember { AnnotatedTextCache() }
+    val onLinkClick = rememberLinkOpener()
+    val motionScheme = MaterialTheme.motionScheme
+    val spacing = MaterialTheme.spacing
+    val layoutDirection = LocalLayoutDirection.current
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        contentPadding =
+            PaddingValues(
+                start = innerPadding.calculateStartPadding(layoutDirection) + spacing.medium,
+                top = innerPadding.calculateTopPadding() + spacing.small,
+                end = innerPadding.calculateEndPadding(layoutDirection) + spacing.medium,
+                bottom = innerPadding.calculateBottomPadding() + spacing.small,
+            ),
+        reverseLayout = true,
+    ) {
+        items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
+            val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
+            when (item) {
+                is ChatItem.Bubble -> MessageBubbleRow(item, theme, texts, onLinkClick, onEvent, itemModifier)
+                is ChatItem.Service -> ServiceMessageRow(item, itemModifier)
+                is ChatItem.DateSeparator -> DateSeparatorRow(item, itemModifier)
+                is ChatItem.UnreadDivider -> UnreadDividerRow(itemModifier)
+            }
+        }
+        if (content.isLoadingOlder || content.olderError != null) {
+            item(key = OLDER_KEY, contentType = OLDER_KEY) {
+                OlderMessagesState(
+                    content = content,
+                    onRetry = { onEvent(ChatEvent.Retry) },
+                    modifier = Modifier.entry(this, motionScheme, spacing.small),
+                )
+            }
+        }
+    }
+    InitialScroll(content.items, listState)
+    FollowNewestMessage(content.items.firstOrNull()?.key, listState)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(listState) {
+        try {
+            snapshotFlow {
+                val layout = listState.layoutInfo
+                val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
+                layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 1 - LOAD_MORE_THRESHOLD
+            }.distinctUntilChanged()
+                .collect { currentOnEvent(ChatEvent.NearOldestChanged(it)) }
+        } finally {
+            // Leaving the screen, or the list.
+            currentOnEvent(ChatEvent.NearOldestChanged(false))
+        }
+    }
+}
+
+/**
+ * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it
+ * downwards; without one the list stays at the newest message, where the reverse layout starts. Saved, so a rotation
+ * or process death keeps the restored position.
+ */
+@Composable
+private fun InitialScroll(
+    items: ImmutableList<ChatItem>,
+    listState: LazyListState,
+) {
+    var done by rememberSaveable { mutableStateOf(false) }
+    val currentItems by rememberUpdatedState(items)
+    val margin = with(LocalDensity.current) { MaterialTheme.spacing.extraExtraLarge.toPx() }
+    LaunchedEffect(listState) {
+        if (done) return@LaunchedEffect
+        done = true
+        val dividerIndex = currentItems.indexOfFirst { it is ChatItem.UnreadDivider }
+        if (dividerIndex < 0) return@LaunchedEffect
+        // Measured at once: the divider at the bottom, then moved up by the viewport's height less its own.
+        listState.scrollToItem(dividerIndex)
+        val layout = listState.layoutInfo
+        val divider = layout.visibleItemsInfo.firstOrNull { it.index == dividerIndex } ?: return@LaunchedEffect
+        val viewport = layout.viewportSize.height - layout.beforeContentPadding - layout.afterContentPadding
+        // A margin below the top, where the date pill floats.
+        listState.scrollBy(-(viewport - divider.size - margin).coerceAtLeast(0f))
+    }
+}
+
+/**
+ * Brings a new newest message into view when the list showed the newest one: a lazy list keeps its first visible
+ * entry in place by key, which would leave a message added below it out of view. Elsewhere in the history the list
+ * stays where the user scrolled to, and the jump button leads down.
+ */
+@Composable
+private fun FollowNewestMessage(
+    newestKey: Any?,
+    listState: LazyListState,
+) {
+    var shownNewestKey by remember { mutableStateOf(newestKey) }
+    LaunchedEffect(newestKey) {
+        val previousKey = shownNewestKey
+        if (newestKey == previousKey) return@LaunchedEffect
+        shownNewestKey = newestKey
+        // Entries may have come with it (a date separator), so the previous newest one is looked up by key.
+        if (listState.layoutInfo.visibleItemsInfo.any { it.key == previousKey }) listState.requestScrollToItem(0)
+    }
+}
+
+/**
+ * Opens a link of a message with the platform's handler. A link no app opens (a `tg://` link on a device without an
+ * app for it) does nothing; Pingogram resolves Telegram's own links itself later (M4).
+ */
+@Composable
+private fun rememberLinkOpener(): LinkInteractionListener {
+    val uriHandler = LocalUriHandler.current
+    return remember(uriHandler) {
+        LinkInteractionListener { link ->
+            val url = (link as? LinkAnnotation.Url)?.url ?: return@LinkInteractionListener
+            try {
+                uriHandler.openUri(url)
+            } catch (_: IllegalArgumentException) {
+                // No app on the device opens it.
+            }
+        }
+    }
+}
+
+/** An entry of the list: [top] above it, animating as the list changes on the [motionScheme]'s springs. */
+private fun Modifier.entry(
+    scope: LazyItemScope,
+    motionScheme: MotionScheme,
+    top: Dp,
+): Modifier =
+    with(scope) {
+        this@entry
+            .padding(top = top)
+            .animateItem(
+                fadeInSpec = motionScheme.defaultEffectsSpec(),
+                placementSpec = motionScheme.defaultSpatialSpec(),
+                fadeOutSpec = motionScheme.fastEffectsSpec(),
+            )
+    }
+
+/** The space above an entry: less between the bubbles of a group, which then read as one stack. */
+private fun ChatItem.topSpacing(
+    between: Dp,
+    withinGroup: Dp,
+): Dp = if (this is ChatItem.Bubble && position.joinsPrevious) withinGroup else between
+
+/** The content type of an entry, so the list reuses its compositions among entries of one kind. */
+private val ChatItem.contentType: Any
+    get() =
+        when (this) {
+            is ChatItem.Bubble -> if (isOutgoing) OUTGOING_BUBBLE else INCOMING_BUBBLE
+            is ChatItem.Service -> SERVICE
+            is ChatItem.DateSeparator -> DATE
+            is ChatItem.UnreadDivider -> UNREAD
+        }
+
+/** How close to the oldest message the list asks for older ones: about half a page of entries ahead. */
+private const val LOAD_MORE_THRESHOLD = 20
+
+private const val INCOMING_BUBBLE = "incoming"
+private const val OUTGOING_BUBBLE = "outgoing"
+private const val SERVICE = "service"
+private const val DATE = "date"
+private const val UNREAD = "unread"
+private const val OLDER_KEY = "older"
+
+@PingogramPreviews
+@Composable
+private fun ChatScreenPreview(
+    @PreviewParameter(ChatPreviewStates::class) state: ChatUiState,
+) {
+    PingogramPreview { ChatScreen(state = state, onEvent = {}, onBack = {}) }
+}
