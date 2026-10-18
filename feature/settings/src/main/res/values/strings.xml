@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <!-- Spoken by screen readers for the back button of a settings page. -->
+    <string name="settings_back">Back</string>
+    <string name="settings_retry">Try again</string>
+
+    <!-- Account header. %1$s is the username, without @. -->
+    <string name="settings_account_username">\@%1$s</string>
+
+    <!-- Settings home -->
+    <string name="settings_section_general">General</string>
+    <string name="settings_data_storage">Data and storage</string>
+    <string name="settings_data_storage_summary">Storage usage, clear cache</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_summary">Version, source code, license</string>
 
     <!-- Account section -->
     <string name="settings_section_account">Account</string>
@@ -15,7 +28,41 @@
     <string name="settings_log_out_dialog_confirm">Log out</string>
     <string name="settings_log_out_dialog_dismiss">Cancel</string>
 
-    <!-- The settings that are not built yet (docs/ROADMAP.md M3) -->
-    <string name="settings_coming_soon_title">More settings are on the way</string>
-    <string name="settings_coming_soon_body">Privacy, notification, data and appearance settings will arrive in a later version.</string>
+    <!-- Data and storage -->
+    <string name="settings_section_storage_usage">Storage usage</string>
+    <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
+    <string name="settings_storage_usage_loading">Loading storage usage</string>
+    <string name="settings_storage_files">Downloaded files</string>
+    <!-- %1$s is a size such as "1.5 GB", %2$s a file count such as "3,456 files". -->
+    <string name="settings_storage_files_size">%1$s · %2$s</string>
+    <plurals name="settings_storage_file_count">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
+    <string name="settings_storage_database">Database</string>
+    <!-- %1$s is a size such as "85 MB". -->
+    <string name="settings_storage_database_size">%1$s · chats, messages and settings</string>
+    <string name="settings_section_cache">Cache</string>
+    <string name="settings_clear_cache">Clear cache</string>
+    <string name="settings_clear_cache_summary">Remove downloaded photos, videos and files from this device</string>
+    <!-- Spoken by screen readers for the progress indicator while the cache is cleared. -->
+    <string name="settings_clearing_cache">Clearing cache</string>
+    <string name="settings_clear_cache_dialog_title">Clear cache?</string>
+    <string name="settings_clear_cache_dialog_text">Downloaded photos, videos, voice messages, music and files will be removed from this device. They stay in your chats and download again when you open them. Secret chats aren\'t affected.</string>
+    <string name="settings_clear_cache_dialog_confirm">Clear cache</string>
+    <string name="settings_clear_cache_dialog_dismiss">Cancel</string>
+    <!-- Snackbar after clearing the cache. %1$s is a size such as "1.5 GB". -->
+    <string name="settings_clear_cache_done">Cleared %1$s</string>
+    <string name="settings_clear_cache_nothing">There was nothing to clear</string>
+
+    <!-- About -->
+    <string name="settings_section_app">App</string>
+    <string name="settings_about_app_name">Pingogram</string>
+    <!-- %1$s is the version, such as "0.3.0". -->
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_about_source_code">Source code</string>
+    <string name="settings_about_source_code_summary">github.com/kyra-labs/pingogram-android</string>
+    <string name="settings_about_license">License</string>
+    <string name="settings_about_license_summary">GNU General Public License v3.0 or later</string>
+    <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>
 </resources>
