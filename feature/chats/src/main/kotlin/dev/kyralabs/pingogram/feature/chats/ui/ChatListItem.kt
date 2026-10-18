@@ -10,6 +10,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -48,6 +50,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * variants on entering selection mode would recreate the rows and skip the avatar's morph. The list item animates the
  * container color.
  *
+ * Open ([open]), its conversation showing beside the list on expanded windows, the row takes the same selected
+ * container, in the list item's selected shape (`large` corners, where resting rows have `extraSmall` ones), and keeps
+ * its avatar: the current item, as a navigation indicator marks the current destination, distinct from a row checked
+ * in selection mode. Screen readers hear it as selected.
+ *
  * @param onClick opens the chat, or selects it in selection mode; null makes the row not clickable.
  * @param onLongClick e.g. starts selection; only with [onClick].
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
@@ -61,6 +68,7 @@ internal fun ChatListItem(
     onLongClick: (() -> Unit)? = null,
     onLongClickLabel: String? = null,
     selected: Boolean = false,
+    open: Boolean = false,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
@@ -72,13 +80,18 @@ internal fun ChatListItem(
     if (onClick != null) {
         ListItem(
             onClick = onClick,
-            modifier = modifier.semantics { contentDescription = description },
+            modifier =
+                modifier.semantics {
+                    contentDescription = description
+                    if (open) this.selected = true
+                },
             leadingContent = leading,
             trailingContent = trailing,
             supportingContent = supporting,
             onLongClick = onLongClick,
             onLongClickLabel = onLongClickLabel,
-            colors = listItemColors(selected),
+            shapes = listItemShapes(open),
+            colors = listItemColors(selected || open),
             content = headline,
         )
     } else {
@@ -104,6 +117,13 @@ private fun listItemColors(selected: Boolean): ListItemColors {
         trailingContentColor = colors.selectedTrailingContentColor,
         supportingContentColor = colors.selectedSupportingContentColor,
     )
+}
+
+/** The list item's shapes, or its selected shape in place of its resting one. */
+@Composable
+private fun listItemShapes(selected: Boolean): ListItemShapes {
+    val shapes = ListItemDefaults.shapes()
+    return if (selected) shapes.copy(shape = shapes.selectedShape) else shapes
 }
 
 /** Decorative: the row's description names the chat, and its semantics say whether it is selected. */

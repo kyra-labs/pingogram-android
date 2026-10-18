@@ -165,6 +165,25 @@ class ChatListScreenTest {
         )
     }
 
+    // The open chat, beside its conversation on expanded windows
+
+    @Test
+    fun `screen readers hear the open chat's row as selected, and no other`() {
+        setScreen(ChatListPreviewData.content, openChatId = ADA_ID)
+
+        row(ADA).assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        row(GRACE).assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+    }
+
+    @Test
+    fun `in selection mode the open chat's row is a check box like the others`() {
+        setScreen(ChatListPreviewData.selecting, openChatId = GRACE_ID)
+
+        row(GRACE)
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.Off))
+    }
+
     // Selection mode
 
     @Test
@@ -301,11 +320,12 @@ class ChatListScreenTest {
     private fun setScreen(
         state: ChatListUiState,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+        openChatId: Long? = null,
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-                    ChatListScreen(state = state, onEvent = ::record)
+                    ChatListScreen(state = state, onEvent = ::record, openChatId = openChatId)
                 }
             }
         }
