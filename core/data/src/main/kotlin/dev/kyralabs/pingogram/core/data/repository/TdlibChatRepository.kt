@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.NotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
@@ -20,9 +21,11 @@ import dev.kyralabs.pingogram.core.data.mapper.toNotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.toProfilePhoto
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatList
 import dev.kyralabs.pingogram.core.data.mapper.toUnreadChatCount
+import dev.kyralabs.pingogram.core.data.mapper.withOwnMute
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -56,7 +59,12 @@ import javax.inject.Singleton
  * [chatList] sorts the chats of the list again whenever a chat changed, on [dispatcher]: a sort of about 1000 chats
  * costs far less than a frame, and keeping a sorted copy of every list (main, archive, each folder) up to date per
  * update would cost more code and memory than it saves. Updates that change no chat (folders, counts) sort nothing.
+ *
+ * Actions on chats only send requests: TDLib applies each change locally and reports it in an update before it tells
+ * Telegram, so the cache follows without guessing. One function per action, as in [ChatRepository] (hence
+ * `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibChatRepository
     @Inject
@@ -112,13 +120,73 @@ class TdlibChatRepository
 
         override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
             store.state.map { it.unreadChatCounts[list] ?: UnreadChatCount.None }.distinctUntilChanged()
+
+        /** `toggleChatIsPinned`. */
+        override suspend fun setPinned(
+            chatId: Long,
+            list: ChatListType,
+            isPinned: Boolean,
+        ): Outcome<Unit> = client.request(TdApi.ToggleChatIsPinned(list.toTdChatList(), chatId, isPinned)).map {}
+
+        /**
+         * `setChatNotificationSettings` with the chat's current settings, as the last update reported them, with only
+         * the mute changed; TDLib replaces every setting. A mute of more than 366 days lasts forever
+         * (`get_mute_until`, td/telegram/DialogNotificationSettings.cpp), and an own mute of 0 unmutes the chat even
+         * while its kind of chat is muted by default. TDLib refuses it for Saved Messages.
+         */
+        override suspend fun setMuted(
+            chatId: Long,
+            isMuted: Boolean,
+        ): Outcome<Unit> {
+            val cached = store.state.value.chats[chatId] ?: return Outcome.Failure(DomainError.NotFound)
+            val settings = cached.notificationSettings.withOwnMute(isMuted)
+            return client.request(TdApi.SetChatNotificationSettings(chatId, settings)).map {}
+        }
+
+        /** `addChatToList`, which also takes the chat out of the other one of main list and archive. */
+        override suspend fun setArchived(
+            chatId: Long,
+            isArchived: Boolean,
+        ): Outcome<Unit> {
+            val list = if (isArchived) TdApi.ChatListArchive() else TdApi.ChatListMain()
+            return client.request(TdApi.AddChatToList(chatId, list)).map {}
+        }
+
+        /** The requests of [markAsReadRequests] for the chat as cached, in order. */
+        override suspend fun markAsRead(chatId: Long): Outcome<Unit> {
+            val cached = store.state.value.chats[chatId] ?: return Outcome.Failure(DomainError.NotFound)
+            return client.requestAll(cached.chat.markAsReadRequests())
+        }
+
+        /** `toggleChatIsMarkedAsUnread`. */
+        override suspend fun markAsUnread(chatId: Long): Outcome<Unit> =
+            client.request(TdApi.ToggleChatIsMarkedAsUnread(chatId, true)).map {}
+
+        /** See [ChatDeletion]. */
+        override suspend fun deleteOptions(chatId: Long): Outcome<DeleteChatOptions> =
+            client.chatDeletion(chatId).map { it.options }
+
+        /** See [ChatDeletion]; read again here, as what the chat allows may have changed since [deleteOptions]. */
+        override suspend fun deleteChat(
+            chatId: Long,
+            forEveryone: Boolean,
+        ): Outcome<Unit> =
+            when (val deletion = client.chatDeletion(chatId)) {
+                is Outcome.Success -> client.requestAll(deletion.value.requests(forEveryone))
+                is Outcome.Failure -> deletion
+            }
     }
 
-/** A chat, and its own mute setting ([ownMute]), to resolve [Chat.isMuted] again when a default changes. */
+/**
+ * A chat, and its notification settings: the own mute among them resolves [Chat.isMuted] again when a default changes,
+ * and [TdlibChatRepository.setMuted] keeps the others. TDLib's object, never changed, as it stays in `core:data`.
+ */
 private data class CachedChat(
     val chat: Chat,
-    val ownMute: Boolean?,
-)
+    val notificationSettings: TdApi.ChatNotificationSettings,
+) {
+    val ownMute: Boolean? get() = notificationSettings.ownMute
+}
 
 private data class ChatCache(
     val chats: PersistentMap<Long, CachedChat> = persistentMapOf(),
@@ -133,7 +201,7 @@ private data class ChatCache(
     fun reduce(update: TdApi.Update): ChatCache =
         when (update) {
             is TdApi.UpdateNewChat -> withNewChat(update.chat)
-            is TdApi.UpdateChatNotificationSettings -> withOwnMute(update.chatId, update.notificationSettings.ownMute)
+            is TdApi.UpdateChatNotificationSettings -> withSettings(update.chatId, update.notificationSettings)
             is TdApi.UpdateScopeNotificationSettings -> withScopeMute(update.scope, update.notificationSettings.isMuted)
             is TdApi.UpdateChatFolders -> copy(folders = update.chatFolders.map { it.toChatFolder() }.toImmutableList())
             is TdApi.UpdateUnreadChatCount -> withUnreadChatCount(update)
@@ -142,7 +210,7 @@ private data class ChatCache(
 
     private fun withNewChat(tdChat: TdApi.Chat): ChatCache {
         val chat = tdChat.toChat(mutedScopes) ?: return this
-        return copy(chats = chats.putting(chat.id, CachedChat(chat, tdChat.notificationSettings.ownMute)))
+        return copy(chats = chats.putting(chat.id, CachedChat(chat, tdChat.notificationSettings)))
     }
 
     /** Updates for unknown chats are ignored: TDLib announces every chat before it reports a change. */
@@ -151,13 +219,13 @@ private data class ChatCache(
         return copy(chats = chats.putting(change.chatId, cached.copy(chat = change.apply(cached.chat))))
     }
 
-    private fun withOwnMute(
+    private fun withSettings(
         chatId: Long,
-        ownMute: Boolean?,
+        settings: TdApi.ChatNotificationSettings,
     ): ChatCache {
         val cached = chats[chatId] ?: return this
-        val chat = cached.chat.copy(isMuted = resolveMute(ownMute, cached.chat.type, mutedScopes))
-        return copy(chats = chats.putting(chatId, CachedChat(chat, ownMute)))
+        val chat = cached.chat.copy(isMuted = resolveMute(settings.ownMute, cached.chat.type, mutedScopes))
+        return copy(chats = chats.putting(chatId, CachedChat(chat, settings)))
     }
 
     private fun withScopeMute(
@@ -259,6 +327,25 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
         else -> {
             null
         }
+    }
+
+/**
+ * What marking the chat as read from the chat list takes, as the official apps do it; nothing for a chat with nothing
+ * unread.
+ * - `viewMessages` of the last message from the chat list with `force_read`, which reads every message up to it even
+ *   though the chat is not open, and also removes the chat's unread mark (`MessagesManager::view_messages`).
+ * - `readAllChatMentions` and `readAllChatReactions`, as viewing reads only the last message's own.
+ * - `toggleChatIsMarkedAsUnread(false)` for a marked chat without a last message to view.
+ */
+private fun Chat.markAsReadRequests(): List<TdApi.Function<TdApi.Ok>> =
+    buildList {
+        val last = lastMessage
+        if (last != null && (unreadCount > 0 || isMarkedAsUnread)) {
+            add(TdApi.ViewMessages(id, longArrayOf(last.id), TdApi.MessageSourceChatList(), true))
+        }
+        if (unreadMentionCount > 0) add(TdApi.ReadAllChatMentions(id))
+        if (unreadReactionCount > 0) add(TdApi.ReadAllChatReactions(id))
+        if (last == null && isMarkedAsUnread) add(TdApi.ToggleChatIsMarkedAsUnread(id, false))
     }
 
 /** The chat with [position] instead of its position in that list; order 0 takes the chat out of the list. */

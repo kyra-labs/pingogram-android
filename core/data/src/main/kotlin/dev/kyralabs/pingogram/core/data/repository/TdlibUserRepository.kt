@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toUserStatus
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,8 @@ import javax.inject.Singleton
  * app, and again whenever it changes, so every user is kept for the session: as many as the chats, members and
  * senders TDLib loaded. `updateUserStatus` changes the status of a known user; the `my_id` option names the
  * logged-in user.
+ *
+ * A user that changed only in fields Pingogram does not keep keeps its map, so [users] emits only real changes.
  */
 @Singleton
 class TdlibUserRepository
@@ -39,6 +42,10 @@ class TdlibUserRepository
 
         override val myUserId: StateFlow<Long?> =
             store.state.map { it.myUserId }.stateIn(scope, SharingStarted.Eagerly, initialValue = null)
+
+        // A new map is a changed user; the my_id option keeps the map.
+        override val users: Flow<ImmutableMap<Long, User>> =
+            store.state.map { it.users }.distinctUntilChanged { old, new -> old === new }
 
         override fun user(id: Long): Flow<User?> = store.state.map { it.users[id] }.distinctUntilChanged()
 
@@ -57,12 +64,12 @@ private data class UserCache(
     fun reduce(update: TdApi.Update): UserCache =
         when (update) {
             is TdApi.UpdateUser -> {
-                copy(users = users.putting(update.user.id, update.user.toUser()))
+                withUser(update.user.toUser())
             }
 
             is TdApi.UpdateUserStatus -> {
                 val user = users[update.userId] ?: return this
-                copy(users = users.putting(user.id, user.copy(status = update.status.toUserStatus())))
+                withUser(user.copy(status = update.status.toUserStatus()))
             }
 
             is TdApi.UpdateOption -> {
@@ -75,6 +82,9 @@ private data class UserCache(
                 this
             }
         }
+
+    private fun withUser(user: User): UserCache =
+        if (users[user.id] == user) this else copy(users = users.putting(user.id, user))
 }
 
 private const val MY_ID_OPTION = "my_id"

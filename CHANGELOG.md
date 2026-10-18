@@ -19,6 +19,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   three chats' messages in memory; files with download priorities; and a message model covering every content,
   formatting and service message type of the TDLib version in use. All of it starts listening before TDLib
   starts, so no update is missed.
+- Groundwork for the chat list (no screen yet): typing indicators; verified, scam and fake badges for groups
+  and channels; the chat actions behind swipes (pin, mute, archive, mark as read or unread, and delete or
+  leave with the right steps for each kind of chat), with a clear message when the pinned-chat limit is
+  reached; and avatars, which show the photo from TDLib's files through Coil 3 (which makes no network
+  requests of its own) or else initials on an expressive Material shape in one of seven color pairs, with an
+  online dot.
 
 ### Changed
 - The Chats and Contacts placeholders no longer say that sign-in is coming.

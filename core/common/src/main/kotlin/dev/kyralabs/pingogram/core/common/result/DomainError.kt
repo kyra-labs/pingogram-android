@@ -71,4 +71,12 @@ sealed interface DomainError {
     data object PasswordRecoveryUnavailable : DomainError
 
     data object PasswordRecoveryExpired : DomainError
+
+    // Chat list actions (REQUIREMENTS.md FR-L4).
+
+    /**
+     * The chat list already has as many pinned chats as allowed (TDLib's options `pinned_chat_count_max` and
+     * `pinned_archived_chat_count_max`, or the folder's limit; Telegram Premium raises them): unpin one first.
+     */
+    data object TooManyPinnedChats : DomainError
 }

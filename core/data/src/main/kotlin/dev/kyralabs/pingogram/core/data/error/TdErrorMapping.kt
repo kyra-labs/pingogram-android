@@ -74,7 +74,10 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "UPDATE_APP_TO_LOGIN" to DomainError.AppUpdateRequired,
     )
 
-/** TDLib's own validation messages (td/telegram/AuthManager.cpp) for errors Telegram also reports by name. */
+/**
+ * TDLib's own messages for errors it finds before asking Telegram: login input Telegram also reports by name
+ * (td/telegram/AuthManager.cpp), and limits TDLib checks itself.
+ */
 private val TDLIB_MESSAGES: Map<String, DomainError> =
     mapOf(
         "Phone number must be non-empty" to DomainError.PhoneNumberInvalid,
@@ -84,4 +87,7 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Email address must be non-empty" to DomainError.EmailInvalid,
         // The 2-step verification password uses an algorithm this TDLib does not know.
         "Application update is needed to log in" to DomainError.AppUpdateRequired,
+        // toggleChatIsPinned in the main list or the archive (MessagesManager::toggle_dialog_is_pinned) and in a
+        // folder (DialogFilter::check_limits). TDLib answers before it tells Telegram, so no server error follows.
+        "The maximum number of pinned chats exceeded" to DomainError.TooManyPinnedChats,
     )
