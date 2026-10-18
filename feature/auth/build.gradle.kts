@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.collections.immutable)
+    // Draws the QR code for QR login (FR-A6) on the device; nothing leaves it.
+    implementation(libs.zxing.core)
 
     // AuthViewModel is tested through the real TDLib repositories on FakeTdlibClient (docs/TESTING.md).
     testImplementation(projects.core.data)

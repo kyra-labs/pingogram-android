@@ -97,8 +97,11 @@
 
     <!-- QR code login (FR-A6) -->
     <string name="auth_qr_title">Log in with QR code</string>
-    <string name="auth_qr_instructions">1. Open Telegram on your phone.\n2. Go to Settings › Devices › Link Desktop Device.\n3. Scan this code.</string>
-    <string name="auth_qr_code_description">QR code for logging in</string>
+    <!-- The steps of Telegram's own QR login screens; "Telegram" names the user's other app (descriptive text). -->
+    <string name="auth_qr_step_open">Open Telegram on your phone</string>
+    <string name="auth_qr_step_settings">Go to Settings › Devices › Link Desktop Device</string>
+    <string name="auth_qr_step_confirm">Point your phone at this screen to confirm login</string>
+    <string name="auth_qr_code_description">QR code for logging in. Scan it with Telegram on your phone.</string>
     <string name="auth_qr_use_phone">Log in with phone number instead</string>
 
     <!-- Email address (FR-A7) -->
