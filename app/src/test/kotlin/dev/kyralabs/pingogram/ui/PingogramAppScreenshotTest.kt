@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.ui
 
 import android.app.Application
 import com.github.takahirom.roborazzi.captureRoboImage
+import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import org.junit.Test
@@ -10,8 +11,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The shell on the Chats tab: a short navigation bar on a compact phone, a collapsed wide navigation rail
- * on an expanded window (`docs/TESTING.md`). A plain [Application] keeps app start-up work out of UI tests.
+ * The signed-in shell on the Chats tab: a short navigation bar on a compact phone, a collapsed wide navigation rail
+ * on an expanded window (`docs/TESTING.md`). A plain [Application] keeps app start-up work out of UI tests; the Chats
+ * tab needs no Hilt view model.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, qualifiers = COMPACT)
@@ -32,7 +34,9 @@ class PingogramAppScreenshotTest {
 
     private fun capture(themeMode: ThemeMode) =
         captureRoboImage {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) { PingogramApp() }
+            PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+                PingogramApp(uiState = MainActivityUiState.SignedIn)
+            }
         }
 }
 

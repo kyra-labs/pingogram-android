@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.profileinstaller)
 
@@ -84,4 +85,11 @@ dependencies {
     implementation(projects.feature.media)
     implementation(projects.feature.profile)
     implementation(projects.feature.settings)
+
+    // Navigation and view model tests run the real repositories on FakeTdlibClient, bound with Hilt (docs/TESTING.md).
+    testImplementation(projects.core.testing)
+    testImplementation(libs.hilt.android.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    kspTest(libs.hilt.compiler)
 }
