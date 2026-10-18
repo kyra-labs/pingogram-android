@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.Locale
 
 // Fakes of the domain repositories the chat list reads, holding their state in flows the tests set.
 
@@ -43,8 +44,18 @@ class FakeChatRepository : ChatRepository {
     /** Every [loadChats] call: the list and the limit. */
     val loadRequests = mutableListOf<Pair<ChatListType, Int>>()
 
-    /** The answer to [loadChats]; by default the list is complete. */
-    var onLoadChats: suspend (ChatListType, Int) -> Outcome<Boolean> = { _, _ -> Outcome.Success(false) }
+    /** Answers to the next [loadChats] calls, in order ([answerLoads]); the default [onLoadChats] takes them. */
+    private val loadAnswers = ArrayDeque<Outcome<Boolean>>()
+
+    /** The answer to [loadChats]: the next of [answerLoads], then that the list is complete. */
+    var onLoadChats: suspend (ChatListType, Int) -> Outcome<Boolean> = { _, _ ->
+        loadAnswers.removeFirstOrNull() ?: Outcome.Success(false)
+    }
+
+    /** Answers the next [loadChats] calls with [answers], in order; after them the list is complete. */
+    fun answerLoads(vararg answers: Outcome<Boolean>) {
+        loadAnswers += answers
+    }
 
     fun setChats(
         list: ChatListType,
@@ -164,6 +175,22 @@ class FakeWallClock(
     fun setTime(time: Instant) {
         current = time
         minutes.value = time
+    }
+}
+
+/** Fixed English patterns, as the platform gives them for `Locale.US`; [uses24HourClock] is the system setting. */
+class FakeTimePatterns(
+    var uses24HourClock: Boolean = false,
+) : TimePatterns {
+    override fun is24HourClock(): Boolean = uses24HourClock
+
+    override fun bestPattern(
+        locale: Locale,
+        skeleton: String,
+    ): String = PATTERNS[skeleton] ?: error("No pattern for $skeleton")
+
+    private companion object {
+        val PATTERNS = mapOf("Hm" to "HH:mm", "hm" to "h:mm a", "MMMd" to "MMM d", "yMd" to "M/d/y")
     }
 }
 

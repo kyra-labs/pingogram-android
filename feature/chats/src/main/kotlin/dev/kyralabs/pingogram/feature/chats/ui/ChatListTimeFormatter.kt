@@ -2,30 +2,33 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import java.time.Instant
 import java.time.ZoneId
-import java.time.chrono.IsoChronology
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * The time of a chat's last message in the chat list (`REQUIREMENTS.md` FR-L2, §6.4), in [zone] and [locale]:
- * - today: the time, "9:41 AM";
+ * The time of a chat's last message in the chat list (`REQUIREMENTS.md` FR-L2, §6.4), in [zone] and [locale], with
+ * the platform's patterns ([TimePatterns]):
+ * - today: the time, "9:41 AM", or "09:41" on the 24-hour clock ([is24HourClock]);
  * - the six days before: the weekday, "Mon";
  * - earlier this year: the day and month, "Mar 17";
- * - before: the date, "3/17/25".
+ * - before: the date, "3/17/2025".
  *
- * Built in the ViewModel for every row, so formatters are created once per zone and locale. Times in the future (a
- * clock behind Telegram's) count as today.
+ * Built in the ViewModel for every row, so formatters are created once per zone, locale and clock setting. Times in
+ * the future (a clock behind Telegram's) count as today. A platform pattern java.time cannot read (ICU's day periods,
+ * which some languages use and older java.time versions lack) falls back to java.time's own localized style.
  */
 internal class ChatListTimeFormatter(
     val zone: ZoneId,
     val locale: Locale,
+    val is24HourClock: Boolean,
+    patterns: TimePatterns,
 ) {
-    private val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
-    private val dayAndMonth = DateTimeFormatter.ofPattern(dayAndMonthPattern(locale), locale)
-    private val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale)
+    private val time =
+        patterns.formatter(if (is24HourClock) "Hm" else "hm") { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
+    private val dayAndMonth = patterns.formatter("MMMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    private val date = patterns.formatter("yMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT) }
 
     /** The time [epochSeconds] (Unix time) as of [now]. */
     fun format(
@@ -43,92 +46,25 @@ internal class ChatListTimeFormatter(
         }
     }
 
+    /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
+    fun isFor(
+        zone: ZoneId,
+        locale: Locale,
+        is24HourClock: Boolean,
+    ): Boolean = this.zone == zone && this.locale == locale && this.is24HourClock == is24HourClock
+
+    /** The platform's pattern for [skeleton], or [fallback] if java.time cannot read it. */
+    private fun TimePatterns.formatter(
+        skeleton: String,
+        fallback: () -> DateTimeFormatter,
+    ): DateTimeFormatter =
+        try {
+            DateTimeFormatter.ofPattern(bestPattern(locale, skeleton), locale)
+        } catch (_: IllegalArgumentException) {
+            fallback().withLocale(locale)
+        }
+
     private companion object {
         const val DAYS_PER_WEEK = 7L
     }
 }
-
-/**
- * The [locale]'s medium date pattern without the year, "MMM d" for English: java.time has no pattern for a day and
- * month alone (Android's `DateFormat.getBestDateTimePattern` has, but would keep this code off the JVM).
- */
-internal fun dayAndMonthPattern(locale: Locale): String =
-    withoutYear(
-        DateTimeFormatterBuilder.getLocalizedDateTimePattern(FormatStyle.MEDIUM, null, IsoChronology.INSTANCE, locale),
-    )
-
-/**
- * [pattern] without its year and the separators and literals that only belong to it: "MMM d, y" → "MMM d",
- * "d MMM y 'г'." → "d MMM", "y/MM/dd" → "MM/dd", "dd.MM.y" → "dd.MM".
- */
-internal fun withoutYear(pattern: String): String {
-    val tokens = patternTokens(pattern)
-    val year = tokens.indexOfFirst { it.isField && it.text.first() in YEAR_LETTERS }
-    if (year < 0) return pattern
-    val previousField = (year - 1 downTo 0).firstOrNull { tokens[it].isField }
-    val nextField = (year + 1 until tokens.size).firstOrNull { tokens[it].isField }
-    val removed =
-        when {
-            // First: the year and the separator after it ("y/MM/dd").
-            previousField == null -> year until (nextField ?: tokens.size)
-
-            // Last: the separator before it and anything after it ("MMM d, y", "d MMM y 'г'.").
-            nextField == null -> previousField + 1 until tokens.size
-
-            // Between fields: the separator before it, keeping the one after.
-            else -> previousField + 1..year
-        }
-    return tokens.filterIndexed { index, _ -> index !in removed }.joinToString("") { it.text }.trim()
-}
-
-/** A run of one pattern letter (a field), or literal text: separators and quoted text with its quotes. */
-private class PatternToken(
-    val text: String,
-    val isField: Boolean,
-)
-
-private fun patternTokens(pattern: String): List<PatternToken> {
-    val tokens = mutableListOf<PatternToken>()
-    var index = 0
-    while (index < pattern.length) {
-        val char = pattern[index]
-        val end =
-            when {
-                char == '\'' -> quotedEnd(pattern, index)
-                char.isAsciiLetter() -> runEnd(pattern, index) { it == char }
-                else -> runEnd(pattern, index) { it != '\'' && !it.isAsciiLetter() }
-            }
-        tokens += PatternToken(pattern.substring(index, end), isField = char.isAsciiLetter())
-        index = end
-    }
-    return tokens
-}
-
-/** The end of the quoted text starting at [start]; `''` inside it is an escaped quote. */
-private fun quotedEnd(
-    pattern: String,
-    start: Int,
-): Int {
-    var index = start + 1
-    while (index < pattern.length) {
-        if (pattern[index] == '\'') {
-            if (index + 1 < pattern.length && pattern[index + 1] == '\'') index++ else return index + 1
-        }
-        index++
-    }
-    return pattern.length
-}
-
-private inline fun runEnd(
-    pattern: String,
-    start: Int,
-    belongs: (Char) -> Boolean,
-): Int {
-    var index = start + 1
-    while (index < pattern.length && belongs(pattern[index])) index++
-    return index
-}
-
-private fun Char.isAsciiLetter() = this in 'a'..'z' || this in 'A'..'Z'
-
-private const val YEAR_LETTERS = "yuY"

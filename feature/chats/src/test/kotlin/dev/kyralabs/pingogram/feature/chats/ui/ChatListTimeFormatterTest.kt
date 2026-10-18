@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZoneId
@@ -13,12 +15,21 @@ class ChatListTimeFormatterTest {
     private fun format(
         time: String,
         zone: ZoneId = ZoneOffset.UTC,
-        locale: Locale = Locale.US,
-    ) = ChatListTimeFormatter(zone, locale).format(Instant.parse(time).epochSecond, now).replace(' ', ' ')
+        is24HourClock: Boolean = false,
+        patterns: TimePatterns = FakeTimePatterns(),
+    ) = ChatListTimeFormatter(zone, Locale.US, is24HourClock, patterns)
+        .format(Instant.parse(time).epochSecond, now)
+        .replace(' ', ' ')
 
     @Test
-    fun `today shows the time`() {
+    fun `today shows the time on the 12-hour clock`() {
         assertEquals("12:00 AM", format("2026-10-18T00:00:00Z"))
+    }
+
+    @Test
+    fun `today shows the time on the 24-hour clock`() {
+        assertEquals("00:00", format("2026-10-18T00:00:00Z", is24HourClock = true))
+        assertEquals("21:07", format("2026-10-18T21:07:00Z", is24HourClock = true))
     }
 
     @Test
@@ -40,7 +51,7 @@ class ChatListTimeFormatterTest {
 
     @Test
     fun `earlier years show the date`() {
-        assertEquals("12/31/25", format("2025-12-31T23:59:59Z"))
+        assertEquals("12/31/2025", format("2025-12-31T23:59:59Z"))
     }
 
     @Test
@@ -50,24 +61,28 @@ class ChatListTimeFormatterTest {
     }
 
     @Test
-    fun `the day and month follow the language`() {
-        assertEquals("11 Oct", format("2026-10-11T10:00:00Z", locale = Locale.UK))
-        assertEquals("11.10", format("2026-10-11T10:00:00Z", locale = Locale.GERMANY))
+    fun `a platform pattern java_time cannot read falls back to its localized style`() {
+        // ICU's "b" (am, pm, noon, midnight), which java.time does not know.
+        val dayPeriods =
+            object : TimePatterns {
+                override fun is24HourClock() = false
+
+                override fun bestPattern(
+                    locale: Locale,
+                    skeleton: String,
+                ) = "h:mm b"
+            }
+
+        assertEquals("9:05 AM", format("2026-10-18T09:05:00Z", patterns = dayPeriods))
     }
 
     @Test
-    fun `withoutYear removes the year with the separators that belong to it`() {
-        assertEquals("MMM d", withoutYear("MMM d, y"))
-        assertEquals("d MMM", withoutYear("d MMM y 'г'."))
-        assertEquals("MM/dd", withoutYear("y/MM/dd"))
-        assertEquals("dd.MM", withoutYear("dd.MM.y"))
-        assertEquals("M月d日", withoutYear("y年M月d日"))
-        assertEquals("d 'de' MMM", withoutYear("d 'de' MMM 'de' y"))
-        assertEquals("d MMM, EEE", withoutYear("d MMM y, EEE"))
-    }
+    fun `a formatter is for its zone, language and clock setting`() {
+        val formatter = ChatListTimeFormatter(ZoneOffset.UTC, Locale.US, is24HourClock = false, FakeTimePatterns())
 
-    @Test
-    fun `withoutYear keeps a pattern without a year`() {
-        assertEquals("d MMMM", withoutYear("d MMMM"))
+        assertTrue(formatter.isFor(ZoneOffset.UTC, Locale.US, is24HourClock = false))
+        assertFalse(formatter.isFor(ZoneOffset.UTC, Locale.US, is24HourClock = true))
+        assertFalse(formatter.isFor(ZoneOffset.UTC, Locale.UK, is24HourClock = false))
+        assertFalse(formatter.isFor(ZoneId.of("Asia/Tokyo"), Locale.US, is24HourClock = false))
     }
 }

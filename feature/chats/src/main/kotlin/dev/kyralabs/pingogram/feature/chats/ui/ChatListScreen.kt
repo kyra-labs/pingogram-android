@@ -47,7 +47,6 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -72,8 +71,8 @@ internal fun ChatListRoute(
  * bar collapses, read in the draw phase.
  *
  * The list draws behind the floating navigation bar and ends clear of it ([screenContentWindowInsets]); on medium and
- * wider windows its rows keep a comfortable width, centered. It asks for more chats within [LOAD_MORE_THRESHOLD] rows
- * of its end, and scrolls to the top when another folder is selected.
+ * wider windows its rows keep a comfortable width, centered. It reports whether its end is within
+ * [LOAD_MORE_THRESHOLD] rows, so more chats load, and scrolls to the top when another folder is selected.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -120,9 +119,10 @@ internal fun ChatListScreen(
             is ChatListContent.Content -> {
                 ChatList(
                     items = content.items,
+                    folderId = state.selectedFolderId,
                     listState = listState,
                     contentPadding = innerPadding,
-                    onLoadMore = { onEvent(ChatListEvent.LoadMore) },
+                    onNearEndChanged = { onEvent(ChatListEvent.NearEndChanged(it)) },
                     modifier = contentModifier,
                 )
             }
@@ -150,15 +150,17 @@ private fun ScrollToTopOnFolderChange(
 }
 
 /**
- * The chats, keyed by id, each row animating to its new place when the order changes. Reports [onLoadMore] whenever
- * the end comes within [LOAD_MORE_THRESHOLD] rows, again after each page that leaves it that close.
+ * The chats, keyed by id, each row animating to its new place when the order changes. Reports to [onNearEndChanged]
+ * whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh for another folder
+ * ([folderId]), and false when the list leaves the screen.
  */
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
+    folderId: Int?,
     listState: LazyListState,
     contentPadding: PaddingValues,
-    onLoadMore: () -> Unit,
+    onNearEndChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -185,16 +187,19 @@ private fun ChatList(
             )
         }
     }
-    val loadMore by rememberUpdatedState(onLoadMore)
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val layout = listState.layoutInfo
-            val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
-            val nearEnd = layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 1 - LOAD_MORE_THRESHOLD
-            layout.totalItemsCount to nearEnd
-        }.distinctUntilChanged()
-            .filter { (_, nearEnd) -> nearEnd }
-            .collect { loadMore() }
+    val nearEndChanged by rememberUpdatedState(onNearEndChanged)
+    LaunchedEffect(listState, folderId) {
+        try {
+            snapshotFlow {
+                val layout = listState.layoutInfo
+                val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
+                layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 1 - LOAD_MORE_THRESHOLD
+            }.distinctUntilChanged()
+                .collect { nearEndChanged(it) }
+        } finally {
+            // Leaving the screen, or another folder that reports afresh.
+            nearEndChanged(false)
+        }
     }
 }
 

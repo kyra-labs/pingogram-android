@@ -42,7 +42,7 @@ sealed interface ChatListContent {
         val error: DomainError,
     ) : ChatListContent
 
-    /** The chats loaded so far, in TDLib's order (pinned first); more load at the end ([ChatListEvent.LoadMore]). */
+    /** The chats loaded so far, in TDLib's order (pinned first); more load near the end of the list. */
     data class Content(
         val items: ImmutableList<ChatListItemModel>,
     ) : ChatListContent

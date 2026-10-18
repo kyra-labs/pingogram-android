@@ -7,8 +7,13 @@ sealed interface ChatListEvent {
         val folderId: Int?,
     ) : ChatListEvent
 
-    /** The list scrolled to within a page of its end: load the next chats, unless they are loading or all loaded. */
-    data object LoadMore : ChatListEvent
+    /**
+     * Whether the list shows its end or is within about a page of it; reported on every change, and false when the
+     * list leaves the screen. While true, the next chats load, page after page, until all are loaded.
+     */
+    data class NearEndChanged(
+        val isNearEnd: Boolean,
+    ) : ChatListEvent
 
     /** "Try again" after loading the chats failed. */
     data object Retry : ChatListEvent

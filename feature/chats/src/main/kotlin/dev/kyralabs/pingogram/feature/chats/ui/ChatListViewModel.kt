@@ -52,12 +52,16 @@ import javax.inject.Inject
  * - **Folders**: the selected folder is kept in the [SavedStateHandle]. A folder that does not exist (deleted, or not
  *   reported by TDLib yet after a restart) shows the main list, without forgetting the selection.
  * - **Paging**: a list starts with a short first page ([FIRST_PAGE_SIZE]) once selected, then loads pages of
- *   [ChatRepository.PAGE_SIZE] when the list nears its end ([ChatListEvent.LoadMore]), one request per list at a
- *   time, until TDLib has no more. A failure shows [ChatListContent.Error] while there are no chats; otherwise the
- *   chats stay, and the next [ChatListEvent.LoadMore] tries again.
+ *   [ChatRepository.PAGE_SIZE] for as long as the screen reports that its end is near
+ *   ([ChatListEvent.NearEndChanged]), one request per list at a time, until TDLib has no more. A page that leaves the
+ *   end near, even one that added no rows, loads the next. A failure shows [ChatListContent.Error] while there are no
+ *   chats; otherwise the chats stay. Either way nothing is retried by itself: [ChatListEvent.Retry], or the end coming
+ *   near again, tries again.
+ * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every
+ *   emission, so a change shows at the next minute at the latest.
  *
- * It takes one repository per kind of data the list combines, plus the clock, dispatcher and language that tests
- * replace, hence `LongParameterList` is suppressed.
+ * It takes one repository per kind of data the list combines, plus the clock, dispatcher, language and time patterns
+ * that tests replace, hence `LongParameterList` is suppressed.
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,6 +74,7 @@ class ChatListViewModel internal constructor(
     chatActionRepository: ChatActionRepository,
     connectionRepository: ConnectionRepository,
     private val clock: WallClock,
+    private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
 ) : ViewModel() {
@@ -82,6 +87,7 @@ class ChatListViewModel internal constructor(
         chatActionRepository: ChatActionRepository,
         connectionRepository: ConnectionRepository,
         clock: WallClock,
+        timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
     ) : this(
         savedStateHandle,
@@ -91,6 +97,7 @@ class ChatListViewModel internal constructor(
         chatActionRepository,
         connectionRepository,
         clock,
+        timePatterns,
         dispatcher,
         Locale::getDefault,
     )
@@ -100,6 +107,9 @@ class ChatListViewModel internal constructor(
 
     /** The list shown; updated on the main thread, for events that act on it. */
     private var currentList: ChatListType = ChatListType.Main
+
+    /** The screen shows the end of [currentList], or close to it ([ChatListEvent.NearEndChanged]); main thread only. */
+    private var isNearEnd = false
 
     private val mapper = ChatListItemMapper()
     private var timeFormatter: ChatListTimeFormatter? = null
@@ -160,6 +170,8 @@ class ChatListViewModel internal constructor(
         viewModelScope.launch {
             selectedList.collect { list ->
                 currentList = list
+                // The screen reports the new list's end afresh.
+                isNearEnd = false
                 val load = loads.value[list]
                 if (load == null || (load.error != null && !load.isLoading)) loadPage(list)
             }
@@ -169,14 +181,22 @@ class ChatListViewModel internal constructor(
     fun onEvent(event: ChatListEvent) {
         when (event) {
             is ChatListEvent.SelectFolder -> savedStateHandle[KEY_FOLDER] = event.folderId
-            ChatListEvent.LoadMore -> loadPage(currentList)
+            is ChatListEvent.NearEndChanged -> onNearEndChanged(event.isNearEnd)
             ChatListEvent.Retry -> loadPage(currentList)
         }
     }
 
+    /** The end coming near loads the next page, also after a failure; leaving it stops loading after this page. */
+    private fun onNearEndChanged(nearEnd: Boolean) {
+        isNearEnd = nearEnd
+        if (nearEnd) loadPage(currentList)
+    }
+
     /**
      * Loads the next page of [list]: [FIRST_PAGE_SIZE] chats until a page succeeded, then [ChatRepository.PAGE_SIZE].
-     * Nothing while a page of the list loads or once it is complete.
+     * Nothing while a page of the list loads or once it is complete. A page that succeeds while the screen still shows
+     * the end of this list loads the next one, as the chats it added (if any) did not move the end away; a failed page
+     * waits for [ChatListEvent.Retry] or the end coming near again.
      */
     private fun loadPage(list: ChatListType) {
         val load = loads.value[list] ?: ListLoad()
@@ -194,6 +214,8 @@ class ChatListViewModel internal constructor(
                     }
                 loads.put(list, loaded.copy(isLoading = false))
             }
+            val hasMore = (result as? Outcome.Success)?.value == true
+            if (hasMore && isNearEnd && list == currentList) loadPage(list)
         }
     }
 
@@ -215,13 +237,13 @@ class ChatListViewModel internal constructor(
 
     private fun RowSnapshot.sourcesFor(list: ChatListType) = RowSources(list, this, timeFormatter())
 
-    /** The formatter for the current time zone and language, which can change while the app runs. */
+    /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */
     private fun timeFormatter(): ChatListTimeFormatter {
         val zone: ZoneId = clock.zone()
         val locale = locale()
-        val current = timeFormatter
-        if (current != null && current.zone == zone && current.locale == locale) return current
-        return ChatListTimeFormatter(zone, locale).also { timeFormatter = it }
+        val is24HourClock = timePatterns.is24HourClock()
+        return timeFormatter?.takeIf { it.isFor(zone, locale, is24HourClock) }
+            ?: ChatListTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
     }
 
     /** How far a list has loaded. */
