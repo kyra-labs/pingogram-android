@@ -21,8 +21,7 @@ the release workflow so the owner can install and test on a phone.
       shell with placeholder tabs
 - [x] ktlint, detekt, lint config; `./gradlew check` green
 - [x] CI workflow green on PR; TDLib workflow produces an AAR release
-- [ ] Release workflow produces signed APKs on tag — build verified locally with a throwaway key;
-      the first real run needs the owner's signing/API secrets and a `v0.0.1` tag
+- [x] Release workflow produces signed APKs on tag (first release: `v0.1.0`, with M1)
 - [x] README badges, CONTRIBUTING, issue templates in place
 
 ## M1 — Authentication → `v0.1.0`
