@@ -1,12 +1,6 @@
 package dev.kyralabs.pingogram.navigation
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +18,8 @@ import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
+import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
+import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
@@ -106,13 +102,3 @@ private fun SessionNavigationEffect(
         }
     }
 }
-
-// Fade-through: the outgoing screen fades out quickly while the incoming one fades in and grows from 92%.
-// Springs cannot be delayed, so the faster exit spring stands in for the spec's sequential timing.
-private fun fadeThroughEnter(motionScheme: MotionScheme): EnterTransition =
-    fadeIn(motionScheme.defaultEffectsSpec()) +
-        scaleIn(motionScheme.defaultSpatialSpec(), initialScale = FADE_THROUGH_INITIAL_SCALE)
-
-private fun fadeThroughExit(motionScheme: MotionScheme): ExitTransition = fadeOut(motionScheme.fastEffectsSpec())
-
-private const val FADE_THROUGH_INITIAL_SCALE = 0.92f
