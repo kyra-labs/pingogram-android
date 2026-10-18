@@ -12,12 +12,17 @@ import androidx.compose.ui.unit.dp
  * Layout dimensions beyond the spacing scale (`docs/DESIGN_SYSTEM.md` §7). Feature modules use these instead of
  * `dp` literals, through [MaterialTheme.sizes].
  *
- * @property contentMaxWidth the widest a single column of content gets (forms, onboarding), centered on medium and
- *   wider windows so lines and fields stay comfortable; the width of an M3 dialog.
+ * @property contentMaxWidth the widest a single column of content gets (forms, onboarding, a list on its own),
+ *   centered on medium and wider windows so lines and fields stay comfortable; the width of an M3 dialog.
  * @property illustrationMaxSize the largest side of a hero illustration or a QR code frame.
  * @property avatarSmall an `Avatar` in a one- or two-line list item: contacts, members, search results (the M3 list
  *   item's leading avatar).
  * @property avatarMedium an `Avatar` in a chat list row, next to a title and a two-line preview.
+ * @property inlineIcon an icon within a line of title text, e.g. the badges and mute icon after a chat's name.
+ * @property inlineIconSmall an icon next to label text, e.g. read receipts beside a time, or a chat's pin.
+ * @property badgeIcon an icon inside a `Badge`, e.g. the `@` of an unread mention; the size of a badge's digits.
+ * @property inlineProgressIndicator an indeterminate progress indicator within a line of `labelLarge` text, e.g. in
+ *   the chat list's connection pill.
  */
 @Immutable
 data class PingogramSizes(
@@ -25,6 +30,10 @@ data class PingogramSizes(
     val illustrationMaxSize: Dp = 280.dp,
     val avatarSmall: Dp = 40.dp,
     val avatarMedium: Dp = 56.dp,
+    val inlineIcon: Dp = 18.dp,
+    val inlineIconSmall: Dp = 16.dp,
+    val badgeIcon: Dp = 12.dp,
+    val inlineProgressIndicator: Dp = 20.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }
