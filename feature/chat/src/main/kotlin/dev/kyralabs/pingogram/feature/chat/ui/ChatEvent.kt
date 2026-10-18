@@ -41,8 +41,9 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * The photo, video, GIF or video message [messageId] (an album's item, by its own message) was tapped. It is for
-     * the media viewer, the next item of the roadmap; until it comes, nothing happens.
+     * The photo, video, GIF or video message [messageId] (an album's item, by its own message) was tapped: a photo,
+     * video or GIF opens in the media viewer ([ChatEffect.OpenMedia]). Video messages and self-destructing media do not
+     * open there.
      */
     data class OpenMedia(
         val messageId: Long,

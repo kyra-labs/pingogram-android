@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.activity.BackEventCompat
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -239,6 +240,30 @@ class PingogramAppTest {
         tab(R.string.nav_chats).assertIsSelected()
     }
 
+    @Test
+    fun `a predictive back gesture shrinks the conversation over the chat list, then leaves it`() {
+        tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
+        setApp()
+        composeRule.runOnUiThread { navController.navigate(ChatRoute(chatId = 5)) }
+        awaitText(ChatR.string.chat_not_found_title)
+        val resting = text(ChatR.string.chat_not_found_title).fetchSemanticsNode().boundsInRoot.width
+        val dispatcher = composeRule.activity.onBackPressedDispatcher
+
+        composeRule.runOnUiThread {
+            dispatcher.dispatchOnBackStarted(BackEventCompat(0f, 0f, 0f, BackEventCompat.EDGE_LEFT))
+            dispatcher.dispatchOnBackProgressed(BackEventCompat(0f, 0f, HALF_GESTURE, BackEventCompat.EDGE_LEFT))
+        }
+        awaitText(ChatsR.string.chat_list_empty_title)
+
+        // Navigation's default shrinks it to 78% by half the gesture, on its way to 70%.
+        val scale = text(ChatR.string.chat_not_found_title).fetchSemanticsNode().boundsInRoot.width / resting
+        assertTrue("$scale", scale in PREDICTIVE_BACK_SCALE_RANGE)
+        composeRule.runOnUiThread { dispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        text(ChatR.string.chat_not_found_title).assertDoesNotExist()
+        tab(R.string.nav_chats).assertIsSelected()
+    }
+
     // A screen hiding the floating navigation bar, as the chat list does while chats are selected
 
     @Test
@@ -409,5 +434,9 @@ class PingogramAppTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
+        const val HALF_GESTURE = 0.5f
+
+        /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
+        val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f
     }
 }

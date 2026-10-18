@@ -83,6 +83,33 @@ class ChatListFolderSwitchTest {
     }
 
     @Test
+    fun `the selected folder's rows show in their places, not sliding from where the other list had them`() {
+        // Chat 7 is seventh in All chats and first in the folder, above chat 2, which is second in both.
+        val listState = LazyListState()
+        state = allChats
+        setScreen(listState)
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+
+        state = folder(1, numberedRows(listOf(7, 2)))
+        val shown =
+            List(SWITCH_FRAMES) {
+                advanceFrames(1)
+                if (listState.layoutInfo.totalItemsCount <
+                    allChats.chatCount()
+                ) {
+                    top("Chat 7") to top("Chat 2")
+                } else {
+                    null
+                }
+            }.filterNotNull()
+        composeRule.mainClock.autoAdvance = true
+
+        assertTrue("The folder's list showed", shown.isNotEmpty())
+        assertTrue("Chat 7's and chat 2's tops: $shown", shown.all { (seven, two) -> seven < two })
+    }
+
+    @Test
     fun `the selected folder's list starts at its top`() {
         state = ChatListPreviewData.contentWithFolders.copy(content = ChatListContent.Content(manyRows))
         setScreen()
@@ -192,6 +219,10 @@ class ChatListFolderSwitchTest {
 
     private fun row(name: String): SemanticsNodeInteraction = composeRule.onNode(rowMatcher(name))
 
+    private fun top(name: String) = row(name).fetchSemanticsNode().boundsInRoot.top
+
+    private fun ChatListUiState.chatCount() = (content as ChatListContent.Content).items.size
+
     private fun exists(name: String) = composeRule.onAllNodes(rowMatcher(name)).fetchSemanticsNodes().isNotEmpty()
 
     private fun rowMatcher(name: String) = hasContentDescription("$name,", substring = true) and hasClickAction()
@@ -205,6 +236,9 @@ class ChatListFolderSwitchTest {
          * that runs the swap, the one that shows the new list), not for the fade-out on the fast effects spring.
          */
         const val FEW_FRAMES = 3
+
+        /** Enough frames for the fade-out and the first half of the fade-in. */
+        const val SWITCH_FRAMES = 30
 
         /** The Work folder, with only a chat that is not among All chats' rows. */
         val workFolder =

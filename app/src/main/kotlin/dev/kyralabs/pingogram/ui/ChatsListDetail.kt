@@ -54,6 +54,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   history is saved, so the chat survives rotation, process death and switching tabs.
  * - **Back**: predictive, through the navigator ([BACK_BEHAVIOR]): it closes the conversation, back to the list alone
  *   or to [NoChatSelected] beside it. Selection mode in the list handles back first, and never changes the chat shown.
+ * - **Media**: a photo, video or GIF tapped in the conversation opens through [onOpenMedia], which pushes the media
+ *   viewer full screen above the whole layout, whichever pane it was tapped in.
  * - **Motion**: the scaffold's pane motion; panes that stay change their bounds on the slow spatial spring, as large
  *   layout changes do (§5).
  */
@@ -62,6 +64,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 internal fun ChatsListDetail(
     onOpenArchive: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigator =
@@ -99,6 +102,7 @@ internal fun ChatsListDetail(
                 if (chatId != null) {
                     ChatPane(
                         chatId = chatId,
+                        onOpenMedia = onOpenMedia,
                         // Beside the list there is nothing to go back to; a pane sliding out keeps its button.
                         onBack =
                             if (listVisible && shownChatId != null) {

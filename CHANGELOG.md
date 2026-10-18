@@ -22,12 +22,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   round video messages appear without a bubble. Voice messages show their waveform and length; documents
   show their name and size and download on tap, with progress and cancel. Music, polls with their results,
   locations and venues (which open your maps app), contacts, games and invoices have their own cards.
-  Opening media full screen comes next.
+  Tapping a photo, video, GIF or album item opens it full screen.
 - Voice messages and music play in the conversation, one at a time: the waveform fills as it plays, tapping
   it seeks, and voice messages play on to the next one. A file that isn't downloaded yet downloads first.
   Playback pauses when you leave the chat or unplug headphones.
 - Messages you see in a conversation are marked as read, and the unread count follows.
 - Tapping a reply quote jumps to the original message and highlights it, loading older messages if needed.
+- A full-screen media viewer: swipe through all the photos and videos of a chat (GIFs among the chat's GIFs)
+  with "N of total" at the top; pinch or double-tap to zoom and drag to pan; videos play with play/pause and
+  a seek slider, GIFs loop silently. The sender, date and caption show over the media; tap to hide them
+  along with the system bars. Swipe down or go back to close. The viewer is always dark, like a photo app.
 - On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
@@ -49,6 +53,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Switching back to a chat folder shows its list where you left it, or at its top the first time, instead of
   jumping to the chat that was first in the other folder.
 - The navigation bar stays in place when you switch tabs, instead of sliding sideways and back.
+- Going back from a chat, the archive or another tab with the back gesture is smoother: the screen you leave
+  shrinks a little and fades away over the one you go back to, instead of shrinking far, waiting and vanishing at
+  once. Opening and leaving a chat no longer redraws every screen behind it, which caused stutters.
+- Switching chat folders no longer stutters: the new folder's chats appear in their places instead of sliding in
+  from where the other folder had them, and the chat list does less work per chat.
 - Fewer stutters when going between screens: each text style's font is prepared once, instead of again whenever
   enough other styles had been shown since.
 

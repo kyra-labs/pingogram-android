@@ -102,7 +102,8 @@ import java.util.Locale
  * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
- * - **Effects** ([effects]): errors, opening a location in a maps app, and the note that opening files comes later.
+ * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
+ *   opening a location in a maps app, and the note that opening files comes later.
  *
  * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
  * patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the
@@ -309,7 +310,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenReply -> openReply(event.messageId)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
-            is ChatEvent.OpenMedia -> Unit
+            is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.DownloadFile -> files.download(event.fileId)
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> effectChannel.trySend(ChatEffect.FileOpeningUnavailable)
@@ -585,6 +586,35 @@ private fun ChatUiState.locationOf(messageId: Long): ChatEffect.OpenLocation? {
         }
     }
 }
+
+/**
+ * The photo, video or GIF of loaded message [messageId], an album's item too, as the effect that opens it in the media
+ * viewer; null for other messages. Video messages stay where they are, and so does self-destructing media, which needs
+ * a viewer of its own (a timer once opened, screenshots blocked).
+ */
+private fun ChatUiState.mediaToOpen(messageId: Long): ChatEffect.OpenMedia? {
+    val content =
+        items.firstNotNullOfOrNull { item ->
+            val bubble = item as? ChatItem.Bubble
+            val album = bubble?.album
+            when {
+                album != null -> album.items.getOrNull(album.messageIds.indexOf(messageId))
+                bubble != null && bubble.id == messageId -> bubble.content
+                else -> null
+            }
+        }
+    return if (content?.opensInViewer == true) ChatEffect.OpenMedia(messageId) else null
+}
+
+/** A photo, video or GIF that is not self-destructing: what the media viewer shows. */
+private val MessageContent.opensInViewer: Boolean
+    get() =
+        when (this) {
+            is MessageContent.Photo -> !isSecret
+            is MessageContent.Video -> !isSecret
+            is MessageContent.Animation -> !isSecret
+            else -> false
+        }
 
 /** The items shown, none while there is no content. */
 private val ChatUiState.items: List<ChatItem>

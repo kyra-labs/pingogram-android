@@ -229,7 +229,12 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   vertical flows (auth), fade-through for tab switches and chat folder switches, container
   transform via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, FAB → new
   chat.
-- Predictive back: screens use Navigation's default M3 predictive back; custom surfaces
+- Predictive back: Navigation's predictive back with our transitions (`predictiveBackPopExit`,
+  `core:ui`): the screen being left scales to 90% on `defaultSpatialSpec` and fades on
+  `slowEffectsSpec` over the destination beneath, which shows at full opacity. Navigation seeks the
+  transition with the gesture's progress and plays the rest after release at the same pace, so the
+  springs' curves are the gesture's curve. Navigation's default (scale to 70% without fading)
+  leaves an opaque card that is cut at the end. Custom surfaces
   (media viewer, attach sheet, selection toolbar) implement `PredictiveBackHandler` and scale
   to 90% with the Expressive back-progress curve.
 - Lists: `Modifier.animateItem()` on every `LazyColumn` item; new message enters with a spatial
@@ -298,7 +303,9 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out).
 - **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
   `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
-  margin below and the same margin above), so lists end clear of the bar.
+  margin below and the same margin above), so lists end clear of the bar. The insets depend on the
+  window only, never on the destination: changing that static local recomposes every screen.
+  Screens pushed above a tab, where the bar hides, do not read it.
 - **Stepping aside**: a top-level screen that shows a floating toolbar of its own in the bar's place
   (the chat list's selection toolbar, as Google Photos does while selecting) hides the bar with
   `HideNavigationBar(hidden)` (`core:ui`, honoured by `PingogramApp`). The bar returns as soon as the

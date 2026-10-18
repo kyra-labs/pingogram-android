@@ -20,11 +20,15 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
+import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopEnter
+import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopExit
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
+import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
+import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
@@ -35,7 +39,8 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *
  * Destinations switch with Material's fade-through (`docs/DESIGN_SYSTEM.md` §5), built from the theme's
  * expressive motion scheme; so does the switch between the two graphs. Destinations pushed on top of a tab later bring
- * their own shared-axis transitions.
+ * their own shared-axis transitions. A predictive back gesture shrinks and dissolves the screen it leaves over the one
+ * it goes back to ([predictiveBackPopExit]).
  */
 @Composable
 internal fun PingogramNavHost(
@@ -52,6 +57,8 @@ internal fun PingogramNavHost(
         modifier = modifier,
         enterTransition = { fadeThroughEnter(motionScheme) },
         exitTransition = { fadeThroughExit(motionScheme) },
+        predictivePopEnterTransition = { predictiveBackPopEnter() },
+        predictivePopExitTransition = { predictiveBackPopExit(motionScheme) },
     ) {
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then. Navigating
         // here as well could act on a login that a logout has already replaced.
@@ -64,18 +71,22 @@ internal fun PingogramNavHost(
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
+        // Full screen above everything, the list-detail layout too.
+        val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
         // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
         composable<ChatsRoute> {
             ChatsListDetail(
                 onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
                 onOpenChat = openChat,
+                onOpenMedia = openMedia,
             )
         }
         contactsScreen()
         settingsScreen()
         searchScreen(onBack = { navController.popBackStack() })
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
-        chatScreen(onBack = { navController.popBackStack() })
+        chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
+        mediaViewerScreen(onBack = { navController.popBackStack() })
     }
 }
 
