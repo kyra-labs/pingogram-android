@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- TDLib's connection to Telegram's data centers. Every permission needs the owner's approval
+         (CLAUDE.md) and is pinned by AppManifestTest. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- enableOnBackInvokedCallback: predictive back (REQUIREMENTS.md §7). -->
     <application
         android:name=".PingogramApplication"
