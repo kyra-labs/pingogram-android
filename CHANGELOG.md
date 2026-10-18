@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-18
+
 ### Added
 - Project scaffold, documentation, CI, TDLib and release workflows.
 - Gradle project: version catalog, `build-logic` convention plugins, Gradle 9.8.1 wrapper and the
@@ -71,4 +73,5 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/main...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/kyra-labs/pingogram-android/releases/tag/v0.1.0
