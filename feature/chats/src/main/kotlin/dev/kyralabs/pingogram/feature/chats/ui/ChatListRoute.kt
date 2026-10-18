@@ -24,19 +24,21 @@ import kotlinx.coroutines.launch
 /**
  * The Chats tab: hoists its [ChatListViewModel], and reports the app fully drawn once the chat list shows its chats or
  * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Tapping a row
- * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive.
+ * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive. [openChatId] is the chat whose conversation
+ * shows beside the list, on expanded windows.
  */
 @Composable
 internal fun ChatListRoute(
     onOpenArchive: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    openChatId: Long? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
-    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier = modifier)
+    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier, openChatId)
 }
 
 /**
@@ -63,6 +65,7 @@ private fun ChatListDestination(
     onOpenChat: (chatId: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    openChatId: Long? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     ChatListEffects(viewModel.effects, snackbarHostState, onOpenArchive, onOpenChat, onEvent = viewModel::onEvent)
@@ -72,6 +75,7 @@ private fun ChatListDestination(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        openChatId = openChatId,
     )
 }
 

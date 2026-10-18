@@ -69,6 +69,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
  * - **Snackbars** show above the floating bar or toolbar; the delete confirmation is a dialog ([DeleteChatDialog]).
+ * - **Open chat**: beside the conversation of [openChatId] (the list pane on expanded windows), that chat's row looks
+ *   and reads as selected ([ChatListItem]); not in selection mode, whose own selection the toolbar acts on.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +81,7 @@ internal fun ChatListScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
     onBack: () -> Unit = {},
+    openChatId: Long? = null,
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
@@ -116,7 +119,7 @@ internal fun ChatListScreen(
                 } else {
                     screenContentWindowInsets()
                 },
-        ) { innerPadding -> ChatListBody(state, onEvent, listState, innerPadding) }
+        ) { innerPadding -> ChatListBody(state, onEvent, listState, innerPadding, openChatId) }
         SelectionToolbarHost(
             selection = selection,
             backProgress = { backProgress.value },
@@ -141,6 +144,7 @@ private fun ChatListBody(
     onEvent: (ChatListEvent) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
+    openChatId: Long?,
 ) {
     val contentModifier =
         Modifier
@@ -173,6 +177,7 @@ private fun ChatListBody(
                 state = state,
                 listState = listState,
                 contentPadding = innerPadding,
+                openChatId = openChatId,
                 onEvent = onEvent,
                 modifier = contentModifier,
             )
@@ -200,17 +205,20 @@ private fun ScrollToTopOnFolderChange(
 
 /**
  * The archive row of [state], if any, then its chats ([items]), keyed by id, each row animating to its new place when
- * the order changes and fading out when it leaves (archived, deleted). Reports to [ChatListEvent.NearEndChanged]
+ * the order changes and fading out when it leaves (archived, deleted). Outside selection mode, [openChatId]'s row is
+ * open. Reports to [ChatListEvent.NearEndChanged]
  * whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh for another folder, and false
  * when the list leaves the screen. An archive row that appears above the first chat while the list shows its top is
  * scrolled into view.
  */
+@Suppress("LongParameterList") // The rows, the selection and open chat they show, and the list's state and padding.
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
     state: ChatListUiState,
     listState: LazyListState,
     contentPadding: PaddingValues,
+    openChatId: Long?,
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -241,6 +249,7 @@ private fun ChatList(
                 item = item,
                 selected = selectedIds?.contains(item.id) == true,
                 selectionMode = selection != null,
+                open = selection == null && item.id == openChatId,
                 onEvent = onEvent,
                 modifier = Modifier.listRow(this, maxWidth, motionScheme),
             )
