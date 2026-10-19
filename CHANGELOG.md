@@ -45,6 +45,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
   instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
+- Text is set the way Google sets Google Sans Flex on Android: Material's weights (titles were one to three
+  steps heavier), without the extra letter spacing meant for Roboto, and rounded letters for emphasized text
+  only. Sizes are unchanged, but text reads lighter and takes less room.
 
 ### Fixed
 - Leaving a chat after playing a voice message or song no longer holds up the screen for a moment: the audio

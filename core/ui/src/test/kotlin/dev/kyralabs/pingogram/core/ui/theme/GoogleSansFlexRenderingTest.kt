@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.R
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -71,7 +70,6 @@ class GoogleSansFlexRenderingTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private var sample by mutableStateOf<(Typography) -> TextStyle>({ it.bodyLarge })
-    private var textWidth = 0
     private var started = false
 
     @After
@@ -114,23 +112,6 @@ class GoogleSansFlexRenderingTest {
         }
     }
 
-    @Test
-    fun `the emphasis grade adds weight without changing the width of the text`() {
-        val style = pingogramTypography(dark = false).labelLargeEmphasized
-        val graded = render { style }
-        val ungraded = render { style.withAxis("GRAD", 0f) }
-
-        assertTrue(graded.ink > ungraded.ink)
-        assertEquals(ungraded.textWidth, graded.textWidth)
-    }
-
-    @Test
-    fun `labelSmall is narrower than at the normal width`() {
-        val style = pingogramTypography(dark = false).labelSmall
-
-        assertTrue(render { style }.textWidth < render { style.withAxis("wdth", 100f) }.textWidth)
-    }
-
     // The bundled file's GRAD axis is 0..100 (fvar), so the platform clamps the dark theme's -25 to 0. When a file
     // with negative grades ships, this fails as a reminder of the open question in docs/DESIGN_SYSTEM.md §3.1.
     @Test
@@ -139,9 +120,7 @@ class GoogleSansFlexRenderingTest {
         val dark = pingogramTypography(dark = true)
 
         assertTrue(render { dark.bodyLarge }.looksLike(render { light.bodyLarge }))
-        // So in dark, emphasized styles (-25 + 25) lose the grade they have in light (25).
-        val ungraded = light.titleMediumEmphasized.withAxis("GRAD", 0f)
-        assertTrue(render { dark.titleMediumEmphasized }.looksLike(render { ungraded }))
+        assertTrue(render { dark.titleMediumEmphasized }.looksLike(render { light.titleMediumEmphasized }))
     }
 
     @Test
@@ -172,14 +151,13 @@ class GoogleSansFlexRenderingTest {
         val plain = pingogramTypography(dark = false)
 
         assertTrue(render { it.bodyLarge }.looksLike(render { plain.bodyLarge.fontAlone(wght = 400f) }))
-        assertTrue(render { it.titleMedium }.looksLike(render { plain.titleMedium.fontAlone(wght = 600f) }))
-        // Read and unread chat titles stay apart (900 and 1000).
+        assertTrue(render { it.titleMedium }.looksLike(render { plain.titleMedium.fontAlone(wght = 500f) }))
+        // Read and unread chat titles stay apart (800 and 900).
         assertFalse(render { it.titleMedium }.looksLike(render { it.titleMediumEmphasized }))
     }
 
     private class Rendering(
         val pixels: Bitmap,
-        val textWidth: Int,
     ) {
         val ink: Long by lazy {
             val colors = IntArray(pixels.width * pixels.height)
@@ -203,7 +181,6 @@ class GoogleSansFlexRenderingTest {
                             color = Color.Black,
                             maxLines = 1,
                             softWrap = false,
-                            onTextLayout = { textWidth = it.size.width },
                             style = sample(MaterialTheme.typography),
                         )
                     }
@@ -212,7 +189,7 @@ class GoogleSansFlexRenderingTest {
         }
         composeRule.waitForIdle()
         val pixels = composeRule.onNodeWithTag(SAMPLE_TAG).captureToImage().asAndroidBitmap()
-        return Rendering(pixels, textWidth)
+        return Rendering(pixels)
     }
 
     /**

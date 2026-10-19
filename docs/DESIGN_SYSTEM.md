@@ -124,18 +124,23 @@ fun PingogramTheme(
 
 | Axis | Tag | Use in Pingogram |
 |---|---|---|
-| Weight | `wght` | 300–800 across the scale; emphasized styles +200 |
-| Width | `wdth` | 100 default; 90–95 for dense labels/time stamps; 110 for display |
+| Weight | `wght` | the Material 3 token weights (400, 500); emphasized styles +100 |
+| Width | `wdth` | 100 for every style |
 | Optical size | `opsz` | **always set equal to the style's font size in sp** (auto-opsz is not applied by Android) |
-| Grade | `GRAD` | 0 light theme, **−25 in dark theme** (prevents blooming), +25 for emphasis without reflow |
+| Grade | `GRAD` | 0 light theme, **−25 in dark theme** (prevents blooming) |
 | Slant | `slnt` | 0; italic = `slnt −10` (true variable slant, never fake italic) |
-| Round | `ROND` | **100 for display/headline/title** (the "Rounded" look Material 3 Expressive uses), 0 for body/label |
+| Round | `ROND` | **100 for the emphasized styles** (the rounded look Material 3 Expressive gives emphasis), 0 for the base styles |
+
+- These are Google's own settings for the font on Android, which Pingogram follows: Android's SystemUI
+  type scale (`TypeScaleTokens.kt` in `frameworks/base/packages/SystemUI/compose/core`) and Pixel's
+  Google Sans Flex families (`variable-<style>` and `variable-<style>-emphasized` in the device's
+  `fonts_customization.xml`). Both keep the Material 3 sizes and line heights.
 
 - Ranges in the bundled file (read from its `fvar` table): `opsz` 6–144, `wdth` 25–151,
   `wght` 1–1000, `GRAD` **0–100**, `ROND` 0–100, `slnt` −10–0. Because `GRAD` has no negative
-  range, the platform clamps the dark theme's −25 to 0, so only emphasized styles get lighter in
-  dark (25 → 0). **Open question for the owner:** keep −25 (a no-op until a file with negative
-  grades ships) or shift the scale up (light 25 / dark 0, emphasized +25).
+  range, the platform clamps the dark theme's −25 to 0, so dark text renders at grade 0 as in light,
+  like Google's own styles, which use grade 0 throughout. **Open question for the owner:** keep −25
+  (a no-op until a file with negative grades ships) or drop it here and in `CLAUDE.md` rule 4b.
 
 ### 3.2 Compose implementation
 ```kotlin
@@ -162,9 +167,10 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 )
 ```
 - Every distinct variation setting becomes its own Typeface when first used, so families stay
-  small: a regular style holds its weight and its emphasized weight (what a bold span resolves to,
-  instead of a synthesized bold), an emphasized style only its own weight, each upright and
-  italic. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
+  small: a regular style holds its weight and its emphasized weight (what a bold span resolves to),
+  an emphasized style only its own weight, each upright and italic. No style synthesizes a weight or
+  slant (`FontSynthesis.None`): a bold span takes the heaviest font of its style instead of a faked
+  bold. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
 - The fonts are `GoogleSansFlexFont`s (`core/ui/.../theme/GoogleSansFlexFont.kt`) rather than
   `Font(R.font.google_sans_flex, …)`: their loader makes each typeface once per process. Compose's
   own typeface caches hold 16 entries, fewer than the fonts a list and a conversation use, and each
@@ -172,10 +178,15 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 - `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD = if (dark) -25 else 0`.
-- Baseline mapping (weight / opsz / ROND): display 400 / 57–36 / 100 · headline 500 / 32–24 / 100 ·
-  title 600 / 22–14 / 100 · body 400 / 16–12 / 0 · label 500 / 14–11 / 0 (wdth 95 for labelSmall).
-  Emphasized: weight +200 (capped 800), GRAD +25.
-- Line heights and letter spacing: use the M3 token values from material.io; `lineHeightStyle`
+- Mapping (weight / opsz / ROND): display, headline, `titleLarge` and body 400 · `titleMedium`,
+  `titleSmall` and label 500 (the Material 3 token weights), each with `opsz` = size and ROND 0.
+  Emphasized: weight +100 and ROND 100, as Google's emphasized Google Sans Flex families. (Compose's
+  emphasized tokens, still marked provisional in material3, put `titleMedium`, `titleSmall` and the
+  labels at 700; Google's own families use 600.)
+- Sizes and line heights: the M3 token values. Letter spacing: Google's for Google Sans Flex (the
+  SystemUI type scale): 0, and 0.1 sp for `bodySmall`, `labelMedium` and `labelSmall`. The M3 tokens'
+  tracking (up to 0.5 sp) is Roboto's: the font's optical size axis already spaces small sizes
+  apart, and both together set text wider than Material lays it out. `lineHeightStyle`
   = `LineHeightStyle(Alignment.Center, Trim.None)`; `platformStyle = PlatformTextStyle(includeFontPadding = false)`.
 - Font scaling: all sizes in `sp`; the chat "message text size" setting multiplies `bodyLarge`
   only (0.85–1.3) and re-derives `opsz`. Non-linear font scaling (Android 14) is respected.
@@ -196,7 +207,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Screen titles | `titleLargeEmphasized` |
 | Chat list title | `titleMediumEmphasized` when unread, `titleMedium` when read |
 | Chat list preview / message text | `bodyMedium` / `bodyLarge` |
-| Timestamps, badges, meta | `labelSmall` (wdth 95, `tnum`) |
+| Timestamps, badges, meta | `labelSmall` (`tnum`) |
 | Buttons | `labelLargeEmphasized` |
 | Section headers in settings | `titleSmallEmphasized` in `primary` |
 | Empty state title / body | `headlineSmallEmphasized` / `bodyMedium` |
