@@ -124,6 +124,30 @@ internal fun OverlayMeta(
     )
 }
 
+/**
+ * [BubbleMeta] on the conversation's background, for content shown without a bubble or pill (emoji only): the time in
+ * `onSurfaceVariant`, a read message's checks in `primary`, a failed one's icon in `error`.
+ */
+@Composable
+internal fun SurfaceMeta(
+    bubble: ChatItem.Bubble,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    MetaRow(
+        bubble = bubble,
+        color = scheme.onSurfaceVariant,
+        statusTint = { status ->
+            when (status) {
+                OutgoingStatus.Read -> scheme.primary
+                OutgoingStatus.Failed -> scheme.error
+                OutgoingStatus.Pending, OutgoingStatus.Sent -> scheme.onSurfaceVariant
+            }
+        },
+        modifier = modifier,
+    )
+}
+
 @Composable
 private fun MetaRow(
     bubble: ChatItem.Bubble,

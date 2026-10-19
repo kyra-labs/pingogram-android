@@ -411,6 +411,8 @@ private enum class BubbleContentType {
     OutgoingMedia,
     IncomingBare,
     OutgoingBare,
+    IncomingEmoji,
+    OutgoingEmoji,
     ;
 
     companion object {
@@ -418,6 +420,7 @@ private enum class BubbleContentType {
             val content = bubble.content
             val outgoing = bubble.isOutgoing
             return when {
+                bubble.isEmojiOnly -> if (outgoing) OutgoingEmoji else IncomingEmoji
                 bubble.album == null && content.isBare -> if (outgoing) OutgoingBare else IncomingBare
                 bubble.album != null || content.isEdgeToEdge -> if (outgoing) OutgoingMedia else IncomingMedia
                 else -> if (outgoing) OutgoingPadded else IncomingPadded

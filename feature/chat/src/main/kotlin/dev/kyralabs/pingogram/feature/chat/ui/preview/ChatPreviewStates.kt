@@ -13,6 +13,8 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 channel,
                 serviceMessages,
                 formattedText,
+                BubblePreviewData.groupedBubbles,
+                BubblePreviewData.emojiAndReactions,
                 mediaPhotos,
                 mediaFiles,
                 voicePlaying,

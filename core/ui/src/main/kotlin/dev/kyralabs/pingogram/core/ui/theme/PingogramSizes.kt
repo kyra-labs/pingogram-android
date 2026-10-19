@@ -35,6 +35,9 @@ import androidx.compose.ui.unit.dp
  * @property bubbleMaxWidth the widest a message bubble gets on wide windows, where [bubbleMaxWidthFraction] would make
  *   lines too long to read comfortably; the width of [contentMaxWidth].
  * @property quoteBarWidth the bar at the start of a reply quote or link preview inside a bubble.
+ * @property reactionBadge the smallest a reaction's round badge on a bubble's corner gets: its diameter with one emoji.
+ * @property reactionBadgeRing the ring in the conversation's background color around a reaction badge, which sets it
+ *   off from the bubble it overlaps.
  * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll.
  * @property mediaMaxHeight the tallest a photo or a video gets in a message.
  * @property mediaMinSize the shortest side of a photo or a video in a message: panoramas and tall screenshots are
@@ -70,6 +73,8 @@ data class PingogramSizes(
     val bubbleMaxWidthFraction: Float = 0.8f,
     val bubbleMaxWidth: Dp = 560.dp,
     val quoteBarWidth: Dp = 3.dp,
+    val reactionBadge: Dp = 28.dp,
+    val reactionBadgeRing: Dp = 2.dp,
     val mediaMaxWidth: Dp = 280.dp,
     val mediaMaxHeight: Dp = 360.dp,
     val mediaMinSize: Dp = 120.dp,

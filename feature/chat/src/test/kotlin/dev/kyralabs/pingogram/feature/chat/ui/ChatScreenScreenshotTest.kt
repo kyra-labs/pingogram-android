@@ -6,6 +6,7 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.preview.BubblePreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -16,8 +17,9 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of every conversation state on a compact phone (`docs/TESTING.md`), light and dark: a private chat with
  * grouping, every outgoing state, the unread divider and date pills; a group with names, avatars, replies, a forward,
- * reactions and a link preview; a channel; service messages; every kind of formatting; loading, empty, error and not
- * found. Brand colors, so goldens do not depend on a wallpaper.
+ * reactions and a link preview; a channel; service messages; every kind of formatting; groups of bubbles on both sides
+ * with a photo among them; emoji-only messages and reaction badges (one, two, more than fit); loading, empty, error and
+ * not found. Brand colors, so goldens do not depend on a wallpaper.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -59,6 +61,8 @@ class ChatScreenScreenshotTest(
                 "channel" to ChatPreviewData.channel,
                 "serviceMessages" to ChatPreviewData.serviceMessages,
                 "formattedText" to ChatPreviewData.formattedText,
+                "groupedBubbles" to BubblePreviewData.groupedBubbles,
+                "emojiAndReactions" to BubblePreviewData.emojiAndReactions,
                 "loading" to ChatPreviewData.loading,
                 "empty" to ChatPreviewData.empty,
                 "error" to ChatPreviewData.error,

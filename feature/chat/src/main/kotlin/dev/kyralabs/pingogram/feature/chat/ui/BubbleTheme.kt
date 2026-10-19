@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.theme.MessageBubbleShapes
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 
 /**
@@ -25,11 +26,15 @@ internal class BubbleStyle(
     val text: FormattedTextStyles,
 )
 
-/** The [BubbleStyle] of both sides, built once per theme for the whole list. */
+/**
+ * The [BubbleStyle] of both sides and the bubble [shapes] by side and place in a group, built once per theme for the
+ * whole list.
+ */
 @Immutable
 internal class BubbleTheme(
     val incoming: BubbleStyle,
     val outgoing: BubbleStyle,
+    val shapes: MessageBubbleShapes,
 ) {
     fun styleOf(isOutgoing: Boolean): BubbleStyle = if (isOutgoing) outgoing else incoming
 }
@@ -43,17 +48,19 @@ internal fun rememberBubbleTheme(): BubbleTheme {
         rememberFormattedTextStyles(codeBackground = incoming.block, spoilerColor = incoming.secondaryContent)
     val outgoingText =
         rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.secondaryContent)
-    return remember(incoming, outgoing, incomingText, outgoingText) {
+    val shapes = MaterialTheme.shapes
+    return remember(incoming, outgoing, incomingText, outgoingText, shapes) {
         BubbleTheme(
             incoming = BubbleStyle(incoming, incomingText),
             outgoing = BubbleStyle(outgoing, outgoingText),
+            shapes = MessageBubbleShapes(shapes),
         )
     }
 }
 
 /**
  * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), the
- * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction chip ([reactions]), and the
+ * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction badge ([reactions]), and the
  * actions screen readers get on every bubble ([shortcuts]).
  */
 @Stable

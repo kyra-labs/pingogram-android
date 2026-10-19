@@ -26,7 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -71,11 +75,16 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * the end for outgoing messages, at the start for incoming ones, beside the sender's avatar in group chats.
  *
  * - **Bubble**: the [BubbleColors] of its side, a shape from the shape scale by its place in the group
- *   ([messageBubble]), at most [MaterialTheme.sizes]' share of the width. From top to bottom: the sender's name
- *   (first of a group in group chats), "Forwarded from …", the reply quote, the content ([MessageContentBody]), the
- *   text with its formatting, the link preview and the reactions, with the time and state of the message at the bottom
- *   end, after the last line when it fits ([TrailingMeta]).
+ *   ([messageBubble], built once for the list: [BubbleResources.shapes]), at most [MaterialTheme.sizes]' share of the
+ *   width. From top to bottom: the sender's name (first of a group in group chats), "Forwarded from …", the reply
+ *   quote, the content ([MessageContentBody]), the text with its formatting and the link preview, with the time and
+ *   state of the message at the bottom end, after the last line when it fits ([TrailingMeta]), inside the padding
+ *   that keeps it clear of the round corners.
+ * - **Reactions**: round badges on the bubble's bottom corner on the far side ([ReactionBadges]), overlapping it by
+ *   its bottom padding, so they never cover the time; below the content for frames without a bubble.
  * - **Frames**, as the content asks:
+ *   - *Emoji only* ([ChatItem.Bubble.isEmojiOnly]): 1 to 3 emoji in `displaySmall`, without a bubble, the time and
+ *     state below them.
  *   - *Bare* content ([isBare]: stickers, animated emoji, dice, video messages) has no bubble; the time and state sit
  *     on a `mediaOverlay` pill at its bottom end.
  *   - *Edge-to-edge* media ([isEdgeToEdge]: photos, videos, GIFs, albums) fills a bubble as wide as itself, clipped to
@@ -84,11 +93,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
  * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
  *   the reply quote, the content's buttons, replying, copying and sending again ([messageShortcuts]) and the reaction
- *   chips as custom actions, and the actions sheet as its long click and a custom action.
+ *   badges as custom actions, and the actions sheet as its long click and a custom action.
  * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
- * - **Reactions**: tapping a chip adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
- *   haptic, the chip crossfading on the motion scheme's fast effects spring ([ReactionToggleState]).
+ * - **Reactions**: tapping a badge adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
+ *   haptic, the badge crossfading on the motion scheme's fast effects spring ([ReactionToggleState]); "+N" opens the
+ *   actions sheet.
  * - **Reply quote**: tapping it shows the replied message ([ChatEvent.OpenReply]).
  * - **Highlight**: after a jump to the bubble, a `secondaryContainer` band behind the row fades in and out
  *   ([jumpHighlight]), read in the draw phase.
@@ -146,6 +156,8 @@ internal fun MessageBubbleRow(
                     name = avatar.name.resolve(),
                     id = avatar.id,
                     size = size,
+                    // Beside the bubble's bottom, not its reaction badges'.
+                    modifier = Modifier.alignBy { it.measuredHeight },
                     placeholderIcon = avatar.placeholderIcon,
                 )
             } else {
@@ -153,13 +165,21 @@ internal fun MessageBubbleRow(
             }
             Spacer(Modifier.width(MaterialTheme.spacing.small))
         }
-        MessageBubble(bubble, fileState, playback, resources, onEvent, uploads)
+        MessageBubble(
+            bubble = bubble,
+            fileState = fileState,
+            playback = playback,
+            resources = resources,
+            onEvent = onEvent,
+            uploads = uploads,
+            modifier = Modifier.alignBy { it.bubbleBottom() },
+        )
     }
 }
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
- * [messageShortcuts], a toggle per reaction chip but the paid one, and the actions sheet, last. Cancelling the
+ * [messageShortcuts], a toggle per reaction but the paid one, and the actions sheet, last. Cancelling the
  * [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
@@ -203,81 +223,98 @@ private fun MessageBubble(
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     uploads: ImmutableMap<Long, MessageUpload>,
+    modifier: Modifier = Modifier,
 ) {
     val style = resources.theme.styleOf(bubble.isOutgoing)
-    val shapes = MaterialTheme.shapes
     val position = bubble.position
-    val shape =
-        remember(shapes, bubble.isOutgoing, position) {
-            shapes.messageBubble(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
-        }
+    val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes
-    val bubbleModifier = Modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
-    CompositionLocalProvider(LocalContentColor provides style.colors.content) {
+    val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
+    val bare = bubble.isEmojiOnly || (bubble.album == null && bubble.content.isBare)
+    val frame: @Composable (Modifier) -> Unit = { modifier ->
         when {
-            bubble.album == null && bubble.content.isBare -> {
-                BareBubble(bubble, style.colors, resources, onEvent, bubbleModifier)
+            bubble.isEmojiOnly -> {
+                EmojiBubble(bubble, style.colors, onEvent, modifier)
+            }
+
+            bare -> {
+                BareBubble(bubble, style.colors, onEvent, modifier)
             }
 
             bubble.album != null || bubble.content.isEdgeToEdge -> {
-                MediaBubble(bubble, style, shape, resources, onEvent, uploads, bubbleModifier)
+                MediaBubble(
+                    bubble,
+                    style,
+                    shape,
+                    resources,
+                    onEvent,
+                    uploads,
+                    modifier,
+                )
             }
 
             else -> {
-                Column(
-                    modifier =
-                        bubbleModifier
-                            .background(style.colors.container, shape)
-                            .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
-                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-                ) {
-                    BubbleHeader(bubble, style.colors, onEvent)
-                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
-                    BubbleBody(bubble, style, resources, onEvent)
-                }
+                PaddedBubble(bubble, fileState, playback, style, shape, resources, onEvent, uploads, modifier)
             }
         }
     }
-}
-
-/**
- * Bare content: no bubble, the name, forward and reply above it, the meta on a pill over its bottom end, the
- * reactions below.
- */
-@Composable
-private fun BareBubble(
-    bubble: ChatItem.Bubble,
-    colors: BubbleColors,
-    resources: BubbleResources,
-    onEvent: (ChatEvent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-        horizontalAlignment = if (bubble.isOutgoing) Alignment.End else Alignment.Start,
-    ) {
-        BubbleHeader(bubble, colors, onEvent)
-        Box {
-            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
-            OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
-        }
-        if (bubble.reactions.isNotEmpty()) {
-            ReactionsRow(
-                bubble,
-                colors,
-                resources.reactions,
-                rememberReactionToggle(bubble, resources.reactions, onEvent),
+    CompositionLocalProvider(LocalContentColor provides style.colors.content) {
+        if (bubble.reactions.isEmpty()) {
+            frame(bubbleModifier)
+        } else {
+            WithReactionBadges(
+                isOutgoing = bubble.isOutgoing,
+                // Over the bubble's bottom padding, clear of the time; below content without a bubble.
+                overlap = if (bare) 0.dp else MaterialTheme.spacing.small,
+                modifier = bubbleModifier,
+                bubble = { frame(Modifier) },
+                badges = {
+                    ReactionBadges(
+                        bubble = bubble,
+                        toggles = resources.reactions,
+                        onToggle = rememberReactionToggle(bubble, resources.reactions, onEvent),
+                        onMore = { onEvent(ChatEvent.ShowMessageActions(bubble.id)) },
+                    )
+                },
             )
         }
     }
 }
 
 /**
+ * Padded content and text in a bubble of [shape], padded so the text and the time keep clear of the round corners.
+ */
+@Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
+@Composable
+private fun PaddedBubble(
+    bubble: ChatItem.Bubble,
+    fileState: FileState?,
+    playback: Playback,
+    style: BubbleStyle,
+    shape: CornerBasedShape,
+    resources: BubbleResources,
+    onEvent: (ChatEvent) -> Unit,
+    uploads: ImmutableMap<Long, MessageUpload>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .background(style.colors.container, shape)
+                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+    ) {
+        BubbleHeader(bubble, style.colors, onEvent)
+        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+        BubbleBody(bubble, style, resources, onEvent)
+    }
+}
+
+/**
  * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape]: the name, forward and reply
- * above it with the usual padding; below it the caption, link preview and reactions with the meta; without any of
- * them, the meta on a pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media
- * viewer's container transform starts and ends.
+ * above it with the usual padding; below it the caption and link preview with the meta; without either, the meta on a
+ * pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media viewer's container
+ * transform starts and ends.
  */
 @Suppress("LongParameterList") // The bubble, its look, and what it passes on to its content.
 @Composable
@@ -293,7 +330,7 @@ private fun MediaBubble(
     val colors = style.colors
     val spacing = MaterialTheme.spacing
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
-    val metaOnMedia = bubble.text.text.isEmpty() && bubble.linkPreview == null && bubble.reactions.isEmpty()
+    val metaOnMedia = bubble.text.text.isEmpty() && bubble.linkPreview == null
     val mediaShape = remember(shape, hasHeader, metaOnMedia) { shape.mediaCorners(hasHeader, hasFooter = !metaOnMedia) }
     Column(
         modifier
@@ -303,7 +340,7 @@ private fun MediaBubble(
     ) {
         if (hasHeader) {
             Column(
-                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+                modifier = Modifier.padding(horizontal = spacing.large, vertical = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
             ) { BubbleHeader(bubble, colors, onEvent) }
         }
@@ -321,7 +358,7 @@ private fun MediaBubble(
         }
         if (!metaOnMedia) {
             Column(
-                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+                modifier = Modifier.padding(horizontal = spacing.large, vertical = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
             ) { BubbleBody(bubble, style, resources, onEvent) }
         }
@@ -348,7 +385,7 @@ private fun CornerBasedShape.mediaCorners(
  * the quote shows its message when tapped, if it opens one.
  */
 @Composable
-private fun BubbleHeader(
+internal fun BubbleHeader(
     bubble: ChatItem.Bubble,
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
@@ -379,7 +416,7 @@ private fun BubbleHeader(
 }
 
 /**
- * The text, the link preview and the reactions, whichever there are, with the meta after the text or the reactions;
+ * The text and the link preview, whichever there are, with the meta after the text's last line when there is room;
  * otherwise the meta alone, at the bubble's end.
  */
 @Composable
@@ -392,30 +429,15 @@ private fun ColumnScope.BubbleBody(
     val colors = style.colors
     val hasText = bubble.text.text.isNotEmpty()
     val linkPreview = bubble.linkPreview
-    val hasReactions = bubble.reactions.isNotEmpty()
-    val meta = @Composable { BubbleMeta(bubble, colors) }
-    when {
-        hasText && linkPreview == null && !hasReactions -> {
-            val layout = remember { TextLayoutHolder() }
-            TrailingMeta(meta = meta, lastLineWidth = layout::lastLineWidth) {
-                BubbleText(bubble, style, resources, onEvent) { layout.result = it }
-            }
+    if (hasText && linkPreview == null) {
+        val layout = remember { TextLayoutHolder() }
+        TrailingMeta(meta = { BubbleMeta(bubble, colors) }, lastLineWidth = layout::lastLineWidth) {
+            BubbleText(bubble, style, resources, onEvent) { layout.result = it }
         }
-
-        hasReactions -> {
-            if (hasText) BubbleText(bubble, style, resources, onEvent)
-            linkPreview?.let { LinkPreviewBlock(it, colors) }
-            val onToggle = rememberReactionToggle(bubble, resources.reactions, onEvent)
-            TrailingMeta(meta = meta, lastLineWidth = { null }) {
-                ReactionsRow(bubble, colors, resources.reactions, onToggle)
-            }
-        }
-
-        else -> {
-            if (hasText) BubbleText(bubble, style, resources, onEvent)
-            linkPreview?.let { LinkPreviewBlock(it, colors) }
-            BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
-        }
+    } else {
+        if (hasText) BubbleText(bubble, style, resources, onEvent)
+        linkPreview?.let { LinkPreviewBlock(it, colors) }
+        BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
     }
 }
 

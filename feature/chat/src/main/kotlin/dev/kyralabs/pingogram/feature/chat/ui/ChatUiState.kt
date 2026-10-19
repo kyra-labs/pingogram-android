@@ -209,6 +209,8 @@ sealed interface ChatItem {
      *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
      *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
      *   older pages bring in more of the album.
+     * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
+     *   link preview, reply or forward: shown large, without a bubble.
      */
     data class Bubble(
         val id: Long,
@@ -232,6 +234,7 @@ sealed interface ChatItem {
         val reactions: ImmutableList<ReactionChip>,
         override val date: UiText,
         val album: MessageAlbum? = null,
+        val isEmojiOnly: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

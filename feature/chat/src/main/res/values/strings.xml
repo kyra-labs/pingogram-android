@@ -69,6 +69,8 @@
     <string name="chat_unread_badge">%1$d</string>
     <!-- An unread count above the badge's limit: %1$d is the limit, 999. -->
     <string name="chat_unread_badge_overflow">%1$d+</string>
+    <!-- On a bubble's corner after its first reaction badges: %1$d more kinds of reaction. -->
+    <string name="chat_reactions_more">+%1$d</string>
 
     <!-- Screen readers: a message bubble read as one ("Alice, 9:41 AM: Hello, read"). -->
     <!-- %1$s is the sender, %2$s the time, %3$s the content, %4$s the state of an outgoing message. -->

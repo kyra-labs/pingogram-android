@@ -40,6 +40,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
     val senderName = senderName()
     val newest = album.lastOrNull() ?: message
+    val text = content.text
     return ChatItem.Bubble(
         id = message.id,
         isOutgoing = message.isOutgoing,
@@ -61,7 +62,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
                 content is MessageContent.Text -> null
                 else -> contentKindText(content)
             },
-        text = content.text,
+        text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
         reactions =
@@ -78,6 +79,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
                     items = items.map { it.content }.toImmutableList(),
                 )
             },
+        isEmojiOnly = showsLargeEmoji(content, text),
     )
 }
 
