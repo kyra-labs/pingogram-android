@@ -67,6 +67,24 @@ internal class BubbleResources(
 )
 
 /**
+ * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state and the [shortcuts]
+ * stay.
+ */
+@Composable
+internal fun rememberBubbleResources(
+    jump: MessageJumpState,
+    shortcuts: MessageShortcuts,
+): BubbleResources {
+    val theme = rememberBubbleTheme()
+    val texts = remember { AnnotatedTextCache() }
+    val onLinkClick = rememberLinkOpener()
+    val reactions = rememberReactionToggleState()
+    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts) {
+        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts)
+    }
+}
+
+/**
  * The texts of the bubbles as [AnnotatedString]s (`docs/PERFORMANCE.md` §4), built in composition, where the theme's
  * colors are, and kept per message id for as long as the screen shows: a bubble that scrolls away and back, or
  * recomposes, gets the same instance. An entry is built again only when the message's text, the styles (another

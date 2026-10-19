@@ -44,17 +44,17 @@ import java.util.Locale
 
 /**
  * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane, opened at [messageId] when
- * search found it there (the list then jumps to it instead of the unread divider): hoists its [ChatViewModel], and
+ * search found it there (the view model then anchors the list there instead of the unread divider): hoists its
+ * [ChatViewModel], and
  * tells it when the screen is started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md`
  * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
  * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
  * ends up open; the composer's text lives in the view model too. [onBack] leaves it; null shows no back button. The
- * view model's [ChatEffect]s show snackbars, open a
- * downloaded document in another app or a location in a maps app, jump to a message ([MessageJumpState]), or open a
- * photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not know
- * each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a snackbar
- * says when no app opens.
+ * view model's [ChatEffect]s show snackbars, open a downloaded document in another app or a location in a maps app, or
+ * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
+ * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
+ * snackbar says when no app opens.
  */
 @Composable
 internal fun ChatRoute(
@@ -72,7 +72,7 @@ internal fun ChatRoute(
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val jumpState = rememberMessageJumpState(opensAtMessage = messageId != null)
+    val jumpState = rememberMessageJumpState()
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
@@ -87,7 +87,6 @@ internal fun ChatRoute(
     ChatEffects(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
-        jumpState = jumpState,
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
         composerFocus = composerFocus,
         onLaunchCamera = { path ->
@@ -110,20 +109,19 @@ internal fun ChatRoute(
 }
 
 /**
- * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone, for
- * a found message that is not in the loaded history, for a scheduled message's time ([scheduledTime]), for an action
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied or found message that is
+ * gone, for a scheduled message's time ([scheduledTime]), for an action
  * that is not allowed and for what is not there yet, the newest replacing the one shown; a downloaded document opens
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
- * Android 13, which confirms copies itself; a jump to a message goes to [jumpState], a focus request to
- * [composerFocus]; media to open goes to [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
+ * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
+ * [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
  * says that no camera app can.
  */
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
-    jumpState: MessageJumpState,
     onOpenMedia: (messageId: Long) -> Unit,
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
@@ -147,13 +145,8 @@ internal fun ChatEffects(
                         context.openedFileNotice(effect, resources, openFile)
                     }
 
-                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.MessageNotLoaded -> {
+                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable -> {
                         resources.getString(effect.noticeText())
-                    }
-
-                    is ChatEffect.ScrollToMessage -> {
-                        jumpState.jumpTo(effect.messageId)
-                        ""
                     }
 
                     is ChatEffect.OpenLocation -> {
@@ -222,8 +215,7 @@ private fun copiedNotice(resources: Resources): String =
 private fun ChatEffect.noticeText(): Int =
     when (this) {
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
-        ChatEffect.MessageUnavailable -> R.string.chat_message_unavailable
-        else -> R.string.chat_message_not_loaded
+        else -> R.string.chat_message_unavailable
     }
 
 /**

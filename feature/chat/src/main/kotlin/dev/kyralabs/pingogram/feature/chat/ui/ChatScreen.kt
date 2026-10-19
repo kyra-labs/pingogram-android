@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -67,6 +69,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -109,21 +112,23 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * scroll in, and the composer below them ([ChatBottomBar]), above the keyboard and the system bars.
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
- *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
- *   within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged]) and which messages it shows
- *   ([ChatEvent.MessagesVisible]), and opens at the unread divider, near the top, if there is one, else at the newest
- *   message; a rotation keeps the position.
+ *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest or the
+ *   newest loaded message is within [LOAD_MORE_THRESHOLD] entries ([ChatEvent.NearOldestChanged],
+ *   [ChatEvent.NearNewestChanged]) and which messages it shows ([ChatEvent.MessagesVisible]), with the state of older
+ *   pages above the oldest message and of newer ones below the newest. It goes where the content's [ListAnchor] says,
+ *   once per anchor ([FollowListAnchor]): the unread divider near the top, a message in the middle, or the newest
+ *   message; a rotation or process death keeps the position.
  * - **Date pill**: while the list scrolls, the date of the topmost message floats at the top, fading in and out on the
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
- *   view, and scrolls back to it.
- * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, or to the message the
- *   conversation was opened at, centred, and highlights it ([JumpToMessages]). Opened at a message
- *   ([MessageJumpState.opensAtMessage]), the list does not scroll to the unread divider first, so the two never pull
- *   the list both ways.
+ *   view, or not loaded, and scrolls back to it; when the loaded messages do not reach it, it asks for the newest ones
+ *   ([ChatEvent.ShowNewest]), which come with their anchor.
+ * - **Jump to a message** ([jumpState]): a tapped quote's message, or the message the conversation was opened at,
+ *   comes as an anchor: the list centres it and highlights it.
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
  * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
- *   message now scrolls to the newest one, where it shows. Where they cannot, a label says why; in a channel they only
+ *   message now scrolls to the newest one, where it shows (asking for it when the loaded messages do not reach it).
+ *   Where they cannot, a label says why; in a channel they only
  *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
  *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
@@ -150,7 +155,7 @@ internal fun ChatScreen(
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
-    val scrollToNewest = rememberScrollToNewest(listState)
+    val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = { options: SendOptions ->
         // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
@@ -180,7 +185,7 @@ internal fun ChatScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             JumpToBottomButton(
-                visible = content is ChatContent.Content && showJump,
+                visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
                 unreadCount = state.unreadCount,
                 motionScheme = MaterialTheme.motionScheme,
                 onClick = scrollToNewest,
@@ -264,20 +269,17 @@ private fun MessageList(
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
-    val theme = rememberBubbleTheme()
-    val texts = remember { AnnotatedTextCache() }
-    val onLinkClick = rememberLinkOpener()
-    val reactions = rememberReactionToggleState()
-    val shortcuts = state.shortcuts
-    val bubbleResources =
-        remember(theme, texts, onLinkClick, jumpState, reactions, shortcuts) {
-            BubbleResources(theme, texts, onLinkClick, jumpState, reactions, shortcuts)
-        }
+    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts)
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
+    val showsNewerState = content.isLoadingNewer || content.newerError != null
     LazyColumn(
-        modifier = Modifier.fillMaxSize().testTag(MESSAGE_LIST_TEST_TAG),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .hideUntilAnchored(content.anchor, content.items, jumpState)
+                .testTag(MESSAGE_LIST_TEST_TAG),
         state = listState,
         contentPadding =
             PaddingValues(
@@ -288,38 +290,41 @@ private fun MessageList(
             ),
         reverseLayout = true,
     ) {
+        if (showsNewerState) {
+            pagesState(NEWER_KEY, content.isLoadingNewer, content.newerError, R.string.chat_newer_error, onEvent)
+        }
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
             ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
-            item(key = OLDER_KEY, contentType = OLDER_KEY) {
-                OlderMessagesState(
-                    content = content,
-                    onRetry = { onEvent(ChatEvent.Retry) },
-                    modifier = Modifier.entry(this, motionScheme, spacing.small),
-                )
-            }
+            pagesState(OLDER_KEY, content.isLoadingOlder, content.olderError, R.string.chat_older_error, onEvent)
         }
     }
-    InitialScroll(content.items, listState, toUnread = !jumpState.opensAtMessage)
-    FollowNewestMessage(content.items.firstOrNull()?.key, listState)
+    FollowListAnchor(content, listState, jumpState, leadingEntries = if (showsNewerState) 1 else 0)
+    FollowNewestMessage(content.items.firstOrNull()?.key, content.reachedEnd, listState)
     ReportVisibleMessages(content.items, listState, onEvent)
-    JumpToMessages(content.items, listState, jumpState, motionScheme)
-    val currentOnEvent by rememberUpdatedState(onEvent)
-    LaunchedEffect(listState) {
-        try {
-            snapshotFlow {
-                val layout = listState.layoutInfo
-                val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
-                layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 1 - LOAD_MORE_THRESHOLD
-            }.distinctUntilChanged()
-                .collect { currentOnEvent(ChatEvent.NearOldestChanged(it)) }
-        } finally {
-            // Leaving the screen, or the list.
-            currentOnEvent(ChatEvent.NearOldestChanged(false))
-        }
-    }
+    ReportNearEnds(listState, onEvent)
+}
+
+/**
+ * The entry [key] with the state of older or newer pages ([PagesState]): loading, or [errorText] with a retry after
+ * [error].
+ */
+private fun LazyListScope.pagesState(
+    key: String,
+    isLoading: Boolean,
+    error: DomainError?,
+    @StringRes errorText: Int,
+    onEvent: (ChatEvent) -> Unit,
+) = item(key = key, contentType = PAGES_STATE) {
+    PagesState(
+        isLoading = isLoading,
+        error = error,
+        errorText = errorText,
+        onRetry = { onEvent(ChatEvent.Retry) },
+        modifier = Modifier.entry(this, MaterialTheme.motionScheme, MaterialTheme.spacing.small),
+    )
 }
 
 /**
@@ -363,99 +368,6 @@ private fun ChatItemRow(
         is ChatItem.UnreadDivider -> {
             UnreadDividerRow(modifier)
         }
-    }
-}
-
-/**
- * Reports the messages of the entries [listState] shows, wholly or in part ([ChatEvent.MessagesVisible]): on every
- * change of them, as the list scrolls or messages come and go, and none once the list leaves the screen. Read from the
- * layout, outside the items (`docs/PERFORMANCE.md` §4). A frame of a scroll only compares the keys of the entries at
- * both ends of the screen; the ids are gathered, by key, when those or the items change.
- */
-@Composable
-private fun ReportVisibleMessages(
-    items: ImmutableList<ChatItem>,
-    listState: LazyListState,
-    onEvent: (ChatEvent) -> Unit,
-) {
-    val currentItems by rememberUpdatedState(items)
-    val currentOnEvent by rememberUpdatedState(onEvent)
-    LaunchedEffect(listState) {
-        try {
-            val ends =
-                snapshotFlow {
-                    val visible = listState.layoutInfo.visibleItemsInfo
-                    visible.firstOrNull()?.key to visible.lastOrNull()?.key
-                }
-            // By key, as the layout can be a frame behind the items: a new message shifts every index.
-            val itemsByKey = snapshotFlow { currentItems }.map { items -> items.associateBy { it.key } }
-            combine(ends, itemsByKey) { _, byKey ->
-                listState.layoutInfo.visibleItemsInfo.flatMapTo(HashSet()) { byKey[it.key]?.messageIds.orEmpty() }
-            }.distinctUntilChanged()
-                .collect { currentOnEvent(ChatEvent.MessagesVisible(it)) }
-        } finally {
-            currentOnEvent(ChatEvent.MessagesVisible(emptySet()))
-        }
-    }
-}
-
-/** The messages an entry shows: a message, every item of an album; none for dates and the divider. */
-private val ChatItem.messageIds: List<Long>
-    get() =
-        when (this) {
-            is ChatItem.Bubble -> album?.messageIds ?: listOf(id)
-            is ChatItem.Service -> listOf(id)
-            is ChatItem.DateSeparator, is ChatItem.UnreadDivider -> emptyList()
-        }
-
-/**
- * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it
- * downwards; without one, or not [toUnread] (the conversation opened at a message, which the jump scrolls to), the list
- * stays at the newest message, where the reverse layout starts. Saved, so a rotation or process death keeps the
- * restored position.
- */
-@Composable
-private fun InitialScroll(
-    items: ImmutableList<ChatItem>,
-    listState: LazyListState,
-    toUnread: Boolean,
-) {
-    var done by rememberSaveable { mutableStateOf(false) }
-    val currentItems by rememberUpdatedState(items)
-    val margin = with(LocalDensity.current) { MaterialTheme.spacing.extraExtraLarge.toPx() }
-    LaunchedEffect(listState) {
-        if (done) return@LaunchedEffect
-        done = true
-        if (!toUnread) return@LaunchedEffect
-        val dividerIndex = currentItems.indexOfFirst { it is ChatItem.UnreadDivider }
-        if (dividerIndex < 0) return@LaunchedEffect
-        // Measured at once: the divider at the bottom, then moved up by the viewport's height less its own.
-        listState.scrollToItem(dividerIndex)
-        val layout = listState.layoutInfo
-        val divider = layout.visibleItemsInfo.firstOrNull { it.index == dividerIndex } ?: return@LaunchedEffect
-        val viewport = layout.viewportSize.height - layout.beforeContentPadding - layout.afterContentPadding
-        // A margin below the top, where the date pill floats.
-        listState.scrollBy(-(viewport - divider.size - margin).coerceAtLeast(0f))
-    }
-}
-
-/**
- * Brings a new newest message into view when the list showed the newest one: a lazy list keeps its first visible
- * entry in place by key, which would leave a message added below it out of view. Elsewhere in the history the list
- * stays where the user scrolled to, and the jump button leads down.
- */
-@Composable
-private fun FollowNewestMessage(
-    newestKey: Any?,
-    listState: LazyListState,
-) {
-    var shownNewestKey by remember { mutableStateOf(newestKey) }
-    LaunchedEffect(newestKey) {
-        val previousKey = shownNewestKey
-        if (newestKey == previousKey) return@LaunchedEffect
-        shownNewestKey = newestKey
-        // Entries may have come with it (a date separator), so the previous newest one is looked up by key.
-        if (listState.layoutInfo.visibleItemsInfo.any { it.key == previousKey }) listState.requestScrollToItem(0)
     }
 }
 
@@ -514,13 +426,12 @@ private enum class BubbleContentType {
     }
 }
 
-/** How close to the oldest message the list asks for older ones: about half a page of entries ahead. */
-private const val LOAD_MORE_THRESHOLD = 20
-
 private const val SERVICE = "service"
 private const val DATE = "date"
 private const val UNREAD = "unread"
 private const val OLDER_KEY = "older"
+private const val NEWER_KEY = "newer"
+private const val PAGES_STATE = "pages"
 
 // The conversation scroll benchmark and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list by
 // this tag, which `MainActivity` shows as a resource id.

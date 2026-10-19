@@ -16,8 +16,10 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -69,6 +71,25 @@ internal fun JumpToBottomButton(
                 Icon(painter = painterResource(UiR.drawable.ic_keyboard_arrow_down), contentDescription = null)
             }
         }
+    }
+}
+
+/**
+ * Shows the chat's newest message: scrolls [listState] to it ([rememberScrollToNewest]) when the items of [content]
+ * reach it ([ChatContent.Content.reachedEnd]), else asks for the newest messages ([ChatEvent.ShowNewest]), which come
+ * with their anchor.
+ */
+@Composable
+internal fun rememberJumpToNewest(
+    listState: LazyListState,
+    content: ChatContent,
+    onEvent: (ChatEvent) -> Unit,
+): () -> Unit {
+    val scrollToNewest = rememberScrollToNewest(listState)
+    val currentReachedEnd by rememberUpdatedState((content as? ChatContent.Content)?.reachedEnd != false)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    return remember(scrollToNewest) {
+        { if (currentReachedEnd) scrollToNewest() else currentOnEvent(ChatEvent.ShowNewest) }
     }
 }
 

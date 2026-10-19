@@ -46,7 +46,10 @@ regresses by more than 10%.
 - `openChat` on enter / `closeChat` on leave so TDLib can prioritize; `viewMessages` batched
   (max once per 300 ms) with `forceRead=false`.
 - History paging: `getChatHistory(limit=50, onlyLocal=true)` first, then network fill; prefetch
-  the next page when the user is 20 items from the end.
+  the next page when the user is 20 items from the end, in both directions. A chat with unread
+  messages opens around the first unread one (`from_message_id = last_read_inbox_message_id`,
+  `offset = -30`), a jump to a message far back loads the page around it, never every page up to
+  it; the conversation shows nothing until that page is there, so it never jumps.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
   `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
   concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).

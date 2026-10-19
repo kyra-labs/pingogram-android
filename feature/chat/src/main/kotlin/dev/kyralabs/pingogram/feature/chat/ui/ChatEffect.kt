@@ -25,21 +25,10 @@ sealed interface ChatEffect {
     data object PlaybackFailed : ChatEffect
 
     /**
-     * Scroll the list to message [messageId], which the items hold now, and highlight it: the replied message of a
-     * tapped quote ([ChatEvent.OpenReply]), or the message the conversation was opened at.
+     * The message of a tapped quote, or the one the conversation was opened at, no longer exists: a snackbar says so,
+     * and the list shows where it was.
      */
-    data class ScrollToMessage(
-        val messageId: Long,
-    ) : ChatEffect
-
-    /** The replied message of a tapped quote was deleted, or is too far back: a snackbar says so. */
     data object MessageUnavailable : ChatEffect
-
-    /**
-     * The message the conversation was opened at (found by search) is not in the history loaded for it, up to
-     * [ChatViewModel.MAX_OPEN_PAGES] pages back: the conversation stays at the newest messages, and a snackbar says so.
-     */
-    data object MessageNotLoaded : ChatEffect
 
     /** A message was scheduled for [at] (Unix time, seconds): a snackbar says when it will be sent. */
     data class MessageScheduled(
