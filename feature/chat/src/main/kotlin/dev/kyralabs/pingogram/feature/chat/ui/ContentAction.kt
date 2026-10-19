@@ -81,6 +81,12 @@ internal fun messageShortcuts(
     )
 }
 
+/** Cancelling the [uploads] of a bubble's messages being sent, all at once; null while none uploads. */
+internal fun uploadAction(uploads: Map<Long, *>): ContentAction? =
+    uploads.keys.toList().takeIf { it.isNotEmpty() }?.let {
+        ContentAction(R.string.attach_cancel_upload, ChatEvent.CancelUpload(it))
+    }
+
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }

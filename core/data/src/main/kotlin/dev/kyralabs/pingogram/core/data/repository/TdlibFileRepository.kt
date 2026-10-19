@@ -6,8 +6,10 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.mapper.tdlibPriority
 import dev.kyralabs.pingogram.core.data.mapper.toFileState
+import dev.kyralabs.pingogram.core.data.mapper.toFileUpload
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.PersistentMap
@@ -25,9 +27,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] adds a file for as long as
- * it is collected (counting collectors), so the cache holds what is on screen, and `updateFile` for other files is
- * ignored. Observing a file again asks TDLib, which answers from memory.
+ * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] and [observeUpload] add a file
+ * for as long as they are collected (counting collectors), so the cache holds what is on screen, and `updateFile` for
+ * other files is ignored. Observing a file again asks TDLib, which answers from memory.
  */
 @Singleton
 class TdlibFileRepository
@@ -39,7 +41,15 @@ class TdlibFileRepository
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, persistentMapOf(), ObservedFiles::reduce)
 
-        override fun observe(fileId: Int): Flow<FileState> =
+        override fun observe(fileId: Int): Flow<FileState> = observed(fileId) { it.state }
+
+        override fun observeUpload(fileId: Int): Flow<FileUpload> = observed(fileId) { it.upload }
+
+        /** What [select] reads of file [fileId] while it is observed, then every change of it. */
+        private fun <T : Any> observed(
+            fileId: Int,
+            select: (ObservedFile) -> T?,
+        ): Flow<T> =
             flow {
                 // Observed before asking TDLib, so no updateFile in between is ignored.
                 store.update { files -> files.observe(fileId) }
@@ -47,7 +57,9 @@ class TdlibFileRepository
                     coroutineScope {
                         // Alongside, so updates show even before TDLib answered.
                         if (store.state.value[fileId]?.state == null) launch { fetch(fileId) }
-                        emitAll(store.state.mapNotNull { files -> files[fileId]?.state }.distinctUntilChanged())
+                        emitAll(
+                            store.state.mapNotNull { files -> files[fileId]?.let(select) }.distinctUntilChanged(),
+                        )
                     }
                 } finally {
                     store.update { files -> files.release(fileId) }
@@ -68,23 +80,26 @@ class TdlibFileRepository
 
         private suspend fun fetch(fileId: Int) {
             client.request(TdApi.GetFile(fileId)).onSuccess { file ->
-                store.update { files -> files.putIfUnknown(fileId, file.toFileState()) }
+                store.update { files -> files.putIfUnknown(fileId, file) }
             }
         }
     }
 
-/** A file someone observes: how many collectors, and its state once TDLib reported it. */
+/** A file someone observes: how many collectors, and its state and upload once TDLib reported it. */
 private data class ObservedFile(
     val collectors: Int,
     val state: FileState?,
-)
+    val upload: FileUpload? = null,
+) {
+    fun reported(file: TdApi.File) = copy(state = file.toFileState(), upload = file.toFileUpload())
+}
 
 private typealias ObservedFiles = PersistentMap<Int, ObservedFile>
 
 private fun ObservedFiles.reduce(update: TdApi.Update): ObservedFiles {
     if (update !is TdApi.UpdateFile) return this
     val file = update.file
-    return get(file.id)?.let { observed -> putting(file.id, observed.copy(state = file.toFileState())) } ?: this
+    return get(file.id)?.let { observed -> putting(file.id, observed.reported(file)) } ?: this
 }
 
 private fun ObservedFiles.observe(fileId: Int): ObservedFiles {
@@ -108,8 +123,8 @@ private fun ObservedFiles.release(fileId: Int): ObservedFiles {
  */
 private fun ObservedFiles.putIfUnknown(
     fileId: Int,
-    state: FileState,
+    file: TdApi.File,
 ): ObservedFiles {
     val observed = get(fileId)
-    return if (observed != null && observed.state == null) putting(fileId, observed.copy(state = state)) else this
+    return if (observed != null && observed.state == null) putting(fileId, observed.reported(file)) else this
 }

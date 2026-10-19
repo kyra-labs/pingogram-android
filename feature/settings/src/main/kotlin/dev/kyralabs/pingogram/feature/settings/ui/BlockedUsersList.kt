@@ -1,10 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,61 +13,42 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.Avatar
-import dev.kyralabs.pingogram.core.ui.component.ContentSheet
-import dev.kyralabs.pingogram.core.ui.component.EmptyState
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The list of the Blocked users page: its rows, drawn as one card, and loading more as its end comes near.
+// The list of the Blocked users page: its rows, one segmented group, and loading more as its end comes near.
 
 /** The rows under their count, then the next page loading or failing; more load as the end comes near. */
 @Composable
@@ -81,7 +61,6 @@ internal fun BlockedUsersList(
     val layoutDirection = LocalLayoutDirection.current
     val spacing = MaterialTheme.spacing
     val style = RowStyle(MaterialTheme.sizes.contentMaxWidth, spacing.windowMarginCompact, MaterialTheme.motionScheme)
-    val cardColor = MaterialTheme.colorScheme.surfaceContainer
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -94,6 +73,8 @@ internal fun BlockedUsersList(
                 bottom = contentPadding.calculateBottomPadding() + spacing.extraLarge,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
+        // The gap between segmented rows; the heading and the end keep their own padding besides.
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         item(key = HEADER, contentType = HEADER) {
             SettingsSectionHeader(
@@ -109,8 +90,9 @@ internal fun BlockedUsersList(
         itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, _ -> ROW }) { index, item ->
             BlockedSenderRow(
                 item = item,
+                shapes = ListItemDefaults.segmentedShapes(index, state.items.size),
                 onUnblock = { onEvent(BlockedUsersEvent.Unblock(item.sender)) },
-                modifier = Modifier.row(this, style).cardRow(cardRowShape(index, state.items.size), cardColor),
+                modifier = Modifier.row(this, style),
             )
         }
         more(state.more, style, onRetry = { onEvent(BlockedUsersEvent.LoadMore) })
@@ -172,16 +154,21 @@ private fun LoadMoreEffect(
     }
 }
 
-/** A blocked user or chat: its avatar, name and detail, and a button that unblocks it, or progress while it does. */
+/**
+ * A blocked user or chat, a row of the list's segmented group ([shapes]): its avatar, name and detail, and a button
+ * that unblocks it, or progress while it does.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BlockedSenderRow(
     item: BlockedSenderItem,
+    shapes: ListItemShapes,
     onUnblock: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val name = item.name.resolve()
-    ListItem(
+    SegmentedListItem(
+        shapes = shapes,
         modifier = modifier,
         leadingContent = {
             Avatar(
@@ -206,7 +193,6 @@ private fun BlockedSenderRow(
             }
         },
         supportingContent = item.detail?.let { detail -> { Text(detail.resolve()) } },
-        colors = settingsItemColors(),
     ) {
         Text(name)
     }
@@ -234,15 +220,6 @@ private fun Modifier.row(
             .fillMaxWidth()
             .padding(horizontal = style.margin)
     }
-
-/**
- * A row drawn as part of one card: clipped to its part of the card's [shape], on the card's [color], which also fills
- * the corners of the list item's own shape, as the card does in a [SettingsSection].
- */
-private fun Modifier.cardRow(
-    shape: Shape,
-    color: Color,
-): Modifier = clip(shape).background(color)
 
 private const val HEADER = "header"
 private const val ROW = "row"

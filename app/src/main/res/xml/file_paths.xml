@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- What the FileProvider in AndroidManifest.xml may hand to other apps: TDLib's downloaded files
      (filesDir/tdlib/files, filesDir/tdlib-test/files on the test DC; core:tdlib TdlibDirectories), shared from
-     the media viewer and opened from the conversation. Never TDLib's database (filesDir/tdlib/db) or anything
-     else. Keep in sync with core:ui TdlibFiles.kt, which refuses other paths first. -->
+     the media viewer and opened from the conversation, and the files the camera app writes photos into for the
+     attach menu (cacheDir/camera; core:data UploadFiles). Never TDLib's database (filesDir/tdlib/db) or anything
+     else. Keep in sync with core:ui TdlibFiles.kt and CameraFiles.kt, which refuse other paths first. -->
 <paths>
     <files-path
         name="tdlib"
@@ -10,4 +11,7 @@
     <files-path
         name="tdlib-test"
         path="tdlib-test/files/" />
+    <cache-path
+        name="camera"
+        path="camera/" />
 </paths>

@@ -35,6 +35,27 @@ sealed interface FileState {
     }
 }
 
+/**
+ * How much of a file sent from this device TDLib has uploaded (`FileRepository.observeUpload`): [uploadedSize] of
+ * [size] bytes (0 while TDLib does not know the size). [isActive] while it uploads; [isCompleted] once Telegram has it
+ * all.
+ */
+data class FileUpload(
+    val uploadedSize: Long,
+    val size: Long,
+    val isActive: Boolean,
+    val isCompleted: Boolean,
+) {
+    /** From 0 to 1; 1 once completed, 0 while the size is unknown. */
+    val progress: Float
+        get() =
+            when {
+                isCompleted -> 1f
+                size > 0 -> (uploadedSize.toFloat() / size).coerceIn(0f, 1f)
+                else -> 0f
+            }
+}
+
 /** How soon TDLib downloads a file, among the downloads it runs (`docs/PERFORMANCE.md` §3). */
 enum class DownloadPriority {
     /** On screen now. */

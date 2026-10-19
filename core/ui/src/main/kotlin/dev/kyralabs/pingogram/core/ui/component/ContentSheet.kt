@@ -15,9 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -39,9 +36,9 @@ fun ContentSheet(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
 ) {
-    val sheetPadding = remember(innerPadding) { TopOf(innerPadding) }
+    val sheetPadding = remember(innerPadding) { innerPadding.topOnly() }
     val gap = MaterialTheme.spacing.small
-    val contentPadding = remember(innerPadding, gap) { BelowTopOf(innerPadding, gap) }
+    val contentPadding = remember(innerPadding, gap) { innerPadding.withTop(gap) }
     Box(
         modifier
             .fillMaxSize()
@@ -53,35 +50,6 @@ fun ContentSheet(
 
 /** This shape with square bottom corners: a sheet's that rises from the bottom of the window. */
 private fun CornerBasedShape.top(): CornerBasedShape = copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize)
-
-/** The top of [padding] alone, read when asked. */
-private class TopOf(
-    private val padding: PaddingValues,
-) : PaddingValues {
-    override fun calculateTopPadding(): Dp = padding.calculateTopPadding()
-
-    override fun calculateBottomPadding(): Dp = 0.dp
-
-    override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp = 0.dp
-
-    override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp = 0.dp
-}
-
-/** [padding] with [top] in place of its own top, read when asked. */
-private class BelowTopOf(
-    private val padding: PaddingValues,
-    private val top: Dp,
-) : PaddingValues {
-    override fun calculateTopPadding(): Dp = top
-
-    override fun calculateBottomPadding(): Dp = padding.calculateBottomPadding()
-
-    override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
-        padding.calculateLeftPadding(layoutDirection)
-
-    override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
-        padding.calculateRightPadding(layoutDirection)
-}
 
 @PingogramPreviews
 @Composable

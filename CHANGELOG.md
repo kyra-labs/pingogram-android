@@ -19,6 +19,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message again, each only where Telegram allows it. A reply shows a bar above the composer and is kept in the
   chat's draft on all your devices; editing puts the message's text or caption, with its formatting, back in the
   composer. Tap a reaction under a message to add or remove yours.
+- Attach photos, videos, files, contacts and polls: the attach button beside the message field opens Gallery (up to
+  10 at once), Camera, File, Contact and, in groups, channels, bots and Saved Messages, Poll. Picked items show in a
+  preview first, where you can remove some, add a formatted caption, and send now, without sound or later. Photos are
+  sent upright, at most 2560 px and without location data; photos and videos go as albums of up to 10, files as
+  albums of files. Polls can be anonymous, allow several answers, or be a quiz with one correct answer. A photo, video
+  or file shows its upload progress in the chat; tap X (or TalkBack's "Cancel upload") to stop it.
 - Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
   and storage, and About pages; Log out moved to the end.
 - Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper
@@ -43,6 +49,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Whether two-step verification is on, and whether a recovery email is set.
 
 ### Changed
+- Settings follow the Material 3 Expressive look of Google's own apps. Your account sits on a card at the top (photo,
+  name, phone number, username, and a Premium label for Telegram Premium subscribers); tap it to edit your profile.
+  Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
 - The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
   instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
 - Text is set the way Google sets Google Sans Flex on Android: Material's weights (titles were one to three

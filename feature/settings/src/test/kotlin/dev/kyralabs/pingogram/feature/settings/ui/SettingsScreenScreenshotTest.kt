@@ -11,8 +11,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Settings screen: with the account, before TDLib has announced it, on an expanded window, and with the log out
- * confirmation; screen captures, so the dialog's window shows.
+ * The Settings screen: with the account, before TDLib has announced it, on an expanded window, with AMOLED black, and
+ * with the log out confirmation; screen captures, so the dialog's window shows. The account's card on its own:
+ * [AccountCardScreenshotTest].
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -28,6 +29,9 @@ class SettingsScreenScreenshotTest {
 
     @Test
     fun dark() = capture("dark", ThemeMode.Dark, SettingsPreviewData.content)
+
+    @Test
+    fun amoledDark() = capture("amoledDark", ThemeMode.Dark, SettingsPreviewData.content, amoled = true)
 
     @Test
     @Config(qualifiers = EXPANDED)
@@ -56,7 +60,8 @@ class SettingsScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         state: SettingsUiState,
-    ) = composeRule.captureScreen(javaClass, name, themeMode) {
+        amoled: Boolean = false,
+    ) = composeRule.captureScreen(javaClass, name, themeMode, amoled) {
         SettingsScreen(state = state, onEvent = {}, onOpenPage = {})
     }
 }

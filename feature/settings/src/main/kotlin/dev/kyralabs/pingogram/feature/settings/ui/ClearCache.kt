@@ -1,7 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,24 +19,24 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 @Composable
 internal fun ClearCacheItem(
     isClearing: Boolean,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
 ) {
     val clearing = stringResource(R.string.settings_clearing_cache)
-    ListItem(
-        onClick = onClick,
-        enabled = !isClearing,
-        leadingContent = { SettingsItemIcon(UiR.drawable.ic_delete) },
+    SettingsRow(
+        title = stringResource(R.string.settings_clear_cache),
+        shapes = shapes,
+        icon = UiR.drawable.ic_delete,
+        supportingContent = { Text(stringResource(R.string.settings_clear_cache_summary)) },
         trailingContent =
             if (isClearing) {
                 { LoadingIndicator(Modifier.semantics { contentDescription = clearing }) }
             } else {
                 null
             },
-        supportingContent = { Text(stringResource(R.string.settings_clear_cache_summary)) },
-        colors = settingsItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_clear_cache))
-    }
+        onClick = onClick,
+        enabled = !isClearing,
+    )
 }
 
 /** The destructive confirmation ([DestructiveDialog]): the files must download again. */

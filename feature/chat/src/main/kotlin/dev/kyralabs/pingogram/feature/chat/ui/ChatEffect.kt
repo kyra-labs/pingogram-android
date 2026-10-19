@@ -67,6 +67,16 @@ sealed interface ChatEffect {
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
 
+    /**
+     * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);
+     * the screen reports what came of it with `ChatEvent.PhotoTaken`, also when no camera app opens.
+     */
+    data class LaunchCamera(
+        val path: String,
+    ) : ChatEffect {
+        override fun toString() = "LaunchCamera(…)"
+    }
+
     /** Show the point at [latitude], [longitude] (in degrees) in a maps app, named [label] if there is one. */
     data class OpenLocation(
         val latitude: Double,

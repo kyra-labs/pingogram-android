@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
@@ -468,6 +469,12 @@ class FakeTimePatterns : TimePatterns {
 class FakeFileRepository : FileRepository {
     val files = MutableStateFlow<Map<Int, FileState>>(emptyMap())
 
+    /** The uploads TDLib reported, by file id; a file not in it has reported none yet. */
+    val uploads = MutableStateFlow<Map<Int, FileUpload>>(emptyMap())
+
+    /** The ids every [observeUpload] call asked for, in order. */
+    val observedUploads = mutableListOf<Int>()
+
     /** `download:<id>:<priority>` and `cancel:<id>`, in order. */
     val calls = mutableListOf<String>()
 
@@ -487,6 +494,11 @@ class FakeFileRepository : FileRepository {
     override fun observe(fileId: Int): Flow<FileState> {
         observed += fileId
         return files.mapNotNull { it[fileId] }.distinctUntilChanged()
+    }
+
+    override fun observeUpload(fileId: Int): Flow<FileUpload> {
+        observedUploads += fileId
+        return uploads.mapNotNull { it[fileId] }.distinctUntilChanged()
     }
 
     override suspend fun download(

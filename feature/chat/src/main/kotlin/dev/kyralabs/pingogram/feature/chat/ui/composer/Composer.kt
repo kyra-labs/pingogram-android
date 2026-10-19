@@ -34,6 +34,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -99,7 +100,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
- * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar].
+ * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
+ * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach].
  */
 @Composable
 internal fun ChatBottomBar(
@@ -112,6 +114,7 @@ internal fun ChatBottomBar(
     focus: ComposerFocusState = rememberComposerFocusState(),
     onShowBarMessage: (messageId: Long) -> Unit = {},
     onCloseBar: () -> Unit = {},
+    onAttach: () -> Unit = {},
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
@@ -134,7 +137,7 @@ internal fun ChatBottomBar(
             is ComposerUiState.Available -> {
                 Column(insets) {
                     BarArea(composer.bar, onShowBarMessage, onCloseBar)
-                    Composer(composer, text, onSend, onFocusChanged, focus, now)
+                    Composer(composer, text, onSend, onFocusChanged, focus, onAttach, now)
                 }
             }
 
@@ -166,12 +169,14 @@ private fun BarArea(
 }
 
 /**
- * The composer: a multi-line text field that grows to [MAX_LINES] lines and then scrolls, and once there is something
- * to send, the send split button ([SendButton]) beside it, which grows in on the motion scheme's spatial spring; while
- * editing, a check ([SaveEditButton]) in its place, also for an emptied caption. Formatting comes from the selection
+ * The composer: the attach button ([AttachButton]) where the chat takes attachments, a multi-line text field that grows
+ * to [MAX_LINES] lines and then scrolls, and once there is something to send, the send split button ([SendButton])
+ * beside it, which grows in on the motion scheme's spatial spring; while editing, a check ([SaveEditButton]) in its
+ * place, also for an emptied caption, and no attach button. Formatting comes from the selection
  * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
  * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field.
  */
+@Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
 private fun Composer(
     composer: ComposerUiState.Available,
@@ -179,6 +184,7 @@ private fun Composer(
     onSend: (SendOptions) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     focus: ComposerFocusState,
+    onAttach: () -> Unit,
     now: () -> Instant = Instant::now,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -203,6 +209,7 @@ private fun Composer(
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
+        Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
         ComposerField(
             text = text,
             onSend = { send(SendOptions()) },
@@ -284,17 +291,19 @@ private fun RowScope.Appearing(
 }
 
 /**
- * The text field: outlined, `extraLarge` corners, `bodyLarge`, "Message" while empty. Enter on a hardware keyboard
- * sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts one. The selection
- * menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an address ([onLink]).
+ * The text field: outlined, `extraLarge` corners, `bodyLarge`, [placeholder] ("Message") while empty. Enter on a
+ * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
+ * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
+ * address ([onLink]). The attach preview's caption is one too.
  */
 @Composable
-private fun ComposerField(
+internal fun ComposerField(
     text: ComposerText,
     onSend: () -> Unit,
     onLink: (TextRange) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    placeholder: String = stringResource(R.string.composer_placeholder),
 ) {
     val labels = rememberFormattingLabels()
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
@@ -323,7 +332,7 @@ private fun ComposerField(
                 }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                 .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
         textStyle = MaterialTheme.typography.bodyLarge,
-        placeholder = { Text(stringResource(R.string.composer_placeholder)) },
+        placeholder = { Text(placeholder) },
         inputTransformation = text.inputTransformation,
         outputTransformation = rememberFormattingTransformation(text),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),

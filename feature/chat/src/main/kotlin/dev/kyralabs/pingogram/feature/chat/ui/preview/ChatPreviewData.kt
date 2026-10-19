@@ -29,6 +29,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
@@ -53,8 +55,13 @@ internal object ChatPreviewData {
     private val yesterday = UiText.resource(R.string.chat_date_yesterday)
     private val you = UiText.resource(UiR.string.preview_sender_you)
 
-    /** The composer, where the user can write. */
-    private val canWrite = ComposerUiState.Available(canSchedule = true)
+    /** The composer, where the user can write, with the attach options of a private chat. */
+    private val canWrite =
+        ComposerUiState.Available(
+            canSchedule = true,
+            attachOptions =
+                persistentListOf(AttachOption.Gallery, AttachOption.Camera, AttachOption.File, AttachOption.Contact),
+        )
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */
     private val photo =
@@ -395,6 +402,47 @@ internal object ChatPreviewData {
 
     private val sampleDocument = ContentPreviewData.document("photos-from-the-trip.zip", "application/zip")
 
+    private val uploadAlbum = albumItems.take(2).toImmutableList()
+
+    /**
+     * Photos and a file being sent from this device: an album whose first photo uploads and whose second has not
+     * started, and a document that uploads.
+     */
+    val uploading =
+        ChatUiState(
+            composer = canWrite,
+            header = privateChat.header,
+            content =
+                content(
+                    bubble(
+                        73,
+                        "",
+                        time = "10:12 AM",
+                        isOutgoing = true,
+                        status = OutgoingStatus.Pending,
+                        content = sampleDocument,
+                        contentLabel = UiText.Plain(sampleDocument.document.fileName),
+                    ),
+                    bubble(
+                        72,
+                        "",
+                        time = "10:11 AM",
+                        isOutgoing = true,
+                        status = OutgoingStatus.Pending,
+                        content = uploadAlbum.first(),
+                        contentLabel = UiText.plural(R.plurals.content_album_media, uploadAlbum.size, uploadAlbum.size),
+                        album = MessageAlbum(id = 78, messageIds = persistentListOf(71L, 72L), uploadAlbum),
+                    ),
+                    ChatItem.DateSeparator(epochDay = 2, date = today),
+                ),
+            uploads =
+                persistentMapOf(
+                    71L to MessageUpload(progress = 0.4f),
+                    72L to MessageUpload(progress = null),
+                    73L to MessageUpload(progress = 0.65f),
+                ),
+        )
+
     /** A sticker, a voice message, a document as it downloads, a poll and a venue. */
     val mediaFiles =
         ChatUiState(
@@ -552,6 +600,8 @@ internal object ChatPreviewData {
                             preview = UiText.Plain(EDITED_TEXT),
                             canBeEmpty = false,
                         ),
+                    // An edit sends no attachments.
+                    attachOptions = persistentListOf(),
                 ),
         )
 

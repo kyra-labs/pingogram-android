@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextOverflow
@@ -13,7 +15,9 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
+import dev.kyralabs.pingogram.feature.chat.ui.content.MediaUploadProgress
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimatedEmoji
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAnimation
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageAudio
@@ -37,6 +41,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * What a bubble shows of its message's content above the text or caption (`REQUIREMENTS.md` FR-C4): the one place
@@ -53,12 +59,16 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
  *   of any media. Service messages never come here; they are pills. Content Pingogram cannot show yet shows its
  *   [ChatItem.Bubble.contentLabel] in one line.
  *
+ * - **Uploads** ([uploads]): a photo, video, GIF or document being sent from this device shows its upload with a
+ *   cancel button ([ChatEvent.CancelUpload]), an album's item each its own.
+ *
  * @param fileState the state of the file of a voice message, song or document ([downloadableFileId]); null while
  *   unknown and for other content.
  * @param playback how a voice message or song plays; [Playback.Stopped] unless it is the one in the player.
  * @param colors the colors of the bubble's side, for content that draws on the bubble.
  * @param mediaShape the corners edge-to-edge media shows in the bubble, which clips it: the bubble's own where the
  *   media meets its edge, square where a header or a caption follows. The container transform starts and ends there.
+ * @param uploads the uploads of the bubble's messages being sent, by message id; empty for the others.
  */
 @Composable
 internal fun MessageContentBody(
@@ -69,6 +79,7 @@ internal fun MessageContentBody(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
     mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
+    uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
 ) {
     val album = bubble.album
     val content = bubble.content
@@ -80,15 +91,26 @@ internal fun MessageContentBody(
                 onOpen = { index -> onEvent(ChatEvent.OpenMedia(album.messageIds[index])) },
                 modifier = modifier,
                 shape = RectangleShape,
+                uploads = uploads,
+                onCancelUpload = { messageId -> onEvent(ChatEvent.CancelUpload(listOf(messageId))) },
             )
         }
 
         content.isEdgeToEdge || content.isBare -> {
-            MediaContent(bubble.id, content, onEvent, modifier, mediaShape)
+            Box {
+                MediaContent(bubble.id, content, onEvent, modifier, mediaShape)
+                uploads[bubble.id]?.let { upload ->
+                    MediaUploadProgress(
+                        upload = upload,
+                        onCancel = { onEvent(ChatEvent.CancelUpload(listOf(bubble.id))) },
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+            }
         }
 
         content.downloadableFileId != null -> {
-            FileContent(bubble, fileState, playback, colors, onEvent, modifier)
+            FileContent(bubble, fileState, playback, colors, onEvent, modifier, uploads[bubble.id])
         }
 
         else -> {
@@ -124,7 +146,10 @@ private fun MediaContent(
     }
 }
 
-/** Voice messages, songs and documents, with their file's state; voice messages and songs with their [playback]. */
+/**
+ * Voice messages, songs and documents, with their file's state; voice messages and songs with their [playback], a
+ * document being sent with its [upload].
+ */
 @Composable
 private fun FileContent(
     bubble: ChatItem.Bubble,
@@ -133,6 +158,7 @@ private fun FileContent(
     colors: BubbleColors,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    upload: MessageUpload? = null,
 ) {
     val messageId = bubble.id
     val content = bubble.content
@@ -157,6 +183,8 @@ private fun FileContent(
                 onOpen = { onEvent(ChatEvent.OpenFile(messageId, fileId)) },
                 modifier = modifier,
                 colors = colors,
+                upload = upload,
+                onCancelUpload = { onEvent(ChatEvent.CancelUpload(listOf(messageId))) },
             )
         }
 

@@ -10,6 +10,9 @@ import dev.kyralabs.pingogram.core.domain.model.WriteAccess
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /** What the bottom of the conversation shows (`REQUIREMENTS.md` FR-C5): the composer, why there is none, or nothing. */
 @Immutable
@@ -24,11 +27,13 @@ sealed interface ComposerUiState {
 
     /**
      * The composer. [canSchedule] whether its send menu offers scheduling, which secret chats do not allow; [bar] the
-     * message it replies to or edits, shown above the text field; null for a new message.
+     * message it replies to or edits, shown above the text field; null for a new message. [attachOptions] what its
+     * attach button offers, as the chat allows; empty hides the button, as while editing.
      */
     data class Available(
         val canSchedule: Boolean,
         val bar: ComposerBar? = null,
+        val attachOptions: ImmutableList<AttachOption> = persistentListOf(),
     ) : ComposerUiState
 }
 

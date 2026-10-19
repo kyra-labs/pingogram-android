@@ -125,13 +125,14 @@ class SettingsViewModel
         }
     }
 
-/** What the account header shows of a [User], so that its other changes (status, contact flags) change nothing. */
+/** What the account's card shows of a [User], so that its other changes (status, contact flags) change nothing. */
 private data class AccountFields(
     val userId: Long,
     val name: String,
     val photo: ProfilePhoto?,
     val phoneNumber: String,
     val username: String?,
+    val isPremium: Boolean,
 ) {
     fun toUiModel(formattedPhoneNumber: String) =
         AccountUiModel(
@@ -140,6 +141,7 @@ private data class AccountFields(
             photo = photo,
             phoneNumber = formattedPhoneNumber,
             username = username,
+            isPremium = isPremium,
         )
 
     override fun toString() = "AccountFields(userId=$userId, …)"
@@ -152,6 +154,7 @@ private fun User.toAccountFields() =
         photo = profilePhoto,
         phoneNumber = phoneNumber.filter(Char::isDigit),
         username = usernames.firstOrNull(),
+        isPremium = isPremium,
     )
 
 /** The digits TDLib reports as an international number, "+447911123456"; empty for none. */

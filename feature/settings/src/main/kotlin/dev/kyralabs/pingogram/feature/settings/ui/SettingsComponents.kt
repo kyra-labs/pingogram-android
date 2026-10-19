@@ -1,8 +1,8 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,57 +14,53 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItemColors
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
-import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.ui.component.ContentSheet
-import dev.kyralabs.pingogram.core.ui.text.errorText
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.ui.component.topOnly
+import dev.kyralabs.pingogram.core.ui.component.withTop
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// The building blocks every settings screen shares (docs/DESIGN_SYSTEM.md §6, "Settings rows"): sections of ListItems
-// in surfaceContainer cards under a titleSmallEmphasized header in primary, on the rounded surface sheet below a top
-// bar on surfaceContainer, as the chat list is laid out.
+// The frame every settings screen shares (docs/DESIGN_SYSTEM.md §6, "Settings rows"): a transparent top bar on the
+// page's `surfaceContainerHigh` (settingsPageColor), and below it the page's groups of rows (SettingsGroup), with their
+// headings and notes.
+
+/**
+ * The color of a settings page, behind its groups and its top bar (`docs/DESIGN_SYSTEM.md` §2.2). Its rows sit on
+ * `surface`, the segmented list item's container color: lighter than the page in light themes and darker in dark ones
+ * (true black with AMOLED black), as in Google's own Material 3 Expressive menus. One step above the floating
+ * navigation bar's `surfaceContainer`, so the bar stands apart from the page it floats over.
+ */
+@Composable
+@ReadOnlyComposable
+internal fun settingsPageColor(): Color = MaterialTheme.colorScheme.surfaceContainerHigh
 
 /**
  * A settings page pushed above the Settings tab: a small top app bar with back, [title] (`titleLargeEmphasized`) and
@@ -88,8 +84,8 @@ internal fun SettingsPageScaffold(
 }
 
 /**
- * [SettingsPageScaffold] around a [body] of its own, for a page that lays out its content itself, e.g. a lazy list on
- * a [ContentSheet]; [body] gets the `Scaffold`'s inner padding.
+ * [SettingsPageScaffold] around a [body] of its own, for a page that lays out its content itself, e.g. a lazy list in
+ * a [SettingsBody]; [body] gets the `Scaffold`'s inner padding.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -106,8 +102,8 @@ internal fun SettingsPageFrame(
     val titleStyle = MaterialTheme.typography.titleLargeEmphasized
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        // The top bar's container; the content sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The page's color, which the transparent top bar shares.
+        containerColor = settingsPageColor(),
         topBar = {
             TopAppBar(
                 title = {
@@ -144,17 +140,40 @@ internal fun SettingsPageFrame(
 }
 
 /**
- * The scrolling body of a settings screen on a [ContentSheet] below its top bar: [content]'s sections one below the
- * other, as wide as a single column of content gets (`MaterialTheme.sizes.contentMaxWidth`) and centered on wider
+ * The body of a settings screen below its top bar, on the page's color: it starts below the bar, so what scrolls in
+ * it never shows through the transparent bar, and [content] gets the rest of the `Scaffold`'s [innerPadding] (the sides
+ * and the bottom: system bars, the floating navigation bar) to pad what it shows, so it scrolls behind them. Both are
+ * read in the layout phase, so a collapsing bar moves the body without recomposing.
+ */
+@Composable
+internal fun SettingsBody(
+    innerPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.(contentPadding: PaddingValues) -> Unit,
+) {
+    val belowBar = remember(innerPadding) { innerPadding.topOnly() }
+    val contentPadding = remember(innerPadding) { innerPadding.withTop(0.dp) }
+    Box(
+        modifier
+            .consumeWindowInsets(innerPadding)
+            .fillMaxSize()
+            .padding(belowBar),
+    ) { content(contentPadding) }
+}
+
+/**
+ * The scrolling body of a settings screen ([SettingsBody]): [content]'s groups one below the other, [groupSpacing]
+ * apart, as wide as a single column of content gets (`MaterialTheme.sizes.contentMaxWidth`) and centered on wider
  * windows. The end of the content keeps clear of [innerPadding]'s bottom (system bars, the floating navigation bar).
  */
 @Composable
 internal fun SettingsContent(
     innerPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    groupSpacing: Dp = MaterialTheme.spacing.extraLarge,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    ContentSheet(innerPadding, modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+    SettingsBody(innerPadding, modifier) { contentPadding ->
         Column(
             modifier =
                 Modifier
@@ -174,35 +193,14 @@ internal fun SettingsContent(
                             top = MaterialTheme.spacing.small,
                             bottom = MaterialTheme.spacing.extraLarge,
                         ),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraLarge),
+                verticalArrangement = Arrangement.spacedBy(groupSpacing),
                 content = content,
             )
         }
     }
 }
 
-/**
- * A section: [title] as a heading ([SettingsSectionHeader]) over its rows in a `surfaceContainer` card, and a [footer]
- * note below the card ([SettingsFooter]).
- */
-@Composable
-internal fun SettingsSection(
-    title: String,
-    modifier: Modifier = Modifier,
-    footer: String? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(modifier) {
-        SettingsSectionHeader(title)
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            content = content,
-        )
-        if (footer != null) SettingsFooter(footer)
-    }
-}
-
-/** A section's [title]: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3). */
+/** A group's [title]: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3). */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsSectionHeader(
@@ -220,7 +218,7 @@ internal fun SettingsSectionHeader(
     )
 }
 
-/** A note below a section's card: `bodyMedium` in `onSurfaceVariant`. */
+/** A note below a group: `bodyMedium` in `onSurfaceVariant`. */
 @Composable
 internal fun SettingsFooter(
     text: String,
@@ -237,41 +235,4 @@ internal fun SettingsFooter(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodyMedium,
     )
-}
-
-/**
- * The colors of a row in a [SettingsSection]: on the card's `surfaceContainer`, enabled or not (a disabled list item
- * would otherwise take the list's `surface`, and its row would leave the card).
- */
-@Composable
-internal fun settingsItemColors(): ListItemColors =
-    ListItemDefaults.colors(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-    )
-
-/** A row's leading icon, a Material Symbols drawable; the row's text names it for screen readers. */
-@Composable
-internal fun SettingsItemIcon(
-    @DrawableRes icon: Int,
-) {
-    Icon(painter = painterResource(icon), contentDescription = null)
-}
-
-/**
- * The shape of row [index] of [count] that a lazy list draws as one card, as a [SettingsSection] would: the card's
- * `medium` corners at the top of the first row and the bottom of the last one, square in between.
- */
-@Composable
-internal fun cardRowShape(
-    index: Int,
-    count: Int,
-): Shape {
-    val card = MaterialTheme.shapes.medium
-    return when {
-        count == 1 -> card
-        index == 0 -> card.copy(bottomStart = ZeroCornerSize, bottomEnd = ZeroCornerSize)
-        index == count - 1 -> card.copy(topStart = ZeroCornerSize, topEnd = ZeroCornerSize)
-        else -> RectangleShape
-    }
 }

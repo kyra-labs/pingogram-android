@@ -136,6 +136,69 @@
     <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
     <string name="composer_bar_show">Show message</string>
 
+    <!-- Attach menu (the composer's attach button) -->
+    <string name="attach">Attach</string>
+    <string name="attach_gallery">Gallery</string>
+    <string name="attach_camera">Camera</string>
+    <string name="attach_file">File</string>
+    <string name="attach_contact">Contact</string>
+    <string name="attach_poll">Poll</string>
+    <!-- The button of the attach menu that shows the options that do not fit. -->
+    <string name="attach_more">More options</string>
+    <!-- Snackbars when no app on the device opens for an attach option. -->
+    <string name="attach_no_camera_app">No camera app found</string>
+    <string name="attach_no_picker_app">No app found to pick that</string>
+    <!-- The title of the preview of picked items before they are sent. -->
+    <plurals name="attach_preview_photos">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+    <plurals name="attach_preview_videos">
+        <item quantity="one">%d video</item>
+        <item quantity="other">%d videos</item>
+    </plurals>
+    <!-- Photos and videos together, or items still being prepared. -->
+    <plurals name="attach_preview_items">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="attach_preview_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <!-- The hint in the empty caption field of the preview. -->
+    <string name="attach_caption">Add a caption</string>
+    <!-- Screen readers: an item of the preview. %1$d is its place, %2$d how many there are. -->
+    <string name="attach_item_photo">Photo %1$d of %2$d</string>
+    <!-- %3$s is the video's length, "0:42". -->
+    <string name="attach_item_video">Video %1$d of %2$d, %3$s</string>
+    <string name="attach_item_preparing">Preparing item %1$d of %2$d</string>
+    <!-- A file among photos and videos: %1$s is its name. -->
+    <string name="attach_item_file">File %1$s</string>
+    <!-- The remove button of an item of the preview: %1$s is the item, "Photo 2 of 3" or a file's name. -->
+    <string name="attach_remove">Remove %1$s</string>
+    <!-- The button over a photo, video or file being sent that stops sending it. -->
+    <string name="attach_cancel_upload">Cancel upload</string>
+
+    <!-- The form of a new poll -->
+    <string name="poll_title">New poll</string>
+    <string name="poll_question">Question</string>
+    <string name="poll_options">Options</string>
+    <!-- An answer option's field: %1$d is its number. -->
+    <string name="poll_option">Option %1$d</string>
+    <string name="poll_option_repeated">This option is already there</string>
+    <string name="poll_add_option">Add an option</string>
+    <string name="poll_remove_option">Remove option %1$d</string>
+    <!-- Screen readers: the radio button that marks option %1$d as the quiz's correct answer. -->
+    <string name="poll_correct_option">Option %1$d is the correct answer</string>
+    <string name="poll_choose_correct">Choose the correct answer</string>
+    <string name="poll_settings">Settings</string>
+    <string name="poll_anonymous">Anonymous voting</string>
+    <string name="poll_anonymous_channel">Polls in channels are always anonymous</string>
+    <string name="poll_multiple">Multiple answers</string>
+    <string name="poll_quiz">Quiz mode</string>
+    <string name="poll_quiz_note">One answer is correct, and votes can\'t be changed</string>
+
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
     <string name="message_actions">Message actions</string>

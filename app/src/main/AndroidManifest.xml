@@ -45,7 +45,8 @@
         </activity>
 
         <!-- Hands TDLib's downloaded files to the app the user picks, with a read grant for one URI at a time:
-             sharing from the media viewer, opening documents (approved by the owner on 2026-10-18). Only the
+             sharing from the media viewer, opening documents (approved by the owner on 2026-10-18); and to the
+             camera app the file it writes a photo into for the attach menu, with a write grant. Only the
              directories in res/xml/file_paths.xml. -->
         <provider
             android:name="androidx.core.content.FileProvider"

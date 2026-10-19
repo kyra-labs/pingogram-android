@@ -1,9 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -107,24 +105,26 @@ internal fun PrivacySettingScreen(
     }
 }
 
-/** The setting's question over the three main choices. */
+/** The setting's question over the three main choices, a radio row each. */
 @Composable
 private fun ChoicesSection(
     state: PrivacySettingUiState,
     selected: PrivacyChoice,
     onSelect: (PrivacyChoice) -> Unit,
 ) {
-    SettingsSection(
+    SettingsGroup(
         title = stringResource(state.setting.questionRes()),
         footer = if (state.premiumRequired) stringResource(R.string.settings_privacy_premium_note) else null,
+        rowsModifier = Modifier.selectableGroup(),
     ) {
-        Column(Modifier.selectableGroup()) {
-            PrivacyChoices.forEach { choice ->
+        PrivacyChoices.forEach { choice ->
+            item(key = choice) { shapes ->
                 val allowed = !state.premiumRequired || choice == PrivacyChoice.Everybody
                 RadioItem(
                     label = stringResource(choice.labelRes()),
                     selected = choice == selected,
                     enabled = allowed && state.savingChoice == null,
+                    shapes = shapes,
                     onClick = { onSelect(choice) },
                     trailingContent = if (choice == state.savingChoice) ({ SavingIndicator() }) else null,
                 )
@@ -144,24 +144,26 @@ private fun SavingIndicator() {
 /** Who is always and never allowed despite the choice, counted, and that changing the choice keeps them. */
 @Composable
 private fun ExceptionsSection(rules: PrivacyRules) {
-    SettingsSection(
+    SettingsGroup(
         title = stringResource(R.string.settings_section_privacy_exceptions),
         footer = stringResource(R.string.settings_privacy_exceptions_note),
     ) {
         if (rules.hasAlwaysAllowed) {
-            ListItem(
-                supportingContent = { Text(alwaysAllowedText(rules.exceptions)) },
-                colors = settingsItemColors(),
-            ) {
-                Text(stringResource(R.string.settings_privacy_always_allowed))
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_privacy_always_allowed),
+                    shapes = shapes,
+                    supportingContent = { Text(alwaysAllowedText(rules.exceptions)) },
+                )
             }
         }
         if (rules.hasNeverAllowed) {
-            ListItem(
-                supportingContent = { Text(neverAllowedText(rules.exceptions)) },
-                colors = settingsItemColors(),
-            ) {
-                Text(stringResource(R.string.settings_privacy_never_allowed))
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_privacy_never_allowed),
+                    shapes = shapes,
+                    supportingContent = { Text(neverAllowedText(rules.exceptions)) },
+                )
             }
         }
     }

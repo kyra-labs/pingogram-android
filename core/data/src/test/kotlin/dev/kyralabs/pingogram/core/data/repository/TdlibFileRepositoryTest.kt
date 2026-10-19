@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -29,6 +30,14 @@ class TdlibFileRepositoryTest {
 
     private fun downloading(downloadedSize: Long) =
         file(id = FILE_ID, size = SIZE, downloadedSize = downloadedSize, isDownloadingActive = true)
+
+    private fun uploading(
+        fileId: Int,
+        uploadedSize: Long,
+        isActive: Boolean,
+    ) = file(id = fileId, size = SIZE, localPath = PATH, isDownloadingCompleted = true).apply {
+        remote = TdApi.RemoteFile("remote-$fileId", "unique-$fileId", isActive, false, uploadedSize)
+    }
 
     private fun downloaded() =
         file(id = FILE_ID, size = SIZE, localPath = PATH, downloadedSize = SIZE, isDownloadingCompleted = true)
@@ -167,6 +176,42 @@ class TdlibFileRepositoryTest {
                 listOf<Any>(FILE_ID, 32, 0L, 0L, false),
                 listOf(sent.fileId, sent.priority, sent.offset, sent.limit, sent.synchronous),
             )
+        }
+
+    @Test
+    fun `observeUpload follows how far a file sent from this device has uploaded`() =
+        runTest {
+            client.on(TdApi.GetFile::class) { request ->
+                TdResult.Success(uploading(request.fileId, uploadedSize = 0, isActive = false))
+            }
+
+            repository().observeUpload(FILE_ID).test {
+                val waiting = awaitItem()
+                assertEquals(FileUpload(uploadedSize = 0, size = SIZE, isActive = false, isCompleted = false), waiting)
+
+                client.emit(updateFile(uploading(FILE_ID, uploadedSize = 512, isActive = true)))
+                // The file as TDLib reports it once uploaded: complete on both sides.
+                client.emit(updateFile(downloaded()))
+
+                val halfway = awaitItem()
+                assertEquals(FileUpload(uploadedSize = 512, size = SIZE, isActive = true, isCompleted = false), halfway)
+                assertEquals(0.25f, halfway.progress)
+                assertEquals(1f, awaitItem().progress)
+            }
+        }
+
+    @Test
+    fun `a file observed for its state and its upload is asked for once`() =
+        runTest {
+            val repository = repository()
+
+            repository.observe(FILE_ID).test {
+                awaitItem()
+                repository.observeUpload(FILE_ID).first()
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertEquals(1, client.sentOf<TdApi.GetFile>().size)
         }
 
     @Test
