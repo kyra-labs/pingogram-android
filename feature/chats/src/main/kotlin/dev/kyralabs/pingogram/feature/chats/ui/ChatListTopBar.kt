@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -29,7 +28,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -74,10 +72,13 @@ internal fun ChatListScreenTopBar(
 }
 
 /**
- * The top bar of the Chats tab, and the folder tabs below it, on the screen's `surfaceContainer` above the list's sheet
- * (`docs/DESIGN_SYSTEM.md` §2.2). The bar's expanded height makes room for the connection pill on the motion scheme's
- * spatial spring: a parameter, so the bar recomposes for those few frames of a connection change, while scrolling only
- * relayouts.
+ * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
+ * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2). Collapsing the bar as the list scrolls only relayouts it: the
+ * bar reads its scroll state in the layout and draw phases.
+ *
+ * The connection pill ([ConnectionPill]) sits below the bar, not in its subtitle slot: the flexible bar composes its
+ * subtitle twice, in its collapsed row and in its expanded area, and cross-fades the two while it collapses, which
+ * showed two pills at once mid-scroll. Below the bar there is only one, and it stays in view while the bar is collapsed.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
@@ -92,31 +93,23 @@ internal fun ChatListTopBar(
     onClearSelection: () -> Unit,
 ) {
     val selectedCount = state.selection?.chatIds?.size
-    val showPill = state.connection != ConnectionStatus.Ready
-    val expandedHeight by animateDpAsState(
-        targetValue =
-            if (showPill) {
-                TopAppBarDefaults.MediumFlexibleAppBarWithSubtitleExpandedHeight
-            } else {
-                TopAppBarDefaults.MediumFlexibleAppBarWithoutSubtitleExpandedHeight
-            },
-        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-        label = "expandedHeight",
-    )
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
             MediumFlexibleTopAppBar(
                 title = { ChatListTitle(selectedCount) },
-                subtitle = { ConnectionPill(state.connection) },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
-                expandedHeight = expandedHeight,
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,
                     ),
                 scrollBehavior = scrollBehavior,
+            )
+            // In line with the title, which the bar insets by 16 dp, and with the tabs.
+            ConnectionPill(
+                connection = state.connection,
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact),
             )
             if (state.folderTabs.isNotEmpty()) {
                 FolderTabs(
@@ -243,15 +236,19 @@ private fun ClearSelectionButton(onClick: () -> Unit) {
 
 /**
  * "Connecting…" and the like while not connected (`REQUIREMENTS.md` FR-L5): a pill in `surfaceContainerHighest` with
- * an expressive loading indicator. It grows in and out on the motion scheme's springs, keeping its last text while it
- * leaves, and screen readers announce each change.
+ * an expressive loading indicator, below the top bar. It grows in and out on the motion scheme's springs, keeping its
+ * last text while it leaves, and screen readers announce each change. Connected, it takes no space.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ConnectionPill(connection: ConnectionStatus) {
+private fun ConnectionPill(
+    connection: ConnectionStatus,
+    modifier: Modifier = Modifier,
+) {
     val motionScheme = MaterialTheme.motionScheme
     AnimatedContent(
         targetState = connection.takeIf { it != ConnectionStatus.Ready },
+        modifier = modifier,
         transitionSpec = {
             fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec()) using
                 SizeTransform(clip = false) { _, _ -> motionScheme.defaultSpatialSpec() }
@@ -260,7 +257,7 @@ private fun ConnectionPill(connection: ConnectionStatus) {
     ) { status ->
         if (status != null) {
             Surface(
-                modifier = Modifier.padding(top = MaterialTheme.spacing.extraSmall),
+                modifier = Modifier.padding(bottom = MaterialTheme.spacing.small),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
