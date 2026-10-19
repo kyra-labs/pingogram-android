@@ -52,6 +52,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 // TDLib is not built for. Packaging it would let such devices install the app and crash
                 // when TDLib loads, instead of refusing the install.
                 packaging.jniLibs.excludes += UNSUPPORTED_ABIS.map { "lib/$it/**" }
+                // Fonts stay uncompressed, so the platform maps the variable Google Sans Flex file (4 MB) from the
+                // APK when the first text draws, instead of inflating all of it into memory (docs/PERFORMANCE.md
+                // §8). The APKs grow by what compression saved, about 1.7 MB.
+                androidResources.noCompress += "ttf"
             }
 
             // Split APKs get their own code (ABI_INDEX); outputs without an ABI filter are universal.
