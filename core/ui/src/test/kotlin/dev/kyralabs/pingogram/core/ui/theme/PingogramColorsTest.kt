@@ -41,8 +41,8 @@ class PingogramColorsTest {
         val light = pingogramColors(brandColorScheme(dark = false, Contrast.Standard), dark = false)
         val dark = pingogramColors(brandColorScheme(dark = true, Contrast.Standard), dark = true)
 
-        assertClose("FF426900".toColor(), light.online)
-        assertClose("FFA0D756".toColor(), dark.online)
+        assertClose("FF006C43".toColor(), light.online)
+        assertClose("FF45DF97".toColor(), dark.online)
     }
 
     @Test
