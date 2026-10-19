@@ -54,6 +54,12 @@ internal fun TdApi.MessageSender.toMessageSender(): MessageSender? =
         else -> null
     }
 
+internal fun MessageSender.toTdMessageSender(): TdApi.MessageSender =
+    when (this) {
+        is MessageSender.User -> TdApi.MessageSenderUser(userId)
+        is MessageSender.Chat -> TdApi.MessageSenderChat(chatId)
+    }
+
 private fun TdApi.MessageSendingState.toSendingState(): SendingState =
     when (this) {
         is TdApi.MessageSendingStateFailed -> {
