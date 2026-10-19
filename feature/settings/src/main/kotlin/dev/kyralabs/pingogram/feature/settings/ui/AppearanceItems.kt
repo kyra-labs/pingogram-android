@@ -137,13 +137,19 @@ internal fun <T> ChoiceRow(
     }
 }
 
-/** An option of a [ChoiceRow] that does not fit as segmented buttons: the whole row selects it. */
+/**
+ * One of several options in a `selectableGroup`, e.g. of a [ChoiceRow] that does not fit as segmented buttons: a
+ * [RadioButton] and [label], with an optional [summary] and [trailingContent]. The whole row selects it, and screen
+ * readers hear it as a radio button.
+ */
 @Composable
-private fun RadioItem(
+internal fun RadioItem(
     label: String,
     selected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
+    summary: String? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     ListItem(
         modifier =
@@ -155,6 +161,8 @@ private fun RadioItem(
             ),
         enabled = enabled,
         leadingContent = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
+        trailingContent = trailingContent,
+        supportingContent = summary?.let { { Text(it) } },
         colors = settingsItemColors(),
     ) {
         Text(label)

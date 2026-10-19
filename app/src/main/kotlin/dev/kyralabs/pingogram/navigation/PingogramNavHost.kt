@@ -148,7 +148,10 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         contactsScreen()
         // Settings pages are pushed above the tab on every window, as the archive is.
         settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
-        settingsPages(onBack = { navController.popBackStack() })
+        settingsPages(
+            onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
+            onBack = { navController.popBackStack() },
+        )
         // Results push the conversation above search on every window, as the archive does: search is not a pane of
         // the Chats tab (it opens from every tab), and back returns to the results.
         searchScreen(

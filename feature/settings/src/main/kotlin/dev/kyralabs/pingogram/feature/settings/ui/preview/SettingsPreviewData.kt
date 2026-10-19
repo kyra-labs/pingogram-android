@@ -1,11 +1,32 @@
 package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
+import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
+import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.AccountUiModel
+import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.BlockedSenderItem
+import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersUiState
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageUiState
+import dev.kyralabs.pingogram.feature.settings.ui.MoreBlockedSenders
+import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
+import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
+import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
+import dev.kyralabs.pingogram.feature.settings.ui.SessionItem
+import dev.kyralabs.pingogram.feature.settings.ui.SessionsState
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.StorageUsageState
+import dev.kyralabs.pingogram.feature.settings.ui.TwoStepVerificationSummary
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** Sample states of the settings screens, for previews and screenshot tests. */
 internal object SettingsPreviewData {
@@ -30,4 +51,147 @@ internal object SettingsPreviewData {
         )
 
     val storageError = DataStorageUiState(usage = StorageUsageState.Error(DomainError.Network))
+
+    // Privacy and security
+
+    private val contactsWithExceptions =
+        PrivacyRules(
+            PrivacyChoice.Contacts,
+            PrivacyExceptions(allowedUserCount = 2, allowedChatCount = 1, restrictedUserCount = 3),
+        )
+
+    val privacySecurity =
+        PrivacySecurityUiState.Content(
+            rules =
+                persistentMapOf(
+                    PrivacySetting.PhoneNumber to PrivacyRules(PrivacyChoice.Contacts),
+                    PrivacySetting.LastSeen to contactsWithExceptions,
+                    PrivacySetting.ProfilePhoto to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.ForwardedMessages to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
+                    PrivacySetting.ChatInvites to PrivacyRules(PrivacyChoice.Contacts),
+                    PrivacySetting.VoiceMessages to PrivacyRules(PrivacyChoice.Everybody),
+                ),
+            blockedCount = 3,
+            sessionCount = 4,
+            twoStepVerification =
+                TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
+        )
+
+    val privacySetting =
+        PrivacySettingUiState(
+            setting = PrivacySetting.LastSeen,
+            rules = PrivacyRulesState.Loaded(contactsWithExceptions),
+        )
+
+    /** Voice and video messages for a user without Telegram Premium. */
+    val voiceMessages =
+        PrivacySettingUiState(
+            setting = PrivacySetting.VoiceMessages,
+            rules = PrivacyRulesState.Loaded(PrivacyRules(PrivacyChoice.Everybody)),
+            premiumRequired = true,
+        )
+
+    val blockedUsers =
+        BlockedUsersUiState.Content(
+            items =
+                persistentListOf(
+                    BlockedSenderItem(
+                        sender = MessageSender.User(7),
+                        name = UiText.Plain("Grace Hopper"),
+                        detail = UiText.resource(R.string.settings_blocked_username, "grace"),
+                        photo = null,
+                        avatarId = 7,
+                    ),
+                    BlockedSenderItem(
+                        sender = MessageSender.User(8),
+                        name = UiText.Plain("Alan Turing"),
+                        detail = UiText.resource(R.string.settings_blocked_phone, "+447700900123"),
+                        photo = null,
+                        avatarId = 8,
+                        isUnblocking = true,
+                    ),
+                    BlockedSenderItem(
+                        sender = MessageSender.User(9),
+                        name = UiText.resource(UiR.string.user_deleted_account),
+                        detail = null,
+                        photo = null,
+                        avatarId = 9,
+                        placeholderIcon = UiR.drawable.ic_person_filled,
+                    ),
+                    BlockedSenderItem(
+                        sender = MessageSender.Chat(-100_123),
+                        name = UiText.Plain("Spam Channel"),
+                        detail = UiText.resource(R.string.settings_blocked_username, "spamchannel"),
+                        photo = null,
+                        avatarId = -100_123,
+                    ),
+                ),
+            totalCount = 4,
+            more = MoreBlockedSenders.None,
+        )
+
+    private val thisDevice =
+        SessionItem(
+            id = 1,
+            device = SessionDevice.Phone,
+            title = UiText.Plain("Google Pixel 8"),
+            app = parts("Pingogram 0.3.0", "Android 15"),
+            activity = UiText.resource(R.string.settings_session_parts, "Berlin, Germany", online()),
+        )
+
+    val sessions =
+        ActiveSessionsUiState(
+            sessions =
+                SessionsState.Loaded(
+                    current = thisDevice,
+                    unconfirmed =
+                        persistentListOf(
+                            SessionItem(
+                                id = 2,
+                                device = SessionDevice.Browser,
+                                title = UiText.Plain("Chrome 129"),
+                                app = parts("Telegram Web A 10.9", "Windows 11"),
+                                activity = parts("Lisbon, Portugal", "9:12 AM"),
+                            ),
+                        ),
+                    others =
+                        persistentListOf(
+                            SessionItem(
+                                id = 3,
+                                device = SessionDevice.Desktop,
+                                title = UiText.Plain("MacBook Pro"),
+                                app = parts("Telegram Desktop 5.6", "macOS 15"),
+                                activity = parts("Berlin, Germany", "Mon"),
+                            ),
+                            SessionItem(
+                                id = 4,
+                                device = SessionDevice.Tablet,
+                                title = UiText.Plain("iPad Air"),
+                                app = parts("Telegram iOS 11.2", "iPadOS 18"),
+                                activity = parts("Munich, Germany", "Mar 17"),
+                                isPasswordPending = true,
+                            ),
+                        ),
+                    inactiveSessionTtlDays = 180,
+                ),
+        )
+
+    val onlyThisDevice =
+        ActiveSessionsUiState(
+            sessions =
+                SessionsState.Loaded(
+                    current = thisDevice,
+                    unconfirmed = persistentListOf(),
+                    others = persistentListOf(),
+                    inactiveSessionTtlDays = 180,
+                ),
+        )
+
+    private fun parts(
+        first: String,
+        second: String,
+    ) = UiText.resource(R.string.settings_session_parts, first, second)
+
+    private fun online() = UiText.resource(R.string.settings_session_online)
 }

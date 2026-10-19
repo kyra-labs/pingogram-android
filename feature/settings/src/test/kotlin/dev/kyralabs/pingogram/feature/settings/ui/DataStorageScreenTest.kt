@@ -86,7 +86,7 @@ class DataStorageScreenTest {
     fun `cancelling the confirmation dismisses it`() {
         setScreen(SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true))
 
-        dialogButton(R.string.settings_clear_cache_dialog_dismiss).performClick()
+        dialogButton(R.string.settings_dialog_dismiss).performClick()
 
         assertEquals(listOf(DataStorageEvent.DismissClearCache), events)
     }
