@@ -17,6 +17,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The app's own colors, used when dynamic color is off or unavailable (before Android 12), are now built from the
   icon's blue instead of a placeholder pink.
 
+### Fixed
+- "Wallpaper colors" now follow the wallpaper on phones that publish its colors only the older way, such as Samsung
+  phones with One UI, where the app showed the system's stock blue instead.
+
 ## [0.3.0-beta.1] - 2026-10-19
 
 ### Added

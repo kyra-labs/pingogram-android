@@ -4,8 +4,6 @@ import android.app.UiModeManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -19,10 +17,10 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 
 /**
  * The [ColorScheme] for the current settings (`docs/DESIGN_SYSTEM.md` §2.1): Material You on
- * Android 12+ when [dynamicColor] is on, otherwise the brand schemes from `Color.kt`.
+ * Android 12+ when [dynamicColor] is on ([systemDynamicColors]), otherwise the brand schemes from `Color.kt`.
  *
  * On Android 14+ the system contrast setting replaces [contrast], and the platform applies it to
- * dynamic schemes too.
+ * dynamic schemes read from its color roles too.
  */
 @Composable
 fun rememberPingogramColorScheme(
@@ -37,27 +35,29 @@ fun rememberPingogramColorScheme(
     val effectiveContrast =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) systemContrast() else contrast
     return remember(context, configuration, dark, dynamicColor, effectiveContrast, amoled) {
-        val dynamicScheme =
-            when {
-                !dynamicColor || Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> null
-                dark -> dynamicDarkColorScheme(context)
-                else -> dynamicLightColorScheme(context)
+        val dynamic =
+            if (dynamicColor &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            ) {
+                systemDynamicColors(context, dark)
+            } else {
+                null
             }
         pingogramColorScheme(
             dark = dark,
             contrast = effectiveContrast,
             amoled = amoled,
-            dynamicScheme = dynamicScheme,
-            dynamicSchemeFollowsContrast = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+            dynamicScheme = dynamic?.scheme,
+            dynamicSchemeFollowsContrast = dynamic?.followsContrast ?: false,
         )
     }
 }
 
 /**
  * Picks the scheme for the given settings. [dynamicScheme] is the platform's Material You scheme, or
- * null when dynamic color is off or unavailable. Dynamic schemes before Android 14 have no contrast
- * levels ([dynamicSchemeFollowsContrast] = false), so a medium or high [contrast] falls back to the
- * brand scheme there: accessibility wins over wallpaper colors.
+ * null when dynamic color is off or unavailable. Dynamic schemes from the tonal palettes (before Android 14, or where
+ * the system leaves its color roles stale) have no contrast levels ([dynamicSchemeFollowsContrast] = false), so a
+ * medium or high [contrast] falls back to the brand scheme there: accessibility wins over wallpaper colors.
  */
 internal fun pingogramColorScheme(
     dark: Boolean,
