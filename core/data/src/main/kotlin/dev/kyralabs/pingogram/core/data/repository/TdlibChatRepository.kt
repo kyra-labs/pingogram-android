@@ -116,6 +116,19 @@ class TdlibChatRepository
             }
         }
 
+        /** `createPrivateChat` without `force`: TDLib knows the user, or fails. */
+        override suspend fun privateChat(userId: Long): Outcome<Chat> =
+            when (val result = client.request(TdApi.CreatePrivateChat(userId, false))) {
+                is Outcome.Success -> {
+                    val chat = result.value.toChat(store.state.value.mutedScopes)
+                    if (chat != null) Outcome.Success(chat) else Outcome.Failure(DomainError.NotFound)
+                }
+
+                is Outcome.Failure -> {
+                    result
+                }
+            }
+
         override val folders: Flow<ImmutableList<ChatFolder>> =
             store.state.map { it.folders }.distinctUntilChanged()
 

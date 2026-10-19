@@ -207,6 +207,8 @@ class FakeChatRepository : ChatRepository {
 
     override fun chat(id: Long): Flow<Chat?> = chats.map { it[id] }.distinctUntilChanged()
 
+    override suspend fun privateChat(userId: Long): Outcome<Chat> = unused()
+
     override suspend fun getChat(id: Long): Outcome<Chat> = unused()
 
     override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> = unused()

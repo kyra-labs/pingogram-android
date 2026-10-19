@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.text.UiText
 
 /** One-off effects of [ChatViewModel], handled by the screen once each (`docs/ARCHITECTURE.md`, ViewModels). */
 sealed interface ChatEffect {
@@ -55,6 +56,26 @@ sealed interface ChatEffect {
 
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
+
+    /**
+     * Messages were forwarded to [count] chats: a snackbar says so, naming the chat if there was one ([chatTitle]),
+     * with an action that opens it if it is another chat ([openChatId]).
+     */
+    data class Forwarded(
+        val count: Int,
+        val chatTitle: UiText? = null,
+        val openChatId: Long? = null,
+    ) : ChatEffect
+
+    /**
+     * Forwarding to [failed] chats failed, the first time with [error] (a flood wait stops it, counting the chats left
+     * as failed); [forwarded] chats got the messages. A snackbar says so.
+     */
+    data class ForwardFailed(
+        val error: DomainError,
+        val failed: Int,
+        val forwarded: Int,
+    ) : ChatEffect
 
     /**
      * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);

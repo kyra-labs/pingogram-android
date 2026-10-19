@@ -244,6 +244,14 @@ sealed interface ChatEvent {
     /** The delete confirmation was dismissed: nothing is deleted. */
     data object DismissDelete : ChatEvent
 
+    /**
+     * Forward message [messageId], an album's every item: the forward sheet opens with the chats it can go to
+     * ([ChatViewModel.forwardSheet]).
+     */
+    data class Forward(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** Send the failed message [messageId] again (an album's failed items). */
     data class Resend(
         val messageId: Long,
@@ -257,4 +265,37 @@ sealed interface ChatEvent {
         val messageId: Long,
         val label: ReactionLabel,
     ) : ChatEvent
+
+    // The forward sheet (REQUIREMENTS.md FR-C6).
+
+    /** The forward sheet's search field holds [query] now: the chats it finds replace the list once it stays so. */
+    data class ForwardQueryChanged(
+        val query: String,
+    ) : ChatEvent {
+        override fun toString() = "ForwardQueryChanged(…)"
+    }
+
+    /** A chat of the forward sheet was tapped: it is picked, or unpicked if it was. */
+    data class ToggleForwardTarget(
+        val chatId: Long,
+    ) : ChatEvent
+
+    /** "Hide sender's name" in the forward sheet: the messages go as copies, without "Forwarded from". */
+    data class SetForwardHideSenderName(
+        val hide: Boolean,
+    ) : ChatEvent
+
+    /** "Hide captions" in the forward sheet: the copies go without their captions. */
+    data class SetForwardHideCaptions(
+        val hide: Boolean,
+    ) : ChatEvent
+
+    /** The forward sheet's list comes near its end: the next page of the chat list loads. */
+    data object LoadMoreForwardTargets : ChatEvent
+
+    /** The forward sheet's send button: the messages go to the picked chats, after the comment. */
+    data object SendForward : ChatEvent
+
+    /** The forward sheet was dismissed: nothing is forwarded. */
+    data object DismissForward : ChatEvent
 }

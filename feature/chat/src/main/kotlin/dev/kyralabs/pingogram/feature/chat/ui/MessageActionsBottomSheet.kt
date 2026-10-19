@@ -220,6 +220,7 @@ private val MessageAction.label: Int
             MessageAction.Resend -> R.string.message_action_resend
             MessageAction.Reply -> R.string.message_action_reply
             MessageAction.Copy -> R.string.message_action_copy
+            MessageAction.Forward -> R.string.message_action_forward
             MessageAction.Edit -> R.string.message_action_edit
             MessageAction.Pin -> R.string.message_action_pin
             MessageAction.PinForSelf -> R.string.message_action_pin_for_self
@@ -233,6 +234,7 @@ private val MessageAction.icon: Int
             MessageAction.Resend -> UiR.drawable.ic_refresh
             MessageAction.Reply -> UiR.drawable.ic_reply
             MessageAction.Copy -> UiR.drawable.ic_content_copy
+            MessageAction.Forward -> UiR.drawable.ic_forward
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
@@ -245,6 +247,7 @@ private fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)
         MessageAction.Copy -> ChatEvent.Copy(messageId)
+        MessageAction.Forward -> ChatEvent.Forward(messageId)
         MessageAction.Edit -> ChatEvent.Edit(messageId)
         MessageAction.Pin -> ChatEvent.Pin(messageId)
         MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)

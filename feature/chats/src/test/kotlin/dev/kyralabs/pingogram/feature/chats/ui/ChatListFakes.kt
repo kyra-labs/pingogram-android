@@ -91,6 +91,8 @@ class FakeChatRepository : ChatRepository {
     override fun chat(id: Long): Flow<Chat?> = unused()
 
     /** A chat of any list, as the repository keeps them in memory; [DomainError.NotFound] otherwise. */
+    override suspend fun privateChat(userId: Long): Outcome<Chat> = unused()
+
     override suspend fun getChat(id: Long): Outcome<Chat> =
         chats.value.values
             .flatten()

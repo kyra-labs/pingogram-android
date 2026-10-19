@@ -15,6 +15,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
   message with how often it was added. Reactions that need Telegram Premium only show if you have it. Custom emoji
   reactions show as a still picture where Telegram has one.
+- Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
+  opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
+  comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
+  or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
+  it, and when you forwarded to one other chat, opens that chat.
 
 ### Changed
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of

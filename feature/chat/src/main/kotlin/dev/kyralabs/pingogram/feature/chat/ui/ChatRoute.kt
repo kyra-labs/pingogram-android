@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -54,7 +55,8 @@ import java.util.Locale
  * view model's [ChatEffect]s show snackbars, open a downloaded document in another app or a location in a maps app, or
  * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
  * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
- * snackbar says when no app opens.
+ * snackbar says when no app opens. The forward sheet ([ForwardBottomSheet]) shows over the screen while the view model
+ * has one; the snackbar after forwarding to one other chat opens it through [onOpenChat].
  */
 @Composable
 internal fun ChatRoute(
@@ -62,6 +64,7 @@ internal fun ChatRoute(
     onBack: (() -> Unit)?,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenChat: (chatId: Long) -> Unit = {},
     messageId: Long? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
@@ -75,6 +78,7 @@ internal fun ChatRoute(
     val jumpState = rememberMessageJumpState()
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
+    val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
     val attach =
         rememberAttachInputs(
@@ -88,6 +92,7 @@ internal fun ChatRoute(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
+        onOpenChat = { currentOnOpenChat(it) },
         composerFocus = composerFocus,
         onLaunchCamera = { path ->
             launchers.takePhoto(path).also { launched ->
@@ -106,6 +111,8 @@ internal fun ChatRoute(
         composerFocus = composerFocus,
         attach = attach,
     )
+    val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
+    forwardSheet?.let { ForwardBottomSheet(it, viewModel.forwardComment, viewModel::onEvent) }
 }
 
 /**
@@ -116,13 +123,15 @@ internal fun ChatRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can.
+ * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
+ * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why.
  */
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
     onOpenMedia: (messageId: Long) -> Unit,
+    onOpenChat: (chatId: Long) -> Unit = {},
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -180,11 +189,15 @@ internal fun ChatEffects(
                         val launched = onLaunchCamera(effect.path)
                         resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
                     }
+
+                    is ChatEffect.Forwarded, is ChatEffect.ForwardFailed -> {
+                        forwardNotice(resources, effect, showErrorDetails)
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
                 snackbar?.cancel()
-                snackbar = launch { snackbarHostState.showSnackbar(message) }
+                snackbar = launch { snackbarHostState.showNotice(message, effect, resources, onOpenChat) }
             }
         }
     }

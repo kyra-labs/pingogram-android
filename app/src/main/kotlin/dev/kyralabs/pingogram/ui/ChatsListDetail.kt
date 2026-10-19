@@ -103,6 +103,8 @@ internal fun ChatsListDetail(
                     ChatPane(
                         chatId = chatId,
                         onOpenMedia = onOpenMedia,
+                        // The chat messages were forwarded to replaces this one, or is pushed with one pane.
+                        onOpenChat = { id -> if (twoPanes) navigator.show(id, scope) else onOpenChat(id) },
                         // Beside the list there is nothing to go back to; a pane sliding out keeps its button.
                         onBack =
                             if (listVisible && shownChatId != null) {

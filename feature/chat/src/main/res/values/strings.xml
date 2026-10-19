@@ -208,6 +208,8 @@
     <string name="message_action_resend">Send again</string>
     <string name="message_action_reply">Reply</string>
     <string name="message_action_copy">Copy text</string>
+    <!-- Opens the forward sheet, to send the message on to other chats. -->
+    <string name="message_action_forward">Forward</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->
@@ -259,4 +261,48 @@
     <string name="message_delete_for_everyone">Delete for everyone</string>
     <string name="message_delete_confirm">Delete</string>
     <string name="message_delete_cancel">Cancel</string>
+
+    <!-- The forward sheet: the chats a message can be forwarded to -->
+    <!-- Its title when one message (or an album as one) is forwarded. -->
+    <string name="forward_title">Forward to</string>
+    <!-- Its title for several messages: %d is how many. -->
+    <plurals name="forward_title_many">
+        <item quantity="one">Forward %d message to</item>
+        <item quantity="other">Forward %d messages to</item>
+    </plurals>
+    <!-- Below the title once chats are picked: %d is how many. -->
+    <plurals name="forward_selected">
+        <item quantity="one">%d chat selected</item>
+        <item quantity="other">%d chats selected</item>
+    </plurals>
+    <string name="forward_search">Search chats</string>
+    <string name="forward_search_clear">Clear search</string>
+    <!-- When the user can send messages in none of their chats. -->
+    <string name="forward_no_chats">No chats to forward to</string>
+    <!-- When the search finds no chat the messages can go to. -->
+    <string name="forward_nothing_found">No chats found</string>
+    <!-- The switch that sends copies, without "Forwarded from". -->
+    <string name="forward_hide_sender">Hide sender\'s name</string>
+    <!-- The switch that leaves the captions of photos, videos and files out. -->
+    <string name="forward_hide_captions">Hide captions</string>
+    <!-- The field for a message sent before the forwarded ones. -->
+    <string name="forward_comment">Add a comment</string>
+    <string name="forward_send">Send</string>
+    <!-- Screen readers: the send button, with %d the number of chats picked. -->
+    <plurals name="forward_send_description">
+        <item quantity="one">Send to %d chat</item>
+        <item quantity="other">Send to %d chats</item>
+    </plurals>
+    <!-- Snackbars after forwarding: to %d chats, to the one chat named %1$s, and the action that opens it. -->
+    <plurals name="forward_done">
+        <item quantity="one">Forwarded to %d chat</item>
+        <item quantity="other">Forwarded to %d chats</item>
+    </plurals>
+    <string name="forward_done_to">Forwarded to %1$s</string>
+    <string name="forward_open_chat">Open</string>
+    <!-- A snackbar when forwarding to some of the chats failed: %1$d is how many, %2$s says why. -->
+    <plurals name="forward_failed_some">
+        <item quantity="one">Not forwarded to %1$d chat. %2$s</item>
+        <item quantity="other">Not forwarded to %1$d chats. %2$s</item>
+    </plurals>
 </resources>

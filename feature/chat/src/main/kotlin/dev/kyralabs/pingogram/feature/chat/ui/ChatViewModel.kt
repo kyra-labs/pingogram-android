@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
@@ -47,6 +48,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
+import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
+import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -128,6 +131,8 @@ import java.util.Locale
  * - **Message actions** ([ChatMessageActions]): the actions sheet of a long-pressed message, with what TDLib allows for
  *   it ([MessageActionRepository.properties]) and its quick reactions; replying, copying, editing, pinning, deleting
  *   (after a confirmation), sending again and toggling reactions; and the [ChatUiState.shortcuts] screen readers get.
+ * - **Forwarding** ([ChatForwarding]): the forward sheet ([forwardSheet], kept out of [uiState] so the chats it lists
+ *   do not recompose the conversation), with its comment ([forwardComment]), and forwarding to the picked chats.
  * - **Attach menu** ([ChatAttachments]): what the composer's attach button offers in this chat
  *   ([ComposerUiState.Available.attachOptions]); picked photos, videos and files in a preview
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
@@ -159,6 +164,7 @@ class ChatViewModel internal constructor(
     groupRepository: GroupRepository,
     chatActionRepository: ChatActionRepository,
     fileRepository: FileRepository,
+    searchRepository: SearchRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -179,6 +185,7 @@ class ChatViewModel internal constructor(
         groupRepository: GroupRepository,
         chatActionRepository: ChatActionRepository,
         fileRepository: FileRepository,
+        searchRepository: SearchRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -195,6 +202,7 @@ class ChatViewModel internal constructor(
         groupRepository,
         chatActionRepository,
         fileRepository,
+        searchRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -303,7 +311,27 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             current = actionContext,
             onEffect = { effectChannel.trySend(it) },
+            onForward = { forwarding.open(it) },
         )
+
+    private val forwarding =
+        ChatForwarding(
+            fromChatId = chatId,
+            chats = chatRepository,
+            search = searchRepository,
+            users = userRepository,
+            groups = groupRepository,
+            actions = messageActionRepository,
+            scope = viewModelScope,
+            dispatcher = dispatcher,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The forward sheet; null while none is open. */
+    val forwardSheet: StateFlow<ForwardSheet?> get() = forwarding.sheet
+
+    /** The comment of the forward sheet, for its text field; kept like [composerText]. */
+    val forwardComment: ComposerText get() = forwarding.comment
 
     /** The text the composer edits, for its text field; the view model keeps it across rotations. */
     val composerText: ComposerText get() = composer.text
@@ -516,6 +544,22 @@ class ChatViewModel internal constructor(
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
 
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
+
+            is ChatEvent.Forward -> messageActions.forward(event.messageId)
+
+            is ChatEvent.ForwardQueryChanged -> forwarding.setQuery(event.query)
+
+            is ChatEvent.ToggleForwardTarget -> forwarding.toggle(event.chatId)
+
+            is ChatEvent.SetForwardHideSenderName -> forwarding.setHideSenderName(event.hide)
+
+            is ChatEvent.SetForwardHideCaptions -> forwarding.setHideCaptions(event.hide)
+
+            ChatEvent.LoadMoreForwardTargets -> forwarding.loadMore()
+
+            ChatEvent.SendForward -> forwarding.send()
+
+            ChatEvent.DismissForward -> forwarding.dismiss()
 
             is ChatEvent.AttachMedia -> attachments.pickMedia(event.uris)
 
