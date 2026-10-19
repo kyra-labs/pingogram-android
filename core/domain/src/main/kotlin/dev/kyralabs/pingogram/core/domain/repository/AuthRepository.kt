@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 /**
  * Login and logout (`REQUIREMENTS.md` §5.1). Each action answers once TDLib accepted or rejected it; the next step
@@ -68,3 +69,11 @@ interface AuthRepository {
     /** Logs out and deletes all local data; TDLib reports [AuthStep.LoggingOut], then [AuthStep.Closed]. */
     suspend fun logOut(): Outcome<Unit>
 }
+
+/**
+ * Waits until TDLib reports whether the account is logged in: true for [AuthStep.Ready], false for any other step but
+ * [AuthStep.Initializing]. For work that runs outside the app's screens (a notification action, a service): every
+ * process starts TDLib in `PingogramApplication.onCreate`, before any worker, receiver or service runs, so this only
+ * waits for TDLib to open its database. It never times out by itself.
+ */
+suspend fun AuthRepository.awaitLoggedIn(): Boolean = authStep.first { it != AuthStep.Initializing } == AuthStep.Ready

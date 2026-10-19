@@ -70,12 +70,17 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
  * ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share their photos, videos and GIFs
  * (the container transform of `sharedMediaBounds`).
+ *
+ * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
+ * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
  */
 @Composable
 internal fun PingogramNavHost(
     navController: NavHostController,
     uiState: MainActivityUiState,
     modifier: Modifier = Modifier,
+    chatToOpen: Long? = null,
+    onChatOpened: () -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
@@ -107,6 +112,7 @@ internal fun PingogramNavHost(
         }
     }
     SessionNavigationEffect(navController, uiState)
+    OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
 }
 
 /**
