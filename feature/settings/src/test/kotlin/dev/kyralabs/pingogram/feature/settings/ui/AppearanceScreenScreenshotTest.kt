@@ -12,8 +12,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Appearance page: loading, with the defaults, with the contrast following the system (Android 14+), without
- * dynamic color (before Android 12), and at 200% font scale, where the segmented buttons must keep their labels.
+ * The Appearance page: loading, with the defaults, with the contrast following the system (Android 14+) and AMOLED
+ * black on (in the AMOLED theme it chose), without dynamic color (before Android 12), and at 200% font scale, where
+ * the segmented buttons must keep their labels.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -40,6 +41,7 @@ class AppearanceScreenScreenshotTest {
             ThemeMode.Dark,
             AppearanceUiState.Content(AppearanceSettings(themeMode = ThemeMode.Dark, amoled = true)),
             systemContrast = Contrast.Medium,
+            amoled = true,
         )
 
     @Test
@@ -71,7 +73,8 @@ class AppearanceScreenScreenshotTest {
         state: AppearanceUiState,
         dynamicColorAvailable: Boolean = true,
         systemContrast: Contrast? = null,
-    ) = composeRule.captureScreen(javaClass, name, themeMode) {
+        amoled: Boolean = false,
+    ) = composeRule.captureScreen(javaClass, name, themeMode, amoled) {
         AppearanceScreen(
             state = state,
             onEvent = {},

@@ -46,6 +46,16 @@ internal object SettingsPreviewData {
             username = "ada",
         )
 
+    /**
+     * The account with a photo and Telegram Premium; the photo shows where Coil has a preview image (screenshot tests),
+     * else its placeholder.
+     */
+    val premiumAccount =
+        account.copy(
+            photo = ProfilePhoto(small = FileRef(1, 0), big = FileRef(2, 0), minithumbnail = null),
+            isPremium = true,
+        )
+
     val content = SettingsUiState(account = account)
 
     val storage =

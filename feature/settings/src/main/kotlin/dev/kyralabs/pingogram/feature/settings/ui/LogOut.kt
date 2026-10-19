@@ -1,15 +1,14 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -22,32 +21,31 @@ import dev.kyralabs.pingogram.feature.settings.R
 @Composable
 internal fun LogOutItem(
     isLoggingOut: Boolean,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
 ) {
     val loggingOut = stringResource(R.string.settings_logging_out)
-    ListItem(
-        onClick = onClick,
-        enabled = !isLoggingOut,
-        leadingContent = { Icon(painter = painterResource(R.drawable.ic_logout), contentDescription = null) },
+    SettingsRow(
+        title = stringResource(R.string.settings_log_out),
+        shapes = shapes,
+        icon = R.drawable.ic_logout,
+        supportingContent = { Text(stringResource(R.string.settings_log_out_summary)) },
         trailingContent =
             if (isLoggingOut) {
                 { LoadingIndicator(Modifier.semantics { contentDescription = loggingOut }) }
             } else {
                 null
             },
-        supportingContent = { Text(stringResource(R.string.settings_log_out_summary)) },
+        onClick = onClick,
+        enabled = !isLoggingOut,
         colors = destructiveItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_log_out))
-    }
+    )
 }
 
-/** The colors of a destructive row in a [SettingsSection]: its text and icon in the error role, on the card. */
+/** The colors of a destructive row in a [SettingsGroup]: its text and icon in the error role, on its container. */
 @Composable
-internal fun destructiveItemColors() =
-    ListItemDefaults.colors(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+internal fun destructiveItemColors(): ListItemColors =
+    ListItemDefaults.segmentedColors(
         contentColor = MaterialTheme.colorScheme.error,
         leadingContentColor = MaterialTheme.colorScheme.error,
     )

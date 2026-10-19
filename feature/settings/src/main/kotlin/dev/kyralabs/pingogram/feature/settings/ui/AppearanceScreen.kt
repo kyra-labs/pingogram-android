@@ -124,43 +124,51 @@ private fun AppearanceSettingsContent(
     dynamicColorAvailable: Boolean,
     systemContrast: Contrast?,
 ) {
-    SettingsSection(stringResource(R.string.settings_section_theme)) {
-        ChoiceRow(
-            options = ThemeModes,
-            selected = settings.themeMode,
-            label = { stringResource(it.labelRes()) },
-            onSelect = { onEvent(AppearanceEvent.SetThemeMode(it)) },
-            contentPadding =
-                PaddingValues(
-                    start = MaterialTheme.spacing.large,
-                    end = MaterialTheme.spacing.large,
-                    top = MaterialTheme.spacing.large,
-                    bottom = MaterialTheme.spacing.small,
-                ),
-        )
-        SwitchItem(
-            title = stringResource(R.string.settings_amoled),
-            summary = stringResource(R.string.settings_amoled_summary),
-            checked = settings.amoled,
-            onCheckedChange = { onEvent(AppearanceEvent.SetAmoled(it)) },
-        )
-    }
-    SettingsSection(stringResource(R.string.settings_section_colors)) {
-        if (dynamicColorAvailable) {
+    SettingsGroup(title = stringResource(R.string.settings_section_theme)) {
+        item { shapes ->
+            SettingsSegment(shapes) {
+                ChoiceRow(
+                    options = ThemeModes,
+                    selected = settings.themeMode,
+                    label = { stringResource(it.labelRes()) },
+                    onSelect = { onEvent(AppearanceEvent.SetThemeMode(it)) },
+                    contentPadding = PaddingValues(MaterialTheme.spacing.large),
+                )
+            }
+        }
+        item { shapes ->
             SwitchItem(
-                title = stringResource(R.string.settings_dynamic_color),
-                summary = stringResource(R.string.settings_dynamic_color_summary),
-                checked = settings.dynamicColor,
-                onCheckedChange = { onEvent(AppearanceEvent.SetDynamicColor(it)) },
+                title = stringResource(R.string.settings_amoled),
+                summary = stringResource(R.string.settings_amoled_summary),
+                checked = settings.amoled,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetAmoled(it)) },
             )
         }
-        ContrastItem(
-            contrast = systemContrast ?: settings.contrast,
-            followsSystem = systemContrast != null,
-            // Before Android 14 the wallpaper's colors have no contrast levels (rememberPingogramColorScheme).
-            usesBrandColors = dynamicColorAvailable && settings.dynamicColor && settings.contrast != Contrast.Standard,
-            onSelect = { onEvent(AppearanceEvent.SetContrast(it)) },
-        )
+    }
+    SettingsGroup(title = stringResource(R.string.settings_section_colors)) {
+        if (dynamicColorAvailable) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_dynamic_color),
+                    summary = stringResource(R.string.settings_dynamic_color_summary),
+                    checked = settings.dynamicColor,
+                    shapes = shapes,
+                    onCheckedChange = { onEvent(AppearanceEvent.SetDynamicColor(it)) },
+                )
+            }
+        }
+        item { shapes ->
+            ContrastItem(
+                contrast = systemContrast ?: settings.contrast,
+                followsSystem = systemContrast != null,
+                // Before Android 14 the wallpaper's colors have no contrast levels (rememberPingogramColorScheme).
+                usesBrandColors =
+                    dynamicColorAvailable && settings.dynamicColor && settings.contrast != Contrast.Standard,
+                shapes = shapes,
+                onSelect = { onEvent(AppearanceEvent.SetContrast(it)) },
+            )
+        }
     }
 }
 

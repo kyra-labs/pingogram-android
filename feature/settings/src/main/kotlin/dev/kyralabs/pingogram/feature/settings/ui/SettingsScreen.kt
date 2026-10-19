@@ -1,13 +1,11 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
@@ -40,6 +38,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -90,11 +89,11 @@ internal fun SettingsRoute(
 
 /**
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
- * page scrolls, as the chat list's does, then the logged-in account ([AccountHeader], whose button opens Edit
- * profile), the rows that open the other
- * settings pages (the account's own, Privacy and security, under Account), and "Log out", which asks for confirmation
- * first (FR-A8). The page draws behind the floating
- * navigation bar and ends clear of it ([screenContentWindowInsets]).
+ * page scrolls, as the chat list's does, then the logged-in account's card ([AccountCard], which opens Edit profile)
+ * and groups of segmented rows ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
+ * have them: General (Appearance, Data and storage), Privacy and security, About, and "Log out" on its own, which
+ * asks for confirmation first (FR-A8). The page draws behind the floating navigation bar and ends clear of it
+ * ([screenContentWindowInsets]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,43 +107,25 @@ internal fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        // The top bar's container; the page sits on a sheet below it (ContentSheet).
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // The page's color, which the transparent top bar shares.
+        containerColor = settingsPageColor(),
         topBar = { SettingsTopBar(scrollBehavior) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        SettingsContent(innerPadding) {
-            state.account?.let { AccountHeader(it, onEditProfile = { onOpenPage(SettingsPage.EditProfile) }) }
-            SettingsSection(stringResource(R.string.settings_section_general)) {
-                PageItem(
-                    title = stringResource(R.string.settings_appearance),
-                    summary = stringResource(R.string.settings_appearance_summary),
-                    icon = R.drawable.ic_palette,
-                    onClick = { onOpenPage(SettingsPage.Appearance) },
-                )
-                PageItem(
-                    title = stringResource(R.string.settings_data_storage),
-                    summary = stringResource(R.string.settings_data_storage_summary),
-                    icon = R.drawable.ic_storage,
-                    onClick = { onOpenPage(SettingsPage.DataStorage) },
-                )
-                PageItem(
-                    title = stringResource(R.string.settings_about),
-                    summary = stringResource(R.string.settings_about_summary),
-                    icon = R.drawable.ic_info,
-                    onClick = { onOpenPage(SettingsPage.About) },
-                )
-            }
-            SettingsSection(stringResource(R.string.settings_section_account)) {
-                PageItem(
-                    title = stringResource(R.string.settings_privacy_security),
-                    summary = stringResource(R.string.settings_privacy_security_summary),
-                    icon = R.drawable.ic_shield,
-                    onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
-                )
-                LogOutItem(isLoggingOut = state.isLoggingOut, onClick = { onEvent(SettingsEvent.LogOut) })
+        // Without headings between them the groups sit closer, as in the account menus.
+        SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
+            state.account?.let { AccountCard(it, onEditProfile = { onOpenPage(SettingsPage.EditProfile) }) }
+            PageGroups(onOpenPage)
+            SettingsGroup {
+                item { shapes ->
+                    LogOutItem(
+                        isLoggingOut = state.isLoggingOut,
+                        shapes = shapes,
+                        onClick = { onEvent(SettingsEvent.LogOut) },
+                    )
+                }
             }
         }
     }
@@ -156,9 +137,56 @@ internal fun SettingsScreen(
     }
 }
 
+/** The groups of rows that open the other settings pages: General, Privacy and security, About. */
+@Composable
+private fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
+    SettingsGroup {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_appearance),
+                summary = stringResource(R.string.settings_appearance_summary),
+                icon = R.drawable.ic_palette,
+                shapes = shapes,
+                onClick = { onOpenPage(SettingsPage.Appearance) },
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_data_storage),
+                summary = stringResource(R.string.settings_data_storage_summary),
+                icon = R.drawable.ic_storage,
+                shapes = shapes,
+                onClick = { onOpenPage(SettingsPage.DataStorage) },
+            )
+        }
+    }
+    SettingsGroup {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_privacy_security),
+                summary = stringResource(R.string.settings_privacy_security_summary),
+                icon = R.drawable.ic_shield,
+                shapes = shapes,
+                onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
+            )
+        }
+    }
+    SettingsGroup {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_about),
+                summary = stringResource(R.string.settings_about_summary),
+                icon = R.drawable.ic_info,
+                shapes = shapes,
+                onClick = { onOpenPage(SettingsPage.About) },
+            )
+        }
+    }
+}
+
 /**
- * The top bar: "Settings" in a [MediumFlexibleTopAppBar] on the screen's `surfaceContainer`, as wide as the page
- * below it, so the title lines up with the sections on wide windows.
+ * The top bar: "Settings" in a transparent [MediumFlexibleTopAppBar] on the page's color, as wide as the page below
+ * it, so the title lines up with the groups on wide windows.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -193,24 +221,6 @@ private fun SettingsTitle() {
         maxLines = 1,
         style = if (collapsed) typography.titleLargeEmphasized else typography.headlineMediumEmphasized,
     )
-}
-
-/** A row that opens another settings page. */
-@Composable
-internal fun PageItem(
-    title: String,
-    summary: String,
-    @DrawableRes icon: Int,
-    onClick: () -> Unit,
-) {
-    ListItem(
-        onClick = onClick,
-        leadingContent = { SettingsItemIcon(icon) },
-        supportingContent = { Text(summary) },
-        colors = settingsItemColors(),
-    ) {
-        Text(title)
-    }
 }
 
 @PingogramPreviews

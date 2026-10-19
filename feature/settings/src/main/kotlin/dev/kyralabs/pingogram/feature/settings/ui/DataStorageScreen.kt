@@ -1,7 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.text.format.Formatter
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,23 +92,38 @@ internal fun DataStorageScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
-        SettingsSection(stringResource(R.string.settings_section_storage_usage)) {
+        SettingsGroup(title = stringResource(R.string.settings_section_storage_usage)) {
             when (val usage = state.usage) {
                 StorageUsageState.Loading -> {
-                    SettingsLoading(stringResource(R.string.settings_storage_usage_loading))
+                    item { shapes ->
+                        SettingsSegment(shapes) {
+                            SettingsLoading(stringResource(R.string.settings_storage_usage_loading))
+                        }
+                    }
                 }
 
                 is StorageUsageState.Content -> {
-                    UsageItems(usage.usage)
+                    item { shapes -> FilesItem(usage.usage, shapes) }
+                    item { shapes -> DatabaseItem(usage.usage, shapes) }
                 }
 
                 is StorageUsageState.Error -> {
-                    SettingsError(usage.error, onRetry = { onEvent(DataStorageEvent.Retry) })
+                    item { shapes ->
+                        SettingsSegment(shapes) {
+                            SettingsError(usage.error, onRetry = { onEvent(DataStorageEvent.Retry) })
+                        }
+                    }
                 }
             }
         }
-        SettingsSection(stringResource(R.string.settings_section_cache)) {
-            ClearCacheItem(isClearing = state.isClearingCache, onClick = { onEvent(DataStorageEvent.ClearCache) })
+        SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
+            item { shapes ->
+                ClearCacheItem(
+                    isClearing = state.isClearingCache,
+                    shapes = shapes,
+                    onClick = { onEvent(DataStorageEvent.ClearCache) },
+                )
+            }
         }
     }
     if (state.isClearCacheDialogOpen) {
@@ -119,13 +134,18 @@ internal fun DataStorageScreen(
     }
 }
 
-/** The downloaded files and the databases, each with its size. */
+/** The downloaded files: their size and how many there are. */
 @Composable
-private fun UsageItems(usage: StorageUsage) {
+private fun FilesItem(
+    usage: StorageUsage,
+    shapes: ListItemShapes,
+) {
     val context = LocalContext.current
     val count = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(usage.fileCount)
-    ListItem(
-        leadingContent = { SettingsItemIcon(R.drawable.ic_folder) },
+    SettingsRow(
+        title = stringResource(R.string.settings_storage_files),
+        shapes = shapes,
+        icon = R.drawable.ic_folder,
         supportingContent = {
             Text(
                 stringResource(
@@ -135,12 +155,20 @@ private fun UsageItems(usage: StorageUsage) {
                 ),
             )
         },
-        colors = settingsItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_storage_files))
-    }
-    ListItem(
-        leadingContent = { SettingsItemIcon(R.drawable.ic_database) },
+    )
+}
+
+/** The databases and their size. */
+@Composable
+private fun DatabaseItem(
+    usage: StorageUsage,
+    shapes: ListItemShapes,
+) {
+    val context = LocalContext.current
+    SettingsRow(
+        title = stringResource(R.string.settings_storage_database),
+        shapes = shapes,
+        icon = R.drawable.ic_database,
         supportingContent = {
             Text(
                 stringResource(
@@ -149,10 +177,7 @@ private fun UsageItems(usage: StorageUsage) {
                 ),
             )
         },
-        colors = settingsItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_storage_database))
-    }
+    )
 }
 
 @PingogramPreviews

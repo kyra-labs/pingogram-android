@@ -17,9 +17,14 @@ import androidx.compose.ui.unit.dp
  * @property illustrationMaxSize the largest side of a hero illustration or a QR code frame.
  * @property avatarSmall an `Avatar` in a one- or two-line list item: contacts, members, search results (the M3 list
  *   item's leading avatar).
- * @property avatarMedium an `Avatar` in a chat list row, next to a title and a two-line preview.
- * @property avatarLarge an `Avatar` heading a screen on its own: the account at the top of Settings.
+ * @property avatarMedium an `Avatar` in a chat list row, next to a title and a two-line preview, and the account's on
+ *   its card at the top of Settings.
+ * @property avatarLarge an `Avatar` heading a screen on its own: the profile photo in Edit profile.
  * @property avatarExtraSmall an `Avatar` beside the last of a group of messages in a group chat, next to its bubble.
+ * @property avatarRing the width of a ring around an `Avatar`, and of the gap that sets it off from the avatar, e.g.
+ *   the ring in `primary` around the account's avatar on its card in Settings.
+ * @property avatarBadge the diameter of a small round badge over an `Avatar`'s bottom end, e.g. the edit badge on the
+ *   account's avatar in Settings, holding an icon of [badgeIcon].
  * @property inlineIcon an icon within a line of title text, e.g. the badges and mute icon after a chat's name.
  * @property inlineIconSmall an icon next to label text, e.g. read receipts beside a time, or a chat's pin.
  * @property badgeIcon an icon inside a `Badge`, e.g. the `@` of an unread mention; the size of a badge's digits.
@@ -56,6 +61,8 @@ data class PingogramSizes(
     val avatarMedium: Dp = 56.dp,
     val avatarLarge: Dp = 96.dp,
     val avatarExtraSmall: Dp = 32.dp,
+    val avatarRing: Dp = 2.dp,
+    val avatarBadge: Dp = 24.dp,
     val inlineIcon: Dp = 18.dp,
     val inlineIconSmall: Dp = 16.dp,
     val badgeIcon: Dp = 12.dp,

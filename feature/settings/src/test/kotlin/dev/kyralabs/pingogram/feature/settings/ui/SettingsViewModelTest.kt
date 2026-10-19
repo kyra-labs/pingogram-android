@@ -323,6 +323,19 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `shows whether the account subscribes to Telegram Premium and follows changes`() =
+        runTest {
+            val viewModel = viewModel()
+            announceMe(TdApiFixtures.user(id = 7, isPremium = false))
+            assertEquals(false, viewModel.state.account?.isPremium)
+
+            client.emit(TdApiFixtures.updateUser(TdApiFixtures.user(id = 7, isPremium = true)))
+            runCurrent()
+
+            assertEquals(true, viewModel.state.account?.isPremium)
+        }
+
+    @Test
     fun `follows changes of the account and formats each phone number once`() =
         runTest {
             answerPhoneNumberInfo(callingCode = "44", formattedNumber = "7911 123456")

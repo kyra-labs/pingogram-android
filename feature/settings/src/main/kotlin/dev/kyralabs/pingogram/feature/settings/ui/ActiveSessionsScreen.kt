@@ -1,42 +1,21 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.annotation.DrawableRes
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
-import dev.kyralabs.pingogram.core.ui.text.resolve
-import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -147,41 +126,52 @@ private fun Sessions(
 ) {
     val ttl = stringResource(R.string.settings_sessions_ttl, ttlText(sessions.inactiveSessionTtlDays))
     val hasOthers = sessions.unconfirmed.isNotEmpty() || sessions.others.isNotEmpty()
-    SettingsSection(
+    SettingsGroup(
         title = stringResource(R.string.settings_section_this_device),
         footer = if (sessions.others.isEmpty()) ttl else null,
     ) {
-        sessions.current?.let { SessionRow(it, isBusy = false) }
-        if (hasOthers) {
-            TerminateAllItem(
-                isTerminating = state.isTerminatingAll,
-                onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
-            )
+        sessions.current?.let { current ->
+            item(key = current.id) { shapes -> SessionRow(current, isBusy = false, shapes = shapes) }
         }
-    }
-    if (sessions.unconfirmed.isNotEmpty()) {
-        SettingsSection(
-            title = stringResource(R.string.settings_section_new_logins),
-            footer = stringResource(R.string.settings_new_logins_note),
-        ) {
-            sessions.unconfirmed.forEach { session ->
-                NewLogin(
-                    session = session,
-                    isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
-                    onConfirm = { onEvent(ActiveSessionsEvent.ConfirmLogin(session.id)) },
-                    onTerminate = { onEvent(ActiveSessionsEvent.Terminate(session)) },
+        if (hasOthers) {
+            item(key = TERMINATE_ALL) { shapes ->
+                TerminateAllItem(
+                    isTerminating = state.isTerminatingAll,
+                    shapes = shapes,
+                    onClick = { onEvent(ActiveSessionsEvent.TerminateAllOthers) },
                 )
             }
         }
     }
+    if (sessions.unconfirmed.isNotEmpty()) {
+        SettingsGroup(
+            title = stringResource(R.string.settings_section_new_logins),
+            footer = stringResource(R.string.settings_new_logins_note),
+        ) {
+            sessions.unconfirmed.forEach { session ->
+                item(key = session.id) { shapes ->
+                    NewLogin(
+                        session = session,
+                        isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
+                        shapes = shapes,
+                        onConfirm = { onEvent(ActiveSessionsEvent.ConfirmLogin(session.id)) },
+                        onTerminate = { onEvent(ActiveSessionsEvent.Terminate(session)) },
+                    )
+                }
+            }
+        }
+    }
     if (sessions.others.isNotEmpty()) {
-        SettingsSection(title = stringResource(R.string.settings_section_other_sessions), footer = ttl) {
+        SettingsGroup(title = stringResource(R.string.settings_section_other_sessions), footer = ttl) {
             sessions.others.forEach { session ->
-                SessionRow(
-                    session = session,
-                    isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
-                    onClick = { onEvent(ActiveSessionsEvent.Terminate(session)) },
-                )
+                item(key = session.id) { shapes ->
+                    SessionRow(
+                        session = session,
+                        isBusy = session.id in state.busySessionIds || state.isTerminatingAll,
+                        shapes = shapes,
+                        onClick = { onEvent(ActiveSessionsEvent.Terminate(session)) },
+                    )
+                }
             }
         }
     }
@@ -228,3 +218,6 @@ private fun ActiveSessionsScreenErrorPreview() {
         )
     }
 }
+
+/** The key of "Terminate all other sessions" among the session rows, which are keyed by session id. */
+private const val TERMINATE_ALL = "terminateAll"
