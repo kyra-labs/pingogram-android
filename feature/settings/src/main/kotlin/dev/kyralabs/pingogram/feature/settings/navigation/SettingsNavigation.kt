@@ -14,6 +14,8 @@ import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
@@ -25,6 +27,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceS
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRoute as SettingsScreenRoute
@@ -48,8 +52,9 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
 
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [DataStorageRoute],
- * [AboutRoute] and [PrivacySecurityRoute], and the ones Privacy and security pushes above itself, which it opens with
- * [onOpen]: [PrivacySettingRoute], [BlockedUsersRoute] and [ActiveSessionsRoute]. [onBack] leaves each of them; Edit
+ * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
+ * [PrivacySettingRoute], [BlockedUsersRoute] and [ActiveSessionsRoute] above Privacy and security,
+ * [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it. [onBack] leaves each of them; Edit
  * profile leaves with [onProfileSaved] once it saved, which the app implements with [popBackStackAfterProfileSaved].
  */
 fun NavGraphBuilder.settingsPages(
@@ -60,7 +65,13 @@ fun NavGraphBuilder.settingsPages(
     composable<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     composable<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
     composable<DataStorageRoute> { DataStorageScreenRoute(onBack = onBack) }
-    composable<AboutRoute> { AboutScreenRoute(onBack = onBack) }
+    composable<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
+    composable<OpenSourceLicensesRoute> {
+        OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
+    }
+    composable<OpenSourceLibraryRoute> { entry ->
+        OpenSourceLibraryScreenRoute(libraryId = entry.toRoute<OpenSourceLibraryRoute>().libraryId, onBack = onBack)
+    }
     composable<PrivacySecurityRoute> {
         PrivacySecurityScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }

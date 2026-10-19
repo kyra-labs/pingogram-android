@@ -43,11 +43,27 @@ data object AppearanceRoute
 data object DataStorageRoute
 
 /**
- * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code and license, `:feature:settings`, pushed above the
- * Settings tab.
+ * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code, license and the open-source licenses,
+ * `:feature:settings`, pushed above the Settings tab.
  */
 @Serializable
 data object AboutRoute
+
+/**
+ * The open-source licenses (`REQUIREMENTS.md` FR-S1, About): the libraries, fonts and icons Pingogram is built from,
+ * `:feature:settings`, pushed above [AboutRoute].
+ */
+@Serializable
+data object OpenSourceLicensesRoute
+
+/**
+ * One library of [OpenSourceLicensesRoute] with the full texts of its licenses, pushed above it. [libraryId] is the
+ * id of an `OpenSourceLibrary` of `:core:domain`, which this module does not depend on.
+ */
+@Serializable
+data class OpenSourceLibraryRoute(
+    val libraryId: String,
+)
 
 /**
  * Privacy and security (`REQUIREMENTS.md` FR-S1): the privacy settings, blocked users, active sessions and 2-step

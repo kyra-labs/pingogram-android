@@ -2,6 +2,10 @@
 # Compose artifacts take their versions from the BOM, except where noted.
 
 [versions]
+# The open-source licenses screen (feature:settings, docs/adr/0002-open-source-licenses.md): the Gradle plugin lists the
+# release app's dependencies at build time into a raw resource of :app, which :app reads with the platform's org.json.
+# Only the build-time plugin: no runtime library, no network, no UI of its own (the screen is ours), no Play Services.
+aboutLibraries = "15.3.0"
 androidGradlePlugin = "9.4.1"
 androidxActivity = "1.13.0"
 # benchmark-macro-junit4 and the baselineprofile Gradle plugin ship together; keep them on one version
@@ -130,6 +134,7 @@ detekt-api = { group = "io.gitlab.arturbosch.detekt", name = "detekt-api", versi
 detekt-test = { group = "io.gitlab.arturbosch.detekt", name = "detekt-test", version.ref = "detekt" }
 
 [plugins]
+aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutLibraries" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }

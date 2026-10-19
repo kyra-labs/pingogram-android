@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -236,3 +238,29 @@ internal fun SettingsFooter(
         style = MaterialTheme.typography.bodyMedium,
     )
 }
+
+/**
+ * How the rows of a settings page's lazy list are laid out and animated: at most [maxWidth] wide (the settings pages'
+ * column) with [margin]s, on the [motionScheme]'s springs.
+ */
+internal class SettingsListRowStyle(
+    val maxWidth: Dp,
+    val margin: Dp,
+    val motionScheme: MotionScheme,
+)
+
+/** A row of a settings page's lazy list: as wide as the page's column, with its margins, sliding on its springs. */
+internal fun Modifier.settingsListRow(
+    scope: LazyItemScope,
+    style: SettingsListRowStyle,
+): Modifier =
+    with(scope) {
+        this@settingsListRow
+            .animateItem(
+                fadeInSpec = style.motionScheme.defaultEffectsSpec(),
+                placementSpec = style.motionScheme.defaultSpatialSpec(),
+                fadeOutSpec = style.motionScheme.fastEffectsSpec(),
+            ).widthIn(max = style.maxWidth)
+            .fillMaxWidth()
+            .padding(horizontal = style.margin)
+    }
