@@ -28,16 +28,19 @@ import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.QrCode
+import dev.kyralabs.pingogram.feature.auth.ui.components.isCompactHeightWindow
 import dev.kyralabs.pingogram.feature.auth.ui.components.squareAroundContent
 import dev.kyralabs.pingogram.feature.auth.ui.components.squareOfWidth
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A6: QR code login. Another logged-in device scans the QR code of the `tg://login` link, which TDLib renews every
- * few seconds; it sits in the Expressive QR frame (`MaterialShapes.Cookie12Sided`, `docs/DESIGN_SYSTEM.md` §4), above
- * the steps Telegram's apps use to scan it.
+ * few seconds. The steps Telegram's apps use to scan it explain the headline; the QR code, the step's form, sits in
+ * the Expressive QR frame (`MaterialShapes.Cookie12Sided`, `docs/DESIGN_SYSTEM.md` §4), in the end pane on wide
+ * windows and in landscape.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -47,23 +50,34 @@ fun QrCodeScreen(
     onEvent: (AuthEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // In landscape on a phone the frame would not fit above the action; it shrinks there.
+    val frameMaxSize =
+        MaterialTheme.sizes.illustrationMaxSize * if (isCompactHeightWindow()) COMPACT_HEIGHT_SCALE else 1f
     AuthStepLayout(
         title = stringResource(R.string.auth_qr_title),
+        badgeShape = MaterialShapes.Clover4Leaf,
+        badgeIcon = UiR.drawable.ic_photo_camera_filled,
         modifier = modifier,
-        actions = {
+        secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_qr_use_phone),
                 onClick = { onEvent(AuthEvent.CancelQrCode) },
                 inProgress = pendingAction == AuthAction.CancelQrCode,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
+        },
+        explanation = {
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
+                QrInstruction(number = 1, text = stringResource(R.string.auth_qr_step_open))
+                QrInstruction(number = 2, text = stringResource(R.string.auth_qr_step_settings))
+                QrInstruction(number = 3, text = stringResource(R.string.auth_qr_step_confirm))
+            }
         },
     ) {
         Box(
             modifier =
                 Modifier
                     .align(Alignment.CenterHorizontally)
-                    .squareOfWidth(QR_FRAME_WIDTH_FRACTION, MaterialTheme.sizes.illustrationMaxSize)
+                    .squareOfWidth(QR_FRAME_WIDTH_FRACTION, frameMaxSize)
                     .background(MaterialTheme.colorScheme.primaryContainer, MaterialShapes.Cookie12Sided.toShape()),
             contentAlignment = Alignment.Center,
         ) {
@@ -72,11 +86,6 @@ fun QrCodeScreen(
                 contentDescription = stringResource(R.string.auth_qr_code_description),
                 modifier = Modifier.fillMaxSize(QR_CODE_FRACTION).clip(MaterialTheme.shapes.medium),
             )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
-            QrInstruction(number = 1, text = stringResource(R.string.auth_qr_step_open))
-            QrInstruction(number = 2, text = stringResource(R.string.auth_qr_step_settings))
-            QrInstruction(number = 3, text = stringResource(R.string.auth_qr_step_confirm))
         }
     }
 }
@@ -115,6 +124,7 @@ private fun QrInstruction(
 }
 
 private const val QR_FRAME_WIDTH_FRACTION = 0.8f
+private const val COMPACT_HEIGHT_SCALE = 0.7f
 
 // The largest rounded square inside the cookie's scallops: its inner radius is 80% of the outer one.
 private const val QR_CODE_FRACTION = 0.6f

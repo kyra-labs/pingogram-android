@@ -1,10 +1,11 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.pluralStringResource
@@ -14,6 +15,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -27,11 +29,14 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.announcedCountdownSeconds
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
+import dev.kyralabs.pingogram.feature.auth.ui.preview.LANDSCAPE_PHONE
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A3: the login code for every delivery type, with the resend countdown, "change number", and the code autofilled
  * or pasted (it submits itself once complete).
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CodeScreen(
     state: AuthStepUiState.Code,
@@ -42,19 +47,23 @@ fun CodeScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_code_title),
+        badgeShape = MaterialShapes.Sunny,
+        badgeIcon = UiR.drawable.ic_chat_filled,
         description = codeDescription(state.type, state.phoneNumber),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitCode) },
                 enabled = canSubmit && state.code.isNotBlank(),
                 inProgress = pendingAction == AuthAction.SubmitCode,
             )
+        },
+        secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_change_number),
                 onClick = { onEvent(AuthEvent.ChangePhoneNumber) },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         },
     ) {
@@ -187,7 +196,9 @@ private fun resendText(type: AuthCodeType): String =
         }
     }
 
+// Also two panes on a phone in landscape (`docs/DESIGN_SYSTEM.md` §7).
 @PingogramPreviews
+@Preview(name = "Landscape", device = LANDSCAPE_PHONE)
 @Composable
 private fun CodeScreenPreview() {
     AuthScreenPreview(AuthPreviewData.code)
