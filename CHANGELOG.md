@@ -15,6 +15,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
   message with how often it was added. Reactions that need Telegram Premium only show if you have it. Custom emoji
   reactions show as a still picture where Telegram has one.
+- Open-source licenses: About now lists the libraries, fonts and icons Pingogram is built with, each with its
+  version and license. Tap one to read the full license text, which you can select and copy, and to open its
+  website. The list is made from the app's own build, so it always matches what you installed, and it works
+  offline.
 
 ### Changed
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of

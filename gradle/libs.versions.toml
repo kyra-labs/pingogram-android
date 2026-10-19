@@ -2,6 +2,10 @@
 # Compose artifacts take their versions from the BOM, except where noted.
 
 [versions]
+# The open-source licenses screen (feature:settings, docs/adr/0002-open-source-licenses.md): the Gradle plugin lists the
+# release app's dependencies at build time into a raw resource of :app, aboutlibraries-core reads it. No network at run
+# time, no UI of its own (the screen is ours), no Play Services; the plugin and the core library ship together.
+aboutLibraries = "15.3.0"
 androidGradlePlugin = "9.4.1"
 androidxActivity = "1.13.0"
 # benchmark-macro-junit4 and the baselineprofile Gradle plugin ship together; keep them on one version
@@ -63,6 +67,7 @@ turbine = "1.2.1"
 zxing = "3.5.4"
 
 [libraries]
+aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutLibraries" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -130,6 +135,7 @@ detekt-api = { group = "io.gitlab.arturbosch.detekt", name = "detekt-api", versi
 detekt-test = { group = "io.gitlab.arturbosch.detekt", name = "detekt-test", version.ref = "detekt" }
 
 [plugins]
+aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutLibraries" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }

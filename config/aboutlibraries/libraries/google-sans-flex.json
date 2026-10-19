@@ -1,0 +1,14 @@
+{
+  "uniqueId": "google-sans-flex",
+  "name": "Google Sans Flex",
+  "description": "The variable typeface of every text in Pingogram, bundled with the app.",
+  "website": "https://fonts.google.com/specimen/Google+Sans+Flex",
+  "developers": [
+    {
+      "name": "Google"
+    }
+  ],
+  "licenses": [
+    "OFL-1.1"
+  ]
+}

@@ -24,9 +24,13 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** The About page: hoists [AboutViewModel] and opens the links it asks for. [onBack] leaves the page. */
+/**
+ * The About page: hoists [AboutViewModel] and opens the links it asks for. [onOpenLicenses] opens the open-source
+ * licenses; [onBack] leaves the page.
+ */
 @Composable
 internal fun AboutRoute(
+    onOpenLicenses: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AboutViewModel = hiltViewModel(),
@@ -40,18 +44,26 @@ internal fun AboutRoute(
             }
         }
     }
-    AboutScreen(state = state, onEvent = viewModel::onEvent, onBack = onBack, modifier = modifier)
+    AboutScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onOpenLicenses = onOpenLicenses,
+        onBack = onBack,
+        modifier = modifier,
+    )
 }
 
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source
- * code on GitHub (opened in the browser), its license, and the statement that it is an unofficial client, not
+ * code on GitHub (opened in the browser), its license, the open-source licenses of what it is built from
+ * ([onOpenLicenses]), and the statement that it is an unofficial client, not
  * affiliated with Telegram, as Telegram's API terms require of third-party apps (`CLAUDE.md` rule 3).
  */
 @Composable
 internal fun AboutScreen(
     state: AboutUiState,
     onEvent: (AboutEvent) -> Unit,
+    onOpenLicenses: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -97,6 +109,15 @@ internal fun AboutScreen(
                     supportingContent = { Text(stringResource(R.string.settings_about_license_summary)) },
                 )
             }
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_about_licenses),
+                    shapes = shapes,
+                    icon = R.drawable.ic_library_books,
+                    supportingContent = { Text(stringResource(R.string.settings_about_licenses_summary)) },
+                    onClick = onOpenLicenses,
+                )
+            }
         }
         Text(
             text = stringResource(R.string.settings_about_unofficial),
@@ -107,7 +128,8 @@ internal fun AboutScreen(
     }
 }
 
-private fun UriHandler.tryOpen(uri: String) {
+/** Opens [uri] in the app that handles it, the browser for a web address, if there is one. */
+internal fun UriHandler.tryOpen(uri: String) {
     try {
         openUri(uri)
     } catch (_: IllegalArgumentException) {
@@ -118,5 +140,7 @@ private fun UriHandler.tryOpen(uri: String) {
 @PingogramPreviews
 @Composable
 private fun AboutScreenPreview() {
-    PingogramPreview { AboutScreen(state = AboutUiState(versionName = "0.3.0"), onEvent = {}, onBack = {}) }
+    PingogramPreview {
+        AboutScreen(state = AboutUiState(versionName = "0.3.0"), onEvent = {}, onOpenLicenses = {}, onBack = {})
+    }
 }
