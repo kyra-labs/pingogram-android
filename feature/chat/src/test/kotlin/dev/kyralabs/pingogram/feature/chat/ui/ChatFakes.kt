@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
@@ -13,6 +14,8 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageProperties
+import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
@@ -22,6 +25,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -205,15 +209,34 @@ class FakeMessageRepository : MessageRepository {
         return onRepliedMessage(chatId, messageId)
     }
 
+    /** Every [message] call: the chat and the message. */
+    val messageRequests = mutableListOf<Pair<Long, Long>>()
+
+    var onMessage: suspend (Long, Long) -> Outcome<Message> = { _, _ -> Outcome.Failure(DomainError.NotFound) }
+
+    override suspend fun message(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Message> {
+        messageRequests += chatId to messageId
+        return onMessage(chatId, messageId)
+    }
+
     override fun trimMemory() = unused()
 
     /** Every [sendText] call: the chat, the text and the options. */
     val sent = mutableListOf<Triple<Long, FormattedText, SendOptions>>()
 
+    /** The message each [sendText] call replied to, in order; null for none. */
+    val sentReplies = mutableListOf<Long?>()
+
     var onSendText: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** Every [setDraft] call: the chat and the text. */
     val drafts = mutableListOf<Pair<Long, FormattedText>>()
+
+    /** The message each [setDraft] call's draft replied to, in order; null for none. */
+    val draftReplies = mutableListOf<Long?>()
 
     var onSetDraft: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
@@ -221,21 +244,136 @@ class FakeMessageRepository : MessageRepository {
         chatId: Long,
         text: FormattedText,
         options: SendOptions,
+        replyToMessageId: Long?,
     ): Outcome<Unit> {
         sent += Triple(chatId, text, options)
+        sentReplies += replyToMessageId
         return onSendText(text)
     }
 
     override suspend fun setDraft(
         chatId: Long,
         text: FormattedText,
+        replyToMessageId: Long?,
     ): Outcome<Unit> {
         drafts += chatId to text
+        draftReplies += replyToMessageId
         return onSetDraft(text)
     }
 
     private companion object {
         val EMPTY = ChatHistory(persistentListOf(), reachedStart = false)
+    }
+}
+
+/**
+ * What the message actions ask TDLib: [properties] answers with [onProperties] (everything allowed by default),
+ * [availableReactions] with [reactions]; every action is recorded in [calls] (`addReaction:<chat>:<message>:<type>`,
+ * `delete:<chat>:<ids>:<forEveryone>`, …) and answered with [onAction].
+ */
+class FakeMessageActionRepository : MessageActionRepository {
+    var onProperties: suspend (Long) -> Outcome<MessageProperties> = { Outcome.Success(ALL_ALLOWED) }
+
+    var reactions: Outcome<AvailableReactions> = Outcome.Success(AvailableReactions(persistentListOf()))
+
+    var onAction: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** The messages whose properties were asked for, in order. */
+    val propertyRequests = mutableListOf<Long>()
+
+    /** The messages whose available reactions were asked for, in order. */
+    val reactionRequests = mutableListOf<Long>()
+
+    /** Every action, described, in order. */
+    val calls = mutableListOf<String>()
+
+    /** The texts of every edit, in order. */
+    val edits = mutableListOf<FormattedText>()
+
+    override suspend fun properties(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<MessageProperties> {
+        propertyRequests += messageId
+        return onProperties(messageId)
+    }
+
+    override suspend fun availableReactions(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<AvailableReactions> {
+        reactionRequests += messageId
+        return reactions
+    }
+
+    override suspend fun addReaction(
+        chatId: Long,
+        messageId: Long,
+        reaction: ReactionType,
+    ) = record("addReaction:$chatId:$messageId:$reaction")
+
+    override suspend fun removeReaction(
+        chatId: Long,
+        messageId: Long,
+        reaction: ReactionType,
+    ) = record("removeReaction:$chatId:$messageId:$reaction")
+
+    override suspend fun editText(
+        chatId: Long,
+        messageId: Long,
+        text: FormattedText,
+    ): Outcome<Unit> {
+        edits += text
+        return record("editText:$chatId:$messageId")
+    }
+
+    override suspend fun editCaption(
+        chatId: Long,
+        messageId: Long,
+        caption: FormattedText,
+        showCaptionAboveMedia: Boolean,
+    ): Outcome<Unit> {
+        edits += caption
+        return record("editCaption:$chatId:$messageId:$showCaptionAboveMedia")
+    }
+
+    override suspend fun delete(
+        chatId: Long,
+        messageIds: List<Long>,
+        forEveryone: Boolean,
+    ) = record("delete:$chatId:$messageIds:$forEveryone")
+
+    override suspend fun pin(
+        chatId: Long,
+        messageId: Long,
+        onlyForSelf: Boolean,
+    ) = record("pin:$chatId:$messageId:$onlyForSelf")
+
+    override suspend fun unpin(
+        chatId: Long,
+        messageId: Long,
+    ) = record("unpin:$chatId:$messageId")
+
+    override suspend fun resend(
+        chatId: Long,
+        messageIds: List<Long>,
+    ) = record("resend:$chatId:$messageIds")
+
+    private suspend fun record(call: String): Outcome<Unit> {
+        calls += call
+        return onAction(call)
+    }
+
+    companion object {
+        val ALL_ALLOWED =
+            MessageProperties(
+                canBeReplied = true,
+                canBeEdited = true,
+                canBePinned = true,
+                canBeDeletedOnlyForSelf = true,
+                canBeDeletedForAllUsers = true,
+                canBeSaved = true,
+            )
     }
 }
 

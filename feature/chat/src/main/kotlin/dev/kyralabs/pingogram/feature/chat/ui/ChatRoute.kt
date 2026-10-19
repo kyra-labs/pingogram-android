@@ -1,8 +1,12 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
+import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -22,6 +26,8 @@ import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -62,8 +68,15 @@ internal fun ChatRoute(
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState(opensAtMessage = messageId != null)
+    val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
-    ChatEffects(viewModel.effects, snackbarHostState, jumpState, onOpenMedia = { currentOnOpenMedia(chatId, it) })
+    ChatEffects(
+        effects = viewModel.effects,
+        snackbarHostState = snackbarHostState,
+        jumpState = jumpState,
+        onOpenMedia = { currentOnOpenMedia(chatId, it) },
+        composerFocus = composerFocus,
+    )
     ChatScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -72,15 +85,18 @@ internal fun ChatRoute(
         snackbarHostState = snackbarHostState,
         jumpState = jumpState,
         composerText = viewModel.composerText,
+        composerFocus = composerFocus,
     )
 }
 
 /**
  * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone, for
- * a found message that is not in the loaded history, for a scheduled message's time ([scheduledTime]) and for what is
- * not there yet, the newest replacing the one shown; a downloaded document opens in another app through [openFile]
- * (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a snackbar says that no app can; a jump
- * to a message goes to [jumpState]; media to open goes to [onOpenMedia].
+ * a found message that is not in the loaded history, for a scheduled message's time ([scheduledTime]), for an action
+ * that is not allowed and for what is not there yet, the newest replacing the one shown; a downloaded document opens
+ * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
+ * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
+ * Android 13, which confirms copies itself; a jump to a message goes to [jumpState], a focus request to
+ * [composerFocus]; media to open goes to [onOpenMedia].
  */
 @Composable
 internal fun ChatEffects(
@@ -90,6 +106,8 @@ internal fun ChatEffects(
     onOpenMedia: (messageId: Long) -> Unit,
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
+    copyText: Context.(text: String) -> Unit = Context::copyPlainText,
+    composerFocus: ComposerFocusState = rememberComposerFocusState(),
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -104,12 +122,7 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.OpenFile -> {
-                        val chooserTitle = resources.getString(R.string.content_open_with)
-                        when (context.openFile(effect.path, effect.mimeType, chooserTitle)) {
-                            ExternalFileResult.Started -> ""
-                            ExternalFileResult.NoApp -> resources.getString(R.string.content_no_app_for_file)
-                            ExternalFileResult.Unavailable -> resources.getString(R.string.content_file_unavailable)
-                        }
+                        context.openedFileNotice(effect, resources, openFile)
                     }
 
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.MessageNotLoaded -> {
@@ -133,6 +146,20 @@ internal fun ChatEffects(
                     is ChatEffect.MessageScheduled -> {
                         resources.getString(R.string.composer_scheduled, context.scheduledTime(effect.at))
                     }
+
+                    is ChatEffect.CopyText -> {
+                        context.copyText(effect.text)
+                        copiedNotice(resources)
+                    }
+
+                    ChatEffect.ActionUnavailable -> {
+                        resources.getString(R.string.message_action_unavailable)
+                    }
+
+                    ChatEffect.FocusComposer -> {
+                        composerFocus.request()
+                        ""
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
@@ -142,6 +169,27 @@ internal fun ChatEffects(
         }
     }
 }
+
+/**
+ * Opens the downloaded document of [effect] in another app through [openFile], with the chooser's title; the snackbar
+ * when no app takes it or the file is gone, else nothing.
+ */
+private fun Context.openedFileNotice(
+    effect: ChatEffect.OpenFile,
+    resources: Resources,
+    openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult,
+): String {
+    val chooserTitle = resources.getString(R.string.content_open_with)
+    return when (openFile(effect.path, effect.mimeType, chooserTitle)) {
+        ExternalFileResult.Started -> ""
+        ExternalFileResult.NoApp -> resources.getString(R.string.content_no_app_for_file)
+        ExternalFileResult.Unavailable -> resources.getString(R.string.content_file_unavailable)
+    }
+}
+
+/** The snackbar after a copy: none from Android 13 on, which confirms copies itself. */
+private fun copiedNotice(resources: Resources): String =
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) resources.getString(R.string.message_copied) else ""
 
 /** The text of a snackbar that only tells something. */
 private fun ChatEffect.noticeText(): Int =
@@ -165,6 +213,12 @@ internal fun Context.scheduledTime(
     val clock = if (DateFormat.is24HourFormat(this)) "Hm" else "hm"
     val pattern = DateFormat.getBestDateTimePattern(locale, date + clock)
     return DateTimeFormatter.ofPattern(pattern, locale).format(time)
+}
+
+/** Puts [text] on the clipboard as plain text, labelled for the system's clipboard preview. */
+internal fun Context.copyPlainText(text: String) {
+    val clipboard = getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.message_copy_label), text))
 }
 
 /** Opens [location] in a maps app with a `geo:` link, false if no app on the device handles one. */

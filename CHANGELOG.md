@@ -14,6 +14,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   spoiler or a link (from the selection menu, or Ctrl+B, I, U and K on a keyboard). Send without sound, or
   schedule a message for later. Unsent text is kept as a draft that syncs with your other devices. Where you
   can't write in a chat, a short note says why; channels you only read show no composer.
+- Message actions: long-press a message (or use TalkBack's actions) for quick reactions, reply, copy text, edit,
+  pin or unpin (in private chats also only for yourself), delete for you or for everyone, and send a failed
+  message again, each only where Telegram allows it. A reply shows a bar above the composer and is kept in the
+  chat's draft on all your devices; editing puts the message's text or caption, with its formatting, back in the
+  composer. Tap a reaction under a message to add or remove yours.
 - Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
   and storage, and About pages; Log out moved to the end.
 - Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper

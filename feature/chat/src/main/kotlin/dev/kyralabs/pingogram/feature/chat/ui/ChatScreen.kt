@@ -77,7 +77,11 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
@@ -113,7 +117,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
  * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
  *   message now scrolls to the newest one, where it shows. Where they cannot, a label says why; in a channel they only
- *   read, there is nothing.
+ *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
+ *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
+ * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
+ *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -128,6 +135,7 @@ internal fun ChatScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     jumpState: MessageJumpState = rememberMessageJumpState(),
     composerText: ComposerText = remember { ComposerText() },
+    composerFocus: ComposerFocusState = rememberComposerFocusState(),
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -137,17 +145,22 @@ internal fun ChatScreen(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
         bottomBar = {
+            val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
             ChatBottomBar(
                 composer = state.composer,
                 text = composerText,
                 onSend = { options ->
                     onEvent(ChatEvent.Send(options))
-                    // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
-                    if (options.scheduledAt == null && content is ChatContent.Content) {
+                    // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones and edits
+                    // do not.
+                    if (options.scheduledAt == null && !editing && content is ChatContent.Content) {
                         scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
                     }
                 },
                 onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
+                focus = composerFocus,
+                onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
+                onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -164,6 +177,14 @@ internal fun ChatScreen(
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ChatBody(state, onEvent, listState, jumpState, contentPadding)
         }
+    }
+    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    state.deleteDialog?.let { dialog ->
+        DeleteMessagesAlert(
+            dialog = dialog,
+            onConfirm = { onEvent(ChatEvent.ConfirmDelete(it)) },
+            onDismiss = { onEvent(ChatEvent.DismissDelete) },
+        )
     }
 }
 
@@ -196,7 +217,7 @@ private fun BoxScope.ChatBody(
         }
 
         is ChatContent.Content -> {
-            MessageList(content, state.fileStates, state.playback, listState, jumpState, contentPadding, onEvent)
+            MessageList(state, content, listState, jumpState, contentPadding, onEvent)
             FloatingDatePill(
                 items = content.items,
                 listState = listState,
@@ -213,19 +234,24 @@ private fun BoxScope.ChatBody(
 @Suppress("LongParameterList") // What the list shows, its state and the sheet's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
+    state: ChatUiState,
     content: ChatContent.Content,
-    fileStates: ImmutableMap<Int, FileState>,
-    playback: MessagePlayback?,
     listState: LazyListState,
     jumpState: MessageJumpState,
     contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
+    val fileStates = state.fileStates
+    val playback = state.playback
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
+    val reactions = rememberReactionToggleState()
+    val shortcuts = state.shortcuts
     val bubbleResources =
-        remember(theme, texts, onLinkClick, jumpState) { BubbleResources(theme, texts, onLinkClick, jumpState) }
+        remember(theme, texts, onLinkClick, jumpState, reactions, shortcuts) {
+            BubbleResources(theme, texts, onLinkClick, jumpState, reactions, shortcuts)
+        }
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current

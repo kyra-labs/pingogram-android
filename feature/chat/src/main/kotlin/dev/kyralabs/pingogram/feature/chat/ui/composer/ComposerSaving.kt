@@ -19,6 +19,10 @@ internal fun FormattedText.savedEntities(): ArrayList<String> =
         }
     }
 
+/** This text with only the formatting a sender may set, the kinds [savedEntities] keeps. */
+internal fun FormattedText.withSenderFormatting(): FormattedText =
+    copy(entities = entities.filter { it.type.savedKind() != null }.toImmutableList())
+
 /** The text [savedEntities] made the entity strings of; null for no saved [text]. */
 internal fun restoredText(
     text: String?,

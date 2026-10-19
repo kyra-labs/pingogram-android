@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
@@ -28,11 +29,16 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerTargets
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
@@ -50,6 +56,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -116,15 +123,19 @@ import java.util.Locale
  *   Stopping the screen pauses, and the player is released with the view model.
  * - **Composer** ([ChatComposer]): shown where the user can write ([composerState], from the chat's permissions and the
  *   user's membership), it sends the text ([ChatEvent.Send]) and keeps the chat's draft in step with it: filled from
- *   the draft, saved a second after typing stops and when the screen stops, kept across process death.
+ *   the draft, saved a second after typing stops and when the screen stops, kept across process death. It replies and
+ *   edits too, with a bar for the message ([composerBar]), fetched by [ComposerTargets] when it is not loaded.
+ * - **Message actions** ([ChatMessageActions]): the actions sheet of a long-pressed message, with what TDLib allows for
+ *   it ([MessageActionRepository.properties]) and its quick reactions; replying, copying, editing, pinning, deleting
+ *   (after a confirmation), sending again and toggling reactions; and the [ChatUiState.shortcuts] screen readers get.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
- *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, and a scheduled
- *   message's time.
+ *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, a scheduled
+ *   message's time, a copied text, and the composer's focus when a reply or an edit starts.
  *
- * It takes one repository per kind of data the screen combines, plus the player, clock, dispatcher, language, time
- * patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation destination and the
- * detail pane of the Chats tab create it with their [chatId] (and the destination with its route's [initialMessageId])
- * through [Factory].
+ * It takes one repository per kind of data the screen combines or changes, plus the player, clock, dispatcher,
+ * language, time patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation
+ * destination and the detail pane of the Chats tab create it with their [chatId] (and the destination with its route's
+ * [initialMessageId]) through [Factory].
  */
 @Suppress("LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -134,7 +145,8 @@ class ChatViewModel internal constructor(
     private val savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository,
     private val messageRepository: MessageRepository,
-    userRepository: UserRepository,
+    messageActionRepository: MessageActionRepository,
+    private val userRepository: UserRepository,
     groupRepository: GroupRepository,
     chatActionRepository: ChatActionRepository,
     fileRepository: FileRepository,
@@ -152,6 +164,7 @@ class ChatViewModel internal constructor(
         savedStateHandle: SavedStateHandle,
         chatRepository: ChatRepository,
         messageRepository: MessageRepository,
+        messageActionRepository: MessageActionRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatActionRepository: ChatActionRepository,
@@ -166,6 +179,7 @@ class ChatViewModel internal constructor(
         savedStateHandle,
         chatRepository,
         messageRepository,
+        messageActionRepository,
         userRepository,
         groupRepository,
         chatActionRepository,
@@ -231,10 +245,11 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
-    private val composer =
+    private val composer: ChatComposer =
         ChatComposer(
             chatId = chatId,
             repository = messageRepository,
+            actions = messageActionRepository,
             savedState = savedStateHandle,
             scope = viewModelScope,
             drafts =
@@ -243,8 +258,39 @@ class ChatViewModel internal constructor(
                     .filterNotNull()
                     .map { it.draft }
                     .distinctUntilChanged(),
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id) ?: composerTargets[id]
+            },
             onEffect = { effectChannel.trySend(it) },
             log = log,
+        )
+
+    /** The messages the composer's bars show that are not loaded. */
+    private val composerTargets = ComposerTargets(chatId, messageRepository, viewModelScope, composer::onMessageGone)
+
+    /** The latest chat, history, user and composer, for the message actions; null while the chat is not known. */
+    private val actionContext: suspend () -> ActionContext? = {
+        (chat.first() as? ChatLookup.Found)?.chat?.let { chat ->
+            ActionContext(
+                chat = chat,
+                history = history.first(),
+                myUserId = userRepository.myUserId.first(),
+                canWrite = uiState.value.composer is ComposerUiState.Available,
+            )
+        }
+    }
+
+    private val messageActions =
+        ChatMessageActions(
+            chatId = chatId,
+            repository = messageActionRepository,
+            composer = composer,
+            scope = viewModelScope,
+            current = actionContext,
+            onEffect = { effectChannel.trySend(it) },
         )
 
     /** The text the composer edits, for its text field; the view model keeps it across rotations. */
@@ -268,7 +314,7 @@ class ChatViewModel internal constructor(
             }.distinctUntilChanged()
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
-    private val history: Flow<ChatHistory> =
+    private val history: SharedFlow<ChatHistory> =
         messageRepository
             .history(chatId)
             .onEach(::fetchMissingReplies)
@@ -327,8 +373,22 @@ class ChatViewModel internal constructor(
     private val people: Flow<ChatPeople> =
         combine(userRepository.users, userRepository.myUserId, referencedChats, ::ChatPeople)
 
+    /**
+     * What shows over the conversation: the composer's mode, with the message its bar shows fetched when it is not
+     * loaded, the actions sheet and the delete confirmation.
+     */
+    private val overlays: Flow<Overlays> =
+        combine(
+            combine(composer.mode, history, composerTargets.messages) { mode, history, targets ->
+                composerTargets.require(mode.messageId, history)
+                mode to targets
+            },
+            messageActions.sheet,
+            messageActions.deleteDialog,
+        ) { (mode, targets), sheet, deleteDialog -> Overlays(mode, targets, sheet, deleteDialog) }
+
     val uiState: StateFlow<ChatUiState> =
-        combine(chatSources, messageSources, people, clock.minutes, ::state)
+        combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
             .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .flowOn(dispatcher)
@@ -374,6 +434,20 @@ class ChatViewModel internal constructor(
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
             is ChatEvent.Send -> composer.send(event.options)
             is ChatEvent.ComposerFocusChanged -> composer.setFocused(event.isFocused)
+            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
+            ChatEvent.DismissMessageActions -> messageActions.dismiss()
+            is ChatEvent.Reply -> messageActions.reply(event.messageId)
+            ChatEvent.CancelReply -> composer.cancelReply()
+            is ChatEvent.Copy -> messageActions.copy(event.messageId)
+            is ChatEvent.Edit -> messageActions.edit(event.messageId)
+            ChatEvent.CancelEdit -> composer.cancelEdit()
+            is ChatEvent.Pin -> messageActions.pin(event.messageId, event.onlyForSelf)
+            is ChatEvent.Unpin -> messageActions.unpin(event.messageId)
+            is ChatEvent.Delete -> messageActions.delete(event.messageId)
+            is ChatEvent.ConfirmDelete -> messageActions.confirmDelete(event.forEveryone)
+            ChatEvent.DismissDelete -> messageActions.dismissDelete()
+            is ChatEvent.Resend -> messageActions.resend(event.messageId)
+            is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
         }
     }
 
@@ -503,12 +577,13 @@ class ChatViewModel internal constructor(
         }
     }
 
-    /** Runs on [dispatcher]: maps the header and the items. */
+    /** Runs on [dispatcher]: maps the header, the items, the composer and what shows over them. */
     private fun state(
         chatSources: ChatSources,
         messages: MessageSources,
         people: ChatPeople,
         now: Instant,
+        overlays: Overlays,
     ): ChatUiState {
         val lookup = chatSources.chat
         val chat = (lookup as? ChatLookup.Found)?.chat
@@ -527,11 +602,18 @@ class ChatViewModel internal constructor(
                 now = now,
                 timeFormatter = formatter,
             ).toHeader()
+        val history = messages.state.history
+        val composer = composerState(chat, chat.userId?.let(people.users::get), group.basicGroup, group.supergroup)
+        val canWrite = composer is ComposerUiState.Available
         return ChatUiState(
             header = header,
             content = content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
-            composer = composerState(chat, chat.userId?.let(people.users::get), group.basicGroup, group.supergroup),
+            composer = if (canWrite) composer.copy(bar = overlays.bar(chat, history, people)) else composer,
+            // A message deleted meanwhile takes its sheet with it.
+            messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
+            deleteDialog = overlays.deleteDialog,
+            shortcuts = MessageShortcuts(canReply = canWrite, canCopy = !chat.hasProtectedContent),
         )
     }
 
@@ -627,6 +709,20 @@ class ChatViewModel internal constructor(
         val state: MessageState,
         val pageLoad: PageLoad,
     )
+
+    /** The composer's mode with the bar messages fetched for it, the actions sheet and the delete confirmation. */
+    private class Overlays(
+        val mode: ComposerMode,
+        val targets: Map<Long, Message?>,
+        val sheet: MessageActionsSheet?,
+        val deleteDialog: DeleteMessagesDialog?,
+    ) {
+        fun bar(
+            chat: Chat,
+            history: ChatHistory,
+            people: ChatPeople,
+        ): ComposerBar? = composerBar(mode, chat, history, targets, people)
+    }
 
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */

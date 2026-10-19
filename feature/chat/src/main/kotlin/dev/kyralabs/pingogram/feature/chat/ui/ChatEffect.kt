@@ -51,6 +51,22 @@ sealed interface ChatEffect {
         val messageId: Long,
     ) : ChatEffect
 
+    /**
+     * Put [text] on the clipboard, as plain text. Android 13 and later confirm it themselves; earlier versions get a
+     * snackbar.
+     */
+    data class CopyText(
+        val text: String,
+    ) : ChatEffect {
+        override fun toString() = "CopyText(length=${text.length})"
+    }
+
+    /** The user started a reply or an edit: the composer's text field takes the focus, which opens the keyboard. */
+    data object FocusComposer : ChatEffect
+
+    /** The action asked for is not allowed for the message (any more): a snackbar says so. */
+    data object ActionUnavailable : ChatEffect
+
     /** Show the point at [latitude], [longitude] (in degrees) in a maps app, named [label] if there is one. */
     data class OpenLocation(
         val latitude: Double,
