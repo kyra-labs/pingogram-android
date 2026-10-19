@@ -5,9 +5,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
-import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
 import android.os.Build
+import androidx.core.graphics.createBitmap
 import java.io.File
 import java.io.IOException
 
@@ -141,14 +141,17 @@ internal class AndroidMediaProcessor : MediaProcessor {
      *
      * The platform's `ExifInterface` rather than androidx's: the androidx library is not a dependency of this module
      * (the app gets it only at run time, through Coil), and from Android 7 the platform's is the same implementation.
+     * Named in full here, so that Lint's suppression below covers every use.
      */
     @Suppress("ExifInterface") // Lint's warning is about the platform class before Android 7; minSdk is 26.
-    private fun exifOrientation(file: File): Int =
-        try {
-            ExifInterface(file.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+    private fun exifOrientation(file: File): Int {
+        val upright = android.media.ExifInterface.ORIENTATION_NORMAL
+        return try {
+            android.media.ExifInterface(file.path).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, upright)
         } catch (_: IOException) {
-            ExifInterface.ORIENTATION_NORMAL
+            upright
         }
+    }
 
     /** A frame near the start, scaled down while it is decoded where Android can (8.1 and later). */
     private fun MediaMetadataRetriever.firstFrame(): Bitmap? =
@@ -206,7 +209,7 @@ private fun Bitmap.transformed(
 /** This bitmap on a white background if it has transparency (recycling it), else itself. */
 private fun Bitmap.opaque(): Bitmap {
     if (!hasAlpha()) return this
-    val opaque = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val opaque = createBitmap(width, height)
     Canvas(opaque).apply {
         drawColor(Color.WHITE)
         drawBitmap(this@opaque, 0f, 0f, null)

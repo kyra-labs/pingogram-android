@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 /** What [TdlibAttachmentRepository] sends for the attach menu: the exact contents, albums, replies and options. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TdlibAttachmentRepositoryTest {
     @TempDir
     lateinit var cacheDir: File

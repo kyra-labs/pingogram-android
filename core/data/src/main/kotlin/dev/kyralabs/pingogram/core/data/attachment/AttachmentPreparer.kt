@@ -9,6 +9,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -107,24 +109,34 @@ internal class AttachmentPreparer(
     ): Copy {
         val input = content.open(uri) ?: return Copy.Unreadable
         return try {
-            input.use { source ->
-                target.outputStream().use { sink ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    var total = 0L
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val read = source.read(buffer)
-                        if (read < 0) break
-                        total += read
-                        if (total > MAX_FILE_SIZE) return Copy.TooLarge
-                        sink.write(buffer, 0, read)
-                    }
-                    // TDLib refuses empty files ("File must be non-empty").
-                    if (total == 0L) Copy.Unreadable else Copy.Done(total)
-                }
+            val size = input.use { source -> target.outputStream().use { sink -> source.copyAtMost(sink) } }
+            when (size) {
+                null -> Copy.TooLarge
+
+                // TDLib refuses empty files ("File must be non-empty").
+                0L -> Copy.Unreadable
+
+                else -> Copy.Done(size)
             }
         } catch (_: IOException) {
             Copy.Unreadable
+        }
+    }
+
+    /**
+     * Copies this stream to [sink], checking for cancellation before every buffer: the number of bytes, or null as
+     * soon as there are more than [MAX_FILE_SIZE].
+     */
+    private suspend fun InputStream.copyAtMost(sink: OutputStream): Long? {
+        val buffer = ByteArray(BUFFER_SIZE)
+        var total = 0L
+        while (true) {
+            currentCoroutineContext().ensureActive()
+            val read = read(buffer)
+            if (read < 0) return total
+            total += read
+            if (total > MAX_FILE_SIZE) return null
+            sink.write(buffer, 0, read)
         }
     }
 
@@ -140,12 +152,13 @@ internal class AttachmentPreparer(
         val image = media.imageInfo(source) ?: return null
         val plan = photoPlan(image.width, image.height, image.orientation)
         val target = File.createTempFile(PHOTO_PREFIX, JPEG_SUFFIX, directory)
-        if (!media.writePhoto(source, plan, target) || target.length() <= 0) {
+        return if (media.writePhoto(source, plan, target) && target.length() > 0) {
+            if (deleteSource) source.delete()
+            Attachment.Photo(target.path, target.length(), plan.width, plan.height)
+        } else {
             target.delete()
-            return null
+            null
         }
-        if (deleteSource) source.delete()
-        return Attachment.Photo(target.path, target.length(), plan.width, plan.height)
     }
 
     /** The video in [source] with its size, length and a still written into [directory]; null when unreadable. */
@@ -204,11 +217,18 @@ internal fun safeFileName(displayName: String?): String {
             .map { char -> if (char == '/' || char == '\\' || char.isISOControl()) '_' else char }
             .joinToString("")
             .trim()
-    if (cleaned.isEmpty() || cleaned.all { it == '.' }) return FALLBACK_FILE_NAME
-    if (cleaned.toByteArray().size <= MAX_FILE_NAME_BYTES) return cleaned
-    val extension = cleaned.substringAfterLast('.', missingDelimiterValue = "").take(MAX_EXTENSION_LENGTH)
+    return when {
+        cleaned.isEmpty() || cleaned.all { it == '.' } -> FALLBACK_FILE_NAME
+        cleaned.toByteArray().size <= MAX_FILE_NAME_BYTES -> cleaned
+        else -> shortened(cleaned)
+    }
+}
+
+/** [name], longer than [MAX_FILE_NAME_BYTES] bytes of UTF-8, cut to them with its extension kept. */
+private fun shortened(name: String): String {
+    val extension = name.substringAfterLast('.', missingDelimiterValue = "").take(MAX_EXTENSION_LENGTH)
     val suffix = if (extension.isEmpty()) "" else ".$extension"
-    var base = cleaned.removeSuffix(suffix)
+    var base = name.removeSuffix(suffix)
     while (base.isNotEmpty() && (base + suffix).toByteArray().size > MAX_FILE_NAME_BYTES) base = base.dropLast(1)
     return (base + suffix).ifBlank { FALLBACK_FILE_NAME }
 }

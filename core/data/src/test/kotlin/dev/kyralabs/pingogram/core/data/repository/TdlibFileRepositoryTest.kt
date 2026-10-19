@@ -35,15 +35,9 @@ class TdlibFileRepositoryTest {
         fileId: Int,
         uploadedSize: Long,
         isActive: Boolean,
-    ) = file(
-        id = fileId,
-        size = SIZE,
-        localPath = PATH,
-        isDownloadingCompleted = true,
-        uploadedSize = uploadedSize,
-        isUploadingActive = isActive,
-        isUploadingCompleted = false,
-    )
+    ) = file(id = fileId, size = SIZE, localPath = PATH, isDownloadingCompleted = true).apply {
+        remote = TdApi.RemoteFile("remote-$fileId", "unique-$fileId", isActive, false, uploadedSize)
+    }
 
     private fun downloaded() =
         file(id = FILE_ID, size = SIZE, localPath = PATH, downloadedSize = SIZE, isDownloadingCompleted = true)

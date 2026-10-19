@@ -1,9 +1,9 @@
 package dev.kyralabs.pingogram.core.data.attachment
 
 import android.content.ContentResolver
-import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.provider.OpenableColumns
+import androidx.core.net.toUri
 import java.io.InputStream
 
 /**
@@ -44,7 +44,7 @@ internal class AndroidContentSource(
     private val resolver: ContentResolver,
 ) : ContentSource {
     override fun describe(uri: String): ContentInfo {
-        val parsed = Uri.parse(uri)
+        val parsed = uri.toUri()
         var name: String? = null
         var size: Long? = null
         orNullOnFailure {
@@ -61,11 +61,11 @@ internal class AndroidContentSource(
         return ContentInfo(name, size, mimeType)
     }
 
-    override fun open(uri: String): InputStream? = orNullOnFailure { resolver.openInputStream(Uri.parse(uri)) }
+    override fun open(uri: String): InputStream? = orNullOnFailure { resolver.openInputStream(uri.toUri()) }
 
     override fun phoneContact(uri: String): PhoneContact? =
         orNullOnFailure {
-            resolver.query(Uri.parse(uri), PHONE_COLUMNS, null, null, null)?.use { cursor ->
+            resolver.query(uri.toUri(), PHONE_COLUMNS, null, null, null)?.use { cursor ->
                 if (!cursor.moveToFirst()) return@use null
                 val number = cursor.getString(cursor.getColumnIndexOrThrow(Phone.NUMBER))
                 val name = cursor.getString(cursor.getColumnIndexOrThrow(Phone.DISPLAY_NAME))

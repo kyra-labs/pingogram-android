@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateDeleteMessages
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageSendFailed
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateMessageSendSucceeded
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewMessage
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -27,6 +28,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 
 /** When [UploadCleaner] deletes the copies of files being sent, and when it keeps them. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class UploadCleanerTest {
     @TempDir
     lateinit var cacheDir: File

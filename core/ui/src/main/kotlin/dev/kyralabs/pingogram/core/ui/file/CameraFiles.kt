@@ -20,13 +20,16 @@ private const val CAMERA_DIRECTORY = "camera"
  */
 fun Context.cameraFileUri(path: String): Uri? {
     val root = canonicalOrNull(File(cacheDir, CAMERA_DIRECTORY)) ?: return null
-    val file = canonicalOrNull(File(path))?.takeIf { it.parentFile == root } ?: return null
-    return try {
-        FileProvider.getUriForFile(this, tdlibFilesAuthority(), file)
-    } catch (_: IllegalArgumentException) {
-        // file_paths.xml does not serve the directory.
-        null
-    }
+    return canonicalOrNull(File(path))
+        ?.takeIf { it.parentFile == root }
+        ?.let { file ->
+            try {
+                FileProvider.getUriForFile(this, tdlibFilesAuthority(), file)
+            } catch (_: IllegalArgumentException) {
+                // file_paths.xml does not serve the directory.
+                null
+            }
+        }
 }
 
 private fun canonicalOrNull(file: File): File? =

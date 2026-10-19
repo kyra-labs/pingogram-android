@@ -131,7 +131,7 @@ class TdlibAttachmentRepository internal constructor(
             val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
             val result =
                 if (contents.size == 1) {
-                    client.request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, contents[0]))
+                    client.sendMessage(chatId, contents[0], options, replyTo)
                 } else {
                     val all = contents.toTypedArray()
                     client.request(TdApi.SendMessageAlbum(chatId, null, replyTo, options.toTdOptions(), all))
@@ -150,14 +150,16 @@ class TdlibAttachmentRepository internal constructor(
         contact: Contact,
         options: SendOptions,
         replyToMessageId: Long?,
-    ): Outcome<Unit> = sendOne(chatId, contact.toInputMessageContact(), options, replyToMessageId)
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, contact.toInputMessageContact(), options, replyToMessageId?.let(::replyToMessage))
 
     override suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,
         options: SendOptions,
         replyToMessageId: Long?,
-    ): Outcome<Unit> = sendOne(chatId, poll.toInputMessagePoll(), options, replyToMessageId)
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, poll.toInputMessagePoll(), options, replyToMessageId?.let(::replyToMessage))
 
     /**
      * `deleteMessages` for everyone, which for messages still being sent stops their uploads; TDLib deletes them, and
@@ -168,18 +170,16 @@ class TdlibAttachmentRepository internal constructor(
         messageIds: List<Long>,
     ): Outcome<Unit> = client.request(TdApi.DeleteMessages(chatId, messageIds.toLongArray(), true)).map {}
 
-    private suspend fun sendOne(
-        chatId: Long,
-        content: TdApi.InputMessageContent,
-        options: SendOptions,
-        replyToMessageId: Long?,
-    ): Outcome<Unit> {
-        val replyTo = replyToMessageId?.let(::replyToMessage)
-        return client.request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content)).map {}
-    }
-
     private companion object {
         /** td_api.tl `contact.first_name`: 1–64 characters. */
         const val MAX_NAME_LENGTH = 64
     }
 }
+
+/** `sendMessage` of [content] to [chatId] with [options], replying as [replyTo] says. */
+private suspend fun TdlibClient.sendMessage(
+    chatId: Long,
+    content: TdApi.InputMessageContent,
+    options: SendOptions,
+    replyTo: TdApi.InputMessageReplyTo?,
+): Outcome<Unit> = request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content)).map {}
