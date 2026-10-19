@@ -228,4 +228,18 @@ class MainActivityViewModelTest {
             assertEquals(MainActivityUiState.SignedIn, viewModel.state)
             assertFalse(viewModel.keepSplashScreen())
         }
+
+    @Test
+    fun `a chat to open waits until it is opened, and a newer one replaces it`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(null, viewModel.chatToOpen.value)
+
+            viewModel.openChat(100)
+            viewModel.openChat(200)
+            assertEquals(200L, viewModel.chatToOpen.value)
+
+            viewModel.onChatOpened()
+            assertEquals(null, viewModel.chatToOpen.value)
+        }
 }

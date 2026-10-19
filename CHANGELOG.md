@@ -10,6 +10,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Notifications for new messages, mentions, new secret chats and calls, while Pingogram is running. Each chat gets one
+  notification that shows its latest messages with who sent them and their photos; media show as "Photo", "Voice
+  message" and so on, and chats whose previews you turned off show "New message". Muted chats and exceptions work as
+  in your other apps, and a notification goes away once you read the chat anywhere. Only new messages make a sound:
+  updates, messages sent silently and the chat you are looking at stay quiet.
+- Reply right from a notification, or mark the chat as read; tap a notification to open its chat.
+- Notification channels for private chats, groups, channels, calls and everything else, so you can set their sound
+  and importance in your device's settings. On Android 11 and later, chats show in the conversations section of the
+  notification shade, where you can make one a priority conversation.
+- On Android 13 and later, the chat list explains why Pingogram asks to show notifications before it asks. Choose
+  "Not now" and it won't ask again; if you refused before, it offers your device's notification settings instead.
 - Sponsored messages: channels and chats with bots show Telegram's sponsored messages as a card labelled
   "Sponsored" (or "Recommended" for a recommended channel) below the newest posts, with the advertiser's button.
   Tap the button, a link or the picture to open it. The info button shows "About this ad": who placed it and more

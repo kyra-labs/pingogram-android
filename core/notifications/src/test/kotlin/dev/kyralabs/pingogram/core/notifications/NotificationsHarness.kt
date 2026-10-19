@@ -1,0 +1,89 @@
+package dev.kyralabs.pingogram.core.notifications
+
+import android.Manifest
+import android.app.Application
+import android.app.Notification
+import android.app.NotificationManager
+import android.content.Context
+import dev.kyralabs.pingogram.core.data.repository.OpenChats
+import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+
+/**
+ * The notifications of the app, from TDLib's updates to what Android shows: the real repositories of `core:data` on a
+ * [FakeTdlibClient], and the renderer with everything it uses, on a test's scope. Robolectric's notification manager
+ * records what is posted ([posted]); posting is allowed.
+ */
+internal class NotificationsHarness(
+    scope: TestScope,
+    val client: FakeTdlibClient = FakeTdlibClient(),
+) {
+    val context: Application = RuntimeEnvironment.getApplication()
+    private val dispatcher = StandardTestDispatcher(scope.testScheduler)
+    private val backgroundScope = scope.backgroundScope
+
+    val openChats = OpenChats()
+    val chats = TdlibChatRepository(client, backgroundScope, dispatcher, openChats)
+    val users = TdlibUserRepository(client, backgroundScope)
+    val groups = TdlibGroupRepository(client, backgroundScope)
+    val files = TdlibFileRepository(client, backgroundScope)
+    val notifications = TdlibNotificationRepository(client, backgroundScope, openChats)
+    val auth = TdlibAuthRepository(client, dispatcher)
+
+    val builder = ConversationNotificationBuilder(context)
+    val renderer =
+        NotificationRenderer(
+            context = context,
+            notificationRepository = notifications,
+            authRepository = auth,
+            factory =
+                ConversationNotificationFactory(
+                    context = context,
+                    chatRepository = chats,
+                    userRepository = users,
+                    groupRepository = groups,
+                    avatars =
+                        AvatarIcons(
+                            context,
+                            files,
+                            FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
+                            dispatcher,
+                        ),
+                ),
+            builder = builder,
+            shortcuts = ConversationShortcuts(context, dispatcher),
+            channels = NotificationChannels(context),
+            scope = backgroundScope,
+        )
+
+    private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    init {
+        context.registerLauncherActivity()
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    /** The notification of group [groupId], if posted. */
+    fun posted(groupId: Int): Notification? = shadowOf(manager).getNotification("group", groupId)
+
+    /** The summary, if posted. */
+    fun summary(): Notification? = shadowOf(manager).getNotification("summary", 0)
+
+    /** How many notifications are on screen. */
+    fun count(): Int = shadowOf(manager).size()
+
+    fun postStale(groupId: Int) {
+        manager.notify("group", groupId, Notification.Builder(context, PingogramChannel.Other.id).build())
+    }
+}

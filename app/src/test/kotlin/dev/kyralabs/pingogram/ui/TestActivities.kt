@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.ui
 
+import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
 import androidx.activity.ComponentActivity
@@ -29,5 +30,16 @@ class ActivityRegistration(
         val info = packageManager.addActivityIfNotPresent(ComponentName(application, activity))
         info.theme = android.R.style.Theme_Material_Light_NoActionBar
         packageManager.addOrUpdateActivity(info)
+    }
+}
+
+/**
+ * Allows notifications (Android 13+'s runtime permission), so the chat list shows no request to allow them: screenshots
+ * of the app's shell, whose chat list would otherwise begin with it (`NotificationPromptScreenshotTest` in
+ * `feature:chats` has it).
+ */
+class NotificationsAllowed : ExternalResource() {
+    override fun before() {
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
     }
 }

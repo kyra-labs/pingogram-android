@@ -8,9 +8,10 @@ import java.text.BreakIterator
  * on Android, ICU also keeps emoji sequences joined with zero-width joiners together.
  *
  * A word starts at its first letter, digit or symbol (emoji included): punctuation and invisible formatting characters
- * before it are skipped, so "(Work) chat" gives "WC". Empty when [name] has no such character.
+ * before it are skipped, so "(Work) chat" gives "WC". Empty when [name] has no such character. Also used for the
+ * placeholder avatars of notifications (`core:notifications`).
  */
-internal fun avatarInitials(name: String): String {
+fun avatarInitials(name: String): String {
     val characters = BreakIterator.getCharacterInstance().apply { setText(name) }
     val initials = StringBuilder()
     var count = 0

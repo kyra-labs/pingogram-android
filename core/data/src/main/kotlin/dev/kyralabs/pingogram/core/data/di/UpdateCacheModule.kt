@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
@@ -49,6 +50,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun profileCache(repository: TdlibProfileRepository): TdlibUpdateCache
+
+    /** TDLib sends the notifications that stay active from before the start only once, right after it starts. */
+    @Binds
+    @IntoSet
+    fun notificationCache(repository: TdlibNotificationRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds
