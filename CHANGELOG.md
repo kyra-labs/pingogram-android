@@ -46,8 +46,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Settings follow the Material 3 Expressive look of Google's own apps. Your account sits on a card at the top (photo,
   name, phone number, username, and a Premium label for Telegram Premium subscribers); tap it to edit your profile.
   Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
+- The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
+  instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
 
 ### Fixed
+- Leaving a chat after playing a voice message or song no longer holds up the screen for a moment: the audio
+  player now runs on its own thread, and frees itself there.
 - "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
   instead of being cut off.
 

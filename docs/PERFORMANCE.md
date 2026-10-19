@@ -115,8 +115,10 @@ regresses by more than 10%.
 
 - ABI splits + universal; `androidResources.localeFilters` to shipped locales; vector icons
   only (no PNG except launcher); WebP for any raster asset; no bundled emoji or CJK fonts; one
-  variable Google Sans Flex TTF (subset to Latin/Cyrillic/Greek + punctuation with
-  `pyftsubset` if size > 1 MB, keep `OFL.txt`).
+  variable Google Sans Flex TTF, keep `OFL.txt`. It is stored uncompressed
+  (`androidResources.noCompress += "ttf"`, about +1.7 MB per APK), so the platform maps it from the
+  APK at the first text instead of inflating all 4 MB into memory. Subsetting would not shrink it:
+  the file covers Latin only, and 3.6 MB of it is variation data (`gvar`).
 - `android:extractNativeLibs="false"`; uncompressed 16 KB-aligned `.so`.
 - TDLib database and files live in `filesDir` (excluded from backup), cache limit setting
   (default 4 GB) enforced via `optimizeStorage`.
