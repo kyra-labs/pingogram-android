@@ -72,6 +72,19 @@ internal fun reactionToggleLabel(
         label.spoken(resources),
     )
 
+/**
+ * A reaction on a message with how often it was added, for screen readers: "React with 👍, 3 reactions", or "Remove
+ * reaction 👍, …" if the user added it too; just "Star, 12 reactions" where it is not a button ([isButton]).
+ */
+internal fun reactionChipLabel(
+    resources: Resources,
+    chip: ReactionChip,
+    isButton: Boolean,
+): String {
+    val what = if (isButton) reactionToggleLabel(resources, chip.label, chip.isChosen) else chip.label.spoken(resources)
+    return resources.getQuantityString(R.plurals.message_reaction_count, chip.count, what, chip.count)
+}
+
 private fun ReactionLabel.spoken(resources: Resources): String =
     when (this) {
         is ReactionLabel.Emoji -> emoji

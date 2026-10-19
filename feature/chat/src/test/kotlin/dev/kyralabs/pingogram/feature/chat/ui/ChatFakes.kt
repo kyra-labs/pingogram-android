@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
@@ -328,8 +330,9 @@ class FakeMessageRepository : MessageRepository {
 
 /**
  * What the message actions ask TDLib: [properties] answers with [onProperties] (everything allowed by default),
- * [availableReactions] with [reactions]; every action is recorded in [calls] (`addReaction:<chat>:<message>:<type>`,
- * `delete:<chat>:<ids>:<forEveryone>`, …) and answered with [onAction].
+ * [availableReactions] with [reactions], [customEmojiStickers] with those of [customEmoji] asked for; every action is
+ * recorded in [calls] (`addReaction:<chat>:<message>:<type>`, `delete:<chat>:<ids>:<forEveryone>`, …) and answered with
+ * [onAction].
  */
 class FakeMessageActionRepository : MessageActionRepository {
     var onProperties: suspend (Long) -> Outcome<MessageProperties> = { Outcome.Success(ALL_ALLOWED) }
@@ -337,6 +340,12 @@ class FakeMessageActionRepository : MessageActionRepository {
     var reactions: Outcome<AvailableReactions> = Outcome.Success(AvailableReactions(persistentListOf()))
 
     var onAction: suspend (String) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** The custom emoji TDLib knows, by id; a failure fails every request. */
+    var customEmoji: Outcome<Map<Long, Sticker>> = Outcome.Success(emptyMap())
+
+    /** The custom emoji whose stickers were asked for, by request. */
+    val customEmojiRequests = mutableListOf<List<Long>>()
 
     /** The messages whose properties were asked for, in order. */
     val propertyRequests = mutableListOf<Long>()
@@ -364,6 +373,11 @@ class FakeMessageActionRepository : MessageActionRepository {
     ): Outcome<AvailableReactions> {
         reactionRequests += messageId
         return reactions
+    }
+
+    override suspend fun customEmojiStickers(customEmojiIds: List<Long>): Outcome<ImmutableMap<Long, Sticker>> {
+        customEmojiRequests += customEmojiIds
+        return customEmoji.map { known -> known.filterKeys { it in customEmojiIds }.toImmutableMap() }
     }
 
     override suspend fun addReaction(

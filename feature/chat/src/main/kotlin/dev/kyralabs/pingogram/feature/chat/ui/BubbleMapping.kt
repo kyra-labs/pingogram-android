@@ -6,7 +6,6 @@ import dev.kyralabs.pingogram.core.domain.model.LinkPreview
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
-import dev.kyralabs.pingogram.core.domain.model.Reaction
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
@@ -14,6 +13,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
@@ -65,11 +65,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         text = text,
         spoilersRevealed = spoilersRevealed,
         linkPreview = (content as? MessageContent.Text)?.linkPreview?.let(::linkPreviewCard),
-        reactions =
-            newest.interactionInfo
-                ?.reactions
-                ?.map(::reactionChip)
-                ?.toImmutableList() ?: persistentListOf(),
+        reactions = newest.reactionChips(),
         date = date,
         album =
             album.takeIf { it.isNotEmpty() }?.let { items ->
@@ -146,8 +142,12 @@ private fun linkPreviewCard(preview: LinkPreview): LinkPreviewCard? =
     LinkPreviewCard(preview.siteName, preview.title, preview.description.text)
         .takeIf { it.siteName.isNotBlank() || it.title.isNotBlank() || it.description.isNotBlank() }
 
-private fun reactionChip(reaction: Reaction): ReactionChip =
-    ReactionChip(label = reaction.type.label, count = reaction.totalCount, isChosen = reaction.isChosen)
+/** The reactions of this message as chips, in TDLib's order (the most added first). */
+internal fun Message.reactionChips(): ImmutableList<ReactionChip> =
+    interactionInfo
+        ?.reactions
+        ?.map { ReactionChip(label = it.type.label, count = it.totalCount, isChosen = it.isChosen) }
+        ?.toImmutableList() ?: persistentListOf()
 
 /** The text or caption of [this] content; a poll's description; empty for content without one. */
 private val MessageContent.text: FormattedText

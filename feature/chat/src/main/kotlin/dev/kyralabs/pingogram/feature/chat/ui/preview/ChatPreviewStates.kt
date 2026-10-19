@@ -21,6 +21,7 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 cannotWrite,
                 ownActionsSheet,
                 incomingActionsSheet,
+                reactionPickerSheet,
                 deleteConfirmation,
                 replying,
                 editing,
