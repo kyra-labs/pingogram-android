@@ -121,12 +121,12 @@ internal data class DestructiveDialogTexts(
 )
 
 /**
- * A destructive confirmation (`docs/DESIGN_SYSTEM.md` §6: `AlertDialog` for destructive confirmations only): [icon]
- * and [texts], with the confirm button in the error role next to "Cancel".
+ * A destructive confirmation (`docs/DESIGN_SYSTEM.md` §6: `AlertDialog` for destructive confirmations only): [icon],
+ * if any, and [texts], with the confirm button in the error role next to "Cancel".
  */
 @Composable
 internal fun DestructiveDialog(
-    @DrawableRes icon: Int,
+    @DrawableRes icon: Int?,
     texts: DestructiveDialogTexts,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -147,7 +147,7 @@ internal fun DestructiveDialog(
                 Text(text = dismiss, style = MaterialTheme.typography.labelLargeEmphasized)
             }
         },
-        icon = { Icon(painter = painterResource(icon), contentDescription = null) },
+        icon = icon?.let { { Icon(painter = painterResource(it), contentDescription = null) } },
         title = { Text(texts.title) },
         text = { Text(texts.text) },
     )

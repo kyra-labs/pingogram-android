@@ -1,11 +1,13 @@
 package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -15,15 +17,19 @@ import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedSenderItem
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersUiState
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageUiState
+import dev.kyralabs.pingogram.feature.settings.ui.EditProfileUiState
 import dev.kyralabs.pingogram.feature.settings.ui.MoreBlockedSenders
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
+import dev.kyralabs.pingogram.feature.settings.ui.ProfileAccount
+import dev.kyralabs.pingogram.feature.settings.ui.ProfileFields
 import dev.kyralabs.pingogram.feature.settings.ui.SessionItem
 import dev.kyralabs.pingogram.feature.settings.ui.SessionsState
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.StorageUsageState
 import dev.kyralabs.pingogram.feature.settings.ui.TwoStepVerificationSummary
+import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -187,6 +193,39 @@ internal object SettingsPreviewData {
                     inactiveSessionTtlDays = 180,
                 ),
         )
+
+    // Edit profile
+
+    private val savedProfile =
+        ProfileFields(firstName = "Ada", lastName = "Lovelace", username = "ada", bio = "Poetical scientist.")
+
+    /** The profile as TDLib has it, nothing changed yet; the avatar shows its placeholder, as in [account]. */
+    val editProfile =
+        EditProfileUiState.Content(
+            account = ProfileAccount(userId = account.userId, name = account.name, photo = null),
+            saved = savedProfile,
+        )
+
+    /**
+     * [editProfile] with a photo, so "Remove photo" shows. Previews and tests load no TDLib files, so the avatar keeps
+     * its placeholder.
+     */
+    val editProfileWithPhoto =
+        editProfile.copy(
+            account =
+                editProfile.account?.copy(
+                    photo = ProfilePhoto(small = FileRef(1, 0), big = FileRef(2, 0), minithumbnail = null),
+                ),
+        )
+
+    /** The profile with a changed bio and [username], which shows [usernameStatus]. */
+    fun editedProfile(
+        usernameStatus: UsernameStatus,
+        username: String = "ada_lovelace",
+    ) = editProfile.copy(
+        fields = savedProfile.copy(username = username, bio = "Poetical scientist. First programmer."),
+        usernameStatus = usernameStatus,
+    )
 
     private fun parts(
         first: String,

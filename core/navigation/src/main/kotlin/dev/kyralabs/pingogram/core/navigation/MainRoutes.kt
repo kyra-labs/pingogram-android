@@ -22,6 +22,13 @@ data object ContactsRoute
 data object SettingsRoute
 
 /**
+ * Editing the user's own profile (`REQUIREMENTS.md` FR-S1, Account): photo, name, username and bio,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object EditProfileRoute
+
+/**
  * Appearance settings (`REQUIREMENTS.md` FR-S2): theme, dynamic color, AMOLED black and contrast, `:feature:settings`,
  * pushed above the Settings tab.
  */
