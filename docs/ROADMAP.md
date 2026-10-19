@@ -59,7 +59,7 @@ the release workflow so the owner can install and test on a phone.
       share, reply/mark-read actions, Android 13 permission flow
 - [ ] WorkManager background downloads/uploads with foreground service (`dataSync`)
 - [ ] `gms` flavor with FCM `registerDevice` (optional, off by default in GitHub releases)
-- [ ] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
+- [x] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
 - [ ] Material 3 Expressive alignment: the Must and Should items of
       `docs/audit/m3-expressive-gap-analysis.md` (decided 2026-10-19), density first (G63–G69)
 

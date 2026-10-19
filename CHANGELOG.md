@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Sponsored messages: channels and chats with bots show Telegram's sponsored messages as a card labelled
+  "Sponsored" (or "Recommended" for a recommended channel) below the newest posts, with the advertiser's button.
+  Tap the button, a link or the picture to open it. The info button shows "About this ad": who placed it and more
+  about it, and lets you report it, with the reasons Telegram asks for.
 - A reactions picker: the + button at the end of a message's quick reactions shows every reaction you can add in
   that chat, the chat's most used ones first, then your recent ones and the popular ones, with those you added
   marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
