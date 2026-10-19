@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test
 
 /** The position the main thread reads while the player runs on its own thread ([ExoAudioPlayer]). */
 class PlaybackClockTest {
-    private val playing = PlaybackClock(positionMillis = 1_000, advancing = true, atMillis = 50_000, durationMillis = 4_000)
+    private val playing =
+        PlaybackClock(positionMillis = 1_000, advancing = true, atMillis = 50_000, durationMillis = 4_000)
 
     @Test
     fun `while the player advances, the position moves on in real time from the last report`() {

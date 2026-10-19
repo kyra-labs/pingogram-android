@@ -73,7 +73,7 @@ internal class ExoAudioPlayer
                     player: Player,
                     events: Player.Events,
                 ) {
-                    if (events.containsAny(*CLOCK_EVENTS)) report(player)
+                    if (CLOCK_EVENTS.any(events::contains)) report(player)
                 }
 
                 override fun onPlayWhenReadyChanged(
@@ -102,7 +102,9 @@ internal class ExoAudioPlayer
         ) {
             val generation = ++generation
             clock = PlaybackClock.startingAt(positionMillis, SystemClock.elapsedRealtime())
-            val handler = playerHandler ?: startPlayerThread().also { playerHandler = it }
+            val handler =
+                playerHandler
+                    ?: Handler(HandlerThread(THREAD_NAME).apply { start() }.looper).also { playerHandler = it }
             handler.post {
                 val player = player ?: newPlayer().also { player = it }
                 playerGeneration = generation
@@ -152,8 +154,6 @@ internal class ExoAudioPlayer
                 handler.looper.quitSafely()
             }
         }
-
-        private fun startPlayerThread(): Handler = Handler(HandlerThread(THREAD_NAME).apply { start() }.looper)
 
         /** Built on the player's thread, whose looper it then calls back on. */
         private fun newPlayer(): ExoPlayer =
