@@ -42,6 +42,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   other sessions.
 - Whether two-step verification is on, and whether a recovery email is set.
 
+### Changed
+- The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
+  instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
+
 ### Fixed
 - "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
   instead of being cut off.
