@@ -1,61 +1,180 @@
-# Pingogram
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo_full_dark.svg">
+    <img src="art/logo_full.svg" alt="Pingogram" width="360">
+  </picture>
+</h1>
 
-**An open-source Telegram client for Android, built the way a Google app would be: Material 3
-Expressive, dynamic color, adaptive layouts, and nothing else in the way.**
+<p align="center">
+  <strong>A Telegram client for Android that looks and feels like a Google app.</strong>
+</p>
 
-[![CI](https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg)](https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml)
-[![Latest release](https://img.shields.io/github/v/release/kyra-labs/pingogram-android?include_prereleases&label=download)](https://github.com/kyra-labs/pingogram-android/releases/latest)
-[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml"><img src="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?include_prereleases&label=download" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License: GPL v3"></a>
+</p>
+
+Pingogram is an open-source, third-party Telegram client for Android, written from scratch in
+Kotlin and Jetpack Compose on top of [TDLib](https://github.com/tdlib/td), Telegram's official
+client library. You sign in with your existing Telegram account and keep all your chats; what
+changes is the interface, which follows Google's Material 3 Expressive design: Google Sans Flex
+type, expressive shapes and spring motion, dynamic color from your wallpaper, and layouts that
+adapt from phones to tablets and foldables. There are no analytics, no ads and no telemetry: the
+app talks only to Telegram's servers, through TDLib, and to links you open.
 
 Pingogram is **not** affiliated with Telegram. It is a third-party client that uses Telegram's
 official client library, [TDLib](https://github.com/tdlib/td), and complies with the
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
-## Why
+> [!NOTE]
+> Pingogram is an **early beta** (0.3.0-beta.1). Everyday reading and writing works, but
+> notifications, voice recording, the sticker panel and calls are not there yet. See
+> [what works today](#what-works-today) and [what is missing](#not-yet).
 
-Telegram's official Android app is excellent but has its own design language. Pingogram keeps
-the exact same account, chats and encryption, and replaces the UI with a native Jetpack Compose
-app that follows Google's current guidance: Material 3 Expressive components and motion,
-Material You dynamic color, predictive back, edge-to-edge, large-screen layouts, and modern
-notification and permission behaviour.
+## Screenshots
 
-## Status
+<!-- Generated from the Roborazzi goldens; regenerate with tools/readme/screenshots.sh -->
 
-Early development. See [docs/ROADMAP.md](docs/ROADMAP.md) for milestones and
-[Releases](https://github.com/kyra-labs/pingogram-android/releases) for test builds.
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chats-dark.png">
+        <img src="docs/screenshots/chats-light.png" alt="Chat list with folder tabs" width="200">
+      </picture>
+      <br><sub>Chat list with folders</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/chat-dark.png">
+        <img src="docs/screenshots/chat-light.png" alt="Group conversation with replies, a link preview and reactions" width="200">
+      </picture>
+      <br><sub>Replies, link previews, reactions</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/reactions-dark.png">
+        <img src="docs/screenshots/reactions-light.png" alt="Conversation with large emoji and reaction badges" width="200">
+      </picture>
+      <br><sub>Expressive bubbles and emoji</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/composer-dark.png">
+        <img src="docs/screenshots/composer-light.png" alt="Composer with formatted text and the send button" width="200">
+      </picture>
+      <br><sub>Formatting in the composer</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/search-dark.png">
+        <img src="docs/screenshots/search-light.png" alt="Search results for chats, contacts and messages" width="200">
+      </picture>
+      <br><sub>Search chats and messages</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+        <img src="docs/screenshots/settings-light.png" alt="Settings with the account card" width="200">
+      </picture>
+      <br><sub>Settings</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/appearance-dark.png">
+        <img src="docs/screenshots/appearance-light.png" alt="Appearance settings: theme, AMOLED black, dynamic color, contrast" width="200">
+      </picture>
+      <br><sub>Theme, dynamic color, contrast</sub>
+    </td>
+    <td align="center" width="25%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/welcome-dark.png">
+        <img src="docs/screenshots/welcome-light.png" alt="Welcome screen" width="200">
+      </picture>
+      <br><sub>Welcome</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="4">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/tablet-dark.png">
+        <img src="docs/screenshots/tablet-light.png" alt="Chat list and conversation side by side on a tablet" width="600">
+      </picture>
+      <br><sub>Chat list and conversation side by side on tablets and foldables</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>Screenshots come from the app's screenshot tests, with sample data, in the brand colors
+(on Android 12+ the app takes its colors from your wallpaper by default). They follow your GitHub
+light or dark theme.</sub>
+
+## What works today
+
+- **Sign-in:** phone number with country picker, every login code type, two-step verification
+  with password recovery, new-account registration, QR code login and email verification.
+- **Chat list:** folders as tabs, unread, mention and reaction badges, typing and online status,
+  drafts, swipe to archive or mark as read, multi-select with a floating toolbar (pin, mute,
+  archive, mark as read, delete) and the archive.
+- **Conversations:** paged history that opens at the first unread message, Material 3 Expressive
+  bubbles, formatted text, replies, forwarded headers, link previews and reactions; photos and
+  albums, videos, GIFs, static stickers, voice messages and music (playback), documents, polls,
+  locations and contacts; a full-screen media viewer with zoom, share and save.
+- **Writing:** text with formatting, silent and scheduled send, drafts synced with your other
+  devices; reply, edit, delete, pin and react; attach photos and videos (as albums), files,
+  contacts, polls and quizzes, with captions and upload progress.
+- **Search** across your chats, contacts, public chats and channels, and messages.
+- **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
+  active sessions, two-step verification status, appearance (system, light or dark theme, AMOLED
+  black, dynamic color, contrast), data and storage (usage, clear cache) and about.
+- **Built the Android way:** a floating navigation bar on phones and a navigation rail with a
+  list-detail layout on larger screens, edge-to-edge, predictive back, and layouts that hold up
+  at 200% font size and with TalkBack.
+
+### Not yet
+
+- Notifications (the app does not notify you of new messages yet)
+- Recording voice and video messages; the emoji and sticker panel; animated stickers
+- Forwarding messages
+- Contacts, user and group profiles, creating groups and channels, starting secret chats
+- Notification and language settings, passcode lock
+- Voice and video calls
+
+The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster
+start-up and smoother scrolling than the official app on the same device
+([performance budgets](docs/PERFORMANCE.md)).
 
 ## Download
 
-Grab the latest APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases/latest).
-Use `-universal.apk` unless you know your device's ABI. Verify with `SHA256SUMS.txt`.
-
-## Features (planned for 1.0)
-
-- Chats, groups, channels, forums, secret chats, folders, archive
-- Photos, videos, GIFs, stickers (animated), voice messages, files, polls, reactions
-- Rich notifications (conversation style, direct reply, shortcuts, bubbles)
-- Full settings: privacy, sessions, 2FA, passcode/biometrics, storage, appearance, language
-- Material 3 Expressive throughout: Google Sans Flex variable typography, expressive shapes,
-  spring motion, dynamic color, light/dark/AMOLED, three contrast levels, adjustable bubble shape
-- Built to be faster and lighter than the official app (see docs/PERFORMANCE.md)
-- Tablet/foldable list-detail layout, predictive back, per-app language
-- No ads, no analytics, no trackers
+Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
+All releases before 1.0 are marked as pre-releases. Use `-universal.apk` unless you know your
+device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
+installs alongside other Telegram apps; until it has notifications, keep one of them if you
+rely on being notified.
 
 ## Building
 
 ```bash
 cp secrets.properties.example secrets.properties   # add your api_id / api_hash from my.telegram.org
-./gradlew assembleFossDebug
+./gradlew assembleFossDebug                        # APK in app/build/outputs/apk/foss/debug/
+./gradlew check                                    # ktlint, detekt, lint, unit and screenshot tests
 ```
 
-Requirements: JDK 17+, an Android SDK with platform 37 (compileSdk), Android Studio (latest stable). The TDLib AAR is downloaded
-automatically from this repo's `tdlib-*` releases (see [docs/TDLIB.md](docs/TDLIB.md)).
+Requirements: JDK 17+, an Android SDK with platform 37 (compileSdk), Android Studio (latest
+stable). `secrets.properties` is git-ignored; the build stops with a clear message if it is
+missing or malformed. The TDLib AAR is downloaded automatically from this repository's `tdlib-*`
+releases and checked against a pinned SHA-256 (see [docs/TDLIB.md](docs/TDLIB.md)).
 
 ## Documentation
 
 | Doc | Contents |
 |---|---|
 | [REQUIREMENTS.md](REQUIREMENTS.md) | Scope, compliance, functional & non-functional requirements |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones |
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, layers, data flow |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Material 3 Expressive rules |
 | [docs/TDLIB.md](docs/TDLIB.md) | TDLib build and wrapper |
@@ -67,7 +186,8 @@ automatically from this repo's `tdlib-*` releases (see [docs/TDLIB.md](docs/TDLI
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Commits must be signed off (DCO).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Commits
+must be signed off (DCO). Report security issues as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
