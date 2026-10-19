@@ -61,6 +61,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 savedStateHandle = SavedStateHandle(),
                 chatRepository = chats,
                 messageRepository = messages,
+                messageActionRepository = messageActions,
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,

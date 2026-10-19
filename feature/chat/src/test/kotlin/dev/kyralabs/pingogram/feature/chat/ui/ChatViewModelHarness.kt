@@ -37,6 +37,7 @@ import kotlin.reflect.cast
 abstract class ChatViewModelHarness {
     protected val chats = FakeChatRepository()
     protected val messages = FakeMessageRepository()
+    protected val messageActions = FakeMessageActionRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
     protected val actions = FakeChatActionRepository()
@@ -73,6 +74,7 @@ abstract class ChatViewModelHarness {
                 savedStateHandle = handle,
                 chatRepository = chats,
                 messageRepository = messages,
+                messageActionRepository = messageActions,
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,

@@ -26,6 +26,9 @@ import kotlinx.collections.immutable.persistentMapOf
  *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
  * @property playback the voice message or song in the player; null when none is.
  * @property composer what the bottom of the screen shows: the composer, why the user cannot write, or nothing.
+ * @property messageActions the actions sheet of a long-pressed message; null while none is open.
+ * @property deleteDialog the confirmation before messages are deleted; null while none is shown.
+ * @property shortcuts which actions screen readers get on every bubble, besides the sheet.
  */
 @Immutable
 data class ChatUiState(
@@ -35,6 +38,9 @@ data class ChatUiState(
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
     val composer: ComposerUiState = ComposerUiState.Hidden,
+    val messageActions: MessageActionsSheet? = null,
+    val deleteDialog: DeleteMessagesDialog? = null,
+    val shortcuts: MessageShortcuts = MessageShortcuts(),
 )
 
 /**
@@ -179,6 +185,9 @@ sealed interface ChatItem {
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
+        /** The message whose reactions the bubble shows, and which its reaction chips change: an album's newest. */
+        val reactionsMessageId: Long get() = album?.messageIds?.lastOrNull() ?: id
+
         override fun toString() = "Bubble(id=$id, isOutgoing=$isOutgoing, position=$position, status=$status, …)"
     }
 
@@ -307,8 +316,10 @@ sealed interface ReactionLabel {
         val emoji: String,
     ) : ReactionLabel
 
-    /** A custom emoji, drawn as a placeholder until custom emoji are rendered. */
-    data object CustomEmoji : ReactionLabel
+    /** Custom emoji [customEmojiId], drawn as a placeholder until custom emoji are rendered. */
+    data class CustomEmoji(
+        val customEmojiId: Long,
+    ) : ReactionLabel
 
     /** The paid star reaction of channels. */
     data object Paid : ReactionLabel
