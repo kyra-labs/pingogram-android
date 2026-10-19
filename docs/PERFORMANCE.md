@@ -84,6 +84,15 @@ regresses by more than 10%.
   (custom `compose_compiler_config.conf` stability file).
 - Use `Modifier.Node` for custom modifiers; avoid `composed {}`.
 - Avoid `Box`-with-many-children layouts for bubbles; one custom `Layout` per bubble type.
+- Build what only screen readers need (a row's or bubble's spoken description, custom actions) inside
+  the `semantics { }` block, which runs only when something reads the semantics tree, not in the
+  composition of every item.
+- Coming back from a pushed screen composes the tab's screen anew (Navigation keeps only its saved
+  state), in the first frame of the back transition: keep that composition lean, and keep app chrome
+  that only hides (the floating navigation bar) composed rather than composing it again with the
+  screen.
+- A `Scaffold` composes its content lambda again whenever it measures it anew, e.g. in every frame of a
+  collapsing top app bar: put the body in its own skippable composable, so those frames stop there.
 
 ## 5. Rendering
 
@@ -144,6 +153,21 @@ regresses by more than 10%.
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
   `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+- Judging smoothness by hand: a sideloaded APK runs JIT-compiled at first. The APK carries the
+  libraries' baseline profiles (and the app's, once generated) for `profileinstaller`, but the
+  platform compiles them only in its background dexopt, when the phone is idle and charging. Before
+  judging a fresh install, compile it the way Play's installs would be: install with its `.dm` file
+  (`adb install-multiple <apk> <dm>`, both from `app/build/outputs/apk/<flavor>/<type>/`, the `.dm` under
+  `baselineProfiles/`), or open it once for a few seconds (`profileinstaller` writes the profile then)
+  and run `adb shell cmd package compile -f -m speed-profile dev.kyralabs.pingogram` (the
+  `.debug` suffix for debug builds, which are never representative: debuggable, no R8).
+- Recomposition tests on the JVM: `RecompositionCounter` (`feature:chats` tests) counts the composables
+  that compose again, through the Compose runtime's composition observer, while a Robolectric test
+  steps the test clock frame by frame. `ChatListRecompositionTest` keeps §4 true for the chat list
+  (scrolling, collapsing its top bar, coming back to it); copy the pattern for other screens. To see
+  where a frame's time goes without a device, record the test JVM with JFR
+  (`jcmd <pid> JFR.start settings=…`, 1 ms method sampling, `JFR.configure stackdepth=2048` first: Compose
+  stacks are deep): only relative costs carry over to a phone, and Robolectric does not draw.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
@@ -157,7 +181,8 @@ regresses by more than 10%.
 
 - [ ] No new unstable classes in UI state (compiler report)
 - [ ] `LazyColumn` items have `key` + `contentType`; no effects inside items
-- [ ] Animations read state in layout/draw phase
+- [ ] Animations read state in layout/draw phase; a recomposition test for scrolling screens
+- [ ] Accessibility-only strings built in `semantics { }`, not in composition
 - [ ] Images request explicit sizes; stickers respect the concurrency cap
 - [ ] TDLib calls are suspendable, batched, and cancel when the screen leaves
 - [ ] Macrobenchmark for the affected screen unchanged or improved
