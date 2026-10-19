@@ -23,8 +23,12 @@ import javax.xml.parsers.DocumentBuilderFactory
  * INTERNET, TDLib cannot open a socket and the app stays on "Connecting…" forever. WRITE_EXTERNAL_STORAGE saves
  * media into the gallery on Android 8–9 only (approved 2026-10-18): later versions save through MediaStore without it,
  * so it is declared up to API 28 and not requested on newer runtimes. The FileProvider that hands TDLib's files to
- * other apps (approved the same day) is private and grants single URIs. The launcher icon is adaptive, with the
- * monochrome layer of themed icons.
+ * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
+ * (approved 2026-10-19); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
+ * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
+ * left out.
+ * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
+ * themed icons.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -40,8 +44,9 @@ class AppManifestTest {
                 .filter { it.startsWith("android.permission.") }
                 .toSet()
 
-        // Robolectric runs Android 14, where storage access up to API 28 is not requested.
-        assertEquals(setOf(Manifest.permission.INTERNET), requested)
+        // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
+        // not requested.
+        assertEquals(setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS), requested)
     }
 
     @Test
@@ -54,9 +59,31 @@ class AppManifestTest {
                 .toMap()
 
         assertEquals(
-            mapOf(Manifest.permission.INTERNET to "", Manifest.permission.WRITE_EXTERNAL_STORAGE to "28"),
+            mapOf(
+                Manifest.permission.INTERNET to "",
+                Manifest.permission.POST_NOTIFICATIONS to "",
+                Manifest.permission.WAKE_LOCK to "30",
+                Manifest.permission.FOREGROUND_SERVICE to "30",
+                Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
+            ),
             declared,
         )
+    }
+
+    @Test
+    fun `WorkManager starts on demand, and notification actions reach only the app's own receiver`() {
+        val manifest = mergedManifest()
+        val initializers =
+            manifest
+                .elements("meta-data")
+                .map { it.androidAttribute("name") }
+        val receiver =
+            manifest
+                .elements("receiver")
+                .single { it.androidAttribute("name").endsWith(".NotificationActionReceiver") }
+
+        assertFalse("androidx.work.WorkManagerInitializer" in initializers)
+        assertEquals("false", receiver.androidAttribute("exported"))
     }
 
     @Test

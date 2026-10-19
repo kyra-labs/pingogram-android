@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
@@ -60,12 +61,17 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
  * ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share their photos, videos and GIFs
  * (the container transform of `sharedMediaBounds`).
+ *
+ * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
+ * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
  */
 @Composable
 internal fun PingogramNavHost(
     navController: NavHostController,
     uiState: MainActivityUiState,
     modifier: Modifier = Modifier,
+    chatToOpen: Long? = null,
+    onChatOpened: () -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
@@ -101,6 +107,7 @@ internal fun PingogramNavHost(
         }
     }
     SessionNavigationEffect(navController, uiState)
+    OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
 }
 
 /** A destination comes in: a [fullScreen] one fades in over the screen below, any other fades through. */
@@ -166,6 +173,31 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
         mediaViewerScreen(onBack = { navController.popBackStack() })
+    }
+}
+
+/**
+ * Opens [chatId] once the main graph shows, after [SessionNavigationEffect] moved there, and reports it handled; drops
+ * it when signed out, as it belongs to an account that is gone (or the login flow is in the way), and reports that too.
+ */
+@Composable
+private fun OpenChatEffect(
+    navController: NavHostController,
+    uiState: MainActivityUiState,
+    chatId: Long?,
+    onHandled: () -> Unit,
+) {
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val inMainGraph = currentEntry?.destination.isInMainGraph()
+    val currentOnHandled by rememberUpdatedState(onHandled)
+    LaunchedEffect(chatId, uiState, inMainGraph) {
+        // Loading: wait until the login state is known.
+        if (chatId == null || uiState == MainActivityUiState.Loading) return@LaunchedEffect
+        if (uiState == MainActivityUiState.SignedIn) {
+            if (!inMainGraph) return@LaunchedEffect
+            navController.navigateToChatAboveList(chatId)
+        }
+        currentOnHandled()
     }
 }
 

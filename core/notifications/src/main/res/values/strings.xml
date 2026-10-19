@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channels, in the system's notification settings. Never "Telegram" (CLAUDE.md rule 2). -->
+    <string name="notification_channel_private_chats">Private chats</string>
+    <string name="notification_channel_private_chats_description">New messages in one-to-one and secret chats</string>
+    <string name="notification_channel_groups">Groups</string>
+    <string name="notification_channel_groups_description">New messages in groups</string>
+    <string name="notification_channel_channels">Channels</string>
+    <string name="notification_channel_channels_description">New posts in channels</string>
+    <string name="notification_channel_calls">Calls</string>
+    <string name="notification_channel_calls_description">Incoming calls</string>
+    <string name="notification_channel_other">Other</string>
+    <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
+
+    <!-- Notification texts. -->
+    <!-- Shown instead of a message when the chat's settings hide message previews. -->
+    <string name="notification_new_message">New message</string>
+    <string name="notification_new_secret_chat">Secret chat started</string>
+    <string name="notification_incoming_call">Incoming call</string>
+    <!-- A sender TDLib knows nothing about. -->
+    <string name="notification_someone">Someone</string>
+    <!-- The title of a chat TDLib does not know (rare). -->
+    <string name="notification_unknown_chat">Chat</string>
+    <!-- The current user in a conversation notification, beside their own messages. -->
+    <string name="notification_you">You</string>
+    <plurals name="notification_new_messages">
+        <item quantity="one">%d new message</item>
+        <item quantity="other">%d new messages</item>
+    </plurals>
+    <string name="notification_reply">Reply</string>
+    <!-- The hint in the reply field of a notification. -->
+    <string name="notification_reply_label">Message</string>
+    <string name="notification_mark_as_read">Mark as read</string>
+    <!-- Shown briefly on older Android versions while a reply is sent or messages are marked as read. -->
+    <string name="notification_working">Updating your chats…</string>
+</resources>

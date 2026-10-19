@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
+import dev.kyralabs.pingogram.core.ui.component.sidesOnly
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -90,6 +91,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Snackbars** show above the floating bar or toolbar; the delete confirmation is a dialog ([DeleteChatDialog]).
  * - **Open chat**: beside the conversation of [openChatId] (the list pane on expanded windows), that chat's row looks
  *   and reads as selected ([ChatListItem]); not in selection mode, whose own selection the toolbar acts on.
+ * - **Header**: [header] shows at the top of the sheet, above the list, which does not scroll it away: the request to
+ *   allow notifications ([NotificationPromptHost]) on the Chats tab.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +104,7 @@ internal fun ChatListScreen(
     listState: LazyListState = rememberLazyListState(),
     onBack: () -> Unit = {},
     openChatId: Long? = null,
+    header: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
@@ -120,7 +124,7 @@ internal fun ChatListScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
-            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch)
+            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header)
         }
         SelectionToolbarHost(
             selection = selection,
@@ -160,7 +164,7 @@ private fun contentWindowInsets(
  * Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again whenever
  * it measures it anew, i.e. in every frame of the top bar collapsing or expanding, and those frames stop here.
  */
-@Suppress("LongParameterList") // The state, events, list state and padding, the open chat and the folder switch.
+@Suppress("LongParameterList") // The state, events, list state and padding, the open chat, folder switch and header.
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChatListBody(
@@ -170,45 +174,64 @@ private fun ChatListBody(
     innerPadding: PaddingValues,
     openChatId: Long?,
     folderSwitch: FolderSwitch,
+    header: @Composable () -> Unit,
 ) {
     val state = rememberShownList(uiState, listState, folderSwitch)
     val animateRows = folderSwitch.animateRows
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-        val contentModifier = Modifier.fadeThrough(folderSwitch).fillMaxSize()
-        when (val content = state.content) {
-            ChatListContent.Loading -> {
-                Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
-            }
-
-            is ChatListContent.Empty -> {
-                Column(contentModifier.padding(contentPadding)) {
-                    // The archive stays in reach when every chat is archived.
-                    state.archive?.let {
-                        ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) })
+        Column(Modifier.fillMaxSize()) {
+            // Takes no room while it shows nothing.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(contentPadding.sidesOnly()),
+                contentAlignment = Alignment.TopCenter,
+            ) { header() }
+            Box(Modifier.weight(1f)) {
+                val contentModifier = Modifier.fadeThrough(folderSwitch).fillMaxSize()
+                when (val content = state.content) {
+                    ChatListContent.Loading -> {
+                        Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) {
+                            LoadingIndicator()
+                        }
                     }
-                    ChatListEmpty(kind = state.kind, isFolder = content.isFolder, modifier = Modifier.weight(1f))
+
+                    is ChatListContent.Empty -> {
+                        Column(contentModifier.padding(contentPadding)) {
+                            // The archive stays in reach when every chat is archived.
+                            state.archive?.let {
+                                ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) })
+                            }
+                            ChatListEmpty(
+                                kind = state.kind,
+                                isFolder = content.isFolder,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+
+                    is ChatListContent.Error -> {
+                        ChatListError(
+                            content = content,
+                            onRetry = { onEvent(ChatListEvent.Retry) },
+                            modifier = contentModifier.padding(contentPadding),
+                        )
+                    }
+
+                    is ChatListContent.Content -> {
+                        ChatList(
+                            items = content.items,
+                            state = state,
+                            listState = listState,
+                            contentPadding = contentPadding,
+                            openChatId = openChatId,
+                            animateRows = animateRows,
+                            onEvent = onEvent,
+                            modifier = contentModifier,
+                        )
+                    }
                 }
-            }
-
-            is ChatListContent.Error -> {
-                ChatListError(
-                    content = content,
-                    onRetry = { onEvent(ChatListEvent.Retry) },
-                    modifier = contentModifier.padding(contentPadding),
-                )
-            }
-
-            is ChatListContent.Content -> {
-                ChatList(
-                    items = content.items,
-                    state = state,
-                    listState = listState,
-                    contentPadding = contentPadding,
-                    openChatId = openChatId,
-                    animateRows = animateRows,
-                    onEvent = onEvent,
-                    modifier = contentModifier,
-                )
             }
         }
     }

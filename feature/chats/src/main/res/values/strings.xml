@@ -152,4 +152,13 @@
         <item quantity="other">%d results</item>
     </plurals>
     <string name="search_a11y_no_results">No results</string>
+
+    <!-- The request to allow notifications above the chat list (Android 13+). -->
+    <string name="notification_prompt_title">Turn on notifications</string>
+    <string name="notification_prompt_body">Get notified about new messages and calls. You can mute chats any time.</string>
+    <string name="notification_prompt_blocked_title">Notifications are off</string>
+    <string name="notification_prompt_blocked_body">To get notified about new messages and calls, allow notifications for Pingogram in your device settings.</string>
+    <string name="notification_prompt_not_now">Not now</string>
+    <string name="notification_prompt_allow">Allow</string>
+    <string name="notification_prompt_open_settings">Open settings</string>
 </resources>

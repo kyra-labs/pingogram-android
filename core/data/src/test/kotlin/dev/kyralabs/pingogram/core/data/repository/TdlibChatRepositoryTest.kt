@@ -43,7 +43,7 @@ class TdlibChatRepositoryTest {
     private val client = FakeTdlibClient()
 
     private fun TestScope.repository() =
-        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
 
     private suspend fun TdlibChatRepository.cached(id: Long = CHAT_ID): Chat = checkNotNull(chat(id).first())
 

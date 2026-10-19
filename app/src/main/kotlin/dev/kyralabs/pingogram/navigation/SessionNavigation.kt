@@ -6,6 +6,7 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.navOptions
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
+import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.feature.auth.navigation.navigateToAuth
@@ -39,4 +40,16 @@ internal fun NavController.navigateToMainGraph() {
 internal fun NavController.navigateToAuthGraph() {
     TopLevelDestination.entries.sortedBy { it == TopLevelDestination.Start }.forEach { clearBackStack(it.route) }
     navigateToAuth(navOptions { popUpTo(graph.id) { inclusive = true } })
+}
+
+/**
+ * Opens chat [chatId] above the chat list, for a notification or a conversation shortcut: whatever was open above the
+ * chat list is left, so back returns to the chat list, then leaves the app. Pushed on every window, as the archive
+ * pushes chats.
+ */
+internal fun NavController.navigateToChatAboveList(chatId: Long) {
+    navigate(ChatRoute(chatId)) {
+        popUpTo(TopLevelDestination.Start.route)
+        launchSingleTop = true
+    }
 }

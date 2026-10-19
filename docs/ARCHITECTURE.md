@@ -135,11 +135,37 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 ## Notifications
 
-- `core:notifications` listens to `updateNotificationGroup`/`updateNotification` from TDLib
-  (TDLib's own notification engine, enabled via `setOption("notification_group_count_max")`),
-  which already applies mute settings and exceptions. We only render.
-- `MessagingStyle` with `Person` and `ShortcutInfo` for conversation notifications; reply
-  action → `sendMessage` through a `BroadcastReceiver` + WorkManager; mark-read → `viewMessages`.
+- TDLib's own notification engine decides what to show: it applies mute settings, exceptions and read messages,
+  and removes what was read anywhere. `TdlibNotificationRepository` (`core:data`, a `TdlibUpdateCache`, as
+  `updateActiveNotifications` comes only once after TDLib starts) turns it on at every login
+  (`notification_group_count_max` 25, `notification_group_size_max` 10, `docs/TDLIB.md`) and reduces
+  `updateActiveNotifications`, `updateNotificationGroup`, `updateNotification` and `updateHavePendingNotifications`
+  into `ActiveNotifications` (`core:domain`), with the chats on screen (`OpenChats`, kept by `TdlibChatRepository` as it
+  opens and closes chats). Logging out drops everything.
+- `core:notifications` only renders: `NotificationRenderer` (started by `PingogramApplication` in every process,
+  before TDLib) posts one `MessagingStyle` notification per TDLib group under one summary, with a `Person` per sender
+  (avatars from `AvatarIcons`, initials on the placeholder colors without a photo) and the chat list's previews
+  (`core:ui` `messagePreviewText`, or "New message" without `showPreview`). Only notifications not seen before alert;
+  updates, silent messages and restored notifications set `GROUP_ALERT_SUMMARY` under a summary with
+  `GROUP_ALERT_CHILDREN`, so they do not alert. Chats on screen get no notification. After a restart, notifications
+  TDLib no longer knows are cancelled; logging out cancels everything and removes the conversation shortcuts.
+- Channels (`PingogramChannel`, `NotificationChannels`): Private chats (secret chats too), Groups, Channels, Calls,
+  Other, created at every start; the one place that decides channels, for the notification settings to extend.
+- Android 11+: a long-lived conversation shortcut per chat (`ConversationShortcuts`), linked by `setShortcutId` and
+  `LocusId`, so notifications show in the conversation section. No share target yet (sharing into a chat needs a chat
+  picker and a prefilled composer); no bubbles yet (they need a resizable chat activity of their own).
+- Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
+  hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
+- Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go
+  through `NotificationActionReceiver` to `NotificationActionWorker`, expedited one-time work (WorkManager with
+  `HiltWorkerFactory`, initialized on demand by `PingogramApplication`'s `Configuration.Provider`), which waits for
+  TDLib (`AuthRepository.awaitLoggedIn`), then `sendMessage` (keeping the draft) + `viewMessages(force_read)`,
+  `viewMessages(force_read)`, or `removeNotificationGroup`. TDLib's updates then remove the notification.
+- Android 13+: the chat list asks for `POST_NOTIFICATIONS` with a card above the list (`NotificationPromptHost`,
+  `feature:chats`); "Not now" and the first request are kept in DataStore (`NotificationPromptRepository`), so it never
+  nags, and after a final refusal it offers the app's notification settings.
+- `core:notifications` depends on `core:domain`, `core:common` and `core:ui` (previews, names, avatar colors), never
+  on `core:data` or TDLib.
 
 ## Error handling
 

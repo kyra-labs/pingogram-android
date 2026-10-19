@@ -16,8 +16,10 @@ import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +35,9 @@ import javax.inject.Singleton
 interface DataStoreModule {
     @Binds
     fun appearanceRepository(repository: DataStoreAppearanceRepository): AppearanceRepository
+
+    @Binds
+    fun notificationPromptRepository(repository: DataStoreNotificationPromptRepository): NotificationPromptRepository
 
     companion object {
         @Provides

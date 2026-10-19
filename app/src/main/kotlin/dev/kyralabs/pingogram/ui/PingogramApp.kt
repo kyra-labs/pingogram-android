@@ -71,6 +71,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (a conversation, the archive) would do that in the frames that start and end its transition. Screens pushed on top
  * of a tab do not read them.
  *
+ * [chatToOpen] (from a notification) is opened above the chat list once the account is logged in, then reported to
+ * [onChatOpened]; nobody logged in drops it ([PingogramNavHost]).
+ *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
@@ -81,6 +84,8 @@ fun PingogramApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
+    chatToOpen: Long? = null,
+    onChatOpened: () -> Unit = {},
 ) {
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
@@ -122,7 +127,7 @@ fun PingogramApp(
                     // The same progress as the login flow's first step: TDLib is still starting.
                     AuthProgressScreen(isLoggingOut = false)
                 } else {
-                    PingogramNavHost(navController, uiState)
+                    PingogramNavHost(navController, uiState, chatToOpen = chatToOpen, onChatOpened = onChatOpened)
                 }
             }
             // Compact windows only: composed there even while hidden (FloatingNavigationBar).

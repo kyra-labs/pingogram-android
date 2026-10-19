@@ -17,7 +17,7 @@ class TdlibChatPermissionsTest {
     private val client = FakeTdlibClient()
 
     private fun TestScope.repository() =
-        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
 
     private suspend fun TdlibChatRepository.permissions() = checkNotNull(chat(CHAT_ID).first()).permissions
 

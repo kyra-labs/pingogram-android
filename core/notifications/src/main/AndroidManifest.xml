@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- The actions of notifications (reply, mark as read, dismiss), from the app's own pending intents only. -->
+        <receiver
+            android:name="dev.kyralabs.pingogram.core.notifications.NotificationActionReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>
