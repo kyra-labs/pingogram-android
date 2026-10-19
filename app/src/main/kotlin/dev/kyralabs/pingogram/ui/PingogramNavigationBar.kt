@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -35,6 +38,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,8 +47,66 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
+
+/**
+ * [PingogramNavigationBar] while [visible] (`docs/DESIGN_SYSTEM.md` §6.1): it slides in from below by its own height on
+ * the motion scheme's default spatial spring while it fades in on the default effects spring, and slides away and fades
+ * out on the fast ones. The slide and the fade are read in the draw phase, so they never recompose or relayout.
+ *
+ * Hidden, it stays composed, but is neither placed (drawn, touched) nor in the semantics tree. Screens pushed above a
+ * tab hide it, and composing it anew on the way back, its labels measured again ([labelsFit]), would add to the frame
+ * that composes the tab's screen again, at the start of the back transition.
+ *
+ * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
+ * back as it was instead of deselecting its tab on the way out and selecting it again on the way in.
+ */
+@Composable
+internal fun FloatingNavigationBar(
+    visible: Boolean,
+    selected: TopLevelDestination?,
+    onSelect: (TopLevelDestination) -> Unit,
+    onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    // 1 while shown, 0 while hidden: how far the bar is in its place, and its alpha.
+    val position = remember { Animatable(if (visible) 1f else 0f) }
+    val alpha = remember { Animatable(if (visible) 1f else 0f) }
+    val placed = remember { derivedStateOf { alpha.value > 0f } }
+    LaunchedEffect(visible) {
+        val target = if (visible) 1f else 0f
+        launch {
+            position.animateTo(
+                target,
+                if (visible) motionScheme.defaultSpatialSpec() else motionScheme.fastSpatialSpec(),
+            )
+        }
+        alpha.animateTo(target, if (visible) motionScheme.defaultEffectsSpec() else motionScheme.fastEffectsSpec())
+    }
+    PingogramNavigationBar(
+        selected = selected,
+        onSelect = onSelect,
+        onSearch = onSearch,
+        modifier =
+            modifier
+                .placedWhile { visible || placed.value }
+                .then(if (visible) Modifier else Modifier.clearAndSetSemantics {})
+                .graphicsLayer {
+                    translationY = (1f - position.value) * size.height
+                    this.alpha = alpha.value.coerceIn(0f, 1f)
+                },
+    )
+}
+
+/** Places this content only while [placed]; otherwise it is measured but neither drawn nor reached by touches. */
+private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) { if (placed()) placeable.place(0, 0) }
+    }
 
 /**
  * The navigation bar of compact windows in the floating style of Google's Material 3 Expressive apps (Google Photos,
