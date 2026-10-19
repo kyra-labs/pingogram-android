@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.3.0-beta.2] - 2026-10-19
+
 ### Added
 - Pingogram has its own icon, with a themed version that follows your wallpaper's colors on Android 13 and later. It
   also shows on the splash screen, on the Welcome screen and, with the full logo, at the top of About.
@@ -260,7 +262,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.1...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...HEAD
+[0.3.0-beta.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.1...v0.3.0-beta.2
 [0.3.0-beta.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...v0.3.0-beta.1
 [0.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...v0.1.2
