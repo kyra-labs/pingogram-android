@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -65,9 +67,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // bar on surfaceContainer, as the chat list is laid out.
 
 /**
- * A settings page pushed above the Settings tab: a small top app bar with back and [title] (`titleLargeEmphasized`),
- * as the archive has, and [content] in [SettingsContent]. The floating navigation bar hides on pushed screens, so the
- * content keeps clear of the system bars only.
+ * A settings page pushed above the Settings tab: a small top app bar with back, [title] (`titleLargeEmphasized`) and
+ * [actions] at its end, as the archive has, and [content] in [SettingsContent]. The floating navigation bar hides on
+ * pushed screens, so the content keeps clear of [contentWindowInsets] only: the system bars, and the keyboard too on
+ * pages with text fields.
  */
 @Composable
 internal fun SettingsPageScaffold(
@@ -75,9 +78,11 @@ internal fun SettingsPageScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    actions: @Composable RowScope.() -> Unit = {},
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    SettingsPageFrame(title, onBack, modifier, snackbarHostState) { innerPadding ->
+    SettingsPageFrame(title, onBack, modifier, snackbarHostState, actions, contentWindowInsets) { innerPadding ->
         SettingsContent(innerPadding, content = content)
     }
 }
@@ -93,6 +98,8 @@ internal fun SettingsPageFrame(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    actions: @Composable RowScope.() -> Unit = {},
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     body: @Composable (innerPadding: PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -121,6 +128,7 @@ internal fun SettingsPageFrame(
                         )
                     }
                 },
+                actions = actions,
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -130,7 +138,7 @@ internal fun SettingsPageFrame(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
+        contentWindowInsets = contentWindowInsets,
         content = body,
     )
 }
