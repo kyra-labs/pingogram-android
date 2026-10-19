@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.theme
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
@@ -12,12 +14,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.sign
 
 /**
  * How far content travels in a Material shared axis transition (`docs/DESIGN_SYSTEM.md` §5): it slides this distance
  * while it fades, on a `MaterialTheme.motionScheme` spatial spring.
  */
 val SharedAxisDistance: Dp = 30.dp
+
+/**
+ * Material's shared axis on X (§5), for a screen pushed above another and back: the incoming screen slides in by
+ * [distance] pixels ([SharedAxisDistance]) on the [motionScheme]'s default spatial spring and fades in on its default
+ * effects spring, from the end edge going [forward] and from the start edge going back, as the outgoing one leaves the
+ * other way with [sharedAxisXExit]. Start and end follow the layout direction, so right-to-left layouts mirror it.
+ */
+fun AnimatedContentTransitionScope<*>.sharedAxisXEnter(
+    motionScheme: MotionScheme,
+    distance: Int,
+    forward: Boolean,
+): EnterTransition =
+    slideIntoContainer(
+        towards = if (forward) SlideDirection.Start else SlideDirection.End,
+        animationSpec = motionScheme.defaultSpatialSpec(),
+        initialOffset = { fullOffset -> fullOffset.sign * distance },
+    ) + fadeIn(motionScheme.defaultEffectsSpec())
+
+/**
+ * The outgoing half of a shared axis on X ([sharedAxisXEnter]): the screen slides [distance] pixels towards the start
+ * going [forward], towards the end going back, on the default spatial spring, and fades out on the fast effects spring.
+ */
+fun AnimatedContentTransitionScope<*>.sharedAxisXExit(
+    motionScheme: MotionScheme,
+    distance: Int,
+    forward: Boolean,
+): ExitTransition =
+    slideOutOfContainer(
+        towards = if (forward) SlideDirection.Start else SlideDirection.End,
+        animationSpec = motionScheme.defaultSpatialSpec(),
+        targetOffset = { fullOffset -> fullOffset.sign * distance },
+    ) + fadeOut(motionScheme.fastEffectsSpec())
 
 /**
  * Material's fade-through (§5), between content of the same level (tabs, folders): the incoming content fades in on

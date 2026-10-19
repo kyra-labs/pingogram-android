@@ -29,6 +29,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The app's own colors (when dynamic color is off or unavailable) are a more vivid blue, closer to the icon.
 - Loading indicators show only when loading takes longer than a moment, so screens that load quickly no longer
   flash one.
+- Opening a chat, the archive, search or a settings page now slides the new screen in from the side, and going
+  back slides it out the same way, instead of fading. Switching tabs still fades.
+- Phones in landscape show the navigation rail at the side instead of the floating bar, leaving more room for
+  chats. On large tablets and desktop windows the rail is expanded, with each tab's name and a labelled Search
+  button.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

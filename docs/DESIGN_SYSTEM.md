@@ -323,9 +323,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   typing dots, send confirmation → effects fast.
 - Navigation transitions:
   - **Shared-axis X** for every screen pushed above a tab: conversation, archive, search, settings pages. It is
-    built in `core:ui` from `slideIn/OutHorizontally` by `SharedAxisDistance` on `defaultSpatialSpec` with fades on
-    the effects springs, mirrored on pop. It moves to material3's `MaterialTransitions.HorizontalSharedAxis` once
-    1.6 is published.
+    built in `core:ui` (`sharedAxisXEnter` / `sharedAxisXExit`): a slide by `SharedAxisDistance` on
+    `defaultSpatialSpec` with fades on the effects springs, mirrored on pop. It moves to material3's
+    `MaterialTransitions.HorizontalSharedAxis` once 1.6 is published.
   - **Shared-axis Y** for vertical flows (auth).
   - **Fade-through** only for tab switches and chat folder switches.
   - **Container transform** via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, the New
