@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -132,7 +133,7 @@ class BlockedUsersScreenTest {
             BlockedUsersViewModel(
                 TdlibBlockListRepository(client),
                 TdlibUserRepository(client, scope),
-                TdlibChatRepository(client, scope, Dispatchers.Unconfined),
+                TdlibChatRepository(client, scope, Dispatchers.Unconfined, OpenChats()),
                 TdlibGroupRepository(client, scope),
             )
         composeRule.setContent {
