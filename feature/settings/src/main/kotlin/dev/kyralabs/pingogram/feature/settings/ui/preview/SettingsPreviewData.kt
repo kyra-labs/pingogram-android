@@ -18,7 +18,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.BlockedSenderItem
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersUiState
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageUiState
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileUiState
+import dev.kyralabs.pingogram.feature.settings.ui.LicenseItem
 import dev.kyralabs.pingogram.feature.settings.ui.MoreBlockedSenders
+import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryItem
+import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryUiState
+import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
@@ -30,6 +34,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.StorageUsageState
 import dev.kyralabs.pingogram.feature.settings.ui.TwoStepVerificationSummary
 import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
+import dev.kyralabs.pingogram.feature.settings.ui.reflowLicenseText
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -237,6 +242,77 @@ internal object SettingsPreviewData {
         usernameStatus = usernameStatus,
     )
 
+    /** The first libraries of the list, in its order (by name). */
+    val openSourceLicenses =
+        OpenSourceLicensesUiState.Content(
+            persistentListOf(
+                OpenSourceLibraryItem("androidx.activity:activity", "Activity", "1.13.0", "Apache License 2.0"),
+                OpenSourceLibraryItem(
+                    "com.mikepenz:aboutlibraries-core",
+                    "AboutLibraries Core Library",
+                    "15.3.0",
+                    "Apache License 2.0",
+                ),
+                OpenSourceLibraryItem(
+                    "androidx.compose.material3:material3",
+                    "Compose Material3 Components",
+                    "1.5.0-beta01",
+                    "Apache License 2.0",
+                ),
+                OpenSourceLibraryItem("google-sans-flex", "Google Sans Flex", null, "SIL Open Font License 1.1"),
+                OpenSourceLibraryItem("material-symbols", "Material Symbols", null, "Apache License 2.0"),
+                OpenSourceLibraryItem(
+                    "androidx.datastore:datastore-preferences-external-protobuf",
+                    "Preferences External Protobuf",
+                    "1.2.1",
+                    "BSD 3-Clause License",
+                ),
+                OpenSourceLibraryItem("org.drinkless:tdlib", "TDLib", "a94b83d67a", "Boost Software License 1.0"),
+            ),
+        )
+
+    /** TDLib's page, with the Boost license reflowed as the view model does. */
+    val openSourceLibrary =
+        OpenSourceLibraryUiState.Content(
+            id = "org.drinkless:tdlib",
+            name = "TDLib",
+            version = "a94b83d67a",
+            isMavenArtifact = true,
+            description = "The cross-platform library for building Telegram clients that Pingogram is built on.",
+            developers = "Aliaksei Levin, Arseny Smirnov",
+            website = "https://github.com/tdlib/td",
+            licenses =
+                persistentListOf(
+                    LicenseItem(
+                        id = "BSL-1.0",
+                        name = "Boost Software License 1.0",
+                        text = reflowLicenseText(BOOST_LICENSE),
+                        url = "https://www.boost.org/LICENSE_1_0.txt",
+                    ),
+                ),
+        )
+
+    /** A library whose license the build has no text of: a note and the link instead. */
+    val openSourceLibraryWithoutText =
+        OpenSourceLibraryUiState.Content(
+            id = "material-symbols",
+            name = "Material Symbols",
+            version = null,
+            isMavenArtifact = false,
+            description = null,
+            developers = "Google",
+            website = "https://fonts.google.com/icons",
+            licenses =
+                persistentListOf(
+                    LicenseItem(
+                        id = "Apache-2.0",
+                        name = "Apache License 2.0",
+                        text = null,
+                        url = "https://www.apache.org/licenses/LICENSE-2.0",
+                    ),
+                ),
+        )
+
     private fun parts(
         first: String,
         second: String,
@@ -244,3 +320,31 @@ internal object SettingsPreviewData {
 
     private fun online() = UiText.resource(R.string.settings_session_online)
 }
+
+/** The Boost Software License 1.0, as published (TDLib's `LICENSE_1_0.txt`). */
+private val BOOST_LICENSE =
+    """
+    Boost Software License - Version 1.0 - August 17th, 2003
+
+    Permission is hereby granted, free of charge, to any person or organization
+    obtaining a copy of the software and accompanying documentation covered by
+    this license (the "Software") to use, reproduce, display, distribute,
+    execute, and transmit the Software, and to prepare derivative works of the
+    Software, and to permit third-parties to whom the Software is furnished to
+    do so, all subject to the following:
+
+    The copyright notices in the Software and this entire statement, including
+    the above license grant, this restriction and the following disclaimer,
+    must be included in all copies of the Software, in whole or in part, and
+    all derivative works of the Software, unless such copies or derivative
+    works are solely in the form of machine-executable object code generated by
+    a source language processor.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
+    SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+    FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+    ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+    """.trimIndent()

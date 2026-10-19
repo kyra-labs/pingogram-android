@@ -85,7 +85,7 @@ import kotlin.math.max
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
  * - **Reactions**: tapping a badge adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
  *   haptic, the badge crossfading on the motion scheme's fast effects spring ([ReactionToggleState]); "+N" opens the
- *   actions sheet.
+ *   actions sheet at its reactions picker ([ChatEvent.ShowAllReactions]), where all of them show.
  * - **Reply quote**: tapping it shows the replied message ([ChatEvent.OpenReply]).
  * - **Highlight**: after a jump to the bubble, a `secondaryContainer` band behind the row fades in and out
  *   ([jumpHighlight]), read in the draw phase.
@@ -156,8 +156,8 @@ internal fun MessageBubbleRow(
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
- * [messageShortcuts], a toggle per reaction but the paid one, and the actions sheet, last. Cancelling the
- * [uploads] comes first, while there are some.
+ * [messageShortcuts], a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
+ * actions sheet, last. Cancelling the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -184,7 +184,14 @@ private fun bubbleActions(
             val label = reactionToggleLabel(resources, chip.label, chip.isChosen)
             action(label, ChatEvent.ToggleReaction(bubble.reactionsMessageId, chip.label))
         }
-    return fixed.map { action(resources.getString(it.label), it.event) } + reactions +
+    // What "+N" opens: every reaction, where the badges have no room for all.
+    val allReactions =
+        if (bubble.reactions.size > MAX_REACTION_BADGES) {
+            listOf(action(resources.getString(R.string.message_reactions_all), ChatEvent.ShowAllReactions(bubble.id)))
+        } else {
+            emptyList()
+        }
+    return fixed.map { action(resources.getString(it.label), it.event) } + reactions + allReactions +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 
@@ -247,7 +254,7 @@ private fun MessageBubble(
                         bubble = bubble,
                         toggles = resources.reactions,
                         onToggle = rememberReactionToggle(bubble, resources.reactions, onEvent),
-                        onMore = { onEvent(ChatEvent.ShowMessageActions(bubble.id)) },
+                        onMore = { onEvent(ChatEvent.ShowAllReactions(bubble.id)) },
                     )
                 },
             )

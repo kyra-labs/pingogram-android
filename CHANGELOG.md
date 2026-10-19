@@ -21,6 +21,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notification shade, where you can make one a priority conversation.
 - On Android 13 and later, the chat list explains why Pingogram asks to show notifications before it asks. Choose
   "Not now" and it won't ask again; if you refused before, it offers your device's notification settings instead.
+- A reactions picker: the + button at the end of a message's quick reactions shows every reaction you can add in
+  that chat, the chat's most used ones first, then your recent ones and the popular ones, with those you added
+  marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
+  message with how often it was added. Reactions that need Telegram Premium only show if you have it. Custom emoji
+  reactions show as a still picture where Telegram has one.
+- Open-source licenses: About now lists the libraries, fonts and icons Pingogram is built with, each with its
+  version and license. Tap one to read the full license text, which you can select and copy, and to open its
+  website. The list is made from the app's own build, so it always matches what you installed, and it works
+  offline.
+
+### Changed
+- The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
+  the message's actions. TalkBack offers the same as "All reactions".
 
 ## [0.3.0-beta.2] - 2026-10-19
 

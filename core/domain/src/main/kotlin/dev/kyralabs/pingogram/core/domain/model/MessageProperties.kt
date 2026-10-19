@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.model
 
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * What the current user can do with a message right now (TDLib's `messageProperties`), as far as the conversation's
@@ -28,11 +29,17 @@ data class MessageProperties(
 /**
  * The reactions the current user can add to a message (TDLib's `getMessageAvailableReactions`): only those TDLib
  * offers, without the ones that need a Telegram Premium subscription the user does not have, and without the paid star
- * reaction, which is added another way.
+ * reaction, which is added another way. Each reaction is in one list only, the first TDLib gave it in.
  *
- * @property top the reactions to offer first, in TDLib's order (the most used ones); the full list comes with the
- *   reactions picker, later.
+ * TDLib also says whether Premium users may react with any custom emoji (`allowCustomEmoji`); that needs a custom emoji
+ * picker, which Pingogram does not have, so only the custom emoji listed here are offered.
+ *
+ * @property top the reactions to offer first, in TDLib's order (the most used ones in the chat): the quick reactions.
+ * @property recent the reactions the user used recently, newest first.
+ * @property popular the reactions most used on Telegram.
  */
 data class AvailableReactions(
     val top: ImmutableList<ReactionType>,
+    val recent: ImmutableList<ReactionType> = persistentListOf(),
+    val popular: ImmutableList<ReactionType> = persistentListOf(),
 )

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -18,8 +19,12 @@ import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.Reaction
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.domain.model.Thumbnail
+import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
@@ -41,6 +46,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -52,9 +58,9 @@ import org.junit.jupiter.api.Test
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The message actions of [ChatViewModel] (`REQUIREMENTS.md` FR-C6, FR-C7): the sheet with what TDLib allows, its
- * quick reactions, replying (with drafts and process death), copying, editing, pinning, deleting, sending again,
- * reaction chips, actions TDLib no longer allows, and failures.
+ * The message actions of [ChatViewModel] (`REQUIREMENTS.md` FR-C6, FR-C7): the sheet with what TDLib allows, its quick
+ * reactions and reactions picker, replying (with drafts and process death), copying, editing, pinning, deleting,
+ * sending again, reaction chips, actions TDLib no longer allows, and failures.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatMessageActionsTest : ChatViewModelHarness() {
@@ -307,9 +313,9 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 assertEquals(
                     listOf(
-                        QuickReaction(ReactionLabel.Emoji("👍"), isChosen = false),
-                        QuickReaction(ReactionLabel.Emoji("🔥"), isChosen = true),
-                        QuickReaction(ReactionLabel.CustomEmoji(5), isChosen = false),
+                        ReactionOption(ReactionLabel.Emoji("👍"), isChosen = false),
+                        ReactionOption(ReactionLabel.Emoji("🔥"), isChosen = true),
+                        ReactionOption(ReactionLabel.CustomEmoji(5), isChosen = false),
                     ),
                     viewModel.sheet?.reactions,
                 )
@@ -323,7 +329,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 send(viewModel, ChatEvent.ShowMessageActions(1))
 
-                assertEquals(emptyList<QuickReaction>(), viewModel.sheet?.reactions)
+                assertEquals(emptyList<ReactionOption>(), viewModel.sheet?.reactions)
                 assertEquals(MessageAction.Reply, viewModel.sheet?.actions?.first())
             }
 
@@ -943,6 +949,190 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                     assertEquals(ChatEffect.ShowError(DomainError.Network), awaitItem())
                 }
+            }
+    }
+
+    @Nested
+    inner class ReactionsPicker {
+        private fun emoji(vararg emoji: String) = emoji.map { ReactionType.Emoji(it) }.toImmutableList()
+
+        private fun options(
+            vararg emoji: String,
+            chosen: String? = null,
+        ) = emoji.map { ReactionOption(ReactionLabel.Emoji(it), isChosen = it == chosen) }
+
+        private fun still(fileId: Int) =
+            Sticker(0, 100, 100, "😎", StickerFormat.Webp, thumbnail = null, file = FileRef(fileId, 0))
+
+        private fun animated(thumbnail: Thumbnail?) =
+            Sticker(0, 100, 100, "😎", StickerFormat.Tgs, thumbnail = thumbnail, file = FileRef(99, 0))
+
+        @Test
+        fun `the picker has TDLib's sections after the message's own reactions, those the user chose checked`() =
+            runViewModelTest {
+                messageActions.reactions =
+                    Outcome.Success(
+                        AvailableReactions(
+                            top = emoji("👍", "🔥"),
+                            recent = emoji("😍"),
+                            popular = emoji("🎉", "🤩"),
+                        ),
+                    )
+                val chosen = Reaction(ReactionType.Emoji("🔥"), totalCount = 2, isChosen = true)
+                val others = Reaction(ReactionType.Emoji("❤️"), totalCount = 1, isChosen = false)
+                val viewModel = privateChat(mine = outgoing(1).copy(interactionInfo = reactions(chosen, others)))
+
+                send(viewModel, ChatEvent.ShowMessageActions(1))
+
+                val sheet = viewModel.sheet!!
+                assertEquals(options("👍", "🔥", chosen = "🔥"), sheet.reactions)
+                assertEquals(false, sheet.showsPicker)
+                assertEquals(
+                    ReactionPicker(
+                        onMessage =
+                            persistentListOf(
+                                ReactionChip(ReactionLabel.Emoji("🔥"), 2, isChosen = true),
+                                ReactionChip(ReactionLabel.Emoji("❤️"), 1, isChosen = false),
+                            ),
+                        sections =
+                            persistentListOf(
+                                ReactionSection(
+                                    ReactionSectionKind.Top,
+                                    options("👍", "🔥", chosen = "🔥").toImmutableList(),
+                                ),
+                                ReactionSection(ReactionSectionKind.Recent, options("😍").toImmutableList()),
+                                ReactionSection(ReactionSectionKind.Popular, options("🎉", "🤩").toImmutableList()),
+                            ),
+                    ),
+                    sheet.picker,
+                )
+            }
+
+        @Test
+        fun `no picker where the quick row has every reaction and the bubble room for the message's`() =
+            runViewModelTest {
+                messageActions.reactions = Outcome.Success(AvailableReactions(top = emoji("👍", "🔥")))
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowMessageActions(1), ChatEvent.ExpandReactions)
+
+                assertNull(viewModel.sheet?.picker)
+                assertEquals(false, viewModel.sheet?.showsPicker)
+            }
+
+        @Test
+        fun `a message with more reactions than its badges has a picker, even with reactions off`() =
+            runViewModelTest {
+                val four = listOf("👍", "🔥", "🎉", "❤️").map { Reaction(ReactionType.Emoji(it), 1, isChosen = false) }
+                val viewModel =
+                    privateChat(mine = outgoing(1).copy(interactionInfo = reactions(*four.toTypedArray())))
+
+                send(viewModel, ChatEvent.ShowMessageActions(1))
+
+                assertEquals(emptyList<ReactionOption>(), viewModel.sheet?.reactions)
+                assertEquals(
+                    4,
+                    viewModel.sheet
+                        ?.picker
+                        ?.onMessage
+                        ?.size,
+                )
+                assertEquals(emptyList<ReactionSection>(), viewModel.sheet?.picker?.sections)
+            }
+
+        @Test
+        fun `all reactions open the sheet at its picker, which switches to the actions and back`() =
+            runViewModelTest {
+                messageActions.reactions = Outcome.Success(AvailableReactions(top = emoji("👍"), popular = emoji("🎉")))
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowAllReactions(2))
+                assertEquals(true, viewModel.sheet?.showsPicker)
+                assertEquals(2L, viewModel.sheet?.messageId)
+
+                send(viewModel, ChatEvent.CollapseReactions)
+                assertEquals(false, viewModel.sheet?.showsPicker)
+
+                send(viewModel, ChatEvent.ExpandReactions)
+                assertEquals(true, viewModel.sheet?.showsPicker)
+            }
+
+        @Test
+        fun `all reactions without a picker open the actions`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowAllReactions(2))
+
+                assertEquals(false, viewModel.sheet?.showsPicker)
+                assertEquals(MessageAction.Reply, viewModel.sheet?.actions?.first())
+            }
+
+        @Test
+        fun `a reaction from the picker goes to the message and closes the sheet`() =
+            runViewModelTest {
+                messageActions.reactions = Outcome.Success(AvailableReactions(top = emoji("👍"), popular = emoji("🎉")))
+                val viewModel = privateChat()
+                send(viewModel, ChatEvent.ShowAllReactions(2))
+
+                send(viewModel, ChatEvent.ToggleReaction(2, ReactionLabel.Emoji("🎉")))
+
+                assertNull(viewModel.sheet)
+                assertEquals(listOf("addReaction:$PRIVATE_CHAT:2:Emoji(emoji=🎉)"), messageActions.calls)
+            }
+
+        @Test
+        fun `custom emoji get the picture of their sticker once the sheet is open`() =
+            runViewModelTest {
+                messageActions.reactions =
+                    Outcome.Success(
+                        AvailableReactions(
+                            top = persistentListOf(ReactionType.CustomEmoji(5), ReactionType.Emoji("👍")),
+                            recent = persistentListOf(ReactionType.CustomEmoji(6), ReactionType.CustomEmoji(7)),
+                        ),
+                    )
+                val onMessage = Reaction(ReactionType.CustomEmoji(8), totalCount = 1, isChosen = false)
+                messageActions.customEmoji =
+                    Outcome.Success(
+                        mapOf(
+                            5L to still(fileId = 50),
+                            6L to animated(Thumbnail(ThumbnailFormat.Webp, 100, 100, FileRef(60, 0))),
+                            // An animated thumbnail is no picture: the placeholder stays.
+                            7L to animated(Thumbnail(ThumbnailFormat.Tgs, 100, 100, FileRef(70, 0))),
+                            8L to still(fileId = 80),
+                        ),
+                    )
+                val viewModel = privateChat(mine = outgoing(1).copy(interactionInfo = reactions(onMessage)))
+
+                send(viewModel, ChatEvent.ShowMessageActions(1))
+
+                assertEquals(listOf(listOf(5L, 6L, 7L, 8L)), messageActions.customEmojiRequests)
+                assertEquals(mapOf(5L to 50, 6L to 60, 8L to 80), viewModel.sheet?.customEmojiPictures)
+            }
+
+        @Test
+        fun `custom emoji TDLib cannot picture keep their placeholder, and the sheet opens anyway`() =
+            runViewModelTest {
+                messageActions.reactions =
+                    Outcome.Success(AvailableReactions(top = persistentListOf(ReactionType.CustomEmoji(5))))
+                messageActions.customEmoji = Outcome.Failure(DomainError.Network)
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowMessageActions(1))
+
+                assertEquals(emptyMap<Long, Int>(), viewModel.sheet?.customEmojiPictures)
+                assertEquals(listOf(ReactionOption(ReactionLabel.CustomEmoji(5), false)), viewModel.sheet?.reactions)
+            }
+
+        @Test
+        fun `a sheet without custom emoji asks for no pictures`() =
+            runViewModelTest {
+                messageActions.reactions = Outcome.Success(AvailableReactions(top = emoji("👍")))
+                val viewModel = privateChat()
+
+                send(viewModel, ChatEvent.ShowMessageActions(1))
+
+                assertEquals(emptyList<List<Long>>(), messageActions.customEmojiRequests)
             }
     }
 

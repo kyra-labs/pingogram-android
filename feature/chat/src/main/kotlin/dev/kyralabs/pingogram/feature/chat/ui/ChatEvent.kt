@@ -183,6 +183,20 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
+    /**
+     * The "+N" badge on message [messageId]'s bubble, or a screen reader's action for it: open the actions sheet at
+     * its reactions picker, which shows every reaction of the message.
+     */
+    data class ShowAllReactions(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The button at the end of the actions sheet's quick reactions: the sheet shows the reactions picker. */
+    data object ExpandReactions : ChatEvent
+
+    /** The reactions picker's back button: the sheet shows the quick reactions and the actions again. */
+    data object CollapseReactions : ChatEvent
+
     /** The actions sheet was dismissed without an action. */
     data object DismissMessageActions : ChatEvent
 
@@ -236,8 +250,8 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * A reaction chip of message [messageId], or a quick reaction of its actions sheet, was tapped: the user's reaction
-     * [label] goes on the message, or comes off it if they had added it.
+     * A reaction chip of message [messageId], or a reaction of its actions sheet (quick row or picker), was tapped: the
+     * user's reaction [label] goes on the message, or comes off it if they had added it.
      */
     data class ToggleReaction(
         val messageId: Long,

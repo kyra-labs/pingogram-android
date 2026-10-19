@@ -3,6 +3,7 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 // Puts the plugins on the root classpath once, so convention plugins in build-logic
 // (which only compile against them) all load the same versions.
 plugins {
+    alias(libs.plugins.aboutlibraries.android) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.android.lint) apply false

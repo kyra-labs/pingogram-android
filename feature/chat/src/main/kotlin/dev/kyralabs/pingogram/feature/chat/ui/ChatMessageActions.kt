@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.onFailure
+import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
@@ -10,19 +11,26 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.editTarget
 import dev.kyralabs.pingogram.feature.chat.ui.composer.textOrCaption
+import dev.kyralabs.pingogram.feature.chat.ui.content.asPicture
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -31,14 +39,18 @@ import kotlinx.coroutines.launch
  *
  * - **Sheet** ([show]): TDLib's properties of the message ([MessageActionRepository.properties], from memory) and its
  *   available reactions, both asked at once; it opens once the properties are there, with the reactions if TDLib gave
- *   them, and only the actions TDLib allows ([actionsOf]). A failure is a snackbar instead.
+ *   them, and only the actions TDLib allows ([actionsOf]). A failure is a snackbar instead. The pictures of its custom
+ *   emoji follow once it is open.
+ * - **Reactions picker** (`REQUIREMENTS.md` FR-C7): every reaction TDLib offers by section, after the message's own
+ *   reactions, where that shows more than the quick row and the bubble ([reactionPicker]). The sheet opens at it from a
+ *   bubble's "+N" ([show] with `showsPicker`), and switches to it and back ([showPicker]).
  * - **Actions**: each asks for the properties again, as they change with time and screen readers start actions
  *   without the sheet, and does nothing but say so ([ChatEffect.ActionUnavailable]) where TDLib no longer allows it.
  *   Replying and editing go to the [composer], which takes the focus ([ChatEffect.FocusComposer]); copying goes out as
  *   [ChatEffect.CopyText]; pinning, deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then
  *   change the history. An album is deleted, and its failed items resent, as a whole.
- * - **Reactions** ([toggleReaction]) go on or come off the message as the user had chosen them, without asking:
- *   TDLib refuses a reaction it does not offer.
+ * - **Reactions** ([toggleReaction]), from the quick row, the picker or a bubble, go on or come off the message as the
+ *   user had chosen them, without asking: TDLib refuses a reaction it does not offer.
  * - Failures go out as [ChatEffect.ShowError] snackbars.
  *
  * [current] gives the latest chat, history and composer state, from the view model's flows; null while the chat is
@@ -65,8 +77,14 @@ internal class ChatMessageActions(
     /** The sheet being prepared, which a new long press replaces. */
     private var opening: Job? = null
 
-    /** Opens the actions sheet of message [messageId] once TDLib told what it allows. */
-    fun show(messageId: Long) {
+    /**
+     * Opens the actions sheet of message [messageId] once TDLib told what it allows, at its reactions picker if
+     * [showsPicker] and the sheet has one; then asks for the pictures of the custom emoji it shows.
+     */
+    fun show(
+        messageId: Long,
+        showsPicker: Boolean = false,
+    ) {
         opening?.cancel()
         opening =
             scope.launch {
@@ -81,22 +99,28 @@ internal class ChatMessageActions(
                     }
 
                     is Outcome.Success -> {
-                        val top =
-                            reactions
-                                .await()
-                                .getOrNull()
-                                ?.top
-                                .orEmpty()
-                        mutableSheet.value =
+                        val available = reactions.await().getOrNull() ?: NO_REACTIONS
+                        val quick = reactionOptions(available.top.take(MAX_QUICK_REACTIONS), reactionsMessage)
+                        val picker = reactionPicker(available, quick.size, reactionsMessage)
+                        val sheet =
                             MessageActionsSheet(
                                 messageId = messageId,
                                 reactionsMessageId = reactionsMessage.id,
-                                reactions = quickReactions(top, reactionsMessage),
+                                reactions = quick,
                                 actions = context.actionsOf(message, properties.value).toImmutableList(),
+                                picker = picker,
+                                showsPicker = showsPicker && picker != null,
                             )
+                        mutableSheet.value = sheet
+                        loadCustomEmojiPictures(sheet)
                     }
                 }
             }
+    }
+
+    /** Shows the open sheet's reactions picker if [shown] and it has one, else its quick reactions and actions. */
+    fun showPicker(shown: Boolean) {
+        mutableSheet.update { sheet -> sheet?.copy(showsPicker = shown && sheet.picker != null) }
     }
 
     fun dismiss() {
@@ -220,26 +244,89 @@ internal class ChatMessageActions(
         scope.launch { call().onFailure { onEffect(ChatEffect.ShowError(it)) } }
     }
 
-    /** TDLib's [top] reactions, chosen as [message]'s reactions are, at most [MAX_QUICK_REACTIONS]. */
-    private fun quickReactions(
-        top: List<ReactionType>,
+    /**
+     * The pictures of the custom emoji [sheet] shows, added to it while it is open (`getCustomEmojiStickers`, usually
+     * from TDLib's memory). Without them, or when TDLib cannot give them, custom emoji show their placeholder.
+     */
+    private suspend fun loadCustomEmojiPictures(sheet: MessageActionsSheet) {
+        val ids = sheet.customEmojiIds()
+        val stickers = if (ids.isEmpty()) null else repository.customEmojiStickers(ids).getOrNull()
+        val pictures =
+            stickers
+                .orEmpty()
+                .mapNotNull { (id, sticker) -> sticker.pictureFileId?.let { id to it } }
+                .toMap()
+        if (pictures.isNotEmpty()) {
+            mutableSheet.update { open ->
+                open?.takeIf { it.messageId == sheet.messageId }?.copy(customEmojiPictures = pictures.toImmutableMap())
+            }
+        }
+    }
+
+    /** [types] as the sheet offers them, chosen as [message]'s reactions are. */
+    private fun reactionOptions(
+        types: List<ReactionType>,
         message: Message,
-    ) = top
-        .take(MAX_QUICK_REACTIONS)
-        .map { type ->
-            val chosen =
-                message.interactionInfo
-                    ?.reactions
-                    .orEmpty()
-                    .any { it.type == type && it.isChosen }
-            QuickReaction(type.label, chosen)
-        }.toImmutableList()
+    ): ImmutableList<ReactionOption> {
+        val chosen =
+            message.interactionInfo
+                ?.reactions
+                .orEmpty()
+                .filter { it.isChosen }
+                .mapTo(mutableSetOf()) { it.type }
+        return types.map { ReactionOption(it.label, isChosen = it in chosen) }.toImmutableList()
+    }
+
+    /**
+     * The reactions picker of [message] with the [available] reactions: the message's own, then TDLib's sections. Null
+     * where it would show nothing that the [quickCount] quick reactions and the message's bubble do not: every
+     * available reaction is in the quick row, and the bubble has room for all of the message's reactions.
+     */
+    private fun reactionPicker(
+        available: AvailableReactions,
+        quickCount: Int,
+        message: Message,
+    ): ReactionPicker? {
+        val sections =
+            listOf(
+                ReactionSectionKind.Top to available.top,
+                ReactionSectionKind.Recent to available.recent,
+                ReactionSectionKind.Popular to available.popular,
+            ).filter { (_, types) -> types.isNotEmpty() }
+                .map { (kind, types) -> ReactionSection(kind, reactionOptions(types, message)) }
+        val onMessage = message.reactionChips()
+        val offersMore = sections.sumOf { it.reactions.size } > quickCount
+        val showsMore = onMessage.size > MAX_REACTION_BADGES
+        return if (offersMore || showsMore) ReactionPicker(onMessage, sections.toImmutableList()) else null
+    }
 
     private companion object {
         /** Quick reactions at most: two rows of TDLib's reaction picker. */
         const val MAX_QUICK_REACTIONS = 16
+
+        val NO_REACTIONS = AvailableReactions(persistentListOf())
     }
 }
+
+/** The custom emoji [this] shows: in its quick row, in its picker and on its message. */
+private fun MessageActionsSheet.customEmojiIds(): List<Long> {
+    val labels =
+        reactions.map { it.label } +
+            picker
+                ?.sections
+                .orEmpty()
+                .flatMap { section -> section.reactions.map { it.label } } +
+            picker?.onMessage.orEmpty().map { it.label }
+    return labels.filterIsInstance<ReactionLabel.CustomEmoji>().map { it.customEmojiId }.distinct()
+}
+
+/** The TDLib file that pictures this sticker: itself if it is a still, else its thumbnail if that is a picture. */
+private val Sticker.pictureFileId: Int?
+    get() =
+        when (format) {
+            StickerFormat.Webp -> file.id
+            StickerFormat.Tgs, StickerFormat.Webm -> thumbnail?.asPicture()?.file?.id
+        }
 
 /**
  * The latest state the actions depend on: the [chat], its loaded [history], the current user, and whether the user can

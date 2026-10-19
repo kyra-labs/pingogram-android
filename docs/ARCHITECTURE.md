@@ -187,6 +187,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   by `pingogram.android.application`). CI writes the file from GitHub secrets. A missing file or
   key, a non-integer id or a hash that is not 32 hex characters fails configuration with a
   readable message that names the key but never its value.
+- Open-source licenses (About, FR-S1): `:app` applies the AboutLibraries Gradle plugin
+  (`com.mikepenz.aboutlibraries.plugin.android`, offline), which writes each variant's runtime
+  dependencies into its raw resource `aboutlibraries` at build time, merged with
+  `config/aboutlibraries/` (TDLib's license, Google Sans Flex, Material Symbols, and the texts of
+  every license, never downloaded). `:app`'s `GeneratedOpenSourceLicensesRepository` reads it with
+  the platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`;
+  `feature:settings` draws the screens (`docs/adr/0002-open-source-licenses.md`). A dependency
+  under a license without a text there fails `GeneratedOpenSourceLicensesRepositoryTest`.
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
   for GitHub releases: `foss`. Build types: `debug` (suffix `.debug`, debuggable), `release`
   (R8 full mode, resource shrinking, Baseline Profiles).

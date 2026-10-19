@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.pingogram.android.hilt)
     alias(libs.plugins.pingogram.android.roborazzi)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 android {
@@ -97,4 +98,17 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)
+}
+
+// The open-source licenses screen (feature:settings, docs/adr/0002-open-source-licenses.md): each variant's runtime
+// dependencies, listed at build time into its raw resource `aboutlibraries`, with the libraries and license texts of
+// config/aboutlibraries added (what is not on Maven: TDLib's license, Google Sans Flex, Material Symbols).
+aboutLibraries {
+    // No network at build time either: license texts come from config/aboutlibraries/licenses, never downloaded.
+    offlineMode = true
+    collect {
+        configPath = rootProject.layout.projectDirectory.dir("config/aboutlibraries")
+        // BOMs only align versions; they put no code into the app.
+        includePlatform = false
+    }
 }

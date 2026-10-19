@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
  * @property reactionBadge the smallest a reaction's round badge on a bubble's corner gets: its diameter with one emoji.
  * @property reactionBadgeRing the ring in the conversation's background color around a reaction badge, which sets it
  *   off from the bubble it overlaps.
+ * @property reactionTile the width of a reaction with its count in the reactions picker's carousel of a message's
+ *   reactions, at 100% font scale.
  * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll.
  * @property mediaMaxHeight the tallest a photo or a video gets in a message.
  * @property mediaMinSize the shortest side of a photo or a video in a message: panoramas and tall screenshots are
@@ -75,6 +77,7 @@ data class PingogramSizes(
     val quoteBarWidth: Dp = 3.dp,
     val reactionBadge: Dp = 28.dp,
     val reactionBadgeRing: Dp = 2.dp,
+    val reactionTile: Dp = 64.dp,
     val mediaMaxWidth: Dp = 280.dp,
     val mediaMaxHeight: Dp = 360.dp,
     val mediaMinSize: Dp = 120.dp,

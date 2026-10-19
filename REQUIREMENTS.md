@@ -108,7 +108,8 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-L6 Must: Search (global): chats, contacts, messages, via `searchChats`, `searchMessages`,
   with recent searches, using the M3 search bar, opened from the search button beside the floating
   navigation bar (the rail's button on larger windows; `docs/DESIGN_SYSTEM.md` §6.1).
-- FR-L7 Must: FAB → new message / new group / new channel / new contact as an **FAB menu**.
+- FR-L7 Must: a "New chat" FAB (medium extended, collapsing on scroll) opening a New chat screen with new
+  group / new channel / new contact and the contacts, with a container transform (`docs/DESIGN_SYSTEM.md` §6).
 - FR-L8 Should: Selection mode (long-press) with bulk actions in a **floating toolbar**.
 - FR-L9 Should: Archived chats screen with the same list component.
 
@@ -127,8 +128,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-C5 Must: Composer: multi-line text, formatting menu, attach sheet (gallery via Photo
   Picker, file, camera, location, contact, poll), voice record (hold), emoji & sticker panel,
   send-as (channels), silent send, schedule send, reply/edit bar, draft sync.
-- FR-C6 Must: Message actions bottom sheet: reply, copy, forward, edit, pin, delete (for me /
-  for all), select, report, save to downloads, react.
+- FR-C6 Must: Message actions on long-press, in a menu anchored to the lifted message (a bottom sheet with
+  TalkBack or in short windows): reply, copy, forward, edit, pin, delete (for me / for all), select, report,
+  save to downloads, react.
 - FR-C7 Must: Reactions picker (quick row + full grid) with Expressive spring animations.
 - FR-C8 Must: Chat header → profile; typing/online status; muted state; call buttons (later).
 - FR-C9 Should: Threads / comments, topics in forums, pinned messages bar with cycling.
@@ -233,7 +235,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 Every screen must satisfy this list before merge:
 
 - [ ] Material 3 Expressive theme (`MaterialExpressiveTheme`), expressive `MotionScheme`, full compliance audit (`docs/DESIGN_SYSTEM.md` §12)
-- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; dark `GRAD −25`
+- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; `GRAD` 0
 - [ ] Dynamic color on Android 12+ with brand-seeded fallback; tonal palettes, not hard-coded hex
 - [ ] Edge-to-edge (`enableEdgeToEdge()`), insets via `WindowInsets` / `Scaffold` content padding
 - [ ] Predictive back (`android:enableOnBackInvokedCallback="true"`, `PredictiveBackHandler`

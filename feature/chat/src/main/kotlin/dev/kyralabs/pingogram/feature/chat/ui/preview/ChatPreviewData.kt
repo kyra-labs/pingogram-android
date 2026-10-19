@@ -24,7 +24,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.MessageActionsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.MessagePlayback
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
-import dev.kyralabs.pingogram.feature.chat.ui.QuickReaction
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
@@ -517,18 +516,12 @@ internal object ChatPreviewData {
     val error =
         ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network), composer = canWrite)
 
-    /** The quick reactions of the actions sheets, the user's [chosen] one checked. */
-    private fun quickReactions(chosen: String?): ImmutableList<QuickReaction> =
-        listOf("👍", "❤️", "🔥", "🎉", "😁", "😢", "🤔", "👏")
-            .map { QuickReaction(ReactionLabel.Emoji(it), isChosen = it == chosen) }
-            .toImmutableList()
-
     /** The actions sheet of the user's own message 6 in [privateChat]: everything, with pinning for oneself. */
     val ownMessageActions =
         MessageActionsSheet(
             messageId = 6,
             reactionsMessageId = 6,
-            reactions = quickReactions(chosen = null),
+            reactions = ReactionPreviewData.reactionOptions(ReactionPreviewData.topReactions),
             actions =
                 persistentListOf(
                     MessageAction.Reply,
@@ -538,20 +531,34 @@ internal object ChatPreviewData {
                     MessageAction.PinForSelf,
                     MessageAction.Delete,
                 ),
+            picker = ReactionPreviewData.reactionPicker(onMessage = persistentListOf(), chosen = null),
         )
 
-    /** The actions sheet of Grace's message 24 in [groupChat], whose fire the user chose: no editing. */
+    /**
+     * The actions sheet of Grace's message 24 in [groupChat], whose fire the user chose: no editing. Its picker shows
+     * the message's reactions, one a custom emoji, and a recent custom emoji, both without a picture.
+     */
     val incomingMessageActions =
         MessageActionsSheet(
             messageId = 24,
             reactionsMessageId = 24,
-            reactions = quickReactions(chosen = "🔥"),
+            reactions = ReactionPreviewData.reactionOptions(ReactionPreviewData.topReactions, chosen = "🔥"),
             actions =
                 persistentListOf(
                     MessageAction.Reply,
                     MessageAction.Copy,
                     MessageAction.Pin,
                     MessageAction.Delete,
+                ),
+            picker =
+                ReactionPreviewData.reactionPicker(
+                    onMessage =
+                        persistentListOf(
+                            ReactionChip(ReactionLabel.Emoji("🔥"), 5, isChosen = true),
+                            ReactionChip(ReactionLabel.Emoji("❤️"), 3, isChosen = false),
+                            ReactionChip(ReactionLabel.CustomEmoji(customEmojiId = 5), 1, isChosen = false),
+                        ),
+                    chosen = "🔥",
                 ),
         )
 
@@ -571,6 +578,9 @@ internal object ChatPreviewData {
 
     /** [groupChat] with the actions sheet of someone else's message. */
     val incomingActionsSheet = groupChat.copy(messageActions = incomingMessageActions)
+
+    /** [incomingActionsSheet] at its reactions picker, as a bubble's "+N" or the sheet's expand button opens it. */
+    val reactionPickerSheet = groupChat.copy(messageActions = incomingMessageActions.copy(showsPicker = true))
 
     /** [privateChat] asking before message 6 is deleted. */
     val deleteConfirmation = privateChat.copy(deleteDialog = deleteForBoth)

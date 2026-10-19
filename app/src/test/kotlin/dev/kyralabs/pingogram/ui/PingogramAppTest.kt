@@ -20,16 +20,19 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.NavDestination
@@ -56,6 +59,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
@@ -321,6 +326,36 @@ class PingogramAppTest {
             .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `about opens the open-source licenses, and they open a library's page with its license`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        text(SettingsR.string.settings_about).performClick()
+        composeRule.waitForIdle()
+
+        text(SettingsR.string.settings_about_licenses).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<OpenSourceLicensesRoute>() == true)
+        assertNoNavigation()
+        // The list comes from the build's raw resource, read on the IO dispatcher.
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasScrollToKeyAction()).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNode(hasScrollToKeyAction()).performScrollToKey("org.drinkless:tdlib")
+        composeRule.onNodeWithText("TDLib").performClick()
+        composeRule.waitForIdle()
+
+        val route = navController.currentBackStackEntry?.toRoute<OpenSourceLibraryRoute>()
+        assertEquals("org.drinkless:tdlib", route?.libraryId)
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithText("Boost Software License 1.0").fetchSemanticsNodes().isNotEmpty()
+        }
+        pressBack()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<OpenSourceLicensesRoute>() == true)
     }
 
     @Test

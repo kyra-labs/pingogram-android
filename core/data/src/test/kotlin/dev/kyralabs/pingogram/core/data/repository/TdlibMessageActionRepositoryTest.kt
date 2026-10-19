@@ -6,6 +6,8 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -15,6 +17,7 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -104,8 +107,11 @@ class TdlibMessageActionRepositoryTest {
 
     @Nested
     inner class Reactions {
-        private fun available(vararg top: TdApi.AvailableReaction) =
-            TdApi.AvailableReactions(arrayOf(*top), emptyArray(), emptyArray(), false, false, null)
+        private fun available(
+            vararg top: TdApi.AvailableReaction,
+            recent: Array<TdApi.AvailableReaction> = emptyArray(),
+            popular: Array<TdApi.AvailableReaction> = emptyArray(),
+        ) = TdApi.AvailableReactions(arrayOf(*top), recent, popular, true, false, null)
 
         private fun emoji(
             emoji: String,
@@ -164,6 +170,107 @@ class TdlibMessageActionRepositoryTest {
                 val result = repository.availableReactions(CHAT, MESSAGE)
 
                 assertEquals(Outcome.Success(AvailableReactions(persistentListOf(ReactionType.Emoji("👍")))), result)
+            }
+
+        @Test
+        fun `the recent and popular reactions follow, each reaction in its first list only`() =
+            runTest {
+                client.on(
+                    TdApi.GetMessageAvailableReactions::class,
+                    TdResult.Success(
+                        available(
+                            emoji("👍"),
+                            recent =
+                                arrayOf(
+                                    emoji("🔥"),
+                                    emoji("👍"),
+                                    TdApi.AvailableReaction(TdApi.ReactionTypeCustomEmoji(5), false),
+                                ),
+                            popular = arrayOf(emoji("🔥"), emoji("🎉"), emoji("🤩", needsPremium = true)),
+                        ),
+                    ),
+                )
+
+                val result = repository.availableReactions(CHAT, MESSAGE)
+
+                assertEquals(
+                    Outcome.Success(
+                        AvailableReactions(
+                            top = persistentListOf(ReactionType.Emoji("👍")),
+                            recent = persistentListOf(ReactionType.Emoji("🔥"), ReactionType.CustomEmoji(5)),
+                            popular = persistentListOf(ReactionType.Emoji("🎉")),
+                        ),
+                    ),
+                    result,
+                )
+            }
+
+        @Test
+        fun `reactions off give no reactions`() =
+            runTest {
+                val off =
+                    TdApi.AvailableReactions(
+                        emptyArray(),
+                        emptyArray(),
+                        emptyArray(),
+                        false,
+                        false,
+                        TdApi.ReactionUnavailabilityReasonGuest(),
+                    )
+                client.on(TdApi.GetMessageAvailableReactions::class, TdResult.Success(off))
+
+                assertEquals(
+                    Outcome.Success(AvailableReactions(persistentListOf())),
+                    repository.availableReactions(CHAT, MESSAGE),
+                )
+            }
+
+        @Test
+        fun `custom emoji stickers come by their custom emoji id`() =
+            runTest {
+                val still =
+                    TdApiFixtures.sticker(emoji = "😎", file = TdApiFixtures.file(id = 60)).apply {
+                        fullType = TdApi.StickerFullTypeCustomEmoji(5, false)
+                    }
+                val animated =
+                    TdApiFixtures.sticker(format = TdApi.StickerFormatTgs(), file = TdApiFixtures.file(id = 61)).apply {
+                        fullType = TdApi.StickerFullTypeCustomEmoji(6, false)
+                    }
+                // Not a custom emoji: left out.
+                val regular = TdApiFixtures.sticker(file = TdApiFixtures.file(id = 62))
+                client.on(
+                    TdApi.GetCustomEmojiStickers::class,
+                    TdResult.Success(TdApi.Stickers(arrayOf(still, animated, regular))),
+                )
+
+                val result = repository.customEmojiStickers(listOf(5, 6, 5)) as Outcome.Success
+
+                assertEquals(
+                    listOf(5L, 6L),
+                    client
+                        .sentOf<TdApi.GetCustomEmojiStickers>()
+                        .single()
+                        .customEmojiIds
+                        .toList(),
+                )
+                assertEquals(setOf(5L, 6L), result.value.keys)
+                assertEquals(
+                    60,
+                    result.value
+                        .getValue(5)
+                        .file.id,
+                )
+                assertEquals(StickerFormat.Tgs, result.value.getValue(6).format)
+            }
+
+        @Test
+        fun `no custom emoji asks TDLib nothing`() =
+            runTest {
+                assertEquals(
+                    Outcome.Success(persistentMapOf<Long, Sticker>()),
+                    repository.customEmojiStickers(emptyList()),
+                )
+                assertEquals(emptyList<TdApi.Function<*>>(), client.sent)
             }
 
         @Test

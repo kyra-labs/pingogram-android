@@ -86,6 +86,9 @@ Delete `keystore.b64` from disk afterwards.
 3. Copy `OFL.txt` from the zip to `core/ui/src/main/assets/licenses/google_sans_flex_OFL.txt`
    (not into `res/font/`: Android rejects non-font files there and the build fails). The
    license allows bundling and redistribution; shipping it in `assets/` keeps it in the APK.
+   The open-source licenses screen shows the same text from
+   `config/aboutlibraries/licenses/OFL-1.1.json`; if the font's license ever changes, update both
+   (a unit test compares them).
 4. Commit both files (`git add -f` is not needed; they are not ignored). Claude Code will wire
    the type scale when it starts M0.
 
