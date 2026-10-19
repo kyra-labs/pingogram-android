@@ -39,6 +39,7 @@ abstract class ChatViewModelHarness {
     protected val messages = FakeMessageRepository()
     protected val messageActions = FakeMessageActionRepository()
     protected val attachments = FakeAttachmentRepository()
+    protected val sponsored = FakeSponsoredMessageRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
     protected val actions = FakeChatActionRepository()
@@ -77,6 +78,7 @@ abstract class ChatViewModelHarness {
                 chatRepository = chats,
                 messageRepository = messages,
                 messageActionRepository = messageActions,
+                sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
                 userRepository = users,
                 groupRepository = groups,
@@ -159,7 +161,10 @@ abstract class ChatViewModelHarness {
 
     protected val ChatViewModel.subtitle get() = state.header?.subtitle
 
-    /** The items as short descriptions, newest first: `m<id>`, `s<id>` for service messages, dates and the divider. */
+    /**
+     * The items as short descriptions, newest first: `m<id>`, `s<id>` for service messages, dates, the divider and
+     * `ad<id>` for sponsored messages.
+     */
     protected fun ChatViewModel.outline(): List<String> =
         items.map { item ->
             when (item) {
@@ -167,6 +172,7 @@ abstract class ChatViewModelHarness {
                 is ChatItem.Service -> "s${item.id}"
                 is ChatItem.DateSeparator -> "date:${LocalDate.ofEpochDay(item.epochDay)}"
                 is ChatItem.UnreadDivider -> "unread"
+                is ChatItem.Sponsored -> "ad${item.card.id}"
             }
         }
 

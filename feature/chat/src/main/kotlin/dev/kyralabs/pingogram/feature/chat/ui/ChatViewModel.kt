@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
@@ -138,6 +139,9 @@ import java.util.Locale
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
  *   ([ChatUiState.poll], [pollEditor]), each taking the composer's reply along. The uploads of the messages being sent
  *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
+ *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
+ *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
  * - **Starting**: the view model is created in the frame that first composes the screen; what it starts (loading the
  *   messages it opens at, following the composer's text and drafts, reporting viewed messages) runs once that frame is
  *   done, so the frame does not wait for it.
@@ -159,6 +163,7 @@ class ChatViewModel internal constructor(
     private val chatRepository: ChatRepository,
     private val messageRepository: MessageRepository,
     messageActionRepository: MessageActionRepository,
+    sponsoredMessageRepository: SponsoredMessageRepository,
     attachmentRepository: AttachmentRepository,
     private val userRepository: UserRepository,
     groupRepository: GroupRepository,
@@ -180,6 +185,7 @@ class ChatViewModel internal constructor(
         chatRepository: ChatRepository,
         messageRepository: MessageRepository,
         messageActionRepository: MessageActionRepository,
+        sponsoredMessageRepository: SponsoredMessageRepository,
         attachmentRepository: AttachmentRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
@@ -197,6 +203,7 @@ class ChatViewModel internal constructor(
         chatRepository,
         messageRepository,
         messageActionRepository,
+        sponsoredMessageRepository,
         attachmentRepository,
         userRepository,
         groupRepository,
@@ -243,6 +250,16 @@ class ChatViewModel internal constructor(
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
 
     private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
+
+    private val sponsored =
+        ChatSponsoredMessages(
+            chatId = chatId,
+            repository = sponsoredMessageRepository,
+            views = views,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+            log = log,
+        )
 
     private val playback =
         ChatPlayback(
@@ -456,6 +473,7 @@ class ChatViewModel internal constructor(
             .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
             .combine(files.uploadsOf(history)) { state, uploads -> state.copy(uploads = uploads) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
+            .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -470,6 +488,7 @@ class ChatViewModel internal constructor(
             attachments.start()
             views.start()
             window.open()
+            sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
     }
 
@@ -585,6 +604,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
 
             is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
+
+            is SponsoredEvent -> sponsored.onEvent(event)
         }
     }
 
@@ -606,7 +627,10 @@ class ChatViewModel internal constructor(
             if (open) chatRepository.openChat(chatId) else chatRepository.closeChat(chatId)
         }
         // Once openChat is sent: TDLib reads the messages viewed in an open chat only.
-        if (open) views.setOpen(true)
+        if (open) {
+            views.setOpen(true)
+            sponsored.onStarted()
+        }
     }
 
     /**

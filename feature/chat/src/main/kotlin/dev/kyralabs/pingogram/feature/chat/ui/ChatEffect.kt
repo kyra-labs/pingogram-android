@@ -95,4 +95,31 @@ sealed interface ChatEffect {
     ) : ChatEffect {
         override fun toString() = "OpenLocation(…)"
     }
+
+    /** Open [url], a sponsored message's link, with the platform's handler; a snackbar if no app on the device can. */
+    data class OpenUrl(
+        val url: String,
+    ) : ChatEffect {
+        override fun toString() = "OpenUrl(…)"
+    }
+
+    /** What came of reporting a sponsored message: a snackbar says it. */
+    data class SponsoredNotice(
+        val notice: SponsoredReportNotice,
+    ) : ChatEffect
+}
+
+/** What a report of a sponsored message came to ([ChatEffect.SponsoredNotice]). */
+enum class SponsoredReportNotice {
+    /** Telegram has the report; the ad is gone from the list. */
+    Reported,
+
+    /** Telegram hid sponsored messages for the user. */
+    AdsHidden,
+
+    /** Hiding ads needs Telegram Premium; said, never offered. */
+    PremiumRequired,
+
+    /** Telegram did not take the report. */
+    ReportFailed,
 }

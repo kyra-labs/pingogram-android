@@ -36,6 +36,7 @@ import kotlinx.collections.immutable.persistentMapOf
  *   of an album by its own); messages not being sent are missing.
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
+ * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
  */
 @Immutable
 data class ChatUiState(
@@ -51,6 +52,7 @@ data class ChatUiState(
     val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
+    val sponsoredSheet: SponsoredSheet? = null,
 )
 
 /**
@@ -268,6 +270,17 @@ sealed interface ChatItem {
         override val date: UiText,
     ) : ChatItem {
         override val key: Any get() = UNREAD_DIVIDER_KEY
+    }
+
+    /**
+     * A sponsored message of a channel or bot (`REQUIREMENTS.md` §2), a card among the messages, never one of them:
+     * after the newest message, or after the one it was placed below ([withSponsored]). [date] is that message's.
+     */
+    data class Sponsored(
+        val card: SponsoredCard,
+        override val date: UiText,
+    ) : ChatItem {
+        override val key: Any get() = sponsoredKey(card.id)
     }
 
     companion object {

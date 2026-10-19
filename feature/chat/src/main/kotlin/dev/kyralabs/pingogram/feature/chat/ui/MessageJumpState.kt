@@ -140,7 +140,7 @@ internal fun ChatItem.showsMessage(messageId: Long): Boolean =
     when (this) {
         is ChatItem.Bubble -> id == messageId || album?.messageIds?.contains(messageId) == true
         is ChatItem.Service -> id == messageId
-        is ChatItem.DateSeparator, is ChatItem.UnreadDivider -> false
+        is ChatItem.DateSeparator, is ChatItem.UnreadDivider, is ChatItem.Sponsored -> false
     }
 
 /**
@@ -342,7 +342,7 @@ private fun LazyListLayoutInfo.showsEntry(
 ): Boolean = visibleItemsInfo.any { it.index == index && it.key == key }
 
 /** The height of the viewport inside the content padding. */
-private val LazyListLayoutInfo.viewport: Int get() = viewportSize.height - beforeContentPadding - afterContentPadding
+internal val LazyListLayoutInfo.viewport: Int get() = viewportSize.height - beforeContentPadding - afterContentPadding
 
 /**
  * Moves the entry with [key] to the offset [targetOffset] gives for the viewport's height and the entry's: by the

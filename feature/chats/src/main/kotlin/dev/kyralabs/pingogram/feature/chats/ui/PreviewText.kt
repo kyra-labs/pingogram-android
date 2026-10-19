@@ -79,7 +79,10 @@ private data class PreviewParts(
     }
 }
 
-/** Two lines at most, in `bodyMedium`; screen readers get the row's description instead. */
+/**
+ * One line, in `bodyMedium`, with the sender inline: Material's two-line list item, 72 dp rows of one height
+ * (`docs/DESIGN_SYSTEM.md` §6–7). Screen readers get the row's description instead.
+ */
 @Composable
 internal fun ChatPreviewText(preview: PreviewText) {
     Text(
@@ -87,7 +90,7 @@ internal fun ChatPreviewText(preview: PreviewText) {
         modifier = Modifier.clearAndSetSemantics {},
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         overflow = TextOverflow.Ellipsis,
-        maxLines = 2,
+        maxLines = 1,
         style = MaterialTheme.typography.bodyMedium,
     )
 }

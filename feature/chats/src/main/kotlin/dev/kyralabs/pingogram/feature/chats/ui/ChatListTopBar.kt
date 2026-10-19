@@ -19,9 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -73,12 +71,9 @@ internal fun ChatListScreenTopBar(
 
 /**
  * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
- * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2). Collapsing the bar as the list scrolls only relayouts it: the
- * bar reads its scroll state in the layout and draw phases.
- *
- * The connection pill ([ConnectionPill]) sits below the bar, not in its subtitle slot: the flexible bar composes its
- * subtitle twice, in its collapsed row and in its expanded area, and cross-fades the two while it collapses, which
- * showed two pills at once mid-scroll. Below the bar there is only one, which stays in view with the bar collapsed.
+ * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (64 dp) with
+ * `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the screen (§7). The connection pill
+ * ([ConnectionPill]) sits below the bar.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
@@ -96,8 +91,14 @@ internal fun ChatListTopBar(
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-            MediumFlexibleTopAppBar(
-                title = { ChatListTitle(selectedCount) },
+            TopAppBar(
+                title = {
+                    SelectionTitle(
+                        title = stringResource(R.string.chat_list_title),
+                        selectedCount = selectedCount,
+                        style = MaterialTheme.typography.titleLargeEmphasized,
+                    )
+                },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
@@ -121,23 +122,6 @@ internal fun ChatListTopBar(
             }
         }
     }
-}
-
-/**
- * "Pingogram", or "3 selected" in selection mode ([selectedCount]), in the emphasized variant of the style the bar
- * sets: `headlineMedium` while expanded, `titleLarge` collapsed (`docs/DESIGN_SYSTEM.md` §3.3). The bar composes the
- * title once for each state.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ChatListTitle(selectedCount: Int?) {
-    val typography = MaterialTheme.typography
-    val collapsed = LocalTextStyle.current.fontSize == typography.titleLarge.fontSize
-    SelectionTitle(
-        title = stringResource(R.string.chat_list_title),
-        selectedCount = selectedCount,
-        style = if (collapsed) typography.titleLargeEmphasized else typography.headlineMediumEmphasized,
-    )
 }
 
 /**

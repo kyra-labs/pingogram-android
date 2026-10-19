@@ -65,7 +65,7 @@ internal fun ArchiveRow(
                 photo = null,
                 name = title,
                 id = ARCHIVE_AVATAR_ID,
-                size = MaterialTheme.sizes.avatarMedium,
+                size = MaterialTheme.sizes.avatarRow,
                 placeholderIcon = UiR.drawable.ic_archive,
             )
         },
@@ -116,10 +116,10 @@ private fun archiveSummary(entry: ArchiveEntry): String {
 }
 
 /**
- * The avatar placeholder's id: it picks the neutral `surfaceVariant` color pair, the seventh of the avatar colors
- * (`docs/DESIGN_SYSTEM.md` §2.2), so the archive does not look like one of the chats.
+ * The avatar placeholder's id: it picks the neutral `surfaceContainerHighest` color pair, the fourth of the avatar
+ * colors (`docs/DESIGN_SYSTEM.md` §2.2), so the archive does not look like one of the chats.
  */
-private const val ARCHIVE_AVATAR_ID = 6L
+private const val ARCHIVE_AVATAR_ID = 3L
 
 @PingogramPreviews
 @Composable

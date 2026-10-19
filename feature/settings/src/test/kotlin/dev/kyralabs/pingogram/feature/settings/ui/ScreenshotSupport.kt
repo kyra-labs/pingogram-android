@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import org.junit.rules.ExternalResource
 import org.robolectric.RuntimeEnvironment
@@ -37,7 +38,8 @@ class ComponentActivityRegistration : ExternalResource() {
 
 /**
  * Shows [content] in [PingogramTheme] with brand colors in [themeMode], with true-black surfaces if [amoled], and
- * captures the whole screen, dialogs included, as the golden `src/test/snapshots/<test class>.<name>.png`.
+ * captures the whole screen, dialogs included, as the golden `src/test/snapshots/<test class>.<name>.png`: once loading
+ * has taken [LoadingIndicatorDelay], so a page that is still loading shows its delayed indicator.
  */
 @OptIn(ExperimentalRoborazziApi::class)
 fun AndroidComposeTestRule<*, *>.captureScreen(
@@ -48,6 +50,8 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
     content: @Composable () -> Unit,
 ) {
     setContent { PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, content = content) }
+    waitForIdle()
+    mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
     waitForIdle()
     captureScreenRoboImage("src/test/snapshots/${testClass.name}.$name.png")
 }
