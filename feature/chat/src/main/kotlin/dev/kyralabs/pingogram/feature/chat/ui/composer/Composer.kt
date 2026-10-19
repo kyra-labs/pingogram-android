@@ -4,13 +4,16 @@ import android.view.KeyEvent.FLAG_SOFT_KEYBOARD
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,7 +32,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SplitButtonDefaults
@@ -37,14 +42,18 @@ import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -82,12 +91,15 @@ import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where the user
- * can write, a short centred label in `onSurfaceVariant` where they cannot, nothing in a channel they only read. It
- * is a `surfaceContainer` surface below the messages' sheet, which reaches under the keyboard and the system bars, edge
- * to edge, while its content stays above them.
+ * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, FR-C6, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where
+ * the user can write, below the bar of the message it replies to or edits ([ComposerBarRow]), which grows in and out on
+ * the motion scheme's springs; a short centred label in `onSurfaceVariant` where they cannot; nothing in a channel
+ * they only read. It is a `surfaceContainer` surface below the messages' sheet, which reaches under the keyboard and
+ * the system bars, edge to edge, while its content stays above them.
  *
- * [onSend] gets what to send once the user asked for it; [onFocusChanged] whether the text field has the focus.
+ * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
+ * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
+ * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar].
  */
 @Composable
 internal fun ChatBottomBar(
@@ -97,6 +109,9 @@ internal fun ChatBottomBar(
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     now: () -> Instant = Instant::now,
+    focus: ComposerFocusState = rememberComposerFocusState(),
+    onShowBarMessage: (messageId: Long) -> Unit = {},
+    onCloseBar: () -> Unit = {},
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
@@ -117,7 +132,10 @@ internal fun ChatBottomBar(
             }
 
             is ComposerUiState.Available -> {
-                Composer(composer.canSchedule, text, onSend, onFocusChanged, now, insets)
+                Column(insets) {
+                    BarArea(composer.bar, onShowBarMessage, onCloseBar)
+                    Composer(composer, text, onSend, onFocusChanged, focus, now)
+                }
             }
 
             ComposerUiState.Hidden -> {}
@@ -126,23 +144,48 @@ internal fun ChatBottomBar(
 }
 
 /**
+ * The bar of the message the composer replies to or edits, while there is one: it grows in from the top on the motion
+ * scheme's spatial spring and fades in on its effects spring, and the last bar shown stays while it leaves.
+ */
+@Composable
+private fun BarArea(
+    bar: ComposerBar?,
+    onShow: (messageId: Long) -> Unit,
+    onClose: () -> Unit,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    var shown by remember { mutableStateOf(bar) }
+    if (bar != null) shown = bar
+    AnimatedVisibility(
+        visible = bar != null,
+        enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
+        exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
+    ) {
+        shown?.let { ComposerBarRow(it, onShow, onClose) }
+    }
+}
+
+/**
  * The composer: a multi-line text field that grows to [MAX_LINES] lines and then scrolls, and once there is something
- * to send, the send split button ([SendButton]) beside it, which grows in on the motion scheme's spatial spring.
- * Formatting comes from the selection menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time
- * from [ScheduleDialog]. Sending confirms with a haptic (`HapticFeedbackType.Confirm`).
+ * to send, the send split button ([SendButton]) beside it, which grows in on the motion scheme's spatial spring; while
+ * editing, a check ([SaveEditButton]) in its place, also for an emptied caption. Formatting comes from the selection
+ * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
+ * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field.
  */
 @Composable
 private fun Composer(
-    canSchedule: Boolean,
+    composer: ComposerUiState.Available,
     text: ComposerText,
     onSend: (SendOptions) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
-    now: () -> Instant,
-    modifier: Modifier = Modifier,
+    focus: ComposerFocusState,
+    now: () -> Instant = Instant::now,
 ) {
     val haptics = LocalHapticFeedback.current
+    val edit = composer.bar as? ComposerBar.Edit
+    val currentEdit by rememberUpdatedState(edit)
     val send = { options: SendOptions ->
-        if (!text.isBlank) {
+        if (!text.isBlank || currentEdit?.canBeEmpty == true) {
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
             onSend(options)
         }
@@ -150,10 +193,11 @@ private fun Composer(
     var linking by remember { mutableStateOf<TextRange?>(null) }
     var scheduling by rememberSaveable { mutableStateOf(false) }
     val canSend by remember(text) { derivedStateOf { !text.isBlank } }
+    val focusRequester = rememberFocusRequester(focus)
     val spacing = MaterialTheme.spacing
     Row(
         modifier =
-            modifier
+            Modifier
                 .fillMaxWidth()
                 .padding(horizontal = spacing.medium, vertical = spacing.small),
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
@@ -164,16 +208,9 @@ private fun Composer(
             onSend = { send(SendOptions()) },
             onLink = { linking = it },
             onFocusChanged = onFocusChanged,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
         )
-        Appearing(visible = canSend) {
-            SendButton(
-                canSchedule = canSchedule,
-                onSend = { send(SendOptions()) },
-                onSendSilently = { send(SendOptions(silent = true)) },
-                onSchedule = { scheduling = true },
-            )
-        }
+        ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true })
     }
     linking?.let { selection ->
         LinkDialog(
@@ -194,6 +231,32 @@ private fun Composer(
                 send(SendOptions(scheduledAt = at.epochSecond))
             },
         )
+    }
+}
+
+/**
+ * The button beside the text field while there is something to send ([canSend]): the check that saves an [edit] (also
+ * for an emptied caption), else the send button, whose menu schedules where [canSchedule] ([onSchedule]).
+ */
+@Composable
+private fun RowScope.ComposerAction(
+    edit: ComposerBar.Edit?,
+    canSend: Boolean,
+    canSchedule: Boolean,
+    send: (SendOptions) -> Unit,
+    onSchedule: () -> Unit,
+) {
+    if (edit != null) {
+        Appearing(visible = canSend || edit.canBeEmpty) { SaveEditButton(onSave = { send(SendOptions()) }) }
+    } else {
+        Appearing(visible = canSend) {
+            SendButton(
+                canSchedule = canSchedule,
+                onSend = { send(SendOptions()) },
+                onSendSilently = { send(SendOptions(silent = true)) },
+                onSchedule = onSchedule,
+            )
+        }
     }
 }
 
@@ -287,112 +350,11 @@ private fun KeyEvent.isSendKey(): Boolean =
         !isMetaPressed &&
         nativeKeyEvent.flags and FLAG_SOFT_KEYBOARD == 0
 
-/**
- * The send button, a [SplitButtonLayout] as tall as the text field: the leading button sends, the trailing one opens
- * the menu of other ways to send (without sound; at a time, where [canSchedule]). The trailing button's corners morph
- * to a full circle while the menu is open, and its arrow turns on the motion scheme's spatial spring.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun SendButton(
-    canSchedule: Boolean,
-    onSend: () -> Unit,
-    onSendSilently: () -> Unit,
-    onSchedule: () -> Unit,
-) {
-    var menuOpen by rememberSaveable { mutableStateOf(false) }
-    val height = ButtonDefaults.MediumContainerHeight
-    val sendLabel = stringResource(R.string.composer_send)
-    val optionsLabel = stringResource(R.string.composer_send_options)
-    val arrowTurn by animateFloatAsState(
-        targetValue = if (menuOpen) HALF_TURN else 0f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "sendOptionsArrow",
-    )
-    SplitButtonLayout(
-        leadingButton = {
-            SplitButtonDefaults.LeadingButton(
-                onClick = onSend,
-                modifier = Modifier.heightIn(min = height).semantics { contentDescription = sendLabel },
-                shapes = SplitButtonDefaults.leadingButtonShapesFor(height),
-                contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(height),
-            ) {
-                Icon(
-                    painter = painterResource(UiR.drawable.ic_send_filled),
-                    contentDescription = null,
-                    modifier = Modifier.size(SplitButtonDefaults.leadingButtonIconSizeFor(height)),
-                )
-            }
-        },
-        trailingButton = {
-            Box {
-                SplitButtonDefaults.TrailingButton(
-                    checked = menuOpen,
-                    onCheckedChange = { menuOpen = it },
-                    modifier = Modifier.heightIn(min = height).semantics { contentDescription = optionsLabel },
-                    shapes = SplitButtonDefaults.trailingButtonShapesFor(height),
-                    contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(height),
-                ) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_keyboard_arrow_down),
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .size(SplitButtonDefaults.trailingButtonIconSizeFor(height))
-                                .graphicsLayer { rotationZ = arrowTurn },
-                    )
-                }
-                SendOptionsMenu(
-                    expanded = menuOpen,
-                    canSchedule = canSchedule,
-                    onDismiss = { menuOpen = false },
-                    onSendSilently = onSendSilently,
-                    onSchedule = onSchedule,
-                )
-            }
-        },
-    )
-}
-
-/** The other ways to send, under the send button's trailing part: without sound, and at a time where [canSchedule]. */
-@Composable
-private fun SendOptionsMenu(
-    expanded: Boolean,
-    canSchedule: Boolean,
-    onDismiss: () -> Unit,
-    onSendSilently: () -> Unit,
-    onSchedule: () -> Unit,
-) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.composer_send_silently)) },
-            onClick = {
-                onDismiss()
-                onSendSilently()
-            },
-            leadingIcon = { Icon(painterResource(UiR.drawable.ic_notifications_off), null) },
-        )
-        if (canSchedule) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.composer_schedule)) },
-                onClick = {
-                    onDismiss()
-                    onSchedule()
-                },
-                leadingIcon = { Icon(painterResource(UiR.drawable.ic_schedule), null) },
-            )
-        }
-    }
-}
-
 /** The edges the bottom bar keeps clear of: the keyboard and the navigation bar below, cutouts at the sides. */
 private val BOTTOM_EDGES = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
 
 /** The lines the text field grows to before it scrolls. */
 private const val MAX_LINES = 6
-
-/** How far the send menu's arrow turns while the menu is open, in degrees. */
-private const val HALF_TURN = 180f
 
 @PingogramPreviews
 @Composable

@@ -59,6 +59,28 @@ internal fun contentActions(
     }
 }
 
+/**
+ * The message actions screen readers get directly on [bubble], each checked against TDLib when chosen: sending a failed
+ * message again, replying to a sent one and copying its text, as [shortcuts] allow in this chat. The rest are in the
+ * actions sheet.
+ */
+internal fun messageShortcuts(
+    bubble: ChatItem.Bubble,
+    shortcuts: MessageShortcuts,
+): List<ContentAction> {
+    val isSent = bubble.status != OutgoingStatus.Pending && bubble.status != OutgoingStatus.Failed
+    return listOfNotNull(
+        ContentAction(R.string.message_action_resend, ChatEvent.Resend(bubble.id))
+            .takeIf { bubble.status == OutgoingStatus.Failed },
+        ContentAction(
+            R.string.message_action_reply,
+            ChatEvent.Reply(bubble.id),
+        ).takeIf { shortcuts.canReply && isSent },
+        ContentAction(R.string.message_action_copy, ChatEvent.Copy(bubble.id))
+            .takeIf { shortcuts.canCopy && bubble.text.text.isNotEmpty() },
+    )
+}
+
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }

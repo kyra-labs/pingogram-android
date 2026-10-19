@@ -15,15 +15,21 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.ChatItem
 import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
+import dev.kyralabs.pingogram.feature.chat.ui.DeleteMessagesDialog
+import dev.kyralabs.pingogram.feature.chat.ui.DeleteScope
 import dev.kyralabs.pingogram.feature.chat.ui.GroupPosition
 import dev.kyralabs.pingogram.feature.chat.ui.LinkPreviewCard
+import dev.kyralabs.pingogram.feature.chat.ui.MessageAction
+import dev.kyralabs.pingogram.feature.chat.ui.MessageActionsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.MessagePlayback
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
+import dev.kyralabs.pingogram.feature.chat.ui.QuickReaction
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
 import dev.kyralabs.pingogram.feature.chat.ui.SenderAvatar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
@@ -38,7 +44,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * unread divider; a group with sender names, avatars, replies, forwards, reactions and a link preview; a channel;
  * service messages; a message with every kind of formatting; media of every frame (photos, an album, a sticker, a
  * voice message, a document, a poll, a venue), with the voice message also playing; a group where the user may not
- * write; and the loading, empty, error and not-found states. The composer shows where the user can write.
+ * write; the actions sheets of an own and an incoming message, the delete confirmation, and the composer replying and
+ * editing; and the loading, empty, error and not-found states. The composer shows where the user can write.
  * Items are listed newest first, as the reverse layout shows them.
  */
 internal object ChatPreviewData {
@@ -206,7 +213,7 @@ internal object ChatPreviewData {
                             reactions(
                                 ReactionChip(ReactionLabel.Emoji("🔥"), 5, isChosen = true),
                                 ReactionChip(ReactionLabel.Emoji("❤️"), 3, isChosen = false),
-                                ReactionChip(ReactionLabel.CustomEmoji, 1, isChosen = false),
+                                ReactionChip(ReactionLabel.CustomEmoji(customEmojiId = 5), 1, isChosen = false),
                             ),
                     ),
                     bubble(
@@ -461,6 +468,95 @@ internal object ChatPreviewData {
 
     val error =
         ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network), composer = canWrite)
+
+    /** The quick reactions of the actions sheets, the user's [chosen] one checked. */
+    private fun quickReactions(chosen: String?): ImmutableList<QuickReaction> =
+        listOf("👍", "❤️", "🔥", "🎉", "😁", "😢", "🤔", "👏")
+            .map { QuickReaction(ReactionLabel.Emoji(it), isChosen = it == chosen) }
+            .toImmutableList()
+
+    /** The actions sheet of the user's own message 6 in [privateChat]: everything, with pinning for oneself. */
+    val ownMessageActions =
+        MessageActionsSheet(
+            messageId = 6,
+            reactionsMessageId = 6,
+            reactions = quickReactions(chosen = null),
+            actions =
+                persistentListOf(
+                    MessageAction.Reply,
+                    MessageAction.Copy,
+                    MessageAction.Edit,
+                    MessageAction.Pin,
+                    MessageAction.PinForSelf,
+                    MessageAction.Delete,
+                ),
+        )
+
+    /** The actions sheet of Grace's message 24 in [groupChat], whose fire the user chose: no editing. */
+    val incomingMessageActions =
+        MessageActionsSheet(
+            messageId = 24,
+            reactionsMessageId = 24,
+            reactions = quickReactions(chosen = "🔥"),
+            actions =
+                persistentListOf(
+                    MessageAction.Reply,
+                    MessageAction.Copy,
+                    MessageAction.Pin,
+                    MessageAction.Delete,
+                ),
+        )
+
+    /** Deleting message 6 of [privateChat], for Ada too if the user checks it. */
+    val deleteForBoth =
+        DeleteMessagesDialog(
+            messageIds = persistentListOf(6),
+            scope = DeleteScope.Choice(UiText.resource(R.string.message_delete_also_for, UiText.Plain("Ada Lovelace"))),
+        )
+
+    /** Deleting the album of [mediaPhotos], for everyone. */
+    val deleteAlbumForEveryone =
+        DeleteMessagesDialog(messageIds = (50L..53L).toList().toImmutableList(), scope = DeleteScope.ForEveryone)
+
+    /** [privateChat] with the actions sheet of the user's own message. */
+    val ownActionsSheet = privateChat.copy(messageActions = ownMessageActions)
+
+    /** [groupChat] with the actions sheet of someone else's message. */
+    val incomingActionsSheet = groupChat.copy(messageActions = incomingMessageActions)
+
+    /** [privateChat] asking before message 6 is deleted. */
+    val deleteConfirmation = privateChat.copy(deleteDialog = deleteForBoth)
+
+    /** [privateChat] replying to Ada's question. */
+    val replying =
+        privateChat.copy(
+            composer =
+                canWrite.copy(
+                    bar =
+                        ComposerBar.Reply(
+                            messageId = 10,
+                            sender = UiText.Plain("Ada Lovelace"),
+                            preview = UiText.Plain("Is the meetup still on for tonight?"),
+                        ),
+                ),
+        )
+
+    /** [privateChat] editing the user's message 6, whose text fills the composer. */
+    val editing =
+        privateChat.copy(
+            composer =
+                canWrite.copy(
+                    bar =
+                        ComposerBar.Edit(
+                            messageId = 6,
+                            preview = UiText.Plain(EDITED_TEXT),
+                            canBeEmpty = false,
+                        ),
+                ),
+        )
+
+    /** The text of the message [editing] edits. */
+    const val EDITED_TEXT = "Morning! I finished the draft of the talk."
 
     /** [groupChat] for a member the admins restricted: a label instead of the composer. */
     val cannotWrite =

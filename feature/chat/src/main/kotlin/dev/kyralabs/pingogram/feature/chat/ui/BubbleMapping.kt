@@ -7,7 +7,6 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.Reaction
-import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
@@ -146,16 +145,7 @@ private fun linkPreviewCard(preview: LinkPreview): LinkPreviewCard? =
         .takeIf { it.siteName.isNotBlank() || it.title.isNotBlank() || it.description.isNotBlank() }
 
 private fun reactionChip(reaction: Reaction): ReactionChip =
-    ReactionChip(
-        label =
-            when (val type = reaction.type) {
-                is ReactionType.Emoji -> ReactionLabel.Emoji(type.emoji)
-                is ReactionType.CustomEmoji -> ReactionLabel.CustomEmoji
-                ReactionType.Paid -> ReactionLabel.Paid
-            },
-        count = reaction.totalCount,
-        isChosen = reaction.isChosen,
-    )
+    ReactionChip(label = reaction.type.label, count = reaction.totalCount, isChosen = reaction.isChosen)
 
 /** The text or caption of [this] content; a poll's description; empty for content without one. */
 private val MessageContent.text: FormattedText

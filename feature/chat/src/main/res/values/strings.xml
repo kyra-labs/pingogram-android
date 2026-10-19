@@ -126,4 +126,53 @@
     <string name="composer_schedule_past">Choose a time in the future</string>
     <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
     <string name="composer_scheduled">Message scheduled for %1$s</string>
+    <!-- The bar above the text field while replying: its close button. -->
+    <string name="composer_reply_cancel">Cancel reply</string>
+    <!-- The bar above the text field while editing a message: its title and close button. -->
+    <string name="composer_edit_title">Editing</string>
+    <string name="composer_edit_cancel">Cancel editing</string>
+    <!-- The button that saves an edited message, in place of the send button. -->
+    <string name="composer_edit_save">Save changes</string>
+    <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
+    <string name="composer_bar_show">Show message</string>
+
+    <!-- Message actions (the sheet a long press opens) -->
+    <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
+    <string name="message_actions">Message actions</string>
+    <!-- Sends a message that failed to send again. -->
+    <string name="message_action_resend">Send again</string>
+    <string name="message_action_reply">Reply</string>
+    <string name="message_action_copy">Copy text</string>
+    <string name="message_action_edit">Edit</string>
+    <string name="message_action_pin">Pin</string>
+    <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->
+    <string name="message_action_pin_for_self">Pin only for me</string>
+    <string name="message_action_unpin">Unpin</string>
+    <string name="message_action_delete">Delete</string>
+    <!-- Screen readers: what a quick reaction or a reaction under a message does; %1$s is the emoji. -->
+    <string name="message_reaction_add">React with %1$s</string>
+    <string name="message_reaction_remove">Remove reaction %1$s</string>
+    <!-- The label of a copied message text on the clipboard. -->
+    <string name="message_copy_label">Message text</string>
+    <!-- A snackbar after copying a message's text, before Android 13, which confirms copies itself. -->
+    <string name="message_copied">Text copied</string>
+    <!-- A snackbar when an action is no longer allowed for a message, e.g. the time to edit it ran out. -->
+    <string name="message_action_unavailable">That isn\'t possible for this message any more</string>
+    <!-- The confirmation before a message is deleted. -->
+    <string name="message_delete_title">Delete message?</string>
+    <!-- The same for the photos and videos of an album, deleted together: %d is how many. -->
+    <plurals name="message_delete_title_many">
+        <item quantity="one">Delete %d message?</item>
+        <item quantity="other">Delete %d messages?</item>
+    </plurals>
+    <string name="message_delete_for_me_body">This deletes it only for you.</string>
+    <string name="message_delete_for_everyone_body">This deletes it for everyone in this chat.</string>
+    <!-- When the user may also delete it for the others, with the check box below. -->
+    <string name="message_delete_choice_body">This deletes it for you.</string>
+    <!-- The check box in a private chat: %1$s is the other person's name. -->
+    <string name="message_delete_also_for">Also delete for %1$s</string>
+    <!-- The check box in a group. -->
+    <string name="message_delete_for_everyone">Delete for everyone</string>
+    <string name="message_delete_confirm">Delete</string>
+    <string name="message_delete_cancel">Cancel</string>
 </resources>

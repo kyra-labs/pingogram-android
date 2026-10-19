@@ -1,8 +1,10 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -207,13 +209,16 @@ private fun RowInputs.senderNames(users: Map<Long, User>): (MessageSender) -> Ui
         }
     }
 
-/** By precedence: what people are doing, the draft, the last message. Saved Messages shows nobody typing. */
+/**
+ * By precedence: what people are doing, the draft, the last message. Saved Messages shows nobody typing; a draft that
+ * is only a reply, without a text, shows as no draft.
+ */
 private fun RowInputs.preview(
     isSavedMessages: Boolean,
     name: (MessageSender) -> UiText?,
 ): ChatPreview {
     val action = actions?.takeIf { !isSavedMessages }?.let { chatActionText(it, chat.isGroup, name) }
-    val draft = chat.draft
+    val draft = chat.shownDraft
     val message = chat.lastMessage
     return when {
         action != null -> ChatPreview.Action(action)
@@ -240,10 +245,14 @@ private fun RowInputs.senderPrefix(
     }
 }
 
+/** The chat's draft unless it is only a reply, which the conversation's composer shows, not the chat list. */
+private val Chat.shownDraft: ChatDraft?
+    get() = draft?.takeUnless { (it.content as? DraftContent.Text)?.text?.text?.isEmpty() == true }
+
 /** When the [preview]ed message was sent: a newer draft's time while the draft shows. */
 private fun RowInputs.timeOf(preview: ChatPreview): Long? {
     val messageDate = chat.lastMessage?.date
-    val draftDate = chat.draft?.date
+    val draftDate = chat.shownDraft?.date
     return if (preview is ChatPreview.Draft && draftDate != null) maxOf(draftDate, messageDate ?: 0) else messageDate
 }
 

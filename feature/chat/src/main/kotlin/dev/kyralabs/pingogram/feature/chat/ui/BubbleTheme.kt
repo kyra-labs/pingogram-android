@@ -52,8 +52,9 @@ internal fun rememberBubbleTheme(): BubbleTheme {
 }
 
 /**
- * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), and
- * the message highlighted after a jump to it ([jump]).
+ * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), the
+ * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction chip ([reactions]), and the
+ * actions screen readers get on every bubble ([shortcuts]).
  */
 @Stable
 internal class BubbleResources(
@@ -61,6 +62,8 @@ internal class BubbleResources(
     val texts: AnnotatedTextCache,
     val onLinkClick: LinkInteractionListener,
     val jump: MessageJumpState,
+    val reactions: ReactionToggleState,
+    val shortcuts: MessageShortcuts,
 )
 
 /**
