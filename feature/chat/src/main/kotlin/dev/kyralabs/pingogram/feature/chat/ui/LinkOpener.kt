@@ -12,14 +12,27 @@ import androidx.compose.ui.text.LinkInteractionListener
  */
 @Composable
 internal fun rememberLinkOpener(): LinkInteractionListener {
-    val uriHandler = LocalUriHandler.current
-    return remember(uriHandler) {
+    val openUri = rememberUriOpener()
+    return remember(openUri) {
         LinkInteractionListener { link ->
             val url = (link as? LinkAnnotation.Url)?.url ?: return@LinkInteractionListener
+            openUri(url)
+        }
+    }
+}
+
+/** Opens a URI with the platform's handler ([LocalUriHandler]); false if no app on the device opens it. */
+@Composable
+internal fun rememberUriOpener(): (String) -> Boolean {
+    val uriHandler = LocalUriHandler.current
+    return remember(uriHandler) {
+        { uri ->
             try {
-                uriHandler.openUri(url)
+                uriHandler.openUri(uri)
+                true
             } catch (_: IllegalArgumentException) {
                 // No app on the device opens it.
+                false
             }
         }
     }
