@@ -93,8 +93,9 @@ internal fun EditProfileRoute(
 /**
  * Editing the user's own profile (`REQUIREMENTS.md` FR-S1, Account): the photo ([ProfilePhotoEditor]), then the
  * names, the username and the bio in M3 outlined text fields ([NameSection], [UsernameSection], [BioSection]), each
- * with its limit and what is wrong below it. "Save" in the top bar saves what changed; it is enabled once something
- * changed and everything is valid, and shows progress while saving.
+ * with its limit and what is wrong below it, in the rows of segmented groups as on every settings page. "Save" in the
+ * top bar saves what changed; it is enabled once something changed and everything is valid, and shows progress while
+ * saving.
  *
  * Back with unsaved changes asks whether to discard them: the [BackHandler] takes the system back only then, so
  * otherwise Navigation's predictive back shows where it leads. The page keeps clear of the keyboard, so the field
@@ -135,12 +136,17 @@ internal fun EditProfileScreen(
             }
 
             is EditProfileUiState.Content -> {
-                ProfilePhotoEditor(
-                    account = state.account,
-                    task = state.photoTask,
-                    onPickPhoto = onPickPhoto,
-                    onRemovePhoto = { onEvent(EditProfileEvent.RemovePhoto) },
-                )
+                SettingsGroup {
+                    item { shapes ->
+                        ProfilePhotoEditor(
+                            account = state.account,
+                            task = state.photoTask,
+                            shapes = shapes,
+                            onPickPhoto = onPickPhoto,
+                            onRemovePhoto = { onEvent(EditProfileEvent.RemovePhoto) },
+                        )
+                    }
+                }
                 NameSection(state, onEvent)
                 UsernameSection(state, onEvent)
                 BioSection(state, onEvent)

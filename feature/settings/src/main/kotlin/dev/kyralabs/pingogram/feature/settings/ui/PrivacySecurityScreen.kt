@@ -1,7 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -91,11 +90,18 @@ private fun PrivacySection(
     state: PrivacySecurityUiState.Content,
     onOpen: (PrivacySecurityPage) -> Unit,
 ) {
-    SettingsSection(stringResource(R.string.settings_section_privacy)) {
+    SettingsGroup(title = stringResource(R.string.settings_section_privacy)) {
         PrivacySettings.forEach { setting ->
             val rules = state.rules[setting]
             if (rules != null) {
-                PrivacySettingItem(setting, rules, onClick = { onOpen(PrivacySecurityPage.Setting(setting)) })
+                item(key = setting) { shapes ->
+                    PrivacySettingItem(
+                        setting = setting,
+                        rules = rules,
+                        shapes = shapes,
+                        onClick = { onOpen(PrivacySecurityPage.Setting(setting)) },
+                    )
+                }
             }
         }
     }
@@ -106,15 +112,15 @@ private fun PrivacySection(
 private fun PrivacySettingItem(
     setting: PrivacySetting,
     rules: PrivacyRules,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
 ) {
-    ListItem(
-        onClick = onClick,
+    SettingsRow(
+        title = stringResource(setting.titleRes()),
+        shapes = shapes,
         supportingContent = { Text(privacySummary(rules)) },
-        colors = settingsItemColors(),
-    ) {
-        Text(stringResource(setting.titleRes()))
-    }
+        onClick = onClick,
+    )
 }
 
 @Composable
@@ -123,43 +129,53 @@ private fun SecuritySection(
     onOpen: (PrivacySecurityPage) -> Unit,
 ) {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
-    SettingsSection(stringResource(R.string.settings_section_security)) {
-        PageItem(
-            title = stringResource(R.string.settings_blocked_users),
-            summary =
-                if (state.blockedCount == 0) {
-                    stringResource(R.string.settings_blocked_users_none)
-                } else {
+    SettingsGroup(title = stringResource(R.string.settings_section_security)) {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_blocked_users),
+                summary =
+                    if (state.blockedCount == 0) {
+                        stringResource(R.string.settings_blocked_users_none)
+                    } else {
+                        pluralStringResource(
+                            R.plurals.settings_blocked_users_count,
+                            state.blockedCount,
+                            numbers.format(state.blockedCount),
+                        )
+                    },
+                icon = R.drawable.ic_block,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.BlockedUsers) },
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_active_sessions),
+                summary =
                     pluralStringResource(
-                        R.plurals.settings_blocked_users_count,
-                        state.blockedCount,
-                        numbers.format(state.blockedCount),
-                    )
-                },
-            icon = R.drawable.ic_block,
-            onClick = { onOpen(PrivacySecurityPage.BlockedUsers) },
-        )
-        PageItem(
-            title = stringResource(R.string.settings_active_sessions),
-            summary =
-                pluralStringResource(
-                    R.plurals.settings_active_sessions_count,
-                    state.sessionCount,
-                    numbers.format(state.sessionCount),
-                ),
-            icon = R.drawable.ic_devices,
-            onClick = { onOpen(PrivacySecurityPage.ActiveSessions) },
-        )
-        TwoStepVerificationItem(state.twoStepVerification)
+                        R.plurals.settings_active_sessions_count,
+                        state.sessionCount,
+                        numbers.format(state.sessionCount),
+                    ),
+                icon = R.drawable.ic_devices,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.ActiveSessions) },
+            )
+        }
+        item { shapes -> TwoStepVerificationItem(state.twoStepVerification, shapes) }
     }
 }
 
 /** Whether 2-step verification is on, read-only; a requested reset of the password in the error role. */
 @Composable
-private fun TwoStepVerificationItem(summary: TwoStepVerificationSummary) {
-    ListItem(
-        modifier = Modifier.semantics(mergeDescendants = true) {},
-        leadingContent = { SettingsItemIcon(R.drawable.ic_password) },
+private fun TwoStepVerificationItem(
+    summary: TwoStepVerificationSummary,
+    shapes: ListItemShapes,
+) {
+    SettingsRow(
+        title = stringResource(R.string.settings_two_step_verification),
+        shapes = shapes,
+        icon = R.drawable.ic_password,
         supportingContent = {
             Column {
                 Text(summary.status.resolve())
@@ -171,10 +187,7 @@ private fun TwoStepVerificationItem(summary: TwoStepVerificationSummary) {
                 }
             }
         },
-        colors = settingsItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_two_step_verification))
-    }
+    )
 }
 
 @PingogramPreviews

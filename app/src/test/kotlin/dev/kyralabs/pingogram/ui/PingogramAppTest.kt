@@ -18,6 +18,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -363,9 +364,11 @@ class PingogramAppTest {
             tdlib.emit(TdApiFixtures.updateUser(me))
             tdlib.emit(TdApiFixtures.myIdOption(42))
         }
-        awaitText(SettingsR.string.settings_edit_profile_button)
+        // The account's card, which opens Edit profile.
+        val account = hasText("Ada Lovelace") and hasClickAction()
+        awaitNode(account)
 
-        text(SettingsR.string.settings_edit_profile_button).performScrollTo().performClick()
+        composeRule.onNode(account).performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<EditProfileRoute>() == true)
