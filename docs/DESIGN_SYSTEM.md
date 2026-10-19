@@ -69,7 +69,12 @@ fun PingogramTheme(
   `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
   never hand-edit the output.
 - Dynamic color (Material You) on Android 12+ by default: `dynamicLightColorScheme` /
-  `dynamicDarkColorScheme`. User toggle to fall back to brand schemes.
+  `dynamicDarkColorScheme`. User toggle to fall back to brand schemes. On Android 14+ those read the
+  platform's color roles (`system_primary_light`…); some systems (Samsung's One UI) fill only the
+  Android 12 tonal palettes (`system_accent1_*`…) from the wallpaper and leave the roles at AOSP's stock
+  blue. So the roles are used only when their primary has the palettes' hue; otherwise the scheme is
+  built from the palettes as Compose does on Android 12–13 (`systemDynamicColors`, `core:ui`), and a
+  medium or high contrast falls back to the brand scheme there.
 - Contrast follows the system setting on Android 14+ (`UiModeManager.contrast`), otherwise the
   user's choice in Appearance settings.
 - AMOLED: in dark mode replace `background`, `surface`, `surfaceContainerLowest` with `#000000`
