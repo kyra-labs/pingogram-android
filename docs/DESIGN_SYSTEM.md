@@ -286,7 +286,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 
 | UI element | Component |
 |---|---|
-| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`); search opens from the navigation's search button |
+| Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`); search opens from the navigation's search button. The connection pill (FR-L5) sits below the bar, not in its `subtitle` slot: the flexible bar composes its subtitle in both rows and cross-fades them while collapsing, which would show two pills |
 | Global search | Full-screen destination (`SearchRoute`) with the M3 search bar expanded, built from `SearchBarDefaults.InputField` with the bar's colors, divider and full-screen insets (`ExpandedFullScreenSearchBar` opens a dialog window, which would stay above the chats a result opens and outside predictive back); opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title, on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`); `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
@@ -333,7 +333,10 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   toolbar's own colors, opening global search.
 - **Motion**: the indicator fades in on `defaultEffectsSpec` (read in the draw phase); the icon slides
   in with `fastSpatialSpec` + `fastEffectsSpec`; the bar slides away on screens pushed above a tab
-  and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out).
+  and back on return (`defaultSpatialSpec` in, `fastSpatialSpec` out), by its own height, fading on the
+  matching effects springs, in its graphics layer (`FloatingNavigationBar`). It keeps the tab below the
+  pushed screen selected on the way, and stays composed while hidden (not placed, not in the semantics
+  tree), so coming back does not compose it again.
 - **Layout**: the bar floats over the top-level screens, which draw behind it. Their `Scaffold` uses
   `screenContentWindowInsets()` (`core:ui`), which adds `LocalNavigationBarInsets` (the bar, its
   margin below and the same margin above), so lists end clear of the bar. The insets depend on the
