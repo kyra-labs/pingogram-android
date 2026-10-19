@@ -18,7 +18,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -204,13 +203,13 @@ internal fun ShapesShowcase(modifier: Modifier = Modifier) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            repeat(7) { id ->
+            repeat(4) { id ->
                 val colors = MaterialTheme.colorScheme.avatarPlaceholderColors(id.toLong())
                 Box(
                     modifier =
                         Modifier
                             .size(44.dp)
-                            .background(colors.container, avatarPlaceholderPolygon(id.toLong()).toShape()),
+                            .background(colors.container, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("${'A' + id}", color = colors.content, style = MaterialTheme.typography.titleMediumEmphasized)

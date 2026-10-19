@@ -86,7 +86,7 @@ internal fun ChatListItem(
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
     // Built in the semantics blocks, so only when something reads the semantics tree.
     val resources = LocalResources.current
-    val leading = @Composable { ChatAvatar(item, title, selected) }
+    val leading = @Composable { ChatAvatar(item, title, selected, open) }
     val trailing = @Composable { ChatMeta(item) }
     val supporting = @Composable { ChatPreviewText(preview) }
     val headline = @Composable { ChatTitle(title, item.isSecret, item.badge, item.isMuted, item.isUnread) }
@@ -181,12 +181,16 @@ private fun listItemShapes(
     }
 }
 
-/** Decorative: the row's description names the chat, and its semantics say whether it is selected. */
+/**
+ * Decorative: the row's description names the chat, and its semantics say whether it is selected. On an [open] row the
+ * placeholder takes the selection colors and the online dot's ring the row's container, `secondaryContainer`.
+ */
 @Composable
 private fun ChatAvatar(
     item: ChatListItemModel,
     title: String,
     selected: Boolean,
+    open: Boolean,
 ) {
     Avatar(
         photo = item.photo,
@@ -195,7 +199,10 @@ private fun ChatAvatar(
         size = MaterialTheme.sizes.avatarMedium,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
+        onlineRingColor =
+            if (open) ListItemDefaults.colors().selectedContainerColor else MaterialTheme.colorScheme.surface,
         selected = selected,
+        onSelection = open,
     )
 }
 

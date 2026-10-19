@@ -18,7 +18,7 @@ import org.robolectric.RuntimeEnvironment
 @RunWith(RobolectricTestRunner::class)
 class GoogleSansFlexTypefacesTest {
     private val resolver = createFontFamilyResolver(RuntimeEnvironment.getApplication())
-    private val styles = pingogramTypography(dark = false).styles().values
+    private val styles = pingogramTypography().styles().values
 
     @Test
     fun `every style gets its typeface back after Compose's caches moved on to other styles`() {

@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumFlexibleTopAppBar
@@ -51,9 +50,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
@@ -177,7 +179,10 @@ private fun ChatListBody(
         val contentModifier = Modifier.fadeThrough(folderSwitch).fillMaxSize()
         when (val content = state.content) {
             ChatListContent.Loading -> {
-                Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
+                val loading = stringResource(R.string.chat_list_loading)
+                Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) {
+                    DelayedLoadingIndicator(Modifier.semantics { contentDescription = loading })
+                }
             }
 
             is ChatListContent.Empty -> {
