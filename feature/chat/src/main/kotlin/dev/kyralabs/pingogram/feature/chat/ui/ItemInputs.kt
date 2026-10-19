@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
@@ -140,3 +141,14 @@ private fun memberIdsOf(content: MessageContent): List<Long> =
         is ServiceAction.MemberRemoved -> listOf(action.userId)
         else -> emptyList()
     }
+
+/**
+ * Whether the message shows large, without a bubble: a text of only a few emoji ([isEmojiOnly]), without formatting,
+ * link preview, reply or forward, which a bubble would have to hold.
+ */
+internal fun ItemInputs.showsLargeEmoji(
+    content: MessageContent,
+    text: FormattedText,
+): Boolean =
+    content is MessageContent.Text && content.linkPreview == null && text.entities.isEmpty() && reply == null &&
+        message.forwardInfo == null && isEmojiOnly(text.text)

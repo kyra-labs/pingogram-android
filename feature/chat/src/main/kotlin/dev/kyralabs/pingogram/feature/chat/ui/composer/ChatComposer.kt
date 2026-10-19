@@ -48,7 +48,8 @@ import kotlinx.coroutines.launch
  *   the composer is still as the edit left it, with a snackbar. [cancelEdit] gives the composer back without editing.
  * - **Process death**: the text, its formatting and the mode are kept in [savedState] on every change.
  *
- * Runs in [scope], the view model's, on the main thread like the text field.
+ * Runs in [scope], the view model's, on the main thread like the text field, following the text and the drafts from
+ * [start] on.
  */
 @Suppress(
     "LongParameterList", // The chat, where it sends to and keeps state, what it follows, looks up and tells.
@@ -60,7 +61,7 @@ internal class ChatComposer(
     private val actions: MessageActionRepository,
     private val savedState: SavedStateHandle,
     private val scope: CoroutineScope,
-    drafts: Flow<ChatDraft?>,
+    private val drafts: Flow<ChatDraft?>,
     private val messageOf: (Long) -> Message?,
     private val onEffect: (ChatEffect) -> Unit,
     private val log: ChatLog,
@@ -84,7 +85,8 @@ internal class ChatComposer(
 
     private var pendingSave: Job? = null
 
-    init {
+    /** Starts following the text (for [savedState] and the draft) and the chat's drafts, once. */
+    fun start() {
         scope.launch {
             snapshotFlow { text.content }.collect { content ->
                 savedState[KEY_TEXT] = content.text

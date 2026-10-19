@@ -6,6 +6,7 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.preview.BubblePreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -41,6 +42,10 @@ class ChatAdaptiveScreenshotTest {
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200Private() = capture("fontScale200Private", ThemeMode.Light, ChatPreviewData.privateChat)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200Reactions() = capture("fontScale200Reactions", ThemeMode.Dark, BubblePreviewData.emojiAndReactions)
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(

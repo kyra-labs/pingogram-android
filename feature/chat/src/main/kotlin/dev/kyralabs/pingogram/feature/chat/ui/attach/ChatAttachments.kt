@@ -39,8 +39,8 @@ import kotlinx.coroutines.launch
  * - **Process death**: the preview's ready attachments, the caption, the poll form and the camera's file are kept in
  *   [savedState]; items still being prepared are dropped, as their picker's grant does not survive.
  *
- * Runs in [scope], the view model's, on the main thread like the text fields. [release] deletes what was never sent
- * when the conversation is left.
+ * Runs in [scope], the view model's, on the main thread like the text fields, keeping the caption and the poll form
+ * in [savedState] from [start] on. [release] deletes what was never sent when the conversation is left.
  */
 @Suppress("TooManyFunctions") // An entry point per thing the attach menu does, as in ChatComposer.
 internal class ChatAttachments(
@@ -78,7 +78,8 @@ internal class ChatAttachments(
     /** The jobs preparing picked files, which closing the preview stops. */
     private val preparing = mutableSetOf<Job>()
 
-    init {
+    /** Starts keeping the caption and the poll form in [savedState], once. */
+    fun start() {
         scope.launch {
             snapshotFlow { caption.content }.collect { content ->
                 savedState[KEY_CAPTION] = content.text

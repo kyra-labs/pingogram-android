@@ -145,7 +145,8 @@ class FakeChatRepository : ChatRepository {
 
 /**
  * The history of each chat ([histories]), empty and not at the start until set. [loadOlder] is recorded and answers
- * with [onLoadOlder], which by default succeeds without changing anything; [repliedMessage] with [onRepliedMessage].
+ * with [onLoadOlder], which by default succeeds without changing anything; [loadNewer], [loadAround] and [loadNewest]
+ * likewise ([loads]); [repliedMessage] with [onRepliedMessage].
  */
 class FakeMessageRepository : MessageRepository {
     val histories = MutableStateFlow<Map<Long, ChatHistory>>(emptyMap())
@@ -153,21 +154,39 @@ class FakeMessageRepository : MessageRepository {
     /** The chat of every [loadOlder] call. */
     val loadRequests = mutableListOf<Long>()
 
+    /** Every load but [loadOlder], in order: `newer`, `newest` and `around:<message id>`. */
+    val loads = mutableListOf<String>()
+
     var onLoadOlder: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    var onLoadNewer: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** Answers [loadAround] with the chat and the message. */
+    var onLoadAround: suspend (Long, Long) -> Outcome<Unit> = { _, _ -> Outcome.Success(Unit) }
+
+    var onLoadNewest: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** Every [repliedMessage] call: the chat and the replying message. */
     val repliedRequests = mutableListOf<Pair<Long, Long>>()
 
     var onRepliedMessage: suspend (Long, Long) -> Outcome<Message> = { _, _ -> Outcome.Failure(DomainError.NotFound) }
 
+    /**
+     * Sets the history of [chatId], keeping its window id unless [history] has one: the messages changed, but they are
+     * the same run ([replaceHistory] puts another run in place).
+     */
     fun setHistory(
         chatId: Long,
         history: ChatHistory,
     ) {
-        histories.value += chatId to history
+        val windowId = history.windowId.takeIf { it != 0L } ?: histories.value[chatId]?.windowId ?: 0
+        histories.value += chatId to history.copy(windowId = windowId)
     }
 
-    /** Answers the next [loadOlder] calls in turn: each sets its history (or fails), then the start is reached. */
+    /**
+     * Answers the next loads in turn, [loadOlder] and [loadNewest] alike: each sets its history (or fails), then the
+     * start is reached.
+     */
     fun answerLoads(
         chatId: Long,
         vararg pages: Outcome<ChatHistory>,
@@ -193,6 +212,28 @@ class FakeMessageRepository : MessageRepository {
                 }
             }
         }
+        onLoadNewest = onLoadOlder
+    }
+
+    /**
+     * Answers [loadAround] by putting [history] in place of the chat's (or failing with [failure]), with a new window
+     * id, as a page that replaces loaded messages has.
+     */
+    fun answerAround(
+        chatId: Long,
+        history: ChatHistory,
+        failure: Outcome.Failure? = null,
+    ) {
+        onLoadAround = { _, _ -> failure ?: Outcome.Success(Unit).also { replaceHistory(chatId, history) } }
+    }
+
+    /** Puts [history] in place of the chat's, with a new window id. */
+    fun replaceHistory(
+        chatId: Long,
+        history: ChatHistory,
+    ) {
+        val windowId = (histories.value[chatId]?.windowId ?: 0) + 1
+        setHistory(chatId, history.copy(windowId = windowId))
     }
 
     override fun history(chatId: Long): Flow<ChatHistory> = histories.map { it[chatId] ?: EMPTY }.distinctUntilChanged()
@@ -200,6 +241,24 @@ class FakeMessageRepository : MessageRepository {
     override suspend fun loadOlder(chatId: Long): Outcome<Unit> {
         loadRequests += chatId
         return onLoadOlder(chatId)
+    }
+
+    override suspend fun loadNewer(chatId: Long): Outcome<Unit> {
+        loads += "newer"
+        return onLoadNewer(chatId)
+    }
+
+    override suspend fun loadAround(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Unit> {
+        loads += "around:$messageId"
+        return onLoadAround(chatId, messageId)
+    }
+
+    override suspend fun loadNewest(chatId: Long): Outcome<Unit> {
+        loads += "newest"
+        return onLoadNewest(chatId)
     }
 
     override suspend fun repliedMessage(

@@ -51,12 +51,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Items are listed newest first, as the reverse layout shows them.
  */
 internal object ChatPreviewData {
-    private val today = UiText.resource(R.string.chat_date_today)
+    val today = UiText.resource(R.string.chat_date_today)
     private val yesterday = UiText.resource(R.string.chat_date_yesterday)
     private val you = UiText.resource(UiR.string.preview_sender_you)
 
     /** The composer, where the user can write, with the attach options of a private chat. */
-    private val canWrite =
+    val canWrite =
         ComposerUiState.Available(
             canSchedule = true,
             attachOptions =
@@ -73,7 +73,7 @@ internal object ChatPreviewData {
             showCaptionAboveMedia = false,
         )
 
-    private const val ADA = 101L
+    const val ADA = 101L
     private const val GRACE = 102L
     private const val LINUS = 103L
 
@@ -355,7 +355,7 @@ internal object ChatPreviewData {
             )
         }
 
-    private val ada = UiText.Plain("Ada")
+    val ada = UiText.Plain("Ada")
     private val albumItems = ContentPreviewData.album(count = 4, minithumbnail = null)
 
     /** Photos: one without a caption, one with, and an album of four, edge to edge in their bubbles. */
@@ -618,7 +618,7 @@ internal object ChatPreviewData {
 
     private const val PORTRAIT_WIDTH = 960
     private const val PORTRAIT_HEIGHT = 1280
-    private const val SECOND_PHOTO_FILE_ID = 40
+    const val SECOND_PHOTO_FILE_ID = 40
     private const val DOWNLOADED_BYTES = 1_700_000L
     private const val PLAYED = 0.4f
 
@@ -633,7 +633,7 @@ internal object ChatPreviewData {
             "A quoted line.\n" +
             "val answer = 42"
 
-    private fun content(vararg items: ChatItem) =
+    fun content(vararg items: ChatItem) =
         ChatContent.Content(
             items = items.toList().toImmutableList(),
             reachedStart = true,
@@ -641,10 +641,10 @@ internal object ChatPreviewData {
             olderError = null,
         )
 
-    private fun reactions(vararg chips: ReactionChip): ImmutableList<ReactionChip> = chips.toList().toImmutableList()
+    fun reactions(vararg chips: ReactionChip): ImmutableList<ReactionChip> = chips.toList().toImmutableList()
 
     @Suppress("LongParameterList") // One parameter per thing a sample bubble can show, all with defaults.
-    private fun bubble(
+    fun bubble(
         id: Long,
         text: String,
         time: String,
@@ -664,6 +664,7 @@ internal object ChatPreviewData {
         reactions: ImmutableList<ReactionChip> = persistentListOf(),
         date: UiText = today,
         album: MessageAlbum? = null,
+        isEmojiOnly: Boolean = false,
     ): ChatItem.Bubble {
         val formatted = FormattedText(text, entities.toImmutableList())
         val showsSender = groupChat && !isOutgoing
@@ -689,6 +690,7 @@ internal object ChatPreviewData {
             reactions = reactions,
             date = date,
             album = album,
+            isEmojiOnly = isEmojiOnly,
         )
     }
 }

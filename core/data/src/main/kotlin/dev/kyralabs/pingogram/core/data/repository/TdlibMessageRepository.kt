@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
+import dev.kyralabs.pingogram.core.data.repository.HistoryPage.Kind
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -33,10 +36,12 @@ import javax.inject.Singleton
  * messages ([HistoryCache]) that TDLib's updates keep current; [history] counts its collectors, so observed windows are
  * never evicted, and [trimMemory] drops the others.
  *
- * [loadOlder] asks TDLib for the page before the oldest loaded message as `docs/PERFORMANCE.md` §3 says: first
- * only what TDLib has locally, then, when that is nothing, from the server. The page is loaded in the application
- * scope, so a caller that leaves does not cancel it for the others waiting for it, and it still ends up in the window;
- * TDLib could not cancel the request anyway.
+ * Loads ask TDLib for a page ([HistoryPages]) as `docs/PERFORMANCE.md` §3 says: first only what TDLib has locally,
+ * then, when that is not enough, from the server. [loadOlder] asks for the page before the oldest loaded message,
+ * [loadNewer] for the one after the newest, [loadNewest] for the newest page and [loadAround] for a page around a
+ * message (`getChatHistory` with a negative offset, which returns messages on both sides of it), the last two replacing
+ * the window. Loads of a chat run one at a time, shared by the callers that ask meanwhile, in the application scope
+ * ([HistoryLoads]).
  *
  * [repliedMessage] serves the reply quotes of messages whose replied message is older than the loaded ones; the window
  * keeps what it fetched.
@@ -56,11 +61,9 @@ class TdlibMessageRepository
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, HistoryCache(), HistoryCache::reduce)
 
-        /** The page loading for each chat, which concurrent [loadOlder] calls share. */
-        private val loads = ConcurrentHashMap<Long, Deferred<Outcome<Unit>>>()
+        private val loads = HistoryLoads(store, scope)
 
-        /** Tells loads apart, across evictions and TDLib restarts. */
-        private val loadIds = AtomicLong()
+        private val pages = HistoryPages(client)
 
         override fun history(chatId: Long): Flow<ChatHistory> =
             flow {
@@ -72,21 +75,41 @@ class TdlibMessageRepository
                 }
             }
 
-        override suspend fun loadOlder(chatId: Long): Outcome<Unit> {
-            val load =
-                loads.computeIfAbsent(chatId) {
-                    // Lazy, so it cannot finish, and remove itself, before it is in the map.
-                    scope.async(start = CoroutineStart.LAZY) {
-                        try {
-                            loadPage(chatId)
-                        } finally {
-                            loads.remove(chatId)
-                        }
-                    }
+        override suspend fun loadOlder(chatId: Long): Outcome<Unit> =
+            loads.load(LoadKey(chatId, LoadKind.Older)) { window ->
+                val oldestId = window.messages.lastOrNull()?.id
+                when {
+                    window.reachedStart -> Outcome.Success(null)
+                    oldestId == null -> pages.newest(chatId)
+                    else -> pages.older(chatId, oldestId)
                 }
-            load.start()
-            return load.await()
-        }
+            }
+
+        override suspend fun loadNewer(chatId: Long): Outcome<Unit> =
+            loads.load(LoadKey(chatId, LoadKind.Newer)) { window ->
+                val newestId = window.messages.firstOrNull()?.id
+                if (window.reachedEnd || newestId == null) Outcome.Success(null) else pages.newer(chatId, newestId)
+            }
+
+        override suspend fun loadAround(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<Unit> =
+            loads.load(LoadKey(chatId, LoadKind.Around, messageId)) { window ->
+                if (window.messages.indexOfId(messageId) >=
+                    0
+                ) {
+                    Outcome.Success(null)
+                } else {
+                    pages.around(chatId, messageId)
+                }
+            }
+
+        override suspend fun loadNewest(chatId: Long): Outcome<Unit> =
+            loads.load(LoadKey(chatId, LoadKind.Newest)) { window ->
+                val reachesNewest = window.reachedEnd && (window.messages.isNotEmpty() || window.reachedStart)
+                if (reachesNewest) Outcome.Success(null) else pages.newest(chatId)
+            }
 
         /**
          * The replied message from the chat's window, loaded or kept there, else `getRepliedMessage`, whose answer the
@@ -162,48 +185,6 @@ class TdlibMessageRepository
                 }
             return client.request(TdApi.SetChatDraftMessage(chatId, null, draft)).map {}
         }
-
-        private suspend fun loadPage(chatId: Long): Outcome<Unit> {
-            val loadId = loadIds.incrementAndGet()
-            store.update { cache -> cache.startingLoad(chatId, loadId) }
-            // Nothing to load if the window holds the whole history, or was evicted at once (while three other chats
-            // are observed).
-            val window =
-                store.state.value.windows[chatId]
-                    ?.takeIf { it.loadId == loadId }
-            val page =
-                when {
-                    window == null || window.reachedStart -> Outcome.Success(null)
-                    else -> fetchPage(chatId, fromMessageId = window.messages.lastOrNull()?.id ?: 0)
-                }
-            store.update { cache -> cache.finishingLoad(chatId, loadId, page.getOrNull()) }
-            return page.map {}
-        }
-
-        /** The messages before [fromMessageId] (0: the newest ones): those TDLib has locally, else the server's. */
-        private suspend fun fetchPage(
-            chatId: Long,
-            fromMessageId: Long,
-        ): Outcome<HistoryPage> {
-            val local = fetchOlder(chatId, fromMessageId, onlyLocal = true)
-            if (local !is Outcome.Success || local.value.isNotEmpty()) {
-                return local.map { messages -> HistoryPage(messages, reachedStart = false) }
-            }
-            // TDLib can answer with fewer messages than asked although there are more; only none from the server
-            // means that there are none.
-            val remote = fetchOlder(chatId, fromMessageId, onlyLocal = false)
-            return remote.map { messages -> HistoryPage(messages, reachedStart = messages.isEmpty()) }
-        }
-
-        private suspend fun fetchOlder(
-            chatId: Long,
-            fromMessageId: Long,
-            onlyLocal: Boolean,
-        ): Outcome<List<Message>> =
-            // Offset 0: from the message before fromMessageId on.
-            client.request(TdApi.GetChatHistory(chatId, fromMessageId, 0, PAGE_SIZE, onlyLocal)).map { messages ->
-                messages.olderThan(fromMessageId)
-            }
     }
 
 /**
@@ -211,9 +192,6 @@ class TdlibMessageRepository
  * no checklist task, no poll option).
  */
 internal fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
-
-/** Messages per page, `docs/PERFORMANCE.md` §3. */
-private const val PAGE_SIZE = 50
 
 /**
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until
@@ -224,7 +202,3 @@ internal fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
         options.disableNotification = silent
         options.schedulingState = scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), 0) }
     }
-
-/** The messages before [fromMessageId], all of them for 0. td_api.tl allows null entries in the list. */
-private fun TdApi.Messages.olderThan(fromMessageId: Long): List<Message> =
-    messages.filterNotNull().filter { fromMessageId == 0L || it.id < fromMessageId }.map { it.toMessage() }

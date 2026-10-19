@@ -11,20 +11,17 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
-import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
-import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -49,7 +46,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerTargets
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
-import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -62,8 +58,8 @@ import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,13 +76,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -103,20 +97,15 @@ import java.util.Locale
  *   after, so a rotation does not restart it.
  * - **The chat** comes from [ChatRepository.chat], or from [ChatRepository.getChat] while TDLib has not announced it:
  *   [ChatContent.NotFound] for a chat TDLib does not know, [ChatContent.Error] with a retry for other failures.
- * - **Paging**: the newest page loads at once when the history is empty, then older pages for as long as the screen
- *   reports that the oldest message is near ([ChatEvent.NearOldestChanged]), one at a time, until the start. A
- *   failure shows [ChatContent.Error] while there are no messages, [ChatContent.Content.olderError] otherwise; nothing
- *   is retried by itself: [ChatEvent.Retry], or the oldest message coming near again, tries again.
+ * - **Opening, paging and jumps** ([ChatWindow]): the conversation opens around the message search found
+ *   ([initialMessageId]), else around the first unread message, else at the newest page, and shows nothing until those
+ *   are loaded, so it never shows the newest messages first and then jumps; the list goes where the content's
+ *   [ListAnchor] says. Older and newer pages load near the ends ([ChatEvent.NearOldestChanged],
+ *   [ChatEvent.NearNewestChanged]); a tapped quote ([ChatEvent.OpenReply]) and the jump to the newest message
+ *   ([ChatEvent.ShowNewest]) load the messages around their message when it is not loaded. The newest message the list
+ *   shows is kept in the [SavedStateHandle], which the conversation opens around after process death.
  * - **Replies** whose replied message is not loaded fetch it once ([MessageRepository.repliedMessage]); the quote
- *   shows that it loads, or that the message was deleted. Tapping a quote ([ChatEvent.OpenReply]) scrolls to the
- *   replied message ([ChatEffect.ScrollToMessage]), loading older pages for it first, up to [MAX_REPLY_PAGES], as the
- *   older pages' indicator shows; [ChatEffect.MessageUnavailable] when it is not found. A new tap, or leaving the
- *   screen, cancels the search.
- * - **Opened at a message** ([initialMessageId], a message search found): the same search runs once the view model is
- *   created, up to [MAX_OPEN_PAGES], and scrolls to the message and highlights it; not found, the conversation stays
- *   at the newest messages with [ChatEffect.MessageNotLoaded]. Done once, also across process death (the
- *   [SavedStateHandle] remembers it). Loading pages around a message far back, rather than every page up to it, is
- *   left for later.
+ *   shows that it loads, or that the message was deleted.
  * - **Unread divider**: before the first incoming message after the last one read when the chat was first shown
  *   (`lastReadInboxMessageId`, if anything was unread), kept in the [SavedStateHandle], so it stays where it was
  *   while the screen lives, also across process death, whatever arrives or is read meanwhile.
@@ -144,6 +133,9 @@ import java.util.Locale
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
  *   ([ChatUiState.poll], [pollEditor]), each taking the composer's reply along. The uploads of the messages being sent
  *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ * - **Starting**: the view model is created in the frame that first composes the screen; what it starts (loading the
+ *   messages it opens at, following the composer's text and drafts, reporting viewed messages) runs once that frame is
+ *   done, so the frame does not wait for it.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
  *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, a scheduled
  *   message's time, a copied text, and the composer's focus when a reply or an edit starts.
@@ -224,19 +216,10 @@ class ChatViewModel internal constructor(
     /** Each retry of finding the chat starts it again. */
     private val chatAttempts = MutableStateFlow(0)
 
-    /** How far older pages have loaded; changed on the main thread only. */
-    private val pageLoad = MutableStateFlow(PageLoad())
-
     /** The replied messages fetched for messages whose replied message is not loaded, by replying message id. */
     private val replies = MutableStateFlow<PersistentMap<Long, ReplyState>>(persistentMapOf())
 
     private val revealedSpoilers = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
-
-    /** The screen shows the oldest message, or close to it ([ChatEvent.NearOldestChanged]); main thread only. */
-    private var isNearOldest = false
-
-    /** The search for a tapped quote's message ([ChatEvent.OpenReply]); main thread only. */
-    private var replySearch: Job? = null
 
     /** Whether the chat is open in TDLib ([ChatEvent.Started]); main thread only. */
     private var isOpen = false
@@ -356,6 +339,20 @@ class ChatViewModel internal constructor(
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
+    /** Which messages the conversation shows, where its list shows them, and how far pages have loaded. */
+    private val window =
+        ChatWindow(
+            chatId = chatId,
+            repository = messageRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            history = history,
+            content = { uiState.value.content },
+            initialMessageId = initialMessageId,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     /** The basic group or supergroup of a group or channel: its member count, and the user's membership. */
     private val group: Flow<ChatGroup> =
         chat
@@ -401,8 +398,8 @@ class ChatViewModel internal constructor(
         )
 
     private val messageSources: Flow<MessageSources> =
-        combine(history, replies, revealedSpoilers, pageLoad) { history, replies, revealed, load ->
-            MessageSources(MessageState(history, replies, revealed), load)
+        combine(history, replies, revealedSpoilers, window.state) { history, replies, revealed, load ->
+            MessageSources(MessageState(load.historyFor(history), replies, revealed), load)
         }
 
     private val people: Flow<ChatPeople> =
@@ -438,22 +435,13 @@ class ChatViewModel internal constructor(
         // Leaving the screen frees the player, and deletes picked files that were never sent.
         addCloseable { playback.release() }
         addCloseable { attachments.release() }
-        viewModelScope.launch {
-            // The divider stays where it was when the chat was first shown, also after process death.
-            val chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat }.first()
-            if (savedStateHandle.get<Long>(KEY_UNREAD_AFTER) == null) {
-                savedStateHandle[KEY_UNREAD_AFTER] =
-                    if (chat.unreadCount > 0) chat.lastReadInboxMessageId else NO_UNREAD_DIVIDER
-            }
-        }
-        viewModelScope.launch {
-            val first = messageRepository.history(chatId).first()
-            if (first.messages.isEmpty() && !first.reachedStart) loadPage()
-        }
-        if (initialMessageId != null && savedStateHandle.get<Boolean>(KEY_OPENED_AT_MESSAGE) != true) {
-            showMessage(initialMessageId, MAX_OPEN_PAGES, notFound = ChatEffect.MessageNotLoaded) {
-                savedStateHandle[KEY_OPENED_AT_MESSAGE] = true
-            }
+        // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
+        // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
+        viewModelScope.launch(Dispatchers.Main) {
+            composer.start()
+            attachments.start()
+            views.start()
+            window.open()
         }
     }
 
@@ -463,11 +451,15 @@ class ChatViewModel internal constructor(
 
             ChatEvent.Stopped -> setOpen(false)
 
-            is ChatEvent.NearOldestChanged -> onNearOldestChanged(event.isNearOldest)
+            is ChatEvent.NearOldestChanged -> window.onNearOldestChanged(event.isNearOldest)
 
-            is ChatEvent.MessagesVisible -> views.setVisible(event.messageIds)
+            is ChatEvent.NearNewestChanged -> window.onNearNewestChanged(event.isNearNewest)
 
-            is ChatEvent.OpenReply -> showMessage(event.messageId, MAX_REPLY_PAGES, ChatEffect.MessageUnavailable)
+            ChatEvent.ShowNewest -> window.showNewest()
+
+            is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
+
+            is ChatEvent.OpenReply -> window.showMessage(event.messageId)
 
             ChatEvent.Retry -> retry()
 
@@ -567,79 +559,18 @@ class ChatViewModel internal constructor(
         if (open) views.setOpen(true)
     }
 
-    /** The oldest message coming near loads the next page, also after a failure; once at the start nothing. */
-    private fun onNearOldestChanged(nearOldest: Boolean) {
-        isNearOldest = nearOldest
-        val reachedStart = (uiState.value.content as? ChatContent.Content)?.reachedStart == true
-        if (nearOldest && !reachedStart) loadPage()
-    }
-
     /**
-     * Shows message [messageId] once the items hold it ([ChatEffect.ScrollToMessage]), after loading up to [maxPages]
-     * older pages for it ([findMessage]) with the older pages' indicator; [notFound] if it is not found, the error if a
-     * page fails; then [onDone]. For a tapped quote and for the message the conversation was opened at. Replaces a
-     * search still running. Started lazily, so [replySearch] names it before it runs: a replaced search, ending as it
-     * is cancelled, then leaves the indicator to this one.
+     * The messages the list shows go to TDLib as viewed; the newest of them is kept in the [SavedStateHandle], which
+     * the conversation opens around after process death ([ChatWindow]).
      */
-    private fun showMessage(
-        messageId: Long,
-        maxPages: Int,
-        notFound: ChatEffect,
-        onDone: () -> Unit = {},
-    ) {
-        replySearch?.cancel()
-        val search =
-            viewModelScope.launch(start = CoroutineStart.LAZY) {
-                pageLoad.update { it.copy(isFindingMessage = true) }
-                val found =
-                    try {
-                        messageRepository.findMessage(chatId, messageId, maxPages)
-                    } finally {
-                        if (replySearch === coroutineContext.job) pageLoad.update { it.copy(isFindingMessage = false) }
-                    }
-                when {
-                    found is Outcome.Failure -> {
-                        effectChannel.trySend(ChatEffect.ShowError(found.error))
-                    }
-
-                    found == Outcome.Success(true) -> {
-                        uiState.first { state -> state.items.any { it.showsMessage(messageId) } }
-                        effectChannel.trySend(ChatEffect.ScrollToMessage(messageId))
-                    }
-
-                    else -> {
-                        effectChannel.trySend(notFound)
-                    }
-                }
-                onDone()
-            }
-        replySearch = search
-        search.start()
+    private fun onMessagesVisible(messageIds: Set<Long>) {
+        views.setVisible(messageIds)
+        messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
     }
 
-    /** Finds the chat again if that failed, and loads the page that failed. */
+    /** Finds the chat again if that failed, and opens again or loads the pages that failed ([ChatWindow.retry]). */
     private fun retry() {
-        val content = uiState.value.content
-        if (content is ChatContent.Error && pageLoad.value.error == null) chatAttempts.update { it + 1 }
-        if (pageLoad.value.error != null) loadPage()
-    }
-
-    /**
-     * Loads the page before the oldest loaded message; nothing while one loads. A page that succeeds while the screen
-     * still shows the oldest message loads the next one, until the start; a failed page waits for [ChatEvent.Retry] or
-     * the oldest message coming near again.
-     */
-    private fun loadPage() {
-        val load = pageLoad.value
-        if (load.isLoading) return
-        pageLoad.value = load.copy(isLoading = true, error = null)
-        viewModelScope.launch {
-            val result = messageRepository.loadOlder(chatId)
-            // The repository has applied the page by now; a fresh look tells whether it reached the start.
-            val reachedStart = result is Outcome.Success && messageRepository.history(chatId).first().reachedStart
-            pageLoad.update { it.copy(isLoading = false, error = (result as? Outcome.Failure)?.error) }
-            if (result is Outcome.Success && !reachedStart && isNearOldest) loadPage()
-        }
+        if (!window.retry() && uiState.value.content is ChatContent.Error) chatAttempts.update { it + 1 }
     }
 
     /**
@@ -734,7 +665,12 @@ class ChatViewModel internal constructor(
         val history = messages.state.history
         val load = messages.pageLoad
         val error = load.error
+        val shown = load.shown
         return when {
+            shown == null -> {
+                load.openError?.let(ChatContent::Error) ?: ChatContent.Loading
+            }
+
             history.messages.isNotEmpty() -> {
                 val items =
                     mapper.map(
@@ -747,7 +683,16 @@ class ChatViewModel internal constructor(
                             timeFormatter = formatter,
                         ),
                     )
-                ChatContent.Content(items, history.reachedStart, load.isLoading || load.isFindingMessage, error)
+                ChatContent.Content(
+                    items = items,
+                    reachedStart = history.reachedStart,
+                    isLoadingOlder = load.isLoading || load.isFindingMessage,
+                    olderError = error,
+                    reachedEnd = history.reachedEnd,
+                    isLoadingNewer = load.isLoadingNewer || load.isFindingNewest,
+                    newerError = load.newerError,
+                    anchor = shown.anchor,
+                )
             }
 
             error != null -> {
@@ -772,13 +717,6 @@ class ChatViewModel internal constructor(
         return timeFormatter?.takeIf { it.isFor(zone, locale, is24HourClock) }
             ?: ChatTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
     }
-
-    /** How far older pages have loaded, and whether older pages load to find a tapped quote's message. */
-    private data class PageLoad(
-        val isLoading: Boolean = false,
-        val error: DomainError? = null,
-        val isFindingMessage: Boolean = false,
-    )
 
     /** The chat, or why it is not there (yet). */
     private sealed interface ChatLookup {
@@ -812,7 +750,7 @@ class ChatViewModel internal constructor(
 
     private class MessageSources(
         val state: MessageState,
-        val pageLoad: PageLoad,
+        val pageLoad: WindowState,
     )
 
     /**
@@ -838,17 +776,6 @@ class ChatViewModel internal constructor(
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
 
-        /** Whether the conversation was shown at the message it was opened at, so that happens once. */
-        const val KEY_OPENED_AT_MESSAGE = "chat.openedAtMessage"
-
-        /** How many older pages a tapped quote's message is looked for in, about 500 messages. */
-        const val MAX_REPLY_PAGES = 10
-
-        /**
-         * How many older pages the message the conversation was opened at is looked for in, about 1500 messages: search
-         * finds messages anywhere in the history, so further back than quotes usually lead.
-         */
-        const val MAX_OPEN_PAGES = 30
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
@@ -919,31 +846,6 @@ private fun ChatUiState.mediaToOpen(messageId: Long): ChatEffect.OpenMedia? {
 /** The items shown, none while there is no content. */
 private val ChatUiState.items: List<ChatItem>
     get() = (content as? ChatContent.Content)?.items.orEmpty()
-
-/**
- * Whether message [messageId] is in the history of chat [chatId], loading older pages until it is, the start is
- * reached, or [maxPages] pages were loaded; a page that fails ends the search with its error. A message newer than the
- * oldest loaded one that is not there was deleted, as ids grow with time.
- */
-private suspend fun MessageRepository.findMessage(
-    chatId: Long,
-    messageId: Long,
-    maxPages: Int,
-): Outcome<Boolean> {
-    var loaded = history(chatId).first()
-    var pages = 0
-    while (loaded.messages.findById(messageId) == null && loaded.olderPagesMayHold(messageId) && pages < maxPages) {
-        val page = loadOlder(chatId)
-        if (page is Outcome.Failure) return page
-        pages++
-        loaded = history(chatId).first()
-    }
-    return Outcome.Success(loaded.messages.findById(messageId) != null)
-}
-
-/** Message [messageId] is older than every loaded message, and older ones are left to load. */
-private fun ChatHistory.olderPagesMayHold(messageId: Long): Boolean =
-    !reachedStart && messages.lastOrNull().let { oldest -> oldest == null || messageId < oldest.id }
 
 /** The title and photo of chat [id], then every change of them; null while TDLib has not announced the chat. */
 private fun ChatRepository.chatRef(id: Long): Flow<ChatRef?> =

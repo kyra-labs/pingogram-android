@@ -142,7 +142,12 @@ object ChatFixtures {
     fun history(
         vararg messages: Message,
         reachedStart: Boolean = true,
-    ) = ChatHistory(messages.sortedByDescending { it.id }.toImmutableList(), reachedStart)
+        reachedEnd: Boolean = true,
+    ) = ChatHistory(messages.sortedByDescending { it.id }.toImmutableList(), reachedStart, reachedEnd)
+
+    /** Incoming messages [ids] of the private chat, neither at the start of the history nor at its end. */
+    fun window(ids: LongRange) =
+        history(*ids.map { message(it) }.toTypedArray(), reachedStart = false, reachedEnd = false)
 
     fun user(
         id: Long,

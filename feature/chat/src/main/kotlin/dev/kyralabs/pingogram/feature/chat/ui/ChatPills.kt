@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -105,24 +106,31 @@ internal fun UnreadDividerRow(modifier: Modifier = Modifier) {
     }
 }
 
-/** The date of the topmost entry in a pill at the top, shown while the list scrolls. */
+/**
+ * The date of the topmost entry in a pill at the top, shown while the list scrolls. The pill composes again only when
+ * that date changes, not with every new message or scrolled frame; its alpha is read in the draw phase.
+ */
 @Composable
 internal fun FloatingDatePill(
     items: ImmutableList<ChatItem>,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val date by remember(items, listState) {
+    val currentItems by rememberUpdatedState(items)
+    val date by remember(listState) {
         derivedStateOf {
+            val entries = currentItems
             listState.layoutInfo.visibleItemsInfo
-                .lastOrNull { it.index < items.size }
-                ?.let { items[it.index].date }
+                .lastOrNull { it.index < entries.size }
+                ?.let { entries[it.index].date }
         }
     }
-    val alpha by animateFloatAsState(
-        targetValue = if (listState.isScrollInProgress) 1f else 0f,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "datePill",
-    )
-    date?.let { DatePill(it.resolve(), modifier.graphicsLayer { this.alpha = alpha }) }
+    val alpha =
+        animateFloatAsState(
+            targetValue = if (listState.isScrollInProgress) 1f else 0f,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "datePill",
+        )
+    val pillModifier = remember(modifier, alpha) { modifier.graphicsLayer { this.alpha = alpha.value } }
+    date?.let { DatePill(it.resolve(), pillModifier) }
 }

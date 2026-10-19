@@ -11,7 +11,9 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -20,6 +22,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -159,22 +162,105 @@ class ChatScreenTest {
     }
 
     @Test
-    fun `opened at a message, the list does not scroll to the unread divider`() {
-        setScreen(longChat(unread = UNREAD), MessageJumpState(opensAtMessage = true))
+    fun `opened at a message, the list goes there past the unread divider`() {
+        // "Message 50", far older than the unread divider above "Message 30".
+        setScreen(longChat(unread = UNREAD).withAnchor(ListAnchor(1, AnchorTarget.Message(MESSAGES - 50 + 1L))))
+
+        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Message 50").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.chat_unread_divider)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a new anchor at the newest message moves the list there`() {
+        var state by mutableStateOf(longChat(unread = UNREAD))
+        setScreen { state }
+
+        state = state.withAnchor(ListAnchor(1, AnchorTarget.Newest))
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+    }
+
+    @Test
+    fun `an anchor the list took is not taken again after a rotation`() {
+        val restoration = StateRestorationTester(composeRule)
+        restoration.setContent {
+            PingogramTheme(dynamicColor = false) {
+                ChatScreen(state = longChat(unread = UNREAD), onEvent = { events += it }, onBack = {})
+            }
+        }
+        composeRule.onNodeWithContentDescription(string(R.string.chat_jump_to_bottom), substring = true).performClick()
+        composeRule.waitForIdle()
+
+        restoration.emulateSavedInstanceStateRestore()
 
         composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.chat_unread_divider)).assertDoesNotExist()
     }
 
+    // Short of the newest message
+
     @Test
-    fun `opened at a message, the list jumps there past the unread divider`() {
-        val jumpState = MessageJumpState(opensAtMessage = true)
-        // "Message 50", far older than the unread divider above "Message 30".
-        jumpState.jumpTo(MESSAGES - 50 + 1L)
+    fun `short of the newest message, the jump button shows even at the newest loaded one`() {
+        setScreen(longChat(unread = 0, reachedEnd = false))
 
-        setScreen(longChat(unread = UNREAD), jumpState)
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.chat_jump_to_bottom), substring = true)
+            .assertIsDisplayed()
+    }
 
-        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Message 50").assertIsDisplayed()
+    @Test
+    fun `short of the newest message, the jump button asks for the newest messages`() {
+        setScreen(longChat(unread = UNREAD, reachedEnd = false))
+
+        composeRule.onNodeWithContentDescription(string(R.string.chat_jump_to_bottom), substring = true).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ChatEvent.ShowNewest), events.filterIsInstance<ChatEvent.ShowNewest>())
+    }
+
+    @Test
+    fun `sending a message short of the newest message asks for the newest messages`() {
+        composerText = ComposerText(FormattedText("See you there", persistentListOf()))
+        val state = longChat(unread = UNREAD, reachedEnd = false)
+        setScreen(state.copy(composer = ComposerUiState.Available(canSchedule = true)))
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ChatEvent.ShowNewest), events.filterIsInstance<ChatEvent.ShowNewest>())
+    }
+
+    @Test
+    fun `a list that shows its newest loaded message asks for newer ones`() {
+        setScreen(longChat(unread = 0, reachedEnd = false))
+
+        assertEquals(ChatEvent.NearNewestChanged(true), events.filterIsInstance<ChatEvent.NearNewestChanged>().last())
+    }
+
+    @Test
+    fun `newer messages that could not be loaded say so below the newest, with a retry`() {
+        val state = longChat(unread = 0, reachedEnd = false)
+        val content = state.content as ChatContent.Content
+        setScreen(state.copy(content = content.copy(newerError = DomainError.Network)))
+
+        composeRule.onNodeWithText(string(R.string.chat_newer_error)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.chat_retry)).performClick()
+
+        assertEquals(listOf(ChatEvent.Retry), events.filterIsInstance<ChatEvent.Retry>())
+    }
+
+    @Test
+    fun `a newer page coming in below the newest loaded message leaves the list where it is`() {
+        var state by mutableStateOf(longChat(unread = 0, reachedEnd = false))
+        setScreen { state }
+
+        state = longChat(unread = 0, extra = 5, reachedEnd = false)
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Message 0").assertIsNotDisplayed()
     }
 
     @Test
@@ -282,13 +368,13 @@ class ChatScreenTest {
 
     @Test
     fun `a jump centres the message and highlights it for a while`() {
-        val state = longChat(unread = 0)
+        var state by mutableStateOf(longChat(unread = 0))
         val jumpState = MessageJumpState()
-        setScreen(state, jumpState)
+        setScreen(jumpState) { state }
         val target = (state.content as ChatContent.Content).items.first { it is ChatItem.Bubble && it.id == 20L }
         composeRule.mainClock.autoAdvance = false
 
-        composeRule.runOnIdle { jumpState.jumpTo(20) }
+        composeRule.runOnIdle { state = state.withAnchor(ListAnchor(1, AnchorTarget.Message(20))) }
         // The list takes the jump without the clock moving; the highlight then moves with the frames.
         composeRule.waitForIdle()
         var strongest = 0f
@@ -393,6 +479,7 @@ class ChatScreenTest {
         unread: Int,
         extra: Int = 0,
         newDay: Boolean = false,
+        reachedEnd: Boolean = true,
     ): ChatUiState {
         val today = UiText.resource(R.string.chat_date_today)
         val items =
@@ -412,10 +499,15 @@ class ChatScreenTest {
                     reachedStart = true,
                     isLoadingOlder = false,
                     olderError = null,
+                    reachedEnd = reachedEnd,
                 ),
             unreadCount = unread,
         )
     }
+
+    /** This state with [anchor] for its messages. */
+    private fun ChatUiState.withAnchor(anchor: ListAnchor) =
+        copy(content = (content as ChatContent.Content).copy(anchor = anchor))
 
     private fun string(
         @StringRes id: Int,

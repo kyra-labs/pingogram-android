@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.replyTo
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.service
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.text
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
+import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
@@ -642,6 +643,63 @@ class ChatItemsTest : ChatViewModelHarness() {
         }
 
     private fun minutesAgo(minutes: Long): Instant = NOW.minus(Duration.ofMinutes(minutes))
+
+    // Emoji only
+
+    @Test
+    fun `a text of a few emoji shows large, without a bubble`() =
+        runTest {
+            val viewModel = showing(chat(), history(message(1, content = MessageContent.Text(text("🎉🎉"), null))))
+
+            assertTrue(viewModel.bubble(1).isEmojiOnly)
+        }
+
+    @Test
+    fun `a text with words, or too many emoji, keeps its bubble`() =
+        runTest {
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        message(1, content = MessageContent.Text(text("yes 🎉"), null)),
+                        message(2, content = MessageContent.Text(text("🎉🎉🎉🎉"), null)),
+                    ),
+                )
+
+            assertFalse(viewModel.bubble(1).isEmojiOnly)
+            assertFalse(viewModel.bubble(2).isEmojiOnly)
+        }
+
+    @Test
+    fun `emoji with formatting, a reply or a forward keep their bubble`() =
+        runTest {
+            val bold = FormattedText("🎉", persistentListOf(TextEntity(0, 2, TextEntityType.Bold)))
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        message(1),
+                        message(2, content = MessageContent.Text(bold, null)),
+                        message(3, content = MessageContent.Text(text("🎉"), null), replyTo = replyTo(1)),
+                        message(
+                            4,
+                            content = MessageContent.Text(text("🎉"), null),
+                            forwardInfo = ForwardInfo(MessageOrigin.User(GRACE), date = 0),
+                        ),
+                    ),
+                )
+
+            assertEquals(listOf(false, false, false), listOf(2L, 3L, 4L).map { viewModel.bubble(it).isEmojiOnly })
+        }
+
+    @Test
+    fun `a photo whose caption is an emoji keeps its bubble`() =
+        runTest {
+            val photo = ContentPreviewData.photo(minithumbnail = null).copy(caption = text("🎉"))
+            val viewModel = showing(chat(), history(message(1, content = photo)))
+
+            assertFalse(viewModel.bubble(1).isEmojiOnly)
+        }
 
     private companion object {
         val GAP_MINUTES = GROUP_GAP_SECONDS / 60

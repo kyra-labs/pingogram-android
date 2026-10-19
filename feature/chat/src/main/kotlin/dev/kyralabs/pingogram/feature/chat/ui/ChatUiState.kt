@@ -120,17 +120,57 @@ sealed interface ChatContent {
 
     /**
      * The messages loaded so far, newest first, as the reverse layout shows them ([ChatItem]). More load near the
-     * oldest one until [reachedStart].
+     * oldest one until [reachedStart], and near the newest one until [reachedEnd].
      *
      * @property isLoadingOlder older messages are on their way, shown with a progress indicator above the oldest.
      * @property olderError loading older messages failed; shown above the oldest with a retry ([ChatEvent.Retry]).
+     * @property reachedEnd the items go up to the chat's newest message; false while the conversation shows older
+     *   messages loaded around the first unread or a message jumped to, until newer pages reach it.
+     * @property isLoadingNewer newer messages are on their way, shown with a progress indicator below the newest.
+     * @property newerError loading newer messages failed; shown below the newest with a retry ([ChatEvent.Retry]).
+     * @property anchor where the list shows these items: it moves there once per anchor ([ListAnchor.id]).
      */
     data class Content(
         val items: ImmutableList<ChatItem>,
         val reachedStart: Boolean,
         val isLoadingOlder: Boolean,
         val olderError: DomainError?,
+        val reachedEnd: Boolean = true,
+        val isLoadingNewer: Boolean = false,
+        val newerError: DomainError? = null,
+        val anchor: ListAnchor = ListAnchor(),
     ) : ChatContent
+}
+
+/**
+ * Where the message list goes, once, when the conversation asks for it: when it opens (at the unread divider, a found
+ * message or the newest message), at a jump to a message (a tapped quote), and at the jump to the newest message. The
+ * list moves to [target] the first time it shows an anchor with a new [id]; it keeps the last id it took across
+ * rotations and process death, as the view model keeps its anchor, so neither moves the list again.
+ */
+@Immutable
+data class ListAnchor(
+    val id: Int = 0,
+    val target: AnchorTarget = AnchorTarget.Unread,
+)
+
+/** What a [ListAnchor] shows. */
+@Immutable
+sealed interface AnchorTarget {
+    /** The unread divider near the top, with the unread messages below it, if the items have one; else [Newest]. */
+    data object Unread : AnchorTarget
+
+    /** The newest message, at the bottom. */
+    data object Newest : AnchorTarget
+
+    /**
+     * Message [messageId] in the middle, highlighted for a while if [highlight]; where it would be (the next older
+     * message) when it is not among the items.
+     */
+    data class Message(
+        val messageId: Long,
+        val highlight: Boolean = true,
+    ) : AnchorTarget
 }
 
 /**
@@ -169,6 +209,8 @@ sealed interface ChatItem {
      *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
      *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
      *   older pages bring in more of the album.
+     * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
+     *   link preview, reply or forward: shown large, without a bubble.
      */
     data class Bubble(
         val id: Long,
@@ -192,6 +234,7 @@ sealed interface ChatItem {
         val reactions: ImmutableList<ReactionChip>,
         override val date: UiText,
         val album: MessageAlbum? = null,
+        val isEmojiOnly: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

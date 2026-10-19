@@ -5,11 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +39,8 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 
-// The blocks inside a bubble besides its text: the reply quote, the link preview and the reactions
-// (docs/DESIGN_SYSTEM.md §2.2: tonal blocks of the bubble's side, chosen reactions in secondaryContainer).
+// The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2:
+// tonal blocks of the bubble's side), and the reaction badges on its corner (chosen reactions in secondaryContainer).
 
 /**
  * The replied message: a tonal block with a bar in the sender's color, the name over one line of its text. With
@@ -115,67 +117,114 @@ internal fun LinkPreviewBlock(
 }
 
 /**
- * The reactions as small tonal chips, wrapping onto more lines when they do not fit. With [onToggle], tapping a chip
- * adds or takes back the user's reaction (not the paid star reaction, which is changed elsewhere); [toggles] crossfades
- * it meanwhile. Inside a bubble, screen readers reach them as the bubble's custom actions instead.
+ * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows
+ * them on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's actions
+ * ([onMore]). With [onToggle], tapping a badge adds or takes back the user's reaction (not the paid star reaction,
+ * which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen readers reach them as
+ * the bubble's custom actions instead.
  */
 @Composable
-internal fun ReactionsRow(
+internal fun ReactionBadges(
     bubble: ChatItem.Bubble,
-    colors: BubbleColors,
     toggles: ReactionToggleState,
     onToggle: (ReactionChip) -> Unit,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val spacing = MaterialTheme.spacing
+    val reactions = bubble.reactions
     val messageId = bubble.reactionsMessageId
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-        verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        bubble.reactions.forEach { chip ->
-            ReactionChipView(
+        val shown = if (reactions.size > MAX_REACTION_BADGES) MAX_REACTION_BADGES else reactions.size
+        for (index in 0 until shown) {
+            val chip = reactions[index]
+            ReactionBadge(
                 reaction = chip,
-                colors = colors,
                 chosenFraction = { toggles.chosenFraction(messageId, chip) },
                 onClick = { onToggle(chip) }.takeIf { chip.label != ReactionLabel.Paid },
+            )
+        }
+        if (reactions.size > shown) MoreReactionsBadge(reactions.size - shown, onMore)
+    }
+}
+
+/**
+ * A reaction's emoji, with its count when more than one person added it, on a round `surfaceContainerHighest` badge,
+ * or `secondaryContainer` when the user chose it too: [chosenFraction] blends them, read in the draw phase. A button
+ * if [onClick] is not null.
+ */
+@Composable
+private fun ReactionBadge(
+    reaction: ReactionChip,
+    chosenFraction: () -> Float,
+    onClick: (() -> Unit)?,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val container = { lerp(scheme.surfaceContainerHighest, scheme.secondaryContainer, chosenFraction()) }
+    val content = { lerp(scheme.onSurfaceVariant, scheme.onSecondaryContainer, chosenFraction()) }
+    BadgeFrame(container, onClick) {
+        ReactionGlyph(
+            reaction.label,
+            MaterialTheme.typography.titleMedium,
+            MaterialTheme.sizes.inlineIconSmall,
+            content,
+        )
+        if (reaction.count > 1) {
+            BasicText(
+                text = reaction.count.toString(),
+                style = LocalTextStyle.current.merge(MaterialTheme.typography.labelMedium),
+                color = content,
             )
         }
     }
 }
 
-/**
- * A reaction's emoji and count, in the bubble's block colors, or in `secondaryContainer` when the user chose it too:
- * [chosenFraction] blends them, read in the draw phase. A button if [onClick] is not null, its state layer clipped to
- * the chip.
- */
+/** "+N": the reactions beyond the badges shown, which opens the message's actions ([onClick]). */
 @Composable
-private fun ReactionChipView(
-    reaction: ReactionChip,
-    colors: BubbleColors,
-    chosenFraction: () -> Float,
-    onClick: (() -> Unit)?,
+private fun MoreReactionsBadge(
+    count: Int,
+    onClick: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val container = { lerp(colors.block, scheme.secondaryContainer, chosenFraction()) }
-    val content = { lerp(colors.blockContent, scheme.onSecondaryContainer, chosenFraction()) }
+    BadgeFrame({ scheme.surfaceContainerHighest }, onClick) {
+        Text(
+            text = stringResource(R.string.chat_reactions_more, count),
+            color = scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+}
+
+/**
+ * A reaction badge's frame: a circle at least [reactionBadge][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
+ * wide, a pill when its content is wider, in [container], with a ring in the conversation's `surface` that sets it off
+ * from the bubble it overlaps; a button with its state layer clipped to the circle if [onClick] is not null.
+ */
+@Composable
+private fun BadgeFrame(
+    container: ColorProducer,
+    onClick: (() -> Unit)?,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val sizes = MaterialTheme.sizes
     val clickable = onClick?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier
     Row(
         modifier =
             Modifier
-                .clip(MaterialTheme.shapes.small)
+                .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
+                .padding(sizes.reactionBadgeRing)
+                .clip(CircleShape)
                 .then(clickable)
                 .drawBehind { drawRect(container()) }
-                .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+                .padding(horizontal = MaterialTheme.spacing.extraSmall),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ReactionGlyph(reaction.label, MaterialTheme.typography.labelLarge, MaterialTheme.sizes.inlineIconSmall, content)
-        BasicText(
-            text = reaction.count.toString(),
-            style = LocalTextStyle.current.merge(MaterialTheme.typography.labelMedium),
-            color = content,
-        )
-    }
+        content = content,
+    )
 }
 
 /**
@@ -245,6 +294,9 @@ private fun Modifier.leadingBar(
         val x = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - barWidth
         drawRect(color, topLeft = Offset(x, 0f), size = Size(barWidth, size.height))
     }
+
+/** How many reaction badges a bubble shows before "+N". */
+internal const val MAX_REACTION_BADGES = 3
 
 private const val LINK_TITLE_MAX_LINES = 2
 private const val LINK_DESCRIPTION_MAX_LINES = 3

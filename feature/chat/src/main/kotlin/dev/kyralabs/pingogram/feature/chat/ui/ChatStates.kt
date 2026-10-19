@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -21,13 +23,18 @@ import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The conversation without messages to show (docs/DESIGN_SYSTEM.md §6: empty states), and the state of older pages
-// above the oldest message.
+// above the oldest message and of newer ones below the newest.
 
-/** The loading indicator while older messages load, or the error with a retry when they could not be loaded. */
+/**
+ * The loading indicator while older or newer messages load ([isLoading]), or [errorText] with a retry when they could
+ * not be loaded ([error]).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun OlderMessagesState(
-    content: ChatContent.Content,
+internal fun PagesState(
+    isLoading: Boolean,
+    error: DomainError?,
+    @StringRes errorText: Int,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -36,10 +43,9 @@ internal fun OlderMessagesState(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val error = content.olderError
-        if (error != null) {
+        if (error != null && !isLoading) {
             Text(
-                text = stringResource(R.string.chat_older_error),
+                text = stringResource(errorText),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
