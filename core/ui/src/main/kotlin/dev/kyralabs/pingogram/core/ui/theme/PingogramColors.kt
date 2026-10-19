@@ -179,21 +179,26 @@ data class AvatarColors(
 )
 
 /**
- * One of the seven avatar placeholder role pairs from §2.2, chosen by [id] (a TDLib user or chat id,
- * which can be negative) so the same chat always gets the same colors.
+ * One of the four avatar placeholder role pairs from §2.2, chosen by [id] (a TDLib user or chat id,
+ * which can be negative) so the same chat always gets the same colors: the primary, secondary and tertiary
+ * containers and a neutral pair. Container roles only: the `*Fixed` roles keep one light tone in dark theme, and
+ * Material says not to use them where contrast matters.
  */
 fun ColorScheme.avatarPlaceholderColors(id: Long): AvatarColors =
     when (id.mod(AVATAR_COLOR_COUNT)) {
         0 -> AvatarColors(primaryContainer, onPrimaryContainer)
         1 -> AvatarColors(secondaryContainer, onSecondaryContainer)
         2 -> AvatarColors(tertiaryContainer, onTertiaryContainer)
-        3 -> AvatarColors(primaryFixed, onPrimaryFixed)
-        4 -> AvatarColors(secondaryFixed, onSecondaryFixed)
-        5 -> AvatarColors(tertiaryFixed, onTertiaryFixed)
-        else -> AvatarColors(surfaceVariant, onSurfaceVariant)
+        else -> AvatarColors(surfaceContainerHighest, onSurfaceVariant)
     }
 
-private const val AVATAR_COLOR_COUNT = 7
+/**
+ * The avatar placeholder colors on a selected or open row, whose `secondaryContainer` would swallow a container-colored
+ * placeholder (§2.2): `primary` and `onPrimary`.
+ */
+fun ColorScheme.avatarPlaceholderColorsOnSelection(): AvatarColors = AvatarColors(primary, onPrimary)
+
+private const val AVATAR_COLOR_COUNT = 4
 
 /**
  * The color of a sender's name in a group conversation and in reply quotes, chosen by the sender's [id] (a TDLib user
