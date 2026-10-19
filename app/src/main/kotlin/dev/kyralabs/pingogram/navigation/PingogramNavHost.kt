@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
+import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsPages
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
@@ -151,6 +152,7 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         settingsPages(
             onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
             onBack = { navController.popBackStack() },
+            onProfileSaved = { navController.popBackStackAfterProfileSaved() },
         )
         // Results push the conversation above search on every window, as the archive does: search is not a pane of
         // the Chats tab (it opens from every tab), and back returns to the results.

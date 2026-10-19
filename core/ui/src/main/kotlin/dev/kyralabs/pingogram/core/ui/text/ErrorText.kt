@@ -72,5 +72,10 @@ private fun DomainError.messageRes(): Int =
         DomainError.PasswordRecoveryExpired -> R.string.error_password_recovery_expired
         DomainError.TooManyPinnedChats -> R.string.error_too_many_pinned_chats
         DomainError.PremiumRequired -> R.string.error_premium_required
+        DomainError.UsernameTaken -> R.string.error_username_taken
+        DomainError.UsernameInvalid -> R.string.error_username_invalid
+        DomainError.UsernameForSale -> R.string.error_username_for_sale
+        DomainError.BioTooLong -> R.string.error_bio_too_long
+        DomainError.PhotoInvalid -> R.string.error_photo_invalid
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

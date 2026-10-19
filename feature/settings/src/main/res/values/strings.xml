@@ -9,6 +9,10 @@
 
     <!-- Account header. %1$s is the username, without @. -->
     <string name="settings_account_username">\@%1$s</string>
+    <!-- The button under the account header that opens Edit profile. -->
+    <string name="settings_edit_profile_button">Edit profile</string>
+    <!-- Snackbar on Settings after the profile was saved. -->
+    <string name="settings_profile_saved">Profile saved</string>
 
     <!-- Settings home -->
     <string name="settings_section_general">General</string>
@@ -228,4 +232,80 @@
     <string name="settings_about_license">License</string>
     <string name="settings_about_license_summary">GNU General Public License v3.0 or later</string>
     <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>
+
+    <!-- Edit profile (FR-S1, Account) -->
+    <string name="settings_edit_profile">Edit profile</string>
+    <!-- Spoken by screen readers for the progress indicator while the profile loads. -->
+    <string name="settings_edit_profile_loading">Loading your profile</string>
+    <!-- The top bar action that saves the changed name, username and bio. -->
+    <string name="settings_edit_profile_save">Save</string>
+    <!-- Spoken by screen readers for the progress indicator in place of Save while saving. -->
+    <string name="settings_edit_profile_saving">Saving</string>
+    <!-- Spoken by screen readers for the profile photo. -->
+    <string name="settings_profile_photo">Your profile photo</string>
+    <!-- Opens the system photo picker. -->
+    <string name="settings_profile_photo_set">Set new photo</string>
+    <string name="settings_profile_photo_remove">Remove photo</string>
+    <!-- Spoken by screen readers for the progress while the picked image is prepared and before its upload reports progress. -->
+    <string name="settings_profile_photo_preparing">Preparing photo</string>
+    <!-- Spoken by screen readers for the upload progress around the photo. -->
+    <string name="settings_profile_photo_uploading">Uploading photo</string>
+    <!-- Spoken by screen readers for the progress while the photo is removed. -->
+    <string name="settings_profile_photo_removing">Removing photo</string>
+    <string name="settings_remove_photo_dialog_title">Remove profile photo?</string>
+    <string name="settings_remove_photo_dialog_text">Your current profile photo will be deleted. If you had an earlier one, it becomes your profile photo again.</string>
+    <string name="settings_remove_photo_dialog_confirm">Remove</string>
+
+    <string name="settings_section_profile_name">Name</string>
+    <string name="settings_profile_first_name">First name</string>
+    <string name="settings_profile_last_name">Last name (optional)</string>
+    <string name="settings_profile_first_name_required">Enter your first name.</string>
+    <!-- The character counter below a field: %1$d characters typed of at most %2$d. -->
+    <string name="settings_profile_counter">%1$d/%2$d</string>
+    <!-- Spoken by screen readers for the character counter: %1$d characters typed of at most %2$d (the quantity). -->
+    <plurals name="settings_profile_counter_description">
+        <item quantity="one">%1$d of %2$d character</item>
+        <item quantity="other">%1$d of %2$d characters</item>
+    </plurals>
+    <plurals name="settings_profile_too_long">
+        <item quantity="one">Use at most %d character.</item>
+        <item quantity="other">Use at most %d characters.</item>
+    </plurals>
+
+    <string name="settings_section_profile_username">Username</string>
+    <string name="settings_profile_username">Username</string>
+    <string name="settings_profile_username_note">People can find you by your username and message you without knowing your phone number.</string>
+    <string name="settings_profile_username_checking">Checking…</string>
+    <!-- %1$s is the username, without @. -->
+    <string name="settings_profile_username_available">\@%1$s is available.</string>
+    <string name="settings_profile_username_taken">This username is already taken.</string>
+    <string name="settings_profile_username_for_sale">This username is for sale on Fragment.</string>
+    <string name="settings_profile_username_invalid">Telegram doesn\'t accept this username.</string>
+    <string name="settings_profile_username_unavailable">This username can\'t be used.</string>
+    <string name="settings_profile_username_check_failed">Couldn\'t check this username. You can still save it.</string>
+    <string name="settings_profile_username_removed">Your username will be removed.</string>
+    <plurals name="settings_profile_username_too_short">
+        <item quantity="one">A username needs at least %d character.</item>
+        <item quantity="other">A username needs at least %d characters.</item>
+    </plurals>
+    <plurals name="settings_profile_username_too_long">
+        <item quantity="one">A username can have at most %d character.</item>
+        <item quantity="other">A username can have at most %d characters.</item>
+    </plurals>
+    <string name="settings_profile_username_invalid_character">Use only a–z, 0–9 and underscores.</string>
+    <string name="settings_profile_username_starts_with_non_letter">A username must start with a letter.</string>
+    <string name="settings_profile_username_ends_with_underscore">A username can\'t end with an underscore.</string>
+    <string name="settings_profile_username_consecutive_underscores">A username can\'t have two underscores in a row.</string>
+    <string name="settings_remove_username_dialog_title">Remove username?</string>
+    <!-- %1$s is the username, without @. -->
+    <string name="settings_remove_username_dialog_text">People will no longer find you by \@%1$s, and someone else may take it.</string>
+    <string name="settings_remove_username_dialog_confirm">Remove</string>
+
+    <string name="settings_section_profile_bio">Bio</string>
+    <string name="settings_profile_bio">Bio</string>
+    <string name="settings_profile_bio_note">A few words about yourself, shown on your profile.</string>
+
+    <string name="settings_discard_profile_dialog_title">Discard changes?</string>
+    <string name="settings_discard_profile_dialog_text">Your changes to your name, username and bio haven\'t been saved.</string>
+    <string name="settings_discard_profile_dialog_confirm">Discard</string>
 </resources>

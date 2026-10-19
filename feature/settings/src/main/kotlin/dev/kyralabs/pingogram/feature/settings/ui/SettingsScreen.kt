@@ -21,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,18 +46,29 @@ import kotlinx.coroutines.launch
 
 /**
  * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
- * page it opens.
+ * page it opens. [profileSaved] says that Edit profile just saved the profile, shown in a snackbar once:
+ * [onProfileSavedShown] clears it.
  */
 @Composable
 internal fun SettingsRoute(
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    profileSaved: Boolean = false,
+    onProfileSavedShown: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
+    val scope = rememberCoroutineScope()
+    val currentOnProfileSavedShown by rememberUpdatedState(onProfileSavedShown)
+    LaunchedEffect(profileSaved) {
+        if (!profileSaved) return@LaunchedEffect
+        // Cleared first, so it shows once; the snackbar outlives this effect, which clearing restarts.
+        currentOnProfileSavedShown()
+        scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.settings_profile_saved)) }
+    }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -77,7 +90,8 @@ internal fun SettingsRoute(
 
 /**
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
- * page scrolls, as the chat list's does, then the logged-in account ([AccountHeader]), the rows that open the other
+ * page scrolls, as the chat list's does, then the logged-in account ([AccountHeader], whose button opens Edit
+ * profile), the rows that open the other
  * settings pages (the account's own, Privacy and security, under Account), and "Log out", which asks for confirmation
  * first (FR-A8). The page draws behind the floating
  * navigation bar and ends clear of it ([screenContentWindowInsets]).
@@ -102,7 +116,7 @@ internal fun SettingsScreen(
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
         SettingsContent(innerPadding) {
-            state.account?.let { AccountHeader(it) }
+            state.account?.let { AccountHeader(it, onEditProfile = { onOpenPage(SettingsPage.EditProfile) }) }
             SettingsSection(stringResource(R.string.settings_section_general)) {
                 PageItem(
                     title = stringResource(R.string.settings_appearance),

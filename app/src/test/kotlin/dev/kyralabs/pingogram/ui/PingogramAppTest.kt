@@ -30,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph
@@ -53,9 +54,11 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
+import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
+import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -63,11 +66,13 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import kotlinx.coroutines.runBlocking
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -342,6 +347,39 @@ class PingogramAppTest {
         pressBack()
         composeRule.waitForIdle()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `edit profile opens above the settings tab, and saving returns to it with a snackbar`() {
+        val me = TdApiFixtures.user(id = 42, firstName = "Ada", lastName = "Lovelace", usernames = listOf("ada"))
+        tdlib.on(TdApi.GetMe::class, TdResult.Success(me))
+        tdlib.on(TdApi.GetUserFullInfo::class, TdResult.Success(ProfileFixtures.userFullInfo(bio = "Analyst")))
+        tdlib.on(TdApi.SetBio::class, TdResult.Success(TdApi.Ok()))
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        composeRule.waitForIdle()
+        // The Settings tab's view model has created the user repository, which takes TDLib's updates from now on.
+        runBlocking {
+            tdlib.emit(TdApiFixtures.updateUser(me))
+            tdlib.emit(TdApiFixtures.myIdOption(42))
+        }
+        awaitText(SettingsR.string.settings_edit_profile_button)
+
+        text(SettingsR.string.settings_edit_profile_button).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<EditProfileRoute>() == true)
+        assertNoNavigation()
+        val bio =
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText) and
+                hasText(string(SettingsR.string.settings_profile_bio))
+        awaitNode(bio)
+        composeRule.onNode(bio).performScrollTo().performTextReplacement("Countess")
+        text(SettingsR.string.settings_edit_profile_save).performClick()
+
+        awaitText(SettingsR.string.settings_profile_saved)
+        assertTrue(navController.currentDestination?.hasRoute<SettingsRoute>() == true)
+        assertEquals(listOf("Countess"), tdlib.sentOf<TdApi.SetBio>().map { it.bio })
     }
 
     @Test

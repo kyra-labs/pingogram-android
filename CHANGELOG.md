@@ -29,6 +29,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   again when you open them.
 - About: the app version, a link to the source code, the license and a note that Pingogram is an unofficial
   Telegram client.
+- Edit your profile from Settings: set a new profile photo from the photo picker (with upload progress) or remove
+  it, and change your first and last name, your username and your bio. Usernames are checked as you type
+  (available, taken or for sale on Fragment), Save applies only what changed, and leaving with unsaved changes
+  asks first.
 - Privacy and security in Settings: choose who can see your phone number, last seen and online status and
   profile photos, whose forwards of your messages link to your account, and who can call you, add you to groups
   and channels or send you voice and video messages (limiting the last needs Telegram Premium). Exceptions set
