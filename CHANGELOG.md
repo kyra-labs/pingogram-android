@@ -39,6 +39,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Whether two-step verification is on, and whether a recovery email is set.
 
 ### Fixed
+- Leaving a chat after playing a voice message or song no longer holds up the screen for a moment: the audio
+  player now runs on its own thread, and frees itself there.
 - "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
   instead of being cut off.
 
