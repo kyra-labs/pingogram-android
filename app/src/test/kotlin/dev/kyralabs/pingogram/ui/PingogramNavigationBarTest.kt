@@ -10,13 +10,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -32,7 +39,8 @@ import org.robolectric.annotation.Config
 
 /**
  * [PingogramNavigationBar]: tabs with labels where they fit, icons named by their label where they do not, and the
- * detached search button. A plain [Application] keeps app start-up work out of UI tests.
+ * detached search button; [FloatingNavigationBar] hiding and showing it. A plain [Application] keeps app start-up work
+ * out of UI tests.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, qualifiers = "w411dp-h891dp-xxhdpi")
@@ -123,6 +131,85 @@ class PingogramNavigationBarTest {
         assertTrue("$before → $during → $after", during.all { it in range })
     }
 
+    // The floating bar showing and hiding (FloatingNavigationBar)
+
+    @Test
+    fun `hidden, the floating bar is neither seen, heard nor touched`() {
+        var visible by mutableStateOf(true)
+        setFloatingBar { visible }
+        val chats = labeledTab(R.string.nav_chats).fetchSemanticsNode().boundsInRoot.center
+
+        visible = false
+        composeRule.waitForIdle()
+
+        composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
+        composeRule.onNode(hasContentDescription(string(R.string.nav_search))).assertDoesNotExist()
+        composeRule.onRoot().performTouchInput { click(chats) }
+        assertEquals(emptyList<TopLevelDestination>(), selections)
+    }
+
+    @Test
+    fun `the floating bar comes back as it left, without composing it anew`() {
+        var visible by mutableStateOf(true)
+        setFloatingBar { visible }
+        val tab = labeledTab(R.string.nav_chats).fetchSemanticsNode().id
+
+        visible = false
+        composeRule.waitForIdle()
+        visible = true
+        composeRule.waitForIdle()
+
+        // The same node: the bar stayed composed while hidden.
+        assertEquals(tab, labeledTab(R.string.nav_chats).assertIsSelected().fetchSemanticsNode().id)
+        labeledTab(R.string.nav_settings).performClick()
+        assertEquals(listOf(TopLevelDestination.Settings), selections)
+    }
+
+    @Test
+    fun `the floating bar slides away in its graphics layer, its layout staying in place`() {
+        var visible by mutableStateOf(true)
+        setFloatingBar { visible }
+        val bar =
+            composeRule
+                .onNodeWithTag(FLOATING_BAR_TAG)
+                .fetchSemanticsNode()
+                .layoutInfo.coordinates
+        val tab = labeledTab(R.string.nav_chats).fetchSemanticsNode().layoutInfo.coordinates
+        val barTop = bar.boundsInRoot().top
+        val tabTop = tab.boundsInRoot().top
+        composeRule.mainClock.autoAdvance = false
+
+        visible = false
+        repeat(SLIDING_FRAMES) {
+            composeRule.mainClock.advanceTimeByFrame()
+            composeRule.waitForIdle()
+        }
+
+        // The tabs are drawn lower, while the bar is laid out where it was.
+        assertEquals(barTop, bar.boundsInRoot().top)
+        assertTrue("$tabTop → ${tab.boundsInRoot().top}", tab.boundsInRoot().top > tabTop)
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
+    }
+
+    private fun setFloatingBar(visible: () -> Boolean) {
+        composeRule.setContent {
+            PingogramTheme(dynamicColor = false) {
+                Box(Modifier.fillMaxSize()) {
+                    FloatingNavigationBar(
+                        visible = visible(),
+                        selected = TopLevelDestination.Chats,
+                        onSelect = { selections += it },
+                        onSearch = { searches++ },
+                        modifier = Modifier.align(Alignment.BottomCenter).testTag(FLOATING_BAR_TAG),
+                    )
+                }
+            }
+        }
+        composeRule.waitForIdle()
+    }
+
     private fun searchButtonLeft(): Float =
         composeRule
             .onNode(hasContentDescription(string(R.string.nav_search)))
@@ -154,6 +241,11 @@ class PingogramNavigationBarTest {
 
         /** Enough frames for the tabs' springs to play out. */
         const val SWITCH_FRAMES = 40
+
+        /** Some frames into the floating bar's slide, before it has faded out. */
+        const val SLIDING_FRAMES = 6
+
+        const val FLOATING_BAR_TAG = "floating_bar"
 
         /** How far the fast spatial spring's overshoot may widen the bar, half of it on each side. */
         val OVERSHOOT_TOLERANCE = 3.dp

@@ -1,10 +1,5 @@
 package dev.kyralabs.pingogram.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +10,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
@@ -24,6 +18,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -63,7 +58,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * Only the signed-in app has navigation; the login flow is full screen. The window size class picks it: in compact
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
- * them; in medium and wider windows a collapsed `WideNavigationRail` with the search button at its top, from a
+ * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows a collapsed `WideNavigationRail` with the search button at its top, from a
  * `NavigationSuiteScaffold`. The `NavHost` keeps its place in the composition across both, so rotating or resizing
  * the window never resets its screens. Full-screen destinations (the media viewer) show neither.
  *
@@ -99,6 +94,11 @@ fun PingogramApp(
     val currentTab by remember(currentEntry) {
         derivedStateOf { currentEntry.value?.destination.topLevelDestination() }
     }
+    // The tab the user is on: the current destination, or the tab below the screens pushed on top of it.
+    val backStack = navController.currentBackStack.collectAsState()
+    val barTab by remember(backStack) {
+        derivedStateOf { backStack.value.asReversed().firstNotNullOfOrNull { it.destination.topLevelDestination() } }
+    }
     val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
     val floatingBar = adaptiveType.isNavigationBar()
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
@@ -126,24 +126,18 @@ fun PingogramApp(
                     PingogramNavHost(navController, uiState)
                 }
             }
-            val motionScheme = MaterialTheme.motionScheme
-            AnimatedVisibility(
-                visible = floatingBarSlot && !navigationBarVisibility.isHidden,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
-                enter =
-                    slideInVertically(motionScheme.defaultSpatialSpec()) { it } +
-                        fadeIn(motionScheme.defaultEffectsSpec()),
-                exit =
-                    slideOutVertically(motionScheme.fastSpatialSpec()) { it } + fadeOut(motionScheme.fastEffectsSpec()),
-            ) {
-                PingogramNavigationBar(
-                    selected = currentTab,
+            // Compact windows only: composed there even while hidden (FloatingNavigationBar).
+            if (floatingBar) {
+                FloatingNavigationBar(
+                    visible = floatingBarSlot && !navigationBarVisibility.isHidden,
+                    selected = barTab,
                     onSelect = { navController.navigateToTopLevelDestination(it) },
                     onSearch = openSearch,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                            .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
                 )
             }
         }
