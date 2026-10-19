@@ -42,8 +42,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A1: the brand (`displayMediumEmphasized`), an honest note that Pingogram is not Telegram's own app (CLAUDE.md
- * rule 3), "Start messaging", and Telegram's terms of service and privacy policy. The hero artwork, an Expressive
- * shape rather than a logo (CLAUDE.md rule 9), morphs while "Start messaging" is pressed.
+ * rule 3), "Start messaging", and Telegram's terms of service and privacy policy. The hero, Pingogram's mark on an
+ * Expressive shape, morphs while "Start messaging" is pressed.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -122,8 +122,8 @@ private fun ColumnScope.WelcomeActions(
 }
 
 /**
- * Decorative brand artwork: a Material Symbols chat bubble on a [MaterialShapes] cookie that morphs into a soft burst
- * while [isMorphed] (a fast spatial spring, `docs/DESIGN_SYSTEM.md` §5: press feedback).
+ * Decorative brand artwork: Pingogram's mark (`art/`) on a [MaterialShapes] cookie that morphs into a soft burst while
+ * [isMorphed] (a fast spatial spring, `docs/DESIGN_SYSTEM.md` §5: press feedback).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -146,7 +146,7 @@ private fun WelcomeHero(isMorphed: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(UiR.drawable.ic_chat_filled),
+            painter = painterResource(UiR.drawable.ic_pingogram),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.fillMaxSize(HERO_ICON_FRACTION),

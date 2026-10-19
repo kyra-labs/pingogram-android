@@ -389,6 +389,12 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - Launcher icon: adaptive (foreground / background / **monochrome** layers), themed icon
   support; splash via `core-splashscreen` using the same vector. Notification small icon:
   monochrome 24 dp glyph.
+- The owner's artwork lives in `art/` (SVG, the source); the app's vectors are converted from it:
+  `app` `ic_launcher_*` (the mark `#2156C4` on white, the icon's own colors, also on the splash
+  screen's icon circle), `core:notifications` `ic_notification`, `core:ui` `ic_pingogram` (the mark)
+  and `logo_pingogram` (mark and wordmark). In the UI the mark and logo are one-color and tinted
+  with theme roles (Welcome: `onPrimaryContainer` on its `primaryContainer` shape; About: `primary`),
+  so they follow dynamic color.
 - Avatars: circle by default; `MaterialShapes` only for placeholders and states.
 - Images: `large` corner radius inside bubbles, `extraLarge` in media viewer thumbnails.
 
