@@ -176,7 +176,7 @@ regresses by more than 10%.
 - Recomposition tests on the JVM: `RecompositionCounter` (`feature:chats` tests) counts the composables
   that compose again, through the Compose runtime's composition observer, while a Robolectric test
   steps the test clock frame by frame. `ChatListRecompositionTest` keeps §4 true for the chat list
-  (scrolling, collapsing its top bar, coming back to it), `ChatRecompositionTest` for the conversation
+  (scrolling, dragging it under its top bar, coming back to it), `ChatRecompositionTest` for the conversation
   (scrolling, a new message); copy the pattern for other screens. `feature:chat`'s copy of the counter
   starts before the screen first composes and leaves out calls that skip (they enter their restart group
   too), so it counts exactly the composables that run again. To see

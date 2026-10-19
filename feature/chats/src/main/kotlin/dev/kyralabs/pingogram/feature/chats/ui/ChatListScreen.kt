@@ -21,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
@@ -74,11 +73,10 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab with a
- * [MediumFlexibleTopAppBar] that collapses as the list scrolls ([ChatListTopBar]), or the archive with a small one
- * ([ArchiveTopBar]); then the chats, each with its swipe actions ([ChatRow]), below the archive row on the main list.
- * The bar sits on `surfaceContainer` and the list on a rounded `surface` sheet below it ([ContentSheet]), which the
- * rows scroll in.
+ * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9; `docs/DESIGN_SYSTEM.md` §6): the Chats tab ([ChatListTopBar])
+ * or the archive ([ArchiveTopBar]), each with a small, pinned top bar; then the chats, each with its swipe actions
+ * ([ChatRow]), below the archive row on the main list. The bar sits on `surfaceContainer` and the list on a rounded
+ * `surface` sheet below it ([ContentSheet]), which the rows scroll in.
  *
  * - **Insets**: on the Chats tab the list draws behind the floating navigation bar and ends clear of it
  *   ([screenContentWindowInsets]); the archive, pushed on top of the tab where the bar hides, keeps clear of the system
@@ -107,11 +105,7 @@ internal fun ChatListScreen(
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
     val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
-    val scrollBehavior =
-        when (state.kind) {
-            ChatListKind.Chats -> TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-            ChatListKind.Archive -> TopAppBarDefaults.pinnedScrollBehavior()
-        }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val folderSwitch = remember { FolderSwitch() }
     Box(modifier) {
         Scaffold(
@@ -160,7 +154,8 @@ private fun contentWindowInsets(
 /**
  * The list of the folder shown ([rememberShownList]) on its sheet, fading through on a folder switch ([folderSwitch]).
  * Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again whenever
- * it measures it anew, i.e. in every frame of the top bar collapsing or expanding, and those frames stop here.
+ * it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and those
+ * frames stop here.
  */
 @Suppress("LongParameterList") // The state, events, list state and padding, the open chat and the folder switch.
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

@@ -111,14 +111,16 @@ class ChatListFolderSwitchTest {
 
     @Test
     fun `the selected folder's list starts at its top`() {
+        val listState = LazyListState()
         state = ChatListPreviewData.contentWithFolders.copy(content = ChatListContent.Content(manyRows))
-        setScreen()
+        setScreen(listState)
         composeRule.onNode(hasScrollToIndexAction()).performScrollToIndex(manyRows.lastIndex)
 
         state = workFolder.copy(selectedFolderId = 2, content = ChatListContent.Content(manyRows))
         composeRule.waitForIdle()
 
-        row(SAVED_MESSAGES).assertIsDisplayed()
+        assertEquals(0, listState.firstVisibleItemIndex)
+        composeRule.onAllNodes(rowMatcher(SAVED_MESSAGES))[0].assertIsDisplayed()
     }
 
     @Test

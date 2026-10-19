@@ -17,8 +17,9 @@ import androidx.compose.ui.unit.dp
  * @property illustrationMaxSize the largest side of a hero illustration or a QR code frame.
  * @property avatarSmall an `Avatar` in a one- or two-line list item: contacts, members, search results (the M3 list
  *   item's leading avatar).
- * @property avatarMedium an `Avatar` in a chat list row, next to a title and a two-line preview, and the account's on
- *   its card at the top of Settings.
+ * @property avatarRow an `Avatar` in a chat list row, next to a title and a one-line preview (`docs/DESIGN_SYSTEM.md`
+ *   §7: between Material's 40 dp list avatar and [avatarMedium], so photos stay recognizable in a dense list).
+ * @property avatarMedium an `Avatar` on the account's card at the top of Settings.
  * @property avatarLarge an `Avatar` heading a screen on its own: the profile photo in Edit profile.
  * @property avatarExtraSmall an `Avatar` beside the last of a group of messages in a group chat, next to its bubble.
  * @property avatarRing the width of a ring around an `Avatar`, and of the gap that sets it off from the avatar, e.g.
@@ -63,6 +64,7 @@ data class PingogramSizes(
     val contentMaxWidth: Dp = 560.dp,
     val illustrationMaxSize: Dp = 280.dp,
     val avatarSmall: Dp = 40.dp,
+    val avatarRow: Dp = 48.dp,
     val avatarMedium: Dp = 56.dp,
     val avatarLarge: Dp = 96.dp,
     val avatarExtraSmall: Dp = 32.dp,
