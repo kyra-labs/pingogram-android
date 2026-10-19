@@ -44,9 +44,9 @@ internal fun AboutRoute(
 }
 
 /**
- * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source code on GitHub (opened in the
- * browser), its license, and the statement that it is an unofficial client, not affiliated with Telegram, as
- * Telegram's API terms require of third-party apps (`CLAUDE.md` rule 3).
+ * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source
+ * code on GitHub (opened in the browser), its license, and the statement that it is an unofficial client, not
+ * affiliated with Telegram, as Telegram's API terms require of third-party apps (`CLAUDE.md` rule 3).
  */
 @Composable
 internal fun AboutScreen(
