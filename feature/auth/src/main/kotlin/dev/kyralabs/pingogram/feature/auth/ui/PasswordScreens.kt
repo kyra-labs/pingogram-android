@@ -3,10 +3,11 @@ package dev.kyralabs.pingogram.feature.auth.ui
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -21,8 +22,10 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** FR-A4: the 2-step verification password, its hint, and "forgot password". */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PasswordScreen(
     state: AuthStepUiState.Password,
@@ -33,21 +36,25 @@ fun PasswordScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_password_title),
+        badgeShape = MaterialShapes.Gem,
+        badgeIcon = UiR.drawable.ic_lock,
         description = stringResource(R.string.auth_password_description),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitPassword) },
                 enabled = canSubmit && state.password.isNotEmpty(),
                 inProgress = pendingAction == AuthAction.SubmitPassword,
             )
+        },
+        secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_forgot_password),
                 onClick = { onEvent(AuthEvent.ForgotPassword) },
                 enabled = canSubmit,
                 inProgress = pendingAction == AuthAction.RequestPasswordRecovery,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         },
     ) {
@@ -72,6 +79,7 @@ fun PasswordScreen(
 }
 
 /** FR-A4, forgot password: the recovery code sent to the recovery email address. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PasswordRecoveryCodeScreen(
     state: AuthStepUiState.PasswordRecoveryCode,
@@ -82,6 +90,9 @@ fun PasswordRecoveryCodeScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_recovery_title),
+        badgeShape = MaterialShapes.VerySunny,
+        badgeIcon = UiR.drawable.ic_alternate_email,
+        isError = state.error != null,
         description =
             if (state.emailAddressPattern.isBlank()) {
                 stringResource(R.string.auth_recovery_description_unknown)
@@ -89,7 +100,7 @@ fun PasswordRecoveryCodeScreen(
                 stringResource(R.string.auth_recovery_description, state.emailAddressPattern)
             },
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitRecoveryCode) },
@@ -109,6 +120,7 @@ fun PasswordRecoveryCodeScreen(
 }
 
 /** FR-A4, forgot password: the new password, twice, and an optional hint; submitting logs in. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NewPasswordScreen(
     state: AuthStepUiState.NewPassword,
@@ -119,9 +131,12 @@ fun NewPasswordScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_new_password_title),
+        badgeShape = MaterialShapes.PuffyDiamond,
+        badgeIcon = UiR.drawable.ic_lock,
         description = stringResource(R.string.auth_new_password_description),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_new_password_submit),
                 onClick = { onEvent(AuthEvent.SubmitNewPassword) },

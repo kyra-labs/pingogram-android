@@ -462,7 +462,11 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 
   `SupportingPaneScaffold` for profile/shared media. Canonical layouts only.
 - Auth on medium+ widths and on compact heights: two panes, the step's headline and illustration at the start and
-  its form with the actions at the end, so the primary action is always visible.
+  its form with the actions at the end, so the primary action is always visible. Phones in landscape are medium wide;
+  a window that is compact in both (split screen) keeps the compact layout, as two panes would be too narrow. The
+  form pane scrolls above its actions when it does not fit. The QR step's code is its form (end pane), its
+  instructions go with the headline. Compact portrait: one column that scrolls, the actions pinned above the keyboard
+  (at 150% font scale and more they follow the content).
 - Pane behaviour on foldables: `FoldingFeature`-aware hinge avoidance (`material3-adaptive`).
 - **Density** (owner, 2026-10-19: the app must not look bigger than Google's apps on the same phone):
   - Use Material's component sizes, not larger ones: small app bars on dense lists, 40 dp buttons and icon buttons

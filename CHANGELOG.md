@@ -36,6 +36,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   offline.
 
 ### Changed
+- The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
+  shaped icon, which turns into a warning sign when something needs fixing or Telegram asks you to wait. "Next" is a
+  normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
+  password?") at the bottom left. On tablets and on phones held sideways the title sits beside the form, so "Next"
+  is always on screen without scrolling.
 - The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
   a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
   instead of six or seven.

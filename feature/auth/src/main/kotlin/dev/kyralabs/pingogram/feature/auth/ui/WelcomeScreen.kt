@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPaneLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.isCompactHeightWindow
+import dev.kyralabs.pingogram.feature.auth.ui.components.isCompactWidthWindow
 import dev.kyralabs.pingogram.feature.auth.ui.components.squareOfWidth
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
@@ -43,7 +44,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * FR-A1: the brand (`displayMediumEmphasized`), an honest note that Pingogram is not Telegram's own app (CLAUDE.md
  * rule 3), "Start messaging", and Telegram's terms of service and privacy policy. The hero, Pingogram's mark on an
- * Expressive shape, morphs while "Start messaging" is pressed.
+ * Expressive shape, morphs while "Start messaging" is pressed. On wide windows and in landscape the hero and the brand
+ * are the start pane, the rest the end one.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -57,20 +59,22 @@ fun WelcomeScreen(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         centerVertically = true,
+        header = {
+            WelcomeHero(isMorphed = isStartPressed)
+            val brandStyle = MaterialTheme.typography.displayMediumEmphasized
+            Text(
+                text = stringResource(R.string.auth_welcome_title),
+                style = brandStyle,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                // One word that must not break: it shrinks instead when it does not fit (narrow window, 200% font).
+                autoSize = TextAutoSize.StepBased(maxFontSize = brandStyle.fontSize),
+                modifier = Modifier.fillMaxWidth().semantics { heading() },
+            )
+        },
         actions = { WelcomeActions(startInteractions = startInteractions, onEvent = onEvent) },
     ) {
-        WelcomeHero(isMorphed = isStartPressed)
-        val brandStyle = MaterialTheme.typography.displayMediumEmphasized
-        Text(
-            text = stringResource(R.string.auth_welcome_title),
-            style = brandStyle,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            // One word that must not break: it shrinks instead when it does not fit (narrow window, font scale 200%).
-            autoSize = TextAutoSize.StepBased(maxFontSize = brandStyle.fontSize),
-            modifier = Modifier.fillMaxWidth().semantics { heading() },
-        )
         Text(
             text = stringResource(R.string.auth_welcome_tagline),
             style = MaterialTheme.typography.titleMedium,
@@ -86,7 +90,10 @@ fun WelcomeScreen(
     }
 }
 
-/** "Start messaging", and the terms of service and privacy policy that continuing accepts. */
+/**
+ * "Start messaging", the hero moment's medium button (`docs/DESIGN_SYSTEM.md` §6): as wide as the column on compact
+ * windows, as wide as its label on wider ones. Then the terms of service and privacy policy that continuing accepts.
+ */
 @Composable
 private fun ColumnScope.WelcomeActions(
     startInteractions: MutableInteractionSource,
@@ -97,6 +104,8 @@ private fun ColumnScope.WelcomeActions(
         onClick = { onEvent(AuthEvent.StartMessaging) },
         enabled = true,
         inProgress = false,
+        modifier = if (isCompactWidthWindow()) Modifier.fillMaxWidth() else Modifier,
+        hero = true,
         interactionSource = startInteractions,
     )
     Text(

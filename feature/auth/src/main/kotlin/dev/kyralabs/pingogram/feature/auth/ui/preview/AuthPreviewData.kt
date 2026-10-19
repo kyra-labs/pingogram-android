@@ -203,6 +203,9 @@ internal object AuthPreviewData {
         )
 }
 
+/** A phone in landscape, for `@Preview(device = …)`: medium width, compact height. */
+internal const val LANDSCAPE_PHONE = "spec:width=891dp,height=411dp,orientation=landscape"
+
 /** An [AuthScreen] in the preview theme. */
 @Composable
 internal fun AuthScreenPreview(state: AuthUiState) {
