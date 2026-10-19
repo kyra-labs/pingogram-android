@@ -5,15 +5,29 @@
     <!-- TDLib's connection to Telegram's data centers. Every permission needs the owner's approval
          (CLAUDE.md) and is pinned by AppManifestTest. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Media3 ExoPlayer (feature:chat) declares these for streaming and wake locks. Pingogram plays only files
-         TDLib downloaded and sets no wake mode, and ExoPlayer handles the missing network permission, so they are
-         left out. A dependency that needs one (WorkManager needs WAKE_LOCK) must drop its line here, with the owner's
-         approval. -->
+    <!-- Notifications of new messages (REQUIREMENTS.md FR-N1, approved by the owner on 2026-10-19). Android 13 and
+         later ask the user at run time: the chat list explains why first, and asks once. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- WorkManager (notification actions) declares these four. It needs WAKE_LOCK and FOREGROUND_SERVICE only before
+         Android 12, where expedited work runs as a foreground service that holds a wake lock while a reply is sent
+         (approved by the owner on 2026-10-19); from Android 12 on it runs as an expedited job, so both stop at API 30.
+         ACCESS_NETWORK_STATE serves only network constraints, which Pingogram's work has none of (TDLib queues
+         requests while offline), and RECEIVE_BOOT_COMPLETED only reschedules work after a reboot, which its
+         short-lived work does not need: both are left out. Media3 ExoPlayer (feature:chat) declares
+         ACCESS_NETWORK_STATE and WAKE_LOCK too; it plays only files TDLib downloaded and sets no wake mode. -->
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK"
+        android:maxSdkVersion="30"
+        tools:node="replace" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        android:maxSdkVersion="30"
+        tools:node="replace" />
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE"
         tools:node="remove" />
     <uses-permission
-        android:name="android.permission.WAKE_LOCK"
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"
         tools:node="remove" />
     <!-- Saving a photo or video from the media viewer into the gallery on Android 8–9 (approved by the owner on
          2026-10-18), asked for at run time when first needed. Android 10 and later save through MediaStore
@@ -45,6 +59,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- WorkManager starts when first used (PingogramApplication's Configuration.Provider, with Hilt's worker
+             factory), not at every process start through App Startup. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- Hands TDLib's downloaded files to the app the user picks, with a read grant for one URI at a time:
              sharing from the media viewer, opening documents (approved by the owner on 2026-10-18); and to the

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.ui.theme
 
 import android.app.UiModeManager
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.material3.ColorScheme
@@ -52,6 +53,21 @@ fun rememberPingogramColorScheme(
         )
     }
 }
+
+/**
+ * The light scheme for what Pingogram draws outside its own windows, where the system decides light or dark, e.g. the
+ * placeholder avatars of notifications: Material You from the wallpaper on Android 12+ when [dynamicColor] is on, the
+ * brand scheme otherwise. Not composable, so code without a composition (a notification renderer) can use it.
+ */
+fun standaloneColorScheme(
+    context: Context,
+    dynamicColor: Boolean,
+): ColorScheme =
+    if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        systemDynamicColors(context, dark = false).scheme
+    } else {
+        brandColorScheme(dark = false, contrast = Contrast.Standard)
+    }
 
 /**
  * Picks the scheme for the given settings. [dynamicScheme] is the platform's Material You scheme, or

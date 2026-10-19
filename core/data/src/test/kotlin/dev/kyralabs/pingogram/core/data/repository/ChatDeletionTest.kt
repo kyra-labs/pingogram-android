@@ -27,7 +27,7 @@ class ChatDeletionTest {
     private val client = FakeTdlibClient()
 
     private fun TestScope.repository() =
-        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
 
     private fun ok() = TdResult.Success(TdApi.Ok())
 

@@ -50,6 +50,9 @@ class ChatsListDetailScreenshotTest {
     @get:Rule(order = 1)
     val activityRegistration = ActivityRegistration(HiltTestActivity::class.java)
 
+    @get:Rule(order = 1)
+    val notificationsAllowed = NotificationsAllowed()
+
     @get:Rule(order = 2)
     val composeRule = createAndroidComposeRule<HiltTestActivity>()
 
