@@ -19,6 +19,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   message again, each only where Telegram allows it. A reply shows a bar above the composer and is kept in the
   chat's draft on all your devices; editing puts the message's text or caption, with its formatting, back in the
   composer. Tap a reaction under a message to add or remove yours.
+- Attach photos, videos, files, contacts and polls: the attach button beside the message field opens Gallery (up to
+  10 at once), Camera, File, Contact and, in groups, channels, bots and Saved Messages, Poll. Picked items show in a
+  preview first, where you can remove some, add a formatted caption, and send now, without sound or later. Photos are
+  sent upright, at most 2560 px and without location data; photos and videos go as albums of up to 10, files as
+  albums of files. Polls can be anonymous, allow several answers, or be a quiz with one correct answer. A photo, video
+  or file shows its upload progress in the chat; tap X (or TalkBack's "Cancel upload") to stop it.
 - Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
   and storage, and About pages; Log out moved to the end.
 - Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper
