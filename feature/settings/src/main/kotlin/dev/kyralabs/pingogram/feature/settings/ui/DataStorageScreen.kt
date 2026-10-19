@@ -1,43 +1,26 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.text.format.Formatter
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
-import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -111,9 +94,17 @@ internal fun DataStorageScreen(
     ) {
         SettingsSection(stringResource(R.string.settings_section_storage_usage)) {
             when (val usage = state.usage) {
-                StorageUsageState.Loading -> UsageLoading()
-                is StorageUsageState.Content -> UsageItems(usage.usage)
-                is StorageUsageState.Error -> UsageError(usage, onRetry = { onEvent(DataStorageEvent.Retry) })
+                StorageUsageState.Loading -> {
+                    SettingsLoading(stringResource(R.string.settings_storage_usage_loading))
+                }
+
+                is StorageUsageState.Content -> {
+                    UsageItems(usage.usage)
+                }
+
+                is StorageUsageState.Error -> {
+                    SettingsError(usage.error, onRetry = { onEvent(DataStorageEvent.Retry) })
+                }
             }
         }
         SettingsSection(stringResource(R.string.settings_section_cache)) {
@@ -125,21 +116,6 @@ internal fun DataStorageScreen(
             onConfirm = { onEvent(DataStorageEvent.ConfirmClearCache) },
             onDismiss = { onEvent(DataStorageEvent.DismissClearCache) },
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun UsageLoading() {
-    val loading = stringResource(R.string.settings_storage_usage_loading)
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.extraLarge),
-        contentAlignment = Alignment.Center,
-    ) {
-        LoadingIndicator(Modifier.semantics { contentDescription = loading })
     }
 }
 
@@ -176,36 +152,6 @@ private fun UsageItems(usage: StorageUsage) {
         colors = settingsItemColors(),
     ) {
         Text(stringResource(R.string.settings_storage_database))
-    }
-}
-
-/** Why the usage could not be loaded, and a button to try again. */
-@Composable
-private fun UsageError(
-    state: StorageUsageState.Error,
-    onRetry: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(MaterialTheme.spacing.large),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-    ) {
-        Text(
-            text = errorText(state.error),
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        FilledTonalButton(onClick = onRetry) {
-            Text(
-                text = stringResource(R.string.settings_retry),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
-        }
     }
 }
 

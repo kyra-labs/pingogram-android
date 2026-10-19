@@ -24,6 +24,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   again when you open them.
 - About: the app version, a link to the source code, the license and a note that Pingogram is an unofficial
   Telegram client.
+- Privacy and security in Settings: choose who can see your phone number, last seen and online status and
+  profile photos, whose forwards of your messages link to your account, and who can call you, add you to groups
+  and channels or send you voice and video messages (limiting the last needs Telegram Premium). Exceptions set
+  in other apps are shown and kept when you change a choice.
+- Blocked users: everyone you blocked, with a button to unblock and Undo.
+- Active sessions: the devices logged in to your account. Confirm new logins, or terminate one session or all
+  other sessions.
+- Whether two-step verification is on, and whether a recovery email is set.
+
+### Fixed
+- "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
+  instead of being cut off.
 
 ## [0.2.0] - 2026-10-18
 

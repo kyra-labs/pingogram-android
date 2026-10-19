@@ -1,7 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -9,7 +7,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -39,46 +36,37 @@ internal fun LogOutItem(
                 null
             },
         supportingContent = { Text(stringResource(R.string.settings_log_out_summary)) },
-        colors =
-            ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = MaterialTheme.colorScheme.error,
-                leadingContentColor = MaterialTheme.colorScheme.error,
-            ),
+        colors = destructiveItemColors(),
     ) {
         Text(stringResource(R.string.settings_log_out))
     }
 }
 
-/** The destructive confirmation (`docs/DESIGN_SYSTEM.md` §6: `AlertDialog` for destructive confirmations only). */
+/** The colors of a destructive row in a [SettingsSection]: its text and icon in the error role, on the card. */
+@Composable
+internal fun destructiveItemColors() =
+    ListItemDefaults.colors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.error,
+        leadingContentColor = MaterialTheme.colorScheme.error,
+    )
+
+/** The destructive confirmation ([DestructiveDialog]). */
 @Composable
 internal fun LogOutDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_log_out_dialog_confirm),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = stringResource(R.string.settings_log_out_dialog_dismiss),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        },
-        icon = { Icon(painter = painterResource(R.drawable.ic_logout), contentDescription = null) },
-        title = { Text(stringResource(R.string.settings_log_out_dialog_title)) },
-        text = { Text(stringResource(R.string.settings_log_out_dialog_text)) },
+    DestructiveDialog(
+        icon = R.drawable.ic_logout,
+        texts =
+            DestructiveDialogTexts(
+                title = stringResource(R.string.settings_log_out_dialog_title),
+                text = stringResource(R.string.settings_log_out_dialog_text),
+                confirm = stringResource(R.string.settings_log_out_dialog_confirm),
+            ),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
