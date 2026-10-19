@@ -123,8 +123,10 @@ internal fun ChatRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
- * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why.
+ * says that no camera app can. A sponsored message's link opens through [openUri] (the platform's handler), or a
+ * snackbar says that no app can; what came of reporting one is a snackbar too. After forwarding a snackbar says to
+ * how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another chat; or for
+ * how many it failed, and why.
  */
 @Composable
 internal fun ChatEffects(
@@ -137,6 +139,7 @@ internal fun ChatEffects(
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     onLaunchCamera: (path: String) -> Boolean = { false },
+    openUri: (uri: String) -> Boolean = rememberUriOpener(),
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -154,7 +157,11 @@ internal fun ChatEffects(
                         context.openedFileNotice(effect, resources, openFile)
                     }
 
-                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable -> {
+                    ChatEffect.PlaybackFailed,
+                    ChatEffect.MessageUnavailable,
+                    ChatEffect.ActionUnavailable,
+                    is ChatEffect.SponsoredNotice,
+                    -> {
                         resources.getString(effect.noticeText())
                     }
 
@@ -176,10 +183,6 @@ internal fun ChatEffects(
                         copiedNotice(resources)
                     }
 
-                    ChatEffect.ActionUnavailable -> {
-                        resources.getString(R.string.message_action_unavailable)
-                    }
-
                     ChatEffect.FocusComposer -> {
                         composerFocus.request()
                         ""
@@ -192,6 +195,10 @@ internal fun ChatEffects(
 
                     is ChatEffect.Forwarded, is ChatEffect.ForwardFailed -> {
                         forwardNotice(resources, effect, showErrorDetails)
+                    }
+
+                    is ChatEffect.OpenUrl -> {
+                        if (openUri(effect.url)) "" else resources.getString(R.string.sponsored_no_app)
                     }
                 }
             if (message.isNotEmpty()) {
@@ -224,10 +231,22 @@ private fun Context.openedFileNotice(
 private fun copiedNotice(resources: Resources): String =
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) resources.getString(R.string.message_copied) else ""
 
+/** The snackbar after reporting a sponsored message. */
+private val SponsoredReportNotice.text: Int
+    get() =
+        when (this) {
+            SponsoredReportNotice.Reported -> R.string.sponsored_reported
+            SponsoredReportNotice.AdsHidden -> R.string.sponsored_ads_hidden
+            SponsoredReportNotice.PremiumRequired -> R.string.sponsored_premium_required
+            SponsoredReportNotice.ReportFailed -> R.string.sponsored_report_failed
+        }
+
 /** The text of a snackbar that only tells something. */
 private fun ChatEffect.noticeText(): Int =
     when (this) {
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
+        ChatEffect.ActionUnavailable -> R.string.message_action_unavailable
+        is ChatEffect.SponsoredNotice -> notice.text
         else -> R.string.chat_message_unavailable
     }
 

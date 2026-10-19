@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +31,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
@@ -57,8 +59,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * Only the signed-in app has navigation; the login flow is full screen. The window size class picks it: in compact
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
- * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows a collapsed
- * `WideNavigationRail` with the search button at its top, from a `NavigationSuiteScaffold`. The `NavHost` keeps its
+ * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows and in windows of
+ * compact height a `WideNavigationRail` with the search button at its top, from a `NavigationSuiteScaffold`, expanded
+ * in large windows ([pingogramNavigationSuiteType]). The `NavHost` keeps its
  * place in the composition across both, so rotating or resizing the window never resets its screens. Full-screen
  * destinations (the media viewer) show neither.
  *
@@ -71,6 +74,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (a conversation, the archive) would do that in the frames that start and end its transition. Screens pushed on top
  * of a tab do not read them.
  *
+ * [chatToOpen] (from a notification) is opened above the chat list once the account is logged in, then reported to
+ * [onChatOpened]; nobody logged in drops it ([PingogramNavHost]).
+ *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
@@ -81,6 +87,8 @@ fun PingogramApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
+    chatToOpen: Long? = null,
+    onChatOpened: () -> Unit = {},
 ) {
     val currentEntry = navController.currentBackStackEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
@@ -98,8 +106,8 @@ fun PingogramApp(
     // that tab. A plain holder rather than state: the shell recomposes whenever the current tab changes.
     val lastTab = remember { LastTab() }
     val barTab = currentTab?.also { lastTab.tab = it } ?: lastTab.tab
-    val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
-    val floatingBar = adaptiveType.isNavigationBar()
+    val adaptiveType = pingogramNavigationSuiteType(currentWindowAdaptiveInfoV2().windowSizeClass)
+    val floatingBar = adaptiveType == NavigationSuiteType.ShortNavigationBarCompact
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
     val floatingBarSpace = inMainGraph && floatingBar
     val floatingBarSlot = showNavigation && floatingBar && currentTab != null
@@ -110,7 +118,7 @@ fun PingogramApp(
         modifier = modifier,
         navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
         // The scaffold shows its primary action even without navigation.
-        primaryActionContent = { if (showRail) SearchButton(onClick = openSearch) },
+        primaryActionContent = { if (showRail) SearchButton(adaptiveType, onClick = openSearch) },
     ) {
         Box(Modifier.fillMaxSize()) {
             CompositionLocalProvider(
@@ -122,7 +130,7 @@ fun PingogramApp(
                     // The same progress as the login flow's first step: TDLib is still starting.
                     AuthProgressScreen(isLoggingOut = false)
                 } else {
-                    PingogramNavHost(navController, uiState)
+                    PingogramNavHost(navController, uiState, chatToOpen = chatToOpen, onChatOpened = onChatOpened)
                 }
             }
             // Compact windows only: composed there even while hidden (FloatingNavigationBar).
@@ -148,23 +156,57 @@ private class LastTab {
     var tab: TopLevelDestination? = null
 }
 
-/** Navigation bars (rather than rails or drawers) are what compact windows get; Pingogram floats them. */
-private fun NavigationSuiteType.isNavigationBar(): Boolean =
-    this == NavigationSuiteType.ShortNavigationBarCompact ||
-        this == NavigationSuiteType.ShortNavigationBarMedium ||
-        this == NavigationSuiteType.NavigationBar
+/**
+ * The navigation each window gets (`docs/DESIGN_SYSTEM.md` §6, §6.1): the floating bar in compact widths, a collapsed
+ * rail in medium and expanded widths and in windows of compact height (phones in landscape, tabletop), where a bar
+ * would take height that is scarce, and the rail expanded from large widths (1200 dp) on. Material's default
+ * ([NavigationSuiteScaffoldDefaults.navigationSuiteType]) gives compact heights a short navigation bar and never
+ * expands the rail.
+ */
+internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): NavigationSuiteType =
+    when {
+        !windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) -> {
+            NavigationSuiteType.WideNavigationRailCollapsed
+        }
+
+        !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) -> {
+            NavigationSuiteType.ShortNavigationBarCompact
+        }
+
+        windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND) -> {
+            NavigationSuiteType.WideNavigationRailExpanded
+        }
+
+        else -> {
+            NavigationSuiteType.WideNavigationRailCollapsed
+        }
+    }
 
 /**
- * The rail's primary action: global search, as the floating bar's detached button is in compact windows. The rail's
+ * The rail's primary action: global search, as the floating bar's detached button is in compact windows. The
+ * collapsed rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6). The rail's
  * header places it at its start edge, so it brings its own start padding, as in Material's rail samples.
  */
 @Composable
-private fun SearchButton(onClick: () -> Unit) {
-    FloatingActionButton(onClick = onClick, modifier = Modifier.padding(start = RAIL_HEADER_START_PADDING)) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_search),
-            contentDescription = stringResource(R.string.nav_search),
+private fun SearchButton(
+    navigationSuiteType: NavigationSuiteType,
+    onClick: () -> Unit,
+) {
+    val expanded = navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded
+    val modifier = Modifier.padding(start = RAIL_HEADER_START_PADDING)
+    val icon = painterResource(UiR.drawable.ic_search)
+    val label = stringResource(R.string.nav_search)
+    if (expanded) {
+        ExtendedFloatingActionButton(
+            onClick = onClick,
+            icon = { Icon(painter = icon, contentDescription = null) },
+            text = { Text(label) },
+            modifier = modifier,
         )
+    } else {
+        FloatingActionButton(onClick = onClick, modifier = modifier) {
+            Icon(painter = icon, contentDescription = label)
+        }
     }
 }
 

@@ -66,12 +66,19 @@ internal fun CountryPickerSheet(
                     ),
             )
         }
+        val motion = MaterialTheme.motionScheme
         LazyColumn {
             items(state.countries, key = { it.isoCode }, contentType = { CONTENT_TYPE_COUNTRY }) { country ->
                 CountryItem(
                     country = country,
                     onClick = { onEvent(AuthEvent.CountrySelected(country.isoCode)) },
-                    modifier = Modifier.animateItem(),
+                    // Filtering moves rows: placement on the default spatial spring, fades on the effects springs (§5).
+                    modifier =
+                        Modifier.animateItem(
+                            fadeInSpec = motion.defaultEffectsSpec(),
+                            placementSpec = motion.defaultSpatialSpec(),
+                            fadeOutSpec = motion.fastEffectsSpec(),
+                        ),
                 )
             }
             if (state.countries.isEmpty()) {

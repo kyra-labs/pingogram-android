@@ -25,7 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What the chat list composes again while the user scrolls, collapses its top bar, and leaves and comes back
+ * What the chat list composes again while the user scrolls, drags it under its top bar, and leaves and comes back
  * (`docs/PERFORMANCE.md` §4: no recomposition of what stays on screen), counted with [RecompositionCounter] frame by
  * frame on the test clock.
  */
@@ -61,7 +61,7 @@ class ChatListRecompositionTest {
     }
 
     @Test
-    fun `collapsing the top bar recomposes neither the bar's composables nor the list's`() {
+    fun `dragging the list under its pinned top bar recomposes neither the bar's composables nor the list's`() {
         setScreen(connection = ConnectionStatus.Connecting)
         val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
         val barBottom = list.fetchSemanticsNode().boundsInRoot.top
@@ -74,10 +74,10 @@ class ChatListRecompositionTest {
         list.performTouchInput { up() }
         repeat(SETTLE_FRAMES) { frame() }
 
-        // The bar collapsed: the list moved up with it.
-        assertTrue(list.fetchSemanticsNode().boundsInRoot.top < barBottom)
-        // Material's Scaffold runs the screen's content lambda again in every frame the bar's height changes, and
-        // everything that lambda calls skips.
+        // The bar is pinned: the list scrolled under it and stayed where it was.
+        assertEquals(barBottom, list.fetchSemanticsNode().boundsInRoot.top)
+        assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > 0)
+        // The bar takes the scroll through its scroll behavior, read in the layout and draw phases.
         assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
     }
 

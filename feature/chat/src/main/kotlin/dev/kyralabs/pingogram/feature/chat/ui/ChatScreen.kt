@@ -92,6 +92,9 @@ import kotlinx.collections.immutable.ImmutableMap
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
  *   files show in their preview, a new poll in its form ([AttachSheets]). Sending them now scrolls to the newest
  *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.uploads]).
+ * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
+ *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
+ *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -152,7 +155,7 @@ internal fun ChatScreen(
             ChatBody(state, onEvent, listState, jumpState, contentPadding)
         }
     }
-    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    ChatSheets(state, onEvent)
     AttachSheets(
         state = state,
         inputs = attach,
@@ -168,6 +171,16 @@ internal fun ChatScreen(
             onDismiss = { onEvent(ChatEvent.DismissDelete) },
         )
     }
+}
+
+/** The sheets over the conversation: a message's actions, and "About this ad" of a sponsored message. */
+@Composable
+private fun ChatSheets(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    state.sponsoredSheet?.let { SponsoredMessageSheet(it, onEvent) }
 }
 
 /** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
@@ -259,8 +272,14 @@ private fun MessageList(
         }
     }
     FollowListAnchor(content, listState, jumpState, leadingEntries = if (showsNewerState) 1 else 0)
-    FollowNewestMessage(content.items.firstOrNull()?.key, content.reachedEnd, listState)
+    FollowNewestMessage(
+        newestKey = content.items.firstOrNull()?.key,
+        newestMessageKey = content.items.newestMessageKey(),
+        reachedEnd = content.reachedEnd,
+        listState = listState,
+    )
     ReportVisibleMessages(content.items, listState, onEvent)
+    ReportSponsoredViews(content.items, listState, onEvent)
     ReportNearEnds(listState, onEvent)
 }
 
@@ -286,7 +305,7 @@ private fun LazyListScope.pagesState(
 
 /**
  * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
- * (only the message in the player has one), a service message, a date or the unread divider.
+ * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message.
  */
 @Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
@@ -325,6 +344,10 @@ private fun ChatItemRow(
         is ChatItem.UnreadDivider -> {
             UnreadDividerRow(modifier)
         }
+
+        is ChatItem.Sponsored -> {
+            SponsoredMessageCard(item.card, onEvent, modifier)
+        }
     }
 }
 
@@ -358,6 +381,7 @@ private val ChatItem.contentType: Any
             is ChatItem.Service -> SERVICE
             is ChatItem.DateSeparator -> DATE
             is ChatItem.UnreadDivider -> UNREAD
+            is ChatItem.Sponsored -> SPONSORED
         }
 
 /** The content types of bubbles: their side and their frame, whose layouts differ the most. */
@@ -389,6 +413,7 @@ private enum class BubbleContentType {
 private const val SERVICE = "service"
 private const val DATE = "date"
 private const val UNREAD = "unread"
+private const val SPONSORED = "sponsored"
 private const val OLDER_KEY = "older"
 private const val NEWER_KEY = "newer"
 private const val PAGES_STATE = "pages"

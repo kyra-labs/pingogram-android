@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +18,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.ui.PingogramApp
@@ -29,6 +31,10 @@ import dev.kyralabs.pingogram.ui.PingogramApp
  * The theme follows the Appearance settings ([MainActivityViewModel.appearance]), and so do the system bars' icons:
  * light on a dark theme, dark on a light one, whatever the system's own setting. Nothing is composed until the settings
  * are read, so the app never draws in a theme the user did not choose; the splash screen covers that wait.
+ *
+ * A notification or a conversation shortcut opens a chat through the intent that starts the activity, or, when it runs
+ * already, through [onNewIntent] ([NotificationIntents.chatIdOf]). A restored activity (rotation, process death) does
+ * not act on its old intent again: its restored back stack shows the chat already.
  *
  * Test tags show as resource ids, so the Macrobenchmarks and the Baseline Profile generator (`:benchmark`) find the
  * lists they scroll with UiAutomator (`docs/PERFORMANCE.md` §9).
@@ -45,15 +51,32 @@ class MainActivity : ComponentActivity() {
         // the splash time limit.
         splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
         enableEdgeToEdge()
+        if (savedInstanceState == null) openChatOf(intent)
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             appearance?.let { settings ->
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
                 AppTheme(settings) {
-                    PingogramApp(uiState = uiState, modifier = Modifier.semantics { testTagsAsResourceId = true })
+                    PingogramApp(
+                        uiState = uiState,
+                        modifier = Modifier.semantics { testTagsAsResourceId = true },
+                        chatToOpen = chatToOpen,
+                        onChatOpened = viewModel::onChatOpened,
+                    )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openChatOf(intent)
+    }
+
+    /** Opens the chat [intent] names, if it is a notification's or a conversation shortcut's. */
+    private fun openChatOf(intent: Intent?) {
+        NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
     }
 
     /** [PingogramTheme] for [settings], with system bar icons that contrast with the theme it resolves to. */

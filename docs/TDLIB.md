@@ -128,8 +128,15 @@ Transient errors (IO, a busy Keystore) are thrown instead and never cost the ses
 still answers `SetTdlibParameters` with 401 (wrong key), the client discards key and database
 once and sends the parameters again.
 
-Useful options via `setOption`: `notification_group_count_max`, `notification_group_size_max`,
-`ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
+Options set via `setOption`:
+
+- `notification_group_count_max` = 25 (TDLib's maximum) and `notification_group_size_max` = 10 (TDLib's default),
+  by `TdlibNotificationRepository` at every `AuthorizationStateReady`. TDLib's notification engine stays off until the
+  first is set; TDLib keeps both in its database, so from the next start on it restores the active notifications with
+  `updateActiveNotifications` before any other notification update. 25 groups and a summary stay within the 50
+  notifications Android shows per app.
+
+Other useful options: `ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
 
 ## Authorization state machine
 
@@ -161,7 +168,7 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 `updateSecretChat`, `updateNewMessage`, `updateMessageSendSucceeded/Failed`,
 `updateMessageContent`, `updateMessageEdited`, `updateDeleteMessages`,
 `updateMessageInteractionInfo`, `updateChatAction`, `updateFile`, `updateFileDownloads`,
-`updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`,
+`updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`, `updateHavePendingNotifications`,
 `updateUnreadMessageCount`, `updateUnreadChatCount`, `updateScopeNotificationSettings`,
 `updateDefaultReactionType`, `updateAvailableMessageEffects`, `updateStickerSet`,
 `updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`.

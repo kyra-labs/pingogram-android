@@ -26,8 +26,8 @@ import org.robolectric.annotation.Config
  * How the conversation's route handles a downloaded document to open ([ChatEffect.OpenFile]): handed to another app
  * with the document's type and the chooser's title, and a snackbar when no app takes it or the file is gone. The app's
  * `FileProvider` itself is tested in `:app`, which declares it. Also a copied text ([ChatEffect.CopyText]), which goes
- * to the clipboard with a snackbar only before Android 13, a focus request for the composer, and an action that is
- * not allowed.
+ * to the clipboard with a snackbar only before Android 13, a focus request for the composer, an action that is
+ * not allowed, a sponsored message's link and what came of reporting one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -42,8 +42,12 @@ class ChatEffectsTest {
     private val opened = mutableListOf<String>()
     private val copied = mutableListOf<String>()
     private val composerFocus = ComposerFocusState()
+    private val openedUris = mutableListOf<String>()
 
-    private fun setEffects(result: ExternalFileResult = ExternalFileResult.Started) {
+    private fun setEffects(
+        result: ExternalFileResult = ExternalFileResult.Started,
+        uriOpens: Boolean = true,
+    ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val snackbarHostState = remember { SnackbarHostState() }
@@ -57,6 +61,10 @@ class ChatEffectsTest {
                     },
                     copyText = { copied += it },
                     composerFocus = composerFocus,
+                    openUri = { uri ->
+                        openedUris += uri
+                        uriOpens
+                    },
                 )
                 SnackbarHost(snackbarHostState)
             }
@@ -138,6 +146,46 @@ class ChatEffectsTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText(string(R.string.message_action_unavailable)).assertExists()
+    }
+
+    @Test
+    fun `a sponsored message's link opens with the platform`() {
+        setEffects()
+
+        effects.trySend(ChatEffect.OpenUrl("https://t.me/sponsor"))
+        composeRule.waitForIdle()
+
+        assertEquals(listOf("https://t.me/sponsor"), openedUris)
+        composeRule.onNodeWithText(string(R.string.sponsored_no_app)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `no app for a sponsored message's link is a snackbar`() {
+        setEffects(uriOpens = false)
+
+        effects.trySend(ChatEffect.OpenUrl("tg://resolve?domain=sponsor"))
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(string(R.string.sponsored_no_app)).assertExists()
+    }
+
+    @Test
+    fun `what came of a report is a snackbar`() {
+        setEffects()
+        val notices =
+            mapOf(
+                SponsoredReportNotice.Reported to R.string.sponsored_reported,
+                SponsoredReportNotice.AdsHidden to R.string.sponsored_ads_hidden,
+                SponsoredReportNotice.PremiumRequired to R.string.sponsored_premium_required,
+                SponsoredReportNotice.ReportFailed to R.string.sponsored_report_failed,
+            )
+
+        for ((notice, text) in notices) {
+            effects.trySend(ChatEffect.SponsoredNotice(notice))
+            composeRule.waitForIdle()
+
+            composeRule.onNodeWithText(string(text)).assertExists()
+        }
     }
 
     private fun string(

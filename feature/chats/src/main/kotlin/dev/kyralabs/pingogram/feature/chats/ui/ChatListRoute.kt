@@ -25,7 +25,8 @@ import kotlinx.coroutines.launch
  * The Chats tab: hoists its [ChatListViewModel], and reports the app fully drawn once the chat list shows its chats or
  * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Tapping a row
  * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive. [openChatId] is the chat whose conversation
- * shows beside the list, on expanded windows.
+ * shows beside the list, on expanded windows. Above the list, the request to allow notifications
+ * ([NotificationPromptHost]), on Android 13+ until answered.
  */
 @Composable
 internal fun ChatListRoute(
@@ -38,7 +39,9 @@ internal fun ChatListRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
-    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier, openChatId)
+    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier, openChatId) {
+        NotificationPromptHost()
+    }
 }
 
 /**
@@ -66,6 +69,7 @@ private fun ChatListDestination(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     openChatId: Long? = null,
+    header: @Composable () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     ChatListEffects(viewModel.effects, snackbarHostState, onOpenArchive, onOpenChat, onEvent = viewModel::onEvent)
@@ -76,6 +80,7 @@ private fun ChatListDestination(
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         openChatId = openChatId,
+        header = header,
     )
 }
 

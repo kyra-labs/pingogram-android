@@ -54,7 +54,7 @@ fun PingogramTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
         shapes = PingogramShapes,
-        typography = pingogramTypography(dark, LocalConfiguration.current.fontWeightAdjustmentOrZero()),
+        typography = pingogramTypography(LocalConfiguration.current.fontWeightAdjustmentOrZero()),
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,

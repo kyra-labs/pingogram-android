@@ -19,6 +19,12 @@ fun PaddingValues.topOnly(): PaddingValues = TopOf(this)
  */
 fun PaddingValues.withTop(top: Dp): PaddingValues = BelowTopOf(this, top)
 
+/**
+ * The sides of this padding alone, read when asked, e.g. to keep something above a body's content clear of the system
+ * bars and cutouts at the sides, as the content is.
+ */
+fun PaddingValues.sidesOnly(): PaddingValues = BelowTopOf(this, top = 0.dp, bottom = false)
+
 private class TopOf(
     private val padding: PaddingValues,
 ) : PaddingValues {
@@ -34,10 +40,11 @@ private class TopOf(
 private class BelowTopOf(
     private val padding: PaddingValues,
     private val top: Dp,
+    private val bottom: Boolean = true,
 ) : PaddingValues {
     override fun calculateTopPadding(): Dp = top
 
-    override fun calculateBottomPadding(): Dp = padding.calculateBottomPadding()
+    override fun calculateBottomPadding(): Dp = if (bottom) padding.calculateBottomPadding() else 0.dp
 
     override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
         padding.calculateLeftPadding(layoutDirection)

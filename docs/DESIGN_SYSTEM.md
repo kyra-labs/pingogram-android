@@ -36,7 +36,7 @@ fun PingogramTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
         shapes = PingogramShapes,                 // §4
-        typography = pingogramTypography(dark),   // Google Sans Flex, §3
+        typography = pingogramTypography(),       // Google Sans Flex, §3
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,          // §2.2, MaterialTheme.pingogramColors
@@ -77,8 +77,9 @@ fun PingogramTheme(
   `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
   never hand-edit the output.
   - `SchemeVibrant` was chosen by the owner on 2026-10-19. `SchemeTonalSpot` turned the icon's vivid blue into a
-    greyish `#495D92`. The PR that switches the variant shows TonalSpot, Vibrant, Expressive and Fidelity goldens
-    side by side.
+    greyish `#495D92`; Expressive turns `primary` green and Fidelity makes the containers saturated
+    (`docs/audit/images/brand-scheme-variants.png`). `VARIANT=TonalSpot npm run generate` builds another variant to
+    compare.
   - This applies to the brand schemes only; dynamic color follows the system.
 - Dynamic color (Material You) on Android 12+ by default: `dynamicLightColorScheme` /
   `dynamicDarkColorScheme`. User toggle to fall back to brand schemes. On Android 14+ those read the
@@ -112,6 +113,7 @@ fun PingogramTheme(
 | Incoming bubble | `surfaceContainerHigh` / `onSurface` |
 | Selected bubble | `secondaryContainer` / `onSecondaryContainer` |
 | Emoji-only message | no container; time and state `onSurfaceVariant`, read checks `primary` |
+| Sponsored message | filled `Card` with its default colors (`CardDefaults.cardColors()`: `surfaceContainerHighest` / `onSurface`, a step above incoming bubbles); label "Sponsored" / "Recommended" `onSurfaceVariant`; the advertiser's button `FilledTonalButton` (`secondaryContainer` / `onSecondaryContainer`); TDLib's accent color id is not used |
 | Reaction badge | `surfaceContainerHighest` / `onSurfaceVariant`, chosen `secondaryContainer` / `onSecondaryContainer`, a `surface` ring; a 48 dp touch target around the 28 dp badge |
 | Service / date pill | `surfaceContainerHighest` / `onSurfaceVariant` |
 | Unread badge | `primary` / `onPrimary`; muted: `surfaceVariant` / `onSurfaceVariant` |
@@ -199,12 +201,12 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   small: a regular style holds its weight and its emphasized weight (what a bold span resolves to),
   an emphasized style only its own weight, each upright and italic. No style synthesizes a weight or
   slant (`FontSynthesis.None`): a bold span takes the heaviest font of its style instead of a faked
-  bold. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
+  bold. The typography is the same in both themes, built once and cached (`core/ui/.../theme/Type.kt`).
 - The fonts are `GoogleSansFlexFont`s (`core/ui/.../theme/GoogleSansFlexFont.kt`) rather than
   `Font(R.font.google_sans_flex, …)`: their loader makes each typeface once per process. Compose's
   own typeface caches hold 16 entries, fewer than the fonts a list and a conversation use, and each
   reload made a new typeface whose text the platform laid out and rasterized again.
-- `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
+- `pingogramTypography()` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD` 0.
 - Mapping (weight / opsz / ROND): display, headline, `titleLarge` and body 400 · `titleMedium`,
@@ -248,6 +250,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Account card name (Settings home) | `titleLarge`; phone `bodyLarge`, username `bodyMedium` in `onSurfaceVariant`; "Premium" label `labelMediumEmphasized` |
 | Empty state title / body | `headlineSmallEmphasized` / `bodyMedium` |
 | Code blocks in messages | `bodyMedium` + `FontFamily.Monospace` (system) |
+| Sponsored message label / sponsor / text / button | `labelMedium` ("Sponsored", "Recommended") / `titleSmallEmphasized` / `bodyMedium` / `labelLarge` |
+| "About this ad" title / report question | `titleLargeEmphasized` / `titleMedium` |
 
 ## 4. Shape system
 
@@ -322,9 +326,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   typing dots, send confirmation → effects fast.
 - Navigation transitions:
   - **Shared-axis X** for every screen pushed above a tab: conversation, archive, search, settings pages. It is
-    built in `core:ui` from `slideIn/OutHorizontally` by `SharedAxisDistance` on `defaultSpatialSpec` with fades on
-    the effects springs, mirrored on pop. It moves to material3's `MaterialTransitions.HorizontalSharedAxis` once
-    1.6 is published.
+    built in `core:ui` (`sharedAxisXEnter` / `sharedAxisXExit`): a slide by `SharedAxisDistance` on
+    `defaultSpatialSpec` with fades on the effects springs, mirrored on pop. It moves to material3's
+    `MaterialTransitions.HorizontalSharedAxis` once 1.6 is published.
   - **Shared-axis Y** for vertical flows (auth).
   - **Fade-through** only for tab switches and chat folder switches.
   - **Container transform** via `SharedTransitionLayout` for avatar → profile, thumbnail → media viewer, the New
@@ -376,6 +380,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Attach menu | `ModalBottomSheet` + `ButtonGroup` of options; Gallery opens the system Photo Picker (no recent-photos carousel: it would need media permissions, `REQUIREMENTS.md` §7) |
 | Message actions | Long-press lifts the message over a `Scrim`, with the content behind blurred (`RenderEffect`, API 31+; the scrim alone below 31), as Google Messages does. The quick reactions sit above it as a `ToggleButton` row with shape morph, ending in a medium `FilledIconButton` that opens the reactions picker. An expressive menu (`DropdownMenuPopup` with `DropdownMenuGroup`s, destructive items in `error`) sits below it. If the message does not fit, it moves into view on `defaultSpatialSpec` with a `LongPress` haptic. A second long-press selects text in the lifted message. With TalkBack, or when the window is too short, the same items show in a `ModalBottomSheet` |
 | Forward sheet | `ModalBottomSheet`: title, the search bar's `InputField` on its container, a keyed list of chats (Saved Messages first) as toggleable `ListItem`s inset like chat list rows, a picked one `large` in `secondaryContainer` with its avatar morphed into a check (§4); once a chat is picked, `Switch` rows (hide sender's name, hide captions), the composer's field for a comment and a default-size `Button` with the `shapes()` press morph ("Send", `labelLargeEmphasized`) grow in on the default spatial spring |
+| Sponsored message | Channels and bots (`REQUIREMENTS.md` §2): a filled `Card` (default `medium` shape and colors) among the messages, start-aligned and as wide as a bubble can be, never hidden or restyled: the sponsor's circular photo (where TDLib gives one), the label, the sponsor's name and an info `IconButton` (`IconButtonDefaults.shapes()`) on top, the text with its entities, the media (`small` corners inside the card), and the advertiser's `FilledTonalButton` (`ButtonDefaults.shapes()` press morph) at full card width. Below the newest message (`messagesBetween` 0: below every message; otherwise after that many new messages), only where the history reaches the newest message. Viewed once wholly on screen (read from the list's layout); its button, a link in its text or its media open it. The info button opens "About this ad", a `ModalBottomSheet`: what sponsored messages are, the advertiser and more about the ad (selectable `ListItem`s), "Report ad" in `error` with TDLib's reasons as a second page (crossfade on effects springs, `SizeTransform` on `defaultSpatialSpec`, a `LinearWavyProgressIndicator` while it reports), and an informational note on Telegram Premium, never an offer or a link. Screen readers hear label, sponsor and text as one, "About this ad" as a custom action |
 | Reactions picker | In a `ModalBottomSheet` (with TalkBack: in the actions sheet, in place of its actions; content crossfades on effects springs, the sheet resizes on `defaultSpatialSpec`): the message's own reactions as a `HorizontalUncontainedCarousel` of reaction chips (emoji over count), then every reaction the user can add (TDLib's top, recent, popular) as a lazy grid of the same `ToggleButton`s under `titleSmallEmphasized` section headers; a bubble's "+N" opens the sheet there. Custom emoji show their sticker's still picture, or a placeholder |
 | Chat list row | `ListItem` (leading 48 dp circular avatar, title, one line of preview with the sender inline, trailing time + badge): Material's two-line item, 72 dp. Inset in its sheet, `large` when selected (§4). Swipe `SwipeToDismissBox`: read/unread at the start, archive at the end (a full swipe triggers it), pin, mute and delete in the selection toolbar and as screen-reader actions |
 | Chips (filters, mentions) | `FilterChip`, `AssistChip`, `SuggestionChip` |
@@ -387,6 +392,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Progress | `LoadingIndicator`, `ContainedLoadingIndicator`, `LinearWavyProgressIndicator`, `CircularWavyProgressIndicator` |
 | Dialogs | `AlertDialog` for destructive confirmations only; `BasicAlertDialog` for custom |
 | Snackbars | `SnackbarHost` with M3 `Snackbar`; errors are never dialogs |
+| Notification permission request (chat list, Android 13+) | Filled `Card` on `surfaceContainerHigh` at the top of the list's sheet, inset `spacing.small` like the rows: `ic_notifications` in `primary`, `titleMedium` title, `bodyMedium` text in `onSurfaceVariant`, `TextButton` "Not now" and `Button` "Allow" / "Open settings" (both with `ButtonDefaults.shapes()`); grows in and shrinks away (`expandVertically` on `defaultSpatialSpec`, fades on the effects springs). Never a dialog |
+| Notifications | `MessagingStyle` conversations; small icon `ic_notification`, accent the brand seed (`notification_accent`): a notification has no theme. Placeholder avatars: initials on the §2.2 avatar pairs of the wallpaper's (or brand) light scheme, in Google Sans Flex |
 | Media viewer | Full-bleed `Scaffold`, `HorizontalPager`, container-transform entry and exit. Actions in a `HorizontalFloatingToolbar` (standard colors): Forward, Share, Save, Delete (where allowed), each with a tooltip, then More (`DropdownMenuPopup`: show in chat, copy, …). Caption and controls capped at `contentMaxWidth` |
 | Profile header | `LargeFlexibleTopAppBar` + shape-morphing avatar (`MaterialShapes`), `HorizontalUncontainedCarousel` of photos |
 | Tooltips / onboarding | `TooltipBox` with `PlainTooltip` on icon-only buttons in toolbars, `RichTooltip` for onboarding |
@@ -449,7 +456,7 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   - **Expanded** (840–1199 dp): `ListDetailPaneScaffold` for chats | conversation and for Settings home | page.
     The list is a fixed pane of 360–412 dp and the detail is flexible. Each pane is its own rounded container
     (§2.2), and a `VerticalDragHandle` resizes them (`paneExpansionState`, anchors 360 dp, 412 dp and a centered
-    split), keeping the width across restarts. Both panes have top bars of the same height.
+    split), keeping the width across rotation and process death. Both panes have top bars of the same height.
   - **Large / extra-large** (≥ 1200 dp): as expanded, with the rail expanded; a third pane (profile, chat info) as
     a supporting pane at XL (M4).
   - **Compact height** (phones in landscape): the rail instead of the floating bar (§6.1).

@@ -10,6 +10,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Notifications for new messages, mentions, new secret chats and calls, while Pingogram is running. Each chat gets one
+  notification that shows its latest messages with who sent them and their photos; media show as "Photo", "Voice
+  message" and so on, and chats whose previews you turned off show "New message". Muted chats and exceptions work as
+  in your other apps, and a notification goes away once you read the chat anywhere. Only new messages make a sound:
+  updates, messages sent silently and the chat you are looking at stay quiet.
+- Reply right from a notification, or mark the chat as read; tap a notification to open its chat.
+- Notification channels for private chats, groups, channels, calls and everything else, so you can set their sound
+  and importance in your device's settings. On Android 11 and later, chats show in the conversations section of the
+  notification shade, where you can make one a priority conversation.
+- On Android 13 and later, the chat list explains why Pingogram asks to show notifications before it asks. Choose
+  "Not now" and it won't ask again; if you refused before, it offers your device's notification settings instead.
+- Sponsored messages: channels and chats with bots show Telegram's sponsored messages as a card labelled
+  "Sponsored" (or "Recommended" for a recommended channel) below the newest posts, with the advertiser's button.
+  Tap the button, a link or the picture to open it. The info button shows "About this ad": who placed it and more
+  about it, and lets you report it, with the reasons Telegram asks for.
 - A reactions picker: the + button at the end of a message's quick reactions shows every reaction you can add in
   that chat, the chat's most used ones first, then your recent ones and the popular ones, with those you added
   marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
@@ -26,8 +41,26 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   it, and when you forwarded to one other chat, opens that chat.
 
 ### Changed
+- The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
+  a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
+  instead of six or seven.
+- Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
+  their name on a long press.
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
+- Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes
+  in seven colors, some of which stayed bright in dark theme. The chat open beside the list on a tablet keeps its
+  avatar visible against the highlighted row.
+- The app's own colors (when dynamic color is off or unavailable) are a more vivid blue, closer to the icon.
+- Loading indicators show only when loading takes longer than a moment, so screens that load quickly no longer
+  flash one.
+- Opening a chat, the archive, search or a settings page now slides the new screen in from the side, and going
+  back slides it out the same way, instead of fading. Switching tabs still fades.
+- Phones in landscape show the navigation rail at the side instead of the floating bar, leaving more room for
+  chats. On large tablets and desktop windows the rail is expanded, with each tab's name and a labelled Search
+  button.
+- On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
+  handle between them resizes the list. With no chat open, the empty panel lines up with the list.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

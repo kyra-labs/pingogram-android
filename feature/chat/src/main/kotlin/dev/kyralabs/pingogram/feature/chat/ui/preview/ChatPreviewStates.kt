@@ -11,6 +11,7 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 privateChat,
                 groupChat,
                 channel,
+                SponsoredPreviewData.channel,
                 serviceMessages,
                 formattedText,
                 BubblePreviewData.groupedBubbles,

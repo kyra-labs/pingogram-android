@@ -73,6 +73,7 @@ class TdlibChatRepository
         private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
         @Dispatcher(Default) private val dispatcher: CoroutineDispatcher,
+        private val openChats: OpenChats,
     ) : ChatRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, ChatCache(), ChatCache::reduce)
@@ -193,11 +194,17 @@ class TdlibChatRepository
                 is Outcome.Failure -> deletion
             }
 
-        /** `openChat`. */
-        override suspend fun openChat(chatId: Long): Outcome<Unit> = client.request(TdApi.OpenChat(chatId)).map {}
+        /** `openChat`; the chat counts as open ([OpenChats]) from now on, whether TDLib accepts it or not. */
+        override suspend fun openChat(chatId: Long): Outcome<Unit> {
+            openChats.open(chatId)
+            return client.request(TdApi.OpenChat(chatId)).map {}
+        }
 
-        /** `closeChat`. */
-        override suspend fun closeChat(chatId: Long): Outcome<Unit> = client.request(TdApi.CloseChat(chatId)).map {}
+        /** `closeChat`; the counterpart of [openChat] in [OpenChats] too. */
+        override suspend fun closeChat(chatId: Long): Outcome<Unit> {
+            openChats.close(chatId)
+            return client.request(TdApi.CloseChat(chatId)).map {}
+        }
 
         /**
          * `viewMessages` from the chat's history without `force_read`: TDLib reads them because the chat is open,

@@ -41,5 +41,8 @@ fun DelayedLoadingIndicator(
     }
 }
 
-/** How long loading may take before [DelayedLoadingIndicator] shows: shorter waits do not read as waiting. */
-val LoadingIndicatorDelay: Duration = 150.milliseconds
+/**
+ * How long loading may take before [DelayedLoadingIndicator] shows: Material's threshold, below which waits do not read
+ * as waiting (`docs/DESIGN_SYSTEM.md` §5: nothing under 200 ms, a loading indicator up to 5 s, progress beyond).
+ */
+val LoadingIndicatorDelay: Duration = 200.milliseconds
