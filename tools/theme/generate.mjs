@@ -24,7 +24,7 @@ registerHooks({
 const { Hct, SchemeTonalSpot, TonalPalette, argbFromHex } = await import('@material/material-color-utilities');
 
 // docs/DESIGN_SYSTEM.md §2.1 (placeholder until the owner picks the final brand color).
-const SEED = '#E8457C';
+const SEED = '#2156C4';
 // Material green 500; harmonized toward the active scheme's primary at runtime (§2.2, online indicator).
 const ONLINE_GREEN = '#4CAF50';
 
