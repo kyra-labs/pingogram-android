@@ -213,6 +213,37 @@ class ChatMappersTest {
     }
 
     @Test
+    fun `maps the message a draft replies to, also without a text`() {
+        val draft =
+            TdApi.DraftMessage(
+                TdApi.InputMessageReplyToMessage(42, null, 0, ""),
+                1_700_000_100,
+                TdApiFixtures.draftText(""),
+                0,
+                null,
+            )
+
+        assertEquals(
+            ChatDraft(DraftContent.Text(FormattedText.Empty), date = 1_700_000_100, replyToMessageId = 42),
+            chat(draftMessage = draft).toChat(noMutedScopes)?.draft,
+        )
+    }
+
+    @Test
+    fun `a draft replying to a story or to another chat replies to nothing here`() {
+        val replies =
+            listOf(
+                TdApi.InputMessageReplyToStory(7, 3),
+                TdApi.InputMessageReplyToExternalMessage(9, 42, null, 0, ""),
+            ).map { replyTo ->
+                val draft = TdApi.DraftMessage(replyTo, 1_700_000_100, TdApiFixtures.draftText("Later"), 0, null)
+                chat(draftMessage = draft).toChat(noMutedScopes)?.draft?.replyToMessageId
+            }
+
+        assertEquals(listOf<Long?>(null, null), replies)
+    }
+
+    @Test
     fun `maps voice note, video note and rich message drafts`() {
         val contents =
             listOf(

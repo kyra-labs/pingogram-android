@@ -41,29 +41,42 @@ interface MessageRepository {
         messageId: Long,
     ): Outcome<Message>
 
+    /**
+     * Message [messageId] of chat [chatId], for the composer's reply and edit bars when it is not in the loaded
+     * [history]: from memory when it is loaded, else from TDLib. Fails with `DomainError.NotFound` when it was deleted.
+     */
+    suspend fun message(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Message>
+
     /** Forgets the history of every chat nobody observes, for `ComponentCallbacks2.onTrimMemory`. */
     fun trimMemory()
 
     /**
-     * Sends [text] to chat [chatId] as [options] say, and clears the chat's draft. Succeeds once TDLib accepted the
-     * message, which it has then put into the [history] as being sent (a scheduled one stays out of it); whether it
-     * reaches Telegram shows in its sending state there. Only the formatting a sender may set is sent (bold, italic,
-     * underline, strikethrough, spoiler, code, links behind text, quotes); TDLib finds URLs, mentions and hashtags
-     * itself. Fails with `DomainError.FloodWait`, `DomainError.Network` for a request that gets no answer in time, or
-     * another `DomainError` when TDLib refuses it (no right to write, a text too long, a date too far ahead, …).
+     * Sends [text] to chat [chatId] as [options] say, as a reply to message [replyToMessageId] of the chat if it is not
+     * null, and clears the chat's draft. Succeeds once TDLib accepted the message, which it has then put into the
+     * [history] as being sent (a scheduled one stays out of it); whether it reaches Telegram shows in its sending state
+     * there. Only the formatting a sender may set is sent (bold, italic, underline, strikethrough, spoiler, code, links
+     * behind text, quotes); TDLib finds URLs, mentions and hashtags itself. Fails with `DomainError.FloodWait`,
+     * `DomainError.Network` for a request that gets no answer in time, or another `DomainError` when TDLib refuses it
+     * (no right to write, a text too long, a date too far ahead, …).
      */
     suspend fun sendText(
         chatId: Long,
         text: FormattedText,
         options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
     ): Outcome<Unit>
 
     /**
-     * Keeps [text] as the draft of chat [chatId] on every device of the account; an empty text removes the draft. The
-     * chat's draft (`Chat.draft`) follows through TDLib's update.
+     * Keeps [text], replying to message [replyToMessageId] of the chat if it is not null, as the draft of chat [chatId]
+     * on every device of the account; an empty text without a reply removes the draft. The chat's draft (`Chat.draft`)
+     * follows through TDLib's update.
      */
     suspend fun setDraft(
         chatId: Long,
         text: FormattedText,
+        replyToMessageId: Long? = null,
     ): Outcome<Unit>
 }

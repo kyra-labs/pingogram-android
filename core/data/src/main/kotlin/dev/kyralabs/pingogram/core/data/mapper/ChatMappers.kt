@@ -73,7 +73,16 @@ internal fun TdApi.ChatPosition.toChatPosition(): ChatPosition? =
 internal fun Array<TdApi.ChatPosition>.toChatPositions(): ImmutableList<ChatPosition> =
     mapNotNull { it.toChatPosition() }.toImmutableList()
 
-internal fun TdApi.DraftMessage.toChatDraft(): ChatDraft = ChatDraft(content.toDraftContent(), date.toLong())
+/**
+ * The draft with the message of the same chat it replies to. TDLib reports replies to stories and to messages of other
+ * chats too, which the composer does not make; they count as no reply.
+ */
+internal fun TdApi.DraftMessage.toChatDraft(): ChatDraft =
+    ChatDraft(
+        content = content.toDraftContent(),
+        date = date.toLong(),
+        replyToMessageId = (replyTo as? TdApi.InputMessageReplyToMessage)?.messageId,
+    )
 
 private fun TdApi.DraftMessageContent.toDraftContent(): DraftContent =
     when (this) {
