@@ -65,7 +65,7 @@ internal fun ArchiveRow(
                 photo = null,
                 name = title,
                 id = ARCHIVE_AVATAR_ID,
-                size = MaterialTheme.sizes.avatarMedium,
+                size = MaterialTheme.sizes.avatarRow,
                 placeholderIcon = UiR.drawable.ic_archive,
             )
         },

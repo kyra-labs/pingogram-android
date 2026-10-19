@@ -21,6 +21,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   offline.
 
 ### Changed
+- The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
+  a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
+  instead of six or seven.
+- Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
+  their name on a long press.
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
 - Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes
