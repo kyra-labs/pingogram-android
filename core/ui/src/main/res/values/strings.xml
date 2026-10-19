@@ -25,6 +25,11 @@
     <string name="error_password_recovery_expired">The recovery code has expired. Request a new one.</string>
     <string name="error_too_many_pinned_chats">You can\'t pin more chats here. Unpin a chat first.</string>
     <string name="error_premium_required">Only Telegram Premium subscribers can do this.</string>
+    <string name="error_username_taken">This username is already taken.</string>
+    <string name="error_username_invalid">Telegram doesn\'t accept this username.</string>
+    <string name="error_username_for_sale">This username is for sale on Fragment.</string>
+    <string name="error_bio_too_long">Your bio is too long.</string>
+    <string name="error_photo_invalid">This image can\'t be used as a profile photo. Try another one.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

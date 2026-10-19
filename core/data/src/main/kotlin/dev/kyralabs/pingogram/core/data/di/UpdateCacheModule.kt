@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 
@@ -43,4 +44,8 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun groupCache(repository: TdlibGroupRepository): TdlibUpdateCache
+
+    @Binds
+    @IntoSet
+    fun profileCache(repository: TdlibProfileRepository): TdlibUpdateCache
 }

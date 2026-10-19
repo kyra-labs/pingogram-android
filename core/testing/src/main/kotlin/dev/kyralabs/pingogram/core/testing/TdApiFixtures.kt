@@ -197,7 +197,8 @@ object TdApiFixtures {
         smallFileId: Int = 10,
         bigFileId: Int = 11,
         minithumbnail: TdApi.Minithumbnail? = minithumbnail(),
-    ) = TdApi.ProfilePhoto(1, file(smallFileId), file(bigFileId), minithumbnail, false, false)
+        id: Long = 1,
+    ) = TdApi.ProfilePhoto(id, file(smallFileId), file(bigFileId), minithumbnail, false, false)
 
     /** Online until [expires], a Unix time. */
     fun onlineStatus(expires: Int) = TdApi.UserStatusOnline(expires)
