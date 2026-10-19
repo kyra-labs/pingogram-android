@@ -120,16 +120,7 @@ internal fun ChatListScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
-            val shown = rememberShownList(state, listState, folderSwitch)
-            ChatListBody(
-                state = shown,
-                onEvent = onEvent,
-                listState = listState,
-                innerPadding = innerPadding,
-                openChatId = openChatId,
-                animateRows = folderSwitch.animateRows,
-                modifier = Modifier.fadeThrough(folderSwitch),
-            )
+            ChatListShownBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch)
         }
         SelectionToolbarHost(
             selection = selection,
@@ -162,6 +153,33 @@ private fun contentWindowInsets(
             ChatListKind.Archive -> ScaffoldDefaults.contentWindowInsets
         }
     return if (selectionMode) insets.union(floatingToolbarInsets()) else insets
+}
+
+/**
+ * The list of the folder shown ([rememberShownList]), fading through on a folder switch. Its own composable, which
+ * skips while its arguments stay the same: the `Scaffold` composes its content again whenever it measures it anew,
+ * i.e. in every frame of the top bar collapsing or expanding, and this keeps those frames from reaching the list.
+ */
+@Suppress("LongParameterList") // The state, events, list state and padding, the open chat and the folder switch.
+@Composable
+private fun ChatListShownBody(
+    state: ChatListUiState,
+    onEvent: (ChatListEvent) -> Unit,
+    listState: LazyListState,
+    innerPadding: PaddingValues,
+    openChatId: Long?,
+    folderSwitch: FolderSwitch,
+) {
+    val shown = rememberShownList(state, listState, folderSwitch)
+    ChatListBody(
+        state = shown,
+        onEvent = onEvent,
+        listState = listState,
+        innerPadding = innerPadding,
+        openChatId = openChatId,
+        animateRows = folderSwitch.animateRows,
+        modifier = Modifier.fadeThrough(folderSwitch),
+    )
 }
 
 @Suppress("LongParameterList") // The list, its state and padding, the open chat, and whether its rows animate.

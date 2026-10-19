@@ -1,31 +1,28 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.content.res.Resources
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.ui.platform.LocalResources
 import dev.kyralabs.pingogram.feature.chats.R
 
 /**
  * What screen readers say for a row (`docs/DESIGN_SYSTEM.md` §9): "Ada Lovelace, Verified, Online, Muted, Pinned,
  * Ada: see you, 9:41 AM, Read, 3 unread messages, Unread mention". Its [title] and [preview] as the row shows them.
+ *
+ * Not composable: rows build it in their semantics block, which runs only when an accessibility service (or another
+ * client of the semantics tree) asks, rather than in every composition of every row (`docs/PERFORMANCE.md` §4).
  */
-@Composable
-@ReadOnlyComposable
 internal fun rowDescription(
+    resources: Resources,
     item: ChatListItemModel,
     title: String,
     preview: String,
-): String {
-    val resources = LocalResources.current
-    return buildList {
+): String =
+    buildList {
         add(title)
         addAll(chatStates(resources, item))
         if (preview.isNotEmpty()) add(preview)
         if (item.time.isNotEmpty()) add(item.time)
         addAll(messageStates(resources, item))
     }.joinToString(", ")
-}
 
 /** What the title, its badges and the avatar show: verification, encryption, online, mute and pin. */
 private fun chatStates(
