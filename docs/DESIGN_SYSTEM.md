@@ -278,7 +278,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   spring from the bottom; swipe actions reveal icons with scale springs; pull/overscroll uses
   the stretch overscroll default.
 - Loading: `LoadingIndicator` (morphing polygons) for indeterminate, `LinearWavyProgressIndicator`
-  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback).
+  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback). A screen whose
+  content usually comes from TDLib's local database at once shows its indicator only after a short wait,
+  fading in on `defaultEffectsSpec` (`DelayedLoadingIndicator`, `core:ui`), so it never flashes.
 - Micro-interactions with haptics (`LocalHapticFeedback`): `LongPress` (selection, reaction
   picker), `TextHandleMove` (swipe threshold), `Confirm` (sent) / `Reject` (failed) on API 34+,
   `SegmentTick` for slider steps. No raw `Vibrator` patterns.

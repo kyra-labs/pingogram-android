@@ -1,20 +1,18 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.ZeroCornerSize
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,17 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.AlignmentLine
-import androidx.compose.ui.layout.HorizontalAlignmentLine
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -45,16 +36,12 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
-import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
-import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -68,7 +55,6 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.ceil
 import kotlin.math.max
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at
@@ -93,7 +79,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
  * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
  *   the reply quote, the content's buttons, replying, copying and sending again ([messageShortcuts]) and the reaction
- *   badges as custom actions, and the actions sheet as its long click and a custom action.
+ *   badges as custom actions, and the actions sheet as its long click and a custom action. All of it is built in the
+ *   `semantics` block, only when something reads the semantics tree, not in every bubble's composition.
  * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
  * - **Reactions**: tapping a badge adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
@@ -117,12 +104,10 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
 ) {
-    val description = bubbleDescription(bubble)
-    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, resources.shortcuts, uploads, onEvent)
+    val strings = LocalResources.current
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
     val haptics = LocalHapticFeedback.current
-    val actionsLabel = stringResource(R.string.message_actions)
     val showActions =
         remember(bubble.id, onEvent, haptics) {
             {
@@ -137,34 +122,26 @@ internal fun MessageBubbleRow(
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
                 .onLongPress(showActions)
                 .clearAndSetSemantics {
-                    contentDescription = description
-                    onLongClick(label = actionsLabel) {
+                    contentDescription = bubbleDescription(strings, bubble)
+                    onLongClick(label = strings.getString(R.string.message_actions)) {
                         showActions()
                         true
                     }
-                    customActions = actions
+                    customActions =
+                        bubbleActions(
+                            resources = strings,
+                            bubble = bubble,
+                            fileState = fileState,
+                            isPlaying = playback.isPlaying,
+                            shortcuts = resources.shortcuts,
+                            uploads = uploads,
+                            onEvent = onEvent,
+                        )
                 },
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
-        if (bubble.hasAvatarColumn) {
-            val size = MaterialTheme.sizes.avatarExtraSmall
-            val avatar = bubble.avatar
-            if (avatar != null) {
-                Avatar(
-                    photo = avatar.photo,
-                    name = avatar.name.resolve(),
-                    id = avatar.id,
-                    size = size,
-                    // Beside the bubble's bottom, not its reaction badges'.
-                    modifier = Modifier.alignBy { it.measuredHeight },
-                    placeholderIcon = avatar.placeholderIcon,
-                )
-            } else {
-                Spacer(Modifier.width(size))
-            }
-            Spacer(Modifier.width(MaterialTheme.spacing.small))
-        }
+        if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
         MessageBubble(
             bubble = bubble,
             fileState = fileState,
@@ -183,8 +160,8 @@ internal fun MessageBubbleRow(
  * [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
-@Composable
-private fun rememberBubbleActions(
+private fun bubbleActions(
+    resources: Resources,
     bubble: ChatItem.Bubble,
     fileState: FileState?,
     isPlaying: Boolean,
@@ -192,26 +169,23 @@ private fun rememberBubbleActions(
     uploads: ImmutableMap<Long, MessageUpload>,
     onEvent: (ChatEvent) -> Unit,
 ): List<CustomAccessibilityAction> {
-    val resources = LocalResources.current
-    return remember(bubble, fileState, isPlaying, shortcuts, uploads, onEvent, resources) {
-        fun action(
-            label: String,
-            event: ChatEvent,
-        ) = CustomAccessibilityAction(label) {
-            onEvent(event)
-            true
-        }
-        val fixed =
-            listOfNotNull(uploadAction(uploads), replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
-                messageShortcuts(bubble, shortcuts)
-        val reactions =
-            bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
-                val label = reactionToggleLabel(resources, chip.label, chip.isChosen)
-                action(label, ChatEvent.ToggleReaction(bubble.reactionsMessageId, chip.label))
-            }
-        fixed.map { action(resources.getString(it.label), it.event) } + reactions +
-            action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
+    fun action(
+        label: String,
+        event: ChatEvent,
+    ) = CustomAccessibilityAction(label) {
+        onEvent(event)
+        true
     }
+    val fixed =
+        listOfNotNull(uploadAction(uploads), replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
+            messageShortcuts(bubble, shortcuts)
+    val reactions =
+        bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
+            val label = reactionToggleLabel(resources, chip.label, chip.isChosen)
+            action(label, ChatEvent.ToggleReaction(bubble.reactionsMessageId, chip.label))
+        }
+    return fixed.map { action(resources.getString(it.label), it.event) } + reactions +
+        action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 
 @Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.

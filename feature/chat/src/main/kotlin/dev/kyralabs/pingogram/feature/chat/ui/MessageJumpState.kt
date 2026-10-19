@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -24,7 +26,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.node.LayoutModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.delay
@@ -48,6 +57,38 @@ internal class MessageJumpState(
 
     private var highlightedId: Long? by mutableStateOf(highlightedId)
     private val strength = Animatable(if (highlightedId != null) 1f else 0f)
+
+    /** Where the list puts an anchor's entry when it next measures ([anchorPlacement]), which reads it there. */
+    internal var placement: AnchorPlacement? by mutableStateOf(null)
+        private set
+
+    /** The anchor of the last [placement] the list took, so it takes each once. */
+    internal var appliedPlacement: Int = NO_ANCHOR
+
+    /** The last anchor the list was measured at, placed there or found on screen: its layout shows the entry. */
+    internal var laidOutAnchor: Int = NO_ANCHOR
+
+    /** Whether the list glides to the last anchor taken up, whose entry was on screen. */
+    internal var glides: Boolean = false
+        private set
+
+    private var takenAnchor: Int = NO_ANCHOR
+
+    /**
+     * Takes anchor [anchorId] up, once: the list glides there when its entry is on screen ([onScreen]), otherwise it
+     * measures with the entry at [index] at [position] ([placement]).
+     */
+    internal fun take(
+        anchorId: Int,
+        onScreen: Boolean,
+        index: Int,
+        position: AnchorPosition,
+    ) {
+        if (takenAnchor == anchorId) return
+        takenAnchor = anchorId
+        glides = onScreen
+        if (onScreen) laidOutAnchor = anchorId else placement = AnchorPlacement(anchorId, index, position)
+    }
 
     /**
      * How strongly [bubble] is highlighted, 0 for none to 1. Reads snapshot state: call it in the draw phase, so the
@@ -108,13 +149,14 @@ internal fun ChatItem.showsMessage(messageId: Long): Boolean =
  *
  * - **Newest**, or the unread divider when the items have none: the start of the reverse layout, requested before the
  *   list measures these items, so they are laid out there in their first frame.
- * - **Unread divider**: near the top, so the unread messages follow it downwards.
- * - **Message**: centred, gliding on the default spatial spring when it is on screen, else at once, and highlighted
- *   if the anchor says so.
+ * - **Unread divider**: near the top, so the unread messages follow it downwards ([AnchorPosition.NearTop]).
+ * - **Message**: centred ([AnchorPosition.Centre]), and highlighted if the anchor says so; gliding there on the default
+ *   spatial spring when it is on screen already.
  *
- * The last two need the items measured. The list's first items are measured in the frame that draws them, so the list
- * hides until it has moved ([hideUntilAnchored]), one frame; later items move at once. Leading entries before the
- * items (the newer pages' indicator) shift every index by [leadingEntries].
+ * The last two are placed as the list measures ([anchorPlacement]), so it composes and measures the entries around
+ * the anchor only, not the newest ones first and then those; then, the entry measured, it moves by what its height
+ * changes. The list hides until then ([hideUntilAnchored]), one frame. Leading entries before the items (the newer
+ * pages' indicator) shift every index by [leadingEntries].
  */
 @Composable
 internal fun FollowListAnchor(
@@ -124,39 +166,138 @@ internal fun FollowListAnchor(
     leadingEntries: Int,
 ) {
     val anchor = content.anchor
-    val target = anchor.target
     val items = content.items
-    val dividerIndex = if (target == AnchorTarget.Unread) items.indexOfFirst { it is ChatItem.UnreadDivider } else -1
-    val atNewest = target == AnchorTarget.Newest || (target == AnchorTarget.Unread && dividerIndex < 0)
-    if (atNewest && state.movedToAnchor != anchor.id) {
+    val entryIndex = content.anchorEntryIndex()
+    val pending = state.movedToAnchor != anchor.id
+    if (pending && entryIndex < 0) {
         SideEffect {
             listState.requestScrollToItem(0)
             state.movedToAnchor = anchor.id
         }
     }
+    val listIndex = entryIndex + leadingEntries
+    val key = items.getOrNull(entryIndex)?.key
+    val position = anchor.target.position
+    if (pending && entryIndex >= 0) {
+        // Before the list measures: on screen, it glides from there; otherwise it measures at the anchor.
+        SideEffect { state.take(anchor.id, listState.layoutInfo.showsEntry(listIndex, key), listIndex, position) }
+    }
     val currentItems by rememberUpdatedState(items)
     val currentLeading by rememberUpdatedState(leadingEntries)
     val motionScheme by rememberUpdatedState(MaterialTheme.motionScheme)
-    val margin = with(LocalDensity.current) { MaterialTheme.spacing.extraExtraLarge.toPx() }
+    // Below the top, where the date pill floats: as in the list's anchorPlacement.
+    val margin = with(LocalDensity.current) { MaterialTheme.spacing.extraExtraLarge.roundToPx() }
     LaunchedEffect(anchor, state) {
-        if (atNewest || state.movedToAnchor == anchor.id) return@LaunchedEffect
-        // Measured once: from the first frame on, the layout knows its viewport and the items.
-        snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
-        when (target) {
-            is AnchorTarget.Message -> {
-                val index = currentItems.indexOfMessageOrOlder(target.messageId)
-                val key = currentItems.getOrNull(index)?.key
-                listState.centreOn(index + currentLeading, key, motionScheme) { state.movedToAnchor = anchor.id }
-                if (target.highlight && currentItems.any { it.showsMessage(target.messageId) }) {
-                    state.highlight(target.messageId, motionScheme)
-                }
-            }
+        if (entryIndex < 0 || state.movedToAnchor == anchor.id) return@LaunchedEffect
+        // The layout that shows the entry: measured at the anchor, or on screen already.
+        snapshotFlow { listState.layoutInfo }.first { state.laidOutAnchor == anchor.id }
+        listState.moveTo(
+            key = key,
+            fallbackIndex = currentItems.indexOfFirst { it.key == key }.coerceAtLeast(0) + currentLeading,
+            targetOffset = { viewport, size -> position.offset(viewport, size, margin) },
+            glide = motionScheme.takeIf { state.glides && position == AnchorPosition.Centre },
+        ) { state.movedToAnchor = anchor.id }
+        val target = anchor.target
+        val shown = target is AnchorTarget.Message && currentItems.any { it.showsMessage(target.messageId) }
+        if (shown && target.highlight) state.highlight(target.messageId, motionScheme)
+    }
+}
 
-            else -> {
-                listState.showNearTop(dividerIndex + currentLeading, margin)
-                state.movedToAnchor = anchor.id
-            }
+/** The index of the entry of the content's anchor among its items: -1 for the newest message, or no unread divider. */
+private fun ChatContent.Content.anchorEntryIndex(): Int =
+    when (val target = anchor.target) {
+        is AnchorTarget.Message -> items.indexOfMessageOrOlder(target.messageId)
+        AnchorTarget.Unread -> items.indexOfFirst { it is ChatItem.UnreadDivider }
+        AnchorTarget.Newest -> -1
+    }
+
+/** Where the target's entry goes: a message in the middle, the unread divider near the top. */
+private val AnchorTarget.position: AnchorPosition
+    get() = if (this is AnchorTarget.Message) AnchorPosition.Centre else AnchorPosition.NearTop
+
+/** Where an anchor's entry goes in the list's viewport. */
+internal enum class AnchorPosition {
+    /** Its top a margin below the viewport's top, the entries after it below: the unread divider. */
+    NearTop,
+
+    /** In the middle, or its top at the top when it is taller than the viewport: a message jumped to. */
+    Centre,
+    ;
+
+    /**
+     * The offset of an entry [size] high from the start of the reverse layout (its bottom, inside the content padding)
+     * in a viewport [viewport] high, with [margin] above it for [NearTop].
+     */
+    fun offset(
+        viewport: Int,
+        size: Int,
+        margin: Int,
+    ): Int =
+        when (this) {
+            NearTop -> (viewport - margin - size).coerceAtLeast(0)
+            Centre -> if (size <= viewport) (viewport - size) / 2 else viewport - size
         }
+}
+
+/** Anchor [anchorId]'s entry, at [index] among the list's entries, goes to [position] when the list next measures. */
+internal data class AnchorPlacement(
+    val anchorId: Int,
+    val index: Int,
+    val position: AnchorPosition,
+)
+
+/**
+ * Puts [state]'s pending [AnchorPlacement] into [listState] as the list measures, before it lays out its entries: the
+ * entry at its position in the viewport this measure gives, taken as if it had no height, which [FollowListAnchor]
+ * corrects once it is measured. [contentPadding] is the list's own.
+ */
+internal fun Modifier.anchorPlacement(
+    state: MessageJumpState,
+    listState: LazyListState,
+    contentPadding: PaddingValues,
+    margin: Dp,
+): Modifier = this then AnchorPlacementElement(state, listState, contentPadding, margin)
+
+private data class AnchorPlacementElement(
+    val state: MessageJumpState,
+    val listState: LazyListState,
+    val contentPadding: PaddingValues,
+    val margin: Dp,
+) : ModifierNodeElement<AnchorPlacementNode>() {
+    override fun create() = AnchorPlacementNode(state, listState, contentPadding, margin)
+
+    override fun update(node: AnchorPlacementNode) {
+        node.state = state
+        node.listState = listState
+        node.contentPadding = contentPadding
+        node.margin = margin
+    }
+}
+
+private class AnchorPlacementNode(
+    var state: MessageJumpState,
+    var listState: LazyListState,
+    var contentPadding: PaddingValues,
+    var margin: Dp,
+) : Modifier.Node(),
+    LayoutModifierNode {
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints,
+    ): MeasureResult {
+        // Read in the measure: a new placement measures the list again.
+        val placement = state.placement?.takeIf { it.anchorId != state.appliedPlacement }
+        if (placement != null) {
+            state.appliedPlacement = placement.anchorId
+            val padding = contentPadding.calculateTopPadding() + contentPadding.calculateBottomPadding()
+            val viewport = if (constraints.hasBoundedHeight) constraints.maxHeight - padding.roundToPx() else 0
+            // A negative offset puts the entry that far from the start: the list measures the entries before it too.
+            val offset = placement.position.offset(viewport, size = 0, margin = margin.roundToPx())
+            listState.requestScrollToItem(placement.index, -offset)
+        }
+        val placeable = measurable.measure(constraints)
+        if (placement != null) state.laidOutAnchor = placement.anchorId
+        return layout(placeable.width, placeable.height) { placeable.place(0, 0) }
     }
 }
 
@@ -194,51 +335,45 @@ private fun List<ChatItem>.indexOfMessageOrOlder(messageId: Long): Int {
     return if (older >= 0) older else lastIndex.coerceAtLeast(0)
 }
 
-/**
- * Scrolls entry [index] to near the top of the viewport, [margin] below it (where the date pill floats), so the
- * entries after it follow downwards: measured at once at the bottom, then moved up by the viewport's height less its
- * own and the margin.
- */
-private suspend fun LazyListState.showNearTop(
-    index: Int,
-    margin: Float,
-) {
-    scrollToItem(index)
-    val layout = layoutInfo
-    val entry = layout.visibleItemsInfo.firstOrNull { it.index == index } ?: return
-    val viewport = layout.viewportSize.height - layout.beforeContentPadding - layout.afterContentPadding
-    scrollBy(-(viewport - entry.size - margin).coerceAtLeast(0f))
-}
-
-/**
- * Scrolls entry [index] (with [key]) to the middle of the viewport if it fits, else its top to the top: gliding on the
- * default spatial spring when the layout shows it already, else at once. [onPlaced] runs once the list is where it
- * shows the entry for good, or starts gliding there. A layout of other items (just replaced) does not show it.
- */
-private suspend fun LazyListState.centreOn(
+/** Whether this layout shows the entry at [index] with [key]: one of other items (just replaced) does not. */
+private fun LazyListLayoutInfo.showsEntry(
     index: Int,
     key: Any?,
-    motionScheme: MotionScheme,
+): Boolean = visibleItemsInfo.any { it.index == index && it.key == key }
+
+/** The height of the viewport inside the content padding. */
+private val LazyListLayoutInfo.viewport: Int get() = viewportSize.height - beforeContentPadding - afterContentPadding
+
+/**
+ * Moves the entry with [key] to the offset [targetOffset] gives for the viewport's height and the entry's: by the
+ * distance from where the layout shows it, gliding on [glide]'s default spatial spring if not null, else at once; when
+ * the layout does not show it, there at once first ([fallbackIndex]). [onPlaced] runs once the list is where it shows
+ * the entry for good, or starts gliding there.
+ */
+private suspend fun LazyListState.moveTo(
+    key: Any?,
+    fallbackIndex: Int,
+    targetOffset: (viewport: Int, size: Int) -> Int,
+    glide: MotionScheme?,
     onPlaced: () -> Unit,
 ) {
-    val wasVisible = layoutInfo.visibleItemsInfo.any { it.index == index && it.key == key }
-    // Measured once there: at the start of the reverse layout, the bottom.
-    if (!wasVisible) scrollToItem(index)
-    val layout = layoutInfo
-    val entry = layout.visibleItemsInfo.firstOrNull { it.index == index }
+    var entry = layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+    if (entry == null) {
+        // Measured once there, at the start of the reverse layout: the bottom.
+        scrollToItem(fallbackIndex)
+        entry = layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+    }
     if (entry == null) {
         onPlaced()
         return
     }
-    val viewport = layout.viewportSize.height - layout.beforeContentPadding - layout.afterContentPadding
     // Offsets run from the start of the layout, the bottom here; scrolling forward moves entries towards it.
-    val target = if (entry.size <= viewport) (viewport - entry.size) / 2 else viewport - entry.size
-    val distance = (entry.offset - target).toFloat()
-    if (wasVisible) {
+    val distance = (entry.offset - targetOffset(layoutInfo.viewport, entry.size)).toFloat()
+    if (glide != null) {
         onPlaced()
-        animateScrollBy(distance, motionScheme.defaultSpatialSpec())
+        animateScrollBy(distance, glide.defaultSpatialSpec())
     } else {
-        scrollBy(distance)
+        if (distance != 0f) scrollBy(distance)
         onPlaced()
     }
 }

@@ -1,25 +1,13 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -27,57 +15,33 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
-import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
-import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
@@ -95,16 +59,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
@@ -125,7 +80,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   ([ChatEvent.ShowNewest]), which come with their anchor.
  * - **Jump to a message** ([jumpState]): a tapped quote's message, or the message the conversation was opened at,
  *   comes as an anchor: the list centres it and highlights it.
- * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
+ * - **States**: a loading indicator once loading takes a moment ([DelayedLoadingIndicator]; messages from TDLib's
+ *   local database come sooner), an empty state, an error with retry, and a chat that does not exist.
  * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
  *   message now scrolls to the newest one, where it shows (asking for it when the loaded messages do not reach it).
  *   Where they cannot, a label says why; in a channel they only
@@ -215,7 +171,6 @@ internal fun ChatScreen(
 }
 
 /** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BoxScope.ChatBody(
     state: ChatUiState,
@@ -227,7 +182,7 @@ private fun BoxScope.ChatBody(
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
     when (val content = state.content) {
         ChatContent.Loading -> {
-            Box(bodyModifier, contentAlignment = Alignment.Center) { LoadingIndicator() }
+            Box(bodyModifier, contentAlignment = Alignment.Center) { DelayedLoadingIndicator() }
         }
 
         ChatContent.Empty -> {
@@ -274,20 +229,22 @@ private fun MessageList(
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
     val showsNewerState = content.isLoadingNewer || content.newerError != null
+    val listPadding =
+        PaddingValues(
+            start = contentPadding.calculateStartPadding(layoutDirection) + spacing.medium,
+            top = contentPadding.calculateTopPadding(),
+            end = contentPadding.calculateEndPadding(layoutDirection) + spacing.medium,
+            bottom = contentPadding.calculateBottomPadding() + spacing.small,
+        )
     LazyColumn(
         modifier =
             Modifier
                 .fillMaxSize()
+                .anchorPlacement(jumpState, listState, listPadding, margin = spacing.extraExtraLarge)
                 .hideUntilAnchored(content.anchor, content.items, jumpState)
                 .testTag(MESSAGE_LIST_TEST_TAG),
         state = listState,
-        contentPadding =
-            PaddingValues(
-                start = contentPadding.calculateStartPadding(layoutDirection) + spacing.medium,
-                top = contentPadding.calculateTopPadding(),
-                end = contentPadding.calculateEndPadding(layoutDirection) + spacing.medium,
-                bottom = contentPadding.calculateBottomPadding() + spacing.small,
-            ),
+        contentPadding = listPadding,
         reverseLayout = true,
     ) {
         if (showsNewerState) {

@@ -3,6 +3,9 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,7 +16,10 @@ import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measured
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlin.math.max
@@ -106,6 +112,28 @@ internal fun BareBubble(
             OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
         }
     }
+}
+
+/**
+ * The column of senders' avatars in a group chat: [avatar] beside the last bubble of a group (its bottom, not its
+ * reaction badges'), else its space, and the gap to the bubble.
+ */
+@Composable
+internal fun RowScope.SenderAvatarColumn(avatar: SenderAvatar?) {
+    val size = MaterialTheme.sizes.avatarExtraSmall
+    if (avatar != null) {
+        Avatar(
+            photo = avatar.photo,
+            name = avatar.name.resolve(),
+            id = avatar.id,
+            size = size,
+            modifier = Modifier.alignBy { it.measuredHeight },
+            placeholderIcon = avatar.placeholderIcon,
+        )
+    } else {
+        Spacer(Modifier.width(size))
+    }
+    Spacer(Modifier.width(MaterialTheme.spacing.small))
 }
 
 /**

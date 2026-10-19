@@ -96,6 +96,15 @@ regresses by more than 10%.
   screen.
 - A `Scaffold` composes its content lambda again whenever it measures it anew, e.g. in every frame of a
   collapsing top app bar: put the body in its own skippable composable, so those frames stop there.
+- Opening a screen: nothing composes a loading indicator for the first 150 ms (`DelayedLoadingIndicator`,
+  `core:ui`); TDLib's local database usually answers sooner, and the Expressive `LoadingIndicator` builds
+  its morphing polygons in the frame that first composes it. A view model created while its screen first
+  composes starts its work (loads, collectors) in a dispatched coroutine, after that frame, not in its
+  constructor.
+- A lazy list that opens away from its start (the conversation at the unread divider or at a found
+  message) takes its position in its first measure (`requestScrollToItem` with a negative offset, from a
+  layout modifier that knows the viewport, `anchorPlacement` in `feature:chat`), then corrects by the
+  entry's measured height: it never composes and measures the newest items first and then scrolls away.
 
 ## 5. Rendering
 
@@ -167,7 +176,10 @@ regresses by more than 10%.
 - Recomposition tests on the JVM: `RecompositionCounter` (`feature:chats` tests) counts the composables
   that compose again, through the Compose runtime's composition observer, while a Robolectric test
   steps the test clock frame by frame. `ChatListRecompositionTest` keeps §4 true for the chat list
-  (scrolling, collapsing its top bar, coming back to it); copy the pattern for other screens. To see
+  (scrolling, collapsing its top bar, coming back to it), `ChatRecompositionTest` for the conversation
+  (scrolling, a new message); copy the pattern for other screens. `feature:chat`'s copy of the counter
+  starts before the screen first composes and leaves out calls that skip (they enter their restart group
+  too), so it counts exactly the composables that run again. To see
   where a frame's time goes without a device, record the test JVM with JFR
   (`jcmd <pid> JFR.start settings=…`, 1 ms method sampling, `JFR.configure stackdepth=2048` first: Compose
   stacks are deep): only relative costs carry over to a phone, and Robolectric does not draw.
