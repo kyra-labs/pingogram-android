@@ -42,6 +42,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   other sessions.
 - Whether two-step verification is on, and whether a recovery email is set.
 
+### Changed
+- Settings follow the Material 3 Expressive look of Google's own apps. Your account sits on a card at the top (photo,
+  name, phone number, username, and a Premium label for Telegram Premium subscribers); tap it to edit your profile.
+  Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
+
 ### Fixed
 - "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
   instead of being cut off.
