@@ -54,7 +54,7 @@ class RecompositionCounter :
     fun reset() = recompositions.clear()
 
     override fun onCompositionRegistered(composition: ObservableComposition) {
-        composition.setObserver(this)?.let(handles::add)
+        handles += composition.setObserver(this)
     }
 
     override fun onCompositionUnregistered(composition: ObservableComposition) = Unit
@@ -85,9 +85,9 @@ class RecompositionCounter :
     }
 
     /**
-     * The function whose restart group [scope] is, from the stack: the caller of the composer's `startRestartGroup`; for
-     * a composable lambda the lambda's class, if found. Null for the root scope of a composition, which the composer
-     * enters without one.
+     * The function whose restart group [scope] is, from the stack: the caller of the composer's `startRestartGroup`;
+     * for a composable lambda the lambda's class, if found. Null for the root scope of a composition, which the
+     * composer enters without one.
      */
     private fun restartGroupOwner(scope: RecomposeScope): String? {
         val stack = Throwable().stackTrace

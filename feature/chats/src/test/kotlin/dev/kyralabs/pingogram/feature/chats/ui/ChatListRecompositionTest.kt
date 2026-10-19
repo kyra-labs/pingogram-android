@@ -42,7 +42,7 @@ class ChatListRecompositionTest {
 
     private lateinit var listState: LazyListState
 
-    /** False while "another screen" is shown: the list leaves the composition, its saved state kept, as in navigation. */
+    /** False while "another screen" shows: the list leaves the composition, its saved state kept, as in navigation. */
     private var shown by mutableStateOf(true)
 
     @Test

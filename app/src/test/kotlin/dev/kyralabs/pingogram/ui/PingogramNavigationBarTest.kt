@@ -166,30 +166,29 @@ class PingogramNavigationBarTest {
     }
 
     @Test
-    fun `the floating bar slides away in its graphics layer, its layout staying in place`() {
+    fun `the floating bar slides down as it hides, by less than twice its height`() {
         var visible by mutableStateOf(true)
         setFloatingBar { visible }
-        val bar =
+        val barHeight =
             composeRule
                 .onNodeWithTag(FLOATING_BAR_TAG)
                 .fetchSemanticsNode()
-                .layoutInfo.coordinates
+                .size.height
+        // Kept while the bar's semantics are gone: the tab's coordinates include the bar's graphics layer.
         val tab = labeledTab(R.string.nav_chats).fetchSemanticsNode().layoutInfo.coordinates
-        val barTop = bar.boundsInRoot().top
-        val tabTop = tab.boundsInRoot().top
+        val restingTop = tab.boundsInRoot().top
         composeRule.mainClock.autoAdvance = false
 
         visible = false
-        repeat(SLIDING_FRAMES) {
-            composeRule.mainClock.advanceTimeByFrame()
-            composeRule.waitForIdle()
-        }
+        val tops =
+            List(HIDING_FRAMES) {
+                composeRule.mainClock.advanceTimeByFrame()
+                composeRule.waitForIdle()
+                tab.boundsInRoot().top
+            }
 
-        // The tabs are drawn lower, while the bar is laid out where it was.
-        assertEquals(barTop, bar.boundsInRoot().top)
-        assertTrue("$tabTop → ${tab.boundsInRoot().top}", tab.boundsInRoot().top > tabTop)
-        composeRule.mainClock.autoAdvance = true
-        composeRule.waitForIdle()
+        val lowest = tops.max()
+        assertTrue("$restingTop → $tops", lowest > restingTop && lowest < restingTop + 2 * barHeight)
         composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
     }
 
@@ -242,8 +241,8 @@ class PingogramNavigationBarTest {
         /** Enough frames for the tabs' springs to play out. */
         const val SWITCH_FRAMES = 40
 
-        /** Some frames into the floating bar's slide, before it has faded out. */
-        const val SLIDING_FRAMES = 6
+        /** Enough frames for the floating bar to slide and fade away. */
+        const val HIDING_FRAMES = 30
 
         const val FLOATING_BAR_TAG = "floating_bar"
 

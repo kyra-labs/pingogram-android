@@ -78,7 +78,7 @@ internal fun ChatListScreenTopBar(
  *
  * The connection pill ([ConnectionPill]) sits below the bar, not in its subtitle slot: the flexible bar composes its
  * subtitle twice, in its collapsed row and in its expanded area, and cross-fades the two while it collapses, which
- * showed two pills at once mid-scroll. Below the bar there is only one, and it stays in view while the bar is collapsed.
+ * showed two pills at once mid-scroll. Below the bar there is only one, which stays in view with the bar collapsed.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching

@@ -18,7 +18,6 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -58,9 +57,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * Only the signed-in app has navigation; the login flow is full screen. The window size class picks it: in compact
  * windows the floating [PingogramNavigationBar] over the top-level screens, which hides on screens pushed on top of
- * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows a collapsed `WideNavigationRail` with the search button at its top, from a
- * `NavigationSuiteScaffold`. The `NavHost` keeps its place in the composition across both, so rotating or resizing
- * the window never resets its screens. Full-screen destinations (the media viewer) show neither.
+ * them, keeping the tab below them selected ([FloatingNavigationBar]); in medium and wider windows a collapsed
+ * `WideNavigationRail` with the search button at its top, from a `NavigationSuiteScaffold`. The `NavHost` keeps its
+ * place in the composition across both, so rotating or resizing the window never resets its screens. Full-screen
+ * destinations (the media viewer) show neither.
  *
  * A top-level screen can hide the floating bar while it shows a floating toolbar of its own in the bar's place, e.g.
  * the chat list while chats are selected ([HideNavigationBar], through [navigationBarVisibility]). The bar's insets
@@ -94,11 +94,10 @@ fun PingogramApp(
     val currentTab by remember(currentEntry) {
         derivedStateOf { currentEntry.value?.destination.topLevelDestination() }
     }
-    // The tab the user is on: the current destination, or the tab below the screens pushed on top of it.
-    val backStack = navController.currentBackStack.collectAsState()
-    val barTab by remember(backStack) {
-        derivedStateOf { backStack.value.asReversed().firstNotNullOfOrNull { it.destination.topLevelDestination() } }
-    }
+    // The tab the user is on: the current destination, or while screens pushed on top of a tab hide the floating bar,
+    // that tab. A plain holder rather than state: the shell recomposes whenever the current tab changes.
+    val lastTab = remember { LastTab() }
+    val barTab = currentTab?.also { lastTab.tab = it } ?: lastTab.tab
     val adaptiveType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
     val floatingBar = adaptiveType.isNavigationBar()
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
@@ -142,6 +141,11 @@ fun PingogramApp(
             }
         }
     }
+}
+
+/** The last tab the user was on, which the floating bar keeps showing while a pushed screen hides it. */
+private class LastTab {
+    var tab: TopLevelDestination? = null
 }
 
 /** Navigation bars (rather than rails or drawers) are what compact windows get; Pingogram floats them. */
