@@ -33,8 +33,10 @@ import kotlinx.coroutines.launch
 
 /**
  * TDLib file [fileId] as an image, decoded by Coil at [widthPx] × [heightPx] (`docs/PERFORMANCE.md` §4: explicit
- * sizes; the viewer's full sizes are decoded at their own size, so zooming shows their pixels). The fetcher downloads
- * it at visible priority if it is not on the device. With [fadeIn], it fades in on the motion scheme's default effects
+ * sizes; the viewer's full sizes are decoded at their own size, so zooming shows their pixels), cropped to fill its
+ * box: the page fits the box to the media, so nothing is cut off there, and while the box moves between the bubble and
+ * the page (the container transform) the photo uncrops as it grows. The fetcher downloads it at visible priority if it
+ * is not on the device. With [fadeIn], it fades in on the motion scheme's default effects
  * spring once loaded from disk (Coil's own crossfade is a tween); it shows at once from Coil's memory cache, and
  * without [fadeIn]. Decorative: the page describes it.
  */
@@ -62,7 +64,7 @@ internal fun ViewerImage(
         model = request,
         contentDescription = null,
         modifier = modifier.graphicsLayer { this.alpha = alpha.value },
-        contentScale = ContentScale.Fit,
+        contentScale = ContentScale.Crop,
         onSuccess = { state ->
             val loaded = state.result.dataSource
             if (loaded == DataSource.DISK || loaded == DataSource.NETWORK) {
@@ -76,8 +78,8 @@ internal fun ViewerImage(
 
 /**
  * What an item shows until its image is loaded, and instead of it while it is a hidden spoiler: the [minithumbnail]
- * blurred, filling [displaySize]. The blur needs Android 12; before that, and without a minithumbnail, it is a tonal
- * placeholder in `surfaceContainerHigh`. The minithumbnail is decoded once per item (it is about 40 px wide).
+ * blurred, cropped to fill [displaySize]. The blur needs Android 12; before that, and without a minithumbnail, it is a
+ * tonal placeholder in `surfaceContainerHigh`. The minithumbnail is decoded once per item (it is about 40 px wide).
  */
 @Composable
 internal fun BlurredMinithumbnail(
@@ -98,7 +100,7 @@ internal fun BlurredMinithumbnail(
             bitmap = bitmap,
             contentDescription = null,
             modifier = modifier.blur(minithumbnailBlur(bitmap, displaySize), BlurredEdgeTreatment.Rectangle),
-            contentScale = ContentScale.FillBounds,
+            contentScale = ContentScale.Crop,
         )
     }
 }

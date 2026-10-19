@@ -6,10 +6,10 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
-import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.feature.chats.ui.ArchivedChatsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
-import dev.kyralabs.pingogram.feature.chats.ui.SearchScreen
+import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
+import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
 /**
  * The chat list of the Chats tab, [ChatsRoute], whose destination `:app` lays out: the list pane of a list-detail
@@ -35,7 +35,16 @@ fun NavGraphBuilder.archiveScreen(
     composable<ArchiveRoute> { ArchivedChatsRoute(onBack = onBack, onOpenChat = onOpenChat) }
 }
 
-/** Adds global search, [SearchRoute], to the graph; [onBack] leaves it. */
-fun NavGraphBuilder.searchScreen(onBack: () -> Unit) {
-    composable<SearchRoute> { SearchScreen(onBack) }
+/**
+ * Adds global search, [SearchDestination], to the graph; [onBack] leaves it. A chat it found calls [onOpenChat] with
+ * its id, a message it found [onOpenMessage] with its chat and its id.
+ */
+fun NavGraphBuilder.searchScreen(
+    onBack: () -> Unit,
+    onOpenChat: (chatId: Long) -> Unit,
+    onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
+) {
+    composable<SearchDestination> {
+        SearchRoute(onBack = onBack, onOpenChat = onOpenChat, onOpenMessage = onOpenMessage)
+    }
 }

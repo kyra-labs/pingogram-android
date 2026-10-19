@@ -22,6 +22,51 @@ data object ContactsRoute
 data object SettingsRoute
 
 /**
+ * Appearance settings (`REQUIREMENTS.md` FR-S2): theme, dynamic color, AMOLED black and contrast, `:feature:settings`,
+ * pushed above the Settings tab.
+ */
+@Serializable
+data object AppearanceRoute
+
+/**
+ * Data and storage settings (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes and clearing its cache,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object DataStorageRoute
+
+/**
+ * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code and license, `:feature:settings`, pushed above the
+ * Settings tab.
+ */
+@Serializable
+data object AboutRoute
+
+/**
+ * Privacy and security (`REQUIREMENTS.md` FR-S1): the privacy settings, blocked users, active sessions and 2-step
+ * verification, `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object PrivacySecurityRoute
+
+/**
+ * One privacy setting, who can see or do something, pushed above [PrivacySecurityRoute]. [setting] is the name of a
+ * `PrivacySetting` of `:core:domain`, which this module does not depend on.
+ */
+@Serializable
+data class PrivacySettingRoute(
+    val setting: String,
+)
+
+/** The users and chats the user blocked, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object BlockedUsersRoute
+
+/** The sessions of the account (devices logged in to it), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object ActiveSessionsRoute
+
+/**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.
  */
@@ -34,11 +79,13 @@ data object ArchiveRoute
 
 /**
  * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C8), `:feature:chat`, pushed above the Chats tab from a
- * row of the chat list or the archive.
+ * row of the chat list, the archive or search. With [messageId] (a message found by search) it opens at that message,
+ * highlighted; without, at the newest messages or the first unread one.
  */
 @Serializable
 data class ChatRoute(
     val chatId: Long,
+    val messageId: Long? = null,
 )
 
 /**

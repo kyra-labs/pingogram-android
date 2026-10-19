@@ -63,6 +63,7 @@ class ErrorTextTest {
                 DomainError.PasswordRecoveryUnavailable,
                 DomainError.PasswordRecoveryExpired,
                 DomainError.TooManyPinnedChats,
+                DomainError.PremiumRequired,
             )
 
         val texts = errors.map { errorMessage(resources, it, showDetails = false) }

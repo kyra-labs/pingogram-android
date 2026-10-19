@@ -10,6 +10,41 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- You can write and send messages. Format selected text as bold, italic, underlined, strikethrough, monospace,
+  spoiler or a link (from the selection menu, or Ctrl+B, I, U and K on a keyboard). Send without sound, or
+  schedule a message for later. Unsent text is kept as a draft that syncs with your other devices. Where you
+  can't write in a chat, a short note says why; channels you only read show no composer.
+- Message actions: long-press a message (or use TalkBack's actions) for quick reactions, reply, copy text, edit,
+  pin or unpin (in private chats also only for yourself), delete for you or for everyone, and send a failed
+  message again, each only where Telegram allows it. A reply shows a bar above the composer and is kept in the
+  chat's draft on all your devices; editing puts the message's text or caption, with its formatting, back in the
+  composer. Tap a reaction under a message to add or remove yours.
+- Settings shows your account at the top (photo, name, phone number and username) and has new Appearance, Data
+  and storage, and About pages; Log out moved to the end.
+- Appearance: a System, Light or Dark theme, AMOLED black for the dark theme, dynamic color from your wallpaper
+  (Android 12+) and contrast (on Android 14+ it follows your device's setting). Changes apply at once with a
+  smooth color fade, and the app always opens in the theme you chose.
+- Data and storage: how much space downloaded files and the database use, and "Clear cache" to remove downloaded
+  photos, videos, voice messages, music and files. Your chats and secret chats are not affected; files download
+  again when you open them.
+- About: the app version, a link to the source code, the license and a note that Pingogram is an unofficial
+  Telegram client.
+- Privacy and security in Settings: choose who can see your phone number, last seen and online status and
+  profile photos, whose forwards of your messages link to your account, and who can call you, add you to groups
+  and channels or send you voice and video messages (limiting the last needs Telegram Premium). Exceptions set
+  in other apps are shown and kept when you change a choice.
+- Blocked users: everyone you blocked, with a button to unblock and Undo.
+- Active sessions: the devices logged in to your account. Confirm new logins, or terminate one session or all
+  other sessions.
+- Whether two-step verification is on, and whether a recovery email is set.
+
+### Fixed
+- "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes
+  instead of being cut off.
+
+## [0.2.0] - 2026-10-18
+
+### Added
 - Tapping a chat opens the conversation (read-only for now). The top bar shows the avatar and name with
   "online", "last seen …", who is typing, or the number of members or subscribers. Messages load as you
   scroll back, with date pills, a divider before the first unread message and a button that jumps to the
@@ -32,6 +67,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   with "N of total" at the top; pinch or double-tap to zoom and drag to pan; videos play with play/pause and
   a seek slider, GIFs loop silently. The sender, date and caption show over the media; tap to hide them
   along with the system bars. Swipe down or go back to close. The viewer is always dark, like a photo app.
+- Photos, videos and GIFs grow out of their bubble into the media viewer and shrink back into it when you close
+  it. The viewer can share what it shows with another app or save it to Pictures/Pingogram or Movies/Pingogram,
+  unless the chat protects its content; on Android 8 and 9 saving first asks for storage access, with the reason.
+  Tapping a downloaded document opens it in an app that can view it.
+- Search, from the round button beside the navigation bar or at the top of the rail. Before you type it shows the
+  people you message most and your recent searches, which you can remove one by one or clear. As you type it finds
+  your chats, your contacts, public chats and channels, and messages in all your chats, with the matching words
+  highlighted; more messages load as you scroll. Tapping a message opens its chat at that message.
 - On tablets, foldables and other large screens, the chat list and the open conversation sit side by side;
   the open chat is highlighted in the list. Narrowing the window shows the conversation alone, and back
   returns to the list.
@@ -169,7 +212,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kyra-labs/pingogram-android/releases/tag/v0.1.0

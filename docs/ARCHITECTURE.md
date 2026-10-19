@@ -13,12 +13,12 @@
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
 │                    components, previews, icons                 │
 │  :core:data      — Repositories (chats, messages, users,       │
-│                    files, settings), mappers TdApi → domain    │
+│                    files, storage), mappers TdApi → domain     │
 │  :core:domain    — plain Kotlin models + use cases, no Android │
 │  :core:tdlib     — TdlibClient (coroutine wrapper), TDLib AAR, │
 │                    lifecycle, auth state machine               │
 │  :core:common    — Result/Error types, dispatchers, utils      │
-│  :core:datastore — Preferences (DataStore Proto)               │
+│  :core:datastore — app settings (Preferences DataStore)        │
 │  :core:notifications — channels, MessagingStyle builder        │
 │  :core:testing   — fakes, test rules, fixtures                 │
 ├────────────────────────────────────────────────────────────────┤
@@ -60,6 +60,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
   (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
   `TdlibClient.start()`. Every new caching repository must join that set.
+- **Settings** (`core:datastore`) are the app's own, kept on the device and kept across logouts: one
+  Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
+  instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
+  `DataStoreAppearanceRepository` for `AppearanceRepository`. Preferences rather than Proto
+  DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
+  not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
+  as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
+- **Theme**: `MainActivityViewModel.appearance` (null until the settings are read) feeds
+  `PingogramTheme` in `MainActivity`, which also styles the system bar icons for the theme it
+  resolves to. The splash screen waits for the settings as for TDLib's first login step (at most
+  300 ms, `docs/PERFORMANCE.md` §2), and nothing is composed before they are known, so the app never
+  draws in a theme the user did not choose. A change made in Appearance reaches the theme through the
+  same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1).
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -84,6 +97,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
+- Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
+  down as `LocalSharedTransitionScope`; destinations that share content provide their animated
+  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.sharedMediaBounds` (a no-op
+  without both) runs the container transform of a photo, video or GIF between the conversation
+  (pushed or in the detail pane) and the media viewer, keyed by message id.
 
 ## Threading
 
@@ -106,6 +124,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Files leave the app only on the user's request and only through `:app`'s `FileProvider`
+  (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
+  never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
+  The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
+  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), behind `MediaFileActions`.
 
 ## Notifications
 

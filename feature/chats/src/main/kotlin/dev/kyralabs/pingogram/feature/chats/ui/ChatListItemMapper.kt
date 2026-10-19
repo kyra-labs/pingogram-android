@@ -1,8 +1,10 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -141,11 +143,12 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     val isPinned = chat.positionIn(list)?.isPinned == true
     return ChatListItemModel(
         id = chat.id,
-        title = title(isSavedMessages, isDeletedAccount),
+        title = chatTitle(chat, isSavedMessages, isDeletedAccount),
         photo = if (isSavedMessages) null else chat.photo,
         placeholderIcon = placeholderIcon(isSavedMessages, isDeletedAccount),
-        isOnline = !isSavedMessages && isUserOnline,
-        badge = badge,
+        isSavedMessages = isSavedMessages,
+        isOnline = !isSavedMessages && user?.showsOnlineAt(now) == true,
+        badge = titleBadge(user, supergroup),
         isSecret = chat.type is ChatType.Secret,
         isMuted = chat.isMuted,
         isPinned = isPinned,
@@ -171,8 +174,9 @@ private fun RowInputs.toItem(sources: RowSources): ChatListItemModel {
     )
 }
 
-/** "Saved Messages" and "Deleted Account" from resources, otherwise the chat's title. */
-private fun RowInputs.title(
+/** "Saved Messages" and "Deleted Account" from resources, otherwise the chat's title; also for search results. */
+internal fun chatTitle(
+    chat: Chat,
     isSavedMessages: Boolean,
     isDeletedAccount: Boolean,
 ): UiText =
@@ -183,7 +187,7 @@ private fun RowInputs.title(
     }
 
 /** The bookmark of Saved Messages or the person of a deleted account on the avatar placeholder; null for initials. */
-private fun placeholderIcon(
+internal fun placeholderIcon(
     isSavedMessages: Boolean,
     isDeletedAccount: Boolean,
 ): Int? =
@@ -192,10 +196,6 @@ private fun placeholderIcon(
         isDeletedAccount -> R.drawable.ic_person_filled
         else -> null
     }
-
-/** The private or secret chat's user is online at the minute shown; bots never are. */
-private val RowInputs.isUserOnline: Boolean
-    get() = user != null && user.type != UserType.Bot && user.status.isOnlineAt(now.epochSecond)
 
 /**
  * The names of senders: [shortName] for users ("Deleted Account" for deleted ones), the chat's title for messages the
@@ -209,13 +209,16 @@ private fun RowInputs.senderNames(users: Map<Long, User>): (MessageSender) -> Ui
         }
     }
 
-/** By precedence: what people are doing, the draft, the last message. Saved Messages shows nobody typing. */
+/**
+ * By precedence: what people are doing, the draft, the last message. Saved Messages shows nobody typing; a draft that
+ * is only a reply, without a text, shows as no draft.
+ */
 private fun RowInputs.preview(
     isSavedMessages: Boolean,
     name: (MessageSender) -> UiText?,
 ): ChatPreview {
     val action = actions?.takeIf { !isSavedMessages }?.let { chatActionText(it, chat.isGroup, name) }
-    val draft = chat.draft
+    val draft = chat.shownDraft
     val message = chat.lastMessage
     return when {
         action != null -> ChatPreview.Action(action)
@@ -242,26 +245,16 @@ private fun RowInputs.senderPrefix(
     }
 }
 
+/** The chat's draft unless it is only a reply, which the conversation's composer shows, not the chat list. */
+private val Chat.shownDraft: ChatDraft?
+    get() = draft?.takeUnless { (it.content as? DraftContent.Text)?.text?.text?.isEmpty() == true }
+
 /** When the [preview]ed message was sent: a newer draft's time while the draft shows. */
 private fun RowInputs.timeOf(preview: ChatPreview): Long? {
     val messageDate = chat.lastMessage?.date
-    val draftDate = chat.draft?.date
+    val draftDate = chat.shownDraft?.date
     return if (preview is ChatPreview.Draft && draftDate != null) maxOf(draftDate, messageDate ?: 0) else messageDate
 }
-
-/** Telegram's verification of the private chat's user or of the supergroup or channel; warnings first. */
-private val RowInputs.badge: TitleBadge?
-    get() {
-        val isScam = user?.isScam ?: supergroup?.isScam ?: false
-        val isFake = user?.isFake ?: supergroup?.isFake ?: false
-        val isVerified = user?.isVerified ?: supergroup?.isVerified ?: false
-        return when {
-            isScam -> TitleBadge.Scam
-            isFake -> TitleBadge.Fake
-            isVerified -> TitleBadge.Verified
-            else -> null
-        }
-    }
 
 /** Null for an incoming message. */
 private fun Message.outgoingStatus(lastReadOutboxMessageId: Long): OutgoingStatus? =
@@ -274,7 +267,7 @@ private fun Message.outgoingStatus(lastReadOutboxMessageId: Long): OutgoingStatu
     }
 
 /** The user of a private or secret chat; null for groups and channels. */
-private val Chat.userId: Long?
+internal val Chat.userId: Long?
     get() =
         when (val type = type) {
             is ChatType.Private -> type.userId
@@ -283,7 +276,7 @@ private val Chat.userId: Long?
         }
 
 /** A basic group or a supergroup that is not a channel: messages there show who sent them. */
-private val Chat.isGroup: Boolean
+internal val Chat.isGroup: Boolean
     get() = type is ChatType.BasicGroup || (type as? ChatType.Supergroup)?.isChannel == false
 
 private val Chat.isChannel: Boolean

@@ -121,13 +121,51 @@ class ChatMediaTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `opening a downloaded file says that it comes later`() =
+    fun `a downloaded document opens in another app, as its type`() =
         runTest {
+            files.setFile(documentFile, FileState.Downloaded(path = "/files/documents/report.pdf", size = 4))
             val viewModel = showing(chat(), history(message(1, content = document)))
 
             viewModel.effects.test {
                 send(viewModel, ChatEvent.OpenFile(messageId = 1, fileId = documentFile))
-                assertEquals(ChatEffect.FileOpeningUnavailable, awaitItem())
+                assertEquals(ChatEffect.OpenFile("/files/documents/report.pdf", "application/pdf"), awaitItem())
+            }
+        }
+
+    @Test
+    fun `a document without a type opens without one`() =
+        runTest {
+            val untyped = ContentPreviewData.document("notes", "")
+            files.setFile(untyped.document.file.id, FileState.Downloaded(path = "/files/documents/notes", size = 4))
+            val viewModel = showing(chat(), history(message(1, content = untyped)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenFile(messageId = 1, fileId = untyped.document.file.id))
+                assertEquals(ChatEffect.OpenFile("/files/documents/notes", null), awaitItem())
+            }
+        }
+
+    @Test
+    fun `documents of a chat that protects its content open too`() =
+        runTest {
+            files.setFile(documentFile, FileState.Downloaded(path = "/files/documents/report.pdf", size = 4))
+            val viewModel = showing(chat().copy(hasProtectedContent = true), history(message(1, content = document)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenFile(messageId = 1, fileId = documentFile))
+                assertEquals(ChatEffect.OpenFile("/files/documents/report.pdf", "application/pdf"), awaitItem())
+            }
+        }
+
+    @Test
+    fun `a file that is not downloaded does not open`() =
+        runTest {
+            files.setFile(documentFile, FileState.Downloading(downloadedSize = 1, size = 4, isActive = true))
+            val viewModel = showing(chat(), history(message(1, content = document)))
+
+            viewModel.effects.test {
+                send(viewModel, ChatEvent.OpenFile(messageId = 1, fileId = documentFile))
+                expectNoEvents()
             }
         }
 

@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import kotlinx.collections.immutable.persistentListOf
@@ -54,6 +56,7 @@ class ChatScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<ChatEvent>()
+    private var composerText = ComposerText()
     private var backPressed = false
 
     @Test
@@ -156,12 +159,44 @@ class ChatScreenTest {
     }
 
     @Test
+    fun `opened at a message, the list does not scroll to the unread divider`() {
+        setScreen(longChat(unread = UNREAD), MessageJumpState(opensAtMessage = true))
+
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.chat_unread_divider)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `opened at a message, the list jumps there past the unread divider`() {
+        val jumpState = MessageJumpState(opensAtMessage = true)
+        // "Message 50", far older than the unread divider above "Message 30".
+        jumpState.jumpTo(MESSAGES - 50 + 1L)
+
+        setScreen(longChat(unread = UNREAD), jumpState)
+
+        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Message 50").assertIsDisplayed()
+    }
+
+    @Test
     fun `the jump button scrolls to the newest message`() {
         setScreen(longChat(unread = UNREAD))
 
         composeRule.onNodeWithContentDescription(string(R.string.chat_jump_to_bottom), substring = true).performClick()
         composeRule.waitForIdle()
 
+        composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
+    }
+
+    @Test
+    fun `sending a message scrolls to the newest one`() {
+        composerText = ComposerText(FormattedText("See you there", persistentListOf()))
+        // It opens at the unread divider, away from the newest message.
+        setScreen(longChat(unread = UNREAD).copy(composer = ComposerUiState.Available(canSchedule = true)))
+
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(ChatEvent.Send()), events.filterIsInstance<ChatEvent.Send>())
         composeRule.onNodeWithContentDescription(NEWEST).assertIsDisplayed()
     }
 
@@ -301,6 +336,7 @@ class ChatScreenTest {
                     onEvent = { events += it },
                     onBack = { backPressed = true },
                     jumpState = jumpState,
+                    composerText = composerText,
                 )
             }
         }

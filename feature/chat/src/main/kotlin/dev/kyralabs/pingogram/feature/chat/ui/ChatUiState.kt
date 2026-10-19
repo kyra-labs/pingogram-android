@@ -9,13 +9,15 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 
 /**
- * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C8): the header and the messages.
+ * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8): the header, the messages and
+ * the composer.
  *
  * @property header the top bar's chat; null until the chat is known, and for a chat that cannot be found.
  * @property content the messages, or why there are none.
@@ -23,6 +25,10 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property fileStates how far the files of the loaded voice messages, songs and documents are downloaded, by file id
  *   ([downloadableFileId]); a file TDLib has not reported yet is missing.
  * @property playback the voice message or song in the player; null when none is.
+ * @property composer what the bottom of the screen shows: the composer, why the user cannot write, or nothing.
+ * @property messageActions the actions sheet of a long-pressed message; null while none is open.
+ * @property deleteDialog the confirmation before messages are deleted; null while none is shown.
+ * @property shortcuts which actions screen readers get on every bubble, besides the sheet.
  */
 @Immutable
 data class ChatUiState(
@@ -31,6 +37,10 @@ data class ChatUiState(
     val unreadCount: Int = 0,
     val fileStates: ImmutableMap<Int, FileState> = persistentMapOf(),
     val playback: MessagePlayback? = null,
+    val composer: ComposerUiState = ComposerUiState.Hidden,
+    val messageActions: MessageActionsSheet? = null,
+    val deleteDialog: DeleteMessagesDialog? = null,
+    val shortcuts: MessageShortcuts = MessageShortcuts(),
 )
 
 /**
@@ -175,6 +185,9 @@ sealed interface ChatItem {
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
+        /** The message whose reactions the bubble shows, and which its reaction chips change: an album's newest. */
+        val reactionsMessageId: Long get() = album?.messageIds?.lastOrNull() ?: id
+
         override fun toString() = "Bubble(id=$id, isOutgoing=$isOutgoing, position=$position, status=$status, …)"
     }
 
@@ -303,8 +316,10 @@ sealed interface ReactionLabel {
         val emoji: String,
     ) : ReactionLabel
 
-    /** A custom emoji, drawn as a placeholder until custom emoji are rendered. */
-    data object CustomEmoji : ReactionLabel
+    /** Custom emoji [customEmojiId], drawn as a placeholder until custom emoji are rendered. */
+    data class CustomEmoji(
+        val customEmojiId: Long,
+    ) : ReactionLabel
 
     /** The paid star reaction of channels. */
     data object Paid : ReactionLabel

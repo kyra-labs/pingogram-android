@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
+
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
     /** The screen is started (visible): the chat is opened in TDLib until [Stopped]. */
@@ -86,5 +88,84 @@ sealed interface ChatEvent {
     data class Seek(
         val messageId: Long,
         val fraction: Float,
+    ) : ChatEvent
+
+    /** Send the composer's text as [options] say: now, without sound, or at a time. */
+    data class Send(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** The composer's text field gained or lost the focus; a draft from another device only fills it unfocused. */
+    data class ComposerFocusChanged(
+        val isFocused: Boolean,
+    ) : ChatEvent
+
+    // Message actions (REQUIREMENTS.md FR-C6, FR-C7). Each closes the actions sheet, and does nothing where TDLib does
+    // not allow it (any more).
+
+    /** Message [messageId] was long-pressed, or a screen reader asked for its actions: open the actions sheet. */
+    data class ShowMessageActions(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The actions sheet was dismissed without an action. */
+    data object DismissMessageActions : ChatEvent
+
+    /** Reply to message [messageId]: the composer shows it in its reply bar. */
+    data class Reply(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The reply bar's close button: the next message replies to nothing. */
+    data object CancelReply : ChatEvent
+
+    /** Copy the text or caption of message [messageId] to the clipboard, as plain text. */
+    data class Copy(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** Edit message [messageId]: its text or caption fills the composer, which sends the edit instead of a message. */
+    data class Edit(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The edit bar's close button: the composer gets back what it held before editing. */
+    data object CancelEdit : ChatEvent
+
+    /** Pin message [messageId]: for the user alone if [onlyForSelf] (private chats), else for everyone. */
+    data class Pin(
+        val messageId: Long,
+        val onlyForSelf: Boolean = false,
+    ) : ChatEvent
+
+    data class Unpin(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** Delete message [messageId], an album's every item: asks first ([ChatUiState.deleteDialog]). */
+    data class Delete(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The delete confirmation's button, with whether its check box asks to delete for everyone too. */
+    data class ConfirmDelete(
+        val forEveryone: Boolean,
+    ) : ChatEvent
+
+    /** The delete confirmation was dismissed: nothing is deleted. */
+    data object DismissDelete : ChatEvent
+
+    /** Send the failed message [messageId] again (an album's failed items). */
+    data class Resend(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * A reaction chip of message [messageId], or a quick reaction of its actions sheet, was tapped: the user's reaction
+     * [label] goes on the message, or comes off it if they had added it.
+     */
+    data class ToggleReaction(
+        val messageId: Long,
+        val label: ReactionLabel,
     ) : ChatEvent
 }

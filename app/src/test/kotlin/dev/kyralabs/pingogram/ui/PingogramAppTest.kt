@@ -7,13 +7,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
@@ -22,11 +28,14 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -34,11 +43,18 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.navigation.AboutRoute
+import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
+import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
+import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
+import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
+import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
+import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
@@ -47,6 +63,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
@@ -182,15 +199,54 @@ class PingogramAppTest {
     // Search (FR-L6)
 
     @Test
-    fun `the search button opens search full screen`() {
+    fun `the search button opens search full screen, its field focused for typing`() {
         setApp()
 
         composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
-        text(ChatsR.string.search_placeholder_title).assertIsDisplayed()
+        composeRule.onNode(hasSetTextAction()).assertIsFocused()
+        // Nothing searched or opened yet: the hint.
+        awaitText(ChatsR.string.search_hint_title)
         assertNoNavigation()
+    }
+
+    @Test
+    fun `a chat found by search opens above it, joins the recent chats, and back returns to the results`() {
+        searchFinds(chatId = FOUND_CHAT)
+        tdlib.on(TdApi.AddRecentlyFoundChat::class, TdResult.Success(TdApi.Ok()))
+        setApp()
+        search("ada")
+
+        awaitNode(hasContentDescription(FOUND_TITLE))
+        composeRule.onNode(hasContentDescription(FOUND_TITLE)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(ChatRoute(FOUND_CHAT), navController.currentBackStackEntry?.toRoute<ChatRoute>())
+        composeRule.waitUntil(TIMEOUT_MILLIS) { tdlib.sentOf<TdApi.AddRecentlyFoundChat>().isNotEmpty() }
+        assertEquals(FOUND_CHAT, tdlib.sentOf<TdApi.AddRecentlyFoundChat>().single().chatId)
+        pressBack()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<SearchRoute>() == true)
+        awaitNode(hasContentDescription(FOUND_TITLE))
+    }
+
+    @Test
+    fun `a message found by search opens its conversation at the message`() {
+        searchFinds(messageId = FOUND_MESSAGE, chatId = FOUND_CHAT)
+        setApp()
+        search("ada")
+
+        val row = hasContentDescription("Ada in a message", substring = true)
+        awaitNode(row)
+        composeRule.onNode(row).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(
+            ChatRoute(FOUND_CHAT, messageId = FOUND_MESSAGE),
+            navController.currentBackStackEntry?.toRoute<ChatRoute>(),
+        )
     }
 
     @Test
@@ -220,6 +276,85 @@ class PingogramAppTest {
         composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // Settings pages (FR-S1)
+
+    @Test
+    fun `settings pages open above the settings tab, without the navigation bar`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_data_storage).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<DataStorageRoute>() == true)
+        assertNoNavigation()
+        composeRule.onNodeWithContentDescription(string(SettingsR.string.settings_back)).performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_about).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
+        assertNoNavigation()
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_appearance).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<AppearanceRoute>() == true)
+        // The page's segmented buttons are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `privacy and security opens above the settings tab, and its pages above it`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_privacy_security).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
+        assertNoNavigation()
+
+        for (route in listOf(BlockedUsersRoute, ActiveSessionsRoute, PrivacySettingRoute("Calls"))) {
+            composeRule.runOnUiThread { navController.navigate(route) }
+            composeRule.waitForIdle()
+
+            // A privacy setting's choices are selectable: only tabs count here.
+            composeRule
+                .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+                .assertCountEquals(0)
+            pressBack()
+            composeRule.waitForIdle()
+            assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
+        }
+        text(SettingsR.string.settings_privacy_security).assertIsDisplayed()
+
+        pressBack()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `a privacy setting this version does not know goes back`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        composeRule.runOnUiThread { navController.navigate(PrivacySecurityRoute) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnUiThread { navController.navigate(PrivacySettingRoute("SomethingNew")) }
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
     }
 
     // A conversation (FR-C1)
@@ -387,6 +522,42 @@ class PingogramAppTest {
 
     private fun setApp() = composeRule.setContent { App() }
 
+    /**
+     * TDLib's searches find chat [chatId], [FOUND_TITLE], on the device and its message [messageId] (if any), and
+     * nothing else.
+     */
+    private fun searchFinds(
+        chatId: Long,
+        messageId: Long? = null,
+    ) {
+        val noChats = TdResult.Success(TdApi.Chats(0, LongArray(0)))
+        tdlib.on(TdApi.SearchChats::class, TdResult.Success(TdApi.Chats(1, longArrayOf(chatId))))
+        tdlib.on(TdApi.SearchChatsOnServer::class, noChats)
+        tdlib.on(TdApi.SearchPublicChats::class, noChats)
+        tdlib.on(TdApi.SearchContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
+        tdlib.on(TdApi.GetChat::class) { request ->
+            TdResult.Success(TdApiFixtures.chat(request.chatId, title = FOUND_TITLE))
+        }
+        val found =
+            listOfNotNull(messageId).map { id ->
+                TdApiFixtures.message(id = id, chatId = chatId, content = TdApiFixtures.messageText("Ada in a message"))
+            }
+        val messages = TdApi.FoundMessages(found.size, found.toTypedArray(), "")
+        tdlib.on(TdApi.SearchMessages::class, TdResult.Success(messages))
+    }
+
+    /** Opens search from the navigation bar and types [query]. */
+    private fun search(query: String) {
+        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNode(hasSetTextAction()).performTextInput(query)
+    }
+
+    /** Waits for a node matching [matcher]: search answers from a background dispatcher, after its debounce. */
+    private fun awaitNode(matcher: SemanticsMatcher) {
+        composeRule.waitUntil(TIMEOUT_MILLIS) { composeRule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+    }
+
     @Composable
     private fun App() {
         PingogramTheme(dynamicColor = false) {
@@ -438,5 +609,10 @@ class PingogramAppTest {
 
         /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
         val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f
+
+        /** The chat and message search finds. */
+        const val FOUND_CHAT = 5L
+        const val FOUND_MESSAGE = 7L
+        const val FOUND_TITLE = "Ada Lovelace"
     }
 }

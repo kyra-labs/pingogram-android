@@ -72,6 +72,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "PASSWORD_RECOVERY_EXPIRED" to DomainError.PasswordRecoveryExpired,
         "TASK_ALREADY_EXISTS" to DomainError.AlreadyRequested,
         "UPDATE_APP_TO_LOGIN" to DomainError.AppUpdateRequired,
+        // Requests only Telegram Premium subscribers may make, e.g. account.setPrivacy for voice messages.
+        "PREMIUM_ACCOUNT_REQUIRED" to DomainError.PremiumRequired,
     )
 
 /**

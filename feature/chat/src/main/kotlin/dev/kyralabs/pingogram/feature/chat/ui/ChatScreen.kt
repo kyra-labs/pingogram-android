@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,12 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
@@ -90,9 +97,9 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
+ * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
  * `surfaceContainer` over the messages, newest at the bottom, on a rounded `surface` sheet ([ContentSheet]) that they
- * scroll in. Read-only for now: there is no composer, only the system bars' insets at the bottom.
+ * scroll in, and the composer below them ([ChatBottomBar]), above the keyboard and the system bars.
  *
  * - **List**: a reverse-layout `LazyColumn` with a key and a content type per entry, each animating to its place on
  *   the motion scheme's springs, so a new message comes in from the bottom. It reports whether the oldest message is
@@ -103,9 +110,17 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   motion scheme's effects springs, read in the draw phase.
  * - **Jump to bottom**: a small FAB, with the unread count as badge, springs in once the newest message is out of
  *   view, and scrolls back to it.
- * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, centred, and highlights it
- *   ([JumpToMessages]).
+ * - **Jump to a message** ([jumpState]): the list scrolls to a tapped quote's message, or to the message the
+ *   conversation was opened at, centred, and highlights it ([JumpToMessages]). Opened at a message
+ *   ([MessageJumpState.opensAtMessage]), the list does not scroll to the unread divider first, so the two never pull
+ *   the list both ways.
  * - **States**: a loading indicator, an empty state, an error with retry, and a chat that does not exist.
+ * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
+ *   message now scrolls to the newest one, where it shows. Where they cannot, a label says why; in a channel they only
+ *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
+ *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
+ * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
+ *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -119,6 +134,8 @@ internal fun ChatScreen(
     listState: LazyListState = rememberLazyListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     jumpState: MessageJumpState = rememberMessageJumpState(),
+    composerText: ComposerText = remember { ComposerText() },
+    composerFocus: ComposerFocusState = rememberComposerFocusState(),
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -127,6 +144,25 @@ internal fun ChatScreen(
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
+        bottomBar = {
+            val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
+            ChatBottomBar(
+                composer = state.composer,
+                text = composerText,
+                onSend = { options ->
+                    onEvent(ChatEvent.Send(options))
+                    // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones and edits
+                    // do not.
+                    if (options.scheduledAt == null && !editing && content is ChatContent.Content) {
+                        scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
+                    }
+                },
+                onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
+                focus = composerFocus,
+                onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
+                onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+            )
+        },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
@@ -141,6 +177,14 @@ internal fun ChatScreen(
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             ChatBody(state, onEvent, listState, jumpState, contentPadding)
         }
+    }
+    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    state.deleteDialog?.let { dialog ->
+        DeleteMessagesAlert(
+            dialog = dialog,
+            onConfirm = { onEvent(ChatEvent.ConfirmDelete(it)) },
+            onDismiss = { onEvent(ChatEvent.DismissDelete) },
+        )
     }
 }
 
@@ -173,7 +217,7 @@ private fun BoxScope.ChatBody(
         }
 
         is ChatContent.Content -> {
-            MessageList(content, state.fileStates, state.playback, listState, jumpState, contentPadding, onEvent)
+            MessageList(state, content, listState, jumpState, contentPadding, onEvent)
             FloatingDatePill(
                 items = content.items,
                 listState = listState,
@@ -190,24 +234,29 @@ private fun BoxScope.ChatBody(
 @Suppress("LongParameterList") // What the list shows, its state and the sheet's padding, all from ChatScreen.
 @Composable
 private fun MessageList(
+    state: ChatUiState,
     content: ChatContent.Content,
-    fileStates: ImmutableMap<Int, FileState>,
-    playback: MessagePlayback?,
     listState: LazyListState,
     jumpState: MessageJumpState,
     contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
+    val fileStates = state.fileStates
+    val playback = state.playback
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
+    val reactions = rememberReactionToggleState()
+    val shortcuts = state.shortcuts
     val bubbleResources =
-        remember(theme, texts, onLinkClick, jumpState) { BubbleResources(theme, texts, onLinkClick, jumpState) }
+        remember(theme, texts, onLinkClick, jumpState, reactions, shortcuts) {
+            BubbleResources(theme, texts, onLinkClick, jumpState, reactions, shortcuts)
+        }
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag(MESSAGE_LIST_TEST_TAG),
         state = listState,
         contentPadding =
             PaddingValues(
@@ -232,7 +281,7 @@ private fun MessageList(
             }
         }
     }
-    InitialScroll(content.items, listState)
+    InitialScroll(content.items, listState, toUnread = !jumpState.opensAtMessage)
     FollowNewestMessage(content.items.firstOrNull()?.key, listState)
     ReportVisibleMessages(content.items, listState, onEvent)
     JumpToMessages(content.items, listState, jumpState, motionScheme)
@@ -330,13 +379,15 @@ private val ChatItem.messageIds: List<Long>
 
 /**
  * Scrolls once, when the list first shows: the unread divider to near the top, so the unread messages follow it
- * downwards; without one the list stays at the newest message, where the reverse layout starts. Saved, so a rotation
- * or process death keeps the restored position.
+ * downwards; without one, or not [toUnread] (the conversation opened at a message, which the jump scrolls to), the list
+ * stays at the newest message, where the reverse layout starts. Saved, so a rotation or process death keeps the
+ * restored position.
  */
 @Composable
 private fun InitialScroll(
     items: ImmutableList<ChatItem>,
     listState: LazyListState,
+    toUnread: Boolean,
 ) {
     var done by rememberSaveable { mutableStateOf(false) }
     val currentItems by rememberUpdatedState(items)
@@ -344,6 +395,7 @@ private fun InitialScroll(
     LaunchedEffect(listState) {
         if (done) return@LaunchedEffect
         done = true
+        if (!toUnread) return@LaunchedEffect
         val dividerIndex = currentItems.indexOfFirst { it is ChatItem.UnreadDivider }
         if (dividerIndex < 0) return@LaunchedEffect
         // Measured at once: the divider at the bottom, then moved up by the viewport's height less its own.
@@ -438,6 +490,10 @@ private const val SERVICE = "service"
 private const val DATE = "date"
 private const val UNREAD = "unread"
 private const val OLDER_KEY = "older"
+
+// The conversation scroll benchmark and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list by
+// this tag, which `MainActivity` shows as a resource id.
+private const val MESSAGE_LIST_TEST_TAG = "message_list"
 
 @PingogramPreviews
 @Composable

@@ -54,6 +54,8 @@
     <string name="chat_reply_open">Show replied message</string>
     <!-- A snackbar after tapping a reply quote whose message was deleted, or is too far back in the history. -->
     <string name="chat_message_unavailable">The message is no longer available</string>
+    <!-- A snackbar when the conversation was opened from search at a message it could not load. -->
+    <string name="chat_message_not_loaded">Couldn\'t find that message in the loaded history</string>
     <string name="chat_empty_title">No messages here yet</string>
     <string name="chat_empty_body">Messages in this chat show up here.</string>
     <string name="chat_error_title">Messages couldn\'t be loaded</string>
@@ -90,4 +92,87 @@
         <item quantity="one">%d unread message</item>
         <item quantity="other">%d unread messages</item>
     </plurals>
+
+    <!-- Composer (ChatBottomBar) -->
+    <!-- The hint in the empty text field. -->
+    <string name="composer_placeholder">Message</string>
+    <string name="composer_send">Send</string>
+    <!-- The button that opens the menu of other ways to send. -->
+    <string name="composer_send_options">More send options</string>
+    <string name="composer_send_silently">Send without sound</string>
+    <string name="composer_schedule">Schedule message</string>
+    <!-- Instead of the composer, where the user may not write. -->
+    <string name="composer_restricted">You can\'t send messages in this chat</string>
+    <string name="composer_not_member">You\'re not a member of this group</string>
+    <!-- Formatting of selected text, in the text selection menu. -->
+    <string name="composer_format_bold">Bold</string>
+    <string name="composer_format_italic">Italic</string>
+    <string name="composer_format_underline">Underline</string>
+    <string name="composer_format_strikethrough">Strikethrough</string>
+    <string name="composer_format_monospace">Monospace</string>
+    <string name="composer_format_spoiler">Spoiler</string>
+    <string name="composer_format_link">Link</string>
+    <!-- The dialog that links the selected text to a web address. -->
+    <string name="composer_link_title">Add link</string>
+    <string name="composer_link_edit_title">Edit link</string>
+    <string name="composer_link_address">Address</string>
+    <string name="composer_link_save">Save</string>
+    <string name="composer_link_remove">Remove</string>
+    <string name="composer_cancel">Cancel</string>
+    <!-- The dialog that picks when a scheduled message is sent: a date, then a time. -->
+    <string name="composer_schedule_next">Next</string>
+    <string name="composer_schedule_back">Back</string>
+    <string name="composer_schedule_confirm">Schedule</string>
+    <string name="composer_schedule_past">Choose a time in the future</string>
+    <!-- A snackbar after scheduling: %1$s is the date and time it will be sent, "Oct 19, 9:41 AM". -->
+    <string name="composer_scheduled">Message scheduled for %1$s</string>
+    <!-- The bar above the text field while replying: its close button. -->
+    <string name="composer_reply_cancel">Cancel reply</string>
+    <!-- The bar above the text field while editing a message: its title and close button. -->
+    <string name="composer_edit_title">Editing</string>
+    <string name="composer_edit_cancel">Cancel editing</string>
+    <!-- The button that saves an edited message, in place of the send button. -->
+    <string name="composer_edit_save">Save changes</string>
+    <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
+    <string name="composer_bar_show">Show message</string>
+
+    <!-- Message actions (the sheet a long press opens) -->
+    <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
+    <string name="message_actions">Message actions</string>
+    <!-- Sends a message that failed to send again. -->
+    <string name="message_action_resend">Send again</string>
+    <string name="message_action_reply">Reply</string>
+    <string name="message_action_copy">Copy text</string>
+    <string name="message_action_edit">Edit</string>
+    <string name="message_action_pin">Pin</string>
+    <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->
+    <string name="message_action_pin_for_self">Pin only for me</string>
+    <string name="message_action_unpin">Unpin</string>
+    <string name="message_action_delete">Delete</string>
+    <!-- Screen readers: what a quick reaction or a reaction under a message does; %1$s is the emoji. -->
+    <string name="message_reaction_add">React with %1$s</string>
+    <string name="message_reaction_remove">Remove reaction %1$s</string>
+    <!-- The label of a copied message text on the clipboard. -->
+    <string name="message_copy_label">Message text</string>
+    <!-- A snackbar after copying a message's text, before Android 13, which confirms copies itself. -->
+    <string name="message_copied">Text copied</string>
+    <!-- A snackbar when an action is no longer allowed for a message, e.g. the time to edit it ran out. -->
+    <string name="message_action_unavailable">That isn\'t possible for this message any more</string>
+    <!-- The confirmation before a message is deleted. -->
+    <string name="message_delete_title">Delete message?</string>
+    <!-- The same for the photos and videos of an album, deleted together: %d is how many. -->
+    <plurals name="message_delete_title_many">
+        <item quantity="one">Delete %d message?</item>
+        <item quantity="other">Delete %d messages?</item>
+    </plurals>
+    <string name="message_delete_for_me_body">This deletes it only for you.</string>
+    <string name="message_delete_for_everyone_body">This deletes it for everyone in this chat.</string>
+    <!-- When the user may also delete it for the others, with the check box below. -->
+    <string name="message_delete_choice_body">This deletes it for you.</string>
+    <!-- The check box in a private chat: %1$s is the other person's name. -->
+    <string name="message_delete_also_for">Also delete for %1$s</string>
+    <!-- The check box in a group. -->
+    <string name="message_delete_for_everyone">Delete for everyone</string>
+    <string name="message_delete_confirm">Delete</string>
+    <string name="message_delete_cancel">Cancel</string>
 </resources>

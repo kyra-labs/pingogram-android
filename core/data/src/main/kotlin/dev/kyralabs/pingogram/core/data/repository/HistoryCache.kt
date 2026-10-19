@@ -375,6 +375,9 @@ internal fun HistoryWindow.repliedTo(messageId: Long): Message? {
     return messages.getOrNull(messages.indexOfId(replyTo.messageId)) ?: replied[replyTo.messageId]
 }
 
+/** Message [id] of the chat if it is loaded or kept in [HistoryWindow.replied]; null otherwise. */
+internal fun HistoryWindow.message(id: Long): Message? = messages.getOrNull(messages.indexOfId(id)) ?: replied[id]
+
 /** The index of message [id] in [this] (newest first), else `-(insertion point) - 1`, as `binarySearch` answers. */
 private fun List<Message>.indexOfId(id: Long) = binarySearch { id.compareTo(it.id) }
 

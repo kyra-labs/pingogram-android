@@ -1,7 +1,15 @@
 package dev.kyralabs.pingogram.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -22,6 +30,8 @@ import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopEnter
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopExit
+import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
+import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
@@ -29,6 +39,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
+import dev.kyralabs.pingogram.feature.settings.navigation.settingsPages
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
@@ -39,8 +50,15 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *
  * Destinations switch with Material's fade-through (`docs/DESIGN_SYSTEM.md` §5), built from the theme's
  * expressive motion scheme; so does the switch between the two graphs. Destinations pushed on top of a tab later bring
- * their own shared-axis transitions. A predictive back gesture shrinks and dissolves the screen it leaves over the one
- * it goes back to ([predictiveBackPopExit]).
+ * their own shared-axis transitions. Full-screen destinations ([isFullScreen], the media viewer) fade in and out on
+ * the default effects spring over the screen below, which stays as it is meanwhile, so the viewer's scrim darkens it
+ * while a photo grows out of its bubble. A predictive back gesture shrinks and dissolves any other screen it leaves
+ * over the one it goes back to ([predictiveBackPopExit]); the viewer follows the gesture itself.
+ *
+ * The `NavHost` is a [SharedTransitionLayout], whose scope goes to the destinations through
+ * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
+ * ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share their photos, videos and GIFs
+ * (the container transform of `sharedMediaBounds`).
  */
 @Composable
 internal fun PingogramNavHost(
@@ -51,22 +69,65 @@ internal fun PingogramNavHost(
     val motionScheme = MaterialTheme.motionScheme
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
     val startSignedIn = rememberSaveable { uiState == MainActivityUiState.SignedIn }
-    NavHost(
-        navController = navController,
-        startDestination = if (startSignedIn) MainGraph else AuthRoute,
-        modifier = modifier,
-        enterTransition = { fadeThroughEnter(motionScheme) },
-        exitTransition = { fadeThroughExit(motionScheme) },
-        predictivePopEnterTransition = { predictiveBackPopEnter() },
-        predictivePopExitTransition = { predictiveBackPopExit(motionScheme) },
-    ) {
-        // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then. Navigating
-        // here as well could act on a login that a logout has already replaced.
-        authScreen(onAuthorized = {})
-        mainGraph(navController)
+    SharedTransitionLayout(modifier) {
+        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+            NavHost(
+                navController = navController,
+                startDestination = if (startSignedIn) MainGraph else AuthRoute,
+                enterTransition = { enter(motionScheme, fullScreen = targetState.destination.isFullScreen()) },
+                exitTransition = { exit(motionScheme, toFullScreen = targetState.destination.isFullScreen()) },
+                popEnterTransition = {
+                    popEnter(
+                        motionScheme,
+                        fromFullScreen = initialState.destination.isFullScreen(),
+                    )
+                },
+                popExitTransition = { popExit(motionScheme, fullScreen = initialState.destination.isFullScreen()) },
+                predictivePopEnterTransition = { predictiveBackPopEnter() },
+                predictivePopExitTransition = {
+                    if (initialState.destination.isFullScreen()) {
+                        popExit(motionScheme, fullScreen = true)
+                    } else {
+                        predictiveBackPopExit(motionScheme)
+                    }
+                },
+            ) {
+                // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
+                // Navigating here as well could act on a login that a logout has already replaced.
+                authScreen(onAuthorized = {})
+                mainGraph(navController)
+            }
+        }
     }
     SessionNavigationEffect(navController, uiState)
 }
+
+/** A destination comes in: a [fullScreen] one fades in over the screen below, any other fades through. */
+private fun enter(
+    motionScheme: MotionScheme,
+    fullScreen: Boolean,
+): EnterTransition = if (fullScreen) fadeIn(motionScheme.defaultEffectsSpec()) else fadeThroughEnter(motionScheme)
+
+/**
+ * A destination is left for another: below a full-screen one ([toFullScreen]) it stays as it is meanwhile, until the
+ * `NavHost`'s transition ends (the scope's `KeepUntilTransitionsFinished`).
+ */
+private fun AnimatedContentTransitionScope<*>.exit(
+    motionScheme: MotionScheme,
+    toFullScreen: Boolean,
+): ExitTransition = if (toFullScreen) ExitTransition.KeepUntilTransitionsFinished else fadeThroughExit(motionScheme)
+
+/** Back to a destination: from a full-screen one ([fromFullScreen]) it is there at once, below it. */
+private fun popEnter(
+    motionScheme: MotionScheme,
+    fromFullScreen: Boolean,
+): EnterTransition = if (fromFullScreen) EnterTransition.None else fadeThroughEnter(motionScheme)
+
+/** A destination is popped: a [fullScreen] one fades out over the screen below. */
+private fun popExit(
+    motionScheme: MotionScheme,
+    fullScreen: Boolean,
+): ExitTransition = if (fullScreen) fadeOut(motionScheme.defaultEffectsSpec()) else fadeThroughExit(motionScheme)
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
@@ -75,15 +136,31 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
         val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
         // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
         composable<ChatsRoute> {
-            ChatsListDetail(
-                onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
-                onOpenChat = openChat,
-                onOpenMedia = openMedia,
-            )
+            // The conversation in the detail pane shares its media with the viewer, as the pushed one does.
+            ProvideNavAnimatedVisibilityScope(this) {
+                ChatsListDetail(
+                    onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
+                    onOpenChat = openChat,
+                    onOpenMedia = openMedia,
+                )
+            }
         }
         contactsScreen()
-        settingsScreen()
-        searchScreen(onBack = { navController.popBackStack() })
+        // Settings pages are pushed above the tab on every window, as the archive is.
+        settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
+        settingsPages(
+            onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
+            onBack = { navController.popBackStack() },
+        )
+        // Results push the conversation above search on every window, as the archive does: search is not a pane of
+        // the Chats tab (it opens from every tab), and back returns to the results.
+        searchScreen(
+            onBack = { navController.popBackStack() },
+            onOpenChat = openChat,
+            onOpenMessage = { chatId, messageId ->
+                navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
+            },
+        )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
         mediaViewerScreen(onBack = { navController.popBackStack() })

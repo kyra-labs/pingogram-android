@@ -1,54 +1,54 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
-import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. */
+/**
+ * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
+ * page it opens.
+ */
 @Composable
 internal fun SettingsRoute(
+    onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -69,57 +69,69 @@ internal fun SettingsRoute(
     SettingsScreen(
         state = state,
         onEvent = viewModel::onEvent,
+        onOpenPage = onOpenPage,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     )
 }
 
 /**
- * Settings until the full set lands (`docs/ROADMAP.md` M3): the account section with "Log out", which asks for
- * confirmation first (FR-A8), above an empty state for everything else.
+ * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
+ * page scrolls, as the chat list's does, then the logged-in account ([AccountHeader]), the rows that open the other
+ * settings pages (the account's own, Privacy and security, under Account), and "Log out", which asks for confirmation
+ * first (FR-A8). The page draws behind the floating
+ * navigation bar and ends clear of it ([screenContentWindowInsets]).
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsScreen(
     state: SettingsUiState,
     onEvent: (SettingsEvent) -> Unit,
+    onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.settings_title),
-                        style = MaterialTheme.typography.titleLargeEmphasized,
-                    )
-                },
-            )
-        },
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // The top bar's container; the page sits on a sheet below it (ContentSheet).
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        topBar = { SettingsTopBar(scrollBehavior) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .consumeWindowInsets(innerPadding),
-        ) {
-            AccountSection(isLoggingOut = state.isLoggingOut, onLogOut = { onEvent(SettingsEvent.LogOut) })
-            // Takes the remaining height and scrolls by itself when that is too little.
-            EmptyState(
-                illustration = MaterialShapes.Sunny,
-                icon = UiR.drawable.ic_settings_filled,
-                title = stringResource(R.string.settings_coming_soon_title),
-                body = stringResource(R.string.settings_coming_soon_body),
-                modifier = Modifier.weight(1f),
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
+        SettingsContent(innerPadding) {
+            state.account?.let { AccountHeader(it) }
+            SettingsSection(stringResource(R.string.settings_section_general)) {
+                PageItem(
+                    title = stringResource(R.string.settings_appearance),
+                    summary = stringResource(R.string.settings_appearance_summary),
+                    icon = R.drawable.ic_palette,
+                    onClick = { onOpenPage(SettingsPage.Appearance) },
+                )
+                PageItem(
+                    title = stringResource(R.string.settings_data_storage),
+                    summary = stringResource(R.string.settings_data_storage_summary),
+                    icon = R.drawable.ic_storage,
+                    onClick = { onOpenPage(SettingsPage.DataStorage) },
+                )
+                PageItem(
+                    title = stringResource(R.string.settings_about),
+                    summary = stringResource(R.string.settings_about_summary),
+                    icon = R.drawable.ic_info,
+                    onClick = { onOpenPage(SettingsPage.About) },
+                )
+            }
+            SettingsSection(stringResource(R.string.settings_section_account)) {
+                PageItem(
+                    title = stringResource(R.string.settings_privacy_security),
+                    summary = stringResource(R.string.settings_privacy_security_summary),
+                    icon = R.drawable.ic_shield,
+                    onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
+                )
+                LogOutItem(isLoggingOut = state.isLoggingOut, onClick = { onEvent(SettingsEvent.LogOut) })
+            }
         }
     }
     if (state.isLogOutDialogOpen) {
@@ -130,109 +142,97 @@ internal fun SettingsScreen(
     }
 }
 
-/** A section header (`titleSmallEmphasized` in `primary`) over its rows in a `surfaceContainer` card. */
+/**
+ * The top bar: "Settings" in a [MediumFlexibleTopAppBar] on the screen's `surfaceContainer`, as wide as the page
+ * below it, so the title lines up with the sections on wide windows.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun AccountSection(
-    isLoggingOut: Boolean,
-    onLogOut: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact)) {
-        Text(
-            text = stringResource(R.string.settings_section_account),
-            modifier =
-                Modifier
-                    .padding(
-                        start = MaterialTheme.spacing.large,
-                        top = MaterialTheme.spacing.small,
-                        bottom = MaterialTheme.spacing.small,
-                    ).semantics { heading() },
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.titleSmallEmphasized,
-        )
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-            LogOutItem(isLoggingOut = isLoggingOut, onClick = onLogOut)
+private fun SettingsTopBar(scrollBehavior: TopAppBarScrollBehavior) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
+            MediumFlexibleTopAppBar(
+                title = { SettingsTitle() },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = Color.Transparent,
+                    ),
+                scrollBehavior = scrollBehavior,
+            )
         }
     }
 }
 
-/** Destructive, so in the error role; disabled with progress while logging out. */
+/**
+ * "Settings" in the emphasized variant of the style the bar sets: `headlineMedium` while expanded, `titleLarge`
+ * collapsed (`docs/DESIGN_SYSTEM.md` §3.3). The bar composes the title once for each state.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun LogOutItem(
-    isLoggingOut: Boolean,
-    onClick: () -> Unit,
-) {
-    val loggingOut = stringResource(R.string.settings_logging_out)
-    ListItem(
-        onClick = onClick,
-        enabled = !isLoggingOut,
-        leadingContent = { Icon(painter = painterResource(R.drawable.ic_logout), contentDescription = null) },
-        trailingContent =
-            if (isLoggingOut) {
-                { LoadingIndicator(Modifier.semantics { contentDescription = loggingOut }) }
-            } else {
-                null
-            },
-        supportingContent = { Text(stringResource(R.string.settings_log_out_summary)) },
-        colors =
-            ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = MaterialTheme.colorScheme.error,
-                leadingContentColor = MaterialTheme.colorScheme.error,
-            ),
-    ) {
-        Text(stringResource(R.string.settings_log_out))
-    }
+private fun SettingsTitle() {
+    val typography = MaterialTheme.typography
+    val collapsed = LocalTextStyle.current.fontSize == typography.titleLarge.fontSize
+    Text(
+        text = stringResource(R.string.settings_title),
+        modifier = Modifier.semantics { heading() },
+        maxLines = 1,
+        style = if (collapsed) typography.titleLargeEmphasized else typography.headlineMediumEmphasized,
+    )
 }
 
-/** The destructive confirmation (`docs/DESIGN_SYSTEM.md` §6: `AlertDialog` for destructive confirmations only). */
+/** A row that opens another settings page. */
 @Composable
-private fun LogOutDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+internal fun PageItem(
+    title: String,
+    summary: String,
+    @DrawableRes icon: Int,
+    onClick: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_log_out_dialog_confirm),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = stringResource(R.string.settings_log_out_dialog_dismiss),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        },
-        icon = { Icon(painter = painterResource(R.drawable.ic_logout), contentDescription = null) },
-        title = { Text(stringResource(R.string.settings_log_out_dialog_title)) },
-        text = { Text(stringResource(R.string.settings_log_out_dialog_text)) },
-    )
+    ListItem(
+        onClick = onClick,
+        leadingContent = { SettingsItemIcon(icon) },
+        supportingContent = { Text(summary) },
+        colors = settingsItemColors(),
+    ) {
+        Text(title)
+    }
 }
 
 @PingogramPreviews
 @Composable
 private fun SettingsScreenPreview() {
-    PingogramPreview { SettingsScreen(state = SettingsUiState(), onEvent = {}) }
+    PingogramPreview { SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {}) }
+}
+
+@Preview(name = "Expanded", widthDp = 840, heightDp = 891)
+@Composable
+private fun SettingsScreenExpandedPreview() {
+    PingogramPreview { SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun SettingsScreenNoAccountPreview() {
+    PingogramPreview { SettingsScreen(state = SettingsUiState(), onEvent = {}, onOpenPage = {}) }
 }
 
 @PingogramPreviews
 @Composable
 private fun SettingsScreenLogOutDialogPreview() {
-    PingogramPreview { SettingsScreen(state = SettingsUiState(isLogOutDialogOpen = true), onEvent = {}) }
+    PingogramPreview {
+        SettingsScreen(
+            state = SettingsPreviewData.content.copy(isLogOutDialogOpen = true),
+            onEvent = {},
+            onOpenPage = {},
+        )
+    }
 }
 
 @PingogramPreviews
 @Composable
 private fun SettingsScreenLoggingOutPreview() {
-    PingogramPreview { SettingsScreen(state = SettingsUiState(isLoggingOut = true), onEvent = {}) }
+    PingogramPreview {
+        SettingsScreen(state = SettingsPreviewData.content.copy(isLoggingOut = true), onEvent = {}, onOpenPage = {})
+    }
 }

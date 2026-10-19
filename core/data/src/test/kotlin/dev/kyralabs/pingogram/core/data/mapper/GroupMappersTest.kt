@@ -16,7 +16,7 @@ class GroupMappersTest {
                 .basicGroup(id = 5, memberCount = 12, status = TdApiFixtures.administratorStatus(), isActive = true)
                 .toBasicGroup()
 
-        assertEquals(BasicGroup(5, 12, ChatMemberStatus.Administrator, isActive = true, null), group)
+        assertEquals(BasicGroup(5, 12, ChatMemberStatus.Administrator(false), isActive = true, null), group)
     }
 
     @Test
@@ -66,8 +66,19 @@ class GroupMappersTest {
                 TdApiFixtures.creatorStatus(isMember = true),
                 TdApiFixtures.creatorStatus(isMember = false),
                 TdApiFixtures.administratorStatus(),
+                TdApi.ChatMemberStatusAdministrator(
+                    false,
+                    TdApi.ChatAdministratorRights().also {
+                        it.canPostMessages =
+                            true
+                    },
+                ),
                 TdApiFixtures.memberStatus(),
-                TdApiFixtures.restrictedStatus(isMember = true),
+                TdApi.ChatMemberStatusRestricted(
+                    true,
+                    0,
+                    TdApi.ChatPermissions().also { it.canSendBasicMessages = true },
+                ),
                 TdApiFixtures.restrictedStatus(isMember = false),
                 TdApiFixtures.leftStatus(),
                 TdApiFixtures.bannedStatus(),
@@ -78,10 +89,11 @@ class GroupMappersTest {
             listOf(
                 ChatMemberStatus.Creator(isMember = true),
                 ChatMemberStatus.Creator(isMember = false),
-                ChatMemberStatus.Administrator,
+                ChatMemberStatus.Administrator(canPostMessages = false),
+                ChatMemberStatus.Administrator(canPostMessages = true),
                 ChatMemberStatus.Member,
-                ChatMemberStatus.Restricted(isMember = true),
-                ChatMemberStatus.Restricted(isMember = false),
+                ChatMemberStatus.Restricted(isMember = true, canSendBasicMessages = true),
+                ChatMemberStatus.Restricted(isMember = false, canSendBasicMessages = false),
                 ChatMemberStatus.Left,
                 ChatMemberStatus.Banned,
                 ChatMemberStatus.Left,

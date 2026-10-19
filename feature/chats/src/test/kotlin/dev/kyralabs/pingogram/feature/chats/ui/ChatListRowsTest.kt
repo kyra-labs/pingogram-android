@@ -60,6 +60,16 @@ class ChatListRowsTest : ChatListViewModelHarness() {
         }
 
     @Test
+    fun `a draft that is only a reply shows the last message`() =
+        runTest {
+            val replyOnly = draft("").copy(replyToMessageId = 7)
+
+            val row = rowOf(chat(id = 2, lastMessage = message(chatId = 2), draft = replyOnly))
+
+            assertEquals(ChatPreview.Message(sender = null, text = UiText.Plain("Hello")), row.preview)
+        }
+
+    @Test
     fun `the last message of a private chat shows without a sender`() =
         runTest {
             val row = rowOf(chat(id = 2, lastMessage = message(chatId = 2)))
@@ -223,6 +233,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             assertEquals(res(UiR.string.chat_saved_messages), row.title)
             assertEquals(UiR.drawable.ic_bookmark_filled, row.placeholderIcon)
+            assertTrue(row.isSavedMessages)
             assertFalse(row.isOnline)
             assertNull(row.outgoingStatus)
             assertTrue(row.preview is ChatPreview.Message)
@@ -246,6 +257,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             assertEquals(UiText.Plain("Ada"), row.title)
             assertNull(row.placeholderIcon)
+            assertFalse(row.isSavedMessages)
         }
 
     // Online

@@ -52,6 +52,9 @@ fun PingogramTheme(
   and `toShape()` still need `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`.
 
 - Root is always `MaterialExpressiveTheme`. `MaterialTheme` (non-expressive) is forbidden.
+- `MainActivity` passes the Appearance settings (FR-S2) to `PingogramTheme`. When one changes, every
+  color role cross-fades to the new scheme on `defaultEffectsSpec()` (§5, `animateColorScheme`); the
+  first scheme shows at once.
 - Everything reads tokens via `MaterialTheme.colorScheme`, `MaterialTheme.typography`,
   `MaterialTheme.shapes`, `MaterialTheme.motionScheme`. **No literal `Color(0xFF…)`, `sp`
   font sizes, `dp` radii or `tween()` in feature modules.** Lint rule `PingogramHardcodedToken`
@@ -264,13 +267,13 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | UI element | Component |
 |---|---|
 | Chat list top bar | `MediumFlexibleTopAppBar` (collapsing to small) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`); search opens from the navigation's search button |
-| Global search | Full-screen destination (`SearchRoute`) with the M3 `SearchBar` expanded; opened from the search button of the floating navigation bar or the rail |
+| Global search | Full-screen destination (`SearchRoute`) with the M3 search bar expanded, built from `SearchBarDefaults.InputField` with the bar's colors, divider and full-screen insets (`ExpandedFullScreenSearchBar` opens a dialog window, which would stay above the chats a result opens and outside predictive back); opened from the search button of the floating navigation bar or the rail |
 | Conversation top bar | `TopAppBar` small, avatar + two-line title, on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`); `DropdownMenu` overflow |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics, in a horizontal scroll so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact: floating navigation bar** (§6.1). Medium/expanded: `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header |
 | New chat / new group | `FloatingActionButtonMenu` with `ToggleFloatingActionButton`; in compact windows bottom-end, above the floating navigation bar |
 | Selection mode | `HorizontalFloatingToolbar` (expressive, `FloatingToolbarDefaults.vibrantFloatingToolbarColors()`) |
-| Composer | M3 `TextField` (outlined, `extraLarge` corners) inside `Surface(surfaceContainer)`; send = `SplitButton` (send / schedule · silent); voice record = `FilledIconButton` → morphs to pill with wavy indicator |
+| Composer | M3 `TextField` (outlined, `extraLarge` corners) inside `Surface(surfaceContainer)`; send = `SplitButton` (send / schedule · silent); voice record = `FilledIconButton` → morphs to pill with wavy indicator. Formatting shows in the field as in bubbles (an output transformation), a spoiler on `tertiaryContainer`; scheduling = `DatePicker`, then `TimePicker`, in a `DatePickerDialog` |
 | Attach menu | `ModalBottomSheet` + `HorizontalMultiBrowseCarousel` of recent photos + `ButtonGroup` of options |
 | Message actions | `ModalBottomSheet`; quick reactions as `ToggleButton` row with shape morph |
 | Reactions picker | `HorizontalUncontainedCarousel` of reaction chips; full grid in sheet |

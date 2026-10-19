@@ -1,8 +1,13 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
+import android.os.Build
+import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,24 +21,35 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
+import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane: hoists its [ChatViewModel], and
+ * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane, opened at [messageId] when
+ * search found it there (the list then jumps to it instead of the unread divider): hoists its [ChatViewModel], and
  * tells it when the screen is started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md`
  * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
  * covers it or the app goes to the background, and stops and disposes when it is left, or when the pane shows another
  * chat, whose view model replaces this one. A rotation stops and starts it again with the same view model, so the chat
- * ends up open. [onBack] leaves it; null shows no back button. The view model's [ChatEffect]s show snackbars, open a
- * location in a maps app, jump to a message ([MessageJumpState]), or open a photo, video or GIF in the media viewer
- * through [onOpenMedia], which the app navigates with (features do not know each other).
+ * ends up open; the composer's text lives in the view model too. [onBack] leaves it; null shows no back button. The
+ * view model's [ChatEffect]s show snackbars, open a
+ * downloaded document in another app or a location in a maps app, jump to a message ([MessageJumpState]), or open a
+ * photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not know
+ * each other).
  */
 @Composable
 internal fun ChatRoute(
@@ -41,8 +57,9 @@ internal fun ChatRoute(
     onBack: (() -> Unit)?,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    messageId: Long? = null,
     viewModel: ChatViewModel =
-        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId) },
+        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
@@ -50,9 +67,16 @@ internal fun ChatRoute(
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    val jumpState = rememberMessageJumpState()
+    val jumpState = rememberMessageJumpState(opensAtMessage = messageId != null)
+    val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
-    ChatEffects(viewModel.effects, snackbarHostState, jumpState, onOpenMedia = { currentOnOpenMedia(chatId, it) })
+    ChatEffects(
+        effects = viewModel.effects,
+        snackbarHostState = snackbarHostState,
+        jumpState = jumpState,
+        onOpenMedia = { currentOnOpenMedia(chatId, it) },
+        composerFocus = composerFocus,
+    )
     ChatScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -60,20 +84,30 @@ internal fun ChatRoute(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         jumpState = jumpState,
+        composerText = viewModel.composerText,
+        composerFocus = composerFocus,
     )
 }
 
 /**
- * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone and
- * for what is not there yet, the newest replacing the one shown; a location opens in a maps app, or a snackbar says
- * that no app can show it; a jump to a message goes to [jumpState]; media to open goes to [onOpenMedia].
+ * Handles [effects]: a snackbar for errors, for a file that cannot be played, for a replied message that is gone, for
+ * a found message that is not in the loaded history, for a scheduled message's time ([scheduledTime]), for an action
+ * that is not allowed and for what is not there yet, the newest replacing the one shown; a downloaded document opens
+ * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
+ * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
+ * Android 13, which confirms copies itself; a jump to a message goes to [jumpState], a focus request to
+ * [composerFocus]; media to open goes to [onOpenMedia].
  */
 @Composable
-private fun ChatEffects(
+internal fun ChatEffects(
     effects: Flow<ChatEffect>,
     snackbarHostState: SnackbarHostState,
     jumpState: MessageJumpState,
     onOpenMedia: (messageId: Long) -> Unit,
+    openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
+        Context::viewTdlibFile,
+    copyText: Context.(text: String) -> Unit = Context::copyPlainText,
+    composerFocus: ComposerFocusState = rememberComposerFocusState(),
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -87,16 +121,12 @@ private fun ChatEffects(
                         errorMessage(resources, effect.error, showErrorDetails)
                     }
 
-                    ChatEffect.FileOpeningUnavailable -> {
-                        resources.getString(R.string.content_open_file_later)
+                    is ChatEffect.OpenFile -> {
+                        context.openedFileNotice(effect, resources, openFile)
                     }
 
-                    ChatEffect.PlaybackFailed -> {
-                        resources.getString(R.string.content_playback_failed)
-                    }
-
-                    ChatEffect.MessageUnavailable -> {
-                        resources.getString(R.string.chat_message_unavailable)
+                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.MessageNotLoaded -> {
+                        resources.getString(effect.noticeText())
                     }
 
                     is ChatEffect.ScrollToMessage -> {
@@ -112,6 +142,24 @@ private fun ChatEffects(
                         onOpenMedia(effect.messageId)
                         ""
                     }
+
+                    is ChatEffect.MessageScheduled -> {
+                        resources.getString(R.string.composer_scheduled, context.scheduledTime(effect.at))
+                    }
+
+                    is ChatEffect.CopyText -> {
+                        context.copyText(effect.text)
+                        copiedNotice(resources)
+                    }
+
+                    ChatEffect.ActionUnavailable -> {
+                        resources.getString(R.string.message_action_unavailable)
+                    }
+
+                    ChatEffect.FocusComposer -> {
+                        composerFocus.request()
+                        ""
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
@@ -120,6 +168,57 @@ private fun ChatEffects(
             }
         }
     }
+}
+
+/**
+ * Opens the downloaded document of [effect] in another app through [openFile], with the chooser's title; the snackbar
+ * when no app takes it or the file is gone, else nothing.
+ */
+private fun Context.openedFileNotice(
+    effect: ChatEffect.OpenFile,
+    resources: Resources,
+    openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult,
+): String {
+    val chooserTitle = resources.getString(R.string.content_open_with)
+    return when (openFile(effect.path, effect.mimeType, chooserTitle)) {
+        ExternalFileResult.Started -> ""
+        ExternalFileResult.NoApp -> resources.getString(R.string.content_no_app_for_file)
+        ExternalFileResult.Unavailable -> resources.getString(R.string.content_file_unavailable)
+    }
+}
+
+/** The snackbar after a copy: none from Android 13 on, which confirms copies itself. */
+private fun copiedNotice(resources: Resources): String =
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) resources.getString(R.string.message_copied) else ""
+
+/** The text of a snackbar that only tells something. */
+private fun ChatEffect.noticeText(): Int =
+    when (this) {
+        ChatEffect.PlaybackFailed -> R.string.content_playback_failed
+        ChatEffect.MessageUnavailable -> R.string.chat_message_unavailable
+        else -> R.string.chat_message_not_loaded
+    }
+
+/**
+ * When a message scheduled for [epochSeconds] goes out, in the device's time zone, language and 12- or 24-hour clock:
+ * "Oct 19, 9:41 AM", with the year when it is not this year's.
+ */
+internal fun Context.scheduledTime(
+    epochSeconds: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): String {
+    val locale = resources.configuration.locales[0]
+    val time = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+    val date = if (time.year == ZonedDateTime.now(zone).year) "MMMd" else "yMMMd"
+    val clock = if (DateFormat.is24HourFormat(this)) "Hm" else "hm"
+    val pattern = DateFormat.getBestDateTimePattern(locale, date + clock)
+    return DateTimeFormatter.ofPattern(pattern, locale).format(time)
+}
+
+/** Puts [text] on the clipboard as plain text, labelled for the system's clipboard preview. */
+internal fun Context.copyPlainText(text: String) {
+    val clipboard = getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.message_copy_label), text))
 }
 
 /** Opens [location] in a maps app with a `geo:` link, false if no app on the device handles one. */
