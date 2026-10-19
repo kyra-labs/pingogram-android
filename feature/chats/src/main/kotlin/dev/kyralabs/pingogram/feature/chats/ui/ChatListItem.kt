@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -48,7 +49,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * Everything shown is in [item], mapped by the ViewModel: the row resolves texts and builds the preview's styled text,
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
- * count included ([rowDescription], `docs/DESIGN_SYSTEM.md` §9). No fixed heights, so it grows with the font scale.
+ * count included ([rowDescription], `docs/DESIGN_SYSTEM.md` §9), built only when something reads the semantics tree.
+ * No fixed heights, so it grows with the font scale.
  *
  * The row's container sits in from its place in the list ([rowInsets]), while its content keeps the list item's
  * padding ([insetContentPadding]): at rest nothing shows it, but a pressed, selected or open row stands apart from the
@@ -82,7 +84,8 @@ internal fun ChatListItem(
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
-    val description = rowDescription(item, title, preview.text)
+    // Built in the semantics blocks, so only when something reads the semantics tree.
+    val resources = LocalResources.current
     val leading = @Composable { ChatAvatar(item, title, selected) }
     val trailing = @Composable { ChatMeta(item) }
     val supporting = @Composable { ChatPreviewText(preview) }
@@ -96,7 +99,7 @@ internal fun ChatListItem(
                 modifier
                     .padding(insets)
                     .semantics {
-                        contentDescription = description
+                        contentDescription = rowDescription(resources, item, title, preview.text)
                         if (open) this.selected = true
                     },
             leadingContent = leading,
@@ -114,7 +117,9 @@ internal fun ChatListItem(
             modifier =
                 modifier
                     .padding(insets)
-                    .semantics(mergeDescendants = true) { contentDescription = description },
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = rowDescription(resources, item, title, preview.text)
+                    },
             leadingContent = leading,
             trailingContent = trailing,
             supportingContent = supporting,
