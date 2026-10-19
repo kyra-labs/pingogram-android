@@ -108,6 +108,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - TDLib callbacks arrive on TDLib's thread; `TdlibClient` immediately hops to
   `Dispatchers.Default`. Nothing TDLib-related touches `Main` except state emission.
 - File IO (saving media) on `Dispatchers.IO`. Image decoding via Coil's own threads.
+- A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
+  thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
+  no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
