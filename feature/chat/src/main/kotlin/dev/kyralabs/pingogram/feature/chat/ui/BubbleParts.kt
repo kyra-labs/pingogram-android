@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,7 +27,6 @@ import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -117,11 +115,11 @@ internal fun LinkPreviewBlock(
 }
 
 /**
- * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows
- * them on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's actions
- * ([onMore]). With [onToggle], tapping a badge adds or takes back the user's reaction (not the paid star reaction,
- * which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen readers reach them as
- * the bubble's custom actions instead.
+ * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows them
+ * on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's reactions picker
+ * ([onMore]), where all of them show. With [onToggle], tapping a badge adds or takes back the user's reaction (not the
+ * paid star reaction, which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen
+ * readers reach them as the bubble's custom actions instead.
  */
 @Composable
 internal fun ReactionBadges(
@@ -182,7 +180,7 @@ private fun ReactionBadge(
     }
 }
 
-/** "+N": the reactions beyond the badges shown, which opens the message's actions ([onClick]). */
+/** "+N": the reactions beyond the badges shown, which opens the message's reactions picker ([onClick]). */
 @Composable
 private fun MoreReactionsBadge(
     count: Int,
@@ -228,37 +226,6 @@ private fun BadgeFrame(
 }
 
 /**
- * A reaction's emoji in [style]; the star of the paid reaction; for a custom emoji, until custom emoji are drawn, a
- * dot of [customEmojiSize] in [placeholderColor].
- */
-@Composable
-internal fun ReactionGlyph(
-    label: ReactionLabel,
-    style: TextStyle,
-    customEmojiSize: Dp,
-    placeholderColor: ColorProducer,
-) {
-    when (label) {
-        is ReactionLabel.Emoji -> Text(label.emoji, style = style)
-        ReactionLabel.Paid -> Text(PAID_REACTION_EMOJI, style = style)
-        is ReactionLabel.CustomEmoji -> CustomEmojiPlaceholder(customEmojiSize, placeholderColor)
-    }
-}
-
-/** Where a custom emoji goes until custom emoji are drawn: a dot of the emoji's size, its color read when drawn. */
-@Composable
-private fun CustomEmojiPlaceholder(
-    size: Dp,
-    color: ColorProducer,
-) {
-    Spacer(
-        Modifier
-            .size(size)
-            .drawBehind { drawCircle(color()) },
-    )
-}
-
-/**
  * A block inside a bubble: [container] in the small shape, with a bar of [accent] along its start edge; [modifier]
  * goes inside the clip, so a click's state layer keeps the shape.
  */
@@ -300,6 +267,3 @@ internal const val MAX_REACTION_BADGES = 3
 
 private const val LINK_TITLE_MAX_LINES = 2
 private const val LINK_DESCRIPTION_MAX_LINES = 3
-
-/** The paid star reaction of channels. */
-private const val PAID_REACTION_EMOJI = "⭐"

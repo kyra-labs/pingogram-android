@@ -217,6 +217,25 @@
     <!-- Screen readers: what a quick reaction or a reaction under a message does; %1$s is the emoji. -->
     <string name="message_reaction_add">React with %1$s</string>
     <string name="message_reaction_remove">Remove reaction %1$s</string>
+    <!-- Screen readers: how often a reaction on the message was added, after what tapping it does. -->
+    <plurals name="message_reaction_count">
+        <item quantity="one">%1$s, %2$d reaction</item>
+        <item quantity="other">%1$s, %2$d reactions</item>
+    </plurals>
+    <!-- The button at the end of the quick reactions that opens every reaction (the reactions picker). -->
+    <string name="message_reactions_more">More reactions</string>
+    <!-- Screen readers: opens every reaction of a message, as its "+N" badge does. -->
+    <string name="message_reactions_all">All reactions</string>
+    <!-- The title of the reactions picker in the message actions sheet. -->
+    <string name="reaction_picker_title">Reactions</string>
+    <!-- The reactions picker's back button: back to the quick reactions and the message actions. -->
+    <string name="reaction_picker_back">Back to message actions</string>
+    <!-- Reactions picker sections: the reactions already on the message, those most used in the chat, those the user
+         used recently, and those most used on Telegram. -->
+    <string name="reaction_picker_on_message">On this message</string>
+    <string name="reaction_picker_top">Frequently used</string>
+    <string name="reaction_picker_recent">Recently used</string>
+    <string name="reaction_picker_popular">Popular</string>
     <!-- The label of a copied message text on the clipboard. -->
     <string name="message_copy_label">Message text</string>
     <!-- A snackbar after copying a message's text, before Android 13, which confirms copies itself. -->

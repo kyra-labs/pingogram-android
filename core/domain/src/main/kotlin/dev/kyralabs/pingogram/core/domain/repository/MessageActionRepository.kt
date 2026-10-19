@@ -5,6 +5,8 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import kotlinx.collections.immutable.ImmutableMap
 
 /**
  * What the user does to a message of the conversation (`REQUIREMENTS.md` FR-C6, FR-C7): what TDLib allows for it, its
@@ -14,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
  * Every call fails with a `DomainError`: `FloodWait`, `Network` for a request that gets no answer in time, `NotFound`
  * for a message or chat TDLib does not know, or another one when TDLib refuses it.
  */
+@Suppress("TooManyFunctions") // One function per message action, and the two lookups the actions sheet needs.
 interface MessageActionRepository {
     /** What the user can do with message [messageId] of chat [chatId] right now; TDLib answers from memory. */
     suspend fun properties(
@@ -21,11 +24,21 @@ interface MessageActionRepository {
         messageId: Long,
     ): Outcome<MessageProperties>
 
-    /** The reactions the user can add to message [messageId] of chat [chatId]; none where reactions are off. */
+    /**
+     * The reactions the user can add to message [messageId] of chat [chatId], for the quick reactions and the reactions
+     * picker; none where reactions are off.
+     */
     suspend fun availableReactions(
         chatId: Long,
         messageId: Long,
     ): Outcome<AvailableReactions>
+
+    /**
+     * The stickers of the custom emoji [customEmojiIds], by custom emoji id, which picture custom emoji reactions;
+     * those TDLib does not know, or in a format it added later, are left out. TDLib answers from memory or its
+     * database, else asks Telegram.
+     */
+    suspend fun customEmojiStickers(customEmojiIds: List<Long>): Outcome<ImmutableMap<Long, Sticker>>
 
     /**
      * Adds the user's [reaction] to message [messageId] of chat [chatId], without the big animation, and to the

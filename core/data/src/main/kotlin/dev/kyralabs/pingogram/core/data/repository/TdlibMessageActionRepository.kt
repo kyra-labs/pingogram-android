@@ -4,14 +4,19 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
+import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +27,7 @@ import javax.inject.Singleton
  * `updateMessageIsPinned`, `updateDeleteMessages`, `updateMessageSendFailed`), which `TdlibMessageRepository` applies.
  * TDLib applies reactions, deletions and pins at once, before Telegram confirms them; edits once Telegram has them.
  */
+@Suppress("TooManyFunctions") // One function per message action of the interface, each a single TDLib request.
 @Singleton
 class TdlibMessageActionRepository
     @Inject
@@ -46,20 +52,40 @@ class TdlibMessageActionRepository
         /**
          * `getMessageAvailableReactions` for rows of [REACTION_ROW_SIZE]. Reactions that need Telegram Premium are left
          * out (TDLib marks them for users without it), and so is the paid reaction (`addPendingPaidMessageReaction`,
-         * not offered), along with types added by a newer TDLib.
+         * not offered), along with types added by a newer TDLib. A reaction in more than one list stays in the first.
          */
         override suspend fun availableReactions(
             chatId: Long,
             messageId: Long,
         ): Outcome<AvailableReactions> =
             client.request(TdApi.GetMessageAvailableReactions(chatId, messageId, REACTION_ROW_SIZE)).map { available ->
-                val top =
-                    available.topReactions
+                val offered = mutableSetOf<ReactionType>()
+
+                fun Array<TdApi.AvailableReaction>.offerable() =
+                    asSequence()
                         .filterNot { it.needsPremium }
                         .mapNotNull { it.type.toReactionType() }
-                        .filterNot { it == ReactionType.Paid }
-                AvailableReactions(top.toImmutableList())
+                        .filter { it != ReactionType.Paid && offered.add(it) }
+                        .toImmutableList()
+                val top = available.topReactions.offerable()
+                val recent = available.recentReactions.offerable()
+                AvailableReactions(top = top, recent = recent, popular = available.popularReactions.offerable())
             }
+
+        /** `getCustomEmojiStickers`, keyed by each sticker's custom emoji id. */
+        override suspend fun customEmojiStickers(customEmojiIds: List<Long>): Outcome<ImmutableMap<Long, Sticker>> {
+            if (customEmojiIds.isEmpty()) return Outcome.Success(persistentMapOf())
+            val ids = customEmojiIds.distinct().toLongArray()
+            return client.request(TdApi.GetCustomEmojiStickers(ids)).map { stickers ->
+                stickers.stickers
+                    .mapNotNull { sticker ->
+                        val id = (sticker.fullType as? TdApi.StickerFullTypeCustomEmoji)?.customEmojiId
+                        val mapped = sticker.toSticker()
+                        if (id == null || mapped == null) null else id to mapped
+                    }.toMap()
+                    .toImmutableMap()
+            }
+        }
 
         override suspend fun addReaction(
             chatId: Long,
