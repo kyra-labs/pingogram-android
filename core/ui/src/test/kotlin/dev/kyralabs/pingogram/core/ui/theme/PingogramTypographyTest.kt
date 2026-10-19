@@ -5,7 +5,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.sp
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -37,29 +39,28 @@ class PingogramTypographyTest {
 
     @ParameterizedTest
     @ValueSource(booleans = [false, true])
-    fun `grade is 0 in light and -25 in dark, 25 higher for emphasized styles`(dark: Boolean) {
+    fun `grade is 0 in light and -25 in dark`(dark: Boolean) {
         pingogramTypography(dark).styles().forEach { (name, style) ->
-            val expected = (if (dark) -25f else 0f) + (if (name.isEmphasized()) 25f else 0f)
-            style.fonts().forEach { assertEquals(expected, it.axis("GRAD"), name) }
+            style.fonts().forEach { assertEquals(if (dark) -25f else 0f, it.axis("GRAD"), name) }
         }
     }
 
     @Test
-    fun `display, headline and title styles are rounded, body and label styles are not`() {
+    fun `emphasized styles are rounded, base styles are not`() {
         pingogramTypography(dark = false).styles().forEach { (name, style) ->
-            val expected = if (name.category() in setOf("display", "headline", "title")) 100f else 0f
+            val expected = if (name.isEmphasized()) 100f else 0f
             style.fonts().forEach { assertEquals(expected, it.axis("ROND"), name) }
         }
     }
 
     @Test
-    fun `base weights follow the category and emphasized styles are 200 heavier up to 800`() {
-        val baseWeights = mapOf("display" to 400, "headline" to 500, "title" to 600, "body" to 400, "label" to 500)
+    fun `base styles have the Material 3 token weights and emphasized styles are 100 heavier`() {
+        val tokens = Typography().styles()
         val styles = pingogramTypography(dark = false).styles()
 
         styles.forEach { (name, style) ->
-            val base = baseWeights.getValue(name.category())
-            val expected = if (name.isEmphasized()) minOf(base + 200, 800) else base
+            val base = tokens.getValue(name.removeSuffix("Emphasized")).fontWeight!!.weight
+            val expected = if (name.isEmphasized()) base + 100 else base
             assertEquals(expected, style.fontWeight?.weight, name)
             assertTrue(
                 style.fonts().any { it.weight.weight == expected && it.axis("wght") == expected.toFloat() },
@@ -103,16 +104,17 @@ class PingogramTypographyTest {
     }
 
     @Test
-    fun `display is wide, labelSmall is narrow with tabular figures, the rest is normal width`() {
+    fun `every style is normal width, and labelSmall has tabular figures`() {
         pingogramTypography(dark = false).styles().forEach { (name, style) ->
-            val expected =
-                when {
-                    name.category() == "display" -> 110f
-                    name.startsWith("labelSmall") -> 95f
-                    else -> 100f
-                }
-            style.fonts().forEach { assertEquals(expected, it.axis("wdth"), name) }
+            style.fonts().forEach { assertEquals(100f, it.axis("wdth"), name) }
             assertEquals(if (name.startsWith("labelSmall")) "tnum" else null, style.fontFeatureSettings, name)
+        }
+    }
+
+    @Test
+    fun `no style synthesizes a weight or slant`() {
+        pingogramTypography(dark = false).styles().forEach { (name, style) ->
+            assertEquals(FontSynthesis.None, style.fontSynthesis, name)
         }
     }
 
@@ -127,14 +129,24 @@ class PingogramTypographyTest {
     }
 
     @Test
-    fun `keeps the Material 3 token sizes, line heights and tracking`() {
+    fun `keeps the Material 3 token sizes and line heights`() {
         val tokens = Typography().styles()
 
         pingogramTypography(dark = false).styles().forEach { (name, style) ->
             val token = tokens.getValue(name)
             assertEquals(token.fontSize, style.fontSize, name)
             assertEquals(token.lineHeight, style.lineHeight, name)
-            assertEquals(token.letterSpacing, style.letterSpacing, name)
+        }
+    }
+
+    // Google's tracking for Google Sans Flex (Android's SystemUI type scale), not the Material tokens' Roboto tracking.
+    @Test
+    fun `tracks only the smallest styles, by 0_1 sp`() {
+        val tracked = setOf("bodySmall", "labelMedium", "labelSmall")
+
+        pingogramTypography(dark = false).styles().forEach { (name, style) ->
+            val expected = if (name.removeSuffix("Emphasized") in tracked) 0.1.sp else 0.sp
+            assertEquals(expected, style.letterSpacing, name)
         }
     }
 
@@ -168,8 +180,6 @@ class PingogramTypographyTest {
         (this as GoogleSansFlexFont).variationSettings.settings.associate { it.axisName to it.toVariationValue(null) }
 
     private fun String.isEmphasized() = endsWith("Emphasized")
-
-    private fun String.category() = takeWhile { it.isLowerCase() }
 
     private companion object {
         /** Android's "Bold text" setting: `Configuration.fontWeightAdjustment` while it is on. */

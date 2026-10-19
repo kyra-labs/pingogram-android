@@ -179,9 +179,7 @@ class ChatListArchiveTest {
 
     private fun openArchive() {
         // The archive row comes with the archive's first chats, which may load after the main list's.
-        val archive = string(ChatsR.string.chat_list_archived_chats)
-        awaitRow(archive)
-        row(archive).performClick()
+        row(string(ChatsR.string.chat_list_archived_chats)).performClick()
         awaitRow(ALAN_TITLE)
     }
 
@@ -220,7 +218,11 @@ class ChatListArchiveTest {
                 .any { it.startsWith("$title,") }
         } and hasClickAction()
 
-    private fun row(title: String): SemanticsNodeInteraction = composeRule.onNode(rowMatcher(title))
+    /** [title]'s row, once it is there: the chats come one by one from TDLib's updates, after the first row shows. */
+    private fun row(title: String): SemanticsNodeInteraction {
+        awaitRow(title)
+        return composeRule.onNode(rowMatcher(title))
+    }
 
     private fun awaitRow(title: String) = await { exists(rowMatcher(title)) }
 

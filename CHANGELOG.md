@@ -54,6 +54,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
 - The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
   instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
+- Text is set the way Google sets Google Sans Flex on Android: Material's weights (titles were one to three
+  steps heavier), without the extra letter spacing meant for Roboto, and rounded letters for emphasized text
+  only. Sizes are unchanged, but text reads lighter and takes less room.
 - Going back from a chat is smoother: the floating navigation bar stays ready while it is hidden instead of being
   rebuilt, and keeps its tab selected while it slides away and back. Chat list rows do less work as they appear;
   screen-reader descriptions are built only when a screen reader asks for them.
