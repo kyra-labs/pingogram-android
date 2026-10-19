@@ -71,6 +71,9 @@ private fun DomainError.messageRes(): Int =
         DomainError.PasswordRecoveryUnavailable -> R.string.error_password_recovery_unavailable
         DomainError.PasswordRecoveryExpired -> R.string.error_password_recovery_expired
         DomainError.TooManyPinnedChats -> R.string.error_too_many_pinned_chats
+        DomainError.FileUnavailable -> R.string.error_file_unavailable
+        DomainError.FileTooLarge -> R.string.error_file_too_large
+        DomainError.SendingNotAllowed -> R.string.error_sending_not_allowed
         DomainError.PremiumRequired -> R.string.error_premium_required
         DomainError.UsernameTaken -> R.string.error_username_taken
         DomainError.UsernameInvalid -> R.string.error_username_invalid

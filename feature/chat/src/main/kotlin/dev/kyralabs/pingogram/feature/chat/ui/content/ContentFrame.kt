@@ -94,3 +94,17 @@ internal val MessageContent.downloadableFileId: Int?
             is MessageContent.Document -> document.file.id
             else -> null
         }
+
+/**
+ * The file a message being sent from this device uploads: a photo's largest size (the picked photo), a video, a GIF or
+ * a document; null for other content.
+ */
+internal val MessageContent.uploadFileId: Int?
+    get() =
+        when (this) {
+            is MessageContent.Photo -> largestPhotoSize(photo.sizes)?.file?.id
+            is MessageContent.Video -> video.file.id
+            is MessageContent.Animation -> animation.file.id
+            is MessageContent.Document -> document.file.id
+            else -> null
+        }

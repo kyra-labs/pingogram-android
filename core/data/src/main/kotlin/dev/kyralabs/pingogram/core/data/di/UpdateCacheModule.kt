@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
+import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
@@ -48,4 +49,9 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun profileCache(repository: TdlibProfileRepository): TdlibUpdateCache
+
+    /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
+    @Binds
+    @IntoSet
+    fun uploadCleaner(cleaner: UploadCleaner): TdlibUpdateCache
 }

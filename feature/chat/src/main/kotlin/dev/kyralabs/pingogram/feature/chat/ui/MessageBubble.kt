@@ -55,10 +55,13 @@ import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.ceil
 import kotlin.math.max
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -90,7 +93,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Highlight**: after a jump to the bubble, a `secondaryContainer` band behind the row fades in and out
  *   ([jumpHighlight]), read in the draw phase.
  * - Everything shown is in [bubble], mapped by the ViewModel, in [fileState], the file of a voice message, song or
- *   document, and in [playback], how a voice message or song plays; the text is built once per message
+ *   document, in [playback], how a voice message or song plays, and in [uploads], the uploads of the bubble's messages
+ *   being sent (cancelled by screen readers through a custom action too); the text is built once per message
  *   ([AnnotatedTextCache]). No effects, no fixed heights, so it grows with the font scale (`docs/PERFORMANCE.md` §4).
  */
 @Composable
@@ -101,9 +105,10 @@ internal fun MessageBubbleRow(
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
 ) {
     val description = bubbleDescription(bubble)
-    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, resources.shortcuts, onEvent)
+    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, resources.shortcuts, uploads, onEvent)
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
     val haptics = LocalHapticFeedback.current
@@ -148,24 +153,27 @@ internal fun MessageBubbleRow(
             }
             Spacer(Modifier.width(MaterialTheme.spacing.small))
         }
-        MessageBubble(bubble, fileState, playback, resources, onEvent)
+        MessageBubble(bubble, fileState, playback, resources, onEvent, uploads)
     }
 }
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
- * [messageShortcuts], a toggle per reaction chip but the paid one, and the actions sheet, last.
+ * [messageShortcuts], a toggle per reaction chip but the paid one, and the actions sheet, last. Cancelling the
+ * [uploads] comes first, while there are some.
  */
+@Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 @Composable
 private fun rememberBubbleActions(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
     isPlaying: Boolean,
     shortcuts: MessageShortcuts,
+    uploads: ImmutableMap<Long, MessageUpload>,
     onEvent: (ChatEvent) -> Unit,
 ): List<CustomAccessibilityAction> {
     val resources = LocalResources.current
-    return remember(bubble, fileState, isPlaying, shortcuts, onEvent, resources) {
+    return remember(bubble, fileState, isPlaying, shortcuts, uploads, onEvent, resources) {
         fun action(
             label: String,
             event: ChatEvent,
@@ -174,7 +182,7 @@ private fun rememberBubbleActions(
             true
         }
         val fixed =
-            listOfNotNull(replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
+            listOfNotNull(uploadAction(uploads), replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
                 messageShortcuts(bubble, shortcuts)
         val reactions =
             bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
@@ -186,6 +194,7 @@ private fun rememberBubbleActions(
     }
 }
 
+@Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
 private fun MessageBubble(
     bubble: ChatItem.Bubble,
@@ -193,6 +202,7 @@ private fun MessageBubble(
     playback: Playback,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
+    uploads: ImmutableMap<Long, MessageUpload>,
 ) {
     val style = resources.theme.styleOf(bubble.isOutgoing)
     val shapes = MaterialTheme.shapes
@@ -210,7 +220,7 @@ private fun MessageBubble(
             }
 
             bubble.album != null || bubble.content.isEdgeToEdge -> {
-                MediaBubble(bubble, style, shape, resources, onEvent, bubbleModifier)
+                MediaBubble(bubble, style, shape, resources, onEvent, uploads, bubbleModifier)
             }
 
             else -> {
@@ -222,7 +232,7 @@ private fun MessageBubble(
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
                 ) {
                     BubbleHeader(bubble, style.colors, onEvent)
-                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent)
+                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
                     BubbleBody(bubble, style, resources, onEvent)
                 }
             }
@@ -269,6 +279,7 @@ private fun BareBubble(
  * them, the meta on a pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media
  * viewer's container transform starts and ends.
  */
+@Suppress("LongParameterList") // The bubble, its look, and what it passes on to its content.
 @Composable
 private fun MediaBubble(
     bubble: ChatItem.Bubble,
@@ -276,6 +287,7 @@ private fun MediaBubble(
     shape: CornerBasedShape,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
+    uploads: ImmutableMap<Long, MessageUpload>,
     modifier: Modifier = Modifier,
 ) {
     val colors = style.colors
@@ -296,7 +308,15 @@ private fun MediaBubble(
             ) { BubbleHeader(bubble, colors, onEvent) }
         }
         Box {
-            MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent, mediaShape = mediaShape)
+            MessageContentBody(
+                bubble = bubble,
+                fileState = null,
+                playback = Playback.Stopped,
+                colors = colors,
+                onEvent = onEvent,
+                mediaShape = mediaShape,
+                uploads = uploads,
+            )
             if (metaOnMedia) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
         }
         if (!metaOnMedia) {

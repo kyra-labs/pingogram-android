@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import java.util.Locale
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -35,6 +36,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Not downloaded**: a download [IconButton] ([onDownload]); none if TDLib cannot download it.
  * - **Downloading**: "1.2 MB / 4.5 MB" and a determinate wavy ring around a cancel button ([onCancel]).
  * - **Downloaded**: tapping the file opens it ([onOpen]).
+ * - **Being sent** ([upload]): a wavy ring of the upload around a cancel button ([onCancelUpload]).
  *
  * @param fileState the file's state, from `FileRepository`; null while unknown, shown as not downloaded.
  * @param colors the bubble's colors, `MaterialTheme.pingogramColors.incomingBubble` or `outgoingBubble`.
@@ -48,6 +50,8 @@ internal fun MessageDocument(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
     colors: BubbleColors = MaterialTheme.pingogramColors.incomingBubble,
+    upload: MessageUpload? = null,
+    onCancelUpload: () -> Unit = {},
 ) {
     val document = content.document
     val state = fileState ?: FileState.NotDownloaded(document.file.size, canBeDownloaded = true)
@@ -97,10 +101,11 @@ internal fun MessageDocument(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        when (state) {
-            is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
-            is FileState.Downloading -> CancelDownloadButton(state.progress, colors, onCancel)
-            is FileState.Downloaded -> Unit
+        when {
+            upload != null -> UploadRing(upload, colors.accent, colors.track, onCancelUpload)
+            state is FileState.NotDownloaded -> if (state.canBeDownloaded) DownloadButton(colors, onDownload)
+            state is FileState.Downloading -> CancelDownloadButton(state.progress, colors, onCancel)
+            else -> Unit
         }
     }
 }
@@ -147,15 +152,21 @@ internal enum class DocumentKind(
  * The kind of [document], by its MIME type and then by its file name's extension, since senders often send
  * `application/octet-stream`.
  */
-internal fun documentKind(document: Document): DocumentKind {
-    val mimeType = document.mimeType.lowercase(Locale.ROOT)
-    val extension = document.fileName.substringAfterLast('.', missingDelimiterValue = "").lowercase(Locale.ROOT)
+internal fun documentKind(document: Document): DocumentKind = documentKind(document.fileName, document.mimeType)
+
+/** The kind of a file named [fileName] of type [mimeType] (may be empty), as for a [Document]. */
+internal fun documentKind(
+    fileName: String,
+    mimeType: String,
+): DocumentKind {
+    val type = mimeType.lowercase(Locale.ROOT)
+    val extension = fileName.substringAfterLast('.', missingDelimiterValue = "").lowercase(Locale.ROOT)
     return when {
-        mimeType == "application/pdf" || extension == "pdf" -> DocumentKind.Pdf
-        mimeType in ArchiveMimeTypes || extension in ArchiveExtensions -> DocumentKind.Archive
-        mimeType.startsWith("image/") || extension in ImageExtensions -> DocumentKind.Image
-        mimeType.startsWith("audio/") || extension in AudioExtensions -> DocumentKind.Audio
-        mimeType.startsWith("video/") || extension in VideoExtensions -> DocumentKind.Video
+        type == "application/pdf" || extension == "pdf" -> DocumentKind.Pdf
+        type in ArchiveMimeTypes || extension in ArchiveExtensions -> DocumentKind.Archive
+        type.startsWith("image/") || extension in ImageExtensions -> DocumentKind.Image
+        type.startsWith("audio/") || extension in AudioExtensions -> DocumentKind.Audio
+        type.startsWith("video/") || extension in VideoExtensions -> DocumentKind.Video
         else -> DocumentKind.Other
     }
 }

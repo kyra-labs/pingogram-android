@@ -30,6 +30,11 @@
     <string name="error_username_for_sale">This username is for sale on Fragment.</string>
     <string name="error_bio_too_long">Your bio is too long.</string>
     <string name="error_photo_invalid">This image can\'t be used as a profile photo. Try another one.</string>
+    <!-- A picked photo, video, file or contact could not be read. -->
+    <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
+    <string name="error_file_too_large">This file is too large to send.</string>
+    <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
+    <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +117,8 @@ private class DownloadedFiles(
 ) : FileRepository {
     override fun observe(fileId: Int): Flow<FileState> =
         paths[fileId]?.let { path -> flowOf(FileState.Downloaded(path, size = 0)) } ?: flowOf()
+
+    override fun observeUpload(fileId: Int): Flow<FileUpload> = flowOf()
 
     override suspend fun download(
         fileId: Int,

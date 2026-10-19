@@ -11,4 +11,8 @@ dependencies {
     testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    // AndroidMediaProcessorTest decodes, turns and writes real images on Robolectric's native graphics (JUnit 4).
+    testImplementation(libs.robolectric)
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage.engine)
 }

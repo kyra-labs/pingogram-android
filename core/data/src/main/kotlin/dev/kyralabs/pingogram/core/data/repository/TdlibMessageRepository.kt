@@ -210,7 +210,7 @@ class TdlibMessageRepository
  * A reply to the whole message [messageId] of the same chat, without a quote (td_api.tl `inputMessageReplyToMessage`:
  * no checklist task, no poll option).
  */
-private fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
+internal fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
 
 /** Messages per page, `docs/PERFORMANCE.md` §3. */
 private const val PAGE_SIZE = 50
@@ -219,7 +219,7 @@ private const val PAGE_SIZE = 50
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until
  * then (`messageSchedulingStateSendAtDate`, not repeated); everything else is TDLib's default for a user's message.
  */
-private fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
+internal fun SendOptions.toTdOptions(): TdApi.MessageSendOptions =
     TdApi.MessageSendOptions().also { options ->
         options.disableNotification = silent
         options.schedulingState = scheduledAt?.let { TdApi.MessageSchedulingStateSendAtDate(it.toInt(), 0) }

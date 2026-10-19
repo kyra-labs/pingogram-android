@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +27,9 @@ import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
+import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
+import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import kotlinx.coroutines.Job
@@ -49,7 +53,8 @@ import java.util.Locale
  * view model's [ChatEffect]s show snackbars, open a
  * downloaded document in another app or a location in a maps app, jump to a message ([MessageJumpState]), or open a
  * photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not know
- * each other).
+ * each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a snackbar
+ * says when no app opens.
  */
 @Composable
 internal fun ChatRoute(
@@ -70,12 +75,26 @@ internal fun ChatRoute(
     val jumpState = rememberMessageJumpState(opensAtMessage = messageId != null)
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
+    val launchers = rememberAttachLaunchers(viewModel::onEvent)
+    val attach =
+        rememberAttachInputs(
+            launchers = launchers,
+            onEvent = viewModel::onEvent,
+            caption = viewModel.attachCaption,
+            pollEditor = viewModel.pollEditor,
+            snackbarHostState = snackbarHostState,
+        )
     ChatEffects(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
         jumpState = jumpState,
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
         composerFocus = composerFocus,
+        onLaunchCamera = { path ->
+            launchers.takePhoto(path).also { launched ->
+                if (!launched) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false))
+            }
+        },
     )
     ChatScreen(
         state = state,
@@ -86,6 +105,7 @@ internal fun ChatRoute(
         jumpState = jumpState,
         composerText = viewModel.composerText,
         composerFocus = composerFocus,
+        attach = attach,
     )
 }
 
@@ -96,7 +116,8 @@ internal fun ChatRoute(
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a jump to a message goes to [jumpState], a focus request to
- * [composerFocus]; media to open goes to [onOpenMedia].
+ * [composerFocus]; media to open goes to [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
+ * says that no camera app can.
  */
 @Composable
 internal fun ChatEffects(
@@ -108,6 +129,7 @@ internal fun ChatEffects(
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
+    onLaunchCamera: (path: String) -> Boolean = { false },
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -159,6 +181,11 @@ internal fun ChatEffects(
                     ChatEffect.FocusComposer -> {
                         composerFocus.request()
                         ""
+                    }
+
+                    is ChatEffect.LaunchCamera -> {
+                        val launched = onLaunchCamera(effect.path)
+                        resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
                     }
                 }
             if (message.isNotEmpty()) {

@@ -31,8 +31,11 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.roundToInt
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -49,6 +52,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   left out.
  * - Each item grows into the media viewer and shrinks back into its cell ([sharedMediaBounds]) by its own message, of
  *   [messageIds] (in the order of [items]; none in previews), from and to its `extraSmall` corners.
+ * - An item being sent shows its upload ([uploads], by message id) with a cancel button ([onCancelUpload]).
  *
  * The caption, if any, is the bubble's: Telegram shows the caption of the album's one captioned item below it.
  */
@@ -60,6 +64,8 @@ internal fun MediaAlbum(
     shape: Shape = MaterialTheme.shapes.large,
     maxWidth: Dp = MaterialTheme.sizes.mediaMaxWidth,
     messageIds: ImmutableList<Long> = persistentListOf(),
+    uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
+    onCancelUpload: (messageId: Long) -> Unit = {},
 ) {
     val density = LocalDensity.current
     val widthPx = with(density) { maxWidth.roundToPx() }
@@ -74,19 +80,25 @@ internal fun MediaAlbum(
                 val cell = layout.cells[index]
                 val cellSize = with(density) { DpSize(cell.width.toDp(), cell.height.toDp()) }
                 val messageId = messageIds.getOrNull(index)
-                AlbumItem(
-                    item = item,
-                    displaySize = cellSize,
-                    modifier =
-                        Modifier
-                            .sharedMediaBounds(
-                                messageId = messageId ?: 0L,
-                                shape = cellShape,
-                                counterpartShape = FullBleedShape,
-                                enabled = messageId != null && item.opensInViewer,
-                            ).clip(cellShape)
-                            .clickable(onClickLabel = openLabel) { onOpen(index) },
-                )
+                Box(
+                    Modifier
+                        .sharedMediaBounds(
+                            messageId = messageId ?: 0L,
+                            shape = cellShape,
+                            counterpartShape = FullBleedShape,
+                            enabled = messageId != null && item.opensInViewer,
+                        ).clip(cellShape)
+                        .clickable(onClickLabel = openLabel) { onOpen(index) },
+                ) {
+                    AlbumItem(item = item, displaySize = cellSize, modifier = Modifier.matchParentSize())
+                    messageId?.let(uploads::get)?.let { upload ->
+                        MediaUploadProgress(
+                            upload = upload,
+                            onCancel = { onCancelUpload(messageId) },
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                }
             }
         },
         modifier = modifier.clip(shape),
