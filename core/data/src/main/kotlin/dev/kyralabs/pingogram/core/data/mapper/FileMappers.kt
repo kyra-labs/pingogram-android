@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import org.drinkless.tdlib.TdApi
 
 /**
@@ -32,6 +33,18 @@ internal fun TdApi.File.toFileState(): FileState {
         }
     }
 }
+
+/**
+ * How much of the file Telegram has ([TdApi.File.remote]), for a file sent from this device; the size falls back to
+ * TDLib's estimate while the exact size is unknown.
+ */
+internal fun TdApi.File.toFileUpload(): FileUpload =
+    FileUpload(
+        uploadedSize = remote.uploadedSize,
+        size = if (size > 0) size else expectedSize,
+        isActive = remote.isUploadingActive,
+        isCompleted = remote.isUploadingCompleted,
+    )
 
 /** TDLib's download priority, 1–32, higher first (`docs/PERFORMANCE.md` §3). */
 internal val DownloadPriority.tdlibPriority: Int

@@ -4,6 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
@@ -70,6 +72,9 @@ interface RepositoryModule {
 
     @Binds
     fun messageActionRepository(repository: TdlibMessageActionRepository): MessageActionRepository
+
+    @Binds
+    fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository
 
     @Binds
     fun chatActionRepository(repository: TdlibChatActionRepository): ChatActionRepository

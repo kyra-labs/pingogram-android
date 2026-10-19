@@ -122,7 +122,10 @@ object TdApiFixtures {
     /** What TDLib returns for a flood wait: code 429 with the seconds in the message. */
     fun floodWait(seconds: Int) = TdApi.Error(429, "Too Many Requests: retry after $seconds")
 
-    /** A remote file that is not downloaded yet; pass [localPath] and [downloadedSize] for other states. */
+    /**
+     * A remote file that is not downloaded yet; pass [localPath] and [downloadedSize] for other states, and
+     * [uploadedSize] with [isUploadingCompleted] false for a file this device is uploading.
+     */
     fun file(
         id: Int = 1,
         size: Long = 1_024,
@@ -132,6 +135,9 @@ object TdApiFixtures {
         isDownloadingActive: Boolean = false,
         isDownloadingCompleted: Boolean = false,
         canBeDownloaded: Boolean = true,
+        uploadedSize: Long = size,
+        isUploadingActive: Boolean = false,
+        isUploadingCompleted: Boolean = true,
     ) = TdApi.File(
         id,
         size,
@@ -146,7 +152,7 @@ object TdApiFixtures {
             downloadedSize,
             downloadedSize,
         ),
-        TdApi.RemoteFile("remote-$id", "unique-$id", false, true, size),
+        TdApi.RemoteFile("remote-$id", "unique-$id", isUploadingActive, isUploadingCompleted, uploadedSize),
     )
 
     fun minithumbnail(

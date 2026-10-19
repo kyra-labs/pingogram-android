@@ -25,6 +25,11 @@
     <string name="error_password_recovery_expired">The recovery code has expired. Request a new one.</string>
     <string name="error_too_many_pinned_chats">You can\'t pin more chats here. Unpin a chat first.</string>
     <string name="error_premium_required">Only Telegram Premium subscribers can do this.</string>
+    <!-- A picked photo, video, file or contact could not be read. -->
+    <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
+    <string name="error_file_too_large">This file is too large to send.</string>
+    <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
+    <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

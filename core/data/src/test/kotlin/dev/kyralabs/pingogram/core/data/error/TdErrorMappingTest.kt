@@ -69,6 +69,16 @@ class TdErrorMappingTest {
                 Arguments.of(400, "Application update is needed to log in", DomainError.AppUpdateRequired),
                 Arguments.of(400, "The maximum number of pinned chats exceeded", DomainError.TooManyPinnedChats),
                 Arguments.of(403, "PREMIUM_ACCOUNT_REQUIRED", DomainError.PremiumRequired),
+                Arguments.of(
+                    400,
+                    "File of size 4194304001 bytes is too big; the maximum size is 4194304000 bytes",
+                    DomainError.FileTooLarge,
+                ),
+                Arguments.of(400, "FILE_PARTS_INVALID", DomainError.FileTooLarge),
+                Arguments.of(400, "Not enough rights to send photos to the chat", DomainError.SendingNotAllowed),
+                Arguments.of(400, "Polls can't be sent to the private chat", DomainError.SendingNotAllowed),
+                Arguments.of(400, "Non-anonymous polls can't be sent to channel chats", DomainError.SendingNotAllowed),
+                Arguments.of(403, "CHAT_SEND_MEDIA_FORBIDDEN", DomainError.SendingNotAllowed),
                 // td_api.tl: the message of a 406 is not processed, even when it names a known error.
                 Arguments.of(406, "UPDATE_APP_TO_LOGIN", DomainError.Silent),
                 Arguments.of(406, "PHONE_NUMBER_INVALID", DomainError.Silent),

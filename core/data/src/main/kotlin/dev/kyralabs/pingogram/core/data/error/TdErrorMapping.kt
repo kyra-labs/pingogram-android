@@ -13,12 +13,21 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 internal fun TdError.toDomainError(): DomainError {
     val floodWait = retryAfter
     return when {
-        floodWait != null -> DomainError.FloodWait(floodWait.inWholeSeconds)
+        floodWait != null -> {
+            DomainError.FloodWait(floodWait.inWholeSeconds)
+        }
 
         // td_api.tl: the message of a 406 error must not be processed in any way.
-        code == SILENT -> DomainError.Silent
+        code == SILENT -> {
+            DomainError.Silent
+        }
 
-        else -> ERROR_NAME.find(message)?.value?.let(TELEGRAM_ERRORS::get) ?: TDLIB_MESSAGES[message] ?: byCode()
+        else -> {
+            ERROR_NAME.find(message)?.value?.let(TELEGRAM_ERRORS::get)
+                ?: TDLIB_MESSAGES[message]
+                ?: TDLIB_PATTERNS.firstOrNull { (pattern, _) -> pattern.containsMatchIn(message) }?.second
+                ?: byCode()
+        }
     }
 }
 
@@ -74,6 +83,14 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "UPDATE_APP_TO_LOGIN" to DomainError.AppUpdateRequired,
         // Requests only Telegram Premium subscribers may make, e.g. account.setPrivacy for voice messages.
         "PREMIUM_ACCOUNT_REQUIRED" to DomainError.PremiumRequired,
+        // An upload of more parts than the account may send: a file over Telegram's size limit for it.
+        "FILE_PARTS_INVALID" to DomainError.FileTooLarge,
+        // Rights Telegram checks itself when TDLib did not know them yet.
+        "CHAT_SEND_MEDIA_FORBIDDEN" to DomainError.SendingNotAllowed,
+        "CHAT_SEND_PHOTOS_FORBIDDEN" to DomainError.SendingNotAllowed,
+        "CHAT_SEND_VIDEOS_FORBIDDEN" to DomainError.SendingNotAllowed,
+        "CHAT_SEND_DOCS_FORBIDDEN" to DomainError.SendingNotAllowed,
+        "CHAT_SEND_POLL_FORBIDDEN" to DomainError.SendingNotAllowed,
     )
 
 /**
@@ -92,4 +109,19 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         // toggleChatIsPinned in the main list or the archive (MessagesManager::toggle_dialog_is_pinned) and in a
         // folder (DialogFilter::check_limits). TDLib answers before it tells Telegram, so no server error follows.
         "The maximum number of pinned chats exceeded" to DomainError.TooManyPinnedChats,
+        // can_send_message_content (td/telegram/MessageContent.cpp), for content the chat does not take.
+        "Polls can't be sent to the private chat" to DomainError.SendingNotAllowed,
+        "Non-anonymous polls can't be sent to channel chats" to DomainError.SendingNotAllowed,
+        "Message can't be sent to a secret chat" to DomainError.SendingNotAllowed,
+    )
+
+/**
+ * TDLib's own messages that carry details: the size checks of files to send (check_full_local_location,
+ * td/telegram/files/FileLoaderUtils.cpp: "File of size … bytes is too big…") and the rights checks of
+ * can_send_message_content ("Not enough rights to send photos to the chat").
+ */
+private val TDLIB_PATTERNS: List<Pair<Regex, DomainError>> =
+    listOf(
+        Regex("""^File of size \d+ bytes is too big""") to DomainError.FileTooLarge,
+        Regex("""^Not enough rights to send """) to DomainError.SendingNotAllowed,
     )
