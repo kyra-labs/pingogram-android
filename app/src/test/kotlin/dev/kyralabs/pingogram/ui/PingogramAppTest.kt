@@ -28,6 +28,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -43,13 +44,17 @@ import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
+import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
+import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
+import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
+import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
@@ -307,6 +312,49 @@ class PingogramAppTest {
             .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `privacy and security opens above the settings tab, and its pages above it`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_privacy_security).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
+        assertNoNavigation()
+
+        for (route in listOf(BlockedUsersRoute, ActiveSessionsRoute, PrivacySettingRoute("Calls"))) {
+            composeRule.runOnUiThread { navController.navigate(route) }
+            composeRule.waitForIdle()
+
+            // A privacy setting's choices are selectable: only tabs count here.
+            composeRule
+                .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+                .assertCountEquals(0)
+            pressBack()
+            composeRule.waitForIdle()
+            assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
+        }
+        text(SettingsR.string.settings_privacy_security).assertIsDisplayed()
+
+        pressBack()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `a privacy setting this version does not know goes back`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        composeRule.runOnUiThread { navController.navigate(PrivacySecurityRoute) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnUiThread { navController.navigate(PrivacySettingRoute("SomethingNew")) }
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<PrivacySecurityRoute>() == true)
     }
 
     // A conversation (FR-C1)

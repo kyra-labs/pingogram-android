@@ -43,6 +43,30 @@ data object DataStorageRoute
 data object AboutRoute
 
 /**
+ * Privacy and security (`REQUIREMENTS.md` FR-S1): the privacy settings, blocked users, active sessions and 2-step
+ * verification, `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object PrivacySecurityRoute
+
+/**
+ * One privacy setting, who can see or do something, pushed above [PrivacySecurityRoute]. [setting] is the name of a
+ * `PrivacySetting` of `:core:domain`, which this module does not depend on.
+ */
+@Serializable
+data class PrivacySettingRoute(
+    val setting: String,
+)
+
+/** The users and chats the user blocked, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object BlockedUsersRoute
+
+/** The sessions of the account (devices logged in to it), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object ActiveSessionsRoute
+
+/**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.
  */

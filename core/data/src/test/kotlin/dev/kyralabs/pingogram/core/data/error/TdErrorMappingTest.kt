@@ -68,6 +68,7 @@ class TdErrorMappingTest {
                 Arguments.of(400, "UPDATE_APP_TO_LOGIN", DomainError.AppUpdateRequired),
                 Arguments.of(400, "Application update is needed to log in", DomainError.AppUpdateRequired),
                 Arguments.of(400, "The maximum number of pinned chats exceeded", DomainError.TooManyPinnedChats),
+                Arguments.of(403, "PREMIUM_ACCOUNT_REQUIRED", DomainError.PremiumRequired),
                 // td_api.tl: the message of a 406 is not processed, even when it names a known error.
                 Arguments.of(406, "UPDATE_APP_TO_LOGIN", DomainError.Silent),
                 Arguments.of(406, "PHONE_NUMBER_INVALID", DomainError.Silent),

@@ -78,7 +78,8 @@ internal fun SettingsRoute(
 /**
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
  * page scrolls, as the chat list's does, then the logged-in account ([AccountHeader]), the rows that open the other
- * settings pages, and "Log out", which asks for confirmation first (FR-A8). The page draws behind the floating
+ * settings pages (the account's own, Privacy and security, under Account), and "Log out", which asks for confirmation
+ * first (FR-A8). The page draws behind the floating
  * navigation bar and ends clear of it ([screenContentWindowInsets]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,6 +124,12 @@ internal fun SettingsScreen(
                 )
             }
             SettingsSection(stringResource(R.string.settings_section_account)) {
+                PageItem(
+                    title = stringResource(R.string.settings_privacy_security),
+                    summary = stringResource(R.string.settings_privacy_security_summary),
+                    icon = R.drawable.ic_shield,
+                    onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
+                )
                 LogOutItem(isLoggingOut = state.isLoggingOut, onClick = { onEvent(SettingsEvent.LogOut) })
             }
         }
@@ -176,7 +183,7 @@ private fun SettingsTitle() {
 
 /** A row that opens another settings page. */
 @Composable
-private fun PageItem(
+internal fun PageItem(
     title: String,
     summary: String,
     @DrawableRes icon: Int,

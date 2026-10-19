@@ -79,4 +79,13 @@ sealed interface DomainError {
      * `pinned_archived_chat_count_max`, or the folder's limit; Telegram Premium raises them): unpin one first.
      */
     data object TooManyPinnedChats : DomainError
+
+    // Settings (REQUIREMENTS.md FR-S1).
+
+    /**
+     * Only Telegram Premium subscribers may do this (`PREMIUM_ACCOUNT_REQUIRED`), e.g. limit who can send them voice
+     * and video messages. Pingogram offers no Premium purchase (`REQUIREMENTS.md` §1.2), so the UI says so, and no
+     * more.
+     */
+    data object PremiumRequired : DomainError
 }

@@ -67,8 +67,12 @@ class SettingsScreenTest {
         node(R.string.settings_appearance).assertHasClickAction().performClick()
         node(R.string.settings_data_storage).assertHasClickAction().performClick()
         node(R.string.settings_about).assertHasClickAction().performClick()
+        node(R.string.settings_privacy_security).assertHasClickAction().performClick()
 
-        assertEquals(listOf(SettingsPage.Appearance, SettingsPage.DataStorage, SettingsPage.About), pages)
+        assertEquals(
+            listOf(SettingsPage.Appearance, SettingsPage.DataStorage, SettingsPage.About, SettingsPage.PrivacySecurity),
+            pages,
+        )
     }
 
     @Test
@@ -95,7 +99,7 @@ class SettingsScreenTest {
             .onNode(hasText(string(R.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
             .performClick()
         composeRule
-            .onNode(hasText(string(R.string.settings_log_out_dialog_dismiss)) and hasAnyAncestor(isDialog()))
+            .onNode(hasText(string(R.string.settings_dialog_dismiss)) and hasAnyAncestor(isDialog()))
             .performClick()
 
         assertEquals(listOf(SettingsEvent.ConfirmLogOut, SettingsEvent.DismissLogOut), events)
