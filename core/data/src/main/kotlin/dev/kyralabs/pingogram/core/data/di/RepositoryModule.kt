@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
@@ -35,6 +36,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
@@ -102,4 +104,7 @@ interface RepositoryModule {
 
     @Binds
     fun twoStepVerificationRepository(repository: TdlibTwoStepVerificationRepository): TwoStepVerificationRepository
+
+    @Binds
+    fun profileRepository(repository: TdlibProfileRepository): ProfileRepository
 }

@@ -19,7 +19,7 @@ data class SettingsUiState(
 )
 
 /**
- * The logged-in account at the top of Settings, read-only.
+ * The logged-in account at the top of Settings.
  *
  * @property userId the account's user id, which picks its avatar placeholder.
  * @property name the first and last names.
@@ -40,6 +40,7 @@ data class AccountUiModel(
 
 /** The pages Settings opens, each pushed above the Settings tab. */
 enum class SettingsPage {
+    EditProfile,
     Appearance,
     DataStorage,
     About,

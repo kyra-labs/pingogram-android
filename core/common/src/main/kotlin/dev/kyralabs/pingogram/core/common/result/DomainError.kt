@@ -105,4 +105,22 @@ sealed interface DomainError {
      * more.
      */
     data object PremiumRequired : DomainError
+
+    /** Someone else has the username the user wants (`USERNAME_OCCUPIED`). */
+    data object UsernameTaken : DomainError
+
+    /** Telegram does not accept the username (`USERNAME_INVALID`). */
+    data object UsernameInvalid : DomainError
+
+    /** The username is for sale on Fragment and can only be bought there (`USERNAME_PURCHASE_AVAILABLE`). */
+    data object UsernameForSale : DomainError
+
+    /** The bio is longer than Telegram accepts from the user (`ABOUT_TOO_LONG`). */
+    data object BioTooLong : DomainError
+
+    /**
+     * The image cannot be a profile photo: too small, of unusable dimensions, or unreadable (`PHOTO_CROP_SIZE_SMALL`,
+     * `IMAGE_PROCESS_FAILED` …, or an image the app could not read).
+     */
+    data object PhotoInvalid : DomainError
 }

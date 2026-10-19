@@ -75,5 +75,10 @@ private fun DomainError.messageRes(): Int =
         DomainError.FileTooLarge -> R.string.error_file_too_large
         DomainError.SendingNotAllowed -> R.string.error_sending_not_allowed
         DomainError.PremiumRequired -> R.string.error_premium_required
+        DomainError.UsernameTaken -> R.string.error_username_taken
+        DomainError.UsernameInvalid -> R.string.error_username_invalid
+        DomainError.UsernameForSale -> R.string.error_username_for_sale
+        DomainError.BioTooLong -> R.string.error_bio_too_long
+        DomainError.PhotoInvalid -> R.string.error_photo_invalid
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

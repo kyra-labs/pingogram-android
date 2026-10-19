@@ -83,6 +83,16 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "UPDATE_APP_TO_LOGIN" to DomainError.AppUpdateRequired,
         // Requests only Telegram Premium subscribers may make, e.g. account.setPrivacy for voice messages.
         "PREMIUM_ACCOUNT_REQUIRED" to DomainError.PremiumRequired,
+        // Editing the profile: account.updateUsername, account.updateProfile and photos.uploadProfilePhoto.
+        "USERNAME_OCCUPIED" to DomainError.UsernameTaken,
+        "USERNAME_INVALID" to DomainError.UsernameInvalid,
+        "USERNAME_PURCHASE_AVAILABLE" to DomainError.UsernameForSale,
+        "ABOUT_TOO_LONG" to DomainError.BioTooLong,
+        "PHOTO_CROP_SIZE_SMALL" to DomainError.PhotoInvalid,
+        "PHOTO_INVALID_DIMENSIONS" to DomainError.PhotoInvalid,
+        "PHOTO_EXT_INVALID" to DomainError.PhotoInvalid,
+        "PHOTO_INVALID" to DomainError.PhotoInvalid,
+        "IMAGE_PROCESS_FAILED" to DomainError.PhotoInvalid,
         // An upload of more parts than the account may send: a file over Telegram's size limit for it.
         "FILE_PARTS_INVALID" to DomainError.FileTooLarge,
         // Rights Telegram checks itself when TDLib did not know them yet.
@@ -109,6 +119,8 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         // toggleChatIsPinned in the main list or the archive (MessagesManager::toggle_dialog_is_pinned) and in a
         // folder (DialogFilter::check_limits). TDLib answers before it tells Telegram, so no server error follows.
         "The maximum number of pinned chats exceeded" to DomainError.TooManyPinnedChats,
+        // setUsername checks the characters itself (UserManager::set_username, is_allowed_username).
+        "Username is invalid" to DomainError.UsernameInvalid,
         // can_send_message_content (td/telegram/MessageContent.cpp), for content the chat does not take.
         "Polls can't be sent to the private chat" to DomainError.SendingNotAllowed,
         "Non-anonymous polls can't be sent to channel chats" to DomainError.SendingNotAllowed,

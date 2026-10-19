@@ -178,9 +178,14 @@ private const val MESSAGE_PAGE_SIZE = 30
 
 private const val BAD_REQUEST = 400
 
-/** What TDLib could not search (a 400, see [TdlibSearchRepository]) found [nothing] instead of failing. */
+/**
+ * What TDLib could not search (a 400, see [TdlibSearchRepository]) found [nothing] instead of failing. That includes
+ * `USERNAME_INVALID`, which `searchPublicChats` answers for a query too short for a username, and which the error
+ * mapping names for editing the profile.
+ */
 private inline fun <T> Outcome<T>.orNothing(nothing: () -> T): Outcome<T> {
-    val isBadRequest = this is Outcome.Failure && (error as? DomainError.Unknown)?.code == BAD_REQUEST
+    val error = (this as? Outcome.Failure)?.error
+    val isBadRequest = (error as? DomainError.Unknown)?.code == BAD_REQUEST || error == DomainError.UsernameInvalid
     return if (isBadRequest) Outcome.Success(nothing()) else this
 }
 

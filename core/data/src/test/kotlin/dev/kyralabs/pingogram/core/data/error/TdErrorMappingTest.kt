@@ -98,6 +98,21 @@ class TdErrorMappingTest {
                     DomainError.Unknown(400, "Call to checkAuthenticationCode unexpected"),
                 ),
                 Arguments.of(400, "SOME_NEW_ERROR", DomainError.Unknown(400, "SOME_NEW_ERROR")),
+            ) + profileErrors()
+
+        /** Editing the profile: usernames, the bio and photos. */
+        private fun profileErrors(): List<Arguments> =
+            listOf(
+                Arguments.of(400, "USERNAME_OCCUPIED", DomainError.UsernameTaken),
+                Arguments.of(400, "USERNAME_INVALID", DomainError.UsernameInvalid),
+                Arguments.of(400, "Username is invalid", DomainError.UsernameInvalid),
+                Arguments.of(400, "USERNAME_PURCHASE_AVAILABLE", DomainError.UsernameForSale),
+                Arguments.of(400, "ABOUT_TOO_LONG", DomainError.BioTooLong),
+                Arguments.of(400, "PHOTO_CROP_SIZE_SMALL", DomainError.PhotoInvalid),
+                Arguments.of(400, "PHOTO_INVALID_DIMENSIONS", DomainError.PhotoInvalid),
+                Arguments.of(400, "PHOTO_EXT_INVALID", DomainError.PhotoInvalid),
+                Arguments.of(400, "PHOTO_INVALID", DomainError.PhotoInvalid),
+                Arguments.of(400, "IMAGE_PROCESS_FAILED", DomainError.PhotoInvalid),
             )
     }
 }

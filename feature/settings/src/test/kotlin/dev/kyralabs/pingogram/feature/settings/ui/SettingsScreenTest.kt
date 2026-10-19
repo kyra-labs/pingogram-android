@@ -61,6 +61,22 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `the account header opens edit profile`() {
+        setScreen()
+
+        node(R.string.settings_edit_profile_button).assertHasClickAction().performClick()
+
+        assertEquals(listOf(SettingsPage.EditProfile), pages)
+    }
+
+    @Test
+    fun `without an account there is no profile to edit`() {
+        setScreen(SettingsUiState())
+
+        composeRule.onNodeWithText(string(R.string.settings_edit_profile_button)).assertDoesNotExist()
+    }
+
+    @Test
     fun `the rows open their pages`() {
         setScreen()
 

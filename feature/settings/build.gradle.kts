@@ -3,6 +3,8 @@ plugins {
 }
 
 dependencies {
+    // The photo picker for a new profile photo, and BackHandler for unsaved profile changes.
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
