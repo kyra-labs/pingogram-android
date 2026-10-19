@@ -63,7 +63,7 @@ fun PingogramTheme(
 ## 2. Color system
 
 ### 2.1 Scheme generation
-- Brand seed: `#E8457C` (placeholder; owner decides once). `tools/theme/generate.mjs` generates
+- Brand seed: `#2156C4`, the blue of the app icon (`art/`; chosen by the owner 2026-10-19). `tools/theme/generate.mjs` generates
   the 6 schemes (light + dark × standard/medium/high contrast) with material-color-utilities, the
   Material Theme Builder algorithm (`SchemeTonalSpot`, contrast 0 / 0.5 / 1), into
   `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
@@ -389,6 +389,12 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - Launcher icon: adaptive (foreground / background / **monochrome** layers), themed icon
   support; splash via `core-splashscreen` using the same vector. Notification small icon:
   monochrome 24 dp glyph.
+- The owner's artwork lives in `art/` (SVG, the source); the app's vectors are converted from it:
+  `app` `ic_launcher_*` (the mark `#2156C4` on white, the icon's own colors, also on the splash
+  screen's icon circle), `core:notifications` `ic_notification`, `core:ui` `ic_pingogram` (the mark)
+  and `logo_pingogram` (mark and wordmark). In the UI the mark and logo are one-color and tinted
+  with theme roles (Welcome: `onPrimaryContainer` on its `primaryContainer` shape; About: `primary`),
+  so they follow dynamic color.
 - Avatars: circle by default; `MaterialShapes` only for placeholders and states.
 - Images: `large` corner radius inside bubbles, `extraLarge` in media viewer thumbnails.
 

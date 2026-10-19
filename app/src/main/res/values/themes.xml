@@ -11,9 +11,12 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
-    <!-- Launch theme (core-splashscreen); installSplashScreen() switches to Theme.Pingogram. -->
+    <!-- Launch theme (core-splashscreen); installSplashScreen() switches to Theme.Pingogram. The icon is the launcher
+         icon's mark on its white circle, so it reads on the light and the dark window alike. -->
     <style name="Theme.Pingogram.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
         <item name="postSplashScreenTheme">@style/Theme.Pingogram</item>
     </style>
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launcher icon's colors, from art/ (ic_launcher_background.svg, ic_launcher_foreground.svg). The app's
+         own UI takes its colors from the theme; only the icon and the splash screen use these. -->
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+    <color name="ic_launcher_mark">#FF2156C4</color>
+</resources>

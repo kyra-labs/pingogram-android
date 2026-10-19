@@ -12,7 +12,7 @@ the release workflow so the owner can install and test on a phone.
 - [x] `core:ui` — `PingogramTheme` (M3 Expressive, dynamic color, contrast, AMOLED), full
       Google Sans Flex type scale (15 styles + 15 emphasized, variable axes per style), shapes
       + `MaterialShapes` helpers, `LocalPingogramColors`, preview helpers, splash
-- [ ] App icon (adaptive + monochrome) — waiting for the owner's artwork
+- [x] App icon (adaptive + monochrome), from the owner's artwork in `art/`
 - [x] `build-logic` detekt rule `PingogramHardcodedToken` (no literal colors/sizes/tweens in features)
 - [x] `benchmark/` module skeleton with `StartupBenchmark` and Baseline Profile generation
 - [x] `core:tdlib` — `fetchTdlib` Gradle task, `TdlibClient`, `AuthState`, `ConnectionState`,
