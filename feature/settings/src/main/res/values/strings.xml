@@ -230,6 +230,31 @@
     <string name="settings_about_license">License</string>
     <string name="settings_about_license_summary">GNU General Public License v3.0 or later</string>
     <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>
+    <string name="settings_about_licenses">Open-source licenses</string>
+    <string name="settings_about_licenses_summary">Libraries, fonts and icons</string>
+
+    <!-- Open-source licenses (FR-S1, About) -->
+    <!-- Spoken by screen readers for the progress indicator while the list of libraries loads. -->
+    <string name="settings_licenses_loading">Loading licenses</string>
+    <!-- Above the list of libraries. %1$s is how many there are, formatted, such as "141". -->
+    <plurals name="settings_licenses_header">
+        <item quantity="one">%1$s library</item>
+        <item quantity="other">%1$s libraries</item>
+    </plurals>
+    <!-- Below a library's name. %1$s is its version, such as "1.5.0", %2$s its licenses, such as "Apache License 2.0". -->
+    <string name="settings_licenses_library_summary">%1$s · %2$s</string>
+    <string name="settings_licenses_intro">Pingogram is built with these open-source libraries, fonts and icons. Tap one to read its license.</string>
+    <!-- Spoken by screen readers for the progress indicator while a library's page loads. -->
+    <string name="settings_license_loading">Loading license</string>
+    <string name="settings_license_version">Version</string>
+    <!-- A library's Maven coordinates, such as "androidx.compose.material3:material3". -->
+    <string name="settings_license_artifact">Artifact</string>
+    <string name="settings_license_developers">Developers</string>
+    <string name="settings_license_website">Website</string>
+    <!-- Opens a license's text on the web, in the browser. -->
+    <string name="settings_license_online">Read online</string>
+    <!-- Instead of a license's text, where the app has none. -->
+    <string name="settings_license_text_missing">This license\'s text is published online.</string>
 
     <!-- Edit profile (FR-S1, Account) -->
     <string name="settings_edit_profile">Edit profile</string>

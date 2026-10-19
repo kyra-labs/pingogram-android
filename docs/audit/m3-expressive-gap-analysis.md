@@ -91,6 +91,10 @@ The fifteen changes with the most effect on how Google-like the app feels, plus 
 14. **G24 + G25** Selection and swipe: small contextual bar, `large` selected rows, a visible container while swiping.
 15. **G08 + G38** Media viewer: correct corners in the return transform, labelled actions, width-capped chrome.
 
+Added after the owner's feedback that the app looks too big: **G63–G69** (§5.10). These cover a smaller chat list
+header, 48 dp avatars and one-line previews in chat rows, a 64 dp composer, tighter bubbles and default-height auth
+buttons. Together they show about 15% more chats per screen.
+
 ---
 
 ## 2. Prioritized backlog
@@ -156,6 +160,14 @@ Paths are shortened: `chats/` = `feature/chats/src/main/kotlin/dev/kyralabs/ping
 | G42 | Reply quotes and link previews use a colored leading bar, and voice uses a bar waveform: the most Telegram-like elements. §11 says not to reproduce Telegram's styling. | S–M | `chat/BubbleParts.kt` (`QuoteBlock`), `chat/content/Waveform.kt` | Tonal rounded quote card without the bar; waveform kept or a `LinearWavyProgressIndicator`-style scrubber | `DESIGN_SYSTEM.md` §11 | D16 |
 | G43 | The brand fallback palette is `SchemeTonalSpot`, which turns the icon's vivid `#2156C4` into a greyish `#495D92` primary. | S | `tools/theme/generate.mjs`, `ui/theme/Color.kt` | Generate `SchemeVibrant`/`SchemeExpressive`/`SchemeFidelity` side by side and choose | [m3 color system][m3-color-system] | D12 |
 | G44 | `DESIGN_SYSTEM.md` has outdated or self-contradictory rules (see §6). | S | `docs/DESIGN_SYSTEM.md`, `CLAUDE.md`, `REQUIREMENTS.md` | Doc PR after the owner decisions | §6 | several |
+| G63 | The chat list spends 176 dp on its header at rest (112 dp medium flexible bar + 64 dp folder row) before the first chat. | S | `chats/ChatListTopBar.kt`, `chats/ChatListScreen.kt` | Small `TopAppBar` with `titleLargeEmphasized`; `pinnedScrollBehavior` | [m3 app bars][m3-app-bars]; §5.10 | D25 |
+| G64 | Folder tab row is 64 dp for 40 dp buttons. | S | `chats/FolderTabs.kt` | `spacing.small` above and below (56 dp) | §5.10 | D26 |
+| G65 | Chat row avatars are 56 dp; Material's list avatar is 40 dp. | S | `ui/theme/PingogramSizes.kt`, `chats/ChatListItem.kt`, `chats/ArchiveRow.kt` | New `avatarRow` = 48 dp | [m3 lists][m3-lists]; §5.10 | D27 |
+| G66 | Two- and three-line previews make rows 79–94 dp apart and uneven. | S | `chats/ChatListItem.kt` | `maxLines = 1` preview (sender inline) → 72 dp rows | [m3 lists][m3-lists]; §5.10 | D28 |
+| G67 | Composer bar 72 dp with a 56 dp field and 56 dp buttons. | M | `chat/composer/Composer.kt`, `ComposerButtons.kt` | `BasicTextField` + `TextFieldDefaults.decorator` (48 dp pill, tonal colors); `IconButtonDefaults.smallContainerSize()`; send at `SplitButtonDefaults.SmallContainerHeight` | §5.10; [Google Messages composer][9to5-gm-chat] | D29 |
+| G68 | Bubble text sits 16 dp from the bubble's sides. | S | `chat/MessageBubble.kt`, `DESIGN_SYSTEM.md` §4 | `spacing.medium` horizontal padding | §5.10 | D30 |
+| G69 | Auth main buttons are 56 dp and full width. | S | `auth/components/AuthComponents.kt` | Default `Button` height, bottom end; secondary `TextButton` bottom start; Welcome keeps the medium size | §5.10 | D31 |
+| G70 | No density check in the per-screen audit. | S | `DESIGN_SYSTEM.md` §12 | Add: ≥ 9 chat rows and one-line bubbles ≤ 40 dp on a 412 × 915 dp phone at 100% font | §5.10 | — |
 
 ### Nice to have
 
@@ -183,6 +195,12 @@ Paths are shortened: `chats/` = `feature/chats/src/main/kotlin/dev/kyralabs/ping
 ---
 
 ## 3. Decisions needed from the owner
+
+**Status (2026-10-19): decided.** The owner accepted every recommendation below ("go with your recommendations for
+all decisions, it should follow Material 3 Expressive and Google standards"). D25–D32 were added afterwards for the
+density findings (§5.10) under the same instruction. Where a recommendation offered a choice, the decision is the
+first option named in it. The rules are now in `DESIGN_SYSTEM.md`, `REQUIREMENTS.md` (FR-L7, FR-C6), `CLAUDE.md`
+rule 4b and `ROADMAP.md`.
 
 Each decision lists the options and a recommendation. Findings that wait on it are named.
 
@@ -212,6 +230,14 @@ Each decision lists the options and a recommendation. Findings that wait on it a
 | D22 | AMOLED Settings page | grey page, black rows (today) / black page, rows on `surfaceContainer` | **Black page** | G54 |
 | D23 | Expressive inset focus rings | keep opacity focus / switch | **Switch**: clearer for keyboard users on tablets and ChromeOS | G51 |
 | D24 | One text field style | filled / outlined / Compose 1.5's rounded tonal | **Rounded tonal** for the composer and Edit profile, filled for auth forms | G32 |
+| D25 | Chat list app bar | medium flexible (today) / small | **Small** (64 dp): the chat list is a dense list, and it gives back ~1.5 rows | G63 |
+| D26 | Folder tab row height | 64 dp (today) / 56 dp | **56 dp** | G64 |
+| D27 | Chat row avatar | 56 dp (today) / 48 dp / 40 dp (Material's list token) | **48 dp** | G65 |
+| D28 | Chat row preview lines | two (today) / one | **One** | G66 |
+| D29 | Composer size | 72 dp bar, 56 dp field and buttons (today) / 64 dp bar, 48 dp pill, 40 dp buttons | **64 dp** | G67 |
+| D30 | Bubble side padding | 16 dp (today) / 12 dp | **12 dp** | G68 |
+| D31 | Auth buttons | medium, full width (today) / default height at the bottom end, as Google's sign-in | **Default**; Welcome keeps its medium hero button | G69 |
+| D32 | `opsz` = size makes small text 5–9% wider than at the font's default | keep / pin `opsz` to 18 | **Keep**: it is how the font is designed, and the layout changes fix the density | §5.10 |
 
 ---
 
@@ -563,7 +589,58 @@ tabs label-only or icon-only, is D13.
     ([Contacts][9to5-contacts])
   - on XL windows, a supporting pane
 
-### 5.10 Shared components (`core:ui/component`)
+### 5.10 Sizes and density: why the app looks big
+
+The owner reported that Pingogram looks too big on their phone next to other apps. Nothing scales the app:
+- no `LocalDensity` override
+- no font-scale change
+- every size in dp and sp
+
+Measured in the goldens (411 × 891 dp at 3×, so 1 dp = 3 px), the size comes from a handful of layout choices that
+add up, plus a small effect of the font's optical size:
+
+| Element | Pingogram (measured) | Material token / Google apps | Effect |
+|---|---|---|---|
+| Chat list header at rest | `MediumFlexibleTopAppBar` 112 dp + folder row 64 dp = **176 dp** before the first chat (plus the status bar) | Small app bar **64 dp** ("small: dense layouts", [m3 app bars][m3-app-bars]); Google Messages' home keeps a slim bar ([GM home][9to5-gm-home]) | ~1.5 rows lost at the top |
+| Folder tab row | 40 dp buttons with 12 dp above and below = 64 dp | Small button 40 dp; 8 dp padding is enough | 8 dp |
+| Chat row avatar | **56 dp** (`avatarMedium`) | List item avatar token **40 dp** (`ListTokens`, [m3 lists][m3-lists]); Google Messages enlarged its photos in the M3E redesign ([GM home][9to5-gm-home]) | The text column is narrower, so previews wrap |
+| Chat row height | **~79 dp** apart with a two-line preview, **~94 dp** with three lines | Two-line list item **72 dp**, three-line 88 dp | ~10–20% taller rows |
+| Chat rows visible (412 × 915 phone, 32 dp status bar, gesture nav, floating bar) | ~8.4 without folders, ~7.6 with folders | — | Proposed changes give ~9.7 / ~8.9 (+15–17%) |
+| Composer bar | **72 dp**: 56 dp outlined field, 56 dp attach and send buttons | Text field 56 dp; small icon button 40 dp; Google Messages' composer is a slim pill ([GM chat][9to5-gm-chat]) | 8–16 dp and the field's width (G05) |
+| Bubble | 16 dp horizontal padding; one-line bubble 40 dp; a time on every bubble (often a line of its own) | No Material rule; Google Messages shows times per group and on a swipe ([GM features][9to5-gm-features]) | Taller threads (G41) |
+| Auth main button | Medium button **56 dp**, full width | Default button 40 dp; Google's sign-in puts a normal-width "Next" at the bottom end | Feels oversized; 9to5Google criticised oversized Expressive buttons ([recap][9to5-recap]) |
+| Settings | Header 112 dp, account card 96 dp, rows 72/88 dp, 12 dp between groups | Android Settings uses a large collapsing title; Android 17 made its cards shorter ([Android 17][9to5-a17]) | Close to Google's; leave |
+| Type | M3 sizes (16 sp messages and titles, 14 sp previews, 11 sp times) with `opsz` = size | Same sizes in Material and Google's apps | See below |
+
+**Optical size.** Google Sans Flex widens and opens its letters at small optical sizes. Measured in the bundled file:
+- at `opsz` 14 (`bodyMedium`) a line is **5%** wider than at the font's default `opsz` 18
+- at `opsz` 11–12 (`labelSmall`/`labelMedium`, times and badges) it is **8–9%** wider
+- x-height rises from 0.510 to 0.525–0.530 em
+
+Pingogram sets `opsz` to the size, as the font is designed and as §3 requires. An app that leaves `opsz` at the
+default, or that uses Roboto, sets the same sp narrower. This explains part of the "big" impression in previews and
+times, but it is the font working as intended. **Keep it** (D32); the layout changes below do more.
+
+**What to change** (all within Material's tokens; decided under the owner's 2026-10-19 instruction, see D25–D32):
+- **G63, D25.** Chat list: a small `TopAppBar` (64 dp) with `titleLargeEmphasized`, no collapsing. Settings home keeps
+  its medium flexible bar, as Android Settings has a large title.
+- **G64, D26.** Folder tab row 56 dp: 40 dp buttons with `spacing.small` above and below.
+- **G65, D27.** Chat row avatar 48 dp, a new size token: between Material's 40 dp and today's 56 dp, for a row with
+  title, preview and a meta column. Contacts and search keep 40 dp, the account card 56 dp.
+- **G66, D28.** One line of preview per chat (the sender inline, as today), so rows are Material's 72 dp two-line
+  item.
+- **G67, D29.** Composer bar 64 dp:
+  - a 48 dp filled tonal pill: `BasicTextField` + `TextFieldDefaults.decorator` with tighter vertical padding,
+    because `TextField` enforces 56 dp
+  - 40 dp icon buttons with 48 dp touch targets
+  - a small (40 dp) icon split send (G05)
+- **G68, D30.** Bubble text 12 dp (`spacing.medium`) from the sides, 8 dp top and bottom; time per group (D15).
+- **G69, D31.** Auth: default-height (40 dp) buttons at the bottom end, the secondary action as a text button at the
+  bottom start, as in Google's sign-in. Welcome's "Start messaging" stays medium (the hero moment).
+- **G70.** A density check in the per-screen audit (§12 of the spec): the chat list shows at least nine rows, and a
+  one-line message bubble is at most 40 dp tall, on a 412 × 915 dp phone at 100% font.
+
+### 5.11 Shared components (`core:ui/component`)
 
 | Component | Status | Notes / IDs |
 |---|---|---|
@@ -581,8 +658,9 @@ tabs label-only or icon-only, is D13.
 
 ## 6. Review of `DESIGN_SYSTEM.md` and the other docs
 
-Rules that are outdated, contradict current Google guidance, contradict each other, or are not implemented. Proposed
-wording changes wait for the decisions named.
+Rules that are outdated, contradict current Google guidance, contradict each other, or are not implemented. **Applied
+2026-10-19**: after the owner's decisions, `DESIGN_SYSTEM.md`, `REQUIREMENTS.md`, `CLAUDE.md` and `ROADMAP.md` were
+updated along these lines. Row 30 (compileSdk 37) stays open until the AARs are checked.
 
 | # | Where | Today | Problem | Proposal |
 |---|---|---|---|---|

@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -50,7 +48,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * One chat: its avatar and name (a lock first for a secret chat) in a list item inset in the sheet, toggled by a tap.
- * Picked ([selected]), the row is a full pill in the list item's selected colors and its avatar morphs into a check.
+ * Picked ([selected]), the row takes the list item's selected colors and shape (`large`) and its avatar morphs into a
+ * check.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -77,7 +76,7 @@ internal fun ForwardTargetRow(
                 selected = selected,
             )
         },
-        shapes = if (selected) shapes.copy(shape = CircleShape) else shapes,
+        shapes = if (selected) shapes.copy(shape = shapes.selectedShape) else shapes,
         colors = listItemColors(selected),
         contentPadding = insetContentPadding(insets),
     ) {
@@ -141,23 +140,21 @@ internal fun ForwardOptions(
     }
 }
 
-/** Send: a medium Expressive button whose shape morphs when pressed; screen readers hear to how many chats. */
+/** Send: a default-size button whose shape morphs when pressed; screen readers hear to how many chats. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SendButton(
     count: Int,
     onClick: () -> Unit,
 ) {
-    val height = ButtonDefaults.MediumContainerHeight
     val resources = LocalResources.current
     Button(
         onClick = onClick,
-        shapes = ButtonDefaults.shapesFor(height),
+        shapes = ButtonDefaults.shapes(),
         modifier =
-            Modifier.heightIn(min = height).semantics {
+            Modifier.semantics {
                 contentDescription = resources.getQuantityString(R.plurals.forward_send_description, count, count)
             },
-        contentPadding = ButtonDefaults.contentPaddingFor(height),
     ) {
         Text(text = stringResource(R.string.forward_send), style = MaterialTheme.typography.labelLargeEmphasized)
     }

@@ -73,13 +73,14 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Search**: the search bar's input field on its container; every edit goes to [ChatEvent.ForwardQueryChanged], and
  *   the view model searches once the text stays (debounced there).
  * - **Chats** ([ForwardTargetRow]): a keyed lazy list of list items, inset in the sheet like the chat list's rows; a
- *   tap picks or unpicks the chat, which turns its row into a full pill in the list item's selected container
- *   (`secondaryContainer`) and morphs its avatar into a check, both on the motion scheme's springs. Screen readers hear
+ *   tap picks or unpicks the chat, which gives its row the list item's selected container (`secondaryContainer`) and
+ *   shape (`large`) and morphs its avatar into a check, both on the motion scheme's springs. Screen readers hear
  *   each row as a check box. Near the end of the list the next page of chats loads
  *   ([ChatEvent.LoadMoreForwardTargets]). While the chats load a delayed loading indicator shows; without any, why.
  * - **Options**: "Hide sender's name" where every message can be copied, and "Hide captions" where one has a caption,
- *   as switches; the comment field is the composer's, formatting included; the send button is a medium Expressive
- *   button. They grow in and out on the motion scheme's default spatial spring, fading on its effects springs.
+ *   as switches; the comment field is the composer's, formatting included; the send button is a default-size
+ *   button with a press morph. They grow in and out on the motion scheme's default spatial spring, fading on its
+ *   effects springs.
  * - Sending confirms with a haptic, hides the sheet on its spring, then sends ([ChatEvent.SendForward]). Dragging the
  *   sheet down, the scrim and the back gesture (Material's predictive back) dismiss it ([ChatEvent.DismissForward]).
  */

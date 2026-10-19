@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,7 +17,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +33,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -60,7 +55,12 @@ internal fun BlockedUsersList(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val spacing = MaterialTheme.spacing
-    val style = RowStyle(MaterialTheme.sizes.contentMaxWidth, spacing.windowMarginCompact, MaterialTheme.motionScheme)
+    val style =
+        SettingsListRowStyle(
+            MaterialTheme.sizes.contentMaxWidth,
+            spacing.windowMarginCompact,
+            MaterialTheme.motionScheme,
+        )
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -84,7 +84,7 @@ internal fun BlockedUsersList(
                         state.totalCount,
                         numbers.format(state.totalCount),
                     ),
-                modifier = Modifier.row(this, style),
+                modifier = Modifier.settingsListRow(this, style),
             )
         }
         itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, _ -> ROW }) { index, item ->
@@ -92,7 +92,7 @@ internal fun BlockedUsersList(
                 item = item,
                 shapes = ListItemDefaults.segmentedShapes(index, state.items.size),
                 onUnblock = { onEvent(BlockedUsersEvent.Unblock(item.sender)) },
-                modifier = Modifier.row(this, style),
+                modifier = Modifier.settingsListRow(this, style),
             )
         }
         more(state.more, style, onRetry = { onEvent(BlockedUsersEvent.LoadMore) })
@@ -110,19 +110,22 @@ internal fun BlockedUsersList(
  */
 private fun LazyListScope.more(
     more: MoreBlockedSenders,
-    style: RowStyle,
+    style: SettingsListRowStyle,
     onRetry: () -> Unit,
 ) {
     when (more) {
         MoreBlockedSenders.Loading -> {
             item(key = MORE, contentType = MORE) {
-                SettingsLoading(stringResource(R.string.settings_blocked_users_loading), Modifier.row(this, style))
+                SettingsLoading(
+                    stringResource(R.string.settings_blocked_users_loading),
+                    Modifier.settingsListRow(this, style),
+                )
             }
         }
 
         is MoreBlockedSenders.Failed -> {
             item(key = MORE, contentType = MORE) {
-                SettingsError(more.error, onRetry = onRetry, modifier = Modifier.row(this, style))
+                SettingsError(more.error, onRetry = onRetry, modifier = Modifier.settingsListRow(this, style))
             }
         }
 
@@ -197,29 +200,6 @@ private fun BlockedSenderRow(
         Text(name)
     }
 }
-
-/** How rows are laid out and animated: at most [maxWidth] wide with [margin]s, on the [motionScheme]'s springs. */
-private class RowStyle(
-    val maxWidth: Dp,
-    val margin: Dp,
-    val motionScheme: MotionScheme,
-)
-
-/** A row of the list: as wide as the settings pages' column, with their margins, sliding on the motion scheme. */
-private fun Modifier.row(
-    scope: LazyItemScope,
-    style: RowStyle,
-): Modifier =
-    with(scope) {
-        this@row
-            .animateItem(
-                fadeInSpec = style.motionScheme.defaultEffectsSpec(),
-                placementSpec = style.motionScheme.defaultSpatialSpec(),
-                fadeOutSpec = style.motionScheme.fastEffectsSpec(),
-            ).widthIn(max = style.maxWidth)
-            .fillMaxWidth()
-            .padding(horizontal = style.margin)
-    }
 
 private const val HEADER = "header"
 private const val ROW = "row"

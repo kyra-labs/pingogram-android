@@ -28,6 +28,6 @@ class AboutScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        AboutScreen(state = AboutUiState(versionName = "0.3.0"), onEvent = {}, onBack = {})
+        AboutScreen(state = AboutUiState(versionName = "0.3.0"), onEvent = {}, onOpenLicenses = {}, onBack = {})
     }
 }
