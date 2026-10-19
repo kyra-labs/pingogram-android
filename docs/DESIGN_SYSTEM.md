@@ -391,6 +391,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Progress | `LoadingIndicator`, `ContainedLoadingIndicator`, `LinearWavyProgressIndicator`, `CircularWavyProgressIndicator` |
 | Dialogs | `AlertDialog` for destructive confirmations only; `BasicAlertDialog` for custom |
 | Snackbars | `SnackbarHost` with M3 `Snackbar`; errors are never dialogs |
+| Notification permission request (chat list, Android 13+) | Filled `Card` on `surfaceContainerHigh` at the top of the list's sheet, inset `spacing.small` like the rows: `ic_notifications` in `primary`, `titleMedium` title, `bodyMedium` text in `onSurfaceVariant`, `TextButton` "Not now" and `Button` "Allow" / "Open settings" (both with `ButtonDefaults.shapes()`); grows in and shrinks away (`expandVertically` on `defaultSpatialSpec`, fades on the effects springs). Never a dialog |
+| Notifications | `MessagingStyle` conversations; small icon `ic_notification`, accent the brand seed (`notification_accent`): a notification has no theme. Placeholder avatars: initials on the §2.2 avatar pairs of the wallpaper's (or brand) light scheme, in Google Sans Flex |
 | Media viewer | Full-bleed `Scaffold`, `HorizontalPager`, container-transform entry and exit. Actions in a `HorizontalFloatingToolbar` (standard colors): Forward, Share, Save, Delete (where allowed), each with a tooltip, then More (`DropdownMenuPopup`: show in chat, copy, …). Caption and controls capped at `contentMaxWidth` |
 | Profile header | `LargeFlexibleTopAppBar` + shape-morphing avatar (`MaterialShapes`), `HorizontalUncontainedCarousel` of photos |
 | Tooltips / onboarding | `TooltipBox` with `PlainTooltip` on icon-only buttons in toolbars, `RichTooltip` for onboarding |
@@ -453,7 +455,7 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   - **Expanded** (840–1199 dp): `ListDetailPaneScaffold` for chats | conversation and for Settings home | page.
     The list is a fixed pane of 360–412 dp and the detail is flexible. Each pane is its own rounded container
     (§2.2), and a `VerticalDragHandle` resizes them (`paneExpansionState`, anchors 360 dp, 412 dp and a centered
-    split), keeping the width across restarts. Both panes have top bars of the same height.
+    split), keeping the width across rotation and process death. Both panes have top bars of the same height.
   - **Large / extra-large** (≥ 1200 dp): as expanded, with the rail expanded; a third pane (profile, chat info) as
     a supporting pane at XL (M4).
   - **Compact height** (phones in landscape): the rail instead of the floating bar (§6.1).

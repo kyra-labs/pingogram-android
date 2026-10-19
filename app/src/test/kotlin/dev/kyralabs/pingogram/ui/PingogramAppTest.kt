@@ -129,6 +129,9 @@ class PingogramAppTest {
 
     private var uiState by mutableStateOf<MainActivityUiState>(MainActivityUiState.SignedIn)
 
+    /** The chat a notification asked to open, cleared once the app reports it handled, as `MainActivity` does. */
+    private var chatToOpen by mutableStateOf<Long?>(null)
+
     private lateinit var navController: NavHostController
 
     // Top-level tabs
@@ -452,6 +455,36 @@ class PingogramAppTest {
         tab(R.string.nav_chats).assertIsSelected()
     }
 
+    // Notifications (FR-N2)
+
+    @Test
+    fun `a notification opens its chat above the chat list, from any tab, and back returns to the chats`() {
+        tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        chatToOpen = 5
+        composeRule.waitForIdle()
+
+        assertEquals(5L, navController.currentBackStackEntry?.toRoute<ChatRoute>()?.chatId)
+        val destinations = backStackDestinations()
+        assertEquals(2, destinations.size)
+        assertTrue(destinations[0].hasRoute<ChatsRoute>())
+        assertNull(chatToOpen)
+    }
+
+    @Test
+    fun `a notification opens no chat while signed out`() {
+        uiState = MainActivityUiState.SignedOut
+        setApp()
+
+        chatToOpen = 5
+        composeRule.waitForIdle()
+
+        assertNull(chatToOpen)
+        assertTrue(navController.currentDestination.isAuthRoute())
+    }
+
     @Test
     fun `a predictive back gesture shrinks the conversation over the chat list, then leaves it`() {
         tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
@@ -640,7 +673,12 @@ class PingogramAppTest {
     @Composable
     private fun App() {
         PingogramTheme(dynamicColor = false) {
-            PingogramApp(uiState = uiState, navController = rememberNavController().also { navController = it })
+            PingogramApp(
+                uiState = uiState,
+                navController = rememberNavController().also { navController = it },
+                chatToOpen = chatToOpen,
+                onChatOpened = { chatToOpen = null },
+            )
         }
     }
 

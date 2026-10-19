@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The accent of notifications (the small icon's circle, action labels on some systems): the brand seed, the blue
+         of the app icon (docs/DESIGN_SYSTEM.md §2.1). A notification has no theme, so it cannot use a color role. -->
+    <color name="notification_accent">#2156C4</color>
+</resources>

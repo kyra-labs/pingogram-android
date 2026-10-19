@@ -44,7 +44,7 @@ class TdlibSearchRepositoryTest {
         }
 
     private fun TestScope.repository(): TdlibSearchRepository {
-        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
         return TdlibSearchRepository(client, chats)
     }
 
