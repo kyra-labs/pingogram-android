@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -202,7 +203,7 @@ private fun NotificationPromptButtons(
                 .padding(spacing.small),
         horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
     ) {
-        TextButton(onClick = { onEvent(NotificationPromptEvent.NotNow) }) {
+        TextButton(onClick = { onEvent(NotificationPromptEvent.NotNow) }, shapes = ButtonDefaults.shapes()) {
             Text(
                 text = stringResource(R.string.notification_prompt_not_now),
                 style = MaterialTheme.typography.labelLargeEmphasized,
@@ -210,6 +211,7 @@ private fun NotificationPromptButtons(
         }
         Button(
             onClick = { onEvent(if (blocked) NotificationPromptEvent.OpenSettings else NotificationPromptEvent.Allow) },
+            shapes = ButtonDefaults.shapes(),
         ) {
             val action = if (blocked) R.string.notification_prompt_open_settings else R.string.notification_prompt_allow
             Text(
