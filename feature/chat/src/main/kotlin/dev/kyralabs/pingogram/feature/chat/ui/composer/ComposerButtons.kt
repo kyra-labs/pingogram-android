@@ -10,6 +10,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SplitButtonDefaults
@@ -100,6 +101,26 @@ internal fun SendButton(
             }
         },
     )
+}
+
+/**
+ * The attach button at the start of the composer, as tall as the text field: an icon button in the Expressive shapes
+ * that morph while pressed. It opens the attach menu ([onAttach]).
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun AttachButton(onAttach: () -> Unit) {
+    IconButton(
+        onClick = onAttach,
+        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
+        shapes = IconButtonDefaults.shapes(),
+    ) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_attach_file),
+            contentDescription = stringResource(R.string.attach),
+            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+        )
+    }
 }
 
 /**

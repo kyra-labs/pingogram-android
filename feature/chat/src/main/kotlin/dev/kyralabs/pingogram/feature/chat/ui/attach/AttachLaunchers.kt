@@ -12,14 +12,20 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import kotlinx.coroutines.launch
 
 /**
  * The system's pickers and the camera app, which the attach menu opens (`REQUIREMENTS.md` FR-C5, §7): none of them
@@ -111,6 +117,61 @@ internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunch
     val context = LocalContext.current
     return remember(context, gallery, files, camera, contact) {
         AttachLaunchers(context, gallery, files, camera, contact)
+    }
+}
+
+/**
+ * What the conversation's attach menu works with, from its route: [onPick] opens the picker of the option chosen in
+ * the menu, [hasCamera] false leaves the camera out of it, [caption] is the preview's caption and [pollEditor] the
+ * poll form, both the view model's.
+ */
+@Stable
+internal class AttachInputs(
+    val onPick: (AttachOption) -> Unit = {},
+    val hasCamera: Boolean = true,
+    val caption: ComposerText = ComposerText(),
+    val pollEditor: PollEditor = PollEditor(),
+)
+
+/**
+ * The route's [AttachInputs]: an option of the menu opens its picker through [launchers], and a snackbar on
+ * [snackbarHostState] says when no app can; the camera and the poll form go to the view model through [onEvent].
+ */
+@Composable
+internal fun rememberAttachInputs(
+    launchers: AttachLaunchers,
+    onEvent: (ChatEvent) -> Unit,
+    caption: ComposerText,
+    pollEditor: PollEditor,
+    snackbarHostState: SnackbarHostState,
+): AttachInputs {
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    val resources = LocalResources.current
+    val scope = rememberCoroutineScope()
+    return remember(launchers, caption, pollEditor, snackbarHostState, resources, scope) {
+        AttachInputs(
+            onPick = { option ->
+                when (option) {
+                    AttachOption.Camera -> {
+                        currentOnEvent(ChatEvent.TakePhoto)
+                    }
+
+                    AttachOption.Poll -> {
+                        currentOnEvent(ChatEvent.OpenPoll)
+                    }
+
+                    else -> {
+                        if (!launchers.pick(option)) {
+                            val notice = resources.getString(R.string.attach_no_picker_app)
+                            scope.launch { snackbarHostState.showSnackbar(notice) }
+                        }
+                    }
+                }
+            },
+            hasCamera = launchers.hasCamera,
+            caption = caption,
+            pollEditor = pollEditor,
+        )
     }
 }
 

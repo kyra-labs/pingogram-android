@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollDraft
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
@@ -60,10 +61,7 @@ class AttachScreenTest {
                     state = state,
                     onEvent = { events += it },
                     onBack = {},
-                    onAttach = { picked += it },
-                    hasCamera = hasCamera,
-                    attachCaption = caption,
-                    pollEditor = poll,
+                    attach = AttachInputs({ picked += it }, hasCamera, caption, poll),
                 )
             }
         }

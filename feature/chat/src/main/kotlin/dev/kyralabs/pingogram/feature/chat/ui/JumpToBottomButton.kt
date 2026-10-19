@@ -16,6 +16,8 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -23,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.feature.chat.R
+import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -67,6 +70,17 @@ internal fun JumpToBottomButton(
             }
         }
     }
+}
+
+/**
+ * Scrolls [listState] to the newest message ([scrollToNewest]) on the motion scheme's default spatial spring, in a
+ * scope of this composition.
+ */
+@Composable
+internal fun rememberScrollToNewest(listState: LazyListState): () -> Unit {
+    val scope = rememberCoroutineScope()
+    val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    return remember<() -> Unit>(listState, scope, spec) { { scope.launch { listState.scrollToNewest(spec) } } }
 }
 
 /** Scrolls to the newest message: snaps close to it when far, then glides the rest on [spec]. */

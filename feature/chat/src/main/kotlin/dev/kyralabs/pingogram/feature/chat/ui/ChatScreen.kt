@@ -77,12 +77,9 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
-import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachMenuSheet
-import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
-import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreviewSheet
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
-import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
-import dev.kyralabs.pingogram.feature.chat.ui.attach.PollFormSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
@@ -131,11 +128,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
  *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
- * - **Attach menu**: the composer's attach button opens it ([AttachMenuSheet]), without the camera where [hasCamera]
- *   is false; the option chosen goes to [onAttach], which opens its picker. Picked photos, videos and files show in
- *   their preview ([AttachPreviewSheet], with [attachCaption]), a new poll in its form ([PollFormSheet], editing
- *   [pollEditor]); sending them now scrolls to the newest message, as sending a text does. Bubbles being sent show
- *   their uploads ([ChatUiState.uploads]).
+ * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
+ *   files show in their preview, a new poll in its form ([AttachSheets]). Sending them now scrolls to the newest
+ *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.uploads]).
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -151,21 +146,15 @@ internal fun ChatScreen(
     jumpState: MessageJumpState = rememberMessageJumpState(),
     composerText: ComposerText = remember { ComposerText() },
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
-    onAttach: (AttachOption) -> Unit = {},
-    hasCamera: Boolean = true,
-    attachCaption: ComposerText = remember { ComposerText() },
-    pollEditor: PollEditor = remember { PollEditor() },
+    attach: AttachInputs = remember { AttachInputs() },
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
-    val scope = rememberCoroutineScope()
-    val motionScheme = MaterialTheme.motionScheme
+    val scrollToNewest = rememberScrollToNewest(listState)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = { options: SendOptions ->
         // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
-        if (options.scheduledAt == null && content is ChatContent.Content) {
-            scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
-        }
+        if (options.scheduledAt == null && content is ChatContent.Content) scrollToNewest()
     }
     Scaffold(
         modifier = modifier,
@@ -177,11 +166,8 @@ internal fun ChatScreen(
                 text = composerText,
                 onSend = { options ->
                     onEvent(ChatEvent.Send(options))
-                    // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones and edits
-                    // do not.
-                    if (options.scheduledAt == null && !editing && content is ChatContent.Content) {
-                        scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
-                    }
+                    // An edited message stays where it is.
+                    if (!editing) scrollToSent(options)
                 },
                 onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
                 focus = composerFocus,
@@ -196,8 +182,8 @@ internal fun ChatScreen(
             JumpToBottomButton(
                 visible = content is ChatContent.Content && showJump,
                 unreadCount = state.unreadCount,
-                motionScheme = motionScheme,
-                onClick = { scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) } },
+                motionScheme = MaterialTheme.motionScheme,
+                onClick = scrollToNewest,
             )
         },
     ) { innerPadding ->
@@ -206,38 +192,14 @@ internal fun ChatScreen(
         }
     }
     state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
-    val attachOptions = (state.composer as? ComposerUiState.Available)?.attachOptions.orEmpty()
-    if (attachMenuOpen && attachOptions.isNotEmpty()) {
-        AttachMenuSheet(
-            options = attachOptions.filter { hasCamera || it != AttachOption.Camera }.toImmutableList(),
-            onPick = { option ->
-                attachMenuOpen = false
-                onAttach(option)
-            },
-            onDismiss = { attachMenuOpen = false },
-        )
-    }
-    state.attachPreview?.let { preview ->
-        AttachPreviewSheet(
-            preview = preview,
-            caption = attachCaption,
-            onEvent = onEvent,
-            onSend = { options ->
-                onEvent(ChatEvent.SendAttachments(options))
-                scrollToSent(options)
-            },
-        )
-    }
-    state.poll?.let { sheet ->
-        PollFormSheet(
-            sheet = sheet,
-            editor = pollEditor,
-            onEvent = { event ->
-                onEvent(event)
-                if (event is ChatEvent.SendPoll) scrollToSent(event.options)
-            },
-        )
-    }
+    AttachSheets(
+        state = state,
+        inputs = attach,
+        menuOpen = attachMenuOpen,
+        onCloseMenu = { attachMenuOpen = false },
+        onEvent = onEvent,
+        onSent = scrollToSent,
+    )
     state.deleteDialog?.let { dialog ->
         DeleteMessagesAlert(
             dialog = dialog,
@@ -301,7 +263,6 @@ private fun MessageList(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val fileStates = state.fileStates
-    val uploads = state.uploads
     val playback = state.playback
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
@@ -329,7 +290,7 @@ private fun MessageList(
     ) {
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, uploads, playback, bubbleResources, onEvent, itemModifier)
+            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             item(key = OLDER_KEY, contentType = OLDER_KEY) {
@@ -437,19 +398,6 @@ private fun ReportVisibleMessages(
         }
     }
 }
-
-/**
- * The uploads of this bubble's messages among [uploads]; the same empty map when none of them is being sent, so the
- * bubbles that do not upload skip while one does.
- */
-private fun ChatItem.Bubble.uploadsIn(uploads: ImmutableMap<Long, MessageUpload>): ImmutableMap<Long, MessageUpload> {
-    if (uploads.isEmpty()) return NoUploads
-    val ids = album?.messageIds ?: listOf(id)
-    if (ids.none(uploads::containsKey)) return NoUploads
-    return ids.mapNotNull { messageId -> uploads[messageId]?.let { messageId to it } }.toMap().toImmutableMap()
-}
-
-private val NoUploads: ImmutableMap<Long, MessageUpload> = persistentMapOf()
 
 /** The messages an entry shows: a message, every item of an album; none for dates and the divider. */
 private val ChatItem.messageIds: List<Long>

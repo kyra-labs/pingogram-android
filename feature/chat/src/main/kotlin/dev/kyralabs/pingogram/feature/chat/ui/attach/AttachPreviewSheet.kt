@@ -205,6 +205,19 @@ internal fun ColumnScope.AttachPreviewContent(
             }
         }
     }
+    CaptionRow(preview, caption, onSend, onSchedule, onLink)
+}
+
+/** The caption field and the send split button, which waits until every item of [preview] is ready. */
+@Composable
+private fun CaptionRow(
+    preview: AttachPreview,
+    caption: ComposerText,
+    onSend: (SendOptions) -> Unit,
+    onSchedule: () -> Unit,
+    onLink: (TextRange) -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.medium, vertical = spacing.small),
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
@@ -251,120 +264,6 @@ private fun previewTitle(preview: AttachPreview): String {
             pluralStringResource(R.plurals.attach_preview_items, count, count)
         }
     }
-}
-
-/**
- * A photo or video of the preview, [position] of [count]: its square thumbnail, or a loading indicator while it is
- * prepared, and its remove button at the top end. Screen readers hear "Photo 2 of 3", or "Video 1 of 2, 0:12".
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun MediaPreviewItem(
-    item: PreviewItem,
-    position: Int,
-    count: Int,
-    onRemove: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val size = MaterialTheme.sizes.attachmentPreview
-    val attachment = (item as? PreviewItem.Ready)?.attachment
-    val description =
-        when (attachment) {
-            null -> {
-                stringResource(R.string.attach_item_preparing, position, count)
-            }
-
-            is Attachment.Photo -> {
-                stringResource(R.string.attach_item_photo, position, count)
-            }
-
-            is Attachment.Video -> {
-                stringResource(R.string.attach_item_video, position, count, mediaDurationText(attachment.duration))
-            }
-
-            is Attachment.Document -> {
-                stringResource(R.string.attach_item_file, attachment.fileName)
-            }
-        }
-    Box(modifier.size(size)) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    .semantics { contentDescription = description },
-            contentAlignment = Alignment.Center,
-        ) {
-            when (attachment) {
-                null -> {
-                    LoadingIndicator()
-                }
-
-                is Attachment.Photo -> {
-                    PreviewImage(attachment.path, size, Modifier.matchParentSize())
-                }
-
-                is Attachment.Video -> {
-                    attachment.thumbnail?.let { PreviewImage(it.path, size, Modifier.matchParentSize()) }
-                    PlayBadge()
-                    MediaLabel(
-                        text = mediaDurationText(attachment.duration),
-                        modifier = Modifier.align(Alignment.BottomStart).padding(MaterialTheme.spacing.small),
-                    )
-                }
-
-                is Attachment.Document -> {
-                    Icon(
-                        painter = painterResource(documentKind(attachment.fileName, attachment.mimeType).icon),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        val colors = MaterialTheme.pingogramColors
-        FilledIconButton(
-            onClick = onRemove,
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(MaterialTheme.spacing.extraSmall)
-                    .size(IconButtonDefaults.extraSmallContainerSize()),
-            shapes = IconButtonDefaults.shapes(),
-            colors =
-                IconButtonDefaults.filledIconButtonColors(
-                    containerColor = colors.mediaOverlay,
-                    contentColor = colors.onMediaOverlay,
-                ),
-        ) {
-            Icon(
-                painter = painterResource(UiR.drawable.ic_close),
-                contentDescription = stringResource(R.string.attach_remove, description),
-                modifier = Modifier.size(IconButtonDefaults.extraSmallIconSize),
-            )
-        }
-    }
-}
-
-/** The image file at [path], decoded by Coil at [size] (`docs/PERFORMANCE.md` §4), cropped to fill. Decorative. */
-@Composable
-private fun PreviewImage(
-    path: String,
-    size: Dp,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalPlatformContext.current
-    val sizePx = with(LocalDensity.current) { size.roundToPx() }
-    val request =
-        remember(context, path, sizePx) {
-            ImageRequest
-                .Builder(context)
-                .data(File(path))
-                .size(sizePx)
-                .build()
-        }
-    AsyncImage(model = request, contentDescription = null, modifier = modifier, contentScale = ContentScale.Crop)
 }
 
 /**

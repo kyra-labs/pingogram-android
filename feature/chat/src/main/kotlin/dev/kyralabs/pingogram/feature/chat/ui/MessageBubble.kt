@@ -162,6 +162,7 @@ internal fun MessageBubbleRow(
  * [messageShortcuts], a toggle per reaction chip but the paid one, and the actions sheet, last. Cancelling the
  * [uploads] comes first, while there are some.
  */
+@Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 @Composable
 private fun rememberBubbleActions(
     bubble: ChatItem.Bubble,
@@ -193,6 +194,7 @@ private fun rememberBubbleActions(
     }
 }
 
+@Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
 private fun MessageBubble(
     bubble: ChatItem.Bubble,

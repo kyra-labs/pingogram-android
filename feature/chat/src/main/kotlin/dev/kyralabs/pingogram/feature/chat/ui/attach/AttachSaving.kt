@@ -74,31 +74,22 @@ internal fun Attachment.saved(): String =
 /** The attachment that [Attachment.saved] wrote as [saved]; null for a string it cannot read. */
 internal fun restoredAttachment(saved: String): Attachment? {
     val fields = saved.split(SEPARATOR)
-    val path = fields.getOrNull(1)?.takeIf { it.isNotEmpty() } ?: return null
-    val size = fields.getOrNull(2)?.toLongOrNull() ?: return null
-
-    fun int(index: Int) = fields.getOrNull(index)?.toIntOrNull()
+    val path = fields.getOrNull(1)?.takeIf { it.isNotEmpty() }
+    val size = fields.getOrNull(2)?.toLongOrNull()
+    if (path == null || size == null) return null
     return when (fields[0]) {
         PHOTO -> {
-            val width = int(WIDTH) ?: return null
-            val height = int(HEIGHT) ?: return null
-            Attachment.Photo(path, size, width, height)
+            restoredPhoto(fields, path, size)
         }
 
         VIDEO -> {
-            val width = int(WIDTH) ?: return null
-            val height = int(HEIGHT) ?: return null
-            val duration = int(DURATION) ?: return null
-            val still =
-                fields.getOrNull(THUMBNAIL_PATH)?.takeIf { it.isNotEmpty() }?.let { stillPath ->
-                    AttachmentThumbnail(stillPath, int(THUMBNAIL_WIDTH) ?: 0, int(THUMBNAIL_HEIGHT) ?: 0)
-                }
-            Attachment.Video(path, size, width, height, duration, still)
+            restoredVideo(fields, path, size)
         }
 
         DOCUMENT -> {
-            val fileName = fields.getOrNull(FILE_NAME) ?: return null
-            Attachment.Document(path, size, fileName, fields.getOrNull(MIME_TYPE).orEmpty())
+            fields.getOrNull(FILE_NAME)?.let { fileName ->
+                Attachment.Document(path, size, fileName, fields.getOrNull(MIME_TYPE).orEmpty())
+            }
         }
 
         else -> {
@@ -106,6 +97,34 @@ internal fun restoredAttachment(saved: String): Attachment? {
         }
     }
 }
+
+private fun restoredPhoto(
+    fields: List<String>,
+    path: String,
+    size: Long,
+): Attachment.Photo? {
+    val width = fields.int(WIDTH)
+    val height = fields.int(HEIGHT)
+    return if (width != null && height != null) Attachment.Photo(path, size, width, height) else null
+}
+
+private fun restoredVideo(
+    fields: List<String>,
+    path: String,
+    size: Long,
+): Attachment.Video? {
+    val width = fields.int(WIDTH)
+    val height = fields.int(HEIGHT)
+    val duration = fields.int(DURATION)
+    if (width == null || height == null || duration == null) return null
+    val still =
+        fields.getOrNull(THUMBNAIL_PATH)?.takeIf { it.isNotEmpty() }?.let { stillPath ->
+            AttachmentThumbnail(stillPath, fields.int(THUMBNAIL_WIDTH) ?: 0, fields.int(THUMBNAIL_HEIGHT) ?: 0)
+        }
+    return Attachment.Video(path, size, width, height, duration, still)
+}
+
+private fun List<String>.int(index: Int): Int? = getOrNull(index)?.toIntOrNull()
 
 private const val SEPARATOR = "\u0000"
 private const val PHOTO = "photo"

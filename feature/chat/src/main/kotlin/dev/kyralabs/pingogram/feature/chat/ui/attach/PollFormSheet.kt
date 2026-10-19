@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.input.InputTransformation
@@ -136,7 +137,6 @@ internal fun ColumnScope.PollForm(
     onSchedule: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
-    val motionScheme = MaterialTheme.motionScheme
     val fieldModifier = Modifier.fillMaxWidth().padding(horizontal = spacing.large)
     LazyColumn(
         modifier = Modifier.weight(1f, fill = false),
@@ -158,77 +158,8 @@ internal fun ColumnScope.PollForm(
                 lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = QUESTION_LINES),
             )
         }
-        item(key = OPTIONS) {
-            SectionHeader(
-                title = stringResource(R.string.poll_options),
-                note =
-                    stringResource(R.string.poll_choose_correct)
-                        .takeIf { editor.isQuiz && editor.correctOption == null },
-            )
-        }
-        itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
-            OptionRow(
-                editor = editor,
-                option = option,
-                number = index + 1,
-                modifier =
-                    Modifier.animateItem(
-                        fadeInSpec = motionScheme.defaultEffectsSpec(),
-                        placementSpec = motionScheme.defaultSpatialSpec(),
-                        fadeOutSpec = motionScheme.fastEffectsSpec(),
-                    ),
-            )
-        }
-        if (editor.canAddOption) {
-            item(key = ADD) {
-                TextButton(
-                    onClick = { editor.addOption() },
-                    modifier =
-                        Modifier.padding(horizontal = spacing.small).animateItem(
-                            fadeInSpec = motionScheme.defaultEffectsSpec(),
-                            placementSpec = motionScheme.defaultSpatialSpec(),
-                            fadeOutSpec = motionScheme.fastEffectsSpec(),
-                        ),
-                ) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_add),
-                        contentDescription = null,
-                        modifier = Modifier.size(ButtonDefaults.IconSize),
-                    )
-                    Text(
-                        text = stringResource(R.string.poll_add_option),
-                        modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
-                        style = MaterialTheme.typography.labelLargeEmphasized,
-                    )
-                }
-            }
-        }
-        item(key = SETTINGS) { SectionHeader(stringResource(R.string.poll_settings)) }
-        item(key = ANONYMOUS) {
-            SwitchRow(
-                title = stringResource(R.string.poll_anonymous),
-                checked = sheet.isChannel || editor.isAnonymous,
-                onCheckedChange = { editor.isAnonymous = it },
-                enabled = !sheet.isChannel,
-                note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
-            )
-        }
-        item(key = MULTIPLE) {
-            SwitchRow(
-                title = stringResource(R.string.poll_multiple),
-                checked = !editor.isQuiz && editor.allowsMultipleAnswers,
-                onCheckedChange = { editor.allowsMultipleAnswers = it },
-                enabled = !editor.isQuiz,
-            )
-        }
-        item(key = QUIZ) {
-            SwitchRow(
-                title = stringResource(R.string.poll_quiz),
-                checked = editor.isQuiz,
-                onCheckedChange = { editor.isQuiz = it },
-                note = stringResource(R.string.poll_quiz_note),
-            )
-        }
+        optionItems(editor)
+        settingItems(sheet, editor)
         item(key = SEND) {
             Box(Modifier.fillMaxWidth().padding(horizontal = spacing.large, vertical = spacing.small)) {
                 Box(Modifier.align(Alignment.CenterEnd)) {
@@ -242,6 +173,93 @@ internal fun ColumnScope.PollForm(
                 }
             }
         }
+    }
+}
+
+/** The options' header, a row per option, and the button that adds one while fewer than ten are there. */
+private fun LazyListScope.optionItems(editor: PollEditor) {
+    item(key = OPTIONS) {
+        SectionHeader(
+            title = stringResource(R.string.poll_options),
+            note =
+                stringResource(R.string.poll_choose_correct)
+                    .takeIf { editor.isQuiz && editor.correctOption == null },
+        )
+    }
+    itemsIndexed(editor.options, key = { _, option -> option.key }) { index, option ->
+        val motionScheme = MaterialTheme.motionScheme
+        OptionRow(
+            editor = editor,
+            option = option,
+            number = index + 1,
+            modifier =
+                Modifier.animateItem(
+                    fadeInSpec = motionScheme.defaultEffectsSpec(),
+                    placementSpec = motionScheme.defaultSpatialSpec(),
+                    fadeOutSpec = motionScheme.fastEffectsSpec(),
+                ),
+        )
+    }
+    if (editor.canAddOption) {
+        item(key = ADD) {
+            val motionScheme = MaterialTheme.motionScheme
+            TextButton(
+                onClick = { editor.addOption() },
+                modifier =
+                    Modifier.padding(horizontal = MaterialTheme.spacing.small).animateItem(
+                        fadeInSpec = motionScheme.defaultEffectsSpec(),
+                        placementSpec = motionScheme.defaultSpatialSpec(),
+                        fadeOutSpec = motionScheme.fastEffectsSpec(),
+                    ),
+            ) {
+                Icon(
+                    painter = painterResource(UiR.drawable.ic_add),
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Text(
+                    text = stringResource(R.string.poll_add_option),
+                    modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The settings: anonymous voting (always on in a channel, which says why), multiple answers (off in quiz mode) and
+ * quiz mode.
+ */
+private fun LazyListScope.settingItems(
+    sheet: PollSheet,
+    editor: PollEditor,
+) {
+    item(key = SETTINGS) { SectionHeader(stringResource(R.string.poll_settings)) }
+    item(key = ANONYMOUS) {
+        SwitchRow(
+            title = stringResource(R.string.poll_anonymous),
+            checked = sheet.isChannel || editor.isAnonymous,
+            onCheckedChange = { editor.isAnonymous = it },
+            enabled = !sheet.isChannel,
+            note = stringResource(R.string.poll_anonymous_channel).takeIf { sheet.isChannel },
+        )
+    }
+    item(key = MULTIPLE) {
+        SwitchRow(
+            title = stringResource(R.string.poll_multiple),
+            checked = !editor.isQuiz && editor.allowsMultipleAnswers,
+            onCheckedChange = { editor.allowsMultipleAnswers = it },
+            enabled = !editor.isQuiz,
+        )
+    }
+    item(key = QUIZ) {
+        SwitchRow(
+            title = stringResource(R.string.poll_quiz),
+            checked = editor.isQuiz,
+            onCheckedChange = { editor.isQuiz = it },
+            note = stringResource(R.string.poll_quiz_note),
+        )
     }
 }
 

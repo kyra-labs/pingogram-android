@@ -10,6 +10,7 @@ import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
@@ -78,7 +79,7 @@ class AttachScreenshotTest(
                             state = state,
                             onEvent = {},
                             onBack = {},
-                            pollEditor = PollEditor(AttachPreviewData.quiz),
+                            attach = AttachInputs(pollEditor = PollEditor(AttachPreviewData.quiz)),
                         )
                     }
                 }

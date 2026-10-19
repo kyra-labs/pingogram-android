@@ -105,6 +105,21 @@ internal class ChatFiles(
             .onStart { emit(fileId to null) }
 }
 
+/**
+ * The uploads of this bubble's messages among [uploads]; the same empty map when none of them is being sent, so the
+ * bubbles that do not upload skip while one does.
+ */
+internal fun ChatItem.Bubble.uploadsIn(uploads: ImmutableMap<Long, MessageUpload>): ImmutableMap<Long, MessageUpload> {
+    val ids = album?.messageIds ?: listOf(id)
+    if (uploads.isEmpty() || ids.none(uploads::containsKey)) return NoUploads
+    return ids.mapNotNull { messageId -> uploads[messageId]?.let { messageId to it } }.toMap().toImmutableMap()
+}
+
+private val NoUploads: ImmutableMap<Long, MessageUpload> = persistentMapOf()
+
 /** The progress to show: none while TDLib has neither started the upload nor told the size. */
 private val FileUpload.progressOrNull: Float?
-    get() = if (isCompleted || (size > 0 && (isActive || uploadedSize > 0))) progress else null
+    get() {
+        val started = isActive || uploadedSize > 0
+        return if (isCompleted || (size > 0 && started)) progress else null
+    }

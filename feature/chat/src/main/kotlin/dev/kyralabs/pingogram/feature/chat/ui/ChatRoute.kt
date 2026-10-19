@@ -28,7 +28,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
-import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
@@ -76,8 +76,14 @@ internal fun ChatRoute(
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
-    val resources = LocalResources.current
-    val scope = rememberCoroutineScope()
+    val attach =
+        rememberAttachInputs(
+            launchers = launchers,
+            onEvent = viewModel::onEvent,
+            caption = viewModel.attachCaption,
+            pollEditor = viewModel.pollEditor,
+            snackbarHostState = snackbarHostState,
+        )
     ChatEffects(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
@@ -99,28 +105,7 @@ internal fun ChatRoute(
         jumpState = jumpState,
         composerText = viewModel.composerText,
         composerFocus = composerFocus,
-        onAttach = { option ->
-            when (option) {
-                AttachOption.Camera -> {
-                    viewModel.onEvent(ChatEvent.TakePhoto)
-                }
-
-                AttachOption.Poll -> {
-                    viewModel.onEvent(ChatEvent.OpenPoll)
-                }
-
-                else -> {
-                    if (!launchers.pick(option)) {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(resources.getString(R.string.attach_no_picker_app))
-                        }
-                    }
-                }
-            }
-        },
-        hasCamera = launchers.hasCamera,
-        attachCaption = viewModel.attachCaption,
-        pollEditor = viewModel.pollEditor,
+        attach = attach,
     )
 }
 
@@ -199,7 +184,8 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.LaunchCamera -> {
-                        if (onLaunchCamera(effect.path)) "" else resources.getString(R.string.attach_no_camera_app)
+                        val launched = onLaunchCamera(effect.path)
+                        resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
                     }
                 }
             if (message.isNotEmpty()) {

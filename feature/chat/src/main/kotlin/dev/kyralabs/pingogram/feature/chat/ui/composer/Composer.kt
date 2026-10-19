@@ -176,6 +176,7 @@ private fun BarArea(
  * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
  * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field.
  */
+@Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
 private fun Composer(
     composer: ComposerUiState.Available,
@@ -360,26 +361,6 @@ private fun KeyEvent.isSendKey(): Boolean =
 
 /** The edges the bottom bar keeps clear of: the keyboard and the navigation bar below, cutouts at the sides. */
 private val BOTTOM_EDGES = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-
-/**
- * The attach button at the start of the composer, as tall as the text field: an icon button in the Expressive shapes
- * that morph while pressed. It opens the attach menu ([onAttach]).
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun AttachButton(onAttach: () -> Unit) {
-    IconButton(
-        onClick = onAttach,
-        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
-        shapes = IconButtonDefaults.shapes(),
-    ) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_attach_file),
-            contentDescription = stringResource(R.string.attach),
-            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
-        )
-    }
-}
 
 /** The lines the text field grows to before it scrolls. */
 private const val MAX_LINES = 6
