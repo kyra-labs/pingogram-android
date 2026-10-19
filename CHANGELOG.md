@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.3.0-beta.1] - 2026-10-19
+
 ### Added
 - You can write and send messages. Format selected text as bold, italic, underlined, strikethrough, monospace,
   spoiler or a link (from the selection menu, or Ctrl+B, I, U and K on a keyboard). Send without sound, or
@@ -246,7 +248,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.1...HEAD
+[0.3.0-beta.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...v0.3.0-beta.1
 [0.2.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.1.0...v0.1.1
