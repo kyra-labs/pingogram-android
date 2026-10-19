@@ -63,7 +63,7 @@ fun PingogramTheme(
 ## 2. Color system
 
 ### 2.1 Scheme generation
-- Brand seed: `#E8457C` (placeholder; owner decides once). `tools/theme/generate.mjs` generates
+- Brand seed: `#2156C4`, the blue of the app icon (`art/`; chosen by the owner 2026-10-19). `tools/theme/generate.mjs` generates
   the 6 schemes (light + dark × standard/medium/high contrast) with material-color-utilities, the
   Material Theme Builder algorithm (`SchemeTonalSpot`, contrast 0 / 0.5 / 1), into
   `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
