@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 
 /**
- * What the Settings screen shows: the account header, the rows that open the other settings pages, and "Log out".
+ * What the Settings screen shows: the account's card, the rows that open the other settings pages, and "Log out".
  *
  * @property account the logged-in account; null until TDLib has announced its user.
  * @property isLogOutDialogOpen the log out confirmation is open.
@@ -19,13 +19,14 @@ data class SettingsUiState(
 )
 
 /**
- * The logged-in account at the top of Settings.
+ * The logged-in account, on its card at the top of Settings.
  *
  * @property userId the account's user id, which picks its avatar placeholder.
  * @property name the first and last names.
  * @property phoneNumber the phone number formatted for its country ("+44 7911 123456"), or as `+` and its digits until
  *   TDLib has formatted it; empty if TDLib reports none.
  * @property username the first active username, without `@`; null without one.
+ * @property isPremium the account subscribes to Telegram Premium, as TDLib reports it (`user.is_premium`).
  */
 @Immutable
 data class AccountUiModel(
@@ -34,6 +35,7 @@ data class AccountUiModel(
     val photo: ProfilePhoto?,
     val phoneNumber: String,
     val username: String?,
+    val isPremium: Boolean = false,
 ) {
     override fun toString() = "AccountUiModel(userId=$userId, …)"
 }

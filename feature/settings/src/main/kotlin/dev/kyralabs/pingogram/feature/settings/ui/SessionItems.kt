@@ -9,51 +9,41 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleStartEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
-import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
-import kotlinx.coroutines.launch
 
 // The rows and the confirmation of the Active sessions page.
 
 /**
- * A session: its device's icon, its device model, app and system, and where and when it was last active. With
- * [onClick] (other sessions) a tap asks to terminate it; while [isBusy], it waits with progress.
+ * A session, a row of its group ([shapes]): its device's icon, its device model, app and system, and where and when it
+ * was last active. With [onClick] (other sessions) a tap asks to terminate it; while [isBusy], it waits with progress.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SessionRow(
     session: SessionItem,
     isBusy: Boolean,
+    shapes: ListItemShapes,
     onClick: (() -> Unit)? = null,
     overline: String? = null,
+    colors: ListItemColors = ListItemDefaults.segmentedColors(),
 ) {
     val busy = stringResource(R.string.settings_session_busy)
     val leading: @Composable () -> Unit = { SettingsItemIcon(session.device.iconRes()) }
@@ -73,66 +63,80 @@ internal fun SessionRow(
         }
     }
     if (onClick != null) {
-        ListItem(
+        SegmentedListItem(
             onClick = onClick,
+            shapes = shapes,
             enabled = !isBusy,
             leadingContent = leading,
             trailingContent = trailing,
             overlineContent = overlineContent,
             supportingContent = supporting,
-            colors = settingsItemColors(),
+            colors = colors,
         ) {
             Text(session.title.resolve())
         }
     } else {
-        ListItem(
+        SegmentedListItem(
+            shapes = shapes,
             leadingContent = leading,
             trailingContent = trailing,
             overlineContent = overlineContent,
             supportingContent = supporting,
-            colors = settingsItemColors(),
+            colors = colors,
         ) {
             Text(session.title.resolve())
         }
     }
 }
 
-/** A new login: the session, labelled as one, then "No, terminate" and "Yes, it's me". */
+/**
+ * A new login, a row of its group ([shapes]): the session, labelled as one, then "No, terminate" and "Yes, it's me",
+ * in one segment.
+ */
 @Composable
 internal fun NewLogin(
     session: SessionItem,
     isBusy: Boolean,
+    shapes: ListItemShapes,
     onConfirm: () -> Unit,
     onTerminate: () -> Unit,
 ) {
-    SessionRow(session, isBusy = isBusy, overline = stringResource(R.string.settings_session_new_login))
-    FlowRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = MaterialTheme.spacing.large,
-                    end = MaterialTheme.spacing.large,
-                    bottom = MaterialTheme.spacing.medium,
-                ),
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small, Alignment.End),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-    ) {
-        TextButton(
-            onClick = onTerminate,
-            enabled = !isBusy,
-            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+    SettingsSegment(shapes) {
+        SessionRow(
+            session = session,
+            isBusy = isBusy,
+            shapes = ListItemDefaults.shapes(),
+            overline = stringResource(R.string.settings_session_new_login),
+            colors = nestedItemColors(),
+        )
+        FlowRow(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = MaterialTheme.spacing.large,
+                        end = MaterialTheme.spacing.large,
+                        bottom = MaterialTheme.spacing.medium,
+                    ),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
         ) {
-            Text(
-                text = stringResource(R.string.settings_session_not_me),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
-        }
-        FilledTonalButton(onClick = onConfirm, enabled = !isBusy) {
-            Text(
-                text = stringResource(R.string.settings_session_confirm),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
+            TextButton(
+                onClick = onTerminate,
+                enabled = !isBusy,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_session_not_me),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
+            }
+            FilledTonalButton(onClick = onConfirm, enabled = !isBusy) {
+                Text(
+                    text = stringResource(R.string.settings_session_confirm),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
+            }
         }
     }
 }
@@ -142,24 +146,25 @@ internal fun NewLogin(
 @Composable
 internal fun TerminateAllItem(
     isTerminating: Boolean,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
 ) {
     val terminating = stringResource(R.string.settings_terminating_all)
-    ListItem(
-        onClick = onClick,
-        enabled = !isTerminating,
-        leadingContent = { SettingsItemIcon(R.drawable.ic_logout) },
+    SettingsRow(
+        title = stringResource(R.string.settings_terminate_all),
+        shapes = shapes,
+        icon = R.drawable.ic_logout,
+        supportingContent = { Text(stringResource(R.string.settings_terminate_all_summary)) },
         trailingContent =
             if (isTerminating) {
                 { LoadingIndicator(Modifier.semantics { contentDescription = terminating }) }
             } else {
                 null
             },
-        supportingContent = { Text(stringResource(R.string.settings_terminate_all_summary)) },
+        onClick = onClick,
+        enabled = !isTerminating,
         colors = destructiveItemColors(),
-    ) {
-        Text(stringResource(R.string.settings_terminate_all))
-    }
+    )
 }
 
 /** The destructive confirmation of a termination ([DestructiveDialog]). */

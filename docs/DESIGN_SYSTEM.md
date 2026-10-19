@@ -84,6 +84,7 @@ fun PingogramTheme(
 | Top app bar (scrolled) | `surfaceContainer` |
 | Chat list and conversation | top bar on `surfaceContainer` (the `Scaffold`'s container); content on a `surface` sheet with `extraLarge` top corners below it (`ContentSheet`, `core:ui`) |
 | Selected chat row | `secondaryContainer` / `onSecondaryContainer`, full-pill shape, inset `spacing.small` from the sheet's sides and `ListItemDefaults.SegmentedGap` apart |
+| Settings pages | page and its transparent top bar on `surfaceContainerHigh` (`settingsPageColor()`, `feature:settings`), no `ContentSheet`; rows on `surface`, the segmented list item's own container (`ListItemDefaults.segmentedColors()`): lighter than the page in light, darker in dark, true black with AMOLED, as in Google's Material 3 Expressive account menus, and one step above the floating navigation bar's `surfaceContainer`. Selected radio row `secondaryContainer` (the list item's selected colors); destructive rows `error` content |
 | Navigation bar / rail | `surfaceContainer`; active indicator `secondaryContainer` / `onSecondaryContainer` |
 | Primary actions (FAB, send, CTA) | `primaryContainer` / `onPrimaryContainer` (FAB), `primary` / `onPrimary` (filled button) |
 | Outgoing bubble | `primaryContainer` / `onPrimaryContainer` |
@@ -198,7 +199,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Chat list preview / message text | `bodyMedium` / `bodyLarge` |
 | Timestamps, badges, meta | `labelSmall` (wdth 95, `tnum`) |
 | Buttons | `labelLargeEmphasized` |
-| Section headers in settings | `titleSmallEmphasized` in `primary` |
+| Section headers in settings | `titleSmallEmphasized` in `primary` (settings pages; Settings home has none, §6) |
+| Account card name (Settings home) | `titleLarge`; phone `bodyLarge`, username `bodyMedium` in `onSurfaceVariant`; "Premium" label `labelMediumEmphasized` |
 | Empty state title / body | `headlineSmallEmphasized` / `bodyMedium` |
 | Code blocks in messages | `bodyMedium` + `FontFamily.Monospace` (system) |
 
@@ -220,6 +222,13 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   padding): at rest `ListItem`'s `extraSmall`, pressed and open `large`, selected in selection mode
   a full pill (`CircleShape`), morphing on the list item's fast spatial spring. Swipe actions reveal
   the same inset container with `large` corners.
+- Settings rows are Material 3 Expressive segmented list items (`SegmentedListItem`): each row its own
+  container, `ListItemDefaults.SegmentedGap` (2 dp) apart, with the shapes of
+  `ListItemDefaults.segmentedShapes(index, count)`: `large` outer corners at the ends of a group
+  (top of the first row, bottom of the last, all four for a single row) and `extraSmall` between
+  rows; pressed, focused and selected rows morph to `large` all round on the motion scheme's fast
+  spatial spring (the list item's own animation). The account card at the top of Settings rests on
+  `extraLarge` and morphs to the same `large` when pressed.
 - Message bubbles: `large` with the tail-side corner `small`; grouped messages use `medium`
   between members of a group; user-adjustable 12–24 dp in Appearance settings.
 - Components keep their M3 default shape tokens (buttons pill, cards `medium`, sheets
@@ -279,7 +288,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Reactions picker | `HorizontalUncontainedCarousel` of reaction chips; full grid in sheet |
 | Chat list row | `ListItem` (leading avatar, trailing time + badge), inset in its sheet, a full pill when selected (§4); swipe `SwipeToDismissBox` |
 | Chips (filters, mentions) | `FilterChip`, `AssistChip`, `SuggestionChip` |
-| Settings rows | `ListItem` in `Card(colors = surfaceContainer)`; `Switch`, `Slider` (expressive track/thumb), `SegmentedButton`, `RadioButton` |
+| Settings rows | Groups of `SegmentedListItem`s (`SettingsGroup`, `feature:settings`) with `ListItemDefaults.segmentedShapes` / `segmentedColors` / `SegmentedGap` (§2.2, §4), outlined leading icons, the label in the list item's `bodyLarge`; a `titleSmallEmphasized` header in `primary` above each group on settings pages, none on Settings home (its single-row groups would repeat their row, as Google's account menus show them bare), groups `spacing.medium` apart there and `spacing.extraLarge` with headers. Clickable rows use the clickable list item; switches the clickable one with `Role.Switch` semantics and a trailing `Switch`; single choices the selectable one with a leading `RadioButton`, or `SegmentedButton`s in a row of their own where every label fits; text fields, buttons and progress sit in a segment of the same container and shape (`SettingsSegment`) |
+| Settings account card | A single `SegmentedListItem` (`extraLarge` at rest): avatar in a `primary` ring with an edit badge, name, phone, username, a "Premium" status label (`tertiaryContainer`, Telegram Premium only, never an offer) and a `FilledTonalIconButton` chevron; the whole card opens Edit profile and is one item for screen readers |
 | Buttons | M3 Expressive sizes: `ButtonDefaults.ExtraSmall…ExtraLarge` container heights; `FilledTonalButton` for secondary, `OutlinedButton` rare, `TextButton` in dialogs |
 | Icon buttons | `IconButton`/`FilledIconButton` with Expressive shapes (`IconButtonDefaults.*Shape`) and sizes; toggleable ones use `IconToggleButton` with shape morph |
 | Progress | `LoadingIndicator`, `ContainedLoadingIndicator`, `LinearWavyProgressIndicator`, `CircularWavyProgressIndicator` |

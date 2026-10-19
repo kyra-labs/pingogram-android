@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,32 +51,35 @@ internal fun AboutScreen(
     modifier: Modifier = Modifier,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
-        SettingsSection(stringResource(R.string.settings_section_app)) {
-            ListItem(
-                leadingContent = { SettingsItemIcon(R.drawable.ic_info) },
-                supportingContent = { Text(stringResource(R.string.settings_about_version, state.versionName)) },
-                colors = settingsItemColors(),
-            ) {
-                Text(stringResource(R.string.settings_about_app_name))
+        SettingsGroup(title = stringResource(R.string.settings_section_app)) {
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_about_app_name),
+                    shapes = shapes,
+                    icon = R.drawable.ic_info,
+                    supportingContent = { Text(stringResource(R.string.settings_about_version, state.versionName)) },
+                )
             }
-            ListItem(
-                onClick = { onEvent(AboutEvent.OpenSourceCode) },
-                leadingContent = { SettingsItemIcon(R.drawable.ic_code) },
-                trailingContent = {
-                    // Says that the row leaves the app; the row's text names it.
-                    Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null)
-                },
-                supportingContent = { Text(stringResource(R.string.settings_about_source_code_summary)) },
-                colors = settingsItemColors(),
-            ) {
-                Text(stringResource(R.string.settings_about_source_code))
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_about_source_code),
+                    shapes = shapes,
+                    icon = R.drawable.ic_code,
+                    supportingContent = { Text(stringResource(R.string.settings_about_source_code_summary)) },
+                    trailingContent = {
+                        // Says that the row leaves the app; the row's text names it.
+                        Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null)
+                    },
+                    onClick = { onEvent(AboutEvent.OpenSourceCode) },
+                )
             }
-            ListItem(
-                leadingContent = { SettingsItemIcon(R.drawable.ic_license) },
-                supportingContent = { Text(stringResource(R.string.settings_about_license_summary)) },
-                colors = settingsItemColors(),
-            ) {
-                Text(stringResource(R.string.settings_about_license))
+            item { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_about_license),
+                    shapes = shapes,
+                    icon = R.drawable.ic_license,
+                    supportingContent = { Text(stringResource(R.string.settings_about_license_summary)) },
+                )
             }
         }
         Text(

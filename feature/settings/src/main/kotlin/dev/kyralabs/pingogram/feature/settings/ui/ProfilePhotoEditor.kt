@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
@@ -15,6 +16,7 @@ import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,71 +35,95 @@ import dev.kyralabs.pingogram.feature.settings.R
 
 /**
  * The profile photo, large and round ([Avatar]), with "Set new photo" (a tonal button) and, when there is a photo,
- * "Remove photo" (a text button in the error role) below it; both shape-morph when pressed. While the photo uploads,
- * a [CircularWavyProgressIndicator] around the avatar shows its progress, animated on the motion scheme's effects
- * spring and read in the draw phase; before that, and while preparing or removing, a [ContainedLoadingIndicator] on
- * it. The buttons wait meanwhile, and wrap below each other where they do not fit side by side.
+ * "Remove photo" (a text button in the error role) below it, in a row of its own ([shapes], a [SettingsSegment]);
+ * both buttons shape-morph when pressed. While the photo uploads, a [CircularWavyProgressIndicator] around the avatar
+ * shows its progress, animated on the motion scheme's effects spring and read in the draw phase; before that, and
+ * while preparing or removing, a [ContainedLoadingIndicator] on it. The buttons wait meanwhile, and wrap below each
+ * other where they do not fit side by side.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ProfilePhotoEditor(
     account: ProfileAccount?,
     task: PhotoTask,
+    shapes: ListItemShapes,
     onPickPhoto: () -> Unit,
     onRemovePhoto: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = MaterialTheme.spacing
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-    ) {
-        Box(
-            modifier = Modifier.size(MaterialTheme.sizes.avatarLarge + spacing.small * 2),
-            contentAlignment = Alignment.Center,
+    SettingsSegment(shapes, modifier) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(spacing.large),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
-            if (account != null) {
-                Avatar(
-                    photo = account.photo,
-                    name = account.name,
-                    id = account.userId,
-                    size = MaterialTheme.sizes.avatarLarge,
-                    contentDescription = stringResource(R.string.settings_profile_photo),
-                )
-            }
-            PhotoTaskProgress(task, Modifier.matchParentSize())
-        }
-        val idle = task == PhotoTask.None
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(spacing.small),
-            itemVerticalAlignment = Alignment.CenterVertically,
-        ) {
-            FilledTonalButton(onClick = onPickPhoto, shapes = ButtonDefaults.shapes(), enabled = idle) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_add_a_photo),
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize),
-                )
-                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                Text(
-                    text = stringResource(R.string.settings_profile_photo_set),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-            if (account?.photo != null) {
-                TextButton(
-                    onClick = onRemovePhoto,
-                    shapes = ButtonDefaults.shapes(),
-                    enabled = idle,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text(
-                        text = stringResource(R.string.settings_profile_photo_remove),
-                        style = MaterialTheme.typography.labelLargeEmphasized,
+            Box(
+                modifier = Modifier.size(MaterialTheme.sizes.avatarLarge + spacing.small * 2),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (account != null) {
+                    Avatar(
+                        photo = account.photo,
+                        name = account.name,
+                        id = account.userId,
+                        size = MaterialTheme.sizes.avatarLarge,
+                        contentDescription = stringResource(R.string.settings_profile_photo),
                     )
                 }
+                PhotoTaskProgress(task, Modifier.matchParentSize())
+            }
+            PhotoButtons(
+                idle = task == PhotoTask.None,
+                hasPhoto = account?.photo != null,
+                onPickPhoto = onPickPhoto,
+                onRemovePhoto = onRemovePhoto,
+            )
+        }
+    }
+}
+
+/** "Set new photo" and, with a photo ([hasPhoto]), "Remove photo"; enabled while [idle]. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PhotoButtons(
+    idle: Boolean,
+    hasPhoto: Boolean,
+    onPickPhoto: () -> Unit,
+    onRemovePhoto: () -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        FilledTonalButton(onClick = onPickPhoto, shapes = ButtonDefaults.shapes(), enabled = idle) {
+            Icon(
+                painter = painterResource(R.drawable.ic_add_a_photo),
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+            Text(
+                text = stringResource(R.string.settings_profile_photo_set),
+                style = MaterialTheme.typography.labelLargeEmphasized,
+            )
+        }
+        if (hasPhoto) {
+            TextButton(
+                onClick = onRemovePhoto,
+                shapes = ButtonDefaults.shapes(),
+                enabled = idle,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_profile_photo_remove),
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                )
             }
         }
     }

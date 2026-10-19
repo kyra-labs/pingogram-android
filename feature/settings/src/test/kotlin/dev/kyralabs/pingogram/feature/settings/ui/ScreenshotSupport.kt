@@ -36,17 +36,18 @@ class ComponentActivityRegistration : ExternalResource() {
 }
 
 /**
- * Shows [content] in [PingogramTheme] with brand colors in [themeMode] and captures the whole screen, dialogs
- * included, as the golden `src/test/snapshots/<test class>.<name>.png`.
+ * Shows [content] in [PingogramTheme] with brand colors in [themeMode], with true-black surfaces if [amoled], and
+ * captures the whole screen, dialogs included, as the golden `src/test/snapshots/<test class>.<name>.png`.
  */
 @OptIn(ExperimentalRoborazziApi::class)
 fun AndroidComposeTestRule<*, *>.captureScreen(
     testClass: Class<*>,
     name: String,
     themeMode: ThemeMode,
+    amoled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    setContent { PingogramTheme(themeMode = themeMode, dynamicColor = false, content = content) }
+    setContent { PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, content = content) }
     waitForIdle()
     captureScreenRoboImage("src/test/snapshots/${testClass.name}.$name.png")
 }
