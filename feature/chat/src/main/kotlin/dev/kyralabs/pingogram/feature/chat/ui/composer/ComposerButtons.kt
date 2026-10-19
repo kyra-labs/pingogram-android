@@ -34,7 +34,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The send button, a [SplitButtonLayout] as tall as the text field: the leading button sends, the trailing one opens
  * the menu of other ways to send (without sound; at a time, where [canSchedule]). The trailing button's corners morph
- * to a full circle while the menu is open, and its arrow turns on the motion scheme's spatial spring.
+ * to a full circle while the menu is open, and its arrow turns on the motion scheme's spatial spring. Not [enabled],
+ * both parts are disabled, e.g. while picked files are being prepared.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -43,6 +44,7 @@ internal fun SendButton(
     onSend: () -> Unit,
     onSendSilently: () -> Unit,
     onSchedule: () -> Unit,
+    enabled: Boolean = true,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     val height = ButtonDefaults.MediumContainerHeight
@@ -58,6 +60,7 @@ internal fun SendButton(
             SplitButtonDefaults.LeadingButton(
                 onClick = onSend,
                 modifier = Modifier.heightIn(min = height).semantics { contentDescription = sendLabel },
+                enabled = enabled,
                 shapes = SplitButtonDefaults.leadingButtonShapesFor(height),
                 contentPadding = SplitButtonDefaults.leadingButtonContentPaddingFor(height),
             ) {
@@ -74,6 +77,7 @@ internal fun SendButton(
                     checked = menuOpen,
                     onCheckedChange = { menuOpen = it },
                     modifier = Modifier.heightIn(min = height).semantics { contentDescription = optionsLabel },
+                    enabled = enabled,
                     shapes = SplitButtonDefaults.trailingButtonShapesFor(height),
                     contentPadding = SplitButtonDefaults.trailingButtonContentPaddingFor(height),
                 ) {

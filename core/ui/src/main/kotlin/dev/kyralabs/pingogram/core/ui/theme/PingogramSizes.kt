@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
  * @property waveformHeight the height of a voice message's waveform: its loudest bars.
  * @property waveformBarWidth the width of one bar of a voice message's waveform.
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
+ * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
  */
 @Immutable
 data class PingogramSizes(
@@ -76,6 +77,7 @@ data class PingogramSizes(
     val waveformHeight: Dp = 24.dp,
     val waveformBarWidth: Dp = 3.dp,
     val waveformBarGap: Dp = 2.dp,
+    val attachmentPreview: Dp = 120.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

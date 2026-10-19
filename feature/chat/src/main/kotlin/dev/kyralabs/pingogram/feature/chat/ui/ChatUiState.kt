@@ -9,6 +9,9 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
@@ -29,6 +32,10 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property messageActions the actions sheet of a long-pressed message; null while none is open.
  * @property deleteDialog the confirmation before messages are deleted; null while none is shown.
  * @property shortcuts which actions screen readers get on every bubble, besides the sheet.
+ * @property uploads the uploads of the photos, videos and files being sent from this device, by message id (each item
+ *   of an album by its own); messages not being sent are missing.
+ * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
+ * @property poll the form of a new poll; null while it is closed.
  */
 @Immutable
 data class ChatUiState(
@@ -41,6 +48,9 @@ data class ChatUiState(
     val messageActions: MessageActionsSheet? = null,
     val deleteDialog: DeleteMessagesDialog? = null,
     val shortcuts: MessageShortcuts = MessageShortcuts(),
+    val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
+    val attachPreview: AttachPreview? = null,
+    val poll: PollSheet? = null,
 )
 
 /**

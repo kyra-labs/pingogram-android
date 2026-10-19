@@ -6,8 +6,12 @@ import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
+import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
+import dev.kyralabs.pingogram.feature.chat.ui.content.uploadFileId
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -25,7 +29,8 @@ import kotlinx.coroutines.launch
 /**
  * The files of a conversation's voice messages, songs and documents, for [ChatViewModel]: their states through
  * [FileRepository.observe], and downloads at visible priority in [scope]. A failed request goes to [onError]. Playing
- * a voice message or song downloads its file through [ChatPlayback].
+ * a voice message or song downloads its file through [ChatPlayback]. The uploads of the messages being sent from this
+ * device come through [FileRepository.observeUpload] ([uploadsOf]).
  */
 internal class ChatFiles(
     private val repository: FileRepository,
@@ -51,6 +56,29 @@ internal class ChatFiles(
                 }
             }.distinctUntilChanged()
 
+    /**
+     * The upload of every message of [history] being sent from this device with a photo, video, GIF or document
+     * ([uploadFileId]), by message id: its progress once TDLib reports it, unknown until then. Followed for as long as
+     * the message is being sent; a failed message has none.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun uploadsOf(history: Flow<ChatHistory>): Flow<ImmutableMap<Long, MessageUpload>> =
+        history
+            .map { history ->
+                history.messages
+                    .filter { it.isOutgoing && it.sendingState == SendingState.Pending }
+                    .mapNotNull { message -> message.content.uploadFileId?.let { message.id to it } }
+            }.distinctUntilChanged()
+            .flatMapLatest { uploading ->
+                if (uploading.isEmpty()) {
+                    flowOf(persistentMapOf())
+                } else {
+                    combine(uploading.map { (messageId, fileId) -> upload(messageId, fileId) }) { uploads ->
+                        uploads.toMap().toImmutableMap()
+                    }
+                }
+            }.distinctUntilChanged()
+
     fun download(fileId: Int) = request { download(fileId, DownloadPriority.Visible) }
 
     fun cancelDownload(fileId: Int) = request { cancelDownload(fileId) }
@@ -59,6 +87,16 @@ internal class ChatFiles(
         scope.launch { repository.call().onFailure(onError) }
     }
 
+    /** The upload of [fileId], message [messageId]'s, as soon as it is subscribed: unknown until TDLib reports it. */
+    private fun upload(
+        messageId: Long,
+        fileId: Int,
+    ): Flow<Pair<Long, MessageUpload>> =
+        repository
+            .observeUpload(fileId)
+            .map { upload -> messageId to MessageUpload(upload.progressOrNull) }
+            .onStart { emit(messageId to MessageUpload(progress = null)) }
+
     /** [fileId] with its state as soon as it is subscribed: null until TDLib reports it. */
     private fun observed(fileId: Int): Flow<Pair<Int, FileState?>> =
         repository
@@ -66,3 +104,7 @@ internal class ChatFiles(
             .map<FileState, Pair<Int, FileState?>> { fileId to it }
             .onStart { emit(fileId to null) }
 }
+
+/** The progress to show: none while TDLib has neither started the upload nor told the size. */
+private val FileUpload.progressOrNull: Float?
+    get() = if (isCompleted || (size > 0 && (isActive || uploadedSize > 0))) progress else null

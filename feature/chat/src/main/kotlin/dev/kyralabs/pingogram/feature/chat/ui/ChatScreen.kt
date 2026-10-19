@@ -68,6 +68,7 @@ import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -76,6 +77,12 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachMenuSheet
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreviewSheet
+import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollFormSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
@@ -90,6 +97,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -121,6 +131,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
  *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
+ * - **Attach menu**: the composer's attach button opens it ([AttachMenuSheet]), without the camera where [hasCamera]
+ *   is false; the option chosen goes to [onAttach], which opens its picker. Picked photos, videos and files show in
+ *   their preview ([AttachPreviewSheet], with [attachCaption]), a new poll in its form ([PollFormSheet], editing
+ *   [pollEditor]); sending them now scrolls to the newest message, as sending a text does. Bubbles being sent show
+ *   their uploads ([ChatUiState.uploads]).
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
@@ -136,11 +151,22 @@ internal fun ChatScreen(
     jumpState: MessageJumpState = rememberMessageJumpState(),
     composerText: ComposerText = remember { ComposerText() },
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
+    onAttach: (AttachOption) -> Unit = {},
+    hasCamera: Boolean = true,
+    attachCaption: ComposerText = remember { ComposerText() },
+    pollEditor: PollEditor = remember { PollEditor() },
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
     val scope = rememberCoroutineScope()
     val motionScheme = MaterialTheme.motionScheme
+    var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
+    val scrollToSent = { options: SendOptions ->
+        // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
+        if (options.scheduledAt == null && content is ChatContent.Content) {
+            scope.launch { listState.scrollToNewest(motionScheme.defaultSpatialSpec()) }
+        }
+    }
     Scaffold(
         modifier = modifier,
         topBar = { ChatTopBar(state.header, onBack) },
@@ -161,6 +187,7 @@ internal fun ChatScreen(
                 focus = composerFocus,
                 onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+                onAttach = { attachMenuOpen = true },
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -179,6 +206,38 @@ internal fun ChatScreen(
         }
     }
     state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    val attachOptions = (state.composer as? ComposerUiState.Available)?.attachOptions.orEmpty()
+    if (attachMenuOpen && attachOptions.isNotEmpty()) {
+        AttachMenuSheet(
+            options = attachOptions.filter { hasCamera || it != AttachOption.Camera }.toImmutableList(),
+            onPick = { option ->
+                attachMenuOpen = false
+                onAttach(option)
+            },
+            onDismiss = { attachMenuOpen = false },
+        )
+    }
+    state.attachPreview?.let { preview ->
+        AttachPreviewSheet(
+            preview = preview,
+            caption = attachCaption,
+            onEvent = onEvent,
+            onSend = { options ->
+                onEvent(ChatEvent.SendAttachments(options))
+                scrollToSent(options)
+            },
+        )
+    }
+    state.poll?.let { sheet ->
+        PollFormSheet(
+            sheet = sheet,
+            editor = pollEditor,
+            onEvent = { event ->
+                onEvent(event)
+                if (event is ChatEvent.SendPoll) scrollToSent(event.options)
+            },
+        )
+    }
     state.deleteDialog?.let { dialog ->
         DeleteMessagesAlert(
             dialog = dialog,
@@ -242,6 +301,7 @@ private fun MessageList(
     onEvent: (ChatEvent) -> Unit,
 ) {
     val fileStates = state.fileStates
+    val uploads = state.uploads
     val playback = state.playback
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
@@ -269,7 +329,7 @@ private fun MessageList(
     ) {
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, playback, bubbleResources, onEvent, itemModifier)
+            ChatItemRow(item, fileStates, uploads, playback, bubbleResources, onEvent, itemModifier)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             item(key = OLDER_KEY, contentType = OLDER_KEY) {
@@ -302,13 +362,15 @@ private fun MessageList(
 }
 
 /**
- * One entry of the list: a message with the state of its file and its playback (only the message in the player has
- * one), a service message, a date or the unread divider.
+ * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
+ * (only the message in the player has one), a service message, a date or the unread divider.
  */
+@Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
 private fun ChatItemRow(
     item: ChatItem,
     fileStates: ImmutableMap<Int, FileState>,
+    uploads: ImmutableMap<Long, MessageUpload>,
     playback: MessagePlayback?,
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
@@ -318,7 +380,15 @@ private fun ChatItemRow(
         is ChatItem.Bubble -> {
             val fileState = item.content.downloadableFileId?.let(fileStates::get)
             val bubblePlayback = playback?.takeIf { it.messageId == item.id }?.playback ?: Playback.Stopped
-            MessageBubbleRow(item, fileState, bubblePlayback, bubbleResources, onEvent, modifier)
+            MessageBubbleRow(
+                bubble = item,
+                fileState = fileState,
+                playback = bubblePlayback,
+                resources = bubbleResources,
+                onEvent = onEvent,
+                modifier = modifier,
+                uploads = item.uploadsIn(uploads),
+            )
         }
 
         is ChatItem.Service -> {
@@ -367,6 +437,19 @@ private fun ReportVisibleMessages(
         }
     }
 }
+
+/**
+ * The uploads of this bubble's messages among [uploads]; the same empty map when none of them is being sent, so the
+ * bubbles that do not upload skip while one does.
+ */
+private fun ChatItem.Bubble.uploadsIn(uploads: ImmutableMap<Long, MessageUpload>): ImmutableMap<Long, MessageUpload> {
+    if (uploads.isEmpty()) return NoUploads
+    val ids = album?.messageIds ?: listOf(id)
+    if (ids.none(uploads::containsKey)) return NoUploads
+    return ids.mapNotNull { messageId -> uploads[messageId]?.let { messageId to it } }.toMap().toImmutableMap()
+}
+
+private val NoUploads: ImmutableMap<Long, MessageUpload> = persistentMapOf()
 
 /** The messages an entry shows: a message, every item of an album; none for dates and the divider. */
 private val ChatItem.messageIds: List<Long>

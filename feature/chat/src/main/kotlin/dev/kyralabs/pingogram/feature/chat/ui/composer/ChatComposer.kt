@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatLog
+import dev.kyralabs.pingogram.feature.chat.ui.attach.ReplyHandoff
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -38,7 +39,8 @@ import kotlinx.coroutines.launch
  *   ([ComposerMode.Replying]), which clears the chat's draft; the message shows through the history. A refused message
  *   comes back into the field, if it is still empty, with its reply and a snackbar ([ChatEffect.ShowError]); a
  *   scheduled one is confirmed with [ChatEffect.MessageScheduled].
- * - **Replying** ([reply], [cancelReply]) changes what the next message replies to, and the draft with it.
+ * - **Replying** ([reply], [cancelReply]) changes what the next message replies to, and the draft with it. A message
+ *   sent from the attach menu takes the reply along ([takeReply]) and gives it back if it is refused ([restoreReply]).
  * - **Editing** ([edit]) saves the draft as it is, keeps the composer's text and reply aside ([ComposerStash]), and
  *   fills the field with the message's text or caption. Drafts are left alone meanwhile. [send] then leaves the edit
  *   at once, giving the composer back what it held, and sends the edit ([MessageActionRepository.editText] or
@@ -62,7 +64,7 @@ internal class ChatComposer(
     private val messageOf: (Long) -> Message?,
     private val onEffect: (ChatEffect) -> Unit,
     private val log: ChatLog,
-) {
+) : ReplyHandoff {
     /** The text the composer edits. */
     val text = ComposerText(restoredText(savedState[KEY_TEXT], savedState[KEY_ENTITIES]) ?: FormattedText.Empty)
 
@@ -101,6 +103,24 @@ internal class ChatComposer(
     /** The next message replies to message [messageId]; an edit in progress is cancelled first. */
     fun reply(messageId: Long) {
         cancelEdit()
+        setMode(ComposerMode.Replying(messageId))
+        scheduleSave()
+    }
+
+    /**
+     * The message the next message replies to, for a message sent from the attach menu, which takes the reply along:
+     * the reply ends, as sending a text ends it, and the draft follows. Null when the composer replies to nothing.
+     */
+    override fun takeReply(): Long? {
+        val replying = mode.value as? ComposerMode.Replying ?: return null
+        setMode(ComposerMode.Writing)
+        scheduleSave()
+        return replying.messageId
+    }
+
+    /** Replies to [messageId] again after what [takeReply] gave it to was refused, unless a reply or edit began. */
+    override fun restoreReply(messageId: Long) {
+        if (mode.value != ComposerMode.Writing) return
         setMode(ComposerMode.Replying(messageId))
         scheduleSave()
     }

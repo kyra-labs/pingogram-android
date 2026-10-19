@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import java.io.File
 
 /** Which bubbles a [ContentSample] is shown in. */
 internal enum class SampleBubbles {
@@ -259,8 +260,14 @@ internal fun PreviewImages(
                         colorScheme.primary,
                     )
                 AsyncImagePreviewHandler { request ->
-                    val fileId = (request.data as? TdlibFileImage)?.fileId ?: 0
-                    ColorImage(palette[fileId.mod(palette.size)].toArgb())
+                    // TDLib files by id, local files (the attach preview's copies) by name.
+                    val key =
+                        when (val data = request.data) {
+                            is TdlibFileImage -> data.fileId
+                            is File -> data.name.hashCode()
+                            else -> 0
+                        }
+                    ColorImage(palette[key.mod(palette.size)].toArgb())
                 }
             }
         }
