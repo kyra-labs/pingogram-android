@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -62,8 +63,26 @@ class PingogramColorsTest {
             AvatarColors(scheme.primaryContainer, scheme.onPrimaryContainer),
             scheme.avatarPlaceholderColors(0),
         )
-        assertEquals(AvatarColors(scheme.surfaceVariant, scheme.onSurfaceVariant), scheme.avatarPlaceholderColors(-1))
-        assertEquals(scheme.avatarPlaceholderColors(supergroupId), scheme.avatarPlaceholderColors(supergroupId + 7))
+        assertEquals(
+            AvatarColors(scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+            scheme.avatarPlaceholderColors(-1),
+        )
+        assertEquals(scheme.avatarPlaceholderColors(supergroupId), scheme.avatarPlaceholderColors(supergroupId + 4))
+    }
+
+    @Test
+    fun `avatar placeholders never use the fixed roles, which keep their light tone in dark theme`() {
+        val scheme = brandColorScheme(dark = true, Contrast.Standard)
+        val fixed = setOf(scheme.primaryFixed, scheme.secondaryFixed, scheme.tertiaryFixed)
+
+        (0L until 4L).forEach { id -> assertFalse(scheme.avatarPlaceholderColors(id).container in fixed) }
+    }
+
+    @Test
+    fun `avatar placeholders on a selected row are primary`() {
+        val scheme = brandColorScheme(dark = false, Contrast.Standard)
+
+        assertEquals(AvatarColors(scheme.primary, scheme.onPrimary), scheme.avatarPlaceholderColorsOnSelection())
     }
 
     @Test

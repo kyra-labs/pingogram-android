@@ -36,7 +36,7 @@ fun PingogramTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
         shapes = PingogramShapes,                 // §4
-        typography = pingogramTypography(dark),   // Google Sans Flex, §3
+        typography = pingogramTypography(),       // Google Sans Flex, §3
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,          // §2.2, MaterialTheme.pingogramColors
@@ -77,8 +77,9 @@ fun PingogramTheme(
   `core/ui/.../theme/Color.kt`. Change the seed there and run `npm ci && npm run generate`;
   never hand-edit the output.
   - `SchemeVibrant` was chosen by the owner on 2026-10-19. `SchemeTonalSpot` turned the icon's vivid blue into a
-    greyish `#495D92`. The PR that switches the variant shows TonalSpot, Vibrant, Expressive and Fidelity goldens
-    side by side.
+    greyish `#495D92`; Expressive turns `primary` green and Fidelity makes the containers saturated
+    (`docs/audit/images/brand-scheme-variants.png`). `VARIANT=TonalSpot npm run generate` builds another variant to
+    compare.
   - This applies to the brand schemes only; dynamic color follows the system.
 - Dynamic color (Material You) on Android 12+ by default: `dynamicLightColorScheme` /
   `dynamicDarkColorScheme`. User toggle to fall back to brand schemes. On Android 14+ those read the
@@ -199,12 +200,12 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   small: a regular style holds its weight and its emphasized weight (what a bold span resolves to),
   an emphasized style only its own weight, each upright and italic. No style synthesizes a weight or
   slant (`FontSynthesis.None`): a bold span takes the heaviest font of its style instead of a faked
-  bold. The typography is built once per light/dark and cached (`core/ui/.../theme/Type.kt`).
+  bold. The typography is the same in both themes, built once and cached (`core/ui/.../theme/Type.kt`).
 - The fonts are `GoogleSansFlexFont`s (`core/ui/.../theme/GoogleSansFlexFont.kt`) rather than
   `Font(R.font.google_sans_flex, …)`: their loader makes each typeface once per process. Compose's
   own typeface caches hold 16 entries, fewer than the fonts a list and a conversation use, and each
   reload made a new typeface whose text the platform laid out and rasterized again.
-- `pingogramTypography(dark)` builds the **full M3 Expressive type scale** (display, headline,
+- `pingogramTypography()` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
   from the `Typography` constructor parameters, with `GRAD` 0.
 - Mapping (weight / opsz / ROND): display, headline, `titleLarge` and body 400 · `titleMedium`,

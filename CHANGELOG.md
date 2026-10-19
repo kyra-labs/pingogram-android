@@ -23,6 +23,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Changed
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
+- Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes
+  in seven colors, some of which stayed bright in dark theme. The chat open beside the list on a tablet keeps its
+  avatar visible against the highlighted row.
+- The app's own colors (when dynamic color is off or unavailable) are a more vivid blue, closer to the icon.
+- Loading indicators show only when loading takes longer than a moment, so screens that load quickly no longer
+  flash one.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

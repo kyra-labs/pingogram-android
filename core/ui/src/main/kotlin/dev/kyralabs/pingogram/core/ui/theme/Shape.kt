@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.toPath
@@ -37,25 +36,6 @@ val PingogramShapes =
         extraLargeIncreased = RoundedCornerShape(32.dp),
         extraExtraLarge = RoundedCornerShape(48.dp),
     )
-
-// Six shapes against seven avatar color pairs: the counts are coprime, so 42 distinct combinations.
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-private val AvatarPlaceholderPolygons =
-    listOf(
-        MaterialShapes.Cookie9Sided,
-        MaterialShapes.Clover8Leaf,
-        MaterialShapes.Sunny,
-        MaterialShapes.Pill,
-        MaterialShapes.Cookie6Sided,
-        MaterialShapes.Clover4Leaf,
-    )
-
-/**
- * The [MaterialShapes] polygon for an avatar placeholder (§4), chosen by [id] (a TDLib user or chat
- * id, which can be negative). Turn it into a [Shape] with `toShape()` or [rememberMorphShape].
- */
-fun avatarPlaceholderPolygon(id: Long): RoundedPolygon =
-    AvatarPlaceholderPolygons[id.mod(AvatarPlaceholderPolygons.size)]
 
 /**
  * A [Shape] that morphs from [start] to [end] while [morphed] is true and back when it is false
