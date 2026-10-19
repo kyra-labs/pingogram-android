@@ -100,6 +100,66 @@ sealed interface ChatEvent {
         val isFocused: Boolean,
     ) : ChatEvent
 
+    // The attach menu (REQUIREMENTS.md FR-C5). Pickers return content URIs, readable while their grant lasts.
+
+    /** Photos and videos picked in the Photo Picker, by their URIs: they open in the preview, being prepared. */
+    data class AttachMedia(
+        val uris: List<String>,
+    ) : ChatEvent {
+        override fun toString() = "AttachMedia(${uris.size})"
+    }
+
+    /** Files picked in the document picker, by their URIs: they open in the preview as documents. */
+    data class AttachFiles(
+        val uris: List<String>,
+    ) : ChatEvent {
+        override fun toString() = "AttachFiles(${uris.size})"
+    }
+
+    /** "Camera" in the attach menu: a file for the photo is made, then the camera app opens. */
+    data object TakePhoto : ChatEvent
+
+    /** The camera app returned, with a photo if [taken]: it joins the preview. */
+    data class PhotoTaken(
+        val taken: Boolean,
+    ) : ChatEvent
+
+    /** A phone number picked in the contact picker, at [uri]: it is sent as a contact. */
+    data class AttachContact(
+        val uri: String,
+    ) : ChatEvent {
+        override fun toString() = "AttachContact(…)"
+    }
+
+    /** The remove button of item [key] of the preview. */
+    data class RemoveAttachment(
+        val key: Long,
+    ) : ChatEvent
+
+    /** The preview was dismissed: nothing is sent. */
+    data object DismissAttachments : ChatEvent
+
+    /** Send the preview's items with their caption as [options] say. */
+    data class SendAttachments(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** "Poll" in the attach menu: the form of a new poll opens. */
+    data object OpenPoll : ChatEvent
+
+    /** The poll form was dismissed: nothing is sent, the form empties. */
+    data object DismissPoll : ChatEvent
+
+    /** Send the poll of the form as [options] say. */
+    data class SendPoll(
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** The cancel button on the upload of messages [messageIds], still being sent: they are deleted. */
+    data class CancelUpload(
+        val messageIds: List<Long>,
+    ) : ChatEvent
+
     // Message actions (REQUIREMENTS.md FR-C6, FR-C7). Each closes the actions sheet, and does nothing where TDLib does
     // not allow it (any more).
 

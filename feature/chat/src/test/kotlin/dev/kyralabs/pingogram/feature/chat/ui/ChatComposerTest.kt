@@ -74,7 +74,10 @@ class ChatComposerTest : ChatViewModelHarness() {
         runCurrent()
     }
 
-    private val ChatViewModel.composer get() = state.composer
+    /** The composer without its attach options, which [ChatAttachmentsTest] covers. */
+    private val ChatViewModel.composer
+        get() =
+            state.composer.let { (it as? ComposerUiState.Available)?.copy(attachOptions = persistentListOf()) ?: it }
 
     private val ChatViewModel.composed get() = composerText.content
 

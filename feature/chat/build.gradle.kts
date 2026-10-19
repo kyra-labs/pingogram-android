@@ -3,6 +3,9 @@ plugins {
 }
 
 dependencies {
+    // The attach menu's pickers and camera (rememberLauncherForActivityResult); already in the app, as for
+    // feature:auth.
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)

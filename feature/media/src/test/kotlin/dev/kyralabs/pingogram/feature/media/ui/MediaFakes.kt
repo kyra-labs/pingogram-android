@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.Instant
@@ -166,6 +168,9 @@ class FakeFileRepository : FileRepository {
     }
 
     override fun observe(fileId: Int): Flow<FileState> = files.mapNotNull { it[fileId] }.distinctUntilChanged()
+
+    // The media viewer shows received files, never uploads.
+    override fun observeUpload(fileId: Int): Flow<FileUpload> = emptyFlow()
 
     override suspend fun download(
         fileId: Int,

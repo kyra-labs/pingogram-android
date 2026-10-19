@@ -80,6 +80,23 @@ sealed interface DomainError {
      */
     data object TooManyPinnedChats : DomainError
 
+    // Sending files, contacts and polls (REQUIREMENTS.md FR-C5).
+
+    /**
+     * A picked file or contact could not be read: it was moved or deleted, the app that shared it no longer lets it be
+     * read, or Android cannot decode it.
+     */
+    data object FileUnavailable : DomainError
+
+    /** The file is larger than Telegram accepts (TDLib's own limit, or Telegram's for the account). */
+    data object FileTooLarge : DomainError
+
+    /**
+     * The chat does not allow sending this kind of message (TDLib's rights checks): polls in a private chat, media for
+     * a restricted member, a non-anonymous poll in a channel.
+     */
+    data object SendingNotAllowed : DomainError
+
     // Settings (REQUIREMENTS.md FR-S1).
 
     /**

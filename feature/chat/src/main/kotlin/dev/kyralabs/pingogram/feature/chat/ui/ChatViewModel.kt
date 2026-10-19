@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -33,6 +34,14 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
+import dev.kyralabs.pingogram.feature.chat.ui.attach.ChatAttachments
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollEditor
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
+import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewDraft
+import dev.kyralabs.pingogram.feature.chat.ui.attach.attachOptions
+import dev.kyralabs.pingogram.feature.chat.ui.attach.isChannel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -43,9 +52,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableMap
@@ -128,6 +139,11 @@ import java.util.Locale
  * - **Message actions** ([ChatMessageActions]): the actions sheet of a long-pressed message, with what TDLib allows for
  *   it ([MessageActionRepository.properties]) and its quick reactions; replying, copying, editing, pinning, deleting
  *   (after a confirmation), sending again and toggling reactions; and the [ChatUiState.shortcuts] screen readers get.
+ * - **Attach menu** ([ChatAttachments]): what the composer's attach button offers in this chat
+ *   ([ComposerUiState.Available.attachOptions]); picked photos, videos and files in a preview
+ *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
+ *   ([ChatUiState.poll], [pollEditor]), each taking the composer's reply along. The uploads of the messages being sent
+ *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
  *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, a scheduled
  *   message's time, a copied text, and the composer's focus when a reply or an edit starts.
@@ -146,6 +162,7 @@ class ChatViewModel internal constructor(
     private val chatRepository: ChatRepository,
     private val messageRepository: MessageRepository,
     messageActionRepository: MessageActionRepository,
+    attachmentRepository: AttachmentRepository,
     private val userRepository: UserRepository,
     groupRepository: GroupRepository,
     chatActionRepository: ChatActionRepository,
@@ -165,6 +182,7 @@ class ChatViewModel internal constructor(
         chatRepository: ChatRepository,
         messageRepository: MessageRepository,
         messageActionRepository: MessageActionRepository,
+        attachmentRepository: AttachmentRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatActionRepository: ChatActionRepository,
@@ -180,6 +198,7 @@ class ChatViewModel internal constructor(
         chatRepository,
         messageRepository,
         messageActionRepository,
+        attachmentRepository,
         userRepository,
         groupRepository,
         chatActionRepository,
@@ -268,6 +287,16 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
+    private val attachments =
+        ChatAttachments(
+            chatId = chatId,
+            repository = attachmentRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            replies = composer,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     /** The messages the composer's bars show that are not loaded. */
     private val composerTargets = ComposerTargets(chatId, messageRepository, viewModelScope, composer::onMessageGone)
 
@@ -295,6 +324,12 @@ class ChatViewModel internal constructor(
 
     /** The text the composer edits, for its text field; the view model keeps it across rotations. */
     val composerText: ComposerText get() = composer.text
+
+    /** The caption of the attach preview, for its text field; kept like [composerText]. */
+    val attachCaption: ComposerText get() = attachments.caption
+
+    /** What the form of a new poll holds, for its fields; kept like [composerText]. */
+    val pollEditor: PollEditor get() = attachments.poll
 
     private val chat: Flow<ChatLookup> =
         chatAttempts
@@ -375,7 +410,7 @@ class ChatViewModel internal constructor(
 
     /**
      * What shows over the conversation: the composer's mode, with the message its bar shows fetched when it is not
-     * loaded, the actions sheet and the delete confirmation.
+     * loaded, the actions sheet, the delete confirmation, the attach preview and the poll form.
      */
     private val overlays: Flow<Overlays> =
         combine(
@@ -385,18 +420,24 @@ class ChatViewModel internal constructor(
             },
             messageActions.sheet,
             messageActions.deleteDialog,
-        ) { (mode, targets), sheet, deleteDialog -> Overlays(mode, targets, sheet, deleteDialog) }
+            attachments.preview,
+            attachments.isPollOpen,
+        ) { (mode, targets), sheet, deleteDialog, preview, pollOpen ->
+            Overlays(mode, targets, sheet, deleteDialog, preview, pollOpen)
+        }
 
     val uiState: StateFlow<ChatUiState> =
         combine(chatSources, messageSources, people, clock.minutes, overlays, ::state)
             .combine(files.statesOf(history)) { state, fileStates -> state.copy(fileStates = fileStates) }
+            .combine(files.uploadsOf(history)) { state, uploads -> state.copy(uploads = uploads) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
     init {
-        // Leaving the screen frees the player.
+        // Leaving the screen frees the player, and deletes picked files that were never sent.
         addCloseable { playback.release() }
+        addCloseable { attachments.release() }
         viewModelScope.launch {
             // The divider stays where it was when the chat was first shown, also after process death.
             val chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat }.first()
@@ -419,35 +460,89 @@ class ChatViewModel internal constructor(
     fun onEvent(event: ChatEvent) {
         when (event) {
             ChatEvent.Started -> setOpen(true)
+
             ChatEvent.Stopped -> setOpen(false)
+
             is ChatEvent.NearOldestChanged -> onNearOldestChanged(event.isNearOldest)
+
             is ChatEvent.MessagesVisible -> views.setVisible(event.messageIds)
+
             is ChatEvent.OpenReply -> showMessage(event.messageId, MAX_REPLY_PAGES, ChatEffect.MessageUnavailable)
+
             ChatEvent.Retry -> retry()
+
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
+
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
+
             is ChatEvent.DownloadFile -> files.download(event.fileId)
+
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
+
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
+
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
+
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
+
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
+
             is ChatEvent.Send -> composer.send(event.options)
+
             is ChatEvent.ComposerFocusChanged -> composer.setFocused(event.isFocused)
+
             is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
+
             ChatEvent.DismissMessageActions -> messageActions.dismiss()
+
             is ChatEvent.Reply -> messageActions.reply(event.messageId)
+
             ChatEvent.CancelReply -> composer.cancelReply()
+
             is ChatEvent.Copy -> messageActions.copy(event.messageId)
+
             is ChatEvent.Edit -> messageActions.edit(event.messageId)
+
             ChatEvent.CancelEdit -> composer.cancelEdit()
+
             is ChatEvent.Pin -> messageActions.pin(event.messageId, event.onlyForSelf)
+
             is ChatEvent.Unpin -> messageActions.unpin(event.messageId)
+
             is ChatEvent.Delete -> messageActions.delete(event.messageId)
+
             is ChatEvent.ConfirmDelete -> messageActions.confirmDelete(event.forEveryone)
+
             ChatEvent.DismissDelete -> messageActions.dismissDelete()
+
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
+
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
+
+            is ChatEvent.AttachMedia -> attachments.pickMedia(event.uris)
+
+            is ChatEvent.AttachFiles -> attachments.pickFiles(event.uris)
+
+            ChatEvent.TakePhoto -> attachments.takePhoto()
+
+            is ChatEvent.PhotoTaken -> attachments.photoTaken(event.taken)
+
+            is ChatEvent.AttachContact -> attachments.sendContact(event.uri)
+
+            is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
+
+            ChatEvent.DismissAttachments -> attachments.dismissPreview()
+
+            is ChatEvent.SendAttachments -> attachments.sendPreview(event.options)
+
+            ChatEvent.OpenPoll -> attachments.openPoll()
+
+            ChatEvent.DismissPoll -> attachments.dismissPoll()
+
+            // A poll goes out anonymous in a channel.
+            is ChatEvent.SendPoll -> attachments.sendPoll(event.options, uiState.value.poll?.isChannel == true)
+
+            is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
         }
     }
 
@@ -603,17 +698,27 @@ class ChatViewModel internal constructor(
                 timeFormatter = formatter,
             ).toHeader()
         val history = messages.state.history
-        val composer = composerState(chat, chat.userId?.let(people.users::get), group.basicGroup, group.supergroup)
+        val user = chat.userId?.let(people.users::get)
+        val composer = composerState(chat, user, group.basicGroup, group.supergroup)
         val canWrite = composer is ComposerUiState.Available
+        val options = attachOptions(chat, user, people.myUserId)
+        val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
         return ChatUiState(
             header = header,
             content = content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
-            composer = if (canWrite) composer.copy(bar = overlays.bar(chat, history, people)) else composer,
+            composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
             shortcuts = MessageShortcuts(canReply = canWrite, canCopy = !chat.hasProtectedContent),
+            // What was picked or written stays while the user may not write; it shows again when they may.
+            attachPreview =
+                overlays.preview?.takeIf { canWrite }?.let { AttachPreview(it.kind, it.items, canSchedule) },
+            poll =
+                PollSheet(chat.isChannel, canSchedule).takeIf {
+                    canWrite && overlays.pollOpen && AttachOption.Poll in options
+                },
         )
     }
 
@@ -710,12 +815,17 @@ class ChatViewModel internal constructor(
         val pageLoad: PageLoad,
     )
 
-    /** The composer's mode with the bar messages fetched for it, the actions sheet and the delete confirmation. */
+    /**
+     * The composer's mode with the bar messages fetched for it, the actions sheet, the delete confirmation, the attach
+     * preview and whether the poll form is open.
+     */
     private class Overlays(
         val mode: ComposerMode,
         val targets: Map<Long, Message?>,
         val sheet: MessageActionsSheet?,
         val deleteDialog: DeleteMessagesDialog?,
+        val preview: PreviewDraft?,
+        val pollOpen: Boolean,
     ) {
         fun bar(
             chat: Chat,
@@ -742,6 +852,13 @@ class ChatViewModel internal constructor(
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
+
+/** The composer with [bar], and the [attachOptions] of the chat unless it edits: an edit sends no attachments. */
+private fun ComposerUiState.Available.withBar(
+    bar: ComposerBar?,
+    attachOptions: ImmutableList<AttachOption>,
+): ComposerUiState.Available =
+    copy(bar = bar, attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions)
 
 /**
  * The location or venue of loaded message [messageId], as the effect that shows it in a maps app, named after the
