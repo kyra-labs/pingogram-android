@@ -10,7 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,8 +22,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -110,54 +114,98 @@ internal fun LinkPreviewBlock(
     }
 }
 
-/** The reactions as small tonal chips, wrapping onto more lines when they do not fit. */
+/**
+ * The reactions as small tonal chips, wrapping onto more lines when they do not fit. With [onToggle], tapping a chip
+ * adds or takes back the user's reaction (not the paid star reaction, which is changed elsewhere); [toggles] crossfades
+ * it meanwhile. Inside a bubble, screen readers reach them as the bubble's custom actions instead.
+ */
 @Composable
 internal fun ReactionsRow(
     bubble: ChatItem.Bubble,
     colors: BubbleColors,
+    toggles: ReactionToggleState,
+    onToggle: (ReactionChip) -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
+    val messageId = bubble.reactionsMessageId
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
         verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
     ) {
-        bubble.reactions.forEach { ReactionChipView(it, colors) }
+        bubble.reactions.forEach { chip ->
+            ReactionChipView(
+                reaction = chip,
+                colors = colors,
+                chosenFraction = { toggles.chosenFraction(messageId, chip) },
+                onClick = { onToggle(chip) }.takeIf { chip.label != ReactionLabel.Paid },
+            )
+        }
     }
 }
 
-/** A reaction's emoji and count; in `secondaryContainer` when the user chose it too. */
+/**
+ * A reaction's emoji and count, in the bubble's block colors, or in `secondaryContainer` when the user chose it too:
+ * [chosenFraction] blends them, read in the draw phase. A button if [onClick] is not null, its state layer clipped to
+ * the chip.
+ */
 @Composable
 private fun ReactionChipView(
     reaction: ReactionChip,
     colors: BubbleColors,
+    chosenFraction: () -> Float,
+    onClick: (() -> Unit)?,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val container = if (reaction.isChosen) scheme.secondaryContainer else colors.block
-    val content = if (reaction.isChosen) scheme.onSecondaryContainer else colors.blockContent
+    val container = { lerp(colors.block, scheme.secondaryContainer, chosenFraction()) }
+    val content = { lerp(colors.blockContent, scheme.onSecondaryContainer, chosenFraction()) }
+    val clickable = onClick?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier
     Row(
         modifier =
             Modifier
-                .background(container, MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.small)
+                .then(clickable)
+                .drawBehind { drawRect(container()) }
                 .padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        when (val label = reaction.label) {
-            is ReactionLabel.Emoji -> Text(label.emoji, style = MaterialTheme.typography.labelLarge)
-            ReactionLabel.Paid -> Text(PAID_REACTION_EMOJI, style = MaterialTheme.typography.labelLarge)
-            ReactionLabel.CustomEmoji -> CustomEmojiPlaceholder(content)
-        }
-        Text(reaction.count.toString(), color = content, style = MaterialTheme.typography.labelMedium)
+        ReactionGlyph(reaction.label, MaterialTheme.typography.labelLarge, MaterialTheme.sizes.inlineIconSmall, content)
+        BasicText(
+            text = reaction.count.toString(),
+            style = LocalTextStyle.current.merge(MaterialTheme.typography.labelMedium),
+            color = content,
+        )
     }
 }
 
-/** Where a custom emoji goes until custom emoji are drawn: a dot of the emoji's size. */
+/**
+ * A reaction's emoji in [style]; the star of the paid reaction; for a custom emoji, until custom emoji are drawn, a
+ * dot of [customEmojiSize] in [placeholderColor].
+ */
 @Composable
-private fun CustomEmojiPlaceholder(color: Color) {
+internal fun ReactionGlyph(
+    label: ReactionLabel,
+    style: TextStyle,
+    customEmojiSize: Dp,
+    placeholderColor: ColorProducer,
+) {
+    when (label) {
+        is ReactionLabel.Emoji -> Text(label.emoji, style = style)
+        ReactionLabel.Paid -> Text(PAID_REACTION_EMOJI, style = style)
+        is ReactionLabel.CustomEmoji -> CustomEmojiPlaceholder(customEmojiSize, placeholderColor)
+    }
+}
+
+/** Where a custom emoji goes until custom emoji are drawn: a dot of the emoji's size, its color read when drawn. */
+@Composable
+private fun CustomEmojiPlaceholder(
+    size: Dp,
+    color: ColorProducer,
+) {
     Spacer(
         Modifier
-            .size(MaterialTheme.sizes.inlineIconSmall)
-            .background(color, CircleShape),
+            .size(size)
+            .drawBehind { drawCircle(color()) },
     )
 }
 

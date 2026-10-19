@@ -41,6 +41,8 @@ class TdlibMessageRepositorySendTest {
     private fun TdApi.FormattedText.describe() =
         listOf(text) + entities.map { "${it.offset}+${it.length}:${it.type.javaClass.simpleName}" }
 
+    private fun TdApi.InputMessageReplyToMessage.describe() = listOf(messageId, quote, checklistTaskId, pollOptionId)
+
     @Test
     fun `sendText sends the text to the chat itself and clears the draft`() =
         runTest {
@@ -59,6 +61,17 @@ class TdlibMessageRepositorySendTest {
                 listOf<Any?>("Hi", true, null),
                 listOf(content.text.text, content.clearDraft, content.linkPreviewOptions),
             )
+        }
+
+    @Test
+    fun `a reply goes to the whole message of the same chat, without a quote`() =
+        runTest {
+            answerSend()
+
+            repository().sendText(CHAT, text("Sure"), replyToMessageId = 42)
+
+            val replyTo = sentMessage().replyTo as TdApi.InputMessageReplyToMessage
+            assertEquals(listOf<Any?>(42L, null, 0, ""), replyTo.describe())
         }
 
     @Test
@@ -174,6 +187,66 @@ class TdlibMessageRepositorySendTest {
             repository().setDraft(CHAT, FormattedText.Empty)
 
             assertNull(client.sentOf<TdApi.SetChatDraftMessage>().single().draftMessage)
+        }
+
+    @Test
+    fun `a draft keeps the message it replies to`() =
+        runTest {
+            client.on(TdApi.SetChatDraftMessage::class, TdResult.Success(TdApi.Ok()))
+
+            repository().setDraft(CHAT, text("Sure"), replyToMessageId = 42)
+
+            val draft = client.sentOf<TdApi.SetChatDraftMessage>().single().draftMessage
+            val replyTo = draft.replyTo as TdApi.InputMessageReplyToMessage
+            assertEquals(listOf<Any?>(42L, null, 0, ""), replyTo.describe())
+            assertEquals(listOf("Sure"), (draft.content as TdApi.DraftMessageContentText).text.describe())
+        }
+
+    @Test
+    fun `a reply without a text is still a draft`() =
+        runTest {
+            client.on(TdApi.SetChatDraftMessage::class, TdResult.Success(TdApi.Ok()))
+
+            repository().setDraft(CHAT, FormattedText.Empty, replyToMessageId = 42)
+
+            val draft = client.sentOf<TdApi.SetChatDraftMessage>().single().draftMessage
+            assertEquals(42L, (draft.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+            assertEquals(listOf(""), (draft.content as TdApi.DraftMessageContentText).text.describe())
+        }
+
+    // Messages for the reply and edit bars
+
+    @Test
+    fun `message asks TDLib for a message that is not loaded`() =
+        runTest {
+            client.on(TdApi.GetMessage::class, TdResult.Success(message(id = 42, chatId = CHAT)))
+
+            val result = repository().message(CHAT, 42)
+
+            val request = client.sentOf<TdApi.GetMessage>().single()
+            assertEquals(listOf(CHAT, 42L), listOf(request.chatId, request.messageId))
+            assertEquals(42L, (result as Outcome.Success).value.id)
+        }
+
+    @Test
+    fun `a loaded message needs no request`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.GetChatHistory::class, TdResult.Success(messages(message(id = 42, chatId = CHAT))))
+            repository.loadOlder(CHAT)
+
+            val result = repository.message(CHAT, 42)
+
+            assertEquals(42L, (result as Outcome.Success).value.id)
+            assertTrue(client.sentOf<TdApi.GetMessage>().isEmpty())
+        }
+
+    @Test
+    fun `a deleted message fails with NotFound`() =
+        runTest {
+            client.on(TdApi.GetMessage::class, TdResult.Failure(TdError(404, "Not Found")))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().message(CHAT, 42))
         }
 
     private companion object {

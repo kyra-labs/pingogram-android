@@ -70,10 +70,21 @@ private fun FormattedText.spokenText(
     }
 }
 
+/** "React with 👍", or "Remove reaction 👍" for a reaction the user chose ([isChosen]), for screen readers. */
+internal fun reactionToggleLabel(
+    resources: Resources,
+    label: ReactionLabel,
+    isChosen: Boolean,
+): String =
+    resources.getString(
+        if (isChosen) R.string.message_reaction_remove else R.string.message_reaction_add,
+        label.spoken(resources),
+    )
+
 private fun ReactionLabel.spoken(resources: Resources): String =
     when (this) {
         is ReactionLabel.Emoji -> emoji
-        ReactionLabel.CustomEmoji -> resources.getString(R.string.chat_reaction_custom_emoji)
+        is ReactionLabel.CustomEmoji -> resources.getString(R.string.chat_reaction_custom_emoji)
         ReactionLabel.Paid -> resources.getString(R.string.chat_reaction_paid)
     }
 

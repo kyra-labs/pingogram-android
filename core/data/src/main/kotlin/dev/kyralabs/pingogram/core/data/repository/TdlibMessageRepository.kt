@@ -41,6 +41,8 @@ import javax.inject.Singleton
  * [repliedMessage] serves the reply quotes of messages whose replied message is older than the loaded ones; the window
  * keeps what it fetched.
  *
+ * [message] serves the composer's reply and edit bars from the window, or from TDLib.
+ *
  * [sendText] and [setDraft] only send requests: the message being sent reaches the window through TDLib's updates, as
  * every other new message does, and the draft reaches the chat through `updateChatDraftMessage`.
  */
@@ -103,35 +105,60 @@ class TdlibMessageRepository
             return replied
         }
 
+        /** The message from the chat's window, loaded or kept there, else `getMessage`. */
+        override suspend fun message(
+            chatId: Long,
+            messageId: Long,
+        ): Outcome<Message> {
+            store.state.value.windows[chatId]
+                ?.message(messageId)
+                ?.let { return Outcome.Success(it) }
+            return client.request(TdApi.GetMessage(chatId, messageId)).map { it.toMessage() }
+        }
+
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
         /**
          * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview and
-         * [options]' notification and scheduling. TDLib puts the message into the chat as being sent
-         * (`updateNewMessage`) before it answers, so the window shows it at once (`docs/PERFORMANCE.md` §1: tap to
-         * bubble ≤ 50 ms); `updateMessageSendSucceeded` or `updateMessageSendFailed` replace it. The answer itself is
-         * not applied: the update has it.
+         * [options]' notification and scheduling, replying to [replyToMessageId] of the chat itself without a quote.
+         * TDLib puts the message into the chat as being sent (`updateNewMessage`) before it answers, so the window
+         * shows it at once (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or
+         * `updateMessageSendFailed` replace it. The answer itself is not applied: the update has it.
          */
         override suspend fun sendText(
             chatId: Long,
             text: FormattedText,
             options: SendOptions,
+            replyToMessageId: Long?,
         ): Outcome<Unit> {
             val content = TdApi.InputMessageText(text.toTdFormattedText(), null, true)
-            return client.request(TdApi.SendMessage(chatId, null, null, options.toTdOptions(), null, content)).map {}
+            val replyTo = replyToMessageId?.let(::replyToMessage)
+            return client
+                .request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content))
+                .map {}
         }
 
         /**
-         * `setChatDraftMessage` of the chat itself (no topic) with a text draft, or none for an empty [text]. TDLib
-         * dates the draft itself, and reports it in `updateChatDraftMessage`.
+         * `setChatDraftMessage` of the chat itself (no topic) with a text draft replying to [replyToMessageId], or none
+         * for an empty [text] without a reply. TDLib dates the draft itself, and reports it in
+         * `updateChatDraftMessage`.
          */
         override suspend fun setDraft(
             chatId: Long,
             text: FormattedText,
+            replyToMessageId: Long?,
         ): Outcome<Unit> {
             val draft =
-                text.takeIf { it.text.isNotEmpty() }?.let {
-                    TdApi.DraftMessage(null, 0, TdApi.DraftMessageContentText(it.toTdFormattedText(), null), 0, null)
+                if (text.text.isEmpty() && replyToMessageId == null) {
+                    null
+                } else {
+                    TdApi.DraftMessage(
+                        replyToMessageId?.let(::replyToMessage),
+                        0,
+                        TdApi.DraftMessageContentText(text.toTdFormattedText(), null),
+                        0,
+                        null,
+                    )
                 }
             return client.request(TdApi.SetChatDraftMessage(chatId, null, draft)).map {}
         }
@@ -178,6 +205,12 @@ class TdlibMessageRepository
                 messages.olderThan(fromMessageId)
             }
     }
+
+/**
+ * A reply to the whole message [messageId] of the same chat, without a quote (td_api.tl `inputMessageReplyToMessage`:
+ * no checklist task, no poll option).
+ */
+private fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
 
 /** Messages per page, `docs/PERFORMANCE.md` §3. */
 private const val PAGE_SIZE = 50

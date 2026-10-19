@@ -22,10 +22,48 @@ sealed interface ComposerUiState {
         val reason: UiText,
     ) : ComposerUiState
 
-    /** The composer. [canSchedule] whether its send menu offers scheduling, which secret chats do not allow. */
+    /**
+     * The composer. [canSchedule] whether its send menu offers scheduling, which secret chats do not allow; [bar] the
+     * message it replies to or edits, shown above the text field; null for a new message.
+     */
     data class Available(
         val canSchedule: Boolean,
+        val bar: ComposerBar? = null,
     ) : ComposerUiState
+}
+
+/** The bar above the text field: the message the composer replies to or edits (`REQUIREMENTS.md` FR-C5, FR-C6). */
+@Immutable
+sealed interface ComposerBar {
+    /** The message, which tapping the bar shows in the list. */
+    val messageId: Long
+
+    /** One line of the message: its text, or what kind of message it is. */
+    val preview: UiText
+
+    /**
+     * Replying to message [messageId]: its [sender]'s name, "You" for the user's own, as reply quotes say. Without a
+     * sender while the message loads.
+     */
+    data class Reply(
+        override val messageId: Long,
+        val sender: UiText?,
+        override val preview: UiText,
+    ) : ComposerBar {
+        override fun toString() = "Reply(messageId=$messageId, …)"
+    }
+
+    /**
+     * Editing message [messageId]: the send button becomes a check that saves the edit. [canBeEmpty] for a caption,
+     * which an empty text removes; a text message needs a text.
+     */
+    data class Edit(
+        override val messageId: Long,
+        override val preview: UiText,
+        val canBeEmpty: Boolean,
+    ) : ComposerBar {
+        override fun toString() = "Edit(messageId=$messageId, canBeEmpty=$canBeEmpty, …)"
+    }
 }
 
 /**

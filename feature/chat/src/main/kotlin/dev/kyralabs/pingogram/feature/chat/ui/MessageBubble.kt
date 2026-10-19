@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +36,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
@@ -77,7 +80,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *     `mediaOverlay` pill over the media's bottom end.
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
  * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
- *   the reply quote and the content's buttons as custom actions ([replyAction], [contentActions]).
+ *   the reply quote, the content's buttons, replying, copying and sending again ([messageShortcuts]) and the reaction
+ *   chips as custom actions, and the actions sheet as its long click and a custom action.
+ * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
+ *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
+ * - **Reactions**: tapping a chip adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
+ *   haptic, the chip crossfading on the motion scheme's fast effects spring ([ReactionToggleState]).
  * - **Reply quote**: tapping it shows the replied message ([ChatEvent.OpenReply]).
  * - **Highlight**: after a jump to the bubble, a `secondaryContainer` band behind the row fades in and out
  *   ([jumpHighlight]), read in the draw phase.
@@ -95,17 +103,31 @@ internal fun MessageBubbleRow(
     modifier: Modifier = Modifier,
 ) {
     val description = bubbleDescription(bubble)
-    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, onEvent)
+    val actions = rememberBubbleActions(bubble, fileState, playback.isPlaying, resources.shortcuts, onEvent)
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
+    val haptics = LocalHapticFeedback.current
+    val actionsLabel = stringResource(R.string.message_actions)
+    val showActions =
+        remember(bubble.id, onEvent, haptics) {
+            {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onEvent(ChatEvent.ShowMessageActions(bubble.id))
+            }
+        }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
+                .onLongPress(showActions)
                 .clearAndSetSemantics {
                     contentDescription = description
-                    if (actions.isNotEmpty()) customActions = actions
+                    onLongClick(label = actionsLabel) {
+                        showActions()
+                        true
+                    }
+                    customActions = actions
                 },
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
@@ -130,22 +152,37 @@ internal fun MessageBubbleRow(
     }
 }
 
-/** [replyAction] and [contentActions] as the screen reader's custom actions, sending their events. */
+/**
+ * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
+ * [messageShortcuts], a toggle per reaction chip but the paid one, and the actions sheet, last.
+ */
 @Composable
 private fun rememberBubbleActions(
     bubble: ChatItem.Bubble,
     fileState: FileState?,
     isPlaying: Boolean,
+    shortcuts: MessageShortcuts,
     onEvent: (ChatEvent) -> Unit,
 ): List<CustomAccessibilityAction> {
     val resources = LocalResources.current
-    return remember(bubble, fileState, isPlaying, onEvent, resources) {
-        (listOfNotNull(replyAction(bubble)) + contentActions(bubble, fileState, isPlaying)).map { action ->
-            CustomAccessibilityAction(resources.getString(action.label)) {
-                onEvent(action.event)
-                true
-            }
+    return remember(bubble, fileState, isPlaying, shortcuts, onEvent, resources) {
+        fun action(
+            label: String,
+            event: ChatEvent,
+        ) = CustomAccessibilityAction(label) {
+            onEvent(event)
+            true
         }
+        val fixed =
+            listOfNotNull(replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
+                messageShortcuts(bubble, shortcuts)
+        val reactions =
+            bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
+                val label = reactionToggleLabel(resources, chip.label, chip.isChosen)
+                action(label, ChatEvent.ToggleReaction(bubble.reactionsMessageId, chip.label))
+            }
+        fixed.map { action(resources.getString(it.label), it.event) } + reactions +
+            action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
     }
 }
 
@@ -169,7 +206,7 @@ private fun MessageBubble(
     CompositionLocalProvider(LocalContentColor provides style.colors.content) {
         when {
             bubble.album == null && bubble.content.isBare -> {
-                BareBubble(bubble, style.colors, onEvent, bubbleModifier)
+                BareBubble(bubble, style.colors, resources, onEvent, bubbleModifier)
             }
 
             bubble.album != null || bubble.content.isEdgeToEdge -> {
@@ -201,6 +238,7 @@ private fun MessageBubble(
 private fun BareBubble(
     bubble: ChatItem.Bubble,
     colors: BubbleColors,
+    resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -214,7 +252,14 @@ private fun BareBubble(
             MessageContentBody(bubble, fileState = null, Playback.Stopped, colors, onEvent)
             OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd))
         }
-        if (bubble.reactions.isNotEmpty()) ReactionsRow(bubble, colors)
+        if (bubble.reactions.isNotEmpty()) {
+            ReactionsRow(
+                bubble,
+                colors,
+                resources.reactions,
+                rememberReactionToggle(bubble, resources.reactions, onEvent),
+            )
+        }
     }
 }
 
@@ -340,7 +385,10 @@ private fun ColumnScope.BubbleBody(
         hasReactions -> {
             if (hasText) BubbleText(bubble, style, resources, onEvent)
             linkPreview?.let { LinkPreviewBlock(it, colors) }
-            TrailingMeta(meta = meta, lastLineWidth = { null }) { ReactionsRow(bubble, colors) }
+            val onToggle = rememberReactionToggle(bubble, resources.reactions, onEvent)
+            TrailingMeta(meta = meta, lastLineWidth = { null }) {
+                ReactionsRow(bubble, colors, resources.reactions, onToggle)
+            }
         }
 
         else -> {

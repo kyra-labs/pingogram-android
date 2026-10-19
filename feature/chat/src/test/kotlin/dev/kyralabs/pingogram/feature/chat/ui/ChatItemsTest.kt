@@ -559,7 +559,7 @@ class ChatItemsTest : ChatViewModelHarness() {
             assertEquals(
                 listOf(
                     ReactionChip(ReactionLabel.Emoji("👍"), 3, isChosen = true),
-                    ReactionChip(ReactionLabel.CustomEmoji, 1, isChosen = false),
+                    ReactionChip(ReactionLabel.CustomEmoji(customEmojiId = 7), 1, isChosen = false),
                     ReactionChip(ReactionLabel.Paid, 12, isChosen = false),
                 ),
                 viewModel.bubble(1).reactions,
