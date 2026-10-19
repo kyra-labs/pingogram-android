@@ -75,6 +75,7 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -542,6 +543,8 @@ class PingogramAppTest {
         uiState = MainActivityUiState.Loading
         setApp()
 
+        // The progress shows once loading takes a moment.
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
         composeRule.onNodeWithContentDescription(string(AuthR.string.auth_loading)).assertIsDisplayed()
         assertNull(navController.currentDestination)
         assertNoNavigation()

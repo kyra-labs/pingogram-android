@@ -13,12 +13,19 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -38,9 +45,10 @@ import kotlinx.coroutines.launch
 /**
  * The selection toolbar (`REQUIREMENTS.md` FR-L8, `docs/DESIGN_SYSTEM.md` §6): an expressive
  * [HorizontalFloatingToolbar] in vibrant colors with one [IconButton] per action on the selected chats, named by its
- * label for screen readers. Five buttons fit the narrowest phones at any font scale, as icons do not grow with it.
+ * label for screen readers and in a [PlainTooltip] on a long press or hover. Five buttons fit the narrowest phones at
+ * any font scale, as icons do not grow with it.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SelectionToolbar(
     actions: ImmutableList<ChatRowAction>,
@@ -53,8 +61,15 @@ internal fun SelectionToolbar(
         colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
     ) {
         actions.forEach { action ->
-            IconButton(onClick = { onAction(action) }) {
-                Icon(painter = painterResource(action.icon), contentDescription = stringResource(action.label))
+            val label = stringResource(action.label)
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                tooltip = { PlainTooltip { Text(label) } },
+                state = rememberTooltipState(),
+            ) {
+                IconButton(onClick = { onAction(action) }) {
+                    Icon(painter = painterResource(action.icon), contentDescription = label)
+                }
             }
         }
     }

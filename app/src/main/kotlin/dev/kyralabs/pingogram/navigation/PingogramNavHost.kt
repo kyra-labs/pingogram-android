@@ -15,6 +15,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,10 +30,13 @@ import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
+import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopEnter
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopExit
+import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
+import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
@@ -50,12 +56,16 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * or out, never loading) picks the graph: the start destination when the `NavHost` first appears, and a reset of the
  * back stack whenever the two disagree (`REQUIREMENTS.md` FR-A8).
  *
- * Destinations switch with Material's fade-through (`docs/DESIGN_SYSTEM.md` §5), built from the theme's
- * expressive motion scheme; so does the switch between the two graphs. Destinations pushed on top of a tab later bring
- * their own shared-axis transitions. Full-screen destinations ([isFullScreen], the media viewer) fade in and out on
- * the default effects spring over the screen below, which stays as it is meanwhile, so the viewer's scrim darkens it
- * while a photo grows out of its bubble. A predictive back gesture shrinks and dissolves any other screen it leaves
- * over the one it goes back to ([predictiveBackPopExit]); the viewer follows the gesture itself.
+ * Transitions follow `docs/DESIGN_SYSTEM.md` §5, built from the theme's expressive motion scheme:
+ * - **Pushed screens** ([isPushed]: the conversation, the archive, search, settings pages) come in and go back with
+ *   Material's shared axis on X ([sharedAxisXEnter], [sharedAxisXExit]), the screen below sliding the same way.
+ * - **Tabs** switch with Material's fade-through, and so do the two graphs.
+ * - **Full-screen destinations** ([isFullScreen], the media viewer) fade in and out on the default effects spring
+ *   over the screen below, which stays as it is meanwhile, so the viewer's scrim darkens it while a photo grows out of
+ *   its bubble.
+ *
+ * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
+ * ([predictiveBackPopExit]); the viewer follows the gesture itself.
  *
  * The `NavHost` is a [SharedTransitionLayout], whose scope goes to the destinations through
  * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
@@ -74,6 +84,7 @@ internal fun PingogramNavHost(
     onChatOpened: () -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
+    val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
     val startSignedIn = rememberSaveable { uiState == MainActivityUiState.SignedIn }
     SharedTransitionLayout(modifier) {
@@ -81,19 +92,14 @@ internal fun PingogramNavHost(
             NavHost(
                 navController = navController,
                 startDestination = if (startSignedIn) MainGraph else AuthRoute,
-                enterTransition = { enter(motionScheme, fullScreen = targetState.destination.isFullScreen()) },
-                exitTransition = { exit(motionScheme, toFullScreen = targetState.destination.isFullScreen()) },
-                popEnterTransition = {
-                    popEnter(
-                        motionScheme,
-                        fromFullScreen = initialState.destination.isFullScreen(),
-                    )
-                },
-                popExitTransition = { popExit(motionScheme, fullScreen = initialState.destination.isFullScreen()) },
+                enterTransition = { enter(motionScheme, axisDistance) },
+                exitTransition = { exit(motionScheme, axisDistance) },
+                popEnterTransition = { popEnter(motionScheme, axisDistance) },
+                popExitTransition = { popExit(motionScheme, axisDistance) },
                 predictivePopEnterTransition = { predictiveBackPopEnter() },
                 predictivePopExitTransition = {
                     if (initialState.destination.isFullScreen()) {
-                        popExit(motionScheme, fullScreen = true)
+                        popExit(motionScheme, axisDistance)
                     } else {
                         predictiveBackPopExit(motionScheme)
                     }
@@ -110,32 +116,72 @@ internal fun PingogramNavHost(
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
 }
 
-/** A destination comes in: a [fullScreen] one fades in over the screen below, any other fades through. */
-private fun enter(
+/**
+ * A destination comes in: a full-screen one fades in over the screen below, a pushed one slides in on the shared axis
+ * ([axisDistance] pixels), any other fades through.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.enter(
     motionScheme: MotionScheme,
-    fullScreen: Boolean,
-): EnterTransition = if (fullScreen) fadeIn(motionScheme.defaultEffectsSpec()) else fadeThroughEnter(motionScheme)
+    axisDistance: Int,
+): EnterTransition =
+    when {
+        targetState.destination.isFullScreen() -> fadeIn(motionScheme.defaultEffectsSpec())
+        isPush() -> sharedAxisXEnter(motionScheme, axisDistance, forward = true)
+        else -> fadeThroughEnter(motionScheme)
+    }
 
 /**
- * A destination is left for another: below a full-screen one ([toFullScreen]) it stays as it is meanwhile, until the
- * `NavHost`'s transition ends (the scope's `KeepUntilTransitionsFinished`).
+ * A destination is left for another: below a full-screen one it stays as it is meanwhile, until the `NavHost`'s
+ * transition ends (the scope's `KeepUntilTransitionsFinished`); below a pushed one it slides away on the shared axis.
  */
-private fun AnimatedContentTransitionScope<*>.exit(
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.exit(
     motionScheme: MotionScheme,
-    toFullScreen: Boolean,
-): ExitTransition = if (toFullScreen) ExitTransition.KeepUntilTransitionsFinished else fadeThroughExit(motionScheme)
+    axisDistance: Int,
+): ExitTransition =
+    when {
+        targetState.destination.isFullScreen() -> ExitTransition.KeepUntilTransitionsFinished
+        isPush() -> sharedAxisXExit(motionScheme, axisDistance, forward = true)
+        else -> fadeThroughExit(motionScheme)
+    }
 
-/** Back to a destination: from a full-screen one ([fromFullScreen]) it is there at once, below it. */
-private fun popEnter(
+/**
+ * Back to a destination: from a full-screen one it is there at once, below it; from a pushed one it slides back on the
+ * shared axis.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.popEnter(
     motionScheme: MotionScheme,
-    fromFullScreen: Boolean,
-): EnterTransition = if (fromFullScreen) EnterTransition.None else fadeThroughEnter(motionScheme)
+    axisDistance: Int,
+): EnterTransition =
+    when {
+        initialState.destination.isFullScreen() -> EnterTransition.None
+        isPop() -> sharedAxisXEnter(motionScheme, axisDistance, forward = false)
+        else -> fadeThroughEnter(motionScheme)
+    }
 
-/** A destination is popped: a [fullScreen] one fades out over the screen below. */
-private fun popExit(
+/** A destination is popped: a full-screen one fades out over the screen below, a pushed one slides back. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.popExit(
     motionScheme: MotionScheme,
-    fullScreen: Boolean,
-): ExitTransition = if (fullScreen) fadeOut(motionScheme.defaultEffectsSpec()) else fadeThroughExit(motionScheme)
+    axisDistance: Int,
+): ExitTransition =
+    when {
+        initialState.destination.isFullScreen() -> fadeOut(motionScheme.defaultEffectsSpec())
+        isPop() -> sharedAxisXExit(motionScheme, axisDistance, forward = false)
+        else -> fadeThroughExit(motionScheme)
+    }
+
+/** A screen is pushed above another of the signed-in app. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isPush(): Boolean =
+    targetState.destination.isPushed() && initialState.destination.isInMainGraph()
+
+/** A pushed screen goes back to another of the signed-in app. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isPop(): Boolean =
+    initialState.destination.isPushed() && targetState.destination.isInMainGraph()
+
+/**
+ * A screen of the signed-in app pushed above a tab (the conversation, the archive, search, a settings page), as
+ * opposed to a tab itself or a full-screen destination.
+ */
+private fun NavDestination.isPushed(): Boolean = isInMainGraph() && topLevelDestination() == null && !isFullScreen()
 
 private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {

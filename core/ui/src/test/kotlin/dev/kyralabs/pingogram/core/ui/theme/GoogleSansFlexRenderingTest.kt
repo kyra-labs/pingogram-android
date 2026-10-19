@@ -77,7 +77,7 @@ class GoogleSansFlexRenderingTest {
 
     @Test
     fun `every axis a style sets changes its glyphs`() {
-        val typography = pingogramTypography(dark = false)
+        val typography = pingogramTypography()
         typography.styles().forEach { (name, style) ->
             val rendering = render { style }
             val font = style.fonts().first { it.weight == style.fontWeight && it.style == FontStyle.Normal }
@@ -93,7 +93,7 @@ class GoogleSansFlexRenderingTest {
 
     @Test
     fun `a copy with the same axis values renders identically`() {
-        val style = pingogramTypography(dark = false).titleMediumEmphasized
+        val style = pingogramTypography().titleMediumEmphasized
         val font = style.fonts().first()
         val rendering = render { style }
 
@@ -104,7 +104,7 @@ class GoogleSansFlexRenderingTest {
 
     @Test
     fun `emphasized styles render heavier than their base styles`() {
-        val styles = pingogramTypography(dark = false).styles()
+        val styles = pingogramTypography().styles()
 
         styles.filterKeys { !it.endsWith("Emphasized") }.forEach { (name, base) ->
             val emphasized = styles.getValue("${name}Emphasized")
@@ -112,20 +112,9 @@ class GoogleSansFlexRenderingTest {
         }
     }
 
-    // The bundled file's GRAD axis is 0..100 (fvar), so the platform clamps the dark theme's -25 to 0. When a file
-    // with negative grades ships, this fails as a reminder of the open question in docs/DESIGN_SYSTEM.md §3.1.
-    @Test
-    fun `the dark grade of -25 renders as grade 0`() {
-        val light = pingogramTypography(dark = false)
-        val dark = pingogramTypography(dark = true)
-
-        assertTrue(render { dark.bodyLarge }.looksLike(render { light.bodyLarge }))
-        assertTrue(render { dark.titleMediumEmphasized }.looksLike(render { light.titleMediumEmphasized }))
-    }
-
     @Test
     fun `italic is the font's own slant, never a synthesized one`() {
-        val italic = pingogramTypography(dark = false).bodyLarge.copy(fontStyle = FontStyle.Italic)
+        val italic = pingogramTypography().bodyLarge.copy(fontStyle = FontStyle.Italic)
         val rendering = render { italic }
 
         assertFalse(rendering.looksLike(render { italic.withAxis("slnt", 0f) }))
@@ -134,8 +123,8 @@ class GoogleSansFlexRenderingTest {
 
     @Test
     fun `bold text in a regular style takes the emphasized font, never a synthesized bold`() {
-        val bodyLarge = pingogramTypography(dark = false).bodyLarge
-        val emphasizedWeight = pingogramTypography(dark = false).bodyLargeEmphasized.fontWeight
+        val bodyLarge = pingogramTypography().bodyLarge
+        val emphasizedWeight = pingogramTypography().bodyLargeEmphasized.fontWeight
 
         assertTrue(
             render { bodyLarge.copy(fontWeight = FontWeight.Bold) }
@@ -148,7 +137,7 @@ class GoogleSansFlexRenderingTest {
     @Test
     fun `with Bold text, the theme's styles are bolder by the adjustment once`() {
         setBoldTextAdjustment(BOLD_TEXT_ADJUSTMENT)
-        val plain = pingogramTypography(dark = false)
+        val plain = pingogramTypography()
 
         assertTrue(render { it.bodyLarge }.looksLike(render { plain.bodyLarge.fontAlone(wght = 400f) }))
         assertTrue(render { it.titleMedium }.looksLike(render { plain.titleMedium.fontAlone(wght = 500f) }))

@@ -77,6 +77,16 @@ class PingogramAppScreenshotTest {
     @Config(qualifiers = EXPANDED)
     fun expandedDark() = capture(ThemeMode.Dark)
 
+    /** A phone in landscape: the collapsed rail instead of the floating bar, which would take scarce height. */
+    @Test
+    @Config(qualifiers = LANDSCAPE)
+    fun landscapeLight() = capture(ThemeMode.Light)
+
+    /** A large window: the rail expanded, search as an extended FAB in its header. */
+    @Test
+    @Config(qualifiers = LARGE)
+    fun largeLight() = capture(ThemeMode.Light)
+
     private fun capture(themeMode: ThemeMode) {
         composeRule.setContent {
             PingogramTheme(themeMode = themeMode, dynamicColor = false) {
@@ -100,3 +110,5 @@ private const val COMPACT = "w411dp-h891dp-xxhdpi"
 private const val NARROW = "w360dp-h780dp-xxhdpi"
 private const val LARGE_FONT_SCALE = 2f
 private const val EXPANDED = "w840dp-h891dp-xxhdpi"
+private const val LANDSCAPE = "w891dp-h411dp-land-xxhdpi"
+private const val LARGE = "w1280dp-h800dp-xhdpi"

@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * The full Material 3 Expressive type scale, 15 styles plus their 15 `*Emphasized` variants, set in Google Sans Flex
  * the way Google sets it on Android (`docs/DESIGN_SYSTEM.md` §3): the Material 3 token sizes, line heights and
- * weights, the tracking Google uses with this font, and per style the variable axes. Built once per [dark] and
- * [fontWeightAdjustment] value and cached.
+ * weights, the tracking Google uses with this font, and per style the variable axes. The same in light and dark
+ * themes (grade 0, as Google's own styles). Built once per [fontWeightAdjustment] value and cached.
  *
  * @param fontWeightAdjustment the system's "Bold text" adjustment (`Configuration.fontWeightAdjustment`
  *   on Android 12+, 300 while it is on), or 0. Compose resolves a style's font at its weight plus the
@@ -28,20 +28,10 @@ import java.util.concurrent.ConcurrentHashMap
  *   emphasized font and add the adjustment on top: `bodyLarge` at 800 instead of 700, and `titleMedium`
  *   at 900, as heavy as `titleMediumEmphasized`.
  */
-fun pingogramTypography(
-    dark: Boolean,
-    fontWeightAdjustment: Int = 0,
-): Typography =
-    Typographies.computeIfAbsent(TypographyKey(dark, fontWeightAdjustment)) {
-        buildTypography(dark, fontWeightAdjustment)
-    }
+fun pingogramTypography(fontWeightAdjustment: Int = 0): Typography =
+    Typographies.computeIfAbsent(fontWeightAdjustment) { buildTypography(it) }
 
-private data class TypographyKey(
-    val dark: Boolean,
-    val fontWeightAdjustment: Int,
-)
-
-private val Typographies = ConcurrentHashMap<TypographyKey, Typography>()
+private val Typographies = ConcurrentHashMap<Int, Typography>()
 
 // Google's tracking for Google Sans Flex (Android's SystemUI type scale): none, except a little in the smallest styles.
 // The Material 3 tokens' tracking (up to 0.5 sp) is Roboto's; Google Sans Flex spaces small sizes through its optical
@@ -56,9 +46,9 @@ private const val TABULAR_FIGURES = "tnum"
 private const val EMPHASIS_WEIGHT = 100
 private const val EMPHASIS_ROUND = 100f
 
-// GRAD −25 keeps light-on-dark text from blooming (§3.1). The bundled file's GRAD axis is 0..100,
-// so the platform clamps negative grades to 0; DESIGN_SYSTEM.md §3.1 records the open question.
-private const val DARK_GRADE = -25
+// Grade 0 in both themes (§3.1), as Google's own styles: the bundled file's GRAD axis is 0..100, so a negative dark
+// grade would be clamped to 0 anyway.
+private const val GRADE = 0
 private const val ITALIC_SLANT = -10f
 private const val NORMAL_WIDTH = 100f
 
@@ -66,23 +56,19 @@ private const val NORMAL_WIDTH = 100f
 private const val MIN_FONT_WEIGHT = 1
 private const val MAX_FONT_WEIGHT = 1000
 
-private fun buildTypography(
-    dark: Boolean,
-    fontWeightAdjustment: Int,
-): Typography {
+private fun buildTypography(fontWeightAdjustment: Int): Typography {
     val tokens = Typography()
-    val grade = if (dark) DARK_GRADE else 0
 
     fun TextStyle.base(
         tracking: TextUnit = NoTracking,
         features: String? = null,
-    ) = withGoogleSansFlex(tracking, features, grade, fontWeightAdjustment, emphasized = false)
+    ) = withGoogleSansFlex(tracking, features, fontWeightAdjustment, emphasized = false)
 
     // From the base style's token: the emphasized tokens share its size and line height.
     fun TextStyle.emphasized(
         tracking: TextUnit = NoTracking,
         features: String? = null,
-    ) = withGoogleSansFlex(tracking, features, grade, fontWeightAdjustment, emphasized = true)
+    ) = withGoogleSansFlex(tracking, features, fontWeightAdjustment, emphasized = true)
 
     return Typography(
         displayLarge = tokens.displayLarge.base(),
@@ -122,7 +108,6 @@ private fun buildTypography(
 private fun TextStyle.withGoogleSansFlex(
     tracking: TextUnit,
     features: String?,
-    grade: Int,
     fontWeightAdjustment: Int,
     emphasized: Boolean,
 ): TextStyle {
@@ -133,7 +118,6 @@ private fun TextStyle.withGoogleSansFlex(
         FontInstance(
             opticalSize = fontSize.value,
             round = if (emphasized) EMPHASIS_ROUND else 0f,
-            grade = grade,
         )
     // A bold span in a regular style resolves to the emphasized weight instead of a synthesized bold.
     val weights = if (emphasized) listOf(weight) else listOf(weight, emphasizedWeight)
@@ -166,7 +150,6 @@ private fun TextStyle.withGoogleSansFlex(
 private class FontInstance(
     val opticalSize: Float,
     val round: Float,
-    val grade: Int,
 ) {
     /** The font at `wght` [weight], registered in its family at [registeredWeight] (see [pingogramTypography]). */
     fun font(
@@ -183,7 +166,7 @@ private class FontInstance(
                     // opsz must equal the size in sp (§3.1): Android does not apply optical sizing on its own.
                     FontVariation.Setting("opsz", opticalSize),
                     FontVariation.Setting("ROND", round),
-                    FontVariation.grade(grade),
+                    FontVariation.grade(GRADE),
                     FontVariation.width(NORMAL_WIDTH),
                     FontVariation.slant(if (italic) ITALIC_SLANT else 0f),
                 ),

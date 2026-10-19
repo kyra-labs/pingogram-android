@@ -7,6 +7,7 @@
     <string name="chat_list_connecting_to_proxy">Connecting to proxy…</string>
     <string name="chat_list_connecting">Connecting…</string>
     <string name="chat_list_updating">Updating…</string>
+    <string name="chat_list_loading">Loading chats</string>
     <!-- The folder tab of the main chat list. -->
     <string name="chat_list_all_chats">All chats</string>
     <string name="chat_list_empty_title">No chats yet</string>

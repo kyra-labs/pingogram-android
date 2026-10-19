@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import org.junit.Rule
@@ -47,6 +48,9 @@ class ChatListScreenScreenshotTest(
                 ChatListScreen(state = state, onEvent = {})
             }
         }
+        composeRule.waitForIdle()
+        // A state that is still loading shows its indicator once loading takes a moment; the golden shows it then.
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
         composeRule.waitForIdle()
         captureScreenRoboImage(goldenPath(javaClass, "$stateName.$variant"))
     }

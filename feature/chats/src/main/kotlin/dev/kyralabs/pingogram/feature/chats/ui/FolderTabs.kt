@@ -96,9 +96,10 @@ private fun FolderButtonGroup(
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
                 .selectableGroup()
+                // A 56 dp row: the buttons' 48 dp touch targets, so 8 dp above and below their 40 dp containers.
                 .padding(
                     horizontal = MaterialTheme.spacing.windowMarginCompact,
-                    vertical = MaterialTheme.spacing.small,
+                    vertical = MaterialTheme.spacing.extraSmall,
                 ),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         verticalAlignment = Alignment.CenterVertically,
