@@ -57,8 +57,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Going back from a chat is smoother: the floating navigation bar stays ready while it is hidden instead of being
   rebuilt, and keeps its tab selected while it slides away and back. Chat list rows do less work as they appear;
   screen-reader descriptions are built only when a screen reader asks for them.
+- Message bubbles follow Material 3 Expressive: round corners (one-line messages are pills), and runs of messages from
+  one sender sit close together with tight corners on the sender's side, without tails. A message of one to three
+  emoji shows large, without a bubble. Reactions show as round badges on the bubble's corner, up to three and then
+  "+N"; tap one to add or take back yours.
+- Conversations open more smoothly: no loading spinner flashes while messages come from the device.
 
 ### Fixed
+- A chat with unread messages opens at the first unread message instead of the newest, also when there are many.
+  Quotes and search results far back load the messages around them at once, and the position in a conversation
+  survives rotation and the app being closed in the background.
 - The chat list shows its "Connecting…" status once, below the title, instead of twice while the top bar collapses.
 - Leaving a chat after playing a voice message or song no longer holds up the screen for a moment: the audio
   player now runs on its own thread, and frees itself there.

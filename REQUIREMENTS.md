@@ -117,7 +117,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-C1 Must: Paginated message list (`getChatHistory`), reverse layout, jump-to-bottom FAB,
   unread divider, date headers (sticky), scroll-to-message from search/reply.
 - FR-C2 Must: Message bubbles with M3 colors (`primaryContainer` outgoing, `surfaceContainerHigh`
-  incoming), grouped consecutive messages, tails via Expressive shapes, read receipts, edited label,
+  incoming), grouped consecutive messages with Expressive rounded shapes (no tails, `docs/DESIGN_SYSTEM.md` §4), read receipts, edited label,
   forward header, reply quote, link previews, reactions row.
 - FR-C3 Must: Text with entities (bold, italic, code, pre, spoiler, links, mentions, hashtags,
   custom emoji placeholder), selectable text, copy, translate (later).
