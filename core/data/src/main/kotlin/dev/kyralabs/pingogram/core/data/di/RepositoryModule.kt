@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
@@ -41,6 +42,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
+import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -76,6 +78,9 @@ interface RepositoryModule {
 
     @Binds
     fun messageActionRepository(repository: TdlibMessageActionRepository): MessageActionRepository
+
+    @Binds
+    fun sponsoredMessageRepository(repository: TdlibSponsoredMessageRepository): SponsoredMessageRepository
 
     @Binds
     fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository
