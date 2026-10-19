@@ -63,7 +63,6 @@ baselineProfile {
 
 dependencies {
     baselineProfile(projects.benchmark)
-    implementation(libs.aboutlibraries.core)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.layout)

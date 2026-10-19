@@ -2,9 +2,6 @@ package dev.kyralabs.pingogram.licenses
 
 import android.content.Context
 import android.content.res.Resources
-import com.mikepenz.aboutlibraries.Libs
-import com.mikepenz.aboutlibraries.entity.Library
-import com.mikepenz.aboutlibraries.entity.License
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.common.Dispatcher
@@ -20,6 +17,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,8 +27,9 @@ import javax.inject.Singleton
 /**
  * [OpenSourceLicensesRepository] on the list the build generates (`docs/adr/0002-open-source-licenses.md`): the
  * AboutLibraries Gradle plugin writes each variant's runtime dependencies, with the entries and license texts of
- * `config/aboutlibraries`, into the raw resource `aboutlibraries`, which `aboutlibraries-core` reads. It is read and
- * mapped once, on the IO dispatcher, the first time a screen asks, then kept for the process (a few hundred KB).
+ * `config/aboutlibraries`, into the raw resource `aboutlibraries`, read here with the platform's `org.json`. It is
+ * read and mapped once, on the IO dispatcher, the first time a screen asks, then kept for the process (a few hundred
+ * KB).
  */
 @Singleton
 class GeneratedOpenSourceLicensesRepository
@@ -73,7 +74,12 @@ class GeneratedOpenSourceLicensesRepository
                 }
             return read.fold(
                 onSuccess = { json ->
-                    val libraries = openSourceLibraries(json)
+                    val libraries =
+                        try {
+                            openSourceLibraries(json)
+                        } catch (e: JSONException) {
+                            return unreadable(e)
+                        }
                     // The build always lists TDLib at least: nothing means the resource could not be parsed.
                     if (libraries.isEmpty()) unreadable(null) else Outcome.Success(libraries)
                 },
@@ -89,44 +95,64 @@ class GeneratedOpenSourceLicensesRepository
 
 /**
  * The libraries in AboutLibraries' [json], as the screens show them: sorted by name (case-insensitively, then by id,
- * so two libraries of one name keep their order), with their licenses sorted by name.
+ * so two libraries of one name keep their order), with their licenses sorted by name. The file is the plugin's
+ * `{"libraries": [...], "licenses": {id: {...}}}`; each library names its licenses by id. Read with `org.json`, which
+ * Android ships: `aboutlibraries-core` would do the same, but its classes target Java 21, which the JDK 17 unit tests
+ * cannot load. Throws [JSONException] if the file cannot be parsed.
  */
-internal fun openSourceLibraries(json: String): ImmutableList<OpenSourceLibrary> =
-    Libs
-        .Builder()
-        .withJson(json)
-        .build()
-        .libraries
-        .map { it.toOpenSourceLibrary() }
+internal fun openSourceLibraries(json: String): ImmutableList<OpenSourceLibrary> {
+    val root = JSONObject(json)
+    val licenses = root.optJSONObject("licenses") ?: JSONObject()
+    return root
+        .optJSONArray("libraries")
+        .objects()
+        .map { it.toOpenSourceLibrary(licenses) }
         .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, OpenSourceLibrary::name).thenBy(OpenSourceLibrary::id))
         .toImmutableList()
+}
 
-private fun Library.toOpenSourceLibrary(): OpenSourceLibrary =
-    OpenSourceLibrary(
-        id = uniqueId,
-        name = name.ifBlank { uniqueId },
-        version = artifactVersion?.takeIf { it.isNotBlank() }?.let(::displayVersion),
-        description = description?.takeIf { it.isNotBlank() },
+private fun JSONObject.toOpenSourceLibrary(licenses: JSONObject): OpenSourceLibrary {
+    val id = getString("uniqueId")
+    return OpenSourceLibrary(
+        id = id,
+        name = text("name") ?: id,
+        version = text("artifactVersion")?.let(::displayVersion),
+        description = text("description"),
         developers =
-            developers
-                .mapNotNull { developer -> developer.name?.takeIf { it.isNotBlank() } }
-                .ifEmpty { listOfNotNull(organization?.name?.takeIf { it.isNotBlank() }) }
+            optJSONArray("developers")
+                .objects()
+                .mapNotNull { it.text("name") }
+                .ifEmpty { listOfNotNull(optJSONObject("organization")?.text("name")) }
                 .toImmutableList(),
-        website = website?.takeIf { it.isNotBlank() } ?: scm?.url?.takeIf { it.isNotBlank() },
+        website = text("website") ?: optJSONObject("scm")?.text("url"),
         licenses =
-            licenses
-                .map { it.toOpenSourceLicense() }
+            optJSONArray("licenses")
+                .strings()
+                .map { licenseId -> licenses.optJSONObject(licenseId).toOpenSourceLicense(licenseId) }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, OpenSourceLicense::name))
                 .toImmutableList(),
     )
+}
 
-private fun License.toOpenSourceLicense(): OpenSourceLicense =
-    OpenSourceLicense(
-        id = spdxId?.takeIf { it.isNotBlank() } ?: hash,
-        name = name.ifBlank { spdxId ?: hash },
-        url = url?.takeIf { it.isNotBlank() },
-        text = licenseContent?.takeIf { it.isNotBlank() },
+/** The license [id] refers to, from its entry in the file; just its id if the file has no entry for it. */
+private fun JSONObject?.toOpenSourceLicense(id: String): OpenSourceLicense {
+    val spdxId = this?.text("spdxId")
+    return OpenSourceLicense(
+        id = spdxId ?: id,
+        name = this?.text("name") ?: spdxId ?: id,
+        url = this?.text("url"),
+        text = this?.text("content"),
     )
+}
+
+/** The string at [key], or null if it is missing, null or blank. */
+private fun JSONObject.text(key: String): String? = if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }
+
+private fun JSONArray?.objects(): List<JSONObject> =
+    if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
+
+private fun JSONArray?.strings(): List<String> =
+    if (this == null) emptyList() else (0 until length()).mapNotNull { i -> optString(i).takeIf { it.isNotBlank() } }
 
 /**
  * [version] as people read it: a git commit (TDLib's version is the commit it is built from, `docs/TDLIB.md`) by its

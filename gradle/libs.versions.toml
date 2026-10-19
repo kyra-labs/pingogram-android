@@ -3,8 +3,8 @@
 
 [versions]
 # The open-source licenses screen (feature:settings, docs/adr/0002-open-source-licenses.md): the Gradle plugin lists the
-# release app's dependencies at build time into a raw resource of :app, aboutlibraries-core reads it. No network at run
-# time, no UI of its own (the screen is ours), no Play Services; the plugin and the core library ship together.
+# release app's dependencies at build time into a raw resource of :app, which :app reads with the platform's org.json.
+# Only the build-time plugin: no runtime library, no network, no UI of its own (the screen is ours), no Play Services.
 aboutLibraries = "15.3.0"
 androidGradlePlugin = "9.4.1"
 androidxActivity = "1.13.0"
@@ -67,7 +67,6 @@ turbine = "1.2.1"
 zxing = "3.5.4"
 
 [libraries]
-aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutLibraries" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "androidxBenchmark" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

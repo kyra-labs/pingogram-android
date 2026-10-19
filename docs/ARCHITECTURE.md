@@ -166,7 +166,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   dependencies into its raw resource `aboutlibraries` at build time, merged with
   `config/aboutlibraries/` (TDLib's license, Google Sans Flex, Material Symbols, and the texts of
   every license, never downloaded). `:app`'s `GeneratedOpenSourceLicensesRepository` reads it with
-  `aboutlibraries-core` behind `core:domain`'s `OpenSourceLicensesRepository`;
+  the platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`;
   `feature:settings` draws the screens (`docs/adr/0002-open-source-licenses.md`). A dependency
   under a license without a text there fails `GeneratedOpenSourceLicensesRepositoryTest`.
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
