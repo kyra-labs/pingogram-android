@@ -14,8 +14,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Three private chats as TDLib announces them while the main chat list loads, with their users and a short history
- * each, scripted on a [FakeTdlibClient] for the tests of the Chats tab that run the real repositories. Opening and
- * closing a chat succeed; the archive and every later page of the main list are empty.
+ * each, scripted on a [FakeTdlibClient] for the tests of the Chats tab that run the real repositories: `getChat`, and
+ * `getChatHistory` from any message with TDLib's offsets (a conversation with unread messages opens around the last
+ * one read). Opening and closing a chat succeed; the archive and every later page of the main list are empty.
  */
 internal object ChatsScript {
     const val ADA = 101L
@@ -52,8 +53,17 @@ internal object ChatsScript {
             }
         }
         tdlib.on(TdApi.GetChatHistory::class) { request ->
-            val messages = if (request.fromMessageId == 0L) histories[request.chatId].orEmpty() else emptyList()
+            val messages =
+                histories[request.chatId].orEmpty().page(
+                    request.fromMessageId,
+                    request.offset,
+                    request.limit,
+                )
             TdResult.Success(TdApi.Messages(messages.size, messages.toTypedArray()))
+        }
+        tdlib.on(TdApi.GetChat::class) { request ->
+            chats.firstOrNull { it.id == request.chatId }?.let { TdResult.Success(it) }
+                ?: TdResult.Failure(TdError(404, "Not Found"))
         }
         tdlib.on(TdApi.OpenChat::class, TdResult.Success(TdApi.Ok()))
         tdlib.on(TdApi.CloseChat::class, TdResult.Success(TdApi.Ok()))
@@ -118,6 +128,19 @@ internal object ChatsScript {
             unreadCount = unreadCount,
             lastReadInboxMessageId = history.getOrNull(unreadCount)?.id ?: 0,
         )
+    }
+
+    /**
+     * The page of this history (newest first) that `getChatHistory` answers: from message [fromMessageId] (0: the
+     * newest) on, older ones after it, [offset] (0 or negative) newer ones before it, at most [limit].
+     */
+    private fun List<TdApi.Message>.page(
+        fromMessageId: Long,
+        offset: Int,
+        limit: Int,
+    ): List<TdApi.Message> {
+        val from = if (fromMessageId == 0L) 0 else indexOfFirst { it.id <= fromMessageId }.takeIf { it >= 0 } ?: size
+        return drop((from + offset).coerceAtLeast(0)).take(limit)
     }
 
     /** [texts] newest first, each with whether the current user sent it, an hour apart, the newest this morning. */

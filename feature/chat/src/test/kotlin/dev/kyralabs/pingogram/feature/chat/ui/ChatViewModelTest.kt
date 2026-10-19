@@ -26,7 +26,7 @@ class ChatViewModelTest : ChatViewModelHarness() {
         runTest {
             chats.setChats(chat())
             val page = CompletableDeferred<Outcome<Unit>>()
-            messages.onLoadOlder = { page.await() }
+            messages.onLoadNewest = { page.await() }
             val viewModel = viewModel()
 
             viewModel.uiState.test {
@@ -42,17 +42,18 @@ class ChatViewModelTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `the first page loads at once when nothing is loaded`() =
+    fun `the newest page loads at once`() =
         runTest {
             chats.setChats(chat())
 
             viewModel()
 
-            assertEquals(listOf(PRIVATE_CHAT), messages.loadRequests)
+            assertEquals(listOf("newest"), messages.loads)
+            assertTrue(messages.loadRequests.isEmpty())
         }
 
     @Test
-    fun `nothing loads by itself when the history is there already`() =
+    fun `no older page loads by itself when the history is there already`() =
         runTest {
             showing(chat(), history(message(1), reachedStart = false))
 
@@ -85,7 +86,7 @@ class ChatViewModelTest : ChatViewModelHarness() {
             send(viewModel, ChatEvent.Retry)
 
             assertEquals(listOf(1L), viewModel.bubbles.map { it.id })
-            assertEquals(2, messages.loadRequests.size)
+            assertEquals(listOf("newest", "newest"), messages.loads)
         }
 
     @Test

@@ -12,6 +12,7 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentMap
 import org.drinkless.tdlib.TdApi
 
@@ -105,9 +106,10 @@ internal data class HistoryCache(
 }
 
 /**
- * The loaded history of one chat: [messages] newest first (by id, descending) from the chat's newest message back,
- * without gaps; [reachedStart] once they include its first message. [collectors] counts who observes the window,
- * [lastUsed] is the [HistoryCache.clock] of its last use.
+ * The loaded history of one chat: [messages] newest first (by id, descending), consecutive, without gaps;
+ * [reachedStart] once they include its first message, [reachedEnd] while they include its newest one (true for an empty
+ * window: nothing newer than nothing is missing). [collectors] counts who observes the window, [lastUsed] is the
+ * [HistoryCache.clock] of its last use.
  *
  * While load [loadId] runs, the changes applied to the window are also kept in [changesWhileLoading], and applied again
  * once the page is merged: TDLib's answers and its updates reach the app on different paths, so an update TDLib sent
@@ -117,19 +119,22 @@ internal data class HistoryCache(
  * [replied] holds the messages that loaded ones reply to, fetched because they are older than the loaded ones, by id;
  * the chat's updates keep them current like the [messages]. They go with the window.
  *
- * Windows are anchored at the newest message for now. A window around an older message (jumping to a reply) would
- * also need to know whether it reaches the newest message, and a way to load newer pages.
+ * A window loaded around an older message ([HistoryPage.Kind.Replacing]) does not reach the newest message until newer
+ * pages do: new messages stay out of it meanwhile, as messages between could be missing. [windowId] is the load that
+ * last replaced loaded messages, 0 before any did ([ChatHistory.windowId]).
  */
 internal data class HistoryWindow(
     val messages: PersistentList<Message> = persistentListOf(),
     val reachedStart: Boolean = false,
+    val reachedEnd: Boolean = true,
     val collectors: Int = 0,
     val lastUsed: Long = 0,
     val loadId: Long? = null,
     val changesWhileLoading: PersistentList<HistoryChange> = persistentListOf(),
     val replied: PersistentMap<Long, Message> = persistentMapOf(),
+    val windowId: Long = 0,
 ) {
-    val history get() = ChatHistory(messages, reachedStart)
+    val history get() = ChatHistory(messages, reachedStart, reachedEnd, windowId)
 
     /** Applies [update], one of the chat's updates ([historyChatId]). */
     fun applying(update: TdApi.Update): HistoryWindow =
@@ -143,7 +148,11 @@ internal data class HistoryWindow(
     fun finishingLoad(page: HistoryPage?): HistoryWindow {
         val done = copy(loadId = null, changesWhileLoading = persistentListOf())
         if (page == null) return done
-        return changesWhileLoading.fold(done.merging(page)) { window, change -> window.applying(change) }
+        val merged = done.merging(page)
+        // Filling an empty window replaces no run of messages.
+        val replacing = page.kind == HistoryPage.Kind.Replacing && messages.isNotEmpty()
+        val replaced = if (replacing) merged.copy(windowId = loadId ?: windowId) else merged
+        return changesWhileLoading.fold(replaced) { window, change -> window.applying(change) }
     }
 
     private fun applying(change: HistoryChange): HistoryWindow =
@@ -183,8 +192,8 @@ internal data class HistoryWindow(
 
     /**
      * Puts [message] in its place by id, replacing [replacedId], a message being sent that got its final id or failed,
-     * if it is loaded. A message older than every loaded one is left out while older ones are not loaded, as messages
-     * between could be missing: loading older pages brings it.
+     * if it is loaded. A message older than every loaded one is left out while older ones are not loaded, and one newer
+     * than every loaded one while newer ones are not, as messages between could be missing: loading pages brings it.
      */
     private fun putting(
         message: Message,
@@ -192,7 +201,10 @@ internal data class HistoryWindow(
     ): HistoryWindow {
         val replacedIndex = replacedId?.let(messages::indexOfId) ?: -1
         val oldestId = messages.lastOrNull()?.id
-        val belongs = replacedIndex >= 0 || reachedStart || (oldestId != null && message.id >= oldestId)
+        val newestId = messages.firstOrNull()?.id
+        val afterStart = reachedStart || (oldestId != null && message.id >= oldestId)
+        val beforeEnd = reachedEnd || (newestId != null && message.id <= newestId)
+        val belongs = replacedIndex >= 0 || (afterStart && beforeEnd)
         if (!belongs) return this
         val rest = if (replacedIndex >= 0) messages.removingAt(replacedIndex) else messages
         return copy(messages = rest.upserting(message))
@@ -227,19 +239,52 @@ internal data class HistoryWindow(
         return copy(messages = messages.mutate { it.subList(index, it.size).clear() }, reachedStart = false)
     }
 
-    /** Adds the [page]'s messages older than the loaded ones, which are as new as the changes applied to them. */
-    private fun merging(page: HistoryPage): HistoryWindow {
-        val oldestId = messages.lastOrNull()?.id ?: Long.MAX_VALUE
-        val older = page.messages.filter { it.id < oldestId }.sortedByDescending { it.id }
-        return copy(messages = messages.addingAll(older), reachedStart = page.reachedStart)
-    }
+    /**
+     * Adds the [page]'s messages to the loaded ones, or puts them in their place for a [HistoryPage.Kind.Replacing]
+     * page. The loaded ones are as new as the changes applied to them, so only messages before or after them are added.
+     */
+    private fun merging(page: HistoryPage): HistoryWindow =
+        when (page.kind) {
+            HistoryPage.Kind.Older -> {
+                val oldestId = messages.lastOrNull()?.id ?: Long.MAX_VALUE
+                val older = page.messages.filter { it.id < oldestId }.sortedByDescending { it.id }
+                copy(messages = messages.addingAll(older), reachedStart = page.reachedStart)
+            }
+
+            HistoryPage.Kind.Newer -> {
+                val newestId = messages.firstOrNull()?.id ?: Long.MIN_VALUE
+                val newer = page.messages.filter { it.id > newestId }.sortedByDescending { it.id }
+                copy(messages = messages.mutate { it.addAll(0, newer) }, reachedEnd = page.reachedEnd)
+            }
+
+            HistoryPage.Kind.Replacing -> {
+                val sorted = page.messages.distinctBy { it.id }.sortedByDescending { it.id }
+                copy(
+                    messages = sorted.toPersistentList(),
+                    reachedStart = page.reachedStart,
+                    reachedEnd = page.reachedEnd,
+                )
+            }
+        }
 }
 
-/** Messages of a chat older than the loaded ones, in any order, and whether they reach the chat's first message. */
+/**
+ * Messages of a chat, in any order: older than the loaded ones, newer than them, or ones that replace them (the newest
+ * page, a page around a message); and whether the window then reaches the chat's first message ([reachedStart]) and
+ * its newest one ([reachedEnd]). An older page keeps the window's [reachedEnd], a newer one its [reachedStart].
+ */
 internal class HistoryPage(
     val messages: List<Message>,
-    val reachedStart: Boolean,
-)
+    val kind: Kind,
+    val reachedStart: Boolean = false,
+    val reachedEnd: Boolean = false,
+) {
+    enum class Kind {
+        Older,
+        Newer,
+        Replacing,
+    }
+}
 
 /** What an update changes in a chat's history. */
 internal sealed interface HistoryChange {
@@ -379,7 +424,7 @@ internal fun HistoryWindow.repliedTo(messageId: Long): Message? {
 internal fun HistoryWindow.message(id: Long): Message? = messages.getOrNull(messages.indexOfId(id)) ?: replied[id]
 
 /** The index of message [id] in [this] (newest first), else `-(insertion point) - 1`, as `binarySearch` answers. */
-private fun List<Message>.indexOfId(id: Long) = binarySearch { id.compareTo(it.id) }
+internal fun List<Message>.indexOfId(id: Long) = binarySearch { id.compareTo(it.id) }
 
 private fun PersistentMap<Long, Message>.removingAll(ids: Set<Long>): PersistentMap<Long, Message> =
     if (ids.none(::containsKey)) this else mutate { map -> ids.forEach(map::remove) }

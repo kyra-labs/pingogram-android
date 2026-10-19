@@ -19,6 +19,21 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
+     * Whether the list shows its newest loaded message or is within about a page of it; reported on every change, and
+     * false when the list leaves the screen. While true, and the items do not reach the chat's newest message, newer
+     * messages load, page after page.
+     */
+    data class NearNewestChanged(
+        val isNearNewest: Boolean,
+    ) : ChatEvent
+
+    /**
+     * Show the chat's newest message: the jump button, or a message sent while the list shows older messages that do
+     * not reach it. The newest messages load in place of the loaded ones, and the list goes to them.
+     */
+    data object ShowNewest : ChatEvent
+
+    /**
      * The messages the list shows now, wholly or in part, by id (every item of an album); reported whenever that
      * changes, and empty when the list leaves the screen. They go to TDLib as viewed, which reads them.
      */
@@ -27,8 +42,8 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
-     * The reply quote of a bubble was tapped: show the replied message [messageId] of this chat, loading older
-     * messages for it if needed.
+     * The reply quote of a bubble was tapped: show the replied message [messageId] of this chat, loading the messages
+     * around it if needed.
      */
     data class OpenReply(
         val messageId: Long,

@@ -149,6 +149,8 @@ abstract class ChatViewModelHarness {
 
     protected val ChatViewModel.items get() = content.items
 
+    protected val ChatViewModel.anchor get() = content.anchor
+
     protected val ChatViewModel.bubbles get() = items.filterIsInstance<ChatItem.Bubble>()
 
     protected fun ChatViewModel.bubble(id: Long) = bubbles.single { it.id == id }

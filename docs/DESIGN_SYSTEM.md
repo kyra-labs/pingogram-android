@@ -90,6 +90,8 @@ fun PingogramTheme(
 | Outgoing bubble | `primaryContainer` / `onPrimaryContainer` |
 | Incoming bubble | `surfaceContainerHigh` / `onSurface` |
 | Selected bubble | `secondaryContainer` / `onSecondaryContainer` |
+| Emoji-only message | no container; time and state `onSurfaceVariant`, read checks `primary` |
+| Reaction badge | `surfaceContainerHighest` / `onSurfaceVariant`, chosen `secondaryContainer` / `onSecondaryContainer`, a `surface` ring |
 | Service / date pill | `surfaceContainerHighest` / `onSurfaceVariant` |
 | Unread badge | `primary` / `onPrimary`; muted: `surfaceVariant` / `onSurfaceVariant` |
 | Mentions / links | `primary`; visited/secondary links `tertiary` |
@@ -240,8 +242,22 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   rows; pressed, focused and selected rows morph to `large` all round on the motion scheme's fast
   spatial spring (the list item's own animation). The account card at the top of Settings rests on
   `extraLarge` and morphs to the same `large` when pressed.
-- Message bubbles: `large` with the tail-side corner `small`; grouped messages use `medium`
-  between members of a group; user-adjustable 12–24 dp in Appearance settings.
+- Message bubbles follow Google's Material 3 Expressive messaging: `extraLarge` corners, which
+  make a one-line bubble a full pill (corners are capped at half the height), and no tail.
+  Consecutive messages of a sender stack `spacing.extraSmall` apart and meet with `extraSmall`
+  corners on the sender's side (the end for outgoing, the start for incoming): the first of a group
+  is `extraLarge` at the top and `extraSmall` at the bottom there, a middle one `extraSmall` at
+  both, the last `extraSmall` at the top and `extraLarge` at the bottom; the far side stays
+  `extraLarge`, and a message alone is `extraLarge` all round. The eight shapes are built once per
+  theme (`MessageBubbleShapes`, `core:ui`). Photos, videos and albums clip to the same shape,
+  square only where a header or a caption joins them. Text and the time keep `spacing.large` from
+  the sides and `spacing.small` from top and bottom, clear of the round corners. The radius will be
+  user-adjustable later in Appearance settings (`extraLarge` by default).
+- Emoji-only messages (1–3 emoji and nothing else, no formatting, reply or forward) show in
+  `displaySmall` without a bubble, the time and state below them.
+- Reactions sit on a bubble's bottom corner on the far side as round badges (§2.2), up to three
+  side by side, then "+N", which opens the message's actions; they overlap the bubble by its bottom
+  padding, so they never cover the time, and hang below content without a bubble.
 - Components keep their M3 default shape tokens (buttons pill, cards `medium`, sheets
   `extraLarge` top, dialogs `extraLarge`, chips `small`, text fields `extraSmall` top).
 
@@ -273,7 +289,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   spring from the bottom; swipe actions reveal icons with scale springs; pull/overscroll uses
   the stretch overscroll default.
 - Loading: `LoadingIndicator` (morphing polygons) for indeterminate, `LinearWavyProgressIndicator`
-  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback).
+  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback). A screen whose
+  content usually comes from TDLib's local database at once shows its indicator only after a short wait,
+  fading in on `defaultEffectsSpec` (`DelayedLoadingIndicator`, `core:ui`), so it never flashes.
 - Micro-interactions with haptics (`LocalHapticFeedback`): `LongPress` (selection, reaction
   picker), `TextHandleMove` (swipe threshold), `Confirm` (sent) / `Reject` (failed) on API 34+,
   `SegmentTick` for slider steps. No raw `Vibrator` patterns.

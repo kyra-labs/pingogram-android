@@ -50,7 +50,6 @@ class ChatEffectsTest {
                 ChatEffects(
                     effects = remember { effects.receiveAsFlow() },
                     snackbarHostState = snackbarHostState,
-                    jumpState = rememberMessageJumpState(),
                     onOpenMedia = {},
                     openFile = { path, mimeType, chooserTitle ->
                         opened += "$path $mimeType $chooserTitle"

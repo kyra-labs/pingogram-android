@@ -21,12 +21,12 @@ import kotlinx.coroutines.launch
  *   meanwhile waits for the next start.
  * - **Failures** are logged without the ids and not retried: TDLib then just does not read those messages yet.
  *
- * Runs in [scope] for as long as it lives; main thread only.
+ * Runs in [scope] for as long as it lives, from [start] on; main thread only.
  */
 internal class MessageViews(
     private val chatId: Long,
     private val repository: ChatRepository,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val log: ChatLog,
 ) {
     private val isOpen = MutableStateFlow(false)
@@ -36,7 +36,8 @@ internal class MessageViews(
 
     private val viewed = HashSet<Long>()
 
-    init {
+    /** Starts reporting, once: the view model starts it after the frame that created it. */
+    fun start() {
         scope.launch { report() }
     }
 

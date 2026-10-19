@@ -8,27 +8,55 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The history of chats, loaded a page at a time as the conversation scrolls back (`REQUIREMENTS.md` FR-C1) and kept up
- * to date with TDLib's updates, and what the composer sends and keeps as a draft (FR-C5). Only the chats being
- * observed and the most recently used others stay in memory (`docs/PERFORMANCE.md` §3); everything is dropped when
- * TDLib closes (logout).
+ * The history of chats, loaded a page at a time as the conversation scrolls (`REQUIREMENTS.md` FR-C1), from the newest
+ * message or around an older one, and kept up to date with TDLib's updates, and what the composer sends and keeps as a
+ * draft (FR-C5). Only the chats being observed and the most recently used others stay in memory
+ * (`docs/PERFORMANCE.md` §3); everything is dropped when TDLib closes (logout).
+ *
+ * Every load succeeds once its messages are in [history], or once there is nothing to load. Loads of one chat run one
+ * at a time, and calls of the same load while it runs share its outcome. A failure (`DomainError.FloodWait`,
+ * `DomainError.Network`, `DomainError.NotFound`, …) leaves the history as it was. TDLib's local messages come first,
+ * the server's only when it has none (`docs/PERFORMANCE.md` §3).
  */
 interface MessageRepository {
     /**
      * The loaded history of chat [chatId], then every change, for as long as it is collected. Observing loads nothing:
-     * for a chat not loaded recently the first snapshot is empty without having reached the start, and [loadOlder]
-     * loads the newest messages, so the caller sees every failure.
+     * for a chat not loaded recently the first snapshot is empty without having reached the start, and [loadNewest]
+     * or [loadAround] loads it, so the caller sees every failure.
      */
     fun history(chatId: Long): Flow<ChatHistory>
 
     /**
-     * Loads the messages before the oldest one in [history] (the newest messages if none is loaded) and succeeds once
-     * they are there, or once there is nothing to load. A page can be short even when there are older messages; the
-     * start is reached only when the server has none. Calls while a page of the same chat is loading share its
-     * outcome. A failure (`DomainError.FloodWait`, `DomainError.Network`, `DomainError.NotFound`, …) leaves the
-     * history as it was.
+     * Loads the messages before the oldest one in [history] (the newest messages if none is loaded). A page can be
+     * short even when there are older messages; the start is reached only when the server has none.
      */
     suspend fun loadOlder(chatId: Long): Outcome<Unit>
+
+    /**
+     * Loads the messages after the newest one in [history] when it does not reach the chat's newest message
+     * ([ChatHistory.reachedEnd]); nothing otherwise. A page can be short; the end is reached with the chat's newest
+     * message.
+     */
+    suspend fun loadNewer(chatId: Long): Outcome<Unit>
+
+    /**
+     * Makes [history] show message [messageId] of chat [chatId] with messages on both sides: nothing to load when it is
+     * loaded already; otherwise a page around it replaces the loaded messages, a few newer and more older ones, which
+     * reaches the chat's newest message only if the page does. For the first unread message and for messages found or
+     * replied to far back, so the history never loads every page up to them. A message that no longer exists leaves
+     * the messages around where it was.
+     */
+    suspend fun loadAround(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Unit>
+
+    /**
+     * Makes [history] reach the chat's newest message: nothing to load when it does already ([ChatHistory.reachedEnd],
+     * with messages, or none at all at the start); otherwise the newest page replaces the loaded messages. For a chat
+     * opened without unread messages, and for the jump to the newest message.
+     */
+    suspend fun loadNewest(chatId: Long): Outcome<Unit>
 
     /**
      * The message that message [messageId] of chat [chatId] replies to, for its reply quote when the replied message

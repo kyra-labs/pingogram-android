@@ -37,7 +37,7 @@ import org.robolectric.annotation.Config
 /**
  * The message actions on the conversation screen (`REQUIREMENTS.md` FR-C6, FR-C7): the long press and its screen
  * reader equivalent, the sheet's actions and quick reactions, the delete confirmation's check box, the reply and edit
- * bars, the reaction chips, and the custom actions every bubble offers screen readers. The screen is stateless: these
+ * bars, the reaction badges, and the custom actions every bubble offers screen readers. The screen is stateless: these
  * check its events.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -229,12 +229,12 @@ class MessageActionsScreenTest {
     }
 
     @Test
-    fun `tapping a reaction chip toggles the user's reaction`() {
+    fun `tapping a reaction badge toggles the user's reaction`() {
         setScreen(chatWithReaction())
 
-        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Hi, 👍 3").performTouchInput {
-            // The first chip: at the start of the reactions, the bubble's last line.
-            click(Offset(CHIP_X.toPx(), height - CHIP_FROM_BOTTOM.toPx()))
+        composeRule.onNodeWithContentDescription("Ada, 9:41 AM: Hi, 👍 3", substring = true).performTouchInput {
+            // The first badge: wider than the short bubble, the badges start at the row's start, below the bubble.
+            click(Offset(BADGE_X.toPx(), height - BADGE_FROM_BOTTOM.toPx()))
         }
 
         assertEquals(
@@ -323,7 +323,14 @@ class MessageActionsScreenTest {
                 text = text,
                 spoilersRevealed = false,
                 linkPreview = null,
-                reactions = persistentListOf(ReactionChip(ReactionLabel.Emoji("👍"), 3, isChosen = false)),
+                reactions =
+                    persistentListOf(
+                        ReactionChip(ReactionLabel.Emoji("👍"), 3, isChosen = false),
+                        ReactionChip(ReactionLabel.Emoji("❤️"), 2, isChosen = false),
+                        ReactionChip(ReactionLabel.Emoji("🔥"), 2, isChosen = false),
+                        ReactionChip(ReactionLabel.Emoji("🎉"), 1, isChosen = false),
+                        ReactionChip(ReactionLabel.Emoji("😮"), 1, isChosen = false),
+                    ),
                 date = today,
             )
         return ChatPreviewData.privateChat.copy(
@@ -381,8 +388,8 @@ class MessageActionsScreenTest {
         const val PHOTO_X = 0.25f
         const val PHOTO_Y = 0.5f
 
-        /** Where the first reaction chip of [chatWithReaction]'s bubble is, from its start and its bottom. */
-        val CHIP_X = 24.dp
-        val CHIP_FROM_BOTTOM = 22.dp
+        /** Where the first reaction badge of [chatWithReaction]'s bubble is, from the row's start and bottom. */
+        val BADGE_X = 14.dp
+        val BADGE_FROM_BOTTOM = 14.dp
     }
 }
