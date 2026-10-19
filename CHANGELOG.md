@@ -54,8 +54,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Every settings page shows its options as connected, rounded groups whose corners round out when you press them.
 - The app's font is stored uncompressed, so Android reads it straight from the app when the first text draws
   instead of unpacking all 4 MB into memory: a faster start, for about 1.7 MB more download.
+- Going back from a chat is smoother: the floating navigation bar stays ready while it is hidden instead of being
+  rebuilt, and keeps its tab selected while it slides away and back. Chat list rows do less work as they appear;
+  screen-reader descriptions are built only when a screen reader asks for them.
 
 ### Fixed
+- The chat list shows its "Connecting…" status once, below the title, instead of twice while the top bar collapses.
 - Leaving a chat after playing a voice message or song no longer holds up the screen for a moment: the audio
   player now runs on its own thread, and frees itself there.
 - "Clear cache" and "Log out" keep their card while they run, and settings page titles fit at large font sizes

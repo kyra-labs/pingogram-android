@@ -120,16 +120,7 @@ internal fun ChatListScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
-            val shown = rememberShownList(state, listState, folderSwitch)
-            ChatListBody(
-                state = shown,
-                onEvent = onEvent,
-                listState = listState,
-                innerPadding = innerPadding,
-                openChatId = openChatId,
-                animateRows = folderSwitch.animateRows,
-                modifier = Modifier.fadeThrough(folderSwitch),
-            )
+            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch)
         }
         SelectionToolbarHost(
             selection = selection,
@@ -164,20 +155,26 @@ private fun contentWindowInsets(
     return if (selectionMode) insets.union(floatingToolbarInsets()) else insets
 }
 
-@Suppress("LongParameterList") // The list, its state and padding, the open chat, and whether its rows animate.
+/**
+ * The list of the folder shown ([rememberShownList]) on its sheet, fading through on a folder switch ([folderSwitch]).
+ * Its own composable, which skips while its arguments stay the same: the `Scaffold` composes its content again whenever
+ * it measures it anew, i.e. in every frame of the top bar collapsing or expanding, and those frames stop here.
+ */
+@Suppress("LongParameterList") // The state, events, list state and padding, the open chat and the folder switch.
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChatListBody(
-    state: ChatListUiState,
+    uiState: ChatListUiState,
     onEvent: (ChatListEvent) -> Unit,
     listState: LazyListState,
     innerPadding: PaddingValues,
     openChatId: Long?,
-    animateRows: Boolean,
-    modifier: Modifier = Modifier,
+    folderSwitch: FolderSwitch,
 ) {
+    val state = rememberShownList(uiState, listState, folderSwitch)
+    val animateRows = folderSwitch.animateRows
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-        val contentModifier = modifier.fillMaxSize()
+        val contentModifier = Modifier.fadeThrough(folderSwitch).fillMaxSize()
         when (val content = state.content) {
             ChatListContent.Loading -> {
                 Box(contentModifier.padding(contentPadding), contentAlignment = Alignment.Center) { LoadingIndicator() }
