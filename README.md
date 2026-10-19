@@ -1,3 +1,5 @@
+<p align="center"><img src="art/logo_full.svg" alt="Pingogram" width="360"></p>
+
 # Pingogram
 
 **An open-source Telegram client for Android, built the way a Google app would be: Material 3

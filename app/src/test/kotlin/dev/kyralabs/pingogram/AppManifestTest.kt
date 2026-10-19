@@ -3,8 +3,10 @@ package dev.kyralabs.pingogram
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import android.graphics.drawable.AdaptiveIconDrawable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,7 +23,8 @@ import javax.xml.parsers.DocumentBuilderFactory
  * INTERNET, TDLib cannot open a socket and the app stays on "Connecting…" forever. WRITE_EXTERNAL_STORAGE saves
  * media into the gallery on Android 8–9 only (approved 2026-10-18): later versions save through MediaStore without it,
  * so it is declared up to API 28 and not requested on newer runtimes. The FileProvider that hands TDLib's files to
- * other apps (approved the same day) is private and grants single URIs.
+ * other apps (approved the same day) is private and grants single URIs. The launcher icon is adaptive, with the
+ * monochrome layer of themed icons.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -66,6 +69,20 @@ class AppManifestTest {
         assertFalse(provider.exported)
         assertTrue(provider.grantUriPermissions)
         assertEquals(R.xml.file_paths, provider.metaData.getInt("android.support.FILE_PROVIDER_PATHS"))
+    }
+
+    @Test
+    fun `the launcher icon is adaptive, round too, with a monochrome layer for themed icons`() {
+        val context = RuntimeEnvironment.getApplication()
+        val application = mergedManifest().elements("application").single()
+
+        assertEquals(R.mipmap.ic_launcher, context.applicationInfo.icon)
+        assertEquals("@mipmap/ic_launcher_round", application.androidAttribute("roundIcon"))
+        for (icon in listOf(R.mipmap.ic_launcher, R.mipmap.ic_launcher_round)) {
+            val drawable = context.getDrawable(icon) as AdaptiveIconDrawable
+            assertNotNull(drawable.foreground)
+            assertNotNull(drawable.monochrome)
+        }
     }
 
     /** The merged manifest Robolectric runs, as the Android Gradle plugin's test config names it. */

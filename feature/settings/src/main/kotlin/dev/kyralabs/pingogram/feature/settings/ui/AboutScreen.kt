@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -8,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
@@ -18,6 +22,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The About page: hoists [AboutViewModel] and opens the links it asks for. [onBack] leaves the page. */
 @Composable
@@ -39,7 +44,7 @@ internal fun AboutRoute(
 }
 
 /**
- * About Pingogram (`REQUIREMENTS.md` FR-S1): the app and its version, its source code on GitHub (opened in the
+ * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source code on GitHub (opened in the
  * browser), its license, and the statement that it is an unofficial client, not affiliated with Telegram, as
  * Telegram's API terms require of third-party apps (`CLAUDE.md` rule 3).
  */
@@ -51,6 +56,17 @@ internal fun AboutScreen(
     modifier: Modifier = Modifier,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
+        Image(
+            painter = painterResource(UiR.drawable.logo_pingogram),
+            // The app's name, which the logo spells; the row below names the app again with its version.
+            contentDescription = stringResource(R.string.settings_about_app_name),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = MaterialTheme.spacing.extraLarge)
+                    .wrapContentWidth(),
+        )
         SettingsGroup(title = stringResource(R.string.settings_section_app)) {
             item { shapes ->
                 SettingsRow(

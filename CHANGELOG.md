@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Pingogram has its own icon, with a themed version that follows your wallpaper's colors on Android 13 and later. It
+  also shows on the splash screen, on the Welcome screen and, with the full logo, at the top of About.
+
 ## [0.3.0-beta.1] - 2026-10-19
 
 ### Added
