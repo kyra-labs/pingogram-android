@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -44,7 +43,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * One chat in a chat list (`REQUIREMENTS.md` FR-L2, `docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the avatar, the
- * name with its badges, a two-line preview ([ChatPreviewText]), and the time with the unread badges at the end
+ * name with its badges, a one-line preview ([ChatPreviewText]), and the time with the unread badges at the end
  * ([ChatMeta]). For the main list, the archive and folders alike; swipe actions and selection wrap or extend it.
  *
  * Everything shown is in [item], mapped by the ViewModel: the row resolves texts and builds the preview's styled text,
@@ -56,10 +55,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * padding ([insetContentPadding]): at rest nothing shows it, but a pressed, selected or open row stands apart from the
  * edges of the list's sheet and from the rows around it (`docs/DESIGN_SYSTEM.md` §4, §6).
  *
- * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row turns into a pill (full corners) in the list item's selected
- * container (`secondaryContainer`) and its avatar morphs into a check. The list item morphs its shape on the motion
- * scheme's fast spatial spring and animates its container color. The colors come from the clickable list item's own
- * selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
+ * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row takes the list item's selected shape (`large` corners) in its
+ * selected container (`secondaryContainer`) and its avatar morphs into a check. The list item morphs its shape on the
+ * motion scheme's fast spatial spring and animates its container color. The colors come from the clickable list item's
+ * own selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
  * variants on entering selection mode would recreate the rows and skip the morphs.
  *
  * Open ([open]), its conversation showing beside the list on expanded windows, the row takes the same selected
@@ -167,18 +166,14 @@ private fun listItemColors(selected: Boolean): ListItemColors {
     )
 }
 
-/** The list item's shapes, with a pill ([selected]) or its selected shape ([open]) in place of its resting one. */
+/** The list item's shapes, with its selected shape in place of its resting one while [selected] or [open]. */
 @Composable
 private fun listItemShapes(
     selected: Boolean,
     open: Boolean,
 ): ListItemShapes {
     val shapes = ListItemDefaults.shapes()
-    return when {
-        selected -> shapes.copy(shape = CircleShape)
-        open -> shapes.copy(shape = shapes.selectedShape)
-        else -> shapes
-    }
+    return if (selected || open) shapes.copy(shape = shapes.selectedShape) else shapes
 }
 
 /**
@@ -196,7 +191,7 @@ private fun ChatAvatar(
         photo = item.photo,
         name = title,
         id = item.id,
-        size = MaterialTheme.sizes.avatarMedium,
+        size = MaterialTheme.sizes.avatarRow,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
         onlineRingColor =

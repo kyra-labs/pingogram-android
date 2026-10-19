@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Sponsored messages: channels and chats with bots show Telegram's sponsored messages as a card labelled
+  "Sponsored" (or "Recommended" for a recommended channel) below the newest posts, with the advertiser's button.
+  Tap the button, a link or the picture to open it. The info button shows "About this ad": who placed it and more
+  about it, and lets you report it, with the reasons Telegram asks for.
 - A reactions picker: the + button at the end of a message's quick reactions shows every reaction you can add in
   that chat, the chat's most used ones first, then your recent ones and the popular ones, with those you added
   marked. Tap one to add it, or tap it again to take it back. The picker also shows every reaction already on the
@@ -21,6 +25,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   offline.
 
 ### Changed
+- The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
+  a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
+  instead of six or seven.
+- Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
+  their name on a long press.
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
 - Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes

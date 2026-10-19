@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
@@ -71,6 +72,23 @@ class ChatRecompositionTest {
         repeat(SETTLE_FRAMES) { frame() }
 
         // The screen and the list compose again for the new items; the bubbles on screen skip.
+        val functions = counter.recomposedOwnFunctions
+        assertTrue(functions.toString(), functions.any { "MessageList" in it })
+        assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `a new message above a sponsored message composes neither it nor the bubbles on screen`() {
+        val ad = ChatItem.Sponsored(SponsoredPreviewData.text, UiText.Plain("Today"))
+        val before = messages(MESSAGES).withNewest(ad)
+        setScreen(before)
+
+        // Where the sponsored message is pinned below every message, a new one comes above it.
+        val content = before.content as ChatContent.Content
+        val items = listOf(ad, bubble(id = MESSAGES + 1L, outgoing = true)) + content.items.drop(1)
+        state = before.copy(content = content.copy(items = items.toImmutableList()))
+        repeat(SETTLE_FRAMES) { frame() }
+
         val functions = counter.recomposedOwnFunctions
         assertTrue(functions.toString(), functions.any { "MessageList" in it })
         assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
@@ -146,9 +164,9 @@ class ChatRecompositionTest {
 
     private fun ChatUiState.bubbles() = (content as ChatContent.Content).items.filterIsInstance<ChatItem.Bubble>()
 
-    private fun ChatUiState.withNewest(bubble: ChatItem.Bubble): ChatUiState {
+    private fun ChatUiState.withNewest(item: ChatItem): ChatUiState {
         val content = content as ChatContent.Content
-        return copy(content = content.copy(items = (listOf(bubble) + content.items).toImmutableList()))
+        return copy(content = content.copy(items = (listOf(item) + content.items).toImmutableList()))
     }
 
     private fun ChatUiState.replacing(bubble: ChatItem.Bubble): ChatUiState {
@@ -190,6 +208,7 @@ class ChatRecompositionTest {
                 "BubbleMetaKt",
                 "MessageContentBodyKt",
                 "ChatPillsKt",
+                "SponsoredMessageCardKt",
             )
     }
 }

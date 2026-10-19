@@ -62,6 +62,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 chatRepository = chats,
                 messageRepository = messages,
                 messageActionRepository = messageActions,
+                sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
                 userRepository = users,
                 groupRepository = groups,
