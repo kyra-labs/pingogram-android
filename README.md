@@ -28,7 +28,7 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
 > [!NOTE]
-> Pingogram is an **early beta** (0.3.0-beta.1). Everyday reading and writing works, but
+> Pingogram is an **early beta** (0.3.0-beta.2). Everyday reading and writing works, but
 > notifications, voice recording, the sticker panel and calls are not there yet. See
 > [what works today](#what-works-today) and [what is missing](#not-yet).
 
