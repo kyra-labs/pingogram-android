@@ -43,6 +43,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Phones in landscape show the navigation rail at the side instead of the floating bar, leaving more room for
   chats. On large tablets and desktop windows the rail is expanded, with each tab's name and a labelled Search
   button.
+- On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
+  handle between them resizes the list. With no chat open, the empty panel lines up with the list.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

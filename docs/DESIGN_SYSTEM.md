@@ -453,7 +453,7 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   - **Expanded** (840–1199 dp): `ListDetailPaneScaffold` for chats | conversation and for Settings home | page.
     The list is a fixed pane of 360–412 dp and the detail is flexible. Each pane is its own rounded container
     (§2.2), and a `VerticalDragHandle` resizes them (`paneExpansionState`, anchors 360 dp, 412 dp and a centered
-    split), keeping the width across restarts. Both panes have top bars of the same height.
+    split), keeping the width across rotation and process death. Both panes have top bars of the same height.
   - **Large / extra-large** (≥ 1200 dp): as expanded, with the rail expanded; a third pane (profile, chat info) as
     a supporting pane at XL (M4).
   - **Compact height** (phones in landscape): the rail instead of the floating bar (§6.1).
