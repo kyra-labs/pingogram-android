@@ -1,0 +1,29 @@
+{
+  "comment": "What Maven does not say, for the open-source licenses list (docs/adr/0002-open-source-licenses.md). An id with a colon completes that dependency (its values replace the POM's, its version stays the dependency's); any other id is a library of its own. Licenses are SPDX ids with a text in texts/.",
+  "libraries": [
+    {
+      "id": "org.drinkless:tdlib",
+      "name": "TDLib",
+      "description": "Telegram Database Library, the cross-platform library for building Telegram clients that Pingogram is built on.",
+      "website": "https://github.com/tdlib/td",
+      "developers": ["Aliaksei Levin", "Arseny Smirnov"],
+      "licenses": ["BSL-1.0"]
+    },
+    {
+      "id": "google-sans-flex",
+      "name": "Google Sans Flex",
+      "description": "The variable typeface of every text in Pingogram, bundled with the app.",
+      "website": "https://fonts.google.com/specimen/Google+Sans+Flex",
+      "developers": ["Google"],
+      "licenses": ["OFL-1.1"]
+    },
+    {
+      "id": "material-symbols",
+      "name": "Material Symbols",
+      "description": "Google's icon set; Pingogram's icons are Material Symbols Rounded, converted to vector drawables.",
+      "website": "https://fonts.google.com/icons",
+      "developers": ["Google"],
+      "licenses": ["Apache-2.0"]
+    }
+  ]
+}

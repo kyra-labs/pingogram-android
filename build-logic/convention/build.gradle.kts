@@ -38,6 +38,12 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // SpdxLicensesTest and OpenSourceLicensesTest read the repository's config/licenses (relative to this project,
+    // the tests' working directory), so a change there runs them again.
+    inputs
+        .dir("../../config/licenses")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("licensesConfig")
 }
 
 tasks {
@@ -71,6 +77,10 @@ gradlePlugin {
         register("androidLibrary") {
             id = libs.plugins.pingogram.android.library.pluginId
             implementationClass = "AndroidLibraryConventionPlugin"
+        }
+        register("androidLicenses") {
+            id = libs.plugins.pingogram.android.licenses.pluginId
+            implementationClass = "AndroidLicensesConventionPlugin"
         }
         register("androidLint") {
             id = libs.plugins.pingogram.android.lint.pluginId

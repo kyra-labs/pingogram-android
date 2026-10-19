@@ -153,6 +153,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - `build-logic/convention` with plugins: `pingogram.android.application`,
   `pingogram.android.library`, `pingogram.android.feature`, `pingogram.android.compose`,
   `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
+  `pingogram.android.licenses` (the open-source licenses list of `:app`),
   `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`).
   `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
@@ -161,14 +162,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   by `pingogram.android.application`). CI writes the file from GitHub secrets. A missing file or
   key, a non-integer id or a hash that is not 32 hex characters fails configuration with a
   readable message that names the key but never its value.
-- Open-source licenses (About, FR-S1): `:app` applies the AboutLibraries Gradle plugin
-  (`com.mikepenz.aboutlibraries.plugin.android`, offline), which writes each variant's runtime
-  dependencies into its raw resource `aboutlibraries` at build time, merged with
-  `config/aboutlibraries/` (TDLib's license, Google Sans Flex, Material Symbols, and the texts of
-  every license, never downloaded). `:app`'s `GeneratedOpenSourceLicensesRepository` reads it with
-  the platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`;
-  `feature:settings` draws the screens (`docs/adr/0002-open-source-licenses.md`). A dependency
-  under a license without a text there fails `GeneratedOpenSourceLicensesRepositoryTest`.
+- Open-source licenses (About, FR-S1): `:app` applies `pingogram.android.licenses`, whose task
+  `generate<Variant>OpenSourceLicenses` lists each variant's runtime dependencies at build time with
+  the licenses of their POMs (parent POMs included, resolved through Gradle's own dependency
+  resolution while the configuration cache entry is stored), mapped to SPDX ids (`SpdxLicenses`),
+  completed by `config/licenses/extra.json` (TDLib's license, Google Sans Flex, Material Symbols)
+  and `config/licenses/texts/` (every license's text, never downloaded), into the generated raw
+  resource `open_source_licenses`. A dependency without a license it can name, or a license without
+  a text, fails the build. `:app`'s `GeneratedOpenSourceLicensesRepository` reads it with the
+  platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`; `feature:settings`
+  draws the screens (`docs/adr/0002-open-source-licenses.md`).
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
   for GitHub releases: `foss`. Build types: `debug` (suffix `.debug`, debuggable), `release`
   (R8 full mode, resource shrinking, Baseline Profiles).

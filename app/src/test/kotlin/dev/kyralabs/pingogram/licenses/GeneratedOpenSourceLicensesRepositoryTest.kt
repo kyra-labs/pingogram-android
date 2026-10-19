@@ -15,9 +15,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The list of libraries this very build generated (`docs/adr/0002-open-source-licenses.md`): the AboutLibraries
- * plugin's raw resource of the unit test's variant, with the entries of `config/aboutlibraries`, as the screens get
- * it.
+ * The list of libraries this very build generated (`docs/adr/0002-open-source-licenses.md`): the raw resource that
+ * build-logic's `pingogram.android.licenses` wrote for the unit test's variant, with the entries of
+ * `config/licenses/extra.json`, as the screens get it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -81,7 +81,7 @@ class GeneratedOpenSourceLicensesRepositoryTest {
 
     @Test
     fun `every library has a license with its full text`() {
-        // A dependency under a license without a text in config/aboutlibraries/licenses fails here: add the text.
+        // The build already fails for a dependency without a license text (config/licenses/texts); this reads the file.
         val incomplete =
             libraries.filter { library ->
                 library.licenses.isEmpty() ||
@@ -94,6 +94,14 @@ class GeneratedOpenSourceLicensesRepositoryTest {
     @Test
     fun `leaves out BOMs, which put no code into the app`() {
         assertEquals(emptyList<String>(), libraries.map { it.id }.filter { it.endsWith("-bom") })
+    }
+
+    @Test
+    fun `lists a Kotlin Multiplatform library once, by the module the app declares`() {
+        val ids = libraries.map { it.id }.toSet()
+
+        assertTrue("androidx.compose.ui:ui" in ids)
+        assertEquals(emptyList<String>(), ids.filter { it.endsWith("-android") && it.removeSuffix("-android") in ids })
     }
 
     @Test
