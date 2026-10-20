@@ -702,6 +702,8 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.SendLocation -> attachments.sendLocation(event.location, event.options)
 
+            is ChatEvent.SendSticker -> attachments.sendSticker(event.sticker)
+
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 
             ChatEvent.DismissAttachments -> attachments.dismissPreview()

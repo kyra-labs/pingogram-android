@@ -152,6 +152,39 @@
     <!-- A sender only Telegram Premium users can choose. Informational only, never an offer. -->
     <string name="send_as_needs_premium">Needs Telegram Premium</string>
 
+    <!-- The emoji and sticker panel, which takes the keyboard's place below the composer -->
+    <!-- The button at the start of the text field that opens the panel, for screen readers. -->
+    <string name="panel_open">Emoji and stickers</string>
+    <!-- The same button while the panel shows: it brings the keyboard back. -->
+    <string name="panel_keyboard">Show keyboard</string>
+    <!-- The panel's tabs. -->
+    <string name="panel_tab_emoji">Emoji</string>
+    <string name="panel_tab_stickers">Stickers</string>
+    <!-- The panel's backspace key, which deletes the character before the cursor. -->
+    <string name="panel_backspace">Delete</string>
+    <!-- The emoji the user picked last, first in the emoji tab. -->
+    <string name="panel_emoji_recent">Recent</string>
+    <!-- Unicode's emoji groups, as section titles and for screen readers on the category buttons. -->
+    <string name="panel_emoji_smileys">Smileys and emotions</string>
+    <string name="panel_emoji_people">People</string>
+    <string name="panel_emoji_animals">Animals and nature</string>
+    <string name="panel_emoji_food">Food and drink</string>
+    <string name="panel_emoji_travel">Travel and places</string>
+    <string name="panel_emoji_activities">Activities</string>
+    <string name="panel_emoji_objects">Objects</string>
+    <string name="panel_emoji_symbols">Symbols</string>
+    <string name="panel_emoji_flags">Flags</string>
+    <!-- Sticker sections: the user's favorite stickers, and those they sent last. -->
+    <string name="panel_stickers_favorites">Favorites</string>
+    <string name="panel_stickers_recent">Recently used</string>
+    <!-- The stickers tab when the account has no stickers at all. -->
+    <string name="panel_stickers_empty_title">No stickers yet</string>
+    <string name="panel_stickers_empty_body">Sticker sets you add in Telegram show here.</string>
+    <!-- The stickers tab when they could not be loaded. -->
+    <string name="panel_stickers_error_title">Couldn\'t load stickers</string>
+    <string name="panel_stickers_retry">Try again</string>
+    <!-- What tapping a sticker does, for screen readers. -->
+    <string name="panel_sticker_send">Send</string>
     <!-- Voice messages (the composer's microphone, in the send button's place while the field is empty) -->
     <!-- The microphone, for screen readers, which record without holding it. -->
     <string name="voice_record">Record voice message</string>

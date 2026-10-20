@@ -59,6 +59,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
@@ -92,7 +94,8 @@ import kotlinx.collections.immutable.ImmutableSet
  *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
  *   [composerFocus] gives its text field the focus when the user starts a reply or an edit. Its microphone records
  *   voice messages ([recording], the view model's, kept apart from [state]); one sent scrolls to the newest message
- *   too.
+ *   too. Its emoji button opens the emoji and sticker panel ([emojiPanel], from its own view model, which gets
+ *   [onEmojiPanelEvent]) in the keyboard's place; a sticker tapped there is sent and scrolls to the newest message.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
  *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
@@ -123,6 +126,8 @@ internal fun ChatScreen(
     attach: AttachInputs = remember { AttachInputs() },
     recording: VoiceRecordingUiState? = null,
     reportComment: TextFieldState = remember { TextFieldState() },
+    emojiPanel: EmojiPanelUiState = EmojiPanelUiState(),
+    onEmojiPanelEvent: (EmojiPanelEvent) -> Unit = {},
 ) {
     val content = state.content
     val selection = state.selection
@@ -132,10 +137,7 @@ internal fun ChatScreen(
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
-    val scrollToSent = { options: SendOptions ->
-        // A message sent now goes to the bottom of the list: bring it into view. Scheduled ones do not.
-        if (options.scheduledAt == null && content is ChatContent.Content) scrollToNewest()
-    }
+    val scrollToSent = scrollingToSent(content, scrollToNewest)
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -155,6 +157,8 @@ internal fun ChatScreen(
                 selectionBack = { selectionBack.value },
                 onEvent = onEvent,
                 onSent = scrollToSent,
+                emojiPanel = emojiPanel,
+                onEmojiPanelEvent = onEmojiPanelEvent,
             ) { attachMenuOpen = true }
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -188,7 +192,7 @@ internal fun ChatScreen(
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
  */
-@Suppress("LongParameterList") // The state, the recording, the composer's text and focus, what its buttons do.
+@Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
 @Composable
 private fun ChatScreenBottomBar(
     state: ChatUiState,
@@ -198,6 +202,8 @@ private fun ChatScreenBottomBar(
     selectionBack: () -> Float,
     onEvent: (ChatEvent) -> Unit,
     onSent: (SendOptions) -> Unit,
+    emojiPanel: EmojiPanelUiState,
+    onEmojiPanelEvent: (EmojiPanelEvent) -> Unit,
     onAttach: () -> Unit,
 ) {
     SelectionBottomBar(
@@ -221,6 +227,12 @@ private fun ChatScreenBottomBar(
             recording = recording,
             onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
             onSendAs = { onEvent(SendAsEvent.Open) },
+            panel = emojiPanel,
+            onPanelEvent = onEmojiPanelEvent,
+            onSendSticker = { sticker ->
+                onEvent(ChatEvent.SendSticker(sticker))
+                onSent(SendOptions())
+            },
         )
     }
 }
