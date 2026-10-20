@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
+import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.textOrCaption
 import dev.kyralabs.pingogram.feature.chat.ui.userId
@@ -149,6 +150,19 @@ internal class ChatForwarding(
                         canCopyToSecretChat = allowed.all { it.second.canBeCopiedToSecretChat },
                     )
             }
+    }
+
+    /** Handles what the user does in the sheet. */
+    fun onEvent(event: ForwardEvent) {
+        when (event) {
+            is ForwardEvent.QueryChanged -> setQuery(event.query)
+            is ForwardEvent.ToggleTarget -> toggle(event.chatId)
+            is ForwardEvent.SetHideSenderName -> setHideSenderName(event.hide)
+            is ForwardEvent.SetHideCaptions -> setHideCaptions(event.hide)
+            ForwardEvent.LoadMore -> loadMore()
+            ForwardEvent.Send -> send()
+            ForwardEvent.Dismiss -> dismiss()
+        }
     }
 
     /** Closes the sheet without forwarding. */

@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LinkDialog
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ForwardPreviewData
@@ -70,19 +71,19 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (`extraLarge` top corners) with its title, a search field, and the chats the messages can go to, Saved Messages
  * first; once a chat is picked, the forward options, the comment field and the send button come in below the list.
  *
- * - **Search**: the search bar's input field on its container; every edit goes to [ChatEvent.ForwardQueryChanged], and
+ * - **Search**: the search bar's input field on its container; every edit goes to [ForwardEvent.QueryChanged], and
  *   the view model searches once the text stays (debounced there).
  * - **Chats** ([ForwardTargetRow]): a keyed lazy list of list items, inset in the sheet like the chat list's rows; a
  *   tap picks or unpicks the chat, which gives its row the list item's selected container (`secondaryContainer`) and
  *   shape (`large`) and morphs its avatar into a check, both on the motion scheme's springs. Screen readers hear
  *   each row as a check box. Near the end of the list the next page of chats loads
- *   ([ChatEvent.LoadMoreForwardTargets]). While the chats load a delayed loading indicator shows; without any, why.
+ *   ([ForwardEvent.LoadMore]). While the chats load a delayed loading indicator shows; without any, why.
  * - **Options**: "Hide sender's name" where every message can be copied, and "Hide captions" where one has a caption,
  *   as switches; the comment field is the composer's, formatting included; the send button is a default-size
  *   button with a press morph. They grow in and out on the motion scheme's default spatial spring, fading on its
  *   effects springs.
- * - Sending confirms with a haptic, hides the sheet on its spring, then sends ([ChatEvent.SendForward]). Dragging the
- *   sheet down, the scrim and the back gesture (Material's predictive back) dismiss it ([ChatEvent.DismissForward]).
+ * - Sending confirms with a haptic, hides the sheet on its spring, then sends ([ForwardEvent.Send]). Dragging the
+ *   sheet down, the scrim and the back gesture (Material's predictive back) dismiss it ([ForwardEvent.Dismiss]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,16 +103,16 @@ internal fun ForwardBottomSheet(
             {
                 if (currentSheet.selectedIds.isNotEmpty()) {
                     haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(ChatEvent.SendForward) }
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(ForwardEvent.Send) }
                 }
             }
         }
     val query = rememberTextFieldState()
     LaunchedEffect(query) {
-        snapshotFlow { query.text.toString() }.collect { currentOnEvent(ChatEvent.ForwardQueryChanged(it)) }
+        snapshotFlow { query.text.toString() }.collect { currentOnEvent(ForwardEvent.QueryChanged(it)) }
     }
     var linking by remember { mutableStateOf<TextRange?>(null) }
-    ModalBottomSheet(onDismissRequest = { currentOnEvent(ChatEvent.DismissForward) }, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = { currentOnEvent(ForwardEvent.Dismiss) }, sheetState = sheetState) {
         ForwardContent(
             sheet = sheet,
             query = query,
@@ -245,7 +246,7 @@ private fun TargetList(
             layout.totalItemsCount.takeIf { it > 0 && lastVisible >= it - 1 - LOAD_MORE_THRESHOLD }
         }.filterNotNull()
             .distinctUntilChanged()
-            .collect { currentOnEvent(ChatEvent.LoadMoreForwardTargets) }
+            .collect { currentOnEvent(ForwardEvent.LoadMore) }
     }
     val motion = MaterialTheme.motionScheme
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
@@ -253,7 +254,7 @@ private fun TargetList(
             ForwardTargetRow(
                 target = target,
                 selected = target.chatId in sheet.selectedIds,
-                onToggle = { onEvent(ChatEvent.ToggleForwardTarget(target.chatId)) },
+                onToggle = { onEvent(ForwardEvent.ToggleTarget(target.chatId)) },
                 modifier =
                     Modifier.animateItem(
                         fadeInSpec = motion.defaultEffectsSpec(),
