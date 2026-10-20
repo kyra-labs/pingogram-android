@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
@@ -192,6 +193,7 @@ class ChatViewModel internal constructor(
     private val locale: () -> Locale,
     audioPlayer: AudioPlayer,
     voiceRecorder: VoiceRecorder,
+    voiceNoteRepository: VoiceNoteRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -216,6 +218,7 @@ class ChatViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         audioPlayer: AudioPlayer,
         voiceRecorder: VoiceRecorder,
+        voiceNoteRepository: VoiceNoteRepository,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
         chatId,
@@ -237,6 +240,7 @@ class ChatViewModel internal constructor(
         Locale::getDefault,
         audioPlayer,
         voiceRecorder,
+        voiceNoteRepository,
         AndroidChatLog,
         messageId,
     )
@@ -331,7 +335,7 @@ class ChatViewModel internal constructor(
         ChatRecorder(
             chatId = chatId,
             recorder = voiceRecorder,
-            repository = attachmentRepository,
+            repository = voiceNoteRepository,
             scope = viewModelScope,
             replies = composer,
             clock = recordingClock,

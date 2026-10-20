@@ -113,7 +113,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
-  and stopping a recording wait for the audio input and the encoder (`docs/adr/0003-voice-recording.md`).
+  and stopping a recording wait for the audio input and the encoder (`docs/adr/0004-voice-recording.md`).
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
@@ -131,8 +131,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
 - Voice messages (FR-C5) are recorded by `feature:chat`'s `ChatRecorder` (a part of `ChatViewModel`, its state kept
-  out of `ChatUiState` as only the composer shows it) into a file `AttachmentRepository.newVoiceNoteFile` makes in the
-  upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent with `sendVoiceNote` (`inputMessageVoiceNote`); like
+  out of `ChatUiState` as only the composer shows it) into a file `VoiceNoteRepository.newVoiceNoteFile`
+  (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
+  with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`

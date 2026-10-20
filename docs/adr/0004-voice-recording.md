@@ -1,4 +1,4 @@
-# 0003 — Voice messages: the platform's MediaRecorder, Ogg Opus on Android 10+, AAC before
+# 0004 — Voice messages: the platform's MediaRecorder, Ogg Opus on Android 10+, AAC before
 
 Status: accepted · Date: 2026-10-20 · Milestone: M3 (`REQUIREMENTS.md` FR-C5 "voice record (hold)")
 

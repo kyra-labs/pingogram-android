@@ -10,7 +10,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
-import dev.kyralabs.pingogram.feature.chat.ui.FakeAttachmentRepository.Companion.voiceNoteFile
+import dev.kyralabs.pingogram.feature.chat.ui.FakeVoiceNoteRepository.Companion.voiceNoteFile
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.decodeWaveform
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingMeter
@@ -109,7 +109,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
             send(viewModel, VoiceEvent.Send)
 
-            val (voiceNote, replyTo) = attachments.sentVoiceNotes.single()
+            val (voiceNote, replyTo) = voiceNotes.sentVoiceNotes.single()
             assertEquals(voiceNoteFile("ogg"), voiceNote.path)
             assertEquals(2, voiceNote.duration)
             val levels = decodeWaveform(voiceNote.waveform.bytes)
@@ -123,7 +123,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
     @Test
     fun `a voice note takes the composer's reply along, and gives it back when refused`() =
         runViewModelTest {
-            attachments.onSendVoiceNote = { Outcome.Failure(DomainError.SendingNotAllowed) }
+            voiceNotes.onSendVoiceNote = { Outcome.Failure(DomainError.SendingNotAllowed) }
             val viewModel = privateChat(replyTo = 1)
             send(viewModel, VoiceEvent.Start())
             record(1_500)
@@ -133,7 +133,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
                 assertEquals(ChatEffect.ShowError(DomainError.SendingNotAllowed), awaitItem())
             }
-            assertEquals(1L, attachments.sentVoiceNotes.single().second)
+            assertEquals(1L, voiceNotes.sentVoiceNotes.single().second)
             assertEquals(1L, (viewModel.state.composer as ComposerUiState.Available).bar?.messageId)
         }
 
@@ -149,8 +149,8 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
                 assertEquals(VoiceEffect.HoldToRecord, awaitItem())
             }
-            assertTrue(attachments.sentVoiceNotes.isEmpty())
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
+            assertTrue(voiceNotes.sentVoiceNotes.isEmpty())
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
             assertNull(viewModel.recording)
         }
 
@@ -164,7 +164,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
             runCurrent()
 
             assertEquals(listOf("start:${voiceNoteFile("ogg")}:OggOpus", "stop"), recorder.calls)
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
             assertNull(viewModel.recording)
         }
 
@@ -178,8 +178,8 @@ class ChatRecorderTest : ChatViewModelHarness() {
             send(viewModel, VoiceEvent.Cancel)
 
             assertEquals("cancel", recorder.calls.last())
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
-            assertTrue(attachments.sentVoiceNotes.isEmpty())
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
+            assertTrue(voiceNotes.sentVoiceNotes.isEmpty())
             assertNull(viewModel.recording)
         }
 
@@ -203,7 +203,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
             assertEquals(listOf("pause", "resume", "stop"), recorder.calls.drop(1))
             assertEquals(
                 2,
-                attachments.sentVoiceNotes
+                voiceNotes.sentVoiceNotes
                     .single()
                     .first.duration,
             )
@@ -221,7 +221,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
             assertEquals(
                 2,
-                attachments.sentVoiceNotes
+                voiceNotes.sentVoiceNotes
                     .single()
                     .first.duration,
             )
@@ -238,14 +238,14 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
                 assertEquals(VoiceEffect.RecordingFailed, awaitItem())
             }
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
             assertNull(viewModel.recording)
         }
 
     @Test
     fun `no file to record into ends the recording with the error`() =
         runViewModelTest {
-            attachments.onNewVoiceNoteFile = { Outcome.Failure(DomainError.FileUnavailable) }
+            voiceNotes.onNewVoiceNoteFile = { Outcome.Failure(DomainError.FileUnavailable) }
             val viewModel = privateChat()
 
             viewModel.effects.test {
@@ -270,8 +270,8 @@ class ChatRecorderTest : ChatViewModelHarness() {
 
                 assertEquals(VoiceEffect.RecordingFailed, awaitItem())
             }
-            assertTrue(attachments.sentVoiceNotes.isEmpty())
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
+            assertTrue(voiceNotes.sentVoiceNotes.isEmpty())
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
         }
 
     @Test
@@ -297,7 +297,7 @@ class ChatRecorderTest : ChatViewModelHarness() {
             clear(viewModel)
 
             assertEquals(listOf("cancel", "release"), recorder.calls.drop(1))
-            assertEquals(listOf(voiceNoteFile("ogg")), attachments.discardedVoiceNotes)
+            assertEquals(listOf(voiceNoteFile("ogg")), voiceNotes.discardedVoiceNotes)
         }
 
     @Test

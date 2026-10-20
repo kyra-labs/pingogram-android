@@ -71,7 +71,7 @@ enum class AttachmentKind {
 
 /**
  * A voice message the user recorded in the composer (`REQUIREMENTS.md` FR-C5), ready to send: the audio at [path] in
- * the app's cache (a file from `AttachmentRepository.newVoiceNoteFile`), [duration] in seconds, at least 1, and its
+ * the app's cache (a file from `VoiceNoteRepository.newVoiceNoteFile`), [duration] in seconds, at least 1, and its
  * loudness as Telegram's 5-bit [waveform].
  *
  * `toString()` leaves out the path.

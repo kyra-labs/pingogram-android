@@ -7,14 +7,12 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
-import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 
 /**
  * The attach menu's repository: it prepares every picked URI as a photo named after it ([onPrepare]), records what is
- * discarded, sent and cancelled, and answers with what tests set. Voice note files are named after their extension
- * ([voiceNoteFile]).
+ * discarded, sent and cancelled, and answers with what tests set.
  */
 class FakeAttachmentRepository : AttachmentRepository {
     /** The URI and kind of every [prepare] call, in order. */
@@ -43,14 +41,6 @@ class FakeAttachmentRepository : AttachmentRepository {
 
     val sentPolls = mutableListOf<SentPoll>()
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }
-
-    /** What [newVoiceNoteFile] answers for an extension. */
-    var onNewVoiceNoteFile: suspend (String) -> Outcome<String> = { Outcome.Success(voiceNoteFile(it)) }
-    val discardedVoiceNotes = mutableListOf<String>()
-
-    /** The voice note and reply of every [sendVoiceNote] call. */
-    val sentVoiceNotes = mutableListOf<Pair<RecordedVoiceNote, Long?>>()
-    var onSendVoiceNote: suspend (RecordedVoiceNote) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** The message ids of every [cancelUpload] call. */
     val cancelled = mutableListOf<List<Long>>()
@@ -113,22 +103,6 @@ class FakeAttachmentRepository : AttachmentRepository {
         return onSendPoll(poll)
     }
 
-    override suspend fun newVoiceNoteFile(extension: String): Outcome<String> = onNewVoiceNoteFile(extension)
-
-    override fun discardVoiceNote(path: String) {
-        discardedVoiceNotes += path
-    }
-
-    override suspend fun sendVoiceNote(
-        chatId: Long,
-        voiceNote: RecordedVoiceNote,
-        options: SendOptions,
-        replyToMessageId: Long?,
-    ): Outcome<Unit> {
-        sentVoiceNotes += voiceNote to replyToMessageId
-        return onSendVoiceNote(voiceNote)
-    }
-
     override suspend fun cancelUpload(
         chatId: Long,
         messageIds: List<Long>,
@@ -155,9 +129,6 @@ class FakeAttachmentRepository : AttachmentRepository {
 
     companion object {
         const val CAMERA_FILE = "/cache/camera/shot.jpg"
-
-        /** The voice note file for [extension]. */
-        fun voiceNoteFile(extension: String) = "/cache/uploads/voice/voice.$extension"
 
         /** The photo a picked [uri] is prepared as: its copy is named after the URI. */
         fun photo(uri: String) = Attachment.Photo("/cache/uploads/${uri.substringAfterLast('/')}.jpg", 1_000, 800, 600)

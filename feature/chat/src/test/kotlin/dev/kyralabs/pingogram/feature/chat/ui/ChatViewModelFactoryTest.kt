@@ -75,6 +75,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 audioPlayer = player,
                 voiceRecorder = FakeVoiceRecorder(),
+                voiceNoteRepository = FakeVoiceNoteRepository(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

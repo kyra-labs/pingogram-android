@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.voice
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
-import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatLog
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEffect
@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 internal class ChatRecorder(
     private val chatId: Long,
     private val recorder: VoiceRecorder,
-    private val repository: AttachmentRepository,
+    private val repository: VoiceNoteRepository,
     private val scope: CoroutineScope,
     private val replies: ReplyHandoff,
     private val clock: () -> Long,
