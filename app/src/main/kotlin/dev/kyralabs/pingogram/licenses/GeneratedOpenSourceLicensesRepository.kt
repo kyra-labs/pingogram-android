@@ -25,11 +25,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [OpenSourceLicensesRepository] on the list the build generates (`docs/adr/0002-open-source-licenses.md`): the
- * AboutLibraries Gradle plugin writes each variant's runtime dependencies, with the entries and license texts of
- * `config/aboutlibraries`, into the raw resource `aboutlibraries`, read here with the platform's `org.json`. It is
- * read and mapped once, on the IO dispatcher, the first time a screen asks, then kept for the process (a few hundred
- * KB).
+ * [OpenSourceLicensesRepository] on the list the build generates (`docs/adr/0002-open-source-licenses.md`):
+ * build-logic's `pingogram.android.licenses` writes each variant's runtime dependencies, with their POM licenses, the
+ * entries of `config/licenses/extra.json` and every license text, into the raw resource `open_source_licenses`, read
+ * here with the platform's `org.json`. It is read and mapped once, on the IO dispatcher, the first time a screen asks,
+ * then kept for the process (about a hundred KB).
  */
 @Singleton
 class GeneratedOpenSourceLicensesRepository
@@ -65,7 +65,9 @@ class GeneratedOpenSourceLicensesRepository
             val read =
                 try {
                     Result.success(
-                        context.resources.openRawResource(R.raw.aboutlibraries).use { it.readBytes().decodeToString() },
+                        context.resources
+                            .openRawResource(R.raw.open_source_licenses)
+                            .use { it.readBytes().decodeToString() },
                     )
                 } catch (e: IOException) {
                     Result.failure(e)
@@ -89,16 +91,15 @@ class GeneratedOpenSourceLicensesRepository
 
         private fun unreadable(cause: Throwable?): Outcome.Failure =
             Outcome.Failure(
-                DomainError.Unknown(code = 0, message = "aboutlibraries unreadable: ${cause?.javaClass?.name}"),
+                DomainError.Unknown(code = 0, message = "open_source_licenses unreadable: ${cause?.javaClass?.name}"),
             )
     }
 
 /**
- * The libraries in AboutLibraries' [json], as the screens show them: sorted by name (case-insensitively, then by id,
- * so two libraries of one name keep their order), with their licenses sorted by name. The file is the plugin's
- * `{"libraries": [...], "licenses": {id: {...}}}`; each library names its licenses by id. Read with `org.json`, which
- * Android ships: `aboutlibraries-core` would do the same, but its classes target Java 21, which the JDK 17 unit tests
- * cannot load. Throws [JSONException] if the file cannot be parsed.
+ * The libraries in the generated [json], as the screens show them: sorted by name (case-insensitively, then by id, so
+ * two libraries of one name keep their order), with their licenses sorted by name. The format is build-logic's
+ * (`OpenSourceLicenses`): `{"formatVersion": 1, "libraries": [...], "licenses": {spdxId: {name, url, text}}}`; each
+ * library names its licenses by SPDX id. Throws [JSONException] if the file cannot be parsed.
  */
 internal fun openSourceLibraries(json: String): ImmutableList<OpenSourceLibrary> {
     val root = JSONObject(json)
@@ -112,19 +113,14 @@ internal fun openSourceLibraries(json: String): ImmutableList<OpenSourceLibrary>
 }
 
 private fun JSONObject.toOpenSourceLibrary(licenses: JSONObject): OpenSourceLibrary {
-    val id = getString("uniqueId")
+    val id = getString("id")
     return OpenSourceLibrary(
         id = id,
         name = text("name") ?: id,
-        version = text("artifactVersion")?.let(::displayVersion),
+        version = text("version")?.let(::displayVersion),
         description = text("description"),
-        developers =
-            optJSONArray("developers")
-                .objects()
-                .mapNotNull { it.text("name") }
-                .ifEmpty { listOfNotNull(optJSONObject("organization")?.text("name")) }
-                .toImmutableList(),
-        website = text("website") ?: optJSONObject("scm")?.text("url"),
+        developers = optJSONArray("developers").strings().toImmutableList(),
+        website = text("website"),
         licenses =
             optJSONArray("licenses")
                 .strings()
@@ -135,15 +131,13 @@ private fun JSONObject.toOpenSourceLibrary(licenses: JSONObject): OpenSourceLibr
 }
 
 /** The license [id] refers to, from its entry in the file; just its id if the file has no entry for it. */
-private fun JSONObject?.toOpenSourceLicense(id: String): OpenSourceLicense {
-    val spdxId = this?.text("spdxId")
-    return OpenSourceLicense(
-        id = spdxId ?: id,
-        name = this?.text("name") ?: spdxId ?: id,
+private fun JSONObject?.toOpenSourceLicense(id: String): OpenSourceLicense =
+    OpenSourceLicense(
+        id = id,
+        name = this?.text("name") ?: id,
         url = this?.text("url"),
-        text = this?.text("content"),
+        text = this?.text("text"),
     )
-}
 
 /** The string at [key], or null if it is missing, null or blank. */
 private fun JSONObject.text(key: String): String? = if (isNull(key)) null else optString(key).takeIf { it.isNotBlank() }

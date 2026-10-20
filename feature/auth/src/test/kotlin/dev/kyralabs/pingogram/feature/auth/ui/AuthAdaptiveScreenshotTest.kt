@@ -17,8 +17,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The adaptive layout of the login screens (`docs/DESIGN_SYSTEM.md` §7): one centered column of comfortable width on
- * an expanded window and in landscape, and text-heavy screens at 200% font scale (`REQUIREMENTS.md` §6.3).
+ * The adaptive layout of the login screens (`docs/DESIGN_SYSTEM.md` §7): two panes, the headline at the start and the
+ * form with its actions at the end, on an expanded window and on a phone in landscape, and text-heavy screens at 200%
+ * font scale (`REQUIREMENTS.md` §6.3).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -56,6 +57,18 @@ class AuthAdaptiveScreenshotTest {
     @Test
     @Config(qualifiers = LANDSCAPE)
     fun phoneNumberLandscape() = capture("phoneNumberLandscape", AuthPreviewData.phoneNumber)
+
+    @Test
+    @Config(qualifiers = LANDSCAPE)
+    fun qrCodeLandscape() = capture("qrCodeLandscape", AuthPreviewData.qrCode)
+
+    @Test
+    @Config(qualifiers = LANDSCAPE)
+    fun codeErrorLandscape() = capture("codeErrorLandscape", AuthPreviewData.codeError)
+
+    @Test
+    @Config(qualifiers = EXPANDED)
+    fun passwordExpanded() = capture("passwordExpanded", AuthPreviewData.password)
 
     @Test
     @Config(fontScale = FONT_SCALE_200)
