@@ -381,7 +381,7 @@ class ChatItemsTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `channels and Saved Messages show no states`() =
+    fun `channels and Saved Messages show no sent or read states`() =
         runTest {
             val channel = showing(channelChat, history(outgoing(1, chatId = channelChat.id)))
             assertNull(channel.bubble(1).status)

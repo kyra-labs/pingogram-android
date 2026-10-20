@@ -71,6 +71,10 @@
     <string name="chat_unread_badge_overflow">%1$d+</string>
     <!-- On a bubble's corner after its first reaction badges: %1$d more kinds of reaction. -->
     <string name="chat_reactions_more">+%1$d</string>
+    <!-- Under a bubble whose message could not be sent; tapping it sends the message again. -->
+    <string name="chat_not_sent_retry">Not sent · Tap to retry</string>
+    <!-- Under a bubble whose message could not be sent and cannot be sent again. -->
+    <string name="chat_not_sent">Not sent</string>
 
     <!-- Screen readers: a message bubble read as one ("Alice, 9:41 AM: Hello, read"). -->
     <!-- %1$s is the sender, %2$s the time, %3$s the content, %4$s the state of an outgoing message. -->

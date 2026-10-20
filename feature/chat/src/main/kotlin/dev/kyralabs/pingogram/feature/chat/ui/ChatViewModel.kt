@@ -121,6 +121,7 @@ import java.util.Locale
  * - **Read** ([MessageViews]): the messages the screen shows ([ChatEvent.MessagesVisible]) go to TDLib as viewed while
  *   the chat is open, which reads them; [Chat.unreadCount], the jump button's badge, follows.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every emission.
+ *   A group of messages shows its time on its last bubble; a bubble tapped shows its own ([ChatEvent.ToggleTime]).
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
  *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
  *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
@@ -154,7 +155,8 @@ import java.util.Locale
  *   done, so the frame does not wait for it.
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
  *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, a scheduled
- *   message's time, a copied text, and the composer's focus when a reply or an edit starts.
+ *   message's time, a copied text, the composer's focus when a reply or an edit starts, and a haptic when a message
+ *   being sent fails while the screen is shown ([SendFailures]).
  *
  * It takes one repository per kind of data the screen combines or changes, plus the player, clock, dispatcher,
  * language, time patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation
@@ -246,8 +248,17 @@ class ChatViewModel internal constructor(
 
     private val revealedSpoilers = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
 
-    /** Whether the chat is open in TDLib ([ChatEvent.Started]); main thread only. */
+    /** The messages whose time was tapped to show ([ChatEvent.ToggleTime]). */
+    private val shownTimes = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
+
+    /**
+     * Whether the chat is open in TDLib ([ChatEvent.Started]): set on the main thread, read where the history is
+     * watched for failed sends too ([SendFailures]).
+     */
+    @Volatile
     private var isOpen = false
+
+    private val sendFailures = SendFailures()
 
     private val mapper = ChatItemMapper()
     private var timeFormatter: ChatTimeFormatter? = null
@@ -433,6 +444,8 @@ class ChatViewModel internal constructor(
         messageRepository
             .history(chatId)
             .onEach(::fetchMissingReplies)
+            // A `Reject` haptic when a message being sent fails while the screen is shown (SendFailures).
+            .onEach { if (sendFailures.failedSince(it) && isOpen) effectChannel.trySend(ChatEffect.SendFailed) }
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
@@ -494,9 +507,12 @@ class ChatViewModel internal constructor(
             ::ChatSources,
         )
 
+    /** What was tapped in the bubbles: the messages whose spoilers show, and those whose time shows. */
+    private val tapped: Flow<Pair<Set<Long>, Set<Long>>> = combine(revealedSpoilers, shownTimes, ::Pair)
+
     private val messageSources: Flow<MessageSources> =
-        combine(history, replies, revealedSpoilers, window.state) { history, replies, revealed, load ->
-            MessageSources(MessageState(load.historyFor(history), replies, revealed), load)
+        combine(history, replies, tapped, window.state) { history, replies, (spoilers, times), load ->
+            MessageSources(MessageState(load.historyFor(history), replies, spoilers, times), load)
         }
 
     private val people: Flow<ChatPeople> =
@@ -557,6 +573,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
+            is ChatEvent.ToggleTime -> shownTimes.update { it.toggling(event.messageId) }
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.DownloadFile -> files.download(event.fileId)
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
@@ -956,3 +973,6 @@ private fun DomainError?.toContent(): ChatContent =
         DomainError.NotFound -> ChatContent.NotFound
         else -> ChatContent.Error(this)
     }
+
+/** This set without [id] if it holds it, else with it. */
+private fun PersistentSet<Long>.toggling(id: Long): PersistentSet<Long> = if (id in this) removing(id) else adding(id)

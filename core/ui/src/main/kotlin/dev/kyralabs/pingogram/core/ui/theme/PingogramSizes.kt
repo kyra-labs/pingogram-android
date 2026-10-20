@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
  *   incoming and outgoing bubbles stay apart.
  * @property bubbleMaxWidth the widest a message bubble gets on wide windows, where [bubbleMaxWidthFraction] would make
  *   lines too long to read comfortably; the width of [contentMaxWidth].
- * @property quoteBarWidth the bar at the start of a reply quote or link preview inside a bubble.
  * @property reactionBadge the smallest a reaction's round badge on a bubble's corner gets: its diameter with one emoji.
+ *   Its touch target is 48 dp nonetheless, reaching past it without taking room.
  * @property reactionBadgeRing the ring in the conversation's background color around a reaction badge, which sets it
  *   off from the bubble it overlaps.
  * @property reactionTile the width of a reaction with its count in the reactions picker's carousel of a message's
@@ -82,7 +82,6 @@ data class PingogramSizes(
     val inlineProgressIndicator: Dp = 20.dp,
     val bubbleMaxWidthFraction: Float = 0.8f,
     val bubbleMaxWidth: Dp = 560.dp,
-    val quoteBarWidth: Dp = 3.dp,
     val reactionBadge: Dp = 28.dp,
     val reactionBadgeRing: Dp = 2.dp,
     val reactionTile: Dp = 64.dp,
