@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlin.math.roundToInt
@@ -34,7 +35,7 @@ internal class TabScroll(
 )
 
 /**
- * The tabs' scroll, which brings the selected tab ([selectedIndex]) fully into view with the row's margin beside it
+ * The tabs' scroll, which brings the selected tab ([selectedIndex]) fully into view with the row's [margin] beside it
  * whenever it changes: at once the first time, then on the motion scheme's default spatial spring
  * (`docs/DESIGN_SYSTEM.md` §5). Nothing moves if it is in view already.
  */
@@ -42,10 +43,11 @@ internal class TabScroll(
 internal fun rememberTabScroll(
     tabCount: Int,
     selectedIndex: Int,
+    margin: Dp,
 ): TabScroll {
     val state = rememberScrollState()
     val scroll = remember(state, tabCount) { TabScroll(state, arrayOfNulls(tabCount)) }
-    val margin = with(LocalDensity.current) { MaterialTheme.spacing.windowMarginCompact.toPx() }
+    val marginPx = with(LocalDensity.current) { margin.toPx() }
     val layoutDirection = LocalLayoutDirection.current
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     val shown = remember { ShownTab() }
@@ -53,7 +55,7 @@ internal fun rememberTabScroll(
         // The buttons are placed in the frame that composes them.
         if (scroll.buttonBounds.getOrNull(selectedIndex) == null) withFrameNanos {}
         val bounds = scroll.buttonBounds.getOrNull(selectedIndex) ?: return@LaunchedEffect
-        val target = state.valueShowing(bounds, margin, layoutDirection) ?: return@LaunchedEffect
+        val target = state.valueShowing(bounds, marginPx, layoutDirection) ?: return@LaunchedEffect
         if (shown.index == null) state.scrollTo(target) else state.animateScrollTo(target, spec)
         shown.index = selectedIndex
     }

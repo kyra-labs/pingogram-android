@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -31,9 +32,13 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
+import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import kotlinx.collections.immutable.toPersistentList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -338,6 +343,66 @@ class ChatListScreenTest {
     }
 
     @Test
+    fun `an error offers to try again`() {
+        setScreen(ChatListPreviewData.error)
+
+        composeRule.onNode(hasText(string(R.string.chat_list_retry)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(ChatListEvent.Retry), events)
+    }
+
+    // Tapping the Chats tab again
+
+    @Test
+    fun `tapping the selected Chats tab scrolls the list back to its top`() {
+        val reselection = TabReselection()
+        val listState = LazyListState()
+        setScreen(longList(), reselection = reselection, listState = listState)
+        listState.requestScrollToItem(LONG_LIST_SIZE / 2)
+        composeRule.waitForIdle()
+        assertTrue(listState.firstVisibleItemIndex > 0)
+
+        reselection.reselect(ChatsRoute)
+        composeRule.waitForIdle()
+
+        assertEquals(0, listState.firstVisibleItemIndex)
+        assertEquals(0, listState.firstVisibleItemScrollOffset)
+    }
+
+    @Test
+    fun `the archive stays where it is when the Chats tab is tapped again`() {
+        val reselection = TabReselection()
+        val listState = LazyListState()
+        setScreen(longList().copy(kind = ChatListKind.Archive), reselection = reselection, listState = listState)
+        listState.requestScrollToItem(LONG_LIST_SIZE / 2)
+        composeRule.waitForIdle()
+
+        reselection.reselect(ChatsRoute)
+        composeRule.waitForIdle()
+
+        assertEquals(LONG_LIST_SIZE / 2, listState.firstVisibleItemIndex)
+    }
+
+    // Rows
+
+    @Test
+    fun `every row is as tall as the others, whatever it shows at its end`() {
+        setScreen(ChatListPreviewData.content)
+
+        val heights = rowHeights()
+        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+    }
+
+    @Test
+    fun `at twice the font size every row is still as tall as the others`() {
+        RuntimeEnvironment.setFontScale(LARGE_FONT_SCALE)
+        setScreen(ChatListPreviewData.content)
+
+        val heights = rowHeights()
+        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+    }
+
+    @Test
     fun `an empty archive offers no New chat button`() {
         setScreen(ChatListPreviewData.archivedEmpty)
 
@@ -413,15 +478,34 @@ class ChatListScreenTest {
         state: ChatListUiState,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
         openChatId: Long? = null,
+        reselection: TabReselection = TabReselection(),
+        listState: LazyListState = LazyListState(),
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-                    ChatListScreen(state = state, onEvent = ::record, openChatId = openChatId)
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides layoutDirection,
+                    LocalTabReselection provides reselection,
+                ) {
+                    ChatListScreen(state = state, onEvent = ::record, listState = listState, openChatId = openChatId)
                 }
             }
         }
     }
+
+    /** [LONG_LIST_SIZE] chats, many screens of them. */
+    private fun longList(): ChatListUiState {
+        val row = ChatListPreviewData.items.first()
+        val rows = (1..LONG_LIST_SIZE).map { row.copy(id = it.toLong()) }.toPersistentList()
+        return ChatListPreviewData.content.copy(content = ChatListContent.Content(rows))
+    }
+
+    /** The chat rows laid out, by their description, with their heights. */
+    private fun rowHeights(): Map<String, Int> =
+        composeRule
+            .onAllNodes(hasContentDescription(",", substring = true) and hasClickAction())
+            .fetchSemanticsNodes()
+            .associate { it.config[SemanticsProperties.ContentDescription].joinToString() to it.size.height }
 
     /** Keeps the events these tests are about: not paging, which the list reports as it lays out. */
     private fun record(event: ChatListEvent) {
@@ -443,5 +527,7 @@ class ChatListScreenTest {
         const val GRACE = "Grace Hopper"
         const val GRACE_ID = 4L
         const val ORBITAL_ID = 5L
+        const val LONG_LIST_SIZE = 60
+        const val LARGE_FONT_SCALE = 2f
     }
 }
