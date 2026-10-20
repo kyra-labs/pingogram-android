@@ -1,0 +1,35 @@
+package dev.kyralabs.pingogram.push
+
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
+import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.core.domain.repository.PushRepository
+import kotlinx.coroutines.runBlocking
+import javax.inject.Inject
+
+/**
+ * Receives Firebase Cloud Messaging's pushes and tokens (`docs/adr/0004-push-delivery.md`). The process may have been
+ * started for it: `PingogramApplication` has then already started TDLib and the notification renderer, so a push only
+ * has to reach TDLib, which turns it into notifications the renderer shows.
+ *
+ * Firebase calls both methods on a thread of its own, one at a time, and lets the process go once they return, so
+ * [onMessageReceived] waits for TDLib, as long as [PushRepository.processPush] allows (a few seconds).
+ */
+@AndroidEntryPoint
+class PingogramMessagingService : FirebaseMessagingService() {
+    @Inject
+    lateinit var pushRepository: PushRepository
+
+    override fun onNewToken(token: String) {
+        pushRepository.onNewToken(token)
+    }
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        val payload = PushPayload.json(message.data, message.sentTime, message.notification?.sound)
+        // Firebase's worker thread, never the main thread; the wait is bounded by processPush.
+        runBlocking { pushRepository.processPush(payload) }
+    }
+
+    // onDeletedMessages: Firebase dropped pushes it could not deliver. Nothing to do: TDLib fetches everything new
+    // when it next connects, and its notification engine shows what is still unread.
+}

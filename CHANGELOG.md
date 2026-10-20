@@ -34,6 +34,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   version and license. Tap one to read the full license text, which you can select and copy, and to open its
   website. The list is made from the app's own build, so it always matches what you installed, and it works
   offline.
+- Push notifications for builds with Google Play services (the "gms" build, not yet published): new messages arrive
+  through Firebase Cloud Messaging even when Pingogram is closed. Telegram encrypts each push for your device, so
+  Google only sees that something arrived. The GitHub releases stay free of Google's services.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a

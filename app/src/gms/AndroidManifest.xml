@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The gms flavor: push notifications through Firebase Cloud Messaging (docs/adr/0004-push-delivery.md). Firebase's
+     libraries bring their permissions and components with them; AppManifestTest pins what the merged manifest ends up
+     with, for both flavors. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Firebase Cloud Messaging declares INTERNET, POST_NOTIFICATIONS, WAKE_LOCK, ACCESS_NETWORK_STATE and
+         com.google.android.c2dm.permission.RECEIVE (receiving its messages). WAKE_LOCK here for every version, not
+         only to API 30 as in the main manifest: FCM holds a wake lock while it hands a push to the service, without
+         which "service start may be delayed" in Doze. ACCESS_NETWORK_STATE stays out (main manifest): FCM checks for
+         it and does without; only its token refresh task, which auto-init off leaves idle, reads connectivity. -->
+    <uses-permission
+        android:name="android.permission.WAKE_LOCK"
+        tools:node="replace" />
+
+    <application>
+
+        <!-- Firebase's pushes and new tokens, handed over by its receiver (FirebaseInstanceIdReceiver, which only Play
+             services may send to: com.google.android.c2dm.permission.SEND). Not exported. -->
+        <service
+            android:name=".push.PingogramMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- No token, and no contact with Google, until a logged-in account asks for one (FirebasePushTokenSource);
+             after a logout the token is deleted and none is made again by itself. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <!-- Firebase's default for data collection, off: the app ships Firebase Cloud Messaging only, and no Firebase
+             library may collect anything by default. No Analytics, no Crashlytics (REQUIREMENTS.md G5). -->
+        <meta-data
+            android:name="firebase_data_collection_default_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_deactivated"
+            android:value="true" />
+        <!-- Firebase Cloud Messaging can log message delivery to BigQuery through Google's data transport; off (its
+             default, written down here so it stays off). -->
+        <meta-data
+            android:name="firebase_messaging_delivery_metrics_exported_to_big_query_enabled"
+            android:value="false" />
+    </application>
+
+</manifest>

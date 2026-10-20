@@ -8,6 +8,7 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
+import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import javax.inject.Inject
@@ -32,6 +33,10 @@ class PingogramApplication :
     @Inject
     lateinit var notificationRenderer: NotificationRenderer
 
+    /** Registers for push notifications at every login (gms; does nothing in foss, which has no push service). */
+    @Inject
+    lateinit var pushRepository: PushRepository
+
     /** Creates the workers with Hilt (notification actions); WorkManager asks for it when first used. */
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -44,6 +49,8 @@ class PingogramApplication :
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
+        // Follows the login to register the push token with Telegram, or delete it at logout (gms only).
+        pushRepository.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()

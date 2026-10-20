@@ -27,6 +27,9 @@ import javax.xml.parsers.DocumentBuilderFactory
  * (approved 2026-10-19); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
  * left out.
+ * The gms flavor adds Firebase Cloud Messaging (approved as "the gms flavor's FCM permissions",
+ * docs/adr/0004-push-delivery.md): its c2dm RECEIVE permission and WAKE_LOCK for every version, its receiver guarded by
+ * Play services' SEND permission, and a private messaging service; FCM's auto-init stays off. foss has none of it.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */
@@ -45,8 +48,9 @@ class AppManifestTest {
                 .toSet()
 
         // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
-        // not requested.
-        assertEquals(setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS), requested)
+        // not requested; gms keeps FCM's WAKE_LOCK.
+        val expected = setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS)
+        assertEquals(if (isGms) expected + Manifest.permission.WAKE_LOCK else expected, requested)
     }
 
     @Test
@@ -62,12 +66,41 @@ class AppManifestTest {
             mapOf(
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
-                Manifest.permission.WAKE_LOCK to "30",
+                Manifest.permission.WAKE_LOCK to if (isGms) "" else "30",
                 Manifest.permission.FOREGROUND_SERVICE to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ),
             declared,
         )
+    }
+
+    @Test
+    fun `only gms receives Firebase Cloud Messaging, through a private service, without auto-init`() {
+        val manifest = mergedManifest()
+        val permissions = manifest.elements("uses-permission").map { it.androidAttribute("name") }
+        val components =
+            listOf("service", "receiver", "provider", "activity").flatMap { tag ->
+                manifest.elements(tag).map { it.androidAttribute("name") }
+            }
+        val googleServices =
+            components.filter { it.startsWith("com.google.firebase.") || it.startsWith("com.google.android.") }
+
+        if (!isGms) {
+            assertFalse(C2DM_RECEIVE in permissions)
+            assertEquals(emptyList<String>(), googleServices)
+            return
+        }
+        val service =
+            manifest.elements("service").single { it.androidAttribute("name").endsWith(".PingogramMessagingService") }
+        val receiver = manifest.elements("receiver").single { it.androidAttribute("name") == FCM_RECEIVER }
+        val metaData =
+            manifest.elements("meta-data").associate { it.androidAttribute("name") to it.androidAttribute("value") }
+
+        assertTrue(C2DM_RECEIVE in permissions)
+        assertEquals("false", service.androidAttribute("exported"))
+        assertEquals("com.google.android.c2dm.permission.SEND", receiver.androidAttribute("permission"))
+        assertEquals("false", metaData["firebase_messaging_auto_init_enabled"])
+        assertEquals("false", metaData["firebase_data_collection_default_enabled"])
     }
 
     @Test
@@ -138,5 +171,10 @@ class AppManifestTest {
         /** What the test libraries (androidx.test's activity scenarios) add to the unit tests' manifest only. */
         val TEST_ONLY_PERMISSIONS = setOf("android.permission.REORDER_TASKS")
         const val GET_META_DATA = PackageManager.GET_META_DATA
+
+        const val C2DM_RECEIVE = "com.google.android.c2dm.permission.RECEIVE"
+        const val FCM_RECEIVER = "com.google.firebase.iid.FirebaseInstanceIdReceiver"
+
+        val isGms = BuildConfig.FLAVOR == "gms"
     }
 }

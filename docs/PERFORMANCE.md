@@ -120,8 +120,11 @@ regresses by more than 10%.
   WorkManager under 15 min.
 - Foreground service (`dataSync`) only while an upload/download the user started is in progress;
   stopped within 5 s of completion.
-- `gms` flavor: FCM push (`registerDevice`) so TDLib can sleep; `foss` uses TDLib's
-  keep-alive (documented in Settings → Notifications as the trade-off).
+- `gms` flavor: FCM push (`registerDevice`, encrypted) so TDLib can sleep; `foss` uses TDLib's
+  keep-alive (documented in Settings → Notifications as the trade-off). A push wakes the process for at most
+  6 s + 3 s (`TdlibPushRepository`: `processPushNotification`, then held-back notifications), not a foreground
+  service. The token is registered at login and at each start, which TDLib answers locally when it is unchanged; no
+  periodic re-registration (`docs/adr/0004-push-delivery.md`).
 - Respect Doze and App Standby buckets; never request battery-optimization exemptions by default.
 
 ## 7. Network & data
