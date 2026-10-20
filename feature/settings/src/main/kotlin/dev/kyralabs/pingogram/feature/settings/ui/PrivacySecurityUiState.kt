@@ -24,12 +24,14 @@ sealed interface PrivacySecurityUiState {
      * @property blockedCount how many users and chats are blocked.
      * @property sessionCount how many sessions the account has, this one included.
      * @property twoStepVerification whether a 2-step verification password is set, read-only.
+     * @property passcodeLock whether the passcode lock is on, on this device.
      */
     data class Content(
         val rules: ImmutableMap<PrivacySetting, PrivacyRules>,
         val blockedCount: Int,
         val sessionCount: Int,
         val twoStepVerification: TwoStepVerificationSummary,
+        val passcodeLock: Boolean = false,
     ) : PrivacySecurityUiState
 }
 
@@ -65,4 +67,6 @@ sealed interface PrivacySecurityPage {
     data object BlockedUsers : PrivacySecurityPage
 
     data object ActiveSessions : PrivacySecurityPage
+
+    data object PasscodeLock : PrivacySecurityPage
 }

@@ -52,8 +52,9 @@ internal fun PrivacySecurityRoute(
 /**
  * Privacy and security (`REQUIREMENTS.md` FR-S1):
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
- * - Security: blocked users and active sessions with their counts, each opening its page, and whether 2-step
- *   verification is on, read-only (changing the password comes later).
+ * - Security: blocked users and active sessions with their counts, each opening its page, whether 2-step
+ *   verification is on, read-only (changing the password comes later), and whether the passcode lock is on, which
+ *   opens its page.
  */
 @Composable
 internal fun PrivacySecurityScreen(
@@ -163,6 +164,20 @@ private fun SecuritySection(
             )
         }
         item { shapes -> TwoStepVerificationItem(state.twoStepVerification, shapes) }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_passcode_lock),
+                summary =
+                    if (state.passcodeLock) {
+                        stringResource(R.string.settings_passcode_lock_on)
+                    } else {
+                        stringResource(R.string.settings_passcode_lock_off)
+                    },
+                icon = R.drawable.ic_pin,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
+            )
+        }
     }
 }
 

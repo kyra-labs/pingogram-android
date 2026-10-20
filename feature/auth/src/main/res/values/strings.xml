@@ -29,6 +29,7 @@
     <string name="auth_country">Country</string>
     <string name="auth_country_choose">Choose a country</string>
     <string name="auth_country_search">Search countries</string>
+    <string name="auth_country_search_clear">Clear search</string>
     <string name="auth_country_none">No countries found</string>
     <string name="auth_calling_code">Code</string>
     <string name="auth_phone_number">Phone number</string>

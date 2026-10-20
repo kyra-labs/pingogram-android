@@ -1,4 +1,4 @@
-# 0005 — Sharing the location: the platform's `LocationManager`, foreground only, no map
+# 0006 — Sharing the location: the platform's `LocationManager`, foreground only, no map
 
 Date: 2026-10-20 · Status: accepted
 

@@ -14,3 +14,9 @@ internal fun Duration.wholeSecondsRoundedUp(): Long =
     if (isPositive()) (inWholeNanoseconds + NANOS_PER_SECOND - 1) / NANOS_PER_SECOND else 0
 
 private val NANOS_PER_SECOND = 1.seconds.inWholeNanoseconds
+
+/** The part of a countdown still to run, for its progress: 1 at the start, 0 at the end, 1 while [total] is unknown. */
+internal fun countdownFraction(
+    secondsLeft: Long,
+    total: Long,
+): Float = if (total <= 0) 1f else (secondsLeft.toFloat() / total).coerceIn(0f, 1f)

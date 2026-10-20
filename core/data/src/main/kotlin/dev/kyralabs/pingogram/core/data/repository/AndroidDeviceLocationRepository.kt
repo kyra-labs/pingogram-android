@@ -24,7 +24,7 @@ import android.location.Location as AndroidLocation
 
 /**
  * [DeviceLocationRepository] on the platform's `LocationManager`, without Google Play services, so the foss flavor
- * stays free of them (`docs/adr/0005-platform-location-manager.md`).
+ * stays free of them (`docs/adr/0006-platform-location-manager.md`).
  *
  * - **Providers**: with precise access GPS and the network provider, with approximate access the network provider
  *   only (GPS needs precise access), and on Android 12 and later the platform's fused provider too, which combines

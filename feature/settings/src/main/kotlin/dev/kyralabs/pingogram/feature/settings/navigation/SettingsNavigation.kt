@@ -19,8 +19,10 @@ import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
+import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
+import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
@@ -38,6 +40,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as Ope
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRoute as SettingsScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 
 /**
  * Adds the Settings tab, [SettingsRoute], to the graph. Its rows call [onOpen] with the route of the page they open,
@@ -60,8 +64,9 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [AboutRoute] and [PrivacySecurityRoute], and the ones these push
  * above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
- * [PrivacySettingRoute], [BlockedUsersRoute] and [ActiveSessionsRoute] above Privacy and security,
- * [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it. [onBack] leaves each of them; Edit
+ * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute] and [PasscodeLockRoute] above Privacy and
+ * security, [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and
+ * [OpenSourceLibraryRoute] above it. [onBack] leaves each of them; Edit
  * profile leaves with [onProfileSaved] once it saved, which the app implements with [popBackStackAfterProfileSaved].
  */
 fun NavGraphBuilder.settingsPages(
@@ -109,6 +114,10 @@ fun NavGraphBuilder.settingsPages(
     }
     composable<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
     composable<ActiveSessionsRoute> { ActiveSessionsScreenRoute(onBack = onBack) }
+    composable<PasscodeLockRoute> {
+        PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
+    }
+    composable<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
 }
 
 /**
@@ -140,6 +149,7 @@ private val PrivacySecurityPage.route: Any
             is PrivacySecurityPage.Setting -> PrivacySettingRoute(setting.name)
             PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
+            PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
         }
 
 private val NotificationSettingsPage.route: Any

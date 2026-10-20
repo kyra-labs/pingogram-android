@@ -89,6 +89,14 @@ data object BlockedUsersRoute
 @Serializable
 data object ActiveSessionsRoute
 
+/** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object PasscodeLockRoute
+
+/** Setting a new passcode, entered twice, pushed above [PasscodeLockRoute]. */
+@Serializable
+data object SetPasscodeRoute
+
 /**
  * Notifications (`REQUIREMENTS.md` FR-S1): the defaults of private chats, groups and channels, "Keep connected" and
  * resetting them, `:feature:settings`, pushed above the Settings tab.

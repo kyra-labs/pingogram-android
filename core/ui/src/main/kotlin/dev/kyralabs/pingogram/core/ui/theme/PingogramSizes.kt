@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.dp
  * @property fabMedium the height of a medium floating action button, extended or not (Material 3 Expressive's medium
  *   FAB, which material3 has no public token for): the room a list leaves at its end, so its last row can scroll clear
  *   of one.
+ * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
+ * @property passcodeDot the diameter of a dot that stands for an entered digit of a passcode.
  */
 @Immutable
 data class PingogramSizes(
@@ -101,6 +103,8 @@ data class PingogramSizes(
     val waveformBarGap: Dp = 2.dp,
     val attachmentPreview: Dp = 120.dp,
     val fabMedium: Dp = 80.dp,
+    val pinPadMaxWidth: Dp = 360.dp,
+    val passcodeDot: Dp = 14.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

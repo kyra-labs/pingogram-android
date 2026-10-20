@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
@@ -28,6 +29,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageReposito
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
@@ -63,6 +65,9 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 interface RepositoryModule {
     @Binds
     fun authRepository(repository: TdlibAuthRepository): AuthRepository
+
+    @Binds
+    fun appLockRepository(repository: DefaultAppLockRepository): AppLockRepository
 
     @Binds
     fun connectionRepository(repository: TdlibConnectionRepository): ConnectionRepository
