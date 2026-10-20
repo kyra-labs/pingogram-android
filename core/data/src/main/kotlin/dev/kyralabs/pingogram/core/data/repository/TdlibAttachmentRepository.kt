@@ -18,11 +18,13 @@ import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -41,8 +43,10 @@ import javax.inject.Singleton
  * [AttachmentRepository] on TDLib and the app's cache ([UploadFiles]). Preparing and reading picked content runs on
  * [io] ([AttachmentPreparer], through the [ContentSource] and [MediaProcessor] seams); sending only sends requests: the
  * messages reach the conversation through TDLib's updates as being sent, as text messages do, and their copies are
- * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here.
+ * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here. One function per kind of
+ * attachment, as in [AttachmentRepository] (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,
@@ -152,6 +156,14 @@ class TdlibAttachmentRepository internal constructor(
         replyToMessageId: Long?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, contact.toInputMessageContact(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendLocation(
+        chatId: Long,
+        location: DeviceLocation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyToMessageId?.let(::replyToMessage))
 
     override suspend fun sendPoll(
         chatId: Long,

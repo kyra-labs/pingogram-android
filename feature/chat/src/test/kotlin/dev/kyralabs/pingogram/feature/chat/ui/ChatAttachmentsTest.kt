@@ -13,10 +13,12 @@ import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.Photo
@@ -103,7 +105,13 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         fun `a private chat offers everything but polls`() =
             runViewModelTest {
                 assertEquals(
-                    listOf(AttachOption.Gallery, AttachOption.Camera, AttachOption.File, AttachOption.Contact),
+                    listOf(
+                        AttachOption.Gallery,
+                        AttachOption.Camera,
+                        AttachOption.File,
+                        AttachOption.Location,
+                        AttachOption.Contact,
+                    ),
                     privateChat().options,
                 )
             }
@@ -430,6 +438,49 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                 }
                 assertTrue(attachments.sentContacts.isEmpty())
                 assertEquals(1L, viewModel.replyTo)
+            }
+    }
+
+    @Nested
+    inner class Locations {
+        private val here = DeviceLocation(Location(51.4978, -0.1745), accuracyMeters = 12f)
+
+        @Test
+        fun `the location is sent as asked, with the composer's reply`() =
+            runViewModelTest {
+                val viewModel = privateChat(replyTo = 1)
+                val silent = SendOptions(silent = true)
+
+                send(viewModel, ChatEvent.SendLocation(here, silent))
+
+                assertEquals(listOf(Triple(here, silent, 1L)), attachments.sentLocations)
+                assertNull(viewModel.replyTo)
+            }
+
+        @Test
+        fun `a refused location gives the reply back, with the error`() =
+            runViewModelTest {
+                attachments.onSendLocation = { Outcome.Failure(DomainError.SendingNotAllowed) }
+                val viewModel = privateChat(replyTo = 1)
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendLocation(here))
+
+                    assertEquals(ChatEffect.ShowError(DomainError.SendingNotAllowed), awaitItem())
+                }
+                assertEquals(1L, viewModel.replyTo)
+            }
+
+        @Test
+        fun `a scheduled location is confirmed with its time`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendLocation(here, SendOptions(scheduledAt = 1_800_000_000)))
+
+                    assertEquals(ChatEffect.MessageScheduled(1_800_000_000), awaitItem())
+                }
             }
     }
 

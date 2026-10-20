@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
@@ -25,9 +26,10 @@ internal sealed interface SearchState {
         val isLoading: Boolean = true,
     ) : SearchState
 
-    /** The sections of [query]'s results; see [SearchContent.Results]. */
+    /** The sections of [query]'s results under [filter]; see [SearchContent.Results]. */
     data class Results(
         val query: String,
+        val filter: SearchFilter = SearchFilter.All,
         val chats: SearchSection<Chat> = SearchSection.Loading,
         val contacts: SearchSection<Chat> = SearchSection.Loading,
         val global: SearchSection<Chat> = SearchSection.Loading,
@@ -60,10 +62,16 @@ internal data class MessagePages(
     }
 
     override fun toString() = "MessagePages(found=${found.size}, hasFirstPage=$hasFirstPage, isLoading=$isLoading, …)"
+
+    companion object {
+        /** No messages, none to load: a search whose filter leaves them out. */
+        val None = MessagePages(hasFirstPage = true, isLoading = false)
+    }
 }
 
 /**
- * The search of one [query] (`REQUIREMENTS.md` FR-L6), its sections searched at once and each on its own, in [scope]:
+ * The search of one [query] under [filter] (`REQUIREMENTS.md` FR-L6), the sections the filter shows searched at once
+ * and each on its own (the others found nothing), in [scope]:
  * the scope of the query's flow, which a new query cancels, and with it every request still waiting (TDLib's late
  * answers are dropped). Its [state] changes as answers arrive.
  *
@@ -74,18 +82,24 @@ internal data class MessagePages(
  */
 internal class QuerySearch(
     private val query: String,
+    private val filter: SearchFilter,
     private val repository: SearchRepository,
     private val scope: CoroutineScope,
 ) {
-    private val mutableState = MutableStateFlow(SearchState.Results(query))
+    private val mutableState = MutableStateFlow(SearchState.Results(query, filter))
     val state: StateFlow<SearchState.Results> = mutableState
 
-    /** Searches every section. */
+    /** Searches every section the filter shows; the others find nothing. */
     fun start() {
-        searchChats()
-        searchContacts()
-        searchGlobal()
-        loadMessages()
+        val nothing = SearchSection.Items(persistentListOf<Chat>())
+        if (filter.searchesChats) {
+            searchChats()
+            searchGlobal()
+        } else {
+            mutableState.update { it.copy(chats = nothing, global = nothing) }
+        }
+        if (filter.searchesContacts) searchContacts() else mutableState.update { it.copy(contacts = nothing) }
+        if (filter.messages != null) loadMessages() else mutableState.update { it.copy(messages = MessagePages.None) }
     }
 
     /** Searches the failed sections again, and loads the failed page of messages again. */
@@ -133,7 +147,7 @@ internal class QuerySearch(
         val offset = mutableState.value.messages.nextOffset
         mutableState.update { it.copy(messages = it.messages.copy(isLoading = true, error = null)) }
         scope.launch {
-            val page = repository.searchMessages(query, offset)
+            val page = repository.searchMessages(query, offset, filter.messages ?: MessageSearchFilter.All)
             mutableState.update { state ->
                 val pages = state.messages
                 val loaded =

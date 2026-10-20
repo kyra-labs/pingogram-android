@@ -18,7 +18,8 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 /**
  * How one side's bubbles look (`docs/DESIGN_SYSTEM.md` §2.2): their [colors], `core:ui`'s [BubbleColors] from
  * `MaterialTheme.pingogramColors` (the one source of bubble colors, for the bubble and the media in it), and the look
- * of entities in their [text], with code on the side's block tone and spoilers in its secondary content color.
+ * of entities in their [text], with code on the side's block tone and hidden spoilers in its tonal spoiler color, both
+ * drawn as rounded blocks behind the text ([textBlocks][dev.kyralabs.pingogram.core.ui.text.textBlocks]).
  */
 @Immutable
 internal class BubbleStyle(
@@ -55,11 +56,11 @@ internal fun rememberBubbleTheme(): BubbleTheme {
     val outgoing = bubbles.outgoingBubble
     val selected = bubbles.selectedBubble
     val incomingText =
-        rememberFormattedTextStyles(codeBackground = incoming.block, spoilerColor = incoming.secondaryContent)
+        rememberFormattedTextStyles(codeBackground = incoming.block, spoilerColor = incoming.spoiler)
     val outgoingText =
-        rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.secondaryContent)
+        rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.spoiler)
     val selectedText =
-        rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.secondaryContent)
+        rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.spoiler)
     val shapes = MaterialTheme.shapes
     return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes) {
         BubbleTheme(
@@ -138,7 +139,7 @@ internal class AnnotatedTextCache {
         val revealed = bubble.spoilersRevealed
         val cached = entries[bubble.id]
         if (cached != null && cached.matches(text, styles, revealed)) return cached.annotated
-        val annotated = text.toAnnotatedString(styles, revealed, onSpoilerClick, onLinkClick)
+        val annotated = text.toAnnotatedString(styles, revealed, onSpoilerClick, onLinkClick, drawsBlocks = true)
         entries[bubble.id] = Entry(text, styles, revealed, annotated)
         return annotated
     }

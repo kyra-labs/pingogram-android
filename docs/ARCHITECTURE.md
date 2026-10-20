@@ -110,18 +110,23 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
-- Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
-  down as `LocalSharedTransitionScope` (`ProvideSharedTransitionScope`); destinations that share content
-  provide their animated visibility scope (`ProvideNavAnimatedVisibilityScope`), and
-  `Modifier.containerTransform` (a no-op without both) runs a container transform between the two
-  destinations' content of one key: the Chats tab's "New chat" button grows into the New chat screen.
-  `Modifier.sharedMediaBounds` (the bubble's side) and `Modifier.sharedMediaViewerBounds` (the viewer's)
-  run that of a photo, video or GIF between the conversation (pushed or in the detail pane) and the media
-  viewer, keyed by message id. Each bubble publishes its media's clip shape in `SharedMediaShapes`
-  (`LocalSharedMediaShapes`, from a `Modifier.Node` while it is laid out), so the viewer morphs from and
-  back to exactly those corners.
+- Shared elements: the app shell (`PingogramApp`: the navigation bar or rail and the `NavHost`) sits in a
+  `SharedTransitionLayout`, whose scope `core:ui` hands down as `LocalSharedTransitionScope`
+  (`ProvideSharedTransitionScope`); destinations that share content provide their animated visibility scope
+  (`ProvideNavAnimatedVisibilityScope`), and `Modifier.containerTransform` (a no-op without both) runs a
+  container transform between the two destinations' content of one key: the Chats tab's "New chat" button
+  grows into the New chat screen, and the search button (outside the `NavHost`, in an `AnimatedVisibility` of
+  its own that hides it while search shows) grows into search. `Modifier.sharedMediaBounds` (the bubble's
+  side) and `Modifier.sharedMediaViewerBounds` (the viewer's) run that of a photo, video or GIF between the
+  conversation (pushed or in the detail pane) and the media viewer, keyed by message id. Each bubble
+  publishes its media's clip shape in `SharedMediaShapes` (`LocalSharedMediaShapes`, from a `Modifier.Node`
+  while it is laid out), so the viewer morphs from and back to exactly those corners.
 - "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
   conversation of the same chat below it, if there is one.
+- Global search: on compact and medium windows a destination (`SearchRoute`) pushed above the tab; on
+  expanded ones docked in the Chats tab's list pane (`SearchPane`, `feature:chats`) in place of the chat
+  list, its results opening in the detail pane. `GlobalSearchState` (`feature:chats`, held by `PingogramApp`
+  and saved) says whether search is docked and carries the two sides' shapes for the container transform.
 
 ## Threading
 
@@ -160,6 +165,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
   directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
   same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
+
+## Location
+
+- The attach menu's "Location" sends the device's location (`docs/adr/0006-platform-location-manager.md`).
+  `AndroidDeviceLocationRepository` (`core:data`, behind `core:domain`'s `DeviceLocationRepository`) reads the access the
+  permissions give and finds the location with the platform's `LocationManager` (`LocationManagerCompat`), never Google
+  Play services: a cold `Flow` of the best location so far, the last known one first, whose collection keeps the
+  providers on.
+- The sheet has its own view model, `ShareLocationViewModel` (`feature:chat`, keyed by the chat like `ChatViewModel`):
+  the permission step, the search while the sheet is open and the screen collects its state (`WhileSubscribed`, so it
+  stops in the background), a 30 s timeout for a first location, and the snackbar when the location is off. The route
+  asks Android for the permissions and opens the settings and the maps app (`LocationInputs`). Sending goes through
+  `ChatViewModel` (`ChatEvent.SendLocation` → `ChatAttachments` → `AttachmentRepository.sendLocation`), so the location
+  takes the composer's reply along like every attachment.
 
 ## Notifications
 

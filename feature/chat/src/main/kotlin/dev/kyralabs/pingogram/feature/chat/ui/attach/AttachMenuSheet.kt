@@ -180,6 +180,7 @@ private val AttachOption.label: Int
             AttachOption.Gallery -> R.string.attach_gallery
             AttachOption.Camera -> R.string.attach_camera
             AttachOption.File -> R.string.attach_file
+            AttachOption.Location -> R.string.attach_location
             AttachOption.Contact -> R.string.attach_contact
             AttachOption.Poll -> R.string.attach_poll
         }
@@ -190,6 +191,7 @@ private val AttachOption.icon: Int
             AttachOption.Gallery -> UiR.drawable.ic_photo_library_filled
             AttachOption.Camera -> UiR.drawable.ic_photo_camera_filled
             AttachOption.File -> UiR.drawable.ic_description_filled
+            AttachOption.Location -> UiR.drawable.ic_location_on_filled
             AttachOption.Contact -> UiR.drawable.ic_person_filled
             AttachOption.Poll -> UiR.drawable.ic_poll_filled
         }

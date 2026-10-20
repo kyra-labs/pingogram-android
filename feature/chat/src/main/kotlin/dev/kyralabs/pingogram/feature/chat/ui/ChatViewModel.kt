@@ -148,8 +148,9 @@ import java.util.Locale
  *   asks for and a comment ([reportComment]); **saving** a message's files to Downloads ([ChatSaving]).
  * - **Attach menu** ([ChatAttachments]): what the composer's attach button offers in this chat
  *   ([ComposerUiState.Available.attachOptions]); picked photos, videos and files in a preview
- *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
- *   ([ChatUiState.poll], [pollEditor]), each taking the composer's reply along. The uploads of the messages being sent
+ *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact, the device's
+ *   location (found by the sheet's own `ShareLocationViewModel`) and a poll ([ChatUiState.poll], [pollEditor]), each
+ *   taking the composer's reply along. The uploads of the messages being sent
  *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
@@ -638,6 +639,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.PhotoTaken -> attachments.photoTaken(event.taken)
 
             is ChatEvent.AttachContact -> attachments.sendContact(event.uri)
+
+            is ChatEvent.SendLocation -> attachments.sendLocation(event.location, event.options)
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 

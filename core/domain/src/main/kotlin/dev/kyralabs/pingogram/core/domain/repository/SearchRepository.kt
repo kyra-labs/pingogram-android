@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
@@ -11,7 +12,8 @@ import kotlinx.coroutines.flow.Flow
  * and the chats the user opened from search before ("recently found"). Every search is one the user started: nothing
  * runs by itself, nothing is kept, and cancelling a call drops its answer (Telegram's API terms: no scraping).
  *
- * Chats come as the `ChatRepository` keeps them. A blank query finds nothing, without asking TDLib. Failures are
+ * Chats come as the `ChatRepository` keeps them. A blank query finds nothing, without asking TDLib, except messages of
+ * one kind ([MessageSearchFilter.PhotoAndVideo], [MessageSearchFilter.Url]), which it finds all of. Failures are
  * `DomainError.Network` (no answer in time) and `DomainError.FloodWait`, and others as TDLib reports them; a query
  * Telegram finds too short to search is no failure, it finds nothing.
  */
@@ -42,13 +44,15 @@ interface SearchRepository {
     suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>>
 
     /**
-     * A page of the messages in all chats (secret chats aside, which only the device could search) that match [query],
-     * newest first: the first page for a null [offset], then the page after the one whose [FoundMessages.nextOffset]
-     * is passed.
+     * A page of the messages in all chats (secret chats aside, which only the device could search) that match [query]
+     * and [filter], newest first: the first page for a null [offset], then the page after the one whose
+     * [FoundMessages.nextOffset] is passed. With a filter other than [MessageSearchFilter.All], a blank query finds
+     * every message of that kind.
      */
     suspend fun searchMessages(
         query: String,
         offset: String?,
+        filter: MessageSearchFilter = MessageSearchFilter.All,
     ): Outcome<FoundMessages>
 
     /** The chats the user opened from search, the last one first, up to [RECENT_LIMIT]. */

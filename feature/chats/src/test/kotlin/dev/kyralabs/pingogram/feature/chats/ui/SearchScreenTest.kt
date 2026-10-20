@@ -7,10 +7,14 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -101,7 +105,7 @@ class SearchScreenTest {
             R.string.search_section_contacts,
             R.string.search_section_global,
             R.string.search_section_messages,
-        ).forEach { composeRule.onNodeWithText(string(it)).assert(isHeading) }
+        ).forEach { composeRule.onNode(hasText(string(it)) and isHeading).assertExists() }
     }
 
     @Test
@@ -172,7 +176,7 @@ class SearchScreenTest {
     fun `try again after a section failed sends Retry`() {
         setScreen(SearchPreviewData.error)
 
-        composeRule.onNode(hasText(string(R.string.search_retry))).performClick()
+        composeRule.onAllNodes(hasText(string(R.string.search_retry))).onFirst().performClick()
 
         assertTrue(SearchEvent.Retry in events)
     }
@@ -182,6 +186,62 @@ class SearchScreenTest {
         setScreen(SearchPreviewData.results)
 
         assertTrue(SearchEvent.LoadMoreMessages in events)
+    }
+
+    @Test
+    fun `the filter chips show every filter, the chosen one selected, and choosing one sends it`() {
+        setScreen(SearchPreviewData.results)
+
+        SearchFilter.entries.forEach { filter ->
+            composeRule.onNode(hasText(string(filter.label)) and hasClickAction()).assertExists()
+        }
+        composeRule.onNode(hasText(string(R.string.search_filter_all)) and hasClickAction()).assertIsSelected()
+        composeRule.onNode(hasText(string(R.string.search_filter_media)) and hasClickAction()).performClick()
+
+        assertEquals(SearchEvent.FilterChanged(SearchFilter.Media), events.last())
+    }
+
+    @Test
+    fun `while a section searches, one progress indicator shows under the field after a moment`() {
+        composeRule.mainClock.autoAdvance = false
+        setScreen(SearchPreviewData.loading)
+
+        composeRule.onAllNodes(isProgressIndicator).assertCountEquals(0)
+        composeRule.mainClock.advanceTimeBy(PROGRESS_DELAY_MILLIS)
+
+        composeRule.onAllNodes(isProgressIndicator).assertCountEquals(1)
+        composeRule.onNodeWithContentDescription(string(R.string.search_searching)).assertExists()
+    }
+
+    @Test
+    fun `nothing shows progress once every section has searched`() {
+        composeRule.mainClock.autoAdvance = false
+        setScreen(SearchPreviewData.results)
+        composeRule.mainClock.advanceTimeBy(PROGRESS_DELAY_MILLIS)
+
+        composeRule.onAllNodes(isProgressIndicator).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a failed page of messages ends their group with its error and Try again`() {
+        setScreen(SearchPreviewData.error)
+
+        // The failed section and the failed page.
+        composeRule.onAllNodes(hasText(string(R.string.search_retry))).assertCountEquals(2)
+    }
+
+    @Test
+    fun `media without a query that found nothing says so`() {
+        setScreen(SearchPreviewData.noMedia)
+
+        composeRule.onNodeWithText(string(R.string.search_no_media_title)).assert(isHeading)
+    }
+
+    @Test
+    fun `media found without a query show under their own heading`() {
+        setScreen(SearchPreviewData.media)
+
+        composeRule.onNodeWithText(string(R.string.search_section_media)).assert(isHeading)
     }
 
     @Test
@@ -197,4 +257,9 @@ class SearchScreenTest {
     ): String = RuntimeEnvironment.getApplication().getString(id, *args)
 
     private val isHeading = SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+
+    private val isProgressIndicator = SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)
 }
+
+/** Longer than search's progress indicator waits before it shows. */
+private const val PROGRESS_DELAY_MILLIS = 1_000L

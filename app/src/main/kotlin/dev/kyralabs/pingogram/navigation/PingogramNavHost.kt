@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +35,11 @@ import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopEnter
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopExit
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
-import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -68,12 +67,13 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * A predictive back gesture shrinks and dissolves any other screen it leaves over the one it goes back to
  * ([predictiveBackPopExit]); the viewer follows the gesture itself.
  *
- * The `NavHost` is a [SharedTransitionLayout], whose scope goes to the destinations through
- * [LocalSharedTransitionScope] ([ProvideSharedTransitionScope]), and each destination that shares content provides its
- * own animated visibility scope ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share
- * their photos, videos and GIFs (the container transform of `sharedMediaBounds`), which morph between the corners the
- * media shows in its bubble and the viewer's, and the Chats tab's "New chat" button grows into the New chat screen
- * (`containerTransform`).
+ * The `NavHost` sits in the app shell's `SharedTransitionLayout`, whose scope comes through
+ * `LocalSharedTransitionScope` (`PingogramApp`, [ProvideSharedTransitionScope]), and each destination that shares
+ * content provides its own animated visibility scope ([ProvideNavAnimatedVisibilityScope]): the conversation and the
+ * media viewer share their photos, videos and GIFs (the container transform of `sharedMediaBounds`, morphing between
+ * the media's corners in its bubble and the viewer's), the Chats tab's "New chat" button grows into the New chat
+ * screen (`containerTransform`), and the shell's search button into search ([search], full screen or docked in the
+ * Chats tab's list pane).
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -82,6 +82,7 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
 internal fun PingogramNavHost(
     navController: NavHostController,
     uiState: MainActivityUiState,
+    search: GlobalSearchState,
     modifier: Modifier = Modifier,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
@@ -90,30 +91,27 @@ internal fun PingogramNavHost(
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
     val startSignedIn = rememberSaveable { uiState == MainActivityUiState.SignedIn }
-    SharedTransitionLayout(modifier) {
-        ProvideSharedTransitionScope(this) {
-            NavHost(
-                navController = navController,
-                startDestination = if (startSignedIn) MainGraph else AuthRoute,
-                enterTransition = { enter(motionScheme, axisDistance) },
-                exitTransition = { exit(motionScheme, axisDistance) },
-                popEnterTransition = { popEnter(motionScheme, axisDistance) },
-                popExitTransition = { popExit(motionScheme, axisDistance) },
-                predictivePopEnterTransition = { predictiveBackPopEnter() },
-                predictivePopExitTransition = {
-                    if (initialState.destination.isFullScreen()) {
-                        popExit(motionScheme, axisDistance)
-                    } else {
-                        predictiveBackPopExit(motionScheme)
-                    }
-                },
-            ) {
-                // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
-                // Navigating here as well could act on a login that a logout has already replaced.
-                authScreen(onAuthorized = {})
-                mainGraph(navController)
+    NavHost(
+        navController = navController,
+        startDestination = if (startSignedIn) MainGraph else AuthRoute,
+        modifier = modifier,
+        enterTransition = { enter(motionScheme, axisDistance) },
+        exitTransition = { exit(motionScheme, axisDistance) },
+        popEnterTransition = { popEnter(motionScheme, axisDistance) },
+        popExitTransition = { popExit(motionScheme, axisDistance) },
+        predictivePopEnterTransition = { predictiveBackPopEnter() },
+        predictivePopExitTransition = {
+            if (initialState.destination.isFullScreen()) {
+                popExit(motionScheme, axisDistance)
+            } else {
+                predictiveBackPopExit(motionScheme)
             }
-        }
+        },
+    ) {
+        // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
+        // Navigating here as well could act on a login that a logout has already replaced.
+        authScreen(onAuthorized = {})
+        mainGraph(navController, search)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
@@ -186,9 +184,15 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.isPop(): Boolean =
  */
 private fun NavDestination.isPushed(): Boolean = isInMainGraph() && topLevelDestination() == null && !isFullScreen()
 
-private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
+private fun NavGraphBuilder.mainGraph(
+    navController: NavHostController,
+    search: GlobalSearchState,
+) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
+        val openMessage = { chatId: Long, messageId: Long ->
+            navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
+        }
         // Full screen above everything, the list-detail layout too.
         val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
         // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
@@ -196,8 +200,11 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             // The conversation in the detail pane shares its media with the viewer, as the pushed one does.
             ProvideNavAnimatedVisibilityScope(this) {
                 ChatsListDetail(
+                    search = search,
                     onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
-                    onOpenChat = openChat,
+                    onOpenChat = { chatId, messageId ->
+                        if (messageId == null) openChat(chatId) else openMessage(chatId, messageId)
+                    },
                     onOpenMedia = openMedia,
                     onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
                 )
@@ -211,14 +218,13 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             onBack = { navController.popBackStack() },
             onProfileSaved = { navController.popBackStackAfterProfileSaved() },
         )
-        // Results push the conversation above search on every window, as the archive does: search is not a pane of
-        // the Chats tab (it opens from every tab), and back returns to the results.
+        // Full-screen search, on compact and medium windows (expanded ones dock it in the Chats tab's list pane):
+        // results push the conversation above it, as the archive does, and back returns to the results.
         searchScreen(
+            state = search,
             onBack = { navController.popBackStack() },
             onOpenChat = openChat,
-            onOpenMessage = { chatId, messageId ->
-                navController.navigate(ChatRoute(chatId, messageId)) { launchSingleTop = true }
-            },
+            onOpenMessage = openMessage,
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         // A contact's chat takes the New chat screen's place, as in Google Messages: back returns to the chat list.

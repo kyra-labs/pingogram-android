@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.WindowInsets
@@ -35,11 +39,15 @@ import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,8 +62,12 @@ import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
+import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
 import dev.kyralabs.pingogram.feature.chats.navigation.ChatListPane
+import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
+import dev.kyralabs.pingogram.feature.chats.navigation.SearchPane
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
@@ -83,14 +95,21 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   widths and an even split. The width is saved with the scaffold, so it survives rotation and process death.
  * - **New chat**: the list's "New chat" button, at the bottom end of the list pane, opens [onOpenNewChat], pushed
  *   above the whole layout as the archive is.
+ * - **Search** ([search], `docs/DESIGN_SYSTEM.md` §6 "Global search"): docked, it takes the list pane's place
+ *   ([SearchPane]), growing out of the search button ([SearchOrList]). With two panes a chat it found shows in the
+ *   detail pane as a tapped one does, and a message opens its conversation there at the message; with one pane (a
+ *   window that shrank while search was docked) it fills the window, the floating navigation bar steps aside, and
+ *   results push the conversation ([onOpenChat], at a message found). Back closes the conversation beside it first,
+ *   then search.
  * - **Motion**: the scaffold's pane motion; panes that stay change their bounds on the slow spatial spring, as large
  *   layout changes do (§5).
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun ChatsListDetail(
+    search: GlobalSearchState,
     onOpenArchive: () -> Unit,
-    onOpenChat: (chatId: Long) -> Unit,
+    onOpenChat: (chatId: Long, messageId: Long?) -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
@@ -105,8 +124,9 @@ internal fun ChatsListDetail(
     val twoPanes = navigator.scaffoldDirective.maxHorizontalPartitions > 1
     val listVisible = navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] != PaneAdaptedValue.Hidden
     val detailVisible = navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] != PaneAdaptedValue.Hidden
-    // The conversation shows alone in the floating navigation bar's window, like a pushed one.
-    HideNavigationBar(hidden = !listVisible)
+    // The conversation shows alone in the floating navigation bar's window, like a pushed one, and so does search.
+    HideNavigationBar(hidden = !listVisible || (search.isDocked && !twoPanes))
+    val opener = rememberDetailOpener(navigator, scope, twoPanes, onOpenChat)
     // The chat last shown keeps its pane while the pane leaves, so it does not turn empty as it slides out.
     var lastChatId by remember { mutableStateOf<Long?>(null) }
     SideEffect { if (shownChatId != null) lastChatId = shownChatId }
@@ -117,14 +137,14 @@ internal fun ChatsListDetail(
         navigator = navigator,
         listPane = {
             AnimatedPane(boundsAnimationSpec = boundsSpec, modifier = Modifier.paneContainer(twoPanes, last = false)) {
-                ChatListPane(
-                    onOpenArchive = onOpenArchive,
-                    onOpenChat = { chatId ->
-                        if (twoPanes) navigator.show(chatId, scope) else onOpenChat(chatId)
-                    },
-                    onOpenNewChat = onOpenNewChat,
-                    openChatId = shownChatId,
-                )
+                SearchOrList(search, opener, twoPanes, !navigator.canNavigateBack(BACK_BEHAVIOR)) {
+                    ChatListPane(
+                        onOpenArchive = onOpenArchive,
+                        onOpenChat = opener::openChat,
+                        onOpenNewChat = onOpenNewChat,
+                        openChatId = shownChatId,
+                    )
+                }
             }
         },
         detailPane = {
@@ -133,9 +153,10 @@ internal fun ChatsListDetail(
                 if (chatId != null) {
                     ChatPane(
                         chatId = chatId,
+                        messageId = opener.messageIn(chatId),
                         onOpenMedia = onOpenMedia,
                         // The chat messages were forwarded to replaces this one, or is pushed with one pane.
-                        onOpenChat = { id -> if (twoPanes) navigator.show(id, scope) else onOpenChat(id) },
+                        onOpenChat = opener::openChat,
                         // Beside the list there is nothing to go back to; a pane sliding out keeps its button.
                         onBack =
                             if (listVisible && shownChatId != null) {
@@ -154,6 +175,94 @@ internal fun ChatsListDetail(
         paneExpansionDragHandle = { state -> PaneDragHandle(state) },
         paneExpansionState = paneExpansionState,
     )
+}
+
+/**
+ * The list pane's content: the chat [list], or docked search ([SearchPane]) while [search] is docked, crossfading on
+ * the effects springs. Search gets this crossfade's animated visibility scope, so the search button grows into it; the
+ * list keeps the destination's, which its "New chat" button grows out of. With [twoPanes] search sits in the pane's
+ * rounded container; system back closes it while [searchBackEnabled]. Its results open through [opener].
+ */
+@Composable
+private fun SearchOrList(
+    search: GlobalSearchState,
+    opener: DetailOpener,
+    twoPanes: Boolean,
+    searchBackEnabled: Boolean,
+    list: @Composable () -> Unit,
+) {
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedContent(
+        targetState = search.isDocked,
+        transitionSpec = {
+            fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
+        },
+        label = "dockedSearch",
+    ) { docked ->
+        if (docked) {
+            ProvideNavAnimatedVisibilityScope(this) {
+                SearchPane(
+                    state = search,
+                    onOpenChat = opener::openChat,
+                    onOpenMessage = opener::openMessage,
+                    shape = if (twoPanes) MaterialTheme.shapes.extraLarge else FullBleedShape,
+                    backEnabled = searchBackEnabled,
+                )
+            }
+        } else {
+            list()
+        }
+    }
+}
+
+/** A [DetailOpener] for [navigator], following the window's panes ([twoPanes]) and the latest callbacks. */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@Composable
+private fun rememberDetailOpener(
+    navigator: ThreePaneScaffoldNavigator<Long>,
+    scope: CoroutineScope,
+    twoPanes: Boolean,
+    onOpenChat: (chatId: Long, messageId: Long?) -> Unit,
+): DetailOpener {
+    // A message found by search, as [chat id, message id]; saved, so its chat still opens at it after process death.
+    val message = rememberSaveable { mutableStateOf<LongArray?>(null) }
+    val currentTwoPanes = rememberUpdatedState(twoPanes)
+    val currentOnOpenChat = rememberUpdatedState(onOpenChat)
+    return remember(navigator, scope) { DetailOpener(navigator, scope, message, currentTwoPanes, currentOnOpenChat) }
+}
+
+/**
+ * Opens what the list pane asks for: with two panes, a chat in the detail pane in place of the one shown, and a
+ * message found by search there too, at that message ([messageIn]); with one pane, pushed full screen ([onOpenChat],
+ * with the message, if any).
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+private class DetailOpener(
+    private val navigator: ThreePaneScaffoldNavigator<Long>,
+    private val scope: CoroutineScope,
+    private val message: MutableState<LongArray?>,
+    private val twoPanes: State<Boolean>,
+    private val onOpenChat: State<(chatId: Long, messageId: Long?) -> Unit>,
+) {
+    fun openChat(chatId: Long) {
+        message.value = null
+        if (twoPanes.value) navigator.show(chatId, scope) else onOpenChat.value(chatId, null)
+    }
+
+    fun openMessage(
+        chatId: Long,
+        messageId: Long,
+    ) {
+        if (twoPanes.value) {
+            message.value = longArrayOf(chatId, messageId)
+            navigator.show(chatId, scope)
+        } else {
+            onOpenChat.value(chatId, messageId)
+        }
+    }
+
+    /** The message chat [chatId]'s conversation opens at; null for its usual place. */
+    fun messageIn(chatId: Long): Long? = message.value?.takeIf { it[0] == chatId }?.get(1)
 }
 
 /**

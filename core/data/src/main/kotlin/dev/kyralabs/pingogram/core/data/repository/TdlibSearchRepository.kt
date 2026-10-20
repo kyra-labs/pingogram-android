@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -35,7 +36,9 @@ import javax.inject.Singleton
  *   contact. All contacts: `getContacts`, their chats asked for all at once, then sorted by name in the user's
  *   language.
  * - **Public chats**: `searchPublicChats`; TDLib leaves out the user's chats and contacts.
- * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset.
+ * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset,
+ *   with `searchMessagesFilterPhotoAndVideo` or `searchMessagesFilterUrl` for photos and videos or links, which TDLib
+ *   also searches without a query.
  * - **Recently found chats**: `searchRecentlyFoundChats` with an empty query, which returns the whole list (TDLib has
  *   no `getRecentlyFoundChats`), and `add`/`remove`/`clearRecentlyFoundChats`.
  * - **Top people**: `getTopChats(topChatCategoryUsers)`.
@@ -117,11 +120,15 @@ class TdlibSearchRepository
         override suspend fun searchMessages(
             query: String,
             offset: String?,
+            filter: MessageSearchFilter,
         ): Outcome<FoundMessages> {
             val text = query.trim()
-            if (text.isEmpty()) return Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, null))
+            val tdFilter = filter.toTdApi()
+            if (text.isEmpty() && tdFilter == null) {
+                return Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, null))
+            }
             val request =
-                TdApi.SearchMessages(null, text, offset.orEmpty(), MESSAGE_PAGE_SIZE, null, null, 0, 0)
+                TdApi.SearchMessages(null, text, offset.orEmpty(), MESSAGE_PAGE_SIZE, tdFilter, null, 0, 0)
             return when (val found = client.request(request).orNothing(::noMessages)) {
                 is Outcome.Success -> Outcome.Success(chatRepository.foundMessages(found.value))
                 is Outcome.Failure -> found
@@ -187,6 +194,14 @@ private suspend fun ChatRepository.foundMessages(found: TdApi.FoundMessages): Fo
         totalCount = found.totalCount.takeIf { it >= 0 },
     )
 }
+
+/** TDLib's filter for [this]; none for every message. */
+private fun MessageSearchFilter.toTdApi(): TdApi.SearchMessagesFilter? =
+    when (this) {
+        MessageSearchFilter.All -> null
+        MessageSearchFilter.PhotoAndVideo -> TdApi.SearchMessagesFilterPhotoAndVideo()
+        MessageSearchFilter.Url -> TdApi.SearchMessagesFilterUrl()
+    }
 
 /** Chats per search of chats, on the device and on the server each, and contacts per search. */
 private const val CHAT_LIMIT = 30

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
+import android.graphics.drawable.GradientDrawable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import coil3.ColorImage
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
+import coil3.asImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
@@ -63,9 +65,10 @@ internal class ContentSample(
 
 /**
  * Every component of this package in its states, named for the screenshot goldens: photo loading and loaded, waiting
- * for a tap on its download button and downloading on request, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps), video, GIF, stickers, voice messages idle, playing and downloading, a video message, music,
- * files in their three download states, location, venue, contact, polls before and after voting, a quiz, a closed
- * poll, a die, an animated emoji, game and invoice, story and expired media.
+ * for a tap on its download button and downloading on request, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps),
+ * video, GIF, stickers (still, animated, and one without an emoji still loading), voice messages idle, playing and
+ * downloading, a video message, music, files in their three download states, location, venue, contact, polls before
+ * and after voting, a quiz, a closed poll, a die, an animated emoji, game and invoice, story and expired media.
  */
 internal val ContentSamples: List<ContentSample> =
     listOf(
@@ -107,6 +110,9 @@ internal val ContentSamples: List<ContentSample> =
         },
         ContentSample("stickerAnimated", SampleBubbles.None) { _, _ ->
             MessageSticker(ContentPreviewData.sticker(StickerFormat.Tgs))
+        },
+        ContentSample("stickerWithoutEmoji", SampleBubbles.None, imagesLoading = true) { _, _ ->
+            MessageSticker(ContentPreviewData.sticker(StickerFormat.Webp, emoji = ""))
         },
         ContentSample("voice", SampleBubbles.Both) { colors, outgoing ->
             MessageVoiceNote(
@@ -252,7 +258,8 @@ private fun downloading(fraction: Float) =
 /**
  * Images for previews and screenshot tests, which Coil takes from `LocalAsyncImagePreviewHandler` in inspection mode
  * only: TDLib files as solid colors of the theme, picked by file id so neighbouring images differ, or, with
- * [loading], kept loading, so the placeholders show.
+ * [loading], kept loading, so the placeholders show. Stickers ([isPreviewSticker]) are round shapes on a
+ * transparent background, as a sticker's artwork is, rather than a square that fills their box.
  */
 @OptIn(ExperimentalCoilApi::class)
 @Composable
@@ -288,7 +295,16 @@ internal fun PreviewImages(
                             is File -> data.name.hashCode()
                             else -> 0
                         }
-                    ColorImage(palette[key.mod(palette.size)].toArgb())
+                    val color = palette[key.mod(palette.size)].toArgb()
+                    if (request.data.let { it is TdlibFileImage && isPreviewSticker(it.fileId) }) {
+                        GradientDrawable()
+                            .apply {
+                                shape = GradientDrawable.OVAL
+                                setColor(color)
+                            }.asImage()
+                    } else {
+                        ColorImage(color)
+                    }
                 }
             }
         }

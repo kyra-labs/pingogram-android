@@ -50,11 +50,15 @@ import javax.inject.Inject
  * - **Query**: kept in the [SavedStateHandle] (so it survives process death), trimmed, and searched once it has not
  *   changed for [DEBOUNCE_MILLIS]; an empty query shows the suggestions at once. A new query cancels the searches of
  *   the previous one (`flatMapLatest`), waiting TDLib requests included (`docs/PERFORMANCE.md` §3).
+ * - **Filter** ([SearchFilter], the chips under the field): kept in the [SavedStateHandle] too, and applied at once,
+ *   searching the query again with only the sections it shows. Media and links show without a query as well, every
+ *   photo and video or link in the chats, instead of the suggestions.
  * - **Suggestions**: the top people and the recently found chats ([SearchRepository.recentChats]), read again after
  *   one is added, removed or cleared. A failure to read them shows none; a failure to change them, a snackbar.
- * - **Results** ([QuerySearch]): chats, contacts not among the chats, public chats among neither, and messages, each
- *   section with its own loading, error and empty state; messages page on [SearchEvent.LoadMoreMessages], one page at
- *   a time, never retried by themselves. [SearchEvent.Retry] searches every failed section and page again.
+ * - **Results** ([QuerySearch]): chats, contacts not among the chats, public chats among neither, and messages (as the
+ *   filter chooses), each section with its own loading, error and empty state; messages page on
+ *   [SearchEvent.LoadMoreMessages], one page at a time, never retried by themselves. [SearchEvent.Retry] searches
+ *   every failed section and page again.
  * - **Rows** are mapped on [dispatcher] as the chat list maps its own ([toSearchItem]), with the users, groups, current
  *   user and minute they show, so names, badges and online dots follow TDLib's updates while search shows them. Times
  *   and counts follow the zone, the language and the 12- or 24-hour setting, checked at every emission.
@@ -110,14 +114,23 @@ class SearchViewModel internal constructor(
     /** One-off effects for the screen: opening a chat or a message, and snackbars. */
     val effects: Flow<SearchEffect> = effectChannel.receiveAsFlow()
 
-    private val search: Flow<SearchState> =
+    private val filter: Flow<SearchFilter> =
+        savedStateHandle.getStateFlow(KEY_FILTER, SearchFilter.All.name).map(SearchFilter::of).distinctUntilChanged()
+
+    private val query: Flow<String> =
         savedStateHandle
             .getStateFlow(KEY_QUERY, "")
             .map { it.trim() }
             .distinctUntilChanged()
             .debounce { if (it.isEmpty()) 0L else DEBOUNCE_MILLIS }
             .distinctUntilChanged()
-            .flatMapLatest { query -> if (query.isEmpty()) suggestions() else results(query) }
+
+    private val search: Flow<SearchState> =
+        combine(query, filter) { query, filter ->
+            // Null for the suggestions, which do not depend on the filter.
+            if (query.isEmpty() && !filter.searchesWithoutQuery) null else query to filter
+        }.distinctUntilChanged()
+            .flatMapLatest { search -> if (search == null) suggestions() else results(search.first, search.second) }
 
     private val people =
         combine(
@@ -131,7 +144,7 @@ class SearchViewModel internal constructor(
         }
 
     val uiState: StateFlow<SearchUiState> =
-        combine(search, people, ::toUiState)
+        combine(search, filter, people, ::toUiState)
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SearchUiState())
 
@@ -139,6 +152,7 @@ class SearchViewModel internal constructor(
         when (event) {
             is SearchEvent.QueryChanged -> savedStateHandle[KEY_QUERY] = event.query
             SearchEvent.ClearQuery -> savedStateHandle[KEY_QUERY] = ""
+            is SearchEvent.FilterChanged -> savedStateHandle[KEY_FILTER] = event.filter.name
             is SearchEvent.OpenChat -> openChat(event.chatId)
             is SearchEvent.OpenMessage -> effectChannel.trySend(SearchEffect.OpenMessage(event.chatId, event.messageId))
             is SearchEvent.RemoveRecent -> changeRecents { searchRepository.removeRecentChat(event.chatId) }
@@ -174,10 +188,13 @@ class SearchViewModel internal constructor(
             .onStart { emit(SearchState.Suggestions()) }
     }
 
-    /** The results of [query], which [commands] retry and page while they are shown. */
-    private fun results(query: String): Flow<SearchState> =
+    /** The results of [query] under [filter], which [commands] retry and page while they are shown. */
+    private fun results(
+        query: String,
+        filter: SearchFilter,
+    ): Flow<SearchState> =
         channelFlow {
-            val search = QuerySearch(query, searchRepository, this)
+            val search = QuerySearch(query, filter, searchRepository, this)
             search.start()
             launch {
                 commands.collect { command ->
@@ -190,25 +207,28 @@ class SearchViewModel internal constructor(
             search.state.collect { send(it) }
         }
 
-    /** Runs on [dispatcher]: maps [state] to rows with [sources]. */
+    /** Runs on [dispatcher]: maps [state] to rows with [sources], under the chips' [filter]. */
     private fun toUiState(
         state: SearchState,
+        filter: SearchFilter,
         sources: SearchRowSources,
     ): SearchUiState =
         SearchUiState(
-            when (state) {
-                is SearchState.Suggestions -> {
-                    SearchContent.Suggestions(
-                        topPeople = state.topPeople.toItems(sources),
-                        recents = state.recents.toItems(sources),
-                        isLoading = state.isLoading,
-                    )
-                }
+            filter = filter,
+            content =
+                when (state) {
+                    is SearchState.Suggestions -> {
+                        SearchContent.Suggestions(
+                            topPeople = state.topPeople.toItems(sources),
+                            recents = state.recents.toItems(sources),
+                            isLoading = state.isLoading,
+                        )
+                    }
 
-                is SearchState.Results -> {
-                    results(state, sources)
-                }
-            },
+                    is SearchState.Results -> {
+                        results(state, sources)
+                    }
+                },
         )
 
     /** The sections of [state]: contacts not among the chats, public chats among neither. */
@@ -228,6 +248,7 @@ class SearchViewModel internal constructor(
             contacts = contacts.mapItems { it.toSearchItem(sources) },
             global = global.mapItems { it.toSearchItem(sources) },
             messages = state.messages.toSection(sources, highlight),
+            filter = state.filter,
         )
     }
 
@@ -251,6 +272,9 @@ class SearchViewModel internal constructor(
     internal companion object {
         /** Where the query is kept in the [SavedStateHandle]. */
         const val KEY_QUERY = "search.query"
+
+        /** Where the filter is kept in the [SavedStateHandle], by name. */
+        const val KEY_FILTER = "search.filter"
 
         /** How long the query must stay the same before it is searched: typing pauses about this long. */
         const val DEBOUNCE_MILLIS = 300L

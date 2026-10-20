@@ -28,6 +28,8 @@ import org.robolectric.annotation.Config
  * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
  * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
+ * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
+ * 2026-10-20), in the foreground only: no background location, and location hardware is optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */
@@ -51,6 +53,8 @@ class AppManifestTest {
             setOf(
                 Manifest.permission.INTERNET,
                 Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.USE_BIOMETRIC,
                 Manifest.permission.ACCESS_NETWORK_STATE,
             ) + FlavorManifest.requestedPermissions,
@@ -71,12 +75,34 @@ class AppManifestTest {
             mapOf(
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
+                Manifest.permission.ACCESS_COARSE_LOCATION to "",
+                Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.USE_BIOMETRIC to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,
             declared,
+        )
+    }
+
+    @Test
+    fun `location is foreground only, and its hardware is optional`() {
+        val manifest = mergedManifest()
+        val declared = manifest.elements("uses-permission").map { it.androidAttribute("name") }
+        val features =
+            manifest
+                .elements("uses-feature")
+                .associate { it.androidAttribute("name") to it.androidAttribute("required") }
+
+        assertFalse(Manifest.permission.ACCESS_BACKGROUND_LOCATION in declared)
+        assertEquals(
+            mapOf(
+                "android.hardware.location" to "false",
+                "android.hardware.location.gps" to "false",
+                "android.hardware.location.network" to "false",
+            ),
+            features.filterKeys { it.startsWith("android.hardware.location") },
         )
     }
 

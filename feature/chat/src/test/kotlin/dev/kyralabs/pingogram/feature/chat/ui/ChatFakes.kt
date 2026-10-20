@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -561,6 +562,7 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun searchMessages(
         query: String,
         offset: String?,
+        filter: MessageSearchFilter,
     ): Outcome<FoundMessages> = unused()
 
     override suspend fun recentChats(): Outcome<ImmutableList<Chat>> = unused()
