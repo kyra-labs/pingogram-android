@@ -70,6 +70,11 @@ import androidx.compose.ui.unit.dp
  * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
  * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.
  * @property recordingLockDistance how far it slides up to lock the recording, which then goes on hands-free.
+ * @property inputPanelHeight the height of the emoji and sticker panel above the navigation bar until the keyboard has
+ *   shown once; then the panel takes the keyboard's height, so switching between them moves nothing.
+ * @property panelEmoji the smallest cell of an emoji in the panel's grid: a 48 dp touch target.
+ * @property panelSticker the smallest cell of a sticker in the panel's grid: five on a phone.
+ * @property panelStickerCover the picture of a sticker set on its button in the panel's row of sets.
  */
 @Immutable
 data class PingogramSizes(
@@ -114,6 +119,10 @@ data class PingogramSizes(
     val recordingDot: Dp = 10.dp,
     val recordingCancelDistance: Dp = 112.dp,
     val recordingLockDistance: Dp = 72.dp,
+    val inputPanelHeight: Dp = 280.dp,
+    val panelEmoji: Dp = 48.dp,
+    val panelSticker: Dp = 72.dp,
+    val panelStickerCover: Dp = 28.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

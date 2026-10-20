@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -23,11 +24,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
+import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
+import javax.inject.Inject
 
 /**
  * The only activity. Draws edge to edge behind transparent system bars; Compose handles the insets
@@ -49,12 +53,18 @@ import dev.kyralabs.pingogram.ui.PingogramApp
  * the content out of the recent apps: through [setRecentsScreenshotEnabled] on Android 13 and later, which still
  * allows screenshots, and with [WindowManager.LayoutParams.FLAG_SECURE] before, which does not.
  *
+ * Animated stickers play through the app's one [AnimatedStickers] ([LocalAnimatedStickers]).
+ *
  * Test tags show as resource ids, so the Macrobenchmarks and the Baseline Profile generator (`:benchmark`) find the
  * lists they scroll with UiAutomator (`docs/PERFORMANCE.md` §9).
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
+
+    /** Plays animated stickers in the conversation and the sticker panel ([LocalAnimatedStickers]). */
+    @Inject
+    lateinit var animatedStickers: AnimatedStickers
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
@@ -76,16 +86,18 @@ class MainActivity : ComponentActivity() {
                 val locked = lock == LockState.Locked
                 SecureWindowEffect(locked = locked, hideContent = hideContent)
                 AppTheme(settings) {
-                    LockableApp(
-                        locked = locked,
-                        lockScreen = { AppLockRoute() },
-                        modifier = Modifier.semantics { testTagsAsResourceId = true },
-                    ) {
-                        PingogramApp(
-                            uiState = uiState,
-                            chatToOpen = chatToOpen,
-                            onChatOpened = viewModel::onChatOpened,
-                        )
+                    CompositionLocalProvider(LocalAnimatedStickers provides animatedStickers) {
+                        LockableApp(
+                            locked = locked,
+                            lockScreen = { AppLockRoute() },
+                            modifier = Modifier.semantics { testTagsAsResourceId = true },
+                        ) {
+                            PingogramApp(
+                                uiState = uiState,
+                                chatToOpen = chatToOpen,
+                                onChatOpened = viewModel::onChatOpened,
+                            )
+                        }
                     }
                 }
             }

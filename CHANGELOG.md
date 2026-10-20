@@ -10,6 +10,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Emoji and stickers: the smiley at the start of the message field opens a panel in the keyboard's place, at the
+  keyboard's height, so nothing jumps when you switch back and forth. The Emoji tab has every emoji your phone can
+  show, by category, with the ones you used last first; tapping one puts it where the cursor is, and the panel's
+  backspace deletes a whole emoji at a time. The Stickers tab has your favorite and recently used stickers and every
+  sticker set you added, each a tap away in the row at the top; tapping a sticker sends it right away, as a reply if you
+  were replying. Back or the keyboard button brings the keyboard back.
+- Animated stickers play, in chats and in the sticker panel, once they are downloaded. To save battery, at most eight
+  play at once, only while they are on screen and Pingogram is in front, and not at all when animations are turned off
+  in Android's settings. Video stickers still show a still picture.
 - Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
   they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
   at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never

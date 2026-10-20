@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
@@ -79,6 +80,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -88,6 +90,9 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
@@ -108,7 +113,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
  * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
- * [onVoiceEvent]).
+ * [onVoiceEvent]). The smiley at the start of the field opens the emoji and sticker panel ([EmojiPanel], showing
+ * [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its stickers
+ * are sent through [onSendSticker], and what it loads goes to [onPanelEvent].
  */
 @Composable
 internal fun ChatBottomBar(
@@ -124,18 +131,22 @@ internal fun ChatBottomBar(
     onAttach: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
+    panel: EmojiPanelUiState = EmojiPanelUiState(),
+    onPanelEvent: (EmojiPanelEvent) -> Unit = {},
+    onSendSticker: (Sticker) -> Unit = {},
+    panelState: ComposerPanelState = rememberComposerPanelState(),
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
     val drag = remember { RecordDrag() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
-        val insets = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
         when (composer) {
             is ComposerUiState.Unavailable -> {
                 Text(
                     text = composer.reason.resolve(),
                     modifier =
-                        insets
+                        Modifier
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
                             .fillMaxWidth()
                             .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.large),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -145,7 +156,9 @@ internal fun ChatBottomBar(
             }
 
             is ComposerUiState.Available -> {
-                Column(insets) {
+                ComposerPanelEffects(panelState, enabled = recording == null)
+                if (panelState.isOpen) LaunchedEffect(Unit) { onPanelEvent(EmojiPanelEvent.Opened) }
+                Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     BarArea(composer.bar, onShowBarMessage, onCloseBar)
                     Composer(
                         composer,
@@ -155,8 +168,24 @@ internal fun ChatBottomBar(
                         focus,
                         onAttach,
                         VoiceInput(recording, onVoiceEvent, drag),
+                        panelState,
                         now,
                     )
+                    PanelArea(panelState) {
+                        EmojiPanel(
+                            state = panel,
+                            onEmoji = { emoji ->
+                                text.insert(emoji)
+                                onPanelEvent(EmojiPanelEvent.EmojiPicked(emoji))
+                            },
+                            onBackspace = text::deleteBackward,
+                            onSticker = onSendSticker,
+                            onEvent = onPanelEvent,
+                            modifier = Modifier.fillMaxSize(),
+                            // Not while editing: a sticker would be a new message.
+                            showStickers = composer.attachOptions.isNotEmpty(),
+                        )
+                    }
                 }
             }
 
@@ -207,6 +236,7 @@ private fun Composer(
     focus: ComposerFocusState,
     onAttach: () -> Unit,
     voice: VoiceInput,
+    panel: ComposerPanelState,
     now: () -> Instant = Instant::now,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -242,20 +272,12 @@ private fun Composer(
                 onLink = { linking = it },
                 onFocusChanged = onFocusChanged,
                 modifier = Modifier.weight(1f).focusRequester(focusRequester),
+                leadingIcon = { PanelButton(panel, focusRequester) },
             )
         }
         ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
     }
-    linking?.let { selection ->
-        LinkDialog(
-            currentUrl = text.linkAt(selection),
-            onDismiss = { linking = null },
-            onConfirm = { url ->
-                text.setLink(url, selection)
-                linking = null
-            },
-        )
-    }
+    linking?.let { selection -> TextLinkDialog(text, selection, onDone = { linking = null }) }
     if (scheduling) {
         ScheduleDialog(
             now = now,
@@ -338,7 +360,8 @@ private fun RowScope.Appearing(
 }
 
 /**
- * The text field: outlined, `extraLarge` corners, `bodyLarge`, [placeholder] ("Message") while empty. Enter on a
+ * The text field: outlined, `extraLarge` corners, `bodyLarge`, [placeholder] ("Message") while empty, [leadingIcon]
+ * at its start (the conversation's emoji button). Enter on a
  * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
  * address ([onLink]). The attach preview's caption is one too.
@@ -351,6 +374,7 @@ internal fun ComposerField(
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(R.string.composer_placeholder),
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     val labels = rememberFormattingLabels()
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
@@ -380,6 +404,7 @@ internal fun ComposerField(
                 .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
         textStyle = MaterialTheme.typography.bodyLarge,
         placeholder = { Text(placeholder) },
+        leadingIcon = leadingIcon,
         inputTransformation = text.inputTransformation,
         outputTransformation = rememberFormattingTransformation(text),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),

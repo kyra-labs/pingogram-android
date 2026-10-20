@@ -1,0 +1,17 @@
+{
+  "name": "pingogram-emoji-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generates the emoji panel's catalog in core/data (res/raw/emoji_catalog.txt) from Unicode's emoji data.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "unicode-emoji-json": "0.9.0"
+  }
+}

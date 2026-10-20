@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -481,6 +483,45 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
 
                     assertEquals(ChatEffect.MessageScheduled(1_800_000_000), awaitItem())
                 }
+            }
+    }
+
+    @Nested
+    inner class Stickers {
+        private val duck =
+            Sticker(
+                setId = 7,
+                width = 512,
+                height = 512,
+                emoji = "🦆",
+                format = StickerFormat.Tgs,
+                thumbnail = null,
+                file = FileRef(70, 30_000),
+            )
+
+        @Test
+        fun `a sticker from the panel is sent at once, with the composer's reply`() =
+            runViewModelTest {
+                val viewModel = privateChat(replyTo = 1)
+
+                send(viewModel, ChatEvent.SendSticker(duck))
+
+                assertEquals(listOf(Triple(duck, SendOptions(), 1L)), attachments.sentStickers)
+                assertNull(viewModel.replyTo)
+            }
+
+        @Test
+        fun `a refused sticker gives the reply back, with the error`() =
+            runViewModelTest {
+                attachments.onSendSticker = { Outcome.Failure(DomainError.FloodWait(30)) }
+                val viewModel = privateChat(replyTo = 1)
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendSticker(duck))
+
+                    assertEquals(ChatEffect.ShowError(DomainError.FloodWait(30)), awaitItem())
+                }
+                assertEquals(1L, viewModel.replyTo)
             }
     }
 

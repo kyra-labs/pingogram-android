@@ -26,6 +26,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -123,3 +124,13 @@ private fun unreadCountText(count: Int): String =
 private const val JUMP_GLIDE_ENTRIES = 15
 
 private const val MAX_UNREAD_SHOWN = 999
+
+/**
+ * What sending does to the list of [content]: a message sent now goes to the bottom of the list, which [scrollToNewest]
+ * brings into view. Scheduled ones do not.
+ */
+internal fun scrollingToSent(
+    content: ChatContent,
+    scrollToNewest: () -> Unit,
+): (SendOptions) -> Unit =
+    { options -> if (options.scheduledAt == null && content is ChatContent.Content) scrollToNewest() }

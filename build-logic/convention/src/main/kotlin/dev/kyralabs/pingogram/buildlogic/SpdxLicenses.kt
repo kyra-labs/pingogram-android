@@ -59,6 +59,12 @@ object SpdxLicenses {
                 name = "SIL Open Font License 1.1",
                 url = "https://openfontlicense.org",
             ),
+            // Unicode's emoji data, behind the emoji panel (config/licenses/extra.json).
+            SpdxLicense(
+                id = "Unicode-3.0",
+                name = "Unicode License v3",
+                url = "https://www.unicode.org/license.txt",
+            ),
             // Google Play services and a few Firebase libraries, gms flavor only (docs/adr/0004-push-delivery.md): not
             // open source and not on the SPDX list, hence SPDX's LicenseRef- form. The text is the one the SDK manager
             // ships with every SDK package (package.xml, license "android-sdk-license"); the link shows Google's
