@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,6 +45,7 @@ import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTopBar
 import dev.kyralabs.pingogram.feature.auth.ui.components.ConnectionBanner
 import dev.kyralabs.pingogram.feature.auth.ui.components.FloodWaitBanner
+import dev.kyralabs.pingogram.feature.auth.ui.components.LocalAuthFloodWait
 import kotlinx.coroutines.launch
 
 /**
@@ -90,9 +92,10 @@ fun AuthRoute(
 
 /**
  * Every login step in one edge-to-edge [Scaffold]: back navigation and the connection status in the top bar, offline
- * and flood wait banners, snackbars, and the current step, switched with a Material shared axis Y transition
- * (`docs/DESIGN_SYSTEM.md` §5: vertical flows). System back within the flow follows the predictive back gesture: the
- * step shrinks to 90% as the gesture progresses, and [AuthEvent.Back] goes back once it completes.
+ * and flood wait banners (while Telegram asks to wait, every step's badge shows an error too, [LocalAuthFloodWait]),
+ * snackbars, and the current step, switched with a Material shared axis Y transition (`docs/DESIGN_SYSTEM.md` §5:
+ * vertical flows). System back within the flow follows the predictive back gesture: the step shrinks to 90% as the
+ * gesture progresses, and [AuthEvent.Back] goes back once it completes.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -128,19 +131,21 @@ fun AuthScreen(
         ) {
             ConnectionBanner(isOffline = state.isOffline)
             FloodWaitBanner(seconds = state.floodWaitSeconds)
-            AnimatedContent(
-                targetState = state.step,
-                modifier = Modifier.predictiveBackScale { backProgress.value },
-                transitionSpec = { sharedAxisY(spatial, enterFade, exitFade, distance) },
-                contentKey = { it::class },
-                label = "AuthStep",
-            ) { step ->
-                AuthStepContent(
-                    step = step,
-                    canSubmit = state.canSubmit,
-                    pendingAction = state.pendingAction,
-                    onEvent = onEvent,
-                )
+            CompositionLocalProvider(LocalAuthFloodWait provides (state.floodWaitSeconds != null)) {
+                AnimatedContent(
+                    targetState = state.step,
+                    modifier = Modifier.predictiveBackScale { backProgress.value },
+                    transitionSpec = { sharedAxisY(spatial, enterFade, exitFade, distance) },
+                    contentKey = { it::class },
+                    label = "AuthStep",
+                ) { step ->
+                    AuthStepContent(
+                        step = step,
+                        canSubmit = state.canSubmit,
+                        pendingAction = state.pendingAction,
+                        onEvent = onEvent,
+                    )
+                }
             }
         }
     }
