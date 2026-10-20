@@ -60,6 +60,9 @@ import androidx.compose.ui.unit.dp
  * @property waveformBarWidth the width of one bar of a voice message's waveform.
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
  * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
+ * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
+ * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.
+ * @property recordingLockDistance how far it slides up to lock the recording, which then goes on hands-free.
  */
 @Immutable
 data class PingogramSizes(
@@ -98,6 +101,9 @@ data class PingogramSizes(
     val waveformBarWidth: Dp = 3.dp,
     val waveformBarGap: Dp = 2.dp,
     val attachmentPreview: Dp = 120.dp,
+    val recordingDot: Dp = 10.dp,
+    val recordingCancelDistance: Dp = 112.dp,
+    val recordingLockDistance: Dp = 72.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

@@ -6,11 +6,12 @@ import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 
 /**
  * What the composer's attach menu sends (`REQUIREMENTS.md` FR-C5): photos, videos and files the user picked, a photo
- * from the camera, a contact and a poll; and cancelling an upload in progress.
+ * from the camera, a contact and a poll; the voice messages the composer records; and cancelling an upload in progress.
  *
  * Picked files are prepared first ([prepare]): copied into the app's private cache, where they stay readable after the
  * picker's read grant ends, and made ready for TDLib. Each copy then belongs to the caller until it is sent ([send]),
@@ -65,6 +66,28 @@ interface AttachmentRepository {
         chatId: Long,
         attachments: List<Attachment>,
         caption: FormattedText,
+        options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
+    ): Outcome<Unit>
+
+    /**
+     * A new, empty file in the app's cache for a voice message to be recorded into, by its path, ending in
+     * `.`[extension] (the audio format's, which TDLib reads the file's type from). Hand it back to [sendVoiceNote] or
+     * [discardVoiceNote].
+     */
+    suspend fun newVoiceNoteFile(extension: String): Outcome<String>
+
+    /** Deletes [path], a file from [newVoiceNoteFile] that will not be sent. Returns at once. */
+    fun discardVoiceNote(path: String)
+
+    /**
+     * Sends [voiceNote] to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not null. Succeeds
+     * once TDLib accepted the message, which it then shows as being sent while it uploads; its file is then TDLib's to
+     * upload and deleted once uploaded. A refused voice note's file is deleted.
+     */
+    suspend fun sendVoiceNote(
+        chatId: Long,
+        voiceNote: RecordedVoiceNote,
         options: SendOptions = SendOptions(),
         replyToMessageId: Long? = null,
     ): Outcome<Unit>

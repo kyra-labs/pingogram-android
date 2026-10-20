@@ -8,6 +8,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
@@ -27,7 +28,8 @@ import org.robolectric.annotation.Config
  * with the document's type and the chooser's title, and a snackbar when no app takes it or the file is gone. The app's
  * `FileProvider` itself is tested in `:app`, which declares it. Also a copied text ([ChatEffect.CopyText]), which goes
  * to the clipboard with a snackbar only before Android 13, a focus request for the composer, an action that is
- * not allowed, a sponsored message's link and what came of reporting one.
+ * not allowed, a sponsored message's link and what came of reporting one; and the voice recording's snackbars, whose
+ * actions ask for the microphone permission or open the settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -43,6 +45,7 @@ class ChatEffectsTest {
     private val copied = mutableListOf<String>()
     private val composerFocus = ComposerFocusState()
     private val openedUris = mutableListOf<String>()
+    private val voiceActions = mutableListOf<VoiceEffect>()
 
     private fun setEffects(
         result: ExternalFileResult = ExternalFileResult.Started,
@@ -65,6 +68,7 @@ class ChatEffectsTest {
                         openedUris += uri
                         uriOpens
                     },
+                    onVoiceAction = { voiceActions += it },
                 )
                 SnackbarHost(snackbarHostState)
             }
@@ -191,4 +195,41 @@ class ChatEffectsTest {
     private fun string(
         @StringRes id: Int,
     ): String = RuntimeEnvironment.getApplication().getString(id)
+
+    @Test
+    fun `the microphone's reason is a snackbar whose action asks for the permission`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.ExplainMicrophone)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(string(R.string.voice_permission_rationale)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_allow)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf<VoiceEffect>(VoiceEffect.ExplainMicrophone), voiceActions)
+    }
+
+    @Test
+    fun `a refused microphone is a snackbar whose action opens the settings`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.MicrophoneDenied)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(string(R.string.voice_permission_denied)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_settings)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(listOf<VoiceEffect>(VoiceEffect.MicrophoneDenied), voiceActions)
+    }
+
+    @Test
+    fun `a recording too short to send says to hold, without an action`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.HoldToRecord)
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(string(R.string.voice_hold_to_record)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_allow)).assertDoesNotExist()
+    }
 }

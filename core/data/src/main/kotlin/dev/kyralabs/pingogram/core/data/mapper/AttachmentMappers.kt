@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.mapper
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import org.drinkless.tdlib.TdApi
 
 // What the attach menu sends, as TDLib's input message contents (td_api.tl of the pinned TDLib, 1.8.68).
@@ -44,6 +45,13 @@ internal fun Attachment.toInputMessageContent(caption: TdApi.FormattedText?): Td
             TdApi.InputMessageDocument(TdApi.InputDocument(TdApi.InputFileLocal(path), null, false), caption)
         }
     }
+
+/**
+ * `inputMessageVoiceNote` of an `inputVoiceNote` from the recorded file, with its length and waveform, without caption,
+ * not self-destructing. TDLib takes the file's type from its extension (`.ogg`, `.m4a`).
+ */
+internal fun RecordedVoiceNote.toInputMessageVoiceNote(): TdApi.InputMessageVoiceNote =
+    TdApi.InputMessageVoiceNote(TdApi.InputVoiceNote(TdApi.InputFileLocal(path), duration, waveform.bytes), null, null)
 
 /**
  * [attachments] in the messages they are sent as, in their order: runs of photos and videos, and runs of documents

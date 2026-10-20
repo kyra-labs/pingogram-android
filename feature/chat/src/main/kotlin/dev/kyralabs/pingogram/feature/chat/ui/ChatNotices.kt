@@ -1,22 +1,32 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeActionLabel
 
 /**
  * Shows [message], the snackbar of [effect]; after forwarding to one other chat ([ChatEffect.Forwarded.openChatId])
- * with an action that opens it through [onOpenChat]. Returns once the snackbar is gone.
+ * with an action that opens it through [onOpenChat]; for the voice recording's microphone permission with an action
+ * ([voiceNoticeActionLabel]) that [onVoiceAction] carries out, shown longer. Returns once the snackbar is gone.
  */
 internal suspend fun SnackbarHostState.showNotice(
     message: String,
     effect: ChatEffect,
     resources: Resources,
     onOpenChat: (chatId: Long) -> Unit,
+    onVoiceAction: (VoiceEffect) -> Unit = {},
 ) {
+    val voiceAction = (effect as? VoiceEffect)?.let(::voiceNoticeActionLabel)
+    if (effect is VoiceEffect && voiceAction != null) {
+        val result = showSnackbar(message, resources.getString(voiceAction), duration = SnackbarDuration.Long)
+        if (result == SnackbarResult.ActionPerformed) onVoiceAction(effect)
+        return
+    }
     val openChatId = (effect as? ChatEffect.Forwarded)?.openChatId
     if (openChatId == null) {
         showSnackbar(message)

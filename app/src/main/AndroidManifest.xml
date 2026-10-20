@@ -8,6 +8,13 @@
     <!-- Notifications of new messages (REQUIREMENTS.md FR-N1, approved by the owner on 2026-10-19). Android 13 and
          later ask the user at run time: the chat list explains why first, and asks once. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Recording voice messages in the composer (REQUIREMENTS.md FR-C5, approved by the owner on 2026-10-20), only
+         while the conversation is on screen. Asked at run time at the first hold of the microphone, after a snackbar
+         says why. Devices without a microphone can still install the app (and do everything else). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
     <!-- WorkManager (notification actions) declares these four. It needs WAKE_LOCK and FOREGROUND_SERVICE only before
          Android 12, where expedited work runs as a foreground service that holds a wake lock while a reply is sent
          (approved by the owner on 2026-10-19); from Android 12 on it runs as an expedited job, so both stop at API 30.

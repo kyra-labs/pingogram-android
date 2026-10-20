@@ -59,6 +59,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
 
 /**
@@ -86,7 +88,9 @@ import kotlinx.collections.immutable.ImmutableMap
  *   message now scrolls to the newest one, where it shows (asking for it when the loaded messages do not reach it).
  *   Where they cannot, a label says why; in a channel they only
  *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
- *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
+ *   [composerFocus] gives its text field the focus when the user starts a reply or an edit. Its microphone records
+ *   voice messages ([recording], the view model's, kept apart from [state]); one sent scrolls to the newest message
+ *   too.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
  *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
@@ -98,6 +102,7 @@ import kotlinx.collections.immutable.ImmutableMap
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
+@Suppress("LongMethod") // The scaffold and its slots: each is a call with its own handful of arguments.
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatScreen(
@@ -111,6 +116,7 @@ internal fun ChatScreen(
     composerText: ComposerText = remember { ComposerText() },
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     attach: AttachInputs = remember { AttachInputs() },
+    recording: VoiceRecordingUiState? = null,
 ) {
     val content = state.content
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
@@ -138,6 +144,8 @@ internal fun ChatScreen(
                 onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
                 onAttach = { attachMenuOpen = true },
+                recording = recording,
+                onVoiceEvent = voiceEvents(onEvent, onSent = { scrollToSent(SendOptions()) }),
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,

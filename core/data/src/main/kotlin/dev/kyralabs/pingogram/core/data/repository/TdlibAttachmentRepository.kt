@@ -19,12 +19,14 @@ import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageVoiceNote
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -33,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,6 +46,7 @@ import javax.inject.Singleton
  * messages reach the conversation through TDLib's updates as being sent, as text messages do, and their copies are
  * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here.
  */
+@Suppress("TooManyFunctions") // One override per thing the attach menu and the voice recorder send or clean up.
 @Singleton
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,
@@ -145,6 +149,35 @@ class TdlibAttachmentRepository internal constructor(
         return Outcome.Success(Unit)
     }
 
+    /** `voice.<extension>` in a new directory of `uploads/`, deleted with it like a copy once TDLib uploaded it. */
+    override suspend fun newVoiceNoteFile(extension: String): Outcome<String> =
+        withContext(io) {
+            try {
+                val file = File(files.newUploadDirectory(), "$VOICE_NOTE.$extension")
+                if (!file.createNewFile()) throw IOException("Cannot create a voice note file")
+                Outcome.Success(file.path)
+            } catch (_: IOException) {
+                Outcome.Failure(DomainError.FileUnavailable)
+            }
+        }
+
+    override fun discardVoiceNote(path: String) {
+        scope.launch(io) { files.deleteUploads(listOf(path)) }
+    }
+
+    /** `sendMessage` of the voice note; a refused one's file is deleted, as a refused attachment's copy is. */
+    override suspend fun sendVoiceNote(
+        chatId: Long,
+        voiceNote: RecordedVoiceNote,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> {
+        val content = voiceNote.toInputMessageVoiceNote()
+        val result = client.sendMessage(chatId, content, options, replyToMessageId?.let(::replyToMessage))
+        if (result is Outcome.Failure) discardVoiceNote(voiceNote.path)
+        return result
+    }
+
     override suspend fun sendContact(
         chatId: Long,
         contact: Contact,
@@ -173,6 +206,9 @@ class TdlibAttachmentRepository internal constructor(
     private companion object {
         /** td_api.tl `contact.first_name`: 1–64 characters. */
         const val MAX_NAME_LENGTH = 64
+
+        /** The name of a voice note's file, before its format's extension. */
+        const val VOICE_NOTE = "voice"
     }
 }
 

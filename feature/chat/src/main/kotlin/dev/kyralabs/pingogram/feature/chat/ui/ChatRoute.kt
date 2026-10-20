@@ -33,6 +33,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.voice.openAppSettings
+import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberMicrophoneRequest
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeAction
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -55,8 +59,10 @@ import java.util.Locale
  * view model's [ChatEffect]s show snackbars, open a downloaded document in another app or a location in a maps app, or
  * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
  * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
- * snackbar says when no app opens. The forward sheet ([ForwardBottomSheet]) shows over the screen while the view model
- * has one; the snackbar after forwarding to one other chat opens it through [onOpenChat].
+ * snackbar says when no app opens. The composer's microphone asks for its permission through the system's request
+ * ([rememberMicrophoneRequest]), whose answer goes back to the view model. The forward sheet ([ForwardBottomSheet])
+ * shows over the screen while the view model has one; the snackbar after forwarding to one other chat opens it through
+ * [onOpenChat].
  */
 @Composable
 internal fun ChatRoute(
@@ -70,6 +76,7 @@ internal fun ChatRoute(
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
         viewModel.onEvent(ChatEvent.Started)
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
@@ -80,6 +87,8 @@ internal fun ChatRoute(
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
+    val requestMicrophone = rememberMicrophoneRequest(viewModel::onEvent)
+    val context = LocalContext.current
     val attach =
         rememberAttachInputs(
             launchers = launchers,
@@ -99,6 +108,7 @@ internal fun ChatRoute(
                 if (!launched) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false))
             }
         },
+        onVoiceAction = voiceNoticeAction(requestMicrophone) { context.openAppSettings() },
     )
     ChatScreen(
         state = state,
@@ -110,6 +120,7 @@ internal fun ChatRoute(
         composerText = viewModel.composerText,
         composerFocus = composerFocus,
         attach = attach,
+        recording = recording,
     )
     val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
     forwardSheet?.let { ForwardBottomSheet(it, viewModel.forwardComment, viewModel::onEvent) }
@@ -126,8 +137,11 @@ internal fun ChatRoute(
  * says that no camera app can. A sponsored message's link opens through [openUri] (the platform's handler), or a
  * snackbar says that no app can; what came of reporting one is a snackbar too. After forwarding a snackbar says to
  * how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another chat; or for
- * how many it failed, and why.
+ * how many it failed, and why. The voice recording's snackbars explain the microphone permission, offer the app's
+ * settings once it is refused, and say to hold the button or that recording failed; their actions (asking for the
+ * permission, opening the settings) go to [onVoiceAction].
  */
+@Suppress("LongMethod") // One short branch per kind of effect, in one place so a new kind cannot be forgotten.
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
@@ -140,6 +154,7 @@ internal fun ChatEffects(
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     onLaunchCamera: (path: String) -> Boolean = { false },
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
+    onVoiceAction: (VoiceEffect) -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -161,6 +176,7 @@ internal fun ChatEffects(
                     ChatEffect.MessageUnavailable,
                     ChatEffect.ActionUnavailable,
                     is ChatEffect.SponsoredNotice,
+                    is VoiceEffect,
                     -> {
                         resources.getString(effect.noticeText())
                     }
@@ -204,7 +220,8 @@ internal fun ChatEffects(
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
                 snackbar?.cancel()
-                snackbar = launch { snackbarHostState.showNotice(message, effect, resources, onOpenChat) }
+                snackbar =
+                    launch { snackbarHostState.showNotice(message, effect, resources, onOpenChat, onVoiceAction) }
             }
         }
     }
@@ -247,6 +264,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
         ChatEffect.ActionUnavailable -> R.string.message_action_unavailable
         is ChatEffect.SponsoredNotice -> notice.text
+        is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable
     }
 

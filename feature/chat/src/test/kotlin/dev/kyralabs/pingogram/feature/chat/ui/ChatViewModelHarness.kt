@@ -30,8 +30,9 @@ import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
 /**
- * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories and of
- * the player, a fake wall clock at [NOW] in UTC, fixed English time patterns and a log that keeps what it is told.
+ * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories, of
+ * the player and of the voice recorder (whose clock is the test's), a fake wall clock at [NOW] in UTC, fixed English
+ * time patterns and a log that keeps what it is told.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatViewModelHarness {
@@ -48,6 +49,7 @@ abstract class ChatViewModelHarness {
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
+    internal val recorder = FakeVoiceRecorder()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -90,8 +92,10 @@ abstract class ChatViewModelHarness {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
                 audioPlayer = player,
+                voiceRecorder = recorder,
                 log = { logged += it },
                 initialMessageId = messageId,
+                recordingClock = { testScheduler.currentTime },
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

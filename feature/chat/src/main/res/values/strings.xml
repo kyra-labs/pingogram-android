@@ -138,6 +138,31 @@
     <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
     <string name="composer_bar_show">Show message</string>
 
+    <!-- Voice messages (the composer's microphone, in the send button's place while the field is empty) -->
+    <!-- The microphone, for screen readers, which record without holding it. -->
+    <string name="voice_record">Record voice message</string>
+    <!-- What activating the microphone does, for screen readers. -->
+    <string name="voice_record_action">Record</string>
+    <!-- While holding the microphone: slide toward the start to throw the recording away. -->
+    <string name="voice_slide_to_cancel">Slide to cancel</string>
+    <!-- The lock beside it, for screen readers: slide up to record hands-free. -->
+    <string name="voice_slide_to_lock">Slide up to keep recording</string>
+    <!-- The buttons of a recording that goes on hands-free. -->
+    <string name="voice_send">Send voice message</string>
+    <string name="voice_delete">Delete recording</string>
+    <string name="voice_pause">Pause recording</string>
+    <string name="voice_resume">Resume recording</string>
+    <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
+    <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
+    <string name="voice_permission_allow">Allow</string>
+    <!-- Snackbar after the microphone permission was refused, with an action that opens the app's settings. -->
+    <string name="voice_permission_denied">Allow the microphone in Settings to record voice messages</string>
+    <string name="voice_permission_settings">Settings</string>
+    <!-- Snackbar after a tap on the microphone, or a recording too short to send. -->
+    <string name="voice_hold_to_record">Hold to record, release to send</string>
+    <!-- Snackbar when the microphone cannot be used, or the recording cannot be finished. -->
+    <string name="voice_recording_failed">Couldn\'t record. Another app may be using the microphone.</string>
+
     <!-- Attach menu (the composer's attach button) -->
     <string name="attach">Attach</string>
     <string name="attach_gallery">Gallery</string>
