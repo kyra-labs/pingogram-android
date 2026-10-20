@@ -4,6 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -35,6 +36,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -127,4 +129,7 @@ interface RepositoryModule {
 
     @Binds
     fun sharedStorageRepository(repository: AndroidSharedStorageRepository): SharedStorageRepository
+
+    @Binds
+    fun deviceLocationRepository(repository: AndroidDeviceLocationRepository): DeviceLocationRepository
 }

@@ -59,7 +59,13 @@ internal object ChatPreviewData {
         ComposerUiState.Available(
             canSchedule = true,
             attachOptions =
-                persistentListOf(AttachOption.Gallery, AttachOption.Camera, AttachOption.File, AttachOption.Contact),
+                persistentListOf(
+                    AttachOption.Gallery,
+                    AttachOption.Camera,
+                    AttachOption.File,
+                    AttachOption.Location,
+                    AttachOption.Contact,
+                ),
         )
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */

@@ -24,7 +24,9 @@ import org.robolectric.annotation.Config
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
  * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
- * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver).
+ * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver). ACCESS_COARSE_LOCATION and
+ * ACCESS_FINE_LOCATION send the device's location from the attach menu (approved 2026-10-20), in the foreground only:
+ * no background location, and location hardware is optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */
@@ -45,8 +47,12 @@ class AppManifestTest {
         // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
         // not requested.
         assertEquals(
-            setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS) +
-                FlavorManifest.requestedPermissions,
+            setOf(
+                Manifest.permission.INTERNET,
+                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) + FlavorManifest.requestedPermissions,
             requested,
         )
     }
@@ -64,10 +70,32 @@ class AppManifestTest {
             mapOf(
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
+                Manifest.permission.ACCESS_COARSE_LOCATION to "",
+                Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,
             declared,
+        )
+    }
+
+    @Test
+    fun `location is foreground only, and its hardware is optional`() {
+        val manifest = mergedManifest()
+        val declared = manifest.elements("uses-permission").map { it.androidAttribute("name") }
+        val features =
+            manifest
+                .elements("uses-feature")
+                .associate { it.androidAttribute("name") to it.androidAttribute("required") }
+
+        assertFalse(Manifest.permission.ACCESS_BACKGROUND_LOCATION in declared)
+        assertEquals(
+            mapOf(
+                "android.hardware.location" to "false",
+                "android.hardware.location.gps" to "false",
+                "android.hardware.location.network" to "false",
+            ),
+            features.filterKeys { it.startsWith("android.hardware.location") },
         )
     }
 

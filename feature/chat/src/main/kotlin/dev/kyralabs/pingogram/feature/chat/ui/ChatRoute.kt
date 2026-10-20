@@ -33,6 +33,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -55,7 +57,8 @@ import java.util.Locale
  * view model's [ChatEffect]s show snackbars, open a downloaded document in another app or a location in a maps app, or
  * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
  * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
- * snackbar says when no app opens. The forward sheet ([ForwardBottomSheet]) shows over the screen while the view model
+ * snackbar says when no app opens; the "Location" sheet has its own view model ([ShareLocationViewModel], keyed by
+ * the chat like this one), which finds the location the conversation then sends. The forward sheet ([ForwardBottomSheet]) shows over the screen while the view model
  * has one; the snackbar after forwarding to one other chat opens it through [onOpenChat].
  */
 @Composable
@@ -68,6 +71,7 @@ internal fun ChatRoute(
     messageId: Long? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
+    locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
@@ -87,6 +91,7 @@ internal fun ChatRoute(
             caption = viewModel.attachCaption,
             pollEditor = viewModel.pollEditor,
             snackbarHostState = snackbarHostState,
+            location = rememberLocationInputs(locationViewModel, snackbarHostState),
         )
     ChatEffects(
         effects = viewModel.effects,

@@ -143,6 +143,7 @@
     <string name="attach_gallery">Gallery</string>
     <string name="attach_camera">Camera</string>
     <string name="attach_file">File</string>
+    <string name="attach_location">Location</string>
     <string name="attach_contact">Contact</string>
     <string name="attach_poll">Poll</string>
     <!-- The button of the attach menu that shows the options that do not fit. -->
@@ -181,6 +182,43 @@
     <string name="attach_remove">Remove %1$s</string>
     <!-- The button over a photo, video or file being sent that stops sending it. -->
     <string name="attach_cancel_upload">Cancel upload</string>
+
+    <!-- The sheet that sends the device's location (the attach menu's "Location") -->
+    <string name="location_title">Send location</string>
+    <!-- Before Android asks for the location permission. -->
+    <string name="location_permission_body">Pingogram uses your location only to send it in this chat, and only while this sheet is open.</string>
+    <string name="location_permission_continue">Continue</string>
+    <!-- After the user refused the permission for good: it can only be allowed in the system settings. -->
+    <string name="location_permission_denied_body">To send your location, allow Pingogram to use it in the app\'s settings.</string>
+    <string name="location_permission_settings">Open settings</string>
+    <string name="location_not_now">Not now</string>
+    <string name="location_searching">Finding your location…</string>
+    <!-- Under a location found while a more accurate one is still being looked for. -->
+    <string name="location_refining">Improving accuracy…</string>
+    <!-- %1$s is a distance with its unit, "12 m" or "1.5 km". -->
+    <string name="location_accuracy">Accurate to %1$s</string>
+    <!-- The user allowed only an approximate location (Android 12 and later), which is what is sent. -->
+    <string name="location_approximate">Approximate location</string>
+    <string name="location_use_precise">Use precise location</string>
+    <string name="location_open_in_maps">Open in maps</string>
+    <string name="location_not_found_title">Your location wasn\'t found</string>
+    <string name="location_not_found_body">Make sure location is on, or move closer to a window, then try again.</string>
+    <string name="location_try_again">Try again</string>
+    <!-- Coordinates: %1$s is the angle in degrees without its sign, "48.85837". -->
+    <string name="location_north">%1$s° N</string>
+    <string name="location_south">%1$s° S</string>
+    <string name="location_east">%1$s° E</string>
+    <string name="location_west">%1$s° W</string>
+    <!-- %1$s is the latitude, %2$s the longitude, as above. -->
+    <string name="location_coordinates">%1$s, %2$s</string>
+    <!-- Screen readers: the coordinates. %1$s and %2$s are the angles in degrees without their signs. -->
+    <string name="location_north_spoken">%1$s degrees north</string>
+    <string name="location_south_spoken">%1$s degrees south</string>
+    <string name="location_east_spoken">%1$s degrees east</string>
+    <string name="location_west_spoken">%1$s degrees west</string>
+    <!-- Snackbar when the device's location is off, with an action that opens the location settings. -->
+    <string name="location_off">Location is turned off</string>
+    <string name="location_off_settings">Settings</string>
 
     <!-- The form of a new poll -->
     <string name="poll_title">New poll</string>

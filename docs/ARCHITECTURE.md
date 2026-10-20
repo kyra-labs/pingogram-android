@@ -138,6 +138,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
   same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
 
+## Location
+
+- The attach menu's "Location" sends the device's location (`docs/adr/0004-platform-location-manager.md`).
+  `AndroidDeviceLocationRepository` (`core:data`, behind `core:domain`'s `DeviceLocationRepository`) reads the access the
+  permissions give and finds the location with the platform's `LocationManager` (`LocationManagerCompat`), never Google
+  Play services: a cold `Flow` of the best location so far, the last known one first, whose collection keeps the
+  providers on.
+- The sheet has its own view model, `ShareLocationViewModel` (`feature:chat`, keyed by the chat like `ChatViewModel`):
+  the permission step, the search while the sheet is open and the screen collects its state (`WhileSubscribed`, so it
+  stops in the background), a 30 s timeout for a first location, and the snackbar when the location is off. The route
+  asks Android for the permissions and opens the settings and the maps app (`LocationInputs`). Sending goes through
+  `ChatViewModel` (`ChatEvent.SendLocation` → `ChatAttachments` → `AttachmentRepository.sendLocation`), so the location
+  takes the composer's reply along like every attachment.
+
 ## Notifications
 
 - TDLib's own notification engine decides what to show: it applies mute settings, exceptions and read messages,

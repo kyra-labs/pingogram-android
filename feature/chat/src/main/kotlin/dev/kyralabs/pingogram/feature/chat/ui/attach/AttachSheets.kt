@@ -5,12 +5,17 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
+import dev.kyralabs.pingogram.feature.chat.ui.location.LocationInputs
+import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationEvent
+import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationSheet
+import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationUiState
 import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The attach menu's sheets over the conversation: the menu ([AttachMenuSheet]) while [menuOpen] and the chat takes
  * attachments, closing through [onCloseMenu]; the preview of picked items ([AttachPreviewSheet]) and the poll form
- * ([PollFormSheet]) while [state] has them. [onSent] gets the options of what they send.
+ * ([PollFormSheet]) while [state] has them; the "Location" sheet ([ShareLocationSheet]) while [inputs] has it open and
+ * the chat takes attachments. [onSent] gets the options of what they send.
  */
 @Composable
 internal fun AttachSheets(
@@ -53,4 +58,34 @@ internal fun AttachSheets(
             },
         )
     }
+    val composer = state.composer as? ComposerUiState.Available
+    if (composer != null && AttachOption.Location in options) {
+        LocationSheet(inputs.location, composer.canSchedule, onEvent, onSent)
+    }
+}
+
+/**
+ * The "Location" sheet while [location] has it open: its location goes to the conversation as [ChatEvent.SendLocation],
+ * at a time if [canSchedule], and the sheet closes. Its own scope, so a better location recomposes only the sheet.
+ */
+@Composable
+private fun LocationSheet(
+    location: LocationInputs,
+    canSchedule: Boolean,
+    onEvent: (ChatEvent) -> Unit,
+    onSent: (SendOptions) -> Unit,
+) {
+    val state = location.state()
+    if (state is ShareLocationUiState.Closed) return
+    ShareLocationSheet(
+        state = state,
+        canSchedule = canSchedule,
+        canOpenMaps = location.canOpenMaps,
+        onEvent = location.onEvent,
+        onSend = { found, sendOptions ->
+            onEvent(ChatEvent.SendLocation(found, sendOptions))
+            location.onEvent(ShareLocationEvent.Dismiss)
+            onSent(sendOptions)
+        },
+    )
 }

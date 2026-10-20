@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -25,13 +26,14 @@ import kotlinx.coroutines.launch
 
 /**
  * What the composer's attach menu does (`REQUIREMENTS.md` FR-C5), for `ChatViewModel`: picked photos, videos and files
- * in a preview before they are sent, a photo from the camera, a contact, a poll, and cancelling uploads.
+ * in a preview before they are sent, a photo from the camera, a contact, the device's location, a poll, and cancelling
+ * uploads.
  *
  * - **Preview** ([preview]): picked items show at once, each being prepared ([AttachmentRepository.prepare]) one after
  *   the other, then ready; an item that fails is dropped with a snackbar. Items can be removed; closing the preview
  *   ([dismissPreview]) stops what is being prepared and deletes the copies. More picked from the same kind of picker
  *   join the preview; from the other kind, they replace it. [caption] is its caption, with the composer's formatting.
- * - **Sending** ([sendPreview], [sendContact], [sendPoll]) closes what was open at once, takes the composer's reply
+ * - **Sending** ([sendPreview], [sendContact], [sendLocation], [sendPoll]) closes what was open at once, takes the composer's reply
  *   along ([ReplyHandoff]), and sends; a refusal gives the reply back with a snackbar ([ChatEffect.ShowError]), a
  *   scheduled message is confirmed ([ChatEffect.MessageScheduled]). A refused poll opens again as it was.
  * - **Camera** ([takePhoto]): a new file for the camera app ([ChatEffect.LaunchCamera]), whose photo joins the preview
@@ -166,6 +168,15 @@ internal class ChatAttachments(
                 }
             }
         }
+    }
+
+    /** Sends [location], the device's, as [options] say, with the composer's reply. */
+    fun sendLocation(
+        location: DeviceLocation,
+        options: SendOptions,
+    ) {
+        val replyTo = replies.takeReply()
+        scope.launch { report(repository.sendLocation(chatId, location, options, replyTo), options, replyTo) }
     }
 
     fun openPoll() = setPollOpen(true)

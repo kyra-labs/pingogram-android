@@ -18,11 +18,13 @@ import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -152,6 +154,14 @@ class TdlibAttachmentRepository internal constructor(
         replyToMessageId: Long?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, contact.toInputMessageContact(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendLocation(
+        chatId: Long,
+        location: DeviceLocation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyToMessageId?.let(::replyToMessage))
 
     override suspend fun sendPoll(
         chatId: Long,
