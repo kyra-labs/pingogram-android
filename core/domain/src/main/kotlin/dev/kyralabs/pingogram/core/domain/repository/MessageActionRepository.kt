@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -10,13 +11,13 @@ import kotlinx.collections.immutable.ImmutableMap
 
 /**
  * What the user does to a message of the conversation (`REQUIREMENTS.md` FR-C6, FR-C7): what TDLib allows for it, its
- * reactions, editing, deleting, pinning and sending it again. Nothing is kept here: the changes reach the message
- * through TDLib's updates, which `MessageRepository.history` applies.
+ * reactions, editing, deleting, pinning, forwarding and sending it again. Nothing is kept here: the changes reach the
+ * message through TDLib's updates, which `MessageRepository.history` applies.
  *
  * Every call fails with a `DomainError`: `FloodWait`, `Network` for a request that gets no answer in time, `NotFound`
  * for a message or chat TDLib does not know, or another one when TDLib refuses it.
  */
-@Suppress("TooManyFunctions") // One function per message action, and the two lookups the actions sheet needs.
+@Suppress("TooManyFunctions") // One function per message action, and the lookups the actions sheet needs.
 interface MessageActionRepository {
     /** What the user can do with message [messageId] of chat [chatId] right now; TDLib answers from memory. */
     suspend fun properties(
@@ -112,4 +113,27 @@ interface MessageActionRepository {
         chatId: Long,
         messageIds: List<Long>,
     ): Outcome<Unit>
+
+    /**
+     * Forwards [messageIds] of chat [fromChatId] to chat [toChatId] as [options] say, in the order they were sent (an
+     * album stays an album), after [comment] as a message of its own if it is not null; the comment is sent as a new
+     * message is, but leaves the draft of [toChatId] alone. Each message must be one TDLib lets be forwarded
+     * (`MessageProperties.canBeForwarded`); at most [MAX_FORWARDED] at once.
+     *
+     * Succeeds once TDLib accepted every message, which it then puts into the history of [toChatId] as being sent.
+     * Fails with the comment's failure, without forwarding anything, or with `DomainError.SendingNotAllowed` when
+     * TDLib does not forward every message (e.g. a photo to a group where members may send no photos).
+     */
+    suspend fun forward(
+        fromChatId: Long,
+        messageIds: List<Long>,
+        toChatId: Long,
+        comment: FormattedText?,
+        options: ForwardOptions,
+    ): Outcome<Unit>
+
+    companion object {
+        /** How many messages [forward] takes at once (td_api.tl `forwardMessages.message_ids`). */
+        const val MAX_FORWARDED = 100
+    }
 }

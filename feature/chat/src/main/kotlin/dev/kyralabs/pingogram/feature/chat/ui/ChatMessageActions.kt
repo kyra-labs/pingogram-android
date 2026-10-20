@@ -47,8 +47,9 @@ import kotlinx.coroutines.launch
  * - **Actions**: each asks for the properties again, as they change with time and screen readers start actions
  *   without the sheet, and does nothing but say so ([ChatEffect.ActionUnavailable]) where TDLib no longer allows it.
  *   Replying and editing go to the [composer], which takes the focus ([ChatEffect.FocusComposer]); copying goes out as
- *   [ChatEffect.CopyText]; pinning, deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then
- *   change the history. An album is deleted, and its failed items resent, as a whole.
+ *   [ChatEffect.CopyText]; forwarding opens the forward sheet through [onForward]; pinning, deleting (after the
+ *   [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is forwarded and
+ *   deleted, and its failed items resent, as a whole.
  * - **Reactions** ([toggleReaction]), from the quick row, the picker or a bubble, go on or come off the message as the
  *   user had chosen them, without asking: TDLib refuses a reaction it does not offer.
  * - Failures go out as [ChatEffect.ShowError] snackbars.
@@ -64,6 +65,7 @@ internal class ChatMessageActions(
     private val scope: CoroutineScope,
     private val current: suspend () -> ActionContext?,
     private val onEffect: (ChatEffect) -> Unit,
+    private val onForward: (List<Message>) -> Unit = {},
 ) {
     private val mutableSheet = MutableStateFlow<MessageActionsSheet?>(null)
     private val mutableDeleteDialog = MutableStateFlow<DeleteMessagesDialog?>(null)
@@ -138,6 +140,10 @@ internal class ChatMessageActions(
         act(messageId, MessageAction.Copy) { _, message, _ ->
             onEffect(ChatEffect.CopyText(message.textOrCaption.text))
         }
+
+    /** Opens the forward sheet for message [messageId] with the album's other items, through [onForward]. */
+    fun forward(messageId: Long) =
+        act(messageId, MessageAction.Forward) { context, message, _ -> onForward(context.albumOf(message)) }
 
     fun edit(messageId: Long) =
         act(messageId, MessageAction.Edit) { _, message, _ ->
@@ -341,8 +347,9 @@ internal class ActionContext(
 
 /**
  * What the actions sheet offers for [message] with TDLib's [properties], in its order: sending a failed message again,
- * replying and editing where the user can write, copying a text or caption the chat lets be saved, pinning or
- * unpinning (also for the user alone in a private chat), deleting.
+ * replying and editing where the user can write, copying a text or caption the chat lets be saved, forwarding where
+ * TDLib allows it (never protected content), pinning or unpinning (also for the user alone in a private chat),
+ * deleting.
  */
 internal fun ActionContext.actionsOf(
     message: Message,
@@ -352,16 +359,18 @@ internal fun ActionContext.actionsOf(
         if (message.canBeResent) add(MessageAction.Resend)
         if (properties.canBeReplied && canWrite) add(MessageAction.Reply)
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
+        if (properties.canBeForwarded) add(MessageAction.Forward)
         if (properties.canBeEdited && canWrite && message.editTarget != null) add(MessageAction.Edit)
-        if (properties.canBePinned) {
-            if (message.isPinned) {
-                add(MessageAction.Unpin)
-            } else {
-                add(MessageAction.Pin)
-                if (pinsForSelf) add(MessageAction.PinForSelf)
-            }
-        }
+        if (properties.canBePinned) addAll(pinActions(message))
         if (properties.canBeDeletedOnlyForSelf || properties.canBeDeletedForAllUsers) add(MessageAction.Delete)
+    }
+
+/** Unpinning a pinned [message], else pinning it, also for the user alone where that is possible. */
+private fun ActionContext.pinActions(message: Message): List<MessageAction> =
+    when {
+        message.isPinned -> listOf(MessageAction.Unpin)
+        pinsForSelf -> listOf(MessageAction.Pin, MessageAction.PinForSelf)
+        else -> listOf(MessageAction.Pin)
     }
 
 /** A failed message TDLib can send again. */

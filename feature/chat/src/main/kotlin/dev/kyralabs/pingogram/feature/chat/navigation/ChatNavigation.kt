@@ -16,16 +16,24 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
 /**
  * Adds the conversation of a chat, [ChatDestination], to the graph, opened at its message if the route names one;
  * [onBack] leaves it, and [onOpenMedia] opens a tapped photo, video or GIF of the chat in the media viewer, which it
- * grows into (the destination provides its animated visibility scope for that container transform).
+ * grows into (the destination provides its animated visibility scope for that container transform). [onOpenChat]
+ * opens the chat messages were forwarded to, from the snackbar after forwarding.
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
+    onOpenChat: (chatId: Long) -> Unit = {},
 ) {
     composable<ChatDestination> { entry ->
         val route = entry.toRoute<ChatDestination>()
         ProvideNavAnimatedVisibilityScope(this) {
-            ChatRoute(chatId = route.chatId, messageId = route.messageId, onBack = onBack, onOpenMedia = onOpenMedia)
+            ChatRoute(
+                chatId = route.chatId,
+                messageId = route.messageId,
+                onBack = onBack,
+                onOpenMedia = onOpenMedia,
+                onOpenChat = onOpenChat,
+            )
         }
     }
 }
@@ -34,7 +42,7 @@ fun NavGraphBuilder.chatScreen(
  * The conversation of chat [chatId] in the detail pane of the Chats tab's list-detail layout (`docs/ARCHITECTURE.md`,
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
  * i.e. when the pane shows alone. [onOpenMedia] opens a tapped photo, video or GIF in the media viewer, full screen
- * above the whole layout.
+ * above the whole layout; [onOpenChat] the chat messages were forwarded to.
  *
  * Each chat gets a fresh composition and view model: its own saved UI state (the scroll position), and a
  * [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own ([rememberViewModelStoreOwner]), which
@@ -49,10 +57,17 @@ fun ChatPane(
     onBack: (() -> Unit)?,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenChat: (chatId: Long) -> Unit = {},
 ) {
     key(chatId) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
-            ChatRoute(chatId = chatId, onBack = onBack, onOpenMedia = onOpenMedia, modifier = modifier)
+            ChatRoute(
+                chatId = chatId,
+                onBack = onBack,
+                onOpenMedia = onOpenMedia,
+                modifier = modifier,
+                onOpenChat = onOpenChat,
+            )
         }
     }
 }

@@ -24,6 +24,15 @@ data class MessageProperties(
      * "restrict saving content"), which copying its text must respect too.
      */
     val canBeSaved: Boolean,
+    /**
+     * It can be forwarded to another chat (`REQUIREMENTS.md` FR-C6): false for protected content, service messages and
+     * a message still being sent, among others.
+     */
+    val canBeForwarded: Boolean = false,
+    /** It can be forwarded as a copy, without its sender's name (td_api.tl `forwardMessages.send_copy`). */
+    val canBeCopied: Boolean = false,
+    /** It can be forwarded into a secret chat, which takes only copies. */
+    val canBeCopiedToSecretChat: Boolean = false,
 )
 
 /**

@@ -396,7 +396,32 @@ class TdlibChatRepositoryActionsTest {
             assertEquals(Outcome.Failure(DomainError.NotFound), result)
         }
 
+    // privateChat
+
+    @Test
+    fun `privateChat asks TDLib for the user's chat without forcing it`() =
+        runTest {
+            client.on(
+                TdApi.CreatePrivateChat::class,
+            ) { request -> TdResult.Success(chat(id = request.userId, title = "Me")) }
+
+            val result = repository().privateChat(USER_ID)
+
+            val request = client.sentOf<TdApi.CreatePrivateChat>().single()
+            assertEquals(USER_ID to false, request.userId to request.force)
+            assertEquals(USER_ID, (result as Outcome.Success).value.id)
+        }
+
+    @Test
+    fun `privateChat reports a user TDLib does not know`() =
+        runTest {
+            client.on(TdApi.CreatePrivateChat::class, failure(TdApi.Error(400, "User not found")))
+
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().privateChat(USER_ID))
+        }
+
     private companion object {
+        const val USER_ID = 42L
         const val CHAT_ID = 100L
         const val LAST_MESSAGE_ID = 7L shl 20
     }

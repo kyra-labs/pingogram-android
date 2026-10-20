@@ -107,6 +107,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
         forSelf: Boolean = true,
         forAll: Boolean = true,
         saved: Boolean = true,
+        forwarded: Boolean = true,
     ) {
         messageActions.onProperties = {
             Outcome.Success(
@@ -117,6 +118,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     canBeDeletedOnlyForSelf = forSelf,
                     canBeDeletedForAllUsers = forAll,
                     canBeSaved = saved,
+                    canBeForwarded = forwarded,
                 ),
             )
         }
@@ -149,6 +151,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     listOf(
                         MessageAction.Reply,
                         MessageAction.Copy,
+                        MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
@@ -168,7 +171,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
                 assertEquals(
-                    listOf(MessageAction.Reply, MessageAction.Copy, MessageAction.Delete),
+                    listOf(MessageAction.Reply, MessageAction.Copy, MessageAction.Forward, MessageAction.Delete),
                     viewModel.sheet?.actions,
                 )
             }
@@ -183,6 +186,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     forSelf = false,
                     forAll = false,
                     saved = false,
+                    forwarded = false,
                 )
                 val viewModel = privateChat()
 
@@ -211,7 +215,13 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(1))
 
                 assertEquals(
-                    listOf(MessageAction.Reply, MessageAction.Pin, MessageAction.PinForSelf, MessageAction.Delete),
+                    listOf(
+                        MessageAction.Reply,
+                        MessageAction.Forward,
+                        MessageAction.Pin,
+                        MessageAction.PinForSelf,
+                        MessageAction.Delete,
+                    ),
                     viewModel.sheet?.actions,
                 )
             }
@@ -227,6 +237,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     listOf(
                         MessageAction.Reply,
                         MessageAction.Copy,
+                        MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Unpin,
                         MessageAction.Delete,
@@ -266,7 +277,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(1))
 
                 assertEquals(
-                    listOf(MessageAction.Copy, MessageAction.Pin, MessageAction.Delete),
+                    listOf(MessageAction.Copy, MessageAction.Forward, MessageAction.Pin, MessageAction.Delete),
                     viewModel.sheet?.actions,
                 )
             }

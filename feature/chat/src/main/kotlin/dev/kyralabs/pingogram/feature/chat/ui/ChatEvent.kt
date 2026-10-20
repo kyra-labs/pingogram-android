@@ -244,6 +244,14 @@ sealed interface ChatEvent {
     /** The delete confirmation was dismissed: nothing is deleted. */
     data object DismissDelete : ChatEvent
 
+    /**
+     * Forward message [messageId], an album's every item: the forward sheet opens with the chats it can go to
+     * ([ChatViewModel.forwardSheet]).
+     */
+    data class Forward(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** Send the failed message [messageId] again (an album's failed items). */
     data class Resend(
         val messageId: Long,
