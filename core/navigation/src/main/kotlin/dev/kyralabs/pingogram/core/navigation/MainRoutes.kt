@@ -36,6 +36,13 @@ data object EditProfileRoute
 data object AppearanceRoute
 
 /**
+ * The app's language (`REQUIREMENTS.md` FR-S1, §6.4): the system's or one of the languages Pingogram ships,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object LanguageRoute
+
+/**
  * Data and storage settings (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes and clearing its cache,
  * `:feature:settings`, pushed above the Settings tab.
  */
@@ -96,6 +103,19 @@ data object PasscodeLockRoute
 /** Setting a new passcode, entered twice, pushed above [PasscodeLockRoute]. */
 @Serializable
 data object SetPasscodeRoute
+
+/** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object TwoStepVerificationRoute
+
+/**
+ * One of 2-step verification's flows (setting, changing or removing the password, the recovery email, a forgotten
+ * password), pushed above [TwoStepVerificationRoute]; [flow] is the flow's name.
+ */
+@Serializable
+data class TwoStepVerificationFlowRoute(
+    val flow: String,
+)
 
 /**
  * Notifications (`REQUIREMENTS.md` FR-S1): the defaults of private chats, groups and channels, "Keep connected" and

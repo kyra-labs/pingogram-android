@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
@@ -81,7 +82,11 @@ import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
@@ -137,6 +142,8 @@ class PingogramAppTest {
 
     private lateinit var navController: NavHostController
 
+    private val tabReselection = TabReselection()
+
     // Top-level tabs
 
     @Test
@@ -160,6 +167,23 @@ class PingogramAppTest {
         tab(R.string.nav_chats).assertIsNotSelected()
         text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
         text(ChatsR.string.chat_list_empty_title).assertDoesNotExist()
+    }
+
+    @Test
+    fun `tapping the selected tab stays on it and asks its screen to go back to the top`() {
+        val reselected = mutableListOf<Any>()
+        val collector =
+            CoroutineScope(Dispatchers.Unconfined).launch {
+                tabReselection.reselections(ChatsRoute).collect { reselected += it }
+            }
+        setApp()
+
+        tab(R.string.nav_chats).performClick()
+        collector.cancel()
+
+        assertEquals(listOf<Any>(ChatsRoute), reselected)
+        assertEquals(1, backStackDestinations().size)
+        tab(R.string.nav_chats).assertIsSelected()
     }
 
     @Test
@@ -347,6 +371,17 @@ class PingogramAppTest {
 
         assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
         assertNoNavigation()
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_language).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<LanguageRoute>() == true)
+        // The page's radio rows are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
 
@@ -753,6 +788,7 @@ class PingogramAppTest {
             PingogramApp(
                 uiState = uiState,
                 navController = rememberNavController().also { navController = it },
+                tabReselection = tabReselection,
                 chatToOpen = chatToOpen,
                 onChatOpened = { chatToOpen = null },
             )

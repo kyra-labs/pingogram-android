@@ -46,6 +46,7 @@ enum class SettingsPage {
     Appearance,
     Notifications,
     DataStorage,
+    Language,
     About,
     PrivacySecurity,
 }

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.sticker
 
+import androidx.core.graphics.createBitmap
 import android.graphics.Bitmap
 import android.util.LruCache
 import androidx.compose.runtime.Stable
@@ -80,12 +81,7 @@ class AnimatedStickers(
         firstFrames[key]?.let { return it }
         val bitmap =
             withContext(renderDispatcher) {
-                Bitmap
-                    .createBitmap(
-                        width,
-                        height,
-                        Bitmap.Config.ARGB_8888,
-                    ).also { animation.newRenderer().render(0, it) }
+                createBitmap(width, height).also { animation.newRenderer().render(0, it) }
             }
         firstFrames.put(key, bitmap)
         return bitmap

@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
@@ -54,10 +55,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
@@ -91,6 +94,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
+ * - **Back to the top** (Chats tab only): tapping the Chats tab while it is selected scrolls the list back to its top
+ *   ([ScrollToTopOnReselect]).
  * - **New chat** (Chats tab only): the [NewChatButton] at the bottom end, above the floating navigation bar or in the
  *   list pane, collapsing while the list scrolls towards its end; it hides in selection mode. The list's end keeps
  *   clear of it. "No chats yet" has a button for the same screen.
@@ -119,6 +124,7 @@ internal fun ChatListScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val folderSwitch = remember { FolderSwitch() }
     val newChatButton = rememberNewChatButtonState()
+    ScrollToTopOnReselect(ChatsRoute, listState, enabled = state.kind == ChatListKind.Chats)
     Box(modifier) {
         Scaffold(
             modifier =
@@ -559,7 +565,7 @@ private fun ChatListEmpty(
                 body = stringResource(R.string.chat_list_empty_body),
                 modifier = modifier,
                 action = {
-                    Button(onClick = onNewChat) {
+                    Button(onClick = onNewChat, shapes = ButtonDefaults.shapes()) {
                         Text(
                             text = stringResource(R.string.new_chat),
                             style = MaterialTheme.typography.labelLargeEmphasized,
@@ -579,7 +585,8 @@ private fun ChatListError(
     modifier: Modifier = Modifier,
 ) {
     EmptyState(
-        illustration = MaterialShapes.Burst,
+        // A soft shape: errors are no alarm (`docs/DESIGN_SYSTEM.md` §4).
+        illustration = MaterialShapes.Cookie4Sided,
         icon = UiR.drawable.ic_error,
         title = stringResource(R.string.chat_list_error_title),
         body = errorText(content.error),
@@ -587,7 +594,7 @@ private fun ChatListError(
         containerColor = MaterialTheme.colorScheme.errorContainer,
         iconColor = MaterialTheme.colorScheme.onErrorContainer,
         action = {
-            Button(onClick = onRetry) {
+            Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(
                     text = stringResource(R.string.chat_list_retry),
                     style = MaterialTheme.typography.labelLargeEmphasized,

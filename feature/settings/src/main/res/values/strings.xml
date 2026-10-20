@@ -19,6 +19,8 @@
     <!-- Settings home -->
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_summary">Pingogram\'s own language</string>
     <string name="settings_data_storage">Data and storage</string>
     <string name="settings_data_storage_summary">Storage usage, clear cache</string>
     <string name="settings_about">About</string>
@@ -57,6 +59,18 @@
     <string name="settings_contrast_follows_system">Follows your device\'s contrast setting</string>
     <!-- Before Android 14, wallpaper colors have no contrast levels. -->
     <string name="settings_contrast_brand_colors">Medium and high contrast use Pingogram\'s colors instead of your wallpaper\'s</string>
+
+    <!-- Language (FR-S1, per-app language) -->
+    <!-- Spoken by screen readers for the progress indicator while the languages load. -->
+    <string name="settings_language_loading">Loading languages</string>
+    <string name="settings_section_app_language">App language</string>
+    <!-- The choice that follows the device's language; the device's language, named in itself, shows below it. -->
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_footer">Text that Pingogram has no translation for yet shows in English.</string>
+    <!-- Android 13+: the heading above the row that opens Android's own app language settings. -->
+    <string name="settings_section_android">Android</string>
+    <string name="settings_language_android_settings">App language in Android settings</string>
+    <string name="settings_language_android_settings_summary">The same choice, where Android lists every app\'s language</string>
 
     <!-- Data and storage -->
     <string name="settings_section_storage_usage">Storage usage</string>
@@ -122,6 +136,80 @@
     <string name="settings_two_step_verification_pending_email">On. Waiting for the code sent to %1$s to confirm it as the recovery email.</string>
     <!-- Follows the state of two-step verification. %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
     <string name="settings_two_step_verification_pending_reset">A reset of the password was requested. The password can be reset after %1$s.</string>
+
+    <!-- The two-step verification page and its flows (FR-S1) -->
+    <string name="settings_two_step_loading">Loading two-step verification</string>
+    <string name="settings_two_step_about">Telegram asks for this password, as well as the code, whenever your account logs in on a new device.</string>
+    <string name="settings_two_step_about_pending">The password takes effect once its recovery email is confirmed.</string>
+    <string name="settings_two_step_set_password">Set password</string>
+    <string name="settings_two_step_change_password">Change password</string>
+    <string name="settings_two_step_turn_off">Turn off</string>
+    <string name="settings_two_step_section_password">Password</string>
+    <string name="settings_two_step_section_recovery_email">Recovery email</string>
+    <string name="settings_two_step_recovery_email">Recovery email</string>
+    <string name="settings_two_step_change_recovery_email">Change recovery email</string>
+    <string name="settings_two_step_add_recovery_email">Add recovery email</string>
+    <string name="settings_two_step_recovery_email_set">Set. A forgotten password can be reset with a code sent there.</string>
+    <string name="settings_two_step_recovery_email_not_set">Not set. Without one, resetting a forgotten password takes days.</string>
+    <string name="settings_two_step_enter_email_code">Enter the code</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_email_code_sent_to">Sent to %1$s to confirm it</string>
+    <string name="settings_two_step_cancel_email">Don\'t use this address</string>
+    <string name="settings_two_step_section_reset">Password reset</string>
+    <string name="settings_two_step_reset_requested">Reset requested</string>
+    <!-- %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
+    <string name="settings_two_step_reset_after">The password can be reset after %1$s.</string>
+    <string name="settings_two_step_reset_ready">The waiting period is over: the password can be reset now.</string>
+    <string name="settings_two_step_reset_now">Reset password now</string>
+    <string name="settings_two_step_cancel_reset">Cancel reset</string>
+    <string name="settings_two_step_turn_off_title_short">Turn off password</string>
+    <string name="settings_two_step_turn_off_title">Turn off two-step verification?</string>
+    <string name="settings_two_step_turn_off_text">Logging in on a new device will need only the code. The recovery email is removed too.</string>
+    <string name="settings_two_step_reset_title">Reset password?</string>
+    <string name="settings_two_step_reset_text">Telegram removes the password and the recovery email after a waiting period of several days, and two-step verification turns off. Your chats stay, and you can cancel the reset until then.</string>
+    <string name="settings_two_step_reset_now_text">The password and the recovery email are removed, and two-step verification turns off.</string>
+    <string name="settings_two_step_reset_confirm">Reset</string>
+    <string name="settings_two_step_done_password_set">Two-step verification is on</string>
+    <string name="settings_two_step_done_password_changed">Password changed</string>
+    <string name="settings_two_step_done_password_removed">Two-step verification is off</string>
+    <string name="settings_two_step_done_email_confirmed">Recovery email confirmed</string>
+    <string name="settings_two_step_done_password_recovered">New password set</string>
+    <string name="settings_two_step_done_reset_requested">Reset requested. The password can be reset after the waiting period.</string>
+    <string name="settings_two_step_email_cancelled">The address waiting for its code is no longer used</string>
+    <string name="settings_two_step_reset_cancelled">Reset cancelled</string>
+    <!-- %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
+    <string name="settings_two_step_reset_declined">Telegram declined the reset. Try again after %1$s.</string>
+    <string name="settings_two_step_code_resent">Code sent again</string>
+    <string name="settings_two_step_title_forgot">Forgot password</string>
+    <string name="settings_two_step_current_password_text">Enter your current password.</string>
+    <!-- %1$s is the hint the user gave for their password. -->
+    <string name="settings_two_step_hint_is">Hint: %1$s</string>
+    <string name="settings_two_step_new_password_text">Choose a password that Telegram asks for whenever your account logs in on a new device.</string>
+    <string name="settings_two_step_hint_text">A hint helps you remember the password. It shows to anyone who tries to log in with your number, so don\'t give the password away.</string>
+    <string name="settings_two_step_recovery_email_text">If you forget the password, a code sent to this address resets it. Telegram sends it a code now to confirm it.</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_email_code_text">Enter the code Telegram sent to %1$s.</string>
+    <string name="settings_two_step_email_code_text_unknown">Enter the code Telegram sent to your recovery email.</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_recovery_code_text">Enter the code Telegram sent to %1$s to reset your password.</string>
+    <string name="settings_two_step_reset_step_text">Without a recovery email you can access, Telegram can reset your password after a waiting period of several days. Your chats stay, and you can cancel the reset on the two-step verification page until then.</string>
+    <string name="settings_two_step_label_password">Password</string>
+    <string name="settings_two_step_label_new_password">New password</string>
+    <string name="settings_two_step_label_repeat_password">Repeat password</string>
+    <string name="settings_two_step_label_hint">Hint (optional)</string>
+    <string name="settings_two_step_label_email">Email address</string>
+    <string name="settings_two_step_label_code">Code</string>
+    <string name="settings_two_step_next">Next</string>
+    <string name="settings_two_step_save">Save</string>
+    <string name="settings_two_step_skip">Skip</string>
+    <string name="settings_two_step_forgot_password">Forgot password?</string>
+    <string name="settings_two_step_resend_code">Resend code</string>
+    <string name="settings_two_step_no_access">Can\'t access it?</string>
+    <string name="settings_two_step_reset_password">Reset password</string>
+    <string name="settings_two_step_error_passwords_differ">The passwords are not the same</string>
+    <string name="settings_two_step_error_hint_is_password">The hint can\'t be the password itself</string>
+    <!-- %1$s is a duration such as "42 seconds" or "3 hours". -->
+    <string name="settings_two_step_flood_wait">Too many attempts. Try again in %1$s.</string>
 
     <!-- A privacy setting (FR-S1) -->
     <!-- Spoken by screen readers for the progress indicator while the setting loads. -->

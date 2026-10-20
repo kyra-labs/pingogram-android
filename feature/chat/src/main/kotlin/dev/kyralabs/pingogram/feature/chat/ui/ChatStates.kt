@@ -78,7 +78,7 @@ internal fun ChatError(
     modifier: Modifier = Modifier,
 ) {
     EmptyState(
-        illustration = MaterialShapes.Burst,
+        illustration = MaterialShapes.Cookie4Sided,
         icon = UiR.drawable.ic_error,
         title = stringResource(R.string.chat_error_title),
         body = errorText(content.error),

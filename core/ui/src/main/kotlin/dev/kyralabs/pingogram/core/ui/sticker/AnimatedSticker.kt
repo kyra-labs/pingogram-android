@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.sticker
 
+import androidx.core.graphics.createBitmap
 import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Spacer
@@ -183,7 +184,7 @@ private class AnimatedStickerNode(
                 val index = next
                 withContext(stickers.renderDispatcher) {
                     val bitmap =
-                        buffers[index] ?: Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
+                        buffers[index] ?: createBitmap(width, height).also {
                             buffers[index] = it
                         }
                     renderer.render(frame, bitmap)

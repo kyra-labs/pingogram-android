@@ -19,6 +19,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Animated stickers play, in chats and in the sticker panel, once they are downloaded. To save battery, at most eight
   play at once, only while they are on screen and Pingogram is in front, and not at all when animations are turned off
   in Android's settings. Video stickers still show a still picture.
+- Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
+  default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
+  and later the choice is the same as in Android's own app language settings, which the page also opens; on Android
+  8 to 12 Pingogram keeps it itself.
+- Two-step verification in Settings → Privacy and security: set a password with a hint and a recovery email (confirmed
+  with the code Telegram sends there), change it, turn it off, or change the recovery email, each after entering the
+  current password. A forgotten password is reset with a code sent to the recovery email, or, without one, after
+  Telegram's waiting period of several days, which the page shows with when it ends and lets you cancel. A recovery
+  email still waiting for its code can be confirmed or dropped later. Wrong passwords and codes show at the field,
+  and when Telegram asks to wait, a countdown says how long.
 - Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
   they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
   at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
@@ -107,6 +117,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   phone pauses a recording, which waits for you to go on, send or delete it.
 
 ### Changed
+- Pingogram now shows every screen in its own languages only: built-in texts of the libraries it uses (the date
+  picker, for example) no longer switch to your phone's language when Pingogram has no translation for it, and the
+  download is a little smaller.
 - Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
   under the search field replaces the loading animations in every section, a section that failed shows its error in
   a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.
@@ -144,6 +157,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   button.
 - On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
   handle between them resizes the list. With no chat open, the empty panel lines up with the list.
+- Tap the Chats tab while you're on it to jump back to the top of the chat list. The highlight behind the selected
+  tab in the floating bar now grows out from its middle.
+- The Contacts tab has a title bar and a rounded panel like the Chats tab, says plainly that contacts are coming in a
+  later version, and offers "New chat", which lists your contacts in the meantime.
+- Empty and error screens feel calmer: the shape behind the picture turns gently now and then (it stays still when
+  animations are turned off), and errors show a soft rounded shape instead of a spiky one.
+- With very large text, the chat list shows each chat's time at the start of the message preview instead of beside
+  the name, so long names are no longer cut short.
+- On tablets and other wide windows, the chat list's title, connection status and folder tabs line up with the chats
+  below them.
 - Messages are tidier, as in Google Messages: a run of messages from one person shows the time only under the last
   one. Tap any message to see its time, and tap it again to hide it. TalkBack still reads every message's time.
 - Message text sits a little closer to the sides of its bubble, so more fits on a line.

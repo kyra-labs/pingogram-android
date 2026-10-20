@@ -31,6 +31,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -182,9 +185,10 @@ internal fun PingogramNavigationBar(
 }
 
 /**
- * One tab: a pill-shaped `Role.Tab` whose indicator fades in and whose icon slides in when it is selected, on the
- * theme's motion scheme. The indicator's alpha is read in the draw phase and the icon's width in the layout phase
- * ([revealHorizontally]), so neither recomposes.
+ * One tab: a pill-shaped `Role.Tab` whose icon slides in when it is selected, and whose indicator grows along one axis
+ * from the tab's center on the motion scheme's fast spatial spring while it fades in on the default effects spring, as
+ * Material's navigation indicator does. The indicator's width and alpha are read in the draw phase and the icon's width
+ * in the layout phase ([revealHorizontally]), so none of them recomposes.
  */
 @Composable
 private fun NavigationTab(
@@ -200,6 +204,7 @@ private fun NavigationTab(
     val label = stringResource(destination.label)
     val indicatorColor = colorScheme.secondaryContainer
     val indicatorAlpha = animateFloatAsState(if (selected) 1f else 0f, motionScheme.defaultEffectsSpec())
+    val indicatorWidth = animateFloatAsState(if (selected) 1f else 0f, motionScheme.fastSpatialSpec())
     val contentColor by animateColorAsState(
         targetValue = if (selected) colorScheme.onSecondaryContainer else LocalContentColor.current,
         animationSpec = motionScheme.defaultEffectsSpec(),
@@ -208,13 +213,8 @@ private fun NavigationTab(
         modifier =
             modifier
                 .clip(CircleShape)
-                .drawBehind {
-                    drawRoundRect(
-                        indicatorColor,
-                        cornerRadius = CornerRadius(size.height / 2),
-                        alpha = indicatorAlpha.value,
-                    )
-                }.selectable(
+                .tabIndicator(indicatorColor, width = { indicatorWidth.value }, alpha = { indicatorAlpha.value })
+                .selectable(
                     selected = selected,
                     onClick = onClick,
                     role = Role.Tab,
@@ -252,6 +252,26 @@ private fun NavigationTab(
         }
     }
 }
+
+/**
+ * The selected tab's pill in [color], drawn behind the tab at [width] (a fraction of the tab's width, from its center)
+ * and [alpha], both read in the draw phase. The spring overshoots a little; the tab's clip keeps the pill within it.
+ */
+private fun Modifier.tabIndicator(
+    color: Color,
+    width: () -> Float,
+    alpha: () -> Float,
+): Modifier =
+    drawBehind {
+        val pillWidth = size.width * width().coerceAtLeast(0f)
+        drawRoundRect(
+            color,
+            topLeft = Offset((size.width - pillWidth) / 2, 0f),
+            size = Size(pillWidth, size.height),
+            cornerRadius = CornerRadius(size.height / 2),
+            alpha = alpha().coerceIn(0f, 1f),
+        )
+    }
 
 /**
  * Whether every tab can show its label in [maxWidth], the bar's width with the search button. Measured for the widest
