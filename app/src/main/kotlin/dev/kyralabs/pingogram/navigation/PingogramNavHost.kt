@@ -47,6 +47,7 @@ import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
+import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterTwoStepVerification
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsPages
 import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
@@ -217,6 +218,7 @@ private fun NavGraphBuilder.mainGraph(
             onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
             onBack = { navController.popBackStack() },
             onProfileSaved = { navController.popBackStackAfterProfileSaved() },
+            onTwoStepVerificationDone = { navController.popBackStackAfterTwoStepVerification(it) },
         )
         // Full-screen search, on compact and medium windows (expanded ones dock it in the Chats tab's list pane):
         // results push the conversation above it, as the archive does, and back returns to the results.

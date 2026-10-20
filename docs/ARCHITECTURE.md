@@ -97,6 +97,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **2-step verification** (FR-S1): `TwoStepVerificationRepository` (`core:domain`, `TdlibTwoStepVerificationRepository`
+  in `core:data`, no cache: TDLib has no updates for it) reads the state with `getPasswordState`, checks the current
+  password with `getRecoveryEmailAddress` and sets, changes, removes and recovers the password and its recovery email.
+  `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
+  pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
+  leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
