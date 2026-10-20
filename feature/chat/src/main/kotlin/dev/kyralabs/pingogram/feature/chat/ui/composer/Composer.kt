@@ -88,7 +88,6 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
-import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
@@ -200,7 +199,7 @@ private fun BarArea(
  * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field. While the
  * field is empty the microphone ([RecordButton]) is in the send button's place; while it records, the recording bar
  * ([RecordingBar]) takes the place of the attach button and the field. Before the attach button, the send-as avatar
- * ([SendAsButton]) where the user can choose who they send as ([onSendAs]).
+ * ([LeadingButtons]) where the user can choose who they send as ([onSendAs]).
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
@@ -241,8 +240,7 @@ private fun Composer(
         if (recording != null) {
             RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
         } else {
-            composer.sendAs?.let { SendAsButton(it, onSendAs) }
-            Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
+            LeadingButtons(composer, onAttach, onSendAs)
             ComposerField(
                 text = text,
                 onSend = { send(SendOptions()) },
@@ -326,7 +324,7 @@ private data class VoiceInput(
  * its effects spring; the text field beside it makes room.
  */
 @Composable
-private fun RowScope.Appearing(
+internal fun RowScope.Appearing(
     visible: Boolean,
     content: @Composable () -> Unit,
 ) {

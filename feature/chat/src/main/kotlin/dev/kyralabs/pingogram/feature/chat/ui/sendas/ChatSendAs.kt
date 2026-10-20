@@ -40,8 +40,8 @@ import kotlinx.coroutines.launch
  *   ([SendAsRepository.availableSenders]), in TDLib's order, the current one marked; a failure closes it with a
  *   snackbar ([ChatEffect.ShowError]).
  * - **Choosing** ([SendAsEvent.Choose]): the tapped sender shows chosen at once and other taps wait while TDLib takes
- *   it; the picker closes once it did, and a failure marks the sender before it again, with a snackbar. Senders that need Telegram Premium cannot be chosen; the
- *   current one just closes the picker.
+ *   it; the picker closes once it did, and a failure marks the sender before it again, with a snackbar. Senders that
+ *   need Telegram Premium cannot be chosen; the current one just closes the picker.
  *
  * Runs in [scope], the view model's, on the main thread.
  */

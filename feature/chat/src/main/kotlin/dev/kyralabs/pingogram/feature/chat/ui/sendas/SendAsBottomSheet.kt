@@ -128,8 +128,8 @@ private fun SendAsTitle() {
 /**
  * One sender: its avatar, name and what it is (the user's account, a channel, the group for an anonymous admin) in a
  * list item inset from the sheet's sides like the chat list's rows (`docs/DESIGN_SYSTEM.md` §4). The chosen one takes
- * the list item's selected container (`secondaryContainer`, `large`), its placeholder avatar in `primary`. A sender that
- * needs Telegram Premium is disabled and says so, without an offer.
+ * the list item's selected container (`secondaryContainer`, `large`), its placeholder avatar in `primary`. A sender
+ * that needs Telegram Premium is disabled and says so, without an offer.
  */
 @Composable
 private fun SendAsRow(
