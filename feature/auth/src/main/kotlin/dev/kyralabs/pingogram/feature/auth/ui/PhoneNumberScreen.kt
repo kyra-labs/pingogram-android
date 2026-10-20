@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -81,35 +83,52 @@ fun PhoneNumberScreen(
             )
         },
     ) {
-        CountryField(country = state.country, onClick = { onEvent(AuthEvent.OpenCountryPicker) })
+        CountryField(
+            country = state.country,
+            isPickerOpen = state.countryPicker != null,
+            onOpenPicker = { onEvent(AuthEvent.OpenCountryPicker) },
+        )
         PhoneNumberFields(state = state, onEvent = onEvent, onDone = submit)
     }
     state.countryPicker?.let { CountryPickerSheet(state = it, onEvent = onEvent) }
 }
 
+/**
+ * The country as a read-only filled text field with the exposed dropdown arrow (`docs/DESIGN_SYSTEM.md` §6: text
+ * fields), like the number fields beside it. Tapping it, or activating it with a screen reader, opens the country
+ * picker sheet instead of a menu; the arrow turns while the sheet is open.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CountryField(
     country: CountryUiModel?,
-    onClick: () -> Unit,
+    isPickerOpen: Boolean,
+    onOpenPicker: () -> Unit,
 ) {
-    ListItem(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        overlineContent = { Text(stringResource(R.string.auth_country)) },
-        leadingContent =
-            country?.let {
-                {
-                    Text(
-                        text = it.flagEmoji,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.clearAndSetSemantics {},
-                    )
-                }
-            },
-        shapes = ListItemDefaults.shapes(shape = MaterialTheme.shapes.large),
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
-    ) {
-        Text(country?.name ?: stringResource(R.string.auth_country_choose))
+    ExposedDropdownMenuBox(expanded = isPickerOpen, onExpandedChange = { if (it) onOpenPicker() }) {
+        TextField(
+            value = country?.name.orEmpty(),
+            onValueChange = {},
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            readOnly = true,
+            label = { Text(stringResource(R.string.auth_country)) },
+            placeholder = { Text(stringResource(R.string.auth_country_choose)) },
+            leadingIcon =
+                country?.let {
+                    {
+                        Text(
+                            text = it.flagEmoji,
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.clearAndSetSemantics {},
+                        )
+                    }
+                },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPickerOpen) },
+            singleLine = true,
+        )
     }
 }
 

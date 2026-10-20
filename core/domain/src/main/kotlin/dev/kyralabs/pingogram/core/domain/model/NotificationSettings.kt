@@ -110,6 +110,6 @@ enum class PushDelivery {
      */
     TdlibConnection,
 
-    /** `gms`: Firebase Cloud Messaging wakes the app for new messages (later; `REQUIREMENTS.md` FR-N3). */
+    /** `gms`: Firebase Cloud Messaging wakes the app for new messages (`docs/adr/0004-push-delivery.md`). */
     Firebase,
 }

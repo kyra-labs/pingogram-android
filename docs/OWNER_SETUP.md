@@ -65,8 +65,23 @@ keytool -genkeypair -v \
 | `SIGNING_KEYSTORE_PASSWORD` | keystore password |
 | `SIGNING_KEY_ALIAS` | `pingogram` |
 | `SIGNING_KEY_PASSWORD` | key password |
+| `GOOGLE_SERVICES_JSON_BASE64` | optional, only for `gms` releases (§8b) |
+| `TELEGRAM_BOT_TOKEN` | optional: the bot that posts builds to your channel (below) |
+| `TELEGRAM_CHANNEL_ID` | optional: that channel, `@name` for a public one, `-100…` for a private one (below) |
 
 Delete `keystore.b64` from disk afterwards.
+
+**Builds in your channel (optional).** CI posts the debug APK of every push to `main`, and the release workflow the
+APKs of every release, to a Telegram channel of yours (`docs/RELEASE.md`, "Channel uploads"). Without the two secrets
+nothing is posted.
+
+1. In Telegram, open @BotFather, send `/newbot`, pick a name and a username. It answers with the bot's token: keep it
+   like a password (anyone with it can post as the bot), and put it only into the secret `TELEGRAM_BOT_TOKEN`.
+2. Add the bot to your channel as an administrator with the right to post messages (nothing else).
+3. The channel's id: `@yourchannel` for a public channel. For a private one, forward a post of the channel to
+   @userinfobot (or any bot that shows ids) and use the `-100…` number. Put it into `TELEGRAM_CHANNEL_ID`.
+4. The next push to `main` posts its debug APK; check the "Post debug APK to the channel" step of the CI run if
+   nothing arrives (it warns with Telegram's reason, e.g. "chat not found" or "not enough rights").
 
 ## 5. Local development setup
 
@@ -117,12 +132,42 @@ git tag -a v0.0.1 -m "v0.0.1" && git push origin v0.0.1
 
 Watch **Actions → Release**; the APKs appear under **Releases** in ~10 minutes.
 
+## 8b. Push notifications for the gms flavor (optional)
+
+The `gms` flavor receives new messages through Firebase Cloud Messaging (FCM): Telegram's server sends each one,
+encrypted, to Google, which wakes the app (`docs/adr/0004-push-delivery.md`). Telegram sends these pushes with **your**
+Firebase project's credentials, so nothing arrives until you have done all of this. GitHub releases (`foss`) need none
+of it.
+
+1. **Firebase project.** At https://console.firebase.google.com create a project (e.g. "Pingogram"). Turn Google
+   Analytics **off** when asked; the app ships no Analytics.
+2. **Android apps.** In the project, *Add app → Android* twice: package `dev.kyralabs.pingogram` (release and
+   benchmark builds) and `dev.kyralabs.pingogram.debug` (debug builds; skip it if you never test pushes with a debug
+   build). No SHA-1 is needed for FCM.
+3. **`google-services.json`.** Download it (*Project settings → General → Your apps*; one file holds both apps) to
+   `app/src/gms/google-services.json`. Git ignores it. Not `app/google-services.json`: the build refuses that place,
+   because the file would then configure the `foss` builds too. Without the file every `gms` APK or bundle task fails
+   with a message pointing here; `foss` builds and `./gradlew check` never need it.
+4. **Server credentials for Telegram.** *Project settings → Service accounts → Generate new private key* downloads
+   a service-account JSON. At https://my.telegram.org/apps (the app you created in §2) upload it where the page asks for
+   **FCM credentials** (Google retired the old "server key" in 2024; if the form still asks for a key, tell Claude Code
+   what it shows). This key goes to Telegram **only**: never into the repository, the app, CI secrets or a chat. Delete
+   the downloaded copy afterwards, or keep it in your password manager.
+5. **CI (only for gms releases).** `base64 -w0 app/src/gms/google-services.json` (macOS: `base64 -i … | tr -d '\n'`)
+   and add the output as the repository secret `GOOGLE_SERVICES_JSON_BASE64`. The release workflow writes the file
+   only when you run it by hand with "Also build the gms (FCM) flavor", after the `foss` build.
+6. **Test** on a phone with Play services, logged in to your account on the **production** DC (the test DC sends no
+   pushes): install a `gms` build (`./gradlew :app:installGmsDebug`), log in, swipe the app away from Recents, and
+   have someone send you a message. A notification should appear within seconds. If none does, check the
+   credentials of step 4 first: the app cannot tell, registration succeeds either way.
+
 ## 9. Decisions only you can make (tell Claude Code when ready)
 
 - Final license (GPL-3.0 vs Apache-2.0) — before the first public release.
 - Brand seed color and app icon artwork (a designer or an image you provide).
 - Whether to subset the Google Sans Flex font (smaller APK) or ship the full file (all scripts).
-- Whether to ship a `gms` (FCM push) build in addition to `foss`.
+- Whether to ship a `gms` (FCM push) build in addition to `foss` (§8b), and, as it bundles Google's proprietary Play
+  services libraries, whether the GPL-3.0 license needs an additional permission for it (or Apache-2.0).
 - Translations platform (Crowdin / Weblate) and F-Droid submission.
 - Play Store account (one-time $25) if you want Play distribution.
 

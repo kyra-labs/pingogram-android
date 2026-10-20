@@ -56,11 +56,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   version and license. Tap one to read the full license text, which you can select and copy, and to open its
   website. The list is made from the app's own build, so it always matches what you installed, and it works
   offline.
+- Push notifications for builds with Google Play services (the "gms" build, not yet published): new messages arrive
+  through Firebase Cloud Messaging even when Pingogram is closed. Telegram encrypts each push for your device, so
+  Google only sees that something arrived. The GitHub releases stay free of Google's services.
 - Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
   opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
   comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
   or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
   it, and when you forwarded to one other chat, opens that chat.
+- A "New chat" button on the chat list. It shrinks to an icon while you scroll down and grows back when you scroll
+  up, and opens a New chat screen that grows out of it, with your contacts to start a conversation with. New group,
+  New channel and New contact are listed there and come in a later version. An empty chat list offers the same
+  button.
+- More you can do with a photo or video you are viewing: delete it (where Telegram lets you, for yourself or for
+  everyone, after asking), jump to it in its chat with "Show in chat", and copy a photo to paste it into another
+  app. Copying and sharing stay off in chats that don't allow saving their content.
 - Voice messages: while the message field is empty, a microphone button sits where the send button goes. Hold it to
   record and release to send; slide toward the start to cancel, or slide up to keep recording hands-free, then send,
   delete or pause and go on. The recording shows how long it is and a live waveform of your voice, and the message
@@ -75,6 +85,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
   password?") at the bottom left. On tablets and on phones held sideways the title sits beside the form, so "Next"
   is always on screen without scrolling.
+- Logging in feels more like a Google app: the country is a field with a drop-down arrow like the number fields next
+  to it, and the country list has a proper search bar and highlights the country you have. Codes show larger and
+  centered, with digits evenly spaced, and codes sent by email can be filled in by your password manager or
+  keyboard, like SMS codes. On Android 14 and later the phone gives a short confirming buzz when Telegram accepts a
+  code or password, and a different one when it's wrong. The offline and "Too many attempts" banners have an icon,
+  and the wait before trying again or getting a new code shows as a shrinking ring next to the time. Swiping back
+  slides in the previous step as you swipe, so you can see where you'll land before letting go.
 - The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
   a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
   instead of six or seven.
@@ -97,6 +114,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   button.
 - On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
   handle between them resizes the list. With no chat open, the empty panel lines up with the list.
+- Messages are tidier, as in Google Messages: a run of messages from one person shows the time only under the last
+  one. Tap any message to see its time, and tap it again to hide it. TalkBack still reads every message's time.
+- Message text sits a little closer to the sides of its bubble, so more fits on a line.
+- Replies and link previews inside a message are rounded cards without the colored bar at their side.
+- A message that could not be sent says "Not sent · Tap to retry" under it in red. Tap it to send the message again.
+  The phone also vibrates briefly when a message fails to send while the chat is open (Android 14 and later). In
+  channels and Saved Messages, messages being sent and failed ones now show it too.
+- Reactions under a message are easier to tap: each reacts to touches a bit around it, without looking bigger.
+- The media viewer's actions now sit in a floating toolbar at the bottom, each button named when you press and hold
+  it, with further actions under "More options". On tablets the caption and the video controls no longer stretch
+  across the whole screen.
+
+### Fixed
+- Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the
+  shape it has in its message, including the square edge above a caption and the corners of an album.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

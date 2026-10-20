@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
  *   incoming and outgoing bubbles stay apart.
  * @property bubbleMaxWidth the widest a message bubble gets on wide windows, where [bubbleMaxWidthFraction] would make
  *   lines too long to read comfortably; the width of [contentMaxWidth].
- * @property quoteBarWidth the bar at the start of a reply quote or link preview inside a bubble.
  * @property reactionBadge the smallest a reaction's round badge on a bubble's corner gets: its diameter with one emoji.
+ *   Its touch target is 48 dp nonetheless, reaching past it without taking room.
  * @property reactionBadgeRing the ring in the conversation's background color around a reaction badge, which sets it
  *   off from the bubble it overlaps.
  * @property reactionTile the width of a reaction with its count in the reactions picker's carousel of a message's
@@ -60,6 +60,9 @@ import androidx.compose.ui.unit.dp
  * @property waveformBarWidth the width of one bar of a voice message's waveform.
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
  * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
+ * @property fabMedium the height of a medium floating action button, extended or not (Material 3 Expressive's medium
+ *   FAB, which material3 has no public token for): the room a list leaves at its end, so its last row can scroll clear
+ *   of one.
  * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
  * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.
  * @property recordingLockDistance how far it slides up to lock the recording, which then goes on hands-free.
@@ -82,7 +85,6 @@ data class PingogramSizes(
     val inlineProgressIndicator: Dp = 20.dp,
     val bubbleMaxWidthFraction: Float = 0.8f,
     val bubbleMaxWidth: Dp = 560.dp,
-    val quoteBarWidth: Dp = 3.dp,
     val reactionBadge: Dp = 28.dp,
     val reactionBadgeRing: Dp = 2.dp,
     val reactionTile: Dp = 64.dp,
@@ -101,6 +103,7 @@ data class PingogramSizes(
     val waveformBarWidth: Dp = 3.dp,
     val waveformBarGap: Dp = 2.dp,
     val attachmentPreview: Dp = 120.dp,
+    val fabMedium: Dp = 80.dp,
     val recordingDot: Dp = 10.dp,
     val recordingCancelDistance: Dp = 112.dp,
     val recordingLockDistance: Dp = 72.dp,

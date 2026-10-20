@@ -25,7 +25,9 @@ import org.robolectric.annotation.Config
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
  * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
- * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver).
+ * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
+ * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
+ * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */

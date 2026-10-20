@@ -120,7 +120,10 @@ regresses by more than 10%.
   WorkManager under 15 min.
 - Foreground service (`dataSync`) only while an upload/download the user started is in progress;
   stopped within 5 s of completion.
-- `gms` flavor: FCM push (`registerDevice`) so TDLib can sleep. `foss` has only TDLib's connection, which lives as
+- `gms` flavor: FCM push (`registerDevice`, encrypted) so TDLib can sleep. A push wakes the process for at most
+  6 s + 3 s (`TdlibPushRepository`: `processPushNotification`, then held-back notifications), not a foreground
+  service. The token is registered at login and at each start, which TDLib answers locally when it is unchanged; no
+  periodic re-registration (`docs/adr/0004-push-delivery.md`). `foss` has only TDLib's connection, which lives as
   long as Android keeps the process: by default notifications arrive while the app runs. "Keep connected" (Settings →
   Notifications, off by default, `docs/adr/0003-keep-connected-foreground-service.md`) keeps the process and the
   connection alive with a `specialUse` foreground service; the switch says under it that this uses more battery, and

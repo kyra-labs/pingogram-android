@@ -19,7 +19,7 @@ import java.util.concurrent.Executors
 import javax.inject.Inject
 
 /**
- * [VoiceRecorder] on the platform's [MediaRecorder] (`docs/adr/0004-voice-recording.md`), no library: Ogg Opus at
+ * [VoiceRecorder] on the platform's [MediaRecorder] (`docs/adr/0005-voice-recording.md`), no library: Ogg Opus at
  * 48 kHz, mono, 32 kbit/s where the device has an Opus encoder (Android 10 and later), else AAC at 44.1 kHz, mono,
  * 64 kbit/s in an `.m4a` file.
  *

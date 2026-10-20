@@ -32,7 +32,8 @@ internal fun ItemInputs.toItem(): ChatItem {
 
 /**
  * A bubble: in group chats with the sender's name on the first of a group and the avatar beside the last, for
- * incoming messages; the outgoing state; the forward's origin, the reply quote, the text or caption, the kind of
+ * incoming messages; the time and the outgoing state on the last of a group, or where its time was tapped to show;
+ * whether a failed message can be sent again; the forward's origin, the reply quote, the text or caption, the kind of
  * media, the link preview and the reactions. An album's bubble takes its time, state and reactions from its newest
  * item.
  */
@@ -53,6 +54,8 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         time = timeFormatter.time(newest.date),
         isEdited = message.editDate > 0,
         status = status(newest),
+        showsTime = !position.joinsNext || timeShown,
+        canResend = (album.ifEmpty { listOf(message) }).any { it.canResend },
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,
@@ -109,16 +112,21 @@ private fun ItemInputs.avatar(name: UiText): SenderAvatar =
     )
 
 /**
- * Where [message] is: null for incoming messages, in channels and in Saved Messages, where nobody else reads them.
+ * Where [message] is: null for incoming messages. In channels and in Saved Messages, where nobody else reads them, only
+ * while it is sent and when sending failed.
  */
 private fun ItemInputs.status(message: Message): OutgoingStatus? =
     when {
-        !message.isOutgoing || kind == ChatKind.Channel || kind == ChatKind.SavedMessages -> null
+        !message.isOutgoing -> null
         message.sendingState is SendingState.Pending -> OutgoingStatus.Pending
         message.sendingState is SendingState.Failed -> OutgoingStatus.Failed
+        kind == ChatKind.Channel || kind == ChatKind.SavedMessages -> null
         isRead -> OutgoingStatus.Read
         else -> OutgoingStatus.Sent
     }
+
+/** Sending failed, and TDLib can send it again. */
+private val Message.canResend: Boolean get() = (sendingState as? SendingState.Failed)?.canRetry == true
 
 /** "Forwarded from X": a user's full name, a chat's title with the author's signature, or a hidden user's name. */
 private fun ItemInputs.forwardedFrom(info: ForwardInfo): UiText {

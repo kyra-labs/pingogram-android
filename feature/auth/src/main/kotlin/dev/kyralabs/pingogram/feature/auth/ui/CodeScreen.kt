@@ -1,11 +1,14 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.pluralStringResource
@@ -21,11 +24,13 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.CountdownIndicator
 import dev.kyralabs.pingogram.feature.auth.ui.components.announcedCountdownSeconds
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
@@ -87,9 +92,9 @@ fun CodeScreen(
 }
 
 /**
- * The resend countdown, then the button for a new code by [AuthStepUiState.Code.nextType]. A polite live region:
- * screen readers hear the countdown at most every 15 seconds ([announcedCountdownSeconds]) and the button once it
- * replaces it.
+ * The resend countdown, its progress running down beside it ([CountdownIndicator]), then the button for a new code by
+ * [AuthStepUiState.Code.nextType]. A polite live region: screen readers hear the countdown at most every 15 seconds
+ * ([announcedCountdownSeconds]) and the button once it replaces it.
  */
 @Composable
 private fun ResendCode(
@@ -113,12 +118,18 @@ private fun ResendCode(
                     R.string.auth_code_resend_in,
                     durationText(announcedCountdownSeconds(state.resendInSeconds)),
                 )
-            Text(
-                text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CountdownIndicator(secondsLeft = state.resendInSeconds, totalSeconds = state.resendTotalSeconds)
+                Text(
+                    text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
+                )
+            }
         }
     }
 }

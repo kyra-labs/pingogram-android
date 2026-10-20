@@ -41,8 +41,7 @@ import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
-import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
+import dev.kyralabs.pingogram.core.ui.transition.sharedMediaViewerBounds
 import dev.kyralabs.pingogram.feature.media.R
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomBounds
 import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
@@ -63,9 +62,10 @@ import kotlinx.collections.immutable.ImmutableMap
  *   frame shows. The screen stays on while a video plays.
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
  * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
- *   conversation ([sharedMediaBounds]), growing out of it as the viewer opens and shrinking back into it as it
- *   closes, from the bubble's `large` corners to square ones. Not while zoomed in: the zoomed photo fades out with the
- *   screen instead. The layers crop to the moving bounds, so a photo cropped in its bubble uncrops as it grows.
+ *   conversation ([sharedMediaViewerBounds]), growing out of it as the viewer opens and shrinking back into it as it
+ *   closes, from exactly the corners the media shows in its bubble to square ones and back. Not while zoomed in: the
+ *   zoomed photo fades out with the screen instead. The layers crop to the moving bounds, so a photo cropped in its
+ *   bubble uncrops as it grows.
  *
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a double tap waits for the second tap only
  * where it zooms. Screen readers get no semantics from here: the pager describes the page.
@@ -98,7 +98,7 @@ internal fun MediaPage(
             Modifier
                 .align(Alignment.Center)
                 .size(fittedDp)
-                .sharedMediaBounds(item.messageId, FullBleedShape, MaterialTheme.shapes.large, enabled = !zoomed)
+                .sharedMediaViewerBounds(item.messageId, enabled = !zoomed)
                 .zoomedBy(zoomState),
         ) {
             MediaLayers(item, files, playback, videoSurface, fittedDp)

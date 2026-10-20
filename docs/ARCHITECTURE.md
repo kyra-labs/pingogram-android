@@ -91,17 +91,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   composable is reused in the detail pane. `:app` composes it (`ChatsListDetail`, a
   `NavigableListDetailPaneScaffold`) from `feature:chats`' `ChatListPane` and `feature:chat`'s
   `ChatPane`; the navigator holds the open chat. With one pane (compact, medium) a tap still pushes
-  `ChatRoute`, and the archive pushes it on every window.
+  `ChatRoute`, and the archive pushes it on every window. New chat (`NewChatRoute`, `feature:chats`) is pushed above
+  the Chats tab on every window too; a contact's chat takes its place on the back stack, so back from the chat
+  returns to the chat list.
 - Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
 - Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
-  down as `LocalSharedTransitionScope`; destinations that share content provide their animated
-  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.sharedMediaBounds` (a no-op
-  without both) runs the container transform of a photo, video or GIF between the conversation
-  (pushed or in the detail pane) and the media viewer, keyed by message id.
+  down as `LocalSharedTransitionScope` (`ProvideSharedTransitionScope`); destinations that share content
+  provide their animated visibility scope (`ProvideNavAnimatedVisibilityScope`), and
+  `Modifier.containerTransform` (a no-op without both) runs a container transform between the two
+  destinations' content of one key: the Chats tab's "New chat" button grows into the New chat screen.
+  `Modifier.sharedMediaBounds` (the bubble's side) and `Modifier.sharedMediaViewerBounds` (the viewer's)
+  run that of a photo, video or GIF between the conversation (pushed or in the detail pane) and the media
+  viewer, keyed by message id. Each bubble publishes its media's clip shape in `SharedMediaShapes`
+  (`LocalSharedMediaShapes`, from a `Modifier.Node` while it is laid out), so the viewer morphs from and
+  back to exactly those corners.
+- "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
+  conversation of the same chat below it, if there is one.
 
 ## Threading
 
@@ -113,7 +122,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
-  and stopping a recording wait for the audio input and the encoder (`docs/adr/0004-voice-recording.md`).
+  and stopping a recording wait for the audio input and the encoder (`docs/adr/0005-voice-recording.md`).
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
@@ -172,6 +181,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `HiltWorkerFactory`, initialized on demand by `PingogramApplication`'s `Configuration.Provider`), which waits for
   TDLib (`AuthRepository.awaitLoggedIn`), then `sendMessage` (keeping the draft) + `viewMessages(force_read)`,
   `viewMessages(force_read)`, or `removeNotificationGroup`. TDLib's updates then remove the notification.
+- Push (`gms` flavor only, `docs/adr/0004-push-delivery.md`): `TdlibPushRepository` (`core:data`, started by the
+  `gms` `BackgroundConnection`, `FirebasePushConnection`) registers the Firebase Cloud Messaging token with `registerDevice` (encrypted) at every
+  login and start while logged in and whenever FCM issues a new one, and deletes the token at logout. The token comes from `core:domain`'s `PushTokenSource`, bound only in `gms` (`FirebasePushTokenSource`,
+  `app/src/gms`); `foss` binds none (`@BindsOptionalOf`) and the repository does nothing. `PingogramMessagingService`
+  (`gms`) hands each push's data to `processPushNotification`, waiting a few seconds at most; TDLib's notification
+  engine then produces the notifications above (`NewPushMessage` until it has synced), in the process FCM started.
 - Android 13+: the chat list asks for `POST_NOTIFICATIONS` with a card above the list (`NotificationPromptHost`,
   `feature:chats`); "Not now" and the first request are kept in DataStore (`NotificationPromptRepository`), so it never
   nags, and after a final refusal it offers the app's notification settings.
@@ -189,7 +204,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`KeepConnectedService`, type `specialUse`, its own low-importance "Connection" channel), run by
   `KeepConnectedController` from the setting (`KeepConnectedRepository`, DataStore), the login and the app being in
   the foreground, with a boot receiver enabled only while the setting is on
-  (`docs/adr/0003-keep-connected-foreground-service.md`). `gms`: nothing yet, until FCM (FR-N3).
+  (`docs/adr/0003-keep-connected-foreground-service.md`). `gms`: `FirebasePushConnection`, which starts
+  `TdlibPushRepository` (Push, above).
 - `core:notifications` depends on `core:domain`, `core:common` and `core:ui` (previews, names, avatar colors), never
   on `core:data` or TDLib.
 
@@ -205,7 +221,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - `build-logic/convention` with plugins: `pingogram.android.application`,
   `pingogram.android.library`, `pingogram.android.feature`, `pingogram.android.compose`,
   `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
-  `pingogram.android.licenses` (the open-source licenses list of `:app`),
+  `pingogram.android.licenses` (the open-source licenses list of `:app`), `pingogram.android.gms` (Firebase for
+  `:app`'s `gms` flavor, the `foss` Google-free check),
   `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`).
   `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
@@ -225,8 +242,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`; `feature:settings`
   draws the screens (`docs/adr/0002-open-source-licenses.md`).
 - Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
-  for GitHub releases: `foss`. Build types: `debug` (suffix `.debug`, debuggable), `release`
-  (R8 full mode, resource shrinking, Baseline Profiles).
+  for GitHub releases: `foss`. `gms` alone depends on Firebase Cloud Messaging (`gmsImplementation`); `foss` variants
+  fail `check<Variant>GoogleFree` (run by `check` and by their builds) if any Firebase or Play services module reaches
+  their runtime classpath. `pingogram.android.gms` applies the Google Services plugin only when the owner's
+  git-ignored `app/src/gms/google-services.json` exists; without it, packaging a `gms` variant fails before anything
+  runs (`docs/adr/0004-push-delivery.md`, `docs/OWNER_SETUP.md` §8b). Build types: `debug` (suffix `.debug`,
+  debuggable), `release` (R8 full mode, resource shrinking, Baseline Profiles).
 
 ## Naming conventions
 

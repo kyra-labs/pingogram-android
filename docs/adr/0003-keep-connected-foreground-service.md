@@ -7,7 +7,8 @@ Date: 2026-10-20 · Status: accepted
 TDLib keeps one connection to Telegram and delivers new messages through it (`REQUIREMENTS.md` FR-N1). The connection
 lives as long as Pingogram's process. Android stops the processes of apps in the background within minutes, and Doze
 cuts their network, so the `foss` flavor, which has no push service, misses notifications until the app is opened
-again. The `gms` flavor will use Firebase Cloud Messaging (`registerDevice`, FR-N3) and needs nothing of this.
+again. The `gms` flavor uses Firebase Cloud Messaging (`registerDevice`, FR-N3, `docs/adr/0004-push-delivery.md`)
+and needs nothing of this.
 
 Some users accept a little battery for messages that arrive at once, as other open-source messengers offer. That
 needs a foreground service: the only way Android lets an app keep its process running, with an ongoing notification

@@ -13,6 +13,9 @@ import kotlinx.collections.immutable.ImmutableList
  * @property floodWaitSeconds while Telegram asks to wait (`FLOOD_WAIT`), the seconds left; submitting is disabled.
  * @property pendingAction the request in progress, if any; its button shows progress and every other action waits.
  * @property canGoBack whether system back is handled by the flow ([AuthEvent.Back]) rather than leaving it.
+ * @property floodWaitTotalSeconds the whole flood wait, for its progress; 0 if unknown.
+ * @property backStep the screen [AuthEvent.Back] leads to, which the predictive back gesture shows coming in; null
+ *   when back leaves the flow or is not known.
  */
 @Immutable
 data class AuthUiState(
@@ -21,6 +24,8 @@ data class AuthUiState(
     val floodWaitSeconds: Long?,
     val pendingAction: AuthAction?,
     val canGoBack: Boolean,
+    val floodWaitTotalSeconds: Long = 0,
+    val backStep: AuthStepUiState? = null,
 ) {
     /** Whether a request can be sent now: none is in progress and Telegram does not ask to wait. */
     val canSubmit: Boolean get() = pendingAction == null && floodWaitSeconds == null
@@ -81,7 +86,7 @@ sealed interface AuthStepUiState {
     /**
      * FR-A3: the login code. [codeLength] is null for codes without a fixed length (words, phrases); the code is
      * submitted by itself once it has [codeLength] characters. A new code can be requested by [nextType] once
-     * [resendInSeconds] reaches 0.
+     * [resendInSeconds] reaches 0, out of [resendTotalSeconds] (0 if unknown).
      */
     @Immutable
     data class Code(
@@ -93,6 +98,7 @@ sealed interface AuthStepUiState {
         val codeLength: Int?,
         val resendInSeconds: Long,
         val error: DomainError?,
+        val resendTotalSeconds: Long = 0,
     ) : AuthStepUiState {
         val canResend: Boolean get() = nextType != null && resendInSeconds == 0L
 
@@ -240,9 +246,13 @@ data class CountryUiModel(
     val callingCode: String,
 )
 
-/** The open country picker: [countries] are the visible countries matching [query]. */
+/**
+ * The open country picker: [countries] are the visible countries matching [query]; [selectedIsoCode] is the country
+ * of the phone number field, shown selected.
+ */
 @Immutable
 data class CountryPickerUiState(
     val query: String,
     val countries: ImmutableList<CountryUiModel>,
+    val selectedIsoCode: String? = null,
 )

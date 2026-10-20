@@ -13,7 +13,6 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
-import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
@@ -50,9 +49,11 @@ import kotlinx.collections.immutable.persistentMapOf
  * asks ([isBare], [isEdgeToEdge]; [MessageBubbleRow]); edge-to-edge media is clipped by the bubble, so it is drawn
  * with square corners here.
  *
- * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum]; tapping an item opens it by its own message.
+ * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum] in [mediaShape]; tapping an item opens it by its own
+ *   message.
  * - **Photos, videos and GIFs**, an album's items too, grow into the media viewer and shrink back into the bubble
- *   ([sharedMediaBounds], by their own message), from and to [mediaShape], the corners they show in the bubble.
+ *   ([sharedMediaBounds], by their own message), from and to [mediaShape], the corners they show in the bubble (an
+ *   album's items, theirs in it), which the viewer's side morphs from and back to as well.
  * - **Voice messages, songs and documents** show their file's [fileState]; voice messages and songs also how they
  *   play ([playback]), and send play and seek as events for the ViewModel's player.
  * - **Text messages** show nothing here: the bubble shows their text and link preview itself, as it does the caption
@@ -90,7 +91,7 @@ internal fun MessageContentBody(
                 messageIds = album.messageIds,
                 onOpen = { index -> onEvent(ChatEvent.OpenMedia(album.messageIds[index])) },
                 modifier = modifier,
-                shape = RectangleShape,
+                shape = mediaShape,
                 uploads = uploads,
                 onCancelUpload = { messageId -> onEvent(ChatEvent.CancelUpload(listOf(messageId))) },
             )
@@ -133,7 +134,7 @@ private fun MediaContent(
 ) {
     val onOpen = { onEvent(ChatEvent.OpenMedia(messageId)) }
     // Only what the viewer shows (no self-destructing media) shares its bounds with it.
-    val shared = modifier.sharedMediaBounds(messageId, mediaShape, FullBleedShape, enabled = content.opensInViewer)
+    val shared = modifier.sharedMediaBounds(messageId, mediaShape, enabled = content.opensInViewer)
     when (content) {
         is MessageContent.Photo -> MessagePhoto(content, onOpen, shared, shape = RectangleShape)
         is MessageContent.Video -> MessageVideo(content, onOpen, shared, shape = RectangleShape)

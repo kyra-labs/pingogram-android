@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPasswordField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.EmailOtpCode
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -115,6 +116,7 @@ fun PasswordRecoveryCodeScreen(
             label = stringResource(R.string.auth_recovery_code_label),
             error = state.error?.let { errorText(it) },
             onDone = { onEvent(AuthEvent.SubmitRecoveryCode) },
+            contentType = EmailOtpCode,
         )
     }
 }

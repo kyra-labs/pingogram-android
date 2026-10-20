@@ -83,6 +83,17 @@ jobs:
           ./gradlew :app:assembleFossRelease -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
           ./gradlew :app:bundleFossRelease -Pversion="${{ steps.version.outputs.version }}" --stacktrace --no-daemon
 
+      # After the foss build, so foss never sees Firebase's configuration (docs/adr/0004-push-delivery.md).
+      - name: Write google-services.json (gms)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_gms }}
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [[ -z "$GOOGLE_SERVICES_JSON_BASE64" ]]; then
+            echo "::error::GOOGLE_SERVICES_JSON_BASE64 secret is not set (docs/OWNER_SETUP.md §8b)"; exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > app/src/gms/google-services.json
+
       - name: Build gms flavor (optional)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_gms }}
         env:
@@ -145,6 +156,30 @@ jobs:
             dist/*.apk
             dist/SHA256SUMS.txt
           fail_on_unmatched_files: true
+
+      # The release APKs go to the owner's channel too (docs/RELEASE.md, "Channel uploads"), after the GitHub Release
+      # they link to; tags only, and a channel problem never fails the release. A bot may send at most 50 MB, so the
+      # universal APK is linked instead of attached.
+      - name: Post release APKs to the channel
+        if: startsWith(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        run: |
+          caption="Pingogram v${VERSION}"
+          [[ "$PRERELEASE" == "true" ]] && caption+=" (pre-release)"
+          caption+=$'\n\n'"Most phones: arm64-v8a. Every device (universal), checksums and what's new: ${RELEASE_URL}"
+          caption+=$'\n\n'"$(awk '/^### Downloads/ { exit } { print }' release-notes.md)"
+          tools/ci/telegram-publish.sh "$caption" \
+            "dist/pingogram-${VERSION}-arm64-v8a.apk" \
+            "dist/pingogram-${VERSION}-armeabi-v7a.apk" \
+            "dist/pingogram-${VERSION}-x86_64.apk" \
+            "dist/pingogram-${VERSION}-universal.apk" \
+            dist/SHA256SUMS.txt
 
       - name: Upload AAB and R8 mapping (artifact only)
         uses: actions/upload-artifact@v7

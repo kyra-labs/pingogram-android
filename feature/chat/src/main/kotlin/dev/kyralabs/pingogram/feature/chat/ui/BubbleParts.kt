@@ -2,6 +2,8 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -15,21 +17,19 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
@@ -37,13 +37,14 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 
-// The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2:
-// tonal blocks of the bubble's side), and the reaction badges on its corner (chosen reactions in secondaryContainer).
+// The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2, §4:
+// tonal cards in the block tone of the bubble's side), and the reaction badges on its corner (chosen reactions in
+// secondaryContainer).
 
 /**
- * The replied message: a tonal block with a bar in the sender's color, the name over one line of its text. With
- * [onOpen] it is a button that shows the replied message, with its state layer clipped to the block. Inside a bubble,
- * screen readers reach it as the bubble's custom action instead ([replyAction]).
+ * The replied message: a tonal card, the name in the sender's color over one line of its text. With [onOpen] it is a
+ * button that shows the replied message, with its state layer clipped to the card. Inside a bubble, screen readers
+ * reach it as the bubble's custom action instead ([replyAction]).
  */
 @Composable
 internal fun ReplyQuoteBlock(
@@ -56,7 +57,7 @@ internal fun ReplyQuoteBlock(
     val openLabel = stringResource(R.string.chat_reply_open)
     val clickable =
         onOpen?.let { Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = it) } ?: Modifier
-    QuoteBlock(colors.block, accent, clickable) {
+    BlockCard(colors.block, clickable) {
         reply.sender?.let { sender ->
             Text(
                 text = sender.resolve(),
@@ -76,14 +77,14 @@ internal fun ReplyQuoteBlock(
     }
 }
 
-/** The link's site name in `primary`, its title, and a few lines of its description, on a tonal block. */
+/** The link's site name in `primary`, its title, and a few lines of its description, on a tonal card. */
 @Composable
 internal fun LinkPreviewBlock(
     preview: LinkPreviewCard,
     colors: BubbleColors,
 ) {
     val primary = MaterialTheme.colorScheme.primary
-    QuoteBlock(colors.block, primary) {
+    BlockCard(colors.block) {
         if (preview.siteName.isNotBlank()) {
             Text(
                 text = preview.siteName,
@@ -199,7 +200,8 @@ private fun MoreReactionsBadge(
 /**
  * A reaction badge's frame: a circle at least [reactionBadge][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
  * wide, a pill when its content is wider, in [container], with a ring in the conversation's `surface` that sets it off
- * from the bubble it overlaps; a button with its state layer clipped to the circle if [onClick] is not null.
+ * from the bubble it overlaps. A button if [onClick] is not null: its touch target is 48 dp tall without the badge
+ * taking more room ([touchTarget]), its state layer clipped to the circle.
  */
 @Composable
 private fun BadgeFrame(
@@ -208,15 +210,20 @@ private fun BadgeFrame(
     content: @Composable RowScope.() -> Unit,
 ) {
     val sizes = MaterialTheme.sizes
-    val clickable = onClick?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier
+    val interactions = remember { MutableInteractionSource() }
+    val target =
+        onClick?.let {
+            Modifier.touchTarget(Modifier.clickable(interactions, indication = null, role = Role.Button, onClick = it))
+        } ?: Modifier
+    val stateLayer = if (onClick != null) Modifier.indication(interactions, ripple()) else Modifier
     Row(
         modifier =
-            Modifier
+            target
                 .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
                 .background(MaterialTheme.colorScheme.surface, CircleShape)
                 .padding(sizes.reactionBadgeRing)
                 .clip(CircleShape)
-                .then(clickable)
+                .then(stateLayer)
                 .drawBehind { drawRect(container()) }
                 .padding(horizontal = MaterialTheme.spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall, Alignment.CenterHorizontally),
@@ -226,41 +233,26 @@ private fun BadgeFrame(
 }
 
 /**
- * A block inside a bubble: [container] in the small shape, with a bar of [accent] along its start edge; [modifier]
- * goes inside the clip, so a click's state layer keeps the shape.
+ * A card inside a bubble, as Google's Material 3 Expressive messaging shows quotes and previews: [container] in the
+ * medium shape, without a bar; [modifier] goes inside the clip, so a click's state layer keeps the shape.
  */
 @Composable
-private fun QuoteBlock(
+private fun BlockCard(
     container: Color,
-    accent: Color,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val barWidth = MaterialTheme.sizes.quoteBarWidth
     val spacing = MaterialTheme.spacing
     Column(
         modifier =
             Modifier
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.medium)
                 .then(modifier)
                 .background(container)
-                .leadingBar(accent, barWidth)
-                .padding(start = barWidth + spacing.small, end = spacing.small)
-                .padding(vertical = spacing.extraSmall),
+                .padding(horizontal = spacing.medium, vertical = spacing.small),
         content = content,
     )
 }
-
-/** A bar of [color], [width] wide, along the start edge; drawn, not laid out. */
-private fun Modifier.leadingBar(
-    color: Color,
-    width: Dp,
-): Modifier =
-    drawBehind {
-        val barWidth = width.toPx()
-        val x = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - barWidth
-        drawRect(color, topLeft = Offset(x, 0f), size = Size(barWidth, size.height))
-    }
 
 /** How many reaction badges a bubble shows before "+N". */
 internal const val MAX_REACTION_BADGES = 3

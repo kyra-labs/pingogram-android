@@ -7,7 +7,11 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -31,8 +35,8 @@ import org.robolectric.annotation.Config
  * with the document's type and the chooser's title, and a snackbar when no app takes it or the file is gone. The app's
  * `FileProvider` itself is tested in `:app`, which declares it. Also a copied text ([ChatEffect.CopyText]), which goes
  * to the clipboard with a snackbar only before Android 13, a focus request for the composer, an action that is
- * not allowed, a sponsored message's link and what came of reporting one; and the voice recording's snackbars, whose
- * actions ask for the microphone permission or open the settings.
+ * not allowed, a sponsored message's link and what came of reporting one, a failed send's haptic; and the voice
+ * recording's snackbars, whose actions ask for the microphone permission or open the settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -48,6 +52,13 @@ class ChatEffectsTest {
     private val copied = mutableListOf<String>()
     private val composerFocus = ComposerFocusState()
     private val openedUris = mutableListOf<String>()
+    private val performedHaptics = mutableListOf<HapticFeedbackType>()
+    private val haptics =
+        object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                performedHaptics += hapticFeedbackType
+            }
+        }
 
     private fun setEffects(
         result: ExternalFileResult = ExternalFileResult.Started,
@@ -56,21 +67,23 @@ class ChatEffectsTest {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val snackbarHostState = remember { SnackbarHostState() }
-                ChatEffects(
-                    effects = remember { effects.receiveAsFlow() },
-                    snackbarHostState = snackbarHostState,
-                    onOpenMedia = {},
-                    openFile = { path, mimeType, chooserTitle ->
-                        opened += "$path $mimeType $chooserTitle"
-                        result
-                    },
-                    copyText = { copied += it },
-                    composerFocus = composerFocus,
-                    openUri = { uri ->
-                        openedUris += uri
-                        uriOpens
-                    },
-                )
+                CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                    ChatEffects(
+                        effects = remember { effects.receiveAsFlow() },
+                        snackbarHostState = snackbarHostState,
+                        onOpenMedia = {},
+                        openFile = { path, mimeType, chooserTitle ->
+                            opened += "$path $mimeType $chooserTitle"
+                            result
+                        },
+                        copyText = { copied += it },
+                        composerFocus = composerFocus,
+                        openUri = { uri ->
+                            openedUris += uri
+                            uriOpens
+                        },
+                    )
+                }
                 SnackbarHost(snackbarHostState)
             }
         }
@@ -141,6 +154,18 @@ class ChatEffectsTest {
         composeRule.waitForIdle()
 
         assertEquals(1, composerFocus.requests)
+    }
+
+    @Test
+    fun `a send that failed is a reject haptic, without a snackbar`() {
+        setEffects()
+
+        effects.trySend(ChatEffect.SendFailed)
+        composeRule.waitForIdle()
+
+        // Robolectric runs Android 14, where the haptic is.
+        assertEquals(listOf(HapticFeedbackType.Reject), performedHaptics)
+        composeRule.onNodeWithText(string(R.string.chat_not_sent)).assertDoesNotExist()
     }
 
     @Test

@@ -72,24 +72,32 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Bubble**: the [BubbleColors] of its side, a shape from the shape scale by its place in the group
  *   ([messageBubble], built once for the list: [BubbleResources.shapes]), at most [MaterialTheme.sizes]' share of the
  *   width. From top to bottom: the sender's name (first of a group in group chats), "Forwarded from …", the reply
- *   quote, the content ([MessageContentBody]), the text with its formatting and the link preview, with the time and
- *   state of the message at the bottom end, after the last line when it fits ([TrailingMeta]), inside the padding
- *   that keeps it clear of the round corners.
+ *   quote ([ReplyQuoteBlock], a tonal card), the content ([MessageContentBody]), the text with its formatting and the
+ *   link preview (a tonal card too), with the time and state of the message at the bottom end, after the last line
+ *   when it fits ([TrailingMeta]), inside the padding (`spacing.medium` at the sides, `spacing.small` at the top and
+ *   bottom) that keeps it clear of the round corners.
+ * - **Time**: the time and the state show on the last bubble of a group and on a message alone
+ *   ([ChatItem.Bubble.showsTime], decided by the ViewModel), as Google Messages shows them; tapping a bubble of the
+ *   group where nothing inside takes the tap shows its own, and tapping again hides it ([ChatEvent.ToggleTime]).
  * - **Reactions**: round badges on the bubble's bottom corner on the far side ([ReactionBadges]), overlapping it by
- *   its bottom padding, so they never cover the time; below the content for frames without a bubble.
+ *   its bottom padding, so they never cover the time; below the content for frames without a bubble. Each has a 48 dp
+ *   touch target that does not move the layout ([touchTarget]).
+ * - **Not sent**: a message that failed to send has a "Not sent · Tap to retry" label under its bubble
+ *   ([NotSentLabel], [WithFooter]), which sends it again ([ChatEvent.Resend]).
  * - **Frames**, as the content asks:
  *   - *Emoji only* ([ChatItem.Bubble.isEmojiOnly]): 1 to 3 emoji in `displaySmall`, without a bubble, the time and
- *     state below them.
+ *     state (where they show) below them.
  *   - *Bare* content ([isBare]: stickers, animated emoji, dice, video messages) has no bubble; the time and state sit
  *     on a `mediaOverlay` pill at its bottom end.
  *   - *Edge-to-edge* media ([isEdgeToEdge]: photos, videos, GIFs, albums) fills a bubble as wide as itself, clipped to
  *     the bubble's shape. A caption follows below with the usual padding and meta; without one, the meta sits on a
  *     `mediaOverlay` pill over the media's bottom end.
  *   - *Padded* content (everything else) sits in the bubble's padding like text.
- * - **Screen readers** hear the bubble as one: "{sender}, {time}: {content}, {status}" ([bubbleDescription]), with
- *   the reply quote, the content's buttons, replying, copying and sending again ([messageShortcuts]) and the reaction
- *   badges as custom actions, and the actions sheet as its long click and a custom action. All of it is built in the
- *   `semantics` block, only when something reads the semantics tree, not in every bubble's composition.
+ * - **Screen readers** hear the bubble as one, with its time whether it shows or not: "{sender}, {time}: {content},
+ *   {status}" ([bubbleDescription]), with the reply quote, the content's buttons, replying, copying and sending again
+ *   ([messageShortcuts]) and the reaction badges as custom actions, and the actions sheet as its long click and a
+ *   custom action. All of it is built in the `semantics` block, only when something reads the semantics tree, not in
+ *   every bubble's composition.
  * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
  * - **Selection mode** ([selection], `docs/DESIGN_SYSTEM.md` §2.2, §6): a check at the row's start, filled in
@@ -263,25 +271,15 @@ private fun MessageBubble(
         }
     }
     CompositionLocalProvider(LocalContentColor provides style.colors.content) {
-        if (bubble.reactions.isEmpty()) {
-            frame(bubbleModifier)
-        } else {
-            WithReactionBadges(
-                isOutgoing = bubble.isOutgoing,
-                // Over the bubble's bottom padding, clear of the time; below content without a bubble.
-                overlap = if (bare) 0.dp else MaterialTheme.spacing.small,
-                modifier = bubbleModifier,
-                bubble = { frame(Modifier) },
-                badges = {
-                    ReactionBadges(
-                        bubble = bubble,
-                        toggles = resources.reactions,
-                        onToggle = rememberReactionToggle(bubble, resources.reactions, onEvent),
-                        onMore = { onEvent(ChatEvent.ShowAllReactions(bubble.id)) },
-                    )
-                },
-            )
-        }
+        BubbleStack(
+            bubble = bubble,
+            // Over the bubble's bottom padding, clear of the time; below content without a bubble.
+            overlap = if (bare) 0.dp else MaterialTheme.spacing.small,
+            reactions = resources.reactions,
+            onEvent = onEvent,
+            modifier = bubbleModifier,
+            frame = frame,
+        )
     }
 }
 
@@ -305,7 +303,7 @@ private fun PaddedBubble(
         modifier =
             modifier
                 .background(style.colors.container, shape)
-                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small),
+                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
     ) {
         BubbleHeader(bubble, style.colors, onEvent)
@@ -316,9 +314,9 @@ private fun PaddedBubble(
 
 /**
  * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape]: the name, forward and reply
- * above it with the usual padding; below it the caption and link preview with the meta; without either, the meta on a
- * pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media viewer's container
- * transform starts and ends.
+ * above it with the usual padding; below it the caption and link preview with the meta; without either, the meta (where
+ * it shows) on a pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media
+ * viewer's container transform starts and ends.
  */
 @Suppress("LongParameterList") // The bubble, its look, and what it passes on to its content.
 @Composable
@@ -334,8 +332,8 @@ private fun MediaBubble(
     val colors = style.colors
     val spacing = MaterialTheme.spacing
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
-    val metaOnMedia = bubble.text.text.isEmpty() && bubble.linkPreview == null
-    val mediaShape = remember(shape, hasHeader, metaOnMedia) { shape.mediaCorners(hasHeader, hasFooter = !metaOnMedia) }
+    val captionless = bubble.text.text.isEmpty() && bubble.linkPreview == null
+    val mediaShape = remember(shape, hasHeader, captionless) { shape.mediaCorners(hasHeader, hasFooter = !captionless) }
     Column(
         modifier
             .width(edgeToEdgeWidth(bubble.content, isAlbum = bubble.album != null))
@@ -344,7 +342,7 @@ private fun MediaBubble(
     ) {
         if (hasHeader) {
             Column(
-                modifier = Modifier.padding(horizontal = spacing.large, vertical = spacing.small),
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
             ) { BubbleHeader(bubble, colors, onEvent) }
         }
@@ -358,11 +356,13 @@ private fun MediaBubble(
                 mediaShape = mediaShape,
                 uploads = uploads,
             )
-            if (metaOnMedia) OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
+            if (captionless && bubble.showsTime) {
+                OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
+            }
         }
-        if (!metaOnMedia) {
+        if (!captionless) {
             Column(
-                modifier = Modifier.padding(horizontal = spacing.large, vertical = spacing.small),
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
                 verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
             ) { BubbleBody(bubble, style, resources, onEvent) }
         }
@@ -421,7 +421,8 @@ internal fun BubbleHeader(
 
 /**
  * The text and the link preview, whichever there are, with the meta after the text's last line when there is room;
- * otherwise the meta alone, at the bubble's end.
+ * otherwise the meta alone, at the bubble's end. Without the meta ([ChatItem.Bubble.showsTime]), just the text and the
+ * link preview.
  */
 @Composable
 private fun ColumnScope.BubbleBody(
@@ -433,7 +434,7 @@ private fun ColumnScope.BubbleBody(
     val colors = style.colors
     val hasText = bubble.text.text.isNotEmpty()
     val linkPreview = bubble.linkPreview
-    if (hasText && linkPreview == null) {
+    if (hasText && linkPreview == null && bubble.showsTime) {
         val layout = remember { TextLayoutHolder() }
         TrailingMeta(meta = { BubbleMeta(bubble, colors) }, lastLineWidth = layout::lastLineWidth) {
             BubbleText(bubble, style, resources, onEvent) { layout.result = it }
@@ -441,7 +442,7 @@ private fun ColumnScope.BubbleBody(
     } else {
         if (hasText) BubbleText(bubble, style, resources, onEvent)
         linkPreview?.let { LinkPreviewBlock(it, colors) }
-        BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
+        if (bubble.showsTime) BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
     }
 }
 

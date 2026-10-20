@@ -25,6 +25,12 @@ fun PaddingValues.withTop(top: Dp): PaddingValues = BelowTopOf(this, top)
  */
 fun PaddingValues.sidesOnly(): PaddingValues = BelowTopOf(this, top = 0.dp, bottom = false)
 
+/**
+ * This padding with [extra] more at the bottom, read when asked, e.g. so the end of a list rests clear of a floating
+ * action button above the bottom it already keeps clear of.
+ */
+fun PaddingValues.plusBottom(extra: Dp): PaddingValues = PlusBottom(this, extra)
+
 private class TopOf(
     private val padding: PaddingValues,
 ) : PaddingValues {
@@ -45,6 +51,21 @@ private class BelowTopOf(
     override fun calculateTopPadding(): Dp = top
 
     override fun calculateBottomPadding(): Dp = if (bottom) padding.calculateBottomPadding() else 0.dp
+
+    override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
+        padding.calculateLeftPadding(layoutDirection)
+
+    override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
+        padding.calculateRightPadding(layoutDirection)
+}
+
+private class PlusBottom(
+    private val padding: PaddingValues,
+    private val extra: Dp,
+) : PaddingValues {
+    override fun calculateTopPadding(): Dp = padding.calculateTopPadding()
+
+    override fun calculateBottomPadding(): Dp = padding.calculateBottomPadding() + extra
 
     override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
         padding.calculateLeftPadding(layoutDirection)

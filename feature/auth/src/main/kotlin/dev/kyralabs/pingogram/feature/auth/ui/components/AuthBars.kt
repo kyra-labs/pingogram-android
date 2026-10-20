@@ -5,14 +5,16 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,13 +89,20 @@ private fun ConnectionStatus.statusText(): String? =
         ConnectionStatus.Ready -> null
     }
 
-/** While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5); announced when it appears. */
+/**
+ * While offline: requests wait for the connection, so say so (`REQUIREMENTS.md` §6.5), with an info icon; announced
+ * when it appears.
+ */
 @Composable
 internal fun ConnectionBanner(
     isOffline: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    AuthBanner(visible = isOffline, modifier = modifier) {
+    AuthBanner(
+        visible = isOffline,
+        modifier = modifier,
+        icon = { Icon(painterResource(UiR.drawable.ic_info), contentDescription = null) },
+    ) {
         Text(
             text = stringResource(R.string.auth_offline_banner),
             style = MaterialTheme.typography.bodyMedium,
@@ -103,16 +112,32 @@ internal fun ConnectionBanner(
 }
 
 /**
- * While Telegram asks to wait (`FLOOD_WAIT`): the time left, which the ViewModel counts down. Screen readers hear it
- * as a live region, at most every 15 seconds ([announcedCountdownSeconds]) rather than every second.
+ * While Telegram asks to wait (`FLOOD_WAIT`): the time left, which the ViewModel counts down, and beside it a clock in
+ * a [CountdownIndicator] that runs down from [totalSeconds]. Screen readers hear the time as a live region, at most
+ * every 15 seconds ([announcedCountdownSeconds]) rather than every second.
  */
 @Composable
 internal fun FloodWaitBanner(
     seconds: Long?,
+    totalSeconds: Long,
     modifier: Modifier = Modifier,
 ) {
-    AuthBanner(visible = seconds != null, modifier = modifier, isError = true) {
-        val left = seconds ?: 0
+    val left = seconds ?: 0
+    AuthBanner(
+        visible = seconds != null,
+        modifier = modifier,
+        isError = true,
+        icon = {
+            CountdownIndicator(
+                secondsLeft = left,
+                totalSeconds = totalSeconds,
+                color = LocalContentColor.current,
+                trackColor = MaterialTheme.colorScheme.outlineVariant,
+            ) {
+                Icon(painterResource(UiR.drawable.ic_schedule), contentDescription = null)
+            }
+        },
+    ) {
         val announcement = stringResource(R.string.auth_flood_wait, durationText(announcedCountdownSeconds(left)))
         Text(
             text = stringResource(R.string.auth_flood_wait, durationText(left)),
@@ -141,11 +166,11 @@ internal fun announcedCountdownSeconds(seconds: Long): Long =
 private const val SECONDS_PER_MINUTE = 60L
 private const val ANNOUNCEMENT_STEP_SECONDS = 15L
 
-/** A banner below the top bar, as wide as the step's content on wide windows. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** A banner below the top bar, as wide as the step's content on wide windows: a leading [icon], then [content]. */
 @Composable
 private fun AuthBanner(
     visible: Boolean,
+    icon: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     content: @Composable () -> Unit,
@@ -171,7 +196,14 @@ private fun AuthBanner(
                 color = if (isError) colors.errorContainer else colors.surfaceContainerHighest,
                 contentColor = if (isError) colors.onErrorContainer else colors.onSurfaceVariant,
             ) {
-                Box(modifier = Modifier.padding(MaterialTheme.spacing.medium)) { content() }
+                Row(
+                    modifier = Modifier.padding(MaterialTheme.spacing.medium),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    icon()
+                    Box(modifier = Modifier.weight(1f)) { content() }
+                }
             }
         }
     }
