@@ -49,16 +49,18 @@ the release workflow so the owner can install and test on a phone.
 
 ## M3 — Full messaging, settings, notifications → `v0.3.0`
 
-- [ ] Composer: text + formatting, reply/edit, attach (photo picker, camera, file, location,
+- [x] Composer: text + formatting, reply/edit, attach (photo picker, camera, file, location,
       contact, poll), voice recording, emoji + sticker panel (animated TGS), send-as, silent and
       scheduled send, drafts
-- [ ] Message actions, reactions picker, forward sheet, delete, pin, select
-- [ ] Settings: account, privacy & security (incl. passcode/biometric, sessions), notifications,
+- [x] Message actions, reactions picker, forward sheet, delete, pin, select
+- [x] Settings: account, privacy & security (incl. passcode/biometric, sessions), notifications,
       data & storage, appearance, language, about + OSS licenses
 - [ ] Notifications via TDLib notification groups, channels, MessagingStyle, shortcuts/direct
       share, reply/mark-read actions, Android 13 permission flow
-- [ ] WorkManager background downloads/uploads with foreground service (`dataSync`)
-- [ ] `gms` flavor with FCM `registerDevice` (optional, off by default in GitHub releases)
+      (all but direct share: sharing into a chat from other apps needs a chat picker and a prefilled composer,
+      `docs/ARCHITECTURE.md` Notifications)
+- [x] WorkManager background downloads/uploads with foreground service (`dataSync`)
+- [x] `gms` flavor with FCM `registerDevice` (optional, off by default in GitHub releases)
 - [x] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
 - [ ] Material 3 Expressive alignment: the Must and Should items of
       `docs/audit/m3-expressive-gap-analysis.md` (decided 2026-10-19), density first (G63–G69)
