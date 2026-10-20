@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
@@ -37,7 +38,7 @@ internal class NotificationsHarness(
     val chats = TdlibChatRepository(client, backgroundScope, dispatcher, openChats)
     val users = TdlibUserRepository(client, backgroundScope)
     val groups = TdlibGroupRepository(client, backgroundScope)
-    val files = TdlibFileRepository(client, backgroundScope)
+    val files = TdlibFileRepository(client, TdlibTransferRepository(client, backgroundScope), backgroundScope)
     val notifications = TdlibNotificationRepository(client, backgroundScope, openChats)
     val auth = TdlibAuthRepository(client, dispatcher)
 

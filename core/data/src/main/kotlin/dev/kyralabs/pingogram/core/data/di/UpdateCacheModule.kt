@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 
@@ -30,6 +31,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun fileCache(repository: TdlibFileRepository): TdlibUpdateCache
+
+    /** Follows the messages being sent from their first update on. */
+    @Binds
+    @IntoSet
+    fun transferCache(repository: TdlibTransferRepository): TdlibUpdateCache
 
     @Binds
     @IntoSet

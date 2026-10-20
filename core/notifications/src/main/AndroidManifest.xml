@@ -1,11 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application>
         <!-- The actions of notifications (reply, mark as read, dismiss), from the app's own pending intents only. -->
         <receiver
             android:name="dev.kyralabs.pingogram.core.notifications.NotificationActionReceiver"
             android:exported="false" />
+
+        <!-- The transfers notification's "Cancel", from the app's own pending intent only. -->
+        <receiver
+            android:name="dev.kyralabs.pingogram.core.notifications.TransferCancelReceiver"
+            android:exported="false" />
+
+        <!-- WorkManager's foreground service runs TransfersWorker while the files the user sends and downloads are on
+             their way (REQUIREMENTS.md FR-N4): type dataSync on Android 14+, which needs FOREGROUND_SERVICE_DATA_SYNC
+             (app manifest). Before Android 12 it also runs the notification actions' expedited work, without a
+             type of its own. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>

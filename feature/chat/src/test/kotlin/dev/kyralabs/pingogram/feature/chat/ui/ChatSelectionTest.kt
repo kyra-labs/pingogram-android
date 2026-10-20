@@ -502,7 +502,7 @@ class ChatSelectionTest : ChatViewModelHarness() {
                 viewModel.effects.test {
                     send(viewModel, SelectionEvent.SaveToDownloads(4))
                     assertEquals(SelectionEffect.Saving, awaitItem())
-                    assertEquals(listOf("download:${PHOTO_FILE + 12}:Visible"), files.calls)
+                    assertEquals(listOf("download:${PHOTO_FILE + 12}:Requested"), files.calls)
 
                     files.setFile(PHOTO_FILE + 12, FileState.Downloading(500, 1_000, isActive = true))
                     files.setFile(PHOTO_FILE + 12, FileState.Downloaded("/files/photos/5.jpg", 1_000))

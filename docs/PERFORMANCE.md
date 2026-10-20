@@ -120,7 +120,8 @@ regresses by more than 10%.
 - No polling; TDLib's connection is the only wakeup source. No `AlarmManager`, no periodic
   WorkManager under 15 min.
 - Foreground service (`dataSync`) only while an upload/download the user started is in progress;
-  stopped within 5 s of completion.
+  stopped within 5 s of completion (`TransfersWorker`: 2 s after the last transfer, plus at most the 1 s between
+  notification updates). Automatic downloads never start it (`docs/adr/0008-background-transfers.md`).
 - `gms` flavor: FCM push (`registerDevice`, encrypted) so TDLib can sleep. A push wakes the process for at most
   6 s + 3 s (`TdlibPushRepository`: `processPushNotification`, then held-back notifications), not a foreground
   service. The token is registered at login and at each start, which TDLib answers locally when it is unchanged; no

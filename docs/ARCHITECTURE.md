@@ -174,6 +174,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Background transfers (FR-N4, `docs/adr/0008-background-transfers.md`): `core:domain`'s `TransferRepository`
+  (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
+  the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
+  its deletion, progress from `updateFile`), and the downloads asked for with `DownloadPriority.Requested` (a document
+  tapped in a bubble, files saved from a selection), which `TdlibFileRepository` hands it. Automatic downloads and
+  what is on screen use the other priorities and never count. `:app`'s `TransfersController` starts `core:notifications`'
+  `TransfersWorker` (unique expedited work) as transfers begin while the app is in the foreground, or when the user
+  comes back to them; the worker runs in WorkManager's foreground service with type `dataSync`, shows their progress
+  in the "Transfers" channel (`TransferNotificationBuilder`, `ProgressStyle` on Android 16) with "Cancel"
+  (`TransferCancelReceiver` → `cancelAll`: `cancelDownloadFile`, `deleteMessages` of the messages being sent), and ends
+  2 s after the last one. Android 15's daily `dataSync` limit reaches it through WorkManager's `onTimeout`.
 - Voice messages (FR-C5) are recorded by `feature:chat`'s `ChatRecorder` (a part of `ChatViewModel`, its state kept
   out of `ChatUiState` as only the composer shows it) into a file `VoiceNoteRepository.newVoiceNoteFile`
   (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
@@ -218,7 +229,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `GROUP_ALERT_CHILDREN`, so they do not alert. Chats on screen get no notification. After a restart, notifications
   TDLib no longer knows are cancelled; logging out cancels everything and removes the conversation shortcuts.
 - Channels (`PingogramChannel`, `NotificationChannels`): Private chats (secret chats too), Groups, Channels, Calls,
-  Other, created at every start; the one place that decides channels, except the `foss` flavor's "Connection" channel
+  Other, and Transfers (low importance, no badge: the progress of background transfers), created at every start; the one place that decides channels, except the `foss` flavor's "Connection" channel
   of "Keep connected", which only that flavor creates, with its service.
 - Android 11+: a long-lived conversation shortcut per chat (`ConversationShortcuts`), linked by `setShortcutId` and
   `LocusId`, so notifications show in the conversation section. No share target yet (sharing into a chat needs a chat
