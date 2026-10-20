@@ -32,6 +32,7 @@ internal data class ItemInputs(
     val forwardOrigin: Any?,
     val isRead: Boolean,
     val spoilersRevealed: Boolean,
+    val timeShown: Boolean,
     val myUserId: Long?,
     val timeFormatter: ChatTimeFormatter,
 )
@@ -72,6 +73,7 @@ internal fun ItemSources.inputsOf(
         forwardOrigin = message.forwardInfo?.let { refOf(it.origin) },
         isRead = newest.isOutgoing && newest.id <= chat.lastReadOutboxMessageId,
         spoilersRevealed = message.id in messages.revealedSpoilers,
+        timeShown = message.id in messages.shownTimes,
         myUserId = myUserId,
         timeFormatter = timeFormatter,
     )

@@ -119,7 +119,6 @@ internal object ChatPreviewData {
                         time = "9:40 AM",
                         isOutgoing = true,
                         status = OutgoingStatus.Failed,
-                        position = GroupPosition.Last,
                     ),
                     bubble(
                         7,
@@ -127,7 +126,7 @@ internal object ChatPreviewData {
                         time = "9:40 AM",
                         isOutgoing = true,
                         status = OutgoingStatus.Sent,
-                        position = GroupPosition.Middle,
+                        position = GroupPosition.Last,
                     ),
                     bubble(
                         6,
@@ -694,6 +693,8 @@ internal object ChatPreviewData {
             time = time,
             isEdited = isEdited,
             status = status,
+            showsTime = !position.joinsNext,
+            canResend = status == OutgoingStatus.Failed,
             forwardedFrom = forwardedFrom,
             reply = reply,
             content = content ?: MessageContent.Text(formatted, linkPreview = null),

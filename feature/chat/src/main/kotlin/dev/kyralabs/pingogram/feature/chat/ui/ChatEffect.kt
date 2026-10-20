@@ -78,6 +78,12 @@ sealed interface ChatEffect {
     ) : ChatEffect
 
     /**
+     * A message being sent failed while the screen was shown: a `Reject` haptic on Android 14 and later; the message's
+     * "Not sent" label says the rest.
+     */
+    data object SendFailed : ChatEffect
+
+    /**
      * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);
      * the screen reports what came of it with `ChatEvent.PhotoTaken`, also when no camera app opens.
      */

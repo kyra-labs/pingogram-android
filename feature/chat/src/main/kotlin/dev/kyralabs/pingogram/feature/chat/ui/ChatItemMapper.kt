@@ -52,12 +52,14 @@ internal class ChatPeople(
 
 /**
  * The messages of one emission: the loaded [history], the replied messages fetched for messages whose replied message
- * is not loaded ([replies], by the id of the replying message), and the messages whose spoilers were revealed.
+ * is not loaded ([replies], by the id of the replying message), the messages whose spoilers were revealed, and those
+ * whose time was tapped to show ([ChatEvent.ToggleTime]).
  */
 internal class MessageState(
     val history: ChatHistory,
     val replies: Map<Long, ReplyState>,
     val revealedSpoilers: Set<Long>,
+    val shownTimes: Set<Long> = emptySet(),
 )
 
 /**
