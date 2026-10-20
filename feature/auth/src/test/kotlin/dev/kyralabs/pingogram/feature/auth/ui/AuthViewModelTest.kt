@@ -267,6 +267,15 @@ class AuthViewModelTest {
             }
 
         @Test
+        fun `the country picker marks the country of the number`() =
+            runTest {
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.StartMessaging, AuthEvent.OpenCountryPicker)
+
+                assertEquals("GB", viewModel.step<AuthStepUiState.PhoneNumber>().countryPicker?.selectedIsoCode)
+            }
+
+        @Test
         fun `closing the country picker keeps the country`() =
             runTest {
                 val viewModel = viewModel()
@@ -430,12 +439,16 @@ class AuthViewModelTest {
                 send(viewModel, AuthEvent.SubmitPhoneNumber)
                 val countdown = mutableListOf(viewModel.state.floodWaitSeconds)
                 send(viewModel, AuthEvent.SubmitPhoneNumber)
-                repeat(3) {
+                advanceSeconds(1)
+                val total = viewModel.state.floodWaitTotalSeconds
+                countdown += viewModel.state.floodWaitSeconds
+                repeat(2) {
                     advanceSeconds(1)
                     countdown += viewModel.state.floodWaitSeconds
                 }
 
                 assertEquals(listOf(3L, 2L, 1L, null), countdown)
+                assertEquals(3L, total)
                 assertEquals(1, client.sentOf<TdApi.SetAuthenticationPhoneNumber>().size)
                 assertTrue(viewModel.state.canSubmit)
                 assertTrue(effects.isEmpty())
@@ -580,15 +593,18 @@ class AuthViewModelTest {
 
                 val code = viewModel.step<AuthStepUiState.Code>()
                 val countdown = mutableListOf(code.resendInSeconds)
+                val totals = mutableListOf(code.resendTotalSeconds)
                 repeat(3) {
                     advanceSeconds(1)
                     countdown += viewModel.step<AuthStepUiState.Code>().resendInSeconds
+                    totals += viewModel.step<AuthStepUiState.Code>().resendTotalSeconds
                 }
 
                 assertEquals(AuthCodeType.Sms(5), code.type)
                 assertEquals(AuthCodeType.Call(5), code.nextType)
                 assertEquals(5, code.codeLength)
                 assertEquals(listOf(3L, 2L, 1L, 0L), countdown)
+                assertEquals(listOf(3L, 3L, 3L, 3L), totals)
                 assertTrue(viewModel.step<AuthStepUiState.Code>().canResend)
             }
 
@@ -732,6 +748,7 @@ class AuthViewModelTest {
                 val code = viewModel.step<AuthStepUiState.Code>()
                 assertEquals(AuthCodeType.Call(5), code.type)
                 assertEquals(60L, code.resendInSeconds)
+                assertEquals(60L, code.resendTotalSeconds)
                 assertFalse(code.canResend)
             }
 
@@ -1373,6 +1390,168 @@ class AuthViewModelTest {
             }
     }
 
+    /** `Confirm` and `Reject` haptics (`docs/DESIGN_SYSTEM.md` §5) for codes and passwords Telegram checked. */
+    @Nested
+    inner class InputFeedback {
+        private suspend fun TestScope.onCode(): AuthViewModel {
+            client.authState.value = AuthState.from(waitCodeFor(UK_INTERNATIONAL))!!
+            return viewModel()
+        }
+
+        private suspend fun TestScope.onPassword(): AuthViewModel {
+            client.authState.value = AuthState.from(TdApiFixtures.waitPassword("cat", true))!!
+            return viewModel()
+        }
+
+        @Test
+        fun `an accepted code confirms`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, ok())
+                val viewModel = onCode()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.CodeChanged("12345"))
+
+                assertEquals(listOf(AuthEffect.InputAccepted), effects)
+            }
+
+        @Test
+        fun `a wrong or expired code rejects`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_INVALID"))
+                val viewModel = onCode()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.CodeChanged("12345"))
+                client.on(TdApi.CheckAuthenticationCode::class, failure("PHONE_CODE_EXPIRED"))
+                send(viewModel, AuthEvent.CodeChanged("12346"))
+
+                assertEquals(listOf(AuthEffect.InputRejected, AuthEffect.InputRejected), effects)
+            }
+
+        @Test
+        fun `a wrong password rejects, the right one confirms`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationPassword::class, failure("PASSWORD_HASH_INVALID"))
+                val viewModel = onPassword()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.PasswordChanged("wrong"), AuthEvent.SubmitPassword)
+                client.on(TdApi.CheckAuthenticationPassword::class, ok())
+                send(viewModel, AuthEvent.PasswordChanged("secret"), AuthEvent.SubmitPassword)
+
+                assertEquals(listOf(AuthEffect.InputRejected, AuthEffect.InputAccepted), effects)
+            }
+
+        @Test
+        fun `an accepted recovery code confirms`() =
+            runTest {
+                client.on(TdApi.RequestAuthenticationPasswordRecovery::class, ok())
+                client.on(TdApi.CheckAuthenticationPasswordRecoveryCode::class, ok())
+                val viewModel = onPassword()
+                val effects = effectsOf(viewModel)
+
+                send(
+                    viewModel,
+                    AuthEvent.ForgotPassword,
+                    AuthEvent.RecoveryCodeChanged("123456"),
+                    AuthEvent.SubmitRecoveryCode,
+                )
+
+                assertEquals(listOf(AuthEffect.InputAccepted), effects)
+            }
+
+        @Test
+        fun `a code Telegram could not check gives no feedback on it`() =
+            runTest {
+                client.on(TdApi.CheckAuthenticationCode::class, failure("SOMETHING_NEW", code = 500))
+                val viewModel = onCode()
+                val effects = effectsOf(viewModel)
+
+                send(viewModel, AuthEvent.CodeChanged("12345"))
+
+                assertEquals(listOf(AuthEffect.ShowError(DomainError.Unknown(500, "SOMETHING_NEW"))), effects)
+            }
+
+        @Test
+        fun `requesting a new code gives no feedback`() =
+            runTest {
+                client.on(TdApi.ResendAuthenticationCode::class, ok())
+                val viewModel = onCode()
+                val effects = effectsOf(viewModel)
+
+                advanceSeconds(60)
+                send(viewModel, AuthEvent.ResendCode)
+                tdlib(waitCodeFor(UK_INTERNATIONAL))
+
+                assertEquals(1, client.sentOf<TdApi.ResendAuthenticationCode>().size)
+                assertTrue(effects.isEmpty())
+            }
+    }
+
+    /** [AuthUiState.backStep]: the screen back leads to, for the predictive back gesture to show coming in. */
+    @Nested
+    inner class BackStep {
+        /** Back synchronously, as the gesture's end does: the screen it shows must be the one the gesture showed. */
+        private fun AuthViewModel.backLeadsToItsBackStep() {
+            val backStep = state.backStep
+            onEvent(AuthEvent.Back)
+            assertEquals(backStep, state.step)
+        }
+
+        @Test
+        fun `phone number entry leads back to the welcome screen`() =
+            runTest {
+                val viewModel = onPhoneNumberEntry()
+
+                assertEquals(AuthStepUiState.Welcome, viewModel.state.backStep)
+                viewModel.backLeadsToItsBackStep()
+            }
+
+        @Test
+        fun `the code leads back to changing the number`() =
+            runTest {
+                client.authState.value = AuthState.from(waitCodeFor(UK_INTERNATIONAL))!!
+                val viewModel = viewModel()
+
+                assertTrue((viewModel.state.backStep as AuthStepUiState.PhoneNumber).isChangingNumber)
+                viewModel.backLeadsToItsBackStep()
+            }
+
+        @Test
+        fun `password recovery leads back to the password`() =
+            runTest {
+                client.on(TdApi.RequestAuthenticationPasswordRecovery::class, ok())
+                client.authState.value = AuthState.from(TdApiFixtures.waitPassword("cat", true))!!
+                val viewModel = viewModel()
+                send(viewModel, AuthEvent.ForgotPassword)
+
+                assertInstanceOf(AuthStepUiState.Password::class.java, viewModel.state.backStep)
+                viewModel.backLeadsToItsBackStep()
+            }
+
+        @Test
+        fun `QR login leads back to loading while TDLib restarts`() =
+            runTest {
+                client.on(TdApi.RequestQrCodeAuthentication::class, ok())
+                client.on(TdApi.LogOut::class, ok())
+                val viewModel = onPhoneNumberEntry()
+                send(viewModel, AuthEvent.LogInWithQrCode)
+                tdlib(TdApiFixtures.waitOtherDeviceConfirmation())
+
+                assertEquals(AuthStepUiState.Loading, viewModel.state.backStep)
+                viewModel.backLeadsToItsBackStep()
+            }
+
+        @Test
+        fun `the welcome screen has none`() =
+            runTest {
+                val viewModel = viewModel()
+
+                assertNull(viewModel.state.backStep)
+            }
+    }
+
     @Nested
     inner class End {
         @Test
@@ -1419,7 +1598,7 @@ class AuthViewModelTest {
                 tdlib(TdApiFixtures.ready())
 
                 assertEquals(AuthStepUiState.Done, viewModel.state.step)
-                assertEquals(listOf(AuthEffect.Authorized), effects)
+                assertEquals(listOf(AuthEffect.InputAccepted, AuthEffect.Authorized), effects)
             }
 
         @Test

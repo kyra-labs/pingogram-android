@@ -244,7 +244,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Chat list row title | `titleMediumEmphasized` when unread, `titleMedium` when read |
 | Chat list preview / message text | `bodyMedium` (one line) / `bodyLarge` |
 | Timestamps, badges, meta | `labelSmall` (`tnum`) |
-| Verification codes | `headlineSmall` (`tnum`), centered |
+| Verification codes | `headlineSmall` (`tnum`), centered, tracked 0.1 em wider (`typography.verificationCode`, `core:ui`); word and phrase codes `titleLarge` as typed text |
 | Passcode entry (lock screen, Passcode lock) | title `headlineMediumEmphasized` under a `MaterialShapes` badge, as an auth step; hint and errors `bodyMedium`; keypad digits `headlineSmall` |
 | Buttons | filled (primary) buttons `labelLargeEmphasized`; tonal, outlined and text buttons `labelLarge` |
 | Section headers in settings | `titleSmallEmphasized` in `primary` (settings pages; Settings home has none, §6) |
@@ -342,12 +342,16 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   springs' curves are the gesture's curve. Navigation's default (scale to 70% without fading)
   leaves an opaque card that is cut at the end. Custom surfaces
   (media viewer, attach sheet, selection toolbar) implement `PredictiveBackHandler` and scale
-  to 90% with the Expressive back-progress curve.
+  to 90% with the Expressive back-progress curve. The login flow, one destination whose steps come from TDLib, seeks
+  its shared-axis Y step transition (a `SeekableTransitionState`, `AuthStepTransition`) towards the step back leads
+  to, which its view model derives with the same reduction as back itself; a cancelled gesture returns on
+  `defaultEffectsSpec`.
 - Lists: `Modifier.animateItem()` on every `LazyColumn` item; new message enters with a spatial
   spring from the bottom; swipe actions reveal icons with scale springs; pull/overscroll uses
   the stretch overscroll default.
 - Loading: `LoadingIndicator` (morphing polygons) for indeterminate, `LinearWavyProgressIndicator`
-  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback). A screen whose
+  / `CircularWavyProgressIndicator` for determinate (uploads, downloads, voice playback, the login's flood wait and
+  resend countdowns, beside their text and hidden from screen readers). A screen whose
   content usually comes from TDLib's local database at once shows its indicator only after **200 ms** (Material's
   threshold: nothing under 200 ms, a loading indicator up to 5 s, progress beyond), fading in on
   `defaultEffectsSpec` (`DelayedLoadingIndicator`, `core:ui`), so it never flashes. Every such screen uses it:
@@ -355,8 +359,9 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 - Micro-interactions with haptics (`LocalHapticFeedback`):
   - `LongPress`: selection, the message menu
   - `TextHandleMove`: swipe threshold (chat rows, swipe to reply)
-  - `Confirm`: sent, code accepted
-  - `Reject`: failed send, wrong code or password (`Confirm` and `Reject` on API 34+)
+  - `Confirm`: sent, a code or password accepted
+  - `Reject`: failed send, wrong code or password (`Confirm` and `Reject` on API 34+; auth gets them as view model
+    effects once Telegram answers, never from guesses in the UI)
   - `ToggleOn` / `ToggleOff`: switches and reactions
   - `SegmentTick`: slider steps and choices in a connected button group
 
@@ -390,7 +395,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Settings rows | Groups of `SegmentedListItem`s (`SettingsGroup`, `feature:settings`) with `ListItemDefaults.segmentedShapes` / `segmentedColors` / `SegmentedGap` (§2.2, §4), outlined leading icons, the label in the list item's `bodyLarge`; a `titleSmallEmphasized` header in `primary` above each group on settings pages, none on Settings home (its single-row groups would repeat their row, as Google's account menus show them bare), groups `spacing.medium` apart there and `spacing.extraLarge` with headers. Clickable rows use the clickable list item. Switches use the clickable one with `Role.Switch` semantics and a trailing `Switch` showing a check icon in its thumb when on (`thumbContent`). Single choices use the selectable one with a leading `RadioButton`, or, where every label fits, a connected button group in a row of its own: `ToggleButton`s with `ButtonGroupDefaults.connectedLeading/Middle/TrailingButtonShapes()` (segmented buttons are deprecated in Material 3 Expressive). Buttons and progress sit in a segment of the same container and shape (`SettingsSegment`); text fields sit directly on the page (rounded tonal style). Leading icons sit in a tonal circle, one `*Container` role per group. Every row of a page has an icon, or none does. **Pages**: a `MediumFlexibleTopAppBar` like Settings home, its width capped with the content. **Expanded windows**: list-detail, with Settings home as the list |
 | Settings account card | A single `SegmentedListItem` (`extraLarge` at rest): avatar in a `primary` ring with an edit badge, name, phone, username, a "Premium" status label (`tertiaryContainer`, Telegram Premium only, never an offer) and a `FilledTonalIconButton` chevron; the whole card opens Edit profile and is one item for screen readers |
 | Buttons | M3 Expressive sizes: `ButtonDefaults.ExtraSmall…ExtraLarge` container heights. The default (40 dp) for actions in forms and flows: auth puts its primary action at the bottom end and the secondary as a `TextButton` at the bottom start, as Google's sign-in does. Medium (56 dp) and up only for hero moments (Welcome's "Start messaging"), never full width on wide windows. `FilledTonalButton` for secondary, `OutlinedButton` rare, `TextButton` in dialogs; every button with `ButtonDefaults.shapes()` press morph |
-| Text fields | Forms (auth): filled `TextField`s, passwords `SecureTextField`, the country a read-only field with `ExposedDropdownMenuDefaults.TrailingIcon` that opens the picker (its search a `SearchBarDefaults.InputField`, the current country selected). Composer and Edit profile: the rounded tonal field (`TextFieldDefaults.roundedShape` + `tonalColors()`) on the page, no enclosing segment. One style per region |
+| Text fields | Forms (auth): filled `TextField`s, passwords `SecureTextField`, the country a read-only field with `ExposedDropdownMenuDefaults.TrailingIcon` that opens the picker (its search a `SearchBarDefaults.InputField`, the current country selected: the list item's selected container, `large`, rows inset like the chat list's, scrolled into view); codes autofill as SMS or email one-time codes. Auth banners (offline, flood wait) lead with an icon, the flood wait's a clock in its countdown's `CircularWavyProgressIndicator`. Composer and Edit profile: the rounded tonal field (`TextFieldDefaults.roundedShape` + `tonalColors()`) on the page, no enclosing segment. One style per region |
 | Icon buttons | `IconButton`/`FilledIconButton` with Expressive shapes (`IconButtonDefaults.*Shape`) and sizes; toggleable ones use `IconToggleButton` with shape morph |
 | Progress | `LoadingIndicator`, `ContainedLoadingIndicator`, `LinearWavyProgressIndicator`, `CircularWavyProgressIndicator` |
 | Dialogs | `AlertDialog` for destructive confirmations only; `BasicAlertDialog` for custom |

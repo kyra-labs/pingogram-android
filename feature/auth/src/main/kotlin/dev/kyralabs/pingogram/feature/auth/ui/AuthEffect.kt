@@ -20,6 +20,15 @@ sealed interface AuthEffect {
         val error: DomainError,
     ) : AuthEffect
 
+    /**
+     * Telegram accepted a code or password the user entered (login, email or recovery code, 2-step verification or new
+     * password): a `Confirm` haptic (`docs/DESIGN_SYSTEM.md` §5).
+     */
+    data object InputAccepted : AuthEffect
+
+    /** Telegram rejected a code or password as wrong or expired: a `Reject` haptic (`docs/DESIGN_SYSTEM.md` §5). */
+    data object InputRejected : AuthEffect
+
     /** The account is logged in: leave the login flow. */
     data object Authorized : AuthEffect
 }

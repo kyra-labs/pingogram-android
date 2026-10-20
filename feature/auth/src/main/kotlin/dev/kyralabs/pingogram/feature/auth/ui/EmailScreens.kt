@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.EmailOtpCode
 import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
@@ -120,6 +121,7 @@ fun EmailCodeScreen(
             label = stringResource(R.string.auth_code_label),
             error = state.error?.let { errorText(it) },
             onDone = { onEvent(AuthEvent.SubmitEmailCode) },
+            contentType = EmailOtpCode,
         )
         if (state.canResendCode) {
             AuthTextButton(

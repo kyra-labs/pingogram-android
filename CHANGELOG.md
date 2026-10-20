@@ -85,6 +85,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
   password?") at the bottom left. On tablets and on phones held sideways the title sits beside the form, so "Next"
   is always on screen without scrolling.
+- Logging in feels more like a Google app: the country is a field with a drop-down arrow like the number fields next
+  to it, and the country list has a proper search bar and highlights the country you have. Codes show larger and
+  centered, with digits evenly spaced, and codes sent by email can be filled in by your password manager or
+  keyboard, like SMS codes. On Android 14 and later the phone gives a short confirming buzz when Telegram accepts a
+  code or password, and a different one when it's wrong. The offline and "Too many attempts" banners have an icon,
+  and the wait before trying again or getting a new code shows as a shrinking ring next to the time. Swiping back
+  slides in the previous step as you swipe, so you can see where you'll land before letting go.
 - The chat list is denser, closer to Google's own apps: a slimmer top bar that no longer collapses, smaller avatars,
   a one-line preview of the last message, and a lower row of folder tabs. About nine chats fit on a typical phone
   instead of six or seven.

@@ -10,7 +10,9 @@ import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import java.util.concurrent.ConcurrentHashMap
 
@@ -32,6 +34,19 @@ fun pingogramTypography(fontWeightAdjustment: Int = 0): Typography =
     Typographies.computeIfAbsent(fontWeightAdjustment) { buildTypography(it) }
 
 private val Typographies = ConcurrentHashMap<Int, Typography>()
+
+/**
+ * Verification codes (`docs/DESIGN_SYSTEM.md` §3.3): [Typography.headlineSmall] with tabular figures, centered, and
+ * tracked a little wider ([CodeTracking]) so each digit reads on its own, as one-time code fields set them.
+ */
+val Typography.verificationCode: TextStyle
+    get() = headlineSmall.merge(VerificationCodeStyle)
+
+// A tenth of the size between digits: enough to tell them apart, little enough to read the code as one.
+private val CodeTracking = 0.1.em
+
+private val VerificationCodeStyle =
+    TextStyle(textAlign = TextAlign.Center, letterSpacing = CodeTracking, fontFeatureSettings = TABULAR_FIGURES)
 
 // Google's tracking for Google Sans Flex (Android's SystemUI type scale): none, except a little in the smallest styles.
 // The Material 3 tokens' tracking (up to 0.5 sp) is Roboto's; Google Sans Flex spaces small sizes through its optical
