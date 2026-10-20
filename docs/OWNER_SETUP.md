@@ -66,8 +66,22 @@ keytool -genkeypair -v \
 | `SIGNING_KEY_ALIAS` | `pingogram` |
 | `SIGNING_KEY_PASSWORD` | key password |
 | `GOOGLE_SERVICES_JSON_BASE64` | optional, only for `gms` releases (§8b) |
+| `TELEGRAM_BOT_TOKEN` | optional: the bot that posts builds to your channel (below) |
+| `TELEGRAM_CHANNEL_ID` | optional: that channel, `@name` for a public one, `-100…` for a private one (below) |
 
 Delete `keystore.b64` from disk afterwards.
+
+**Builds in your channel (optional).** CI posts the debug APK of every push to `main`, and the release workflow the
+APKs of every release, to a Telegram channel of yours (`docs/RELEASE.md`, "Channel uploads"). Without the two secrets
+nothing is posted.
+
+1. In Telegram, open @BotFather, send `/newbot`, pick a name and a username. It answers with the bot's token: keep it
+   like a password (anyone with it can post as the bot), and put it only into the secret `TELEGRAM_BOT_TOKEN`.
+2. Add the bot to your channel as an administrator with the right to post messages (nothing else).
+3. The channel's id: `@yourchannel` for a public channel. For a private one, forward a post of the channel to
+   @userinfobot (or any bot that shows ids) and use the `-100…` number. Put it into `TELEGRAM_CHANNEL_ID`.
+4. The next push to `main` posts its debug APK; check the "Post debug APK to the channel" step of the CI run if
+   nothing arrives (it warns with Telegram's reason, e.g. "chat not found" or "not enough rights").
 
 ## 5. Local development setup
 
