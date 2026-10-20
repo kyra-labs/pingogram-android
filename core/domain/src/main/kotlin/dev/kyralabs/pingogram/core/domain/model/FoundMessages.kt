@@ -17,3 +17,15 @@ data class FoundMessages(
     /** About how many messages match in all, as TDLib counts them; null while it does not know. */
     val totalCount: Int?,
 )
+
+/** Which messages a search across chats finds (`SearchRepository.searchMessages`), as search's filter chips choose. */
+enum class MessageSearchFilter {
+    /** Every message that matches the query. */
+    All,
+
+    /** Photos and videos only; with a blank query, every photo and video. */
+    PhotoAndVideo,
+
+    /** Messages with a link only; with a blank query, every message with one. */
+    Url,
+}

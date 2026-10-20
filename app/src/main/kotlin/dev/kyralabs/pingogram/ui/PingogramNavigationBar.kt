@@ -46,6 +46,7 @@ import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -61,7 +62,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * that composes the tab's screen again, at the start of the back transition.
  *
  * [selected] is the tab the user is on, also while a screen pushed above it hides the bar, so the bar slides away and
- * back as it was instead of deselecting its tab on the way out and selecting it again on the way in.
+ * back as it was instead of deselecting its tab on the way out and selecting it again on the way in. [searchOpen] and
+ * [search] are the search button's ([PingogramNavigationBar]).
  */
 @Composable
 internal fun FloatingNavigationBar(
@@ -70,6 +72,8 @@ internal fun FloatingNavigationBar(
     onSelect: (TopLevelDestination) -> Unit,
     onSearch: () -> Unit,
     modifier: Modifier = Modifier,
+    searchOpen: Boolean = false,
+    search: GlobalSearchState? = null,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     // 1 while shown, 0 while hidden: how far the bar is in its place, and its alpha.
@@ -90,6 +94,8 @@ internal fun FloatingNavigationBar(
         selected = selected,
         onSelect = onSelect,
         onSearch = onSearch,
+        searchOpen = searchOpen,
+        search = search,
         modifier =
             modifier
                 .placedWhile { visible || placed.value }
@@ -117,6 +123,9 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * container, its elevation and the adjacent button; the tabs are built from tokens. The selected tab shows its filled
  * icon and label on a `secondaryContainer` pill, the others only their label. Where the labels do not fit (narrow
  * phones, large font scales), the other tabs show their outlined icon instead, named for screen readers by the label.
+ *
+ * The search button ([onSearch]) grows into search and back ([SearchButtonSlot], through [search]'s container
+ * transform), and is away while search is [searchOpen].
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -125,6 +134,8 @@ internal fun PingogramNavigationBar(
     onSelect: (TopLevelDestination) -> Unit,
     onSearch: () -> Unit,
     modifier: Modifier = Modifier,
+    searchOpen: Boolean = false,
+    search: GlobalSearchState? = null,
 ) {
     BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
         val showLabels = labelsFit(maxWidth)
@@ -136,17 +147,20 @@ internal fun PingogramNavigationBar(
         HorizontalFloatingToolbar(
             expanded = true,
             floatingActionButton = {
-                // A circle in the toolbar's own colors, as in Google's floating navigation bars.
-                FloatingToolbarDefaults.StandardFloatingActionButton(
-                    onClick = onSearch,
-                    shape = CircleShape,
-                    containerColor = colors.toolbarContainerColor,
-                    contentColor = colors.toolbarContentColor,
-                ) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_search),
-                        contentDescription = stringResource(R.string.nav_search),
-                    )
+                SearchButtonSlot(shown = !searchOpen, search = search, shape = CircleShape) { transform ->
+                    // A circle in the toolbar's own colors, as in Google's floating navigation bars.
+                    FloatingToolbarDefaults.StandardFloatingActionButton(
+                        onClick = onSearch,
+                        modifier = transform,
+                        shape = CircleShape,
+                        containerColor = colors.toolbarContainerColor,
+                        contentColor = colors.toolbarContentColor,
+                    ) {
+                        Icon(
+                            painter = painterResource(UiR.drawable.ic_search),
+                            contentDescription = stringResource(R.string.nav_search),
+                        )
+                    }
                 }
             },
             colors = colors,
