@@ -79,11 +79,25 @@ internal val ContentSamples: List<ContentSample> =
             MessagePhoto(ContentPreviewData.photo(rememberSampleMinithumbnail()), onOpen = {})
         },
         ContentSample("photoTapToDownload", SampleBubbles.Incoming, edgeToEdge = true, imagesLoading = true) { _, _ ->
-            MessagePhoto(ContentPreviewData.photo(rememberSampleMinithumbnail()), onOpen = {}, downloads = TapToDownload)
+            MessagePhoto(
+                ContentPreviewData.photo(rememberSampleMinithumbnail()),
+                onOpen = {},
+                downloads = TapToDownload,
+            )
         },
-        ContentSample("photoDownloadRequested", SampleBubbles.Incoming, edgeToEdge = true, imagesLoading = true) { _, _ ->
+        ContentSample(
+            "photoDownloadRequested",
+            SampleBubbles.Incoming,
+            edgeToEdge = true,
+            imagesLoading = true,
+        ) { _, _ ->
             val photo = ContentPreviewData.photo(rememberSampleMinithumbnail())
-            val requested = remember(photo) { photo.photo.sizes.map { it.file.id }.toPersistentSet() }
+            val requested =
+                remember(photo) {
+                    photo.photo.sizes
+                        .map { it.file.id }
+                        .toPersistentSet()
+                }
             MessagePhoto(photo, onOpen = {}, downloads = MediaDownloads(photos = false, requested = requested))
         },
         albumSample(2),

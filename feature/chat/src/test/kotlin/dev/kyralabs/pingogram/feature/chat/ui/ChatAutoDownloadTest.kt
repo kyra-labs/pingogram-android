@@ -86,7 +86,10 @@ class ChatAutoDownloadTest : ChatViewModelHarness() {
             autoDownloads.rules.value = everything
             runCurrent()
 
-            assertEquals(listOf("download:$voiceFile:Prefetch", "download:$documentFile:Prefetch").sorted(), downloads())
+            assertEquals(
+                listOf("download:$voiceFile:Prefetch", "download:$documentFile:Prefetch").sorted(),
+                downloads(),
+            )
         }
 
     @Test
