@@ -32,7 +32,9 @@ internal object AuthPreviewData {
 
     const val CODE_LENGTH = 5
     private const val RESEND_SECONDS = 42L
+    private const val RESEND_TOTAL_SECONDS = 60L
     private const val FLOOD_WAIT_SECONDS = 299L
+    private const val FLOOD_WAIT_TOTAL_SECONDS = 420L
     private const val EMAIL_CODE_LENGTH = 6
     private const val RESET_WAIT_SECONDS = 604_800L
     private const val RESET_PENDING_SECONDS = 3_600L
@@ -44,7 +46,8 @@ internal object AuthPreviewData {
         floodWaitSeconds: Long? = null,
         pendingAction: AuthAction? = null,
         canGoBack: Boolean = true,
-    ) = AuthUiState(step, connection, floodWaitSeconds, pendingAction, canGoBack)
+        floodWaitTotalSeconds: Long = floodWaitSeconds?.let { FLOOD_WAIT_TOTAL_SECONDS } ?: 0,
+    ) = AuthUiState(step, connection, floodWaitSeconds, pendingAction, canGoBack, floodWaitTotalSeconds)
 
     fun phoneNumber(
         number: String = "7911123456",
@@ -58,7 +61,7 @@ internal object AuthPreviewData {
         country = unitedKingdom,
         error = error,
         isChangingNumber = isChangingNumber,
-        countryPicker = if (pickerOpen) CountryPickerUiState("", countries) else null,
+        countryPicker = if (pickerOpen) CountryPickerUiState("", countries, unitedKingdom.isoCode) else null,
     )
 
     fun code(
@@ -75,6 +78,7 @@ internal object AuthPreviewData {
         codeLength = type.codeLength,
         resendInSeconds = resendInSeconds,
         error = error,
+        resendTotalSeconds = RESEND_TOTAL_SECONDS,
     )
 
     fun registration(

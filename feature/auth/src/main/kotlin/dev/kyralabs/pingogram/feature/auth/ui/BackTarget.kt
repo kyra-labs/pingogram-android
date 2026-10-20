@@ -37,3 +37,27 @@ private fun AuthModel.laterStepBackTarget(): BackTarget =
         step is AuthStep.WaitEmailCode && editingEmail -> BackTarget.StopChangingEmail
         else -> BackTarget.ChangeNumber
     }
+
+/**
+ * The model after going back to [target], without the requests some targets start ([AuthViewModel] sends them): the
+ * view model applies it, and the UI state derives the screen back leads to from it ([AuthUiState.backStep]).
+ */
+internal fun AuthModel.afterBack(target: BackTarget): AuthModel =
+    when (target) {
+        BackTarget.Welcome -> copy(welcomeDone = false, phone = phone.copy(error = null))
+
+        BackTarget.CloseCountryPicker -> copy(phone = phone.copy(isPickerOpen = false, pickerQuery = ""))
+
+        BackTarget.StopChangingNumber -> copy(editingPhone = false)
+
+        BackTarget.ChangeNumber -> copy(editingPhone = true, phone = phone.copy(error = null))
+
+        BackTarget.LeaveRecovery -> copy(password = PasswordForm(password = password.password))
+
+        BackTarget.CloseTermsOfService -> copy(registration = registration.copy(isTermsOpen = false))
+
+        BackTarget.StopChangingEmail -> copy(editingEmail = false)
+
+        // TDLib restarts (AuthViewModel cancels the QR login), and the flow continues with phone number entry.
+        BackTarget.CancelQrCode -> copy(restarting = true, pendingAction = AuthAction.CancelQrCode)
+    }

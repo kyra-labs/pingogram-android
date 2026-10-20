@@ -26,14 +26,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import dev.kyralabs.pingogram.core.ui.theme.verificationCode
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A login code field (`docs/DESIGN_SYSTEM.md` §6: M3 `TextField`): the code in `titleLarge`, a numeric keyboard for
- * digit codes, and [error] below it, which screen readers report as the field's error.
+ * A login code field (`docs/DESIGN_SYSTEM.md` §6: M3 `TextField`): digit codes centered in the verification code
+ * style (`headlineSmall`, tabular figures, wider tracking, §3.3) with a numeric keyboard, word and phrase codes in
+ * `titleLarge` as typed text; [error] below it, which screen readers report as the field's error.
  *
- * @param contentType the autofill hint, e.g. [ContentType.SmsOtpCode] for codes sent by SMS.
+ * @param contentType the autofill hint: [ContentType.SmsOtpCode] for codes sent by SMS, [EmailOtpCode] for codes
+ *   sent by email.
  */
 @Composable
 internal fun AuthCodeField(
@@ -54,7 +57,7 @@ internal fun AuthCodeField(
                 .fillMaxWidth()
                 .fieldError(error)
                 .semantics { if (contentType != null) this.contentType = contentType },
-        textStyle = MaterialTheme.typography.titleLarge,
+        textStyle = if (isNumeric) MaterialTheme.typography.verificationCode else MaterialTheme.typography.titleLarge,
         label = { Text(label) },
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
@@ -137,6 +140,12 @@ private fun PasswordVisibilityToggle(
         )
     }
 }
+
+/**
+ * The autofill hint for a one-time code sent by email (`HintConstants.AUTOFILL_HINT_EMAIL_OTP` of androidx.autofill),
+ * which Compose's [ContentType] does not name.
+ */
+internal val EmailOtpCode: ContentType = ContentType("emailOTPCode")
 
 /** Reports [message] as this text field's error to screen readers, instead of Material's generic "Invalid input". */
 internal fun Modifier.fieldError(message: String?): Modifier =

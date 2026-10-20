@@ -4,8 +4,11 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedDispatcher
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -16,7 +19,8 @@ import org.robolectric.annotation.Config
 
 /**
  * System back within the login flow follows the predictive back gesture (`docs/DESIGN_SYSTEM.md` §5) and sends the
- * same [AuthEvent.Back] as before: once when the gesture completes, never when it is cancelled.
+ * same [AuthEvent.Back] as before: once when the gesture completes, never when it is cancelled. While it runs, the
+ * step back leads to comes in with the gesture's progress, and leaves again when it is cancelled.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -54,6 +58,22 @@ class PredictiveBackTest {
     }
 
     @Test
+    fun `the step back leads to comes in with the gesture and leaves when it is cancelled`() {
+        show(AuthPreviewData.code.copy(backStep = AuthPreviewData.phoneNumber(isChangingNumber = true)))
+        val backTitle = composeRule.activity.getString(R.string.auth_phone_change_title)
+
+        backGesture { dispatcher -> dispatcher.dispatchOnBackProgressed(backEvent(progress = HALF)) }
+        val during = composeRule.onAllNodesWithText(backTitle).fetchSemanticsNodes().size
+        backGesture(start = false) { dispatcher -> dispatcher.dispatchOnBackCancelled() }
+        val after = composeRule.onAllNodesWithText(backTitle).fetchSemanticsNodes().size
+
+        assertEquals(1, during)
+        assertEquals(0, after)
+        assertEquals(emptyList<AuthEvent>(), events)
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.auth_code_title)).assertExists()
+    }
+
+    @Test
     fun `back on the welcome screen is left to the app`() {
         show(AuthPreviewData.welcome)
 
@@ -71,10 +91,13 @@ class PredictiveBackTest {
         composeRule.waitForIdle()
     }
 
-    private fun backGesture(gesture: (OnBackPressedDispatcher) -> Unit) {
+    private fun backGesture(
+        start: Boolean = true,
+        gesture: (OnBackPressedDispatcher) -> Unit,
+    ) {
         composeRule.runOnUiThread {
             val dispatcher = composeRule.activity.onBackPressedDispatcher
-            dispatcher.dispatchOnBackStarted(backEvent(progress = 0f))
+            if (start) dispatcher.dispatchOnBackStarted(backEvent(progress = 0f))
             gesture(dispatcher)
         }
         composeRule.waitForIdle()
