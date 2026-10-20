@@ -5,13 +5,13 @@ import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.CHAT
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.chat
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.fullFileId
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.message
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.photos
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.videoContent
-import dev.kyralabs.pingogram.feature.media.ui.files.GalleryItem
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
@@ -72,7 +72,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
                     assertFalse(viewModel.actions.canSave)
                     expectNoEvents()
                 }
-                assertTrue(fileActions.saved.isEmpty())
+                assertTrue(sharedStorage.saved.isEmpty())
             }
 
         @Test
@@ -247,7 +247,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
             runViewModelTest {
                 downloaded()
                 val copy = CompletableDeferred<Boolean>()
-                fileActions.onSave = { copy.await() }
+                sharedStorage.onSave = { copy.await() }
                 val viewModel = viewModel(messageId = 50)
 
                 viewModel.effects.test {
@@ -259,7 +259,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                     assertEquals(MediaViewerEffect.SavedToGallery, awaitItem())
                 }
-                assertEquals(listOf(GalleryItem(path, "image/jpeg", "Pingogram_50")), fileActions.saved)
+                assertEquals(listOf(SharedFile(path, "image/jpeg", "Pingogram_50")), sharedStorage.saved)
                 assertNull(viewModel.actions.pending)
             }
 
@@ -267,7 +267,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
         fun `a failed copy is a snackbar`() =
             runViewModelTest {
                 downloaded()
-                fileActions.onSave = { false }
+                sharedStorage.onSave = { false }
                 val viewModel = viewModel(messageId = 50)
 
                 viewModel.effects.test {
@@ -286,14 +286,14 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                 viewModel.effects.test {
                     send(viewModel, MediaViewerEvent.Save)
-                    assertTrue(fileActions.saved.isEmpty())
+                    assertTrue(sharedStorage.saved.isEmpty())
 
                     downloaded()
                     runCurrent()
 
                     assertEquals(MediaViewerEffect.SavedToGallery, awaitItem())
                 }
-                assertEquals(1, fileActions.saved.size)
+                assertEquals(1, sharedStorage.saved.size)
             }
 
         @Test
@@ -306,7 +306,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
                 downloaded()
                 runCurrent()
 
-                assertEquals(1, fileActions.saved.size)
+                assertEquals(1, sharedStorage.saved.size)
             }
     }
 
@@ -314,7 +314,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
     inner class StoragePermission {
         @BeforeEach
         fun androidNine() {
-            fileActions.needsPermission = true
+            sharedStorage.needsPermission = true
             downloaded()
         }
 
@@ -328,7 +328,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                     assertEquals(MediaViewerEffect.CheckStoragePermission, awaitItem())
                 }
-                assertTrue(fileActions.saved.isEmpty())
+                assertTrue(sharedStorage.saved.isEmpty())
             }
 
         @Test
@@ -383,7 +383,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
                     assertFalse(viewModel.actions.showsStorageRationale)
                     expectNoEvents()
                 }
-                assertTrue(fileActions.saved.isEmpty())
+                assertTrue(sharedStorage.saved.isEmpty())
             }
 
         @Test
@@ -403,7 +403,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                     assertEquals(MediaViewerEffect.SavedToGallery, awaitItem())
                 }
-                assertEquals(listOf(GalleryItem(path, "image/jpeg", "Pingogram_50")), fileActions.saved)
+                assertEquals(listOf(SharedFile(path, "image/jpeg", "Pingogram_50")), sharedStorage.saved)
             }
 
         @Test
@@ -423,7 +423,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                     assertEquals(MediaViewerEffect.StoragePermissionDenied, awaitItem())
                 }
-                assertTrue(fileActions.saved.isEmpty())
+                assertTrue(sharedStorage.saved.isEmpty())
             }
 
         @Test
@@ -440,7 +440,7 @@ class MediaViewerSharingTest : MediaViewerViewModelHarness() {
 
                     assertEquals(MediaViewerEffect.SavedToGallery, awaitItem())
                 }
-                assertEquals(listOf(GalleryItem(path, "image/jpeg", "Pingogram_50")), fileActions.saved)
+                assertEquals(listOf(SharedFile(path, "image/jpeg", "Pingogram_50")), sharedStorage.saved)
             }
     }
 }

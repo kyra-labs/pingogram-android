@@ -131,7 +131,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
-  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), behind `MediaFileActions`.
+  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
+  same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
 
 ## Notifications
 

@@ -10,6 +10,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
+  or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
+  shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
+  sent them and when, as the official apps do), forwards them, reports them or deletes them, offering only what
+  Telegram allows for every selected message. Back or the close button leaves selection mode, which also survives
+  turning the phone. With TalkBack, each message says whether it is selected and can be selected from its actions.
+- Report messages: "Report" in a message's actions (and in the selection toolbar) where Telegram allows it asks the
+  reasons Telegram offers, and a comment where it wants one, then thanks you once the report is sent.
+- Save to Downloads: documents, music, videos, GIFs and photos can be saved to your phone's Downloads folder (in a
+  Pingogram folder) from a message's actions, where the chat allows saving. A file that isn't on the phone yet
+  downloads first. A snackbar confirms it, with a button that opens the file. On Android 8 and 9 Pingogram asks for
+  storage access first.
 - Notifications for new messages, mentions, new secret chats and calls, while Pingogram is running. Each chat gets one
   notification that shows its latest messages with who sent them and their photos; media show as "Photo", "Voice
   message" and so on, and chats whose previews you turned off show "New message". Muted chats and exceptions work as

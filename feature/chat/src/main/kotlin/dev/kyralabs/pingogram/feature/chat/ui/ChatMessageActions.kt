@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
@@ -47,9 +48,11 @@ import kotlinx.coroutines.launch
  * - **Actions**: each asks for the properties again, as they change with time and screen readers start actions
  *   without the sheet, and does nothing but say so ([ChatEffect.ActionUnavailable]) where TDLib no longer allows it.
  *   Replying and editing go to the [composer], which takes the focus ([ChatEffect.FocusComposer]); copying goes out as
- *   [ChatEffect.CopyText]; forwarding opens the forward sheet through [onForward]; pinning, deleting (after the
- *   [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is forwarded and
- *   deleted, and its failed items resent, as a whole.
+ *   [ChatEffect.CopyText]; forwarding opens the forward sheet through [onForward]; selecting starts selection mode
+ *   through [onSelect], reporting the report sheet through [onReport], saving to Downloads goes to [onSave]; pinning,
+ *   deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is
+ *   forwarded, selected, reported, saved and deleted, and its failed items resent, as a whole. Selection mode deletes
+ *   its messages through [askDelete], and ends through [onSelectionDeleted] once they go.
  * - **Reactions** ([toggleReaction]), from the quick row, the picker or a bubble, go on or come off the message as the
  *   user had chosen them, without asking: TDLib refuses a reaction it does not offer.
  * - Failures go out as [ChatEffect.ShowError] snackbars.
@@ -66,6 +69,10 @@ internal class ChatMessageActions(
     private val current: suspend () -> ActionContext?,
     private val onEffect: (ChatEffect) -> Unit,
     private val onForward: (List<Message>) -> Unit = {},
+    private val onSelect: (List<Long>) -> Unit = {},
+    private val onReport: (List<Long>) -> Unit = {},
+    private val onSave: (List<Message>) -> Unit = {},
+    private val onSelectionDeleted: () -> Unit = {},
 ) {
     private val mutableSheet = MutableStateFlow<MessageActionsSheet?>(null)
     private val mutableDeleteDialog = MutableStateFlow<DeleteMessagesDialog?>(null)
@@ -164,14 +171,39 @@ internal class ChatMessageActions(
     /** Asks before deleting message [messageId], an album's every item, for whom TDLib allows. */
     fun delete(messageId: Long) =
         act(messageId, MessageAction.Delete) { context, message, properties ->
-            val ids = context.albumOf(message).map { it.id }.sorted()
-            mutableDeleteDialog.value = DeleteMessagesDialog(ids.toImmutableList(), context.deleteScope(properties))
+            val ids = context.albumOf(message).map { it.id }
+            askDelete(ids, context.deleteScope(listOf(properties)))
         }
+
+    /**
+     * Asks before deleting [messageIds] ([scope]: for whom TDLib allows it for every one of them), the selected
+     * messages if [fromSelection].
+     */
+    fun askDelete(
+        messageIds: List<Long>,
+        scope: DeleteScope,
+        fromSelection: Boolean = false,
+    ) {
+        mutableDeleteDialog.value = DeleteMessagesDialog(messageIds.sorted().toImmutableList(), scope, fromSelection)
+    }
+
+    /** Starts selection mode with message [messageId], an album's every item. */
+    fun select(messageId: Long) =
+        act(messageId, MessageAction.Select) { context, message, _ -> onSelect(context.albumOf(message).map { it.id }) }
+
+    /** Opens the report sheet for message [messageId], an album's every item. */
+    fun report(messageId: Long) =
+        act(messageId, MessageAction.Report) { context, message, _ -> onReport(context.albumOf(message).map { it.id }) }
+
+    /** Saves the file of message [messageId], an album's every file, to Downloads. */
+    fun saveToDownloads(messageId: Long) =
+        act(messageId, MessageAction.SaveToDownloads) { context, message, _ -> onSave(context.albumOf(message)) }
 
     /** Deletes what the dialog asked about: for everyone where it always is, or where its check box asked for it. */
     fun confirmDelete(forEveryone: Boolean) {
         val dialog = mutableDeleteDialog.value ?: return
         mutableDeleteDialog.value = null
+        if (dialog.fromSelection) onSelectionDeleted()
         val revoke =
             when (dialog.scope) {
                 DeleteScope.ForMe -> false
@@ -336,20 +368,23 @@ private val Sticker.pictureFileId: Int?
 
 /**
  * The latest state the actions depend on: the [chat], its loaded [history], the current user, and whether the user can
- * write in the chat ([canWrite]: the composer shows), which replying and editing need.
+ * write in the chat ([canWrite]: the composer shows), which replying and editing need; the [users] known, whose names
+ * copied messages take.
  */
 internal class ActionContext(
     val chat: Chat,
     val history: ChatHistory,
     val myUserId: Long?,
     val canWrite: Boolean,
+    val users: Map<Long, User> = emptyMap(),
 )
 
 /**
  * What the actions sheet offers for [message] with TDLib's [properties], in its order: sending a failed message again,
  * replying and editing where the user can write, copying a text or caption the chat lets be saved, forwarding where
- * TDLib allows it (never protected content), pinning or unpinning (also for the user alone in a private chat),
- * deleting.
+ * TDLib allows it (never protected content), pinning or unpinning (also for the user alone in a private chat), saving
+ * its file (an album's files) to Downloads where the chat lets it be saved, selecting, reporting where TDLib allows
+ * it, deleting.
  */
 internal fun ActionContext.actionsOf(
     message: Message,
@@ -362,6 +397,19 @@ internal fun ActionContext.actionsOf(
         if (properties.canBeForwarded) add(MessageAction.Forward)
         if (properties.canBeEdited && canWrite && message.editTarget != null) add(MessageAction.Edit)
         if (properties.canBePinned) addAll(pinActions(message))
+        addAll(laterActions(message, properties))
+    }
+
+/** Saving [message]'s files where the chat lets it be saved, selecting, reporting and deleting where TDLib allows. */
+private fun ActionContext.laterActions(
+    message: Message,
+    properties: MessageProperties,
+): List<MessageAction> =
+    buildList {
+        val hasFiles = albumOf(message).any { it.downloadsFile != null }
+        if (properties.canBeSaved && hasFiles) add(MessageAction.SaveToDownloads)
+        add(MessageAction.Select)
+        if (properties.canBeReported) add(MessageAction.Report)
         if (properties.canBeDeletedOnlyForSelf || properties.canBeDeletedForAllUsers) add(MessageAction.Delete)
     }
 
@@ -380,10 +428,15 @@ private val Message.canBeResent: Boolean get() = (sendingState as? SendingState.
 private val ActionContext.pinsForSelf: Boolean
     get() = (chat.type as? ChatType.Private)?.let { it.userId != myUserId } == true
 
-/** For whom [properties] let messages be deleted, and how the dialog offers it. */
-private fun ActionContext.deleteScope(properties: MessageProperties): DeleteScope =
-    when {
-        properties.canBeDeletedOnlyForSelf && properties.canBeDeletedForAllUsers -> {
+/**
+ * For whom messages with TDLib's [properties] can all be deleted, and how the dialog offers it: for everyone only where
+ * every one of them can be; for the user alone too where every one of them can be.
+ */
+internal fun ActionContext.deleteScope(properties: List<MessageProperties>): DeleteScope {
+    val forAll = properties.all { it.canBeDeletedForAllUsers }
+    val forSelf = properties.all { it.canBeDeletedOnlyForSelf }
+    return when {
+        forSelf && forAll -> {
             val option =
                 if (chat.type is ChatType.Private) {
                     UiText.resource(R.string.message_delete_also_for, UiText.Plain(chat.title))
@@ -393,7 +446,7 @@ private fun ActionContext.deleteScope(properties: MessageProperties): DeleteScop
             DeleteScope.Choice(option)
         }
 
-        properties.canBeDeletedForAllUsers -> {
+        forAll -> {
             DeleteScope.ForEveryone
         }
 
@@ -401,9 +454,10 @@ private fun ActionContext.deleteScope(properties: MessageProperties): DeleteScop
             DeleteScope.ForMe
         }
     }
+}
 
 /** The loaded items of [message]'s album, newest first, as its bubble shows them; the message alone if in none. */
-private fun ActionContext.albumOf(message: Message): List<Message> =
+internal fun ActionContext.albumOf(message: Message): List<Message> =
     itemUnits(history.messages).firstOrNull { it.contains(message.id) }?.messages ?: listOf(message)
 
 /** The message whose reactions [message]'s bubble shows: an album's newest. */

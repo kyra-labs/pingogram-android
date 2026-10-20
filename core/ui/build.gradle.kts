@@ -14,6 +14,9 @@ dependencies {
     // FileProvider, for the content URIs of TDLib files handed to other apps (file/TdlibFiles.kt). Already in the app
     // through Compose; the catalog pins the version it resolves to.
     implementation(libs.androidx.core)
+    // PredictiveBackHandler, for leaving selection mode with back (component/SelectionBack.kt). Already in the app and
+    // in the features that show selection mode.
+    implementation(libs.androidx.activity.compose)
 
     testImplementation(libs.kotlinx.coroutines.test)
 }

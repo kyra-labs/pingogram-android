@@ -112,9 +112,19 @@ internal class ChatForwarding(
             .flowOn(dispatcher)
             .stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
-    /** Opens the sheet for [messages] of the chat, those TDLib lets be forwarded, once TDLib told which they are. */
-    fun open(messages: List<Message>) {
+    /** What runs once the open sheet sends, the selection mode it was opened from ending; nothing by default. */
+    private var onSent: () -> Unit = {}
+
+    /**
+     * Opens the sheet for [messages] of the chat, those TDLib lets be forwarded, once TDLib told which they are;
+     * [onSent] runs when it sends them.
+     */
+    fun open(
+        messages: List<Message>,
+        onSent: () -> Unit = {},
+    ) {
         opening?.cancel()
+        this.onSent = onSent
         val toForward = messages.distinctBy { it.id }.sortedBy { it.id }.take(MessageActionRepository.MAX_FORWARDED)
         if (toForward.isEmpty()) return
         opening =
@@ -154,6 +164,7 @@ internal class ChatForwarding(
     /** Closes the sheet without forwarding. */
     fun dismiss() {
         opening?.cancel()
+        onSent = {}
         request.value = null
     }
 
@@ -209,6 +220,7 @@ internal class ChatForwarding(
             )
         // The title of the one chat, for the snackbar; its target is shown unless a search hides it.
         val single = targets.singleOrNull()?.let { id -> sheet.value?.targets?.firstOrNull { it.chatId == id } }
+        onSent()
         dismiss()
         scope.launch {
             var forwarded = 0
