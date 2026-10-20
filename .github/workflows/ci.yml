@@ -54,6 +54,21 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleFossDebug --stacktrace --no-daemon
 
+      # The debug APK of every push to main goes to the owner's channel (docs/RELEASE.md, "Channel uploads"); pull
+      # requests never post, and a channel problem never fails the build. Only arm64-v8a: a bot may send at most 50 MB,
+      # and the run's artifact has every ABI.
+      - name: Post debug APK to the channel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          caption="Pingogram debug ${GITHUB_SHA::7}"$'\n'"$(git log -1 --format=%s)"$'\n\n'
+          caption+="Debug build for arm64-v8a phones; it installs next to the release app. Every ABI: ${RUN_URL}"
+          tools/ci/telegram-publish.sh "$caption" app/build/outputs/apk/foss/debug/*-arm64-v8a-debug.apk
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:

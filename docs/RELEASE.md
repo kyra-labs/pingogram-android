@@ -60,6 +60,22 @@ at install instead of crashing when TDLib loads.
 Default flavor for GitHub releases is `foss`. A `gms` build is produced only if the owner
 enables it in the workflow input.
 
+## Channel uploads
+
+Builds also go to the owner's Telegram channel, posted by a bot through the Bot API (`tools/ci/telegram-publish.sh`,
+secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHANNEL_ID`, `docs/OWNER_SETUP.md` §4). Without the secrets nothing is
+posted, so forks build as before.
+
+- **Debug** (`ci.yml`): after `check` and the debug build of every push to `main`, the arm64-v8a debug APK, with the
+  commit and a link to the run, whose artifact has every ABI. Pull requests never post.
+- **Release** (`release.yml`): after the GitHub Release of a tag, the per-ABI release APKs and `SHA256SUMS.txt`, with
+  the version, whether it is a pre-release, the link to the GitHub Release and the changelog section (the caption is cut
+  at Telegram's 1024 characters).
+- A bot may send files of at most 50 MB: larger files (the universal APK, ~62 MB; debug APKs once they pass 50 MB) are
+  not attached, and the caption names them; they are on the GitHub Release or the CI run it links.
+- Both steps are `continue-on-error`: a Telegram outage or a wrong secret shows as a warning, never as a failed build
+  or release. The token is never printed or put on a command line.
+
 ## Release checklist
 
 1. `main` is green; `CHANGELOG.md` has an `## [Unreleased]` section with everything since the
