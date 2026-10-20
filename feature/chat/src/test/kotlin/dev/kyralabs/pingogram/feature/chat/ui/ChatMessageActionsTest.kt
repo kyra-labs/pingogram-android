@@ -108,6 +108,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
         forAll: Boolean = true,
         saved: Boolean = true,
         forwarded: Boolean = true,
+        reported: Boolean = false,
     ) {
         messageActions.onProperties = {
             Outcome.Success(
@@ -119,6 +120,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     canBeDeletedForAllUsers = forAll,
                     canBeSaved = saved,
                     canBeForwarded = forwarded,
+                    canBeReported = reported,
                 ),
             )
         }
@@ -155,6 +157,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Edit,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Select,
                         MessageAction.Delete,
                     ),
                     viewModel.sheet?.actions,
@@ -171,13 +174,19 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
                 assertEquals(
-                    listOf(MessageAction.Reply, MessageAction.Copy, MessageAction.Forward, MessageAction.Delete),
+                    listOf(
+                        MessageAction.Reply,
+                        MessageAction.Copy,
+                        MessageAction.Forward,
+                        MessageAction.Select,
+                        MessageAction.Delete,
+                    ),
                     viewModel.sheet?.actions,
                 )
             }
 
         @Test
-        fun `nothing allowed offers nothing`() =
+        fun `nothing allowed offers only selecting`() =
             runViewModelTest {
                 allowing(
                     replied = false,
@@ -192,7 +201,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
 
                 send(viewModel, ChatEvent.ShowMessageActions(2))
 
-                assertEquals(emptyList<MessageAction>(), viewModel.sheet?.actions)
+                assertEquals(listOf(MessageAction.Select), viewModel.sheet?.actions)
             }
 
         @Test
@@ -220,6 +229,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Forward,
                         MessageAction.Pin,
                         MessageAction.PinForSelf,
+                        MessageAction.Select,
                         MessageAction.Delete,
                     ),
                     viewModel.sheet?.actions,
@@ -240,6 +250,7 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                         MessageAction.Forward,
                         MessageAction.Edit,
                         MessageAction.Unpin,
+                        MessageAction.Select,
                         MessageAction.Delete,
                     ),
                     viewModel.sheet?.actions,
@@ -277,7 +288,13 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.ShowMessageActions(1))
 
                 assertEquals(
-                    listOf(MessageAction.Copy, MessageAction.Forward, MessageAction.Pin, MessageAction.Delete),
+                    listOf(
+                        MessageAction.Copy,
+                        MessageAction.Forward,
+                        MessageAction.Pin,
+                        MessageAction.Select,
+                        MessageAction.Delete,
+                    ),
                     viewModel.sheet?.actions,
                 )
             }

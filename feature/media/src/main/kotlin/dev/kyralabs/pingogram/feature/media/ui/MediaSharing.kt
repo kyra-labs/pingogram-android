@@ -4,8 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.domain.model.FileState
-import dev.kyralabs.pingogram.feature.media.ui.files.GalleryItem
-import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.CoroutineScope
@@ -33,13 +33,13 @@ import kotlinx.coroutines.launch
  *   A tap while it downloads waits for it, with the download's progress on the button; turning the page drops the
  *   wait. A file TDLib cannot download, or a failed download ([onDownloadFailed]), ends it.
  * - **Share** goes out as [MediaViewerEffect.ShareFile], which the screen hands to the system's share sheet.
- * - **Save** copies the file into the gallery ([MediaFileActions.saveToGallery]), then a snackbar says how that went.
- *   On Android 8–9 the storage permission comes first ([permission]).
+ * - **Save** copies the file into the gallery ([SharedStorageRepository.saveToGallery]), then a snackbar says how that
+ *   went. On Android 8–9 the storage permission comes first ([permission]).
  */
 internal class MediaSharing(
     private val canBeSaved: suspend (messageId: Long) -> Outcome<Boolean>,
     isProtected: Flow<Boolean>,
-    private val fileActions: MediaFileActions,
+    private val sharedStorage: SharedStorageRepository,
     savedStateHandle: SavedStateHandle,
     private val scope: CoroutineScope,
     private val effects: SendChannel<MediaViewerEffect>,
@@ -103,7 +103,7 @@ internal class MediaSharing(
     fun start(action: MediaAction) {
         val target = current?.takeIf { canSave(it.messageId) } ?: return
         if (pending.value != null) return
-        if (action == MediaAction.Save && fileActions.needsStoragePermission()) {
+        if (action == MediaAction.Save && sharedStorage.needsStoragePermission()) {
             permission.ask(target.messageId)
         } else {
             pending.value = Pending(target.messageId, action)
@@ -177,7 +177,7 @@ internal class MediaSharing(
                 pending.value = waiting.copy(isRunning = true)
                 scope.launch {
                     val name = "$GALLERY_NAME_PREFIX${target.messageId}"
-                    val saved = fileActions.saveToGallery(GalleryItem(path, media.fallbackMimeType, name))
+                    val saved = sharedStorage.saveToGallery(SharedFile(path, media.fallbackMimeType, name))
                     pending.value = null
                     effects.trySend(if (saved) MediaViewerEffect.SavedToGallery else MediaViewerEffect.SaveFailed)
                 }

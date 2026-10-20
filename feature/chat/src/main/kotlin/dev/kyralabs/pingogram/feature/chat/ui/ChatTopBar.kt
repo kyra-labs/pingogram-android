@@ -1,5 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -37,6 +44,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
+ *
+ * In selection mode ([selectedCount] not null, §6 "Selection mode") the same bar shows "3 selected" in `titleLarge`
+ * with a close button that leaves it ([onClearSelection]) in place of back, the titles cross-fading on the motion
+ * scheme's effects springs; screen readers hear the count change.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,18 +55,43 @@ internal fun ChatTopBar(
     header: ChatHeader?,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    selectedCount: Int? = null,
+    onClearSelection: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
+    val motionScheme = MaterialTheme.motionScheme
     TopAppBar(
-        title = { header?.let { ChatTitle(it) } },
+        title = {
+            AnimatedContent(
+                targetState = selectedCount,
+                transitionSpec = {
+                    fadeIn(motionScheme.defaultEffectsSpec()) togetherWith fadeOut(motionScheme.fastEffectsSpec())
+                },
+                contentKey = { it != null },
+                label = "chatTitle",
+            ) { count ->
+                if (count != null) SelectionTitle(count) else header?.let { ChatTitle(it) }
+            }
+        },
         modifier = modifier,
         navigationIcon = {
-            if (onBack != null) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.chat_back),
-                    )
+            when {
+                selectedCount != null -> {
+                    IconButton(onClick = onClearSelection) {
+                        Icon(
+                            painter = painterResource(UiR.drawable.ic_close),
+                            contentDescription = stringResource(R.string.selection_clear),
+                        )
+                    }
+                }
+
+                onBack != null -> {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painter = painterResource(UiR.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.chat_back),
+                        )
+                    }
                 }
             }
         },
@@ -75,6 +111,21 @@ private fun titleHeight(): Dp {
     val lines =
         with(LocalDensity.current) { typography.titleMedium.lineHeight.toDp() + typography.bodySmall.lineHeight.toDp() }
     return max(TopAppBarDefaults.TopAppBarExpandedHeight, lines + MaterialTheme.spacing.large)
+}
+
+/** "3 selected", a heading whose changes screen readers announce. */
+@Composable
+private fun SelectionTitle(count: Int) {
+    Text(
+        text = LocalResources.current.getQuantityString(R.plurals.selection_count, count, count),
+        modifier =
+            Modifier.semantics {
+                heading()
+                liveRegion = LiveRegionMode.Polite
+            },
+        maxLines = 1,
+        style = MaterialTheme.typography.titleLarge,
+    )
 }
 
 /** The avatar beside the name and the subtitle; one heading for screen readers. */

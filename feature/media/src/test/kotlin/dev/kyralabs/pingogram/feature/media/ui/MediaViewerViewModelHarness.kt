@@ -35,7 +35,7 @@ abstract class MediaViewerViewModelHarness {
     protected val users = FakeUserRepository()
     protected val chats = FakeChatRepository()
     internal val player = FakeVideoPlayer()
-    protected val fileActions = FakeMediaFileActions()
+    protected val sharedStorage = FakeSharedStorageRepository()
 
     /** The view models the test made, cleared when it ends. */
     private val created = mutableListOf<MediaViewerViewModel>()
@@ -69,7 +69,7 @@ abstract class MediaViewerViewModelHarness {
                 applicationScope = backgroundScope,
                 locale = { Locale.US },
                 videoPlayer = player,
-                fileActions = fileActions,
+                sharedStorage = sharedStorage,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

@@ -117,6 +117,10 @@ class PingogramColorsTest {
             assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.content)
             assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.secondaryContent)
             assertEquals(scheme.surfaceContainerLow, colors.outgoingBubble.block)
+            assertEquals(scheme.secondaryContainer, colors.selectedBubble.container)
+            assertEquals(scheme.onSecondaryContainer, colors.selectedBubble.content)
+            assertEquals(scheme.onSecondaryContainer, colors.selectedBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerLow, colors.selectedBubble.block)
             listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
                 assertEquals(scheme.primary, bubble.accent)
                 assertEquals(scheme.onPrimary, bubble.onAccent)
@@ -143,7 +147,7 @@ class PingogramColorsTest {
     ) {
         val colors = pingogramColors(brandColorScheme(dark, contrast), dark)
 
-        listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
+        listOf(colors.incomingBubble, colors.outgoingBubble, colors.selectedBubble).forEach { bubble ->
             listOf(bubble.accent, bubble.correct, bubble.wrong).forEach { accent ->
                 assertTrue(accent.contrastWith(bubble.container) >= 3f, "$accent on ${bubble.container}")
             }

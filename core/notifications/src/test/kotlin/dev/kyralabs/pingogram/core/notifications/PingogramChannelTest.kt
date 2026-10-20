@@ -2,6 +2,8 @@ package dev.kyralabs.pingogram.core.notifications
 
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
+import dev.kyralabs.pingogram.core.domain.model.notificationScope
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -46,5 +48,31 @@ class PingogramChannelTest {
         val ids = PingogramChannel.entries.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
         assertTrue(ids.none { it.contains("telegram", ignoreCase = true) })
+    }
+
+    @Test
+    fun `a scope's channel is the one its chats' messages go to`() {
+        val types =
+            listOf(
+                ChatType.Private(1),
+                ChatType.Secret(secretChatId = 2, userId = 1),
+                ChatType.BasicGroup(3),
+                ChatType.Supergroup(4, isChannel = false),
+                ChatType.Supergroup(5, isChannel = true),
+            )
+
+        for (type in types) {
+            assertEquals(
+                PingogramChannel.of(NotificationGroupType.Messages, type),
+                PingogramChannel.of(type.notificationScope),
+            )
+        }
+        assertEquals(
+            NotificationScope.entries.size,
+            NotificationScope.entries
+                .map { PingogramChannel.of(it) }
+                .toSet()
+                .size,
+        )
     }
 }

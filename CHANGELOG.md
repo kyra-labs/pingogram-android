@@ -10,6 +10,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
+  or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
+  shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
+  sent them and when, as the official apps do), forwards them, reports them or deletes them, offering only what
+  Telegram allows for every selected message. Back or the close button leaves selection mode, which also survives
+  turning the phone. With TalkBack, each message says whether it is selected and can be selected from its actions.
+- Report messages: "Report" in a message's actions (and in the selection toolbar) where Telegram allows it asks the
+  reasons Telegram offers, and a comment where it wants one, then thanks you once the report is sent.
+- Save to Downloads: documents, music, videos, GIFs and photos can be saved to your phone's Downloads folder (in a
+  Pingogram folder) from a message's actions, where the chat allows saving. A file that isn't on the phone yet
+  downloads first. A snackbar confirms it, with a button that opens the file. On Android 8 and 9 Pingogram asks for
+  storage access first.
 - Notifications for new messages, mentions, new secret chats and calls, while Pingogram is running. Each chat gets one
   notification that shows its latest messages with who sent them and their photos; media show as "Photo", "Voice
   message" and so on, and chats whose previews you turned off show "New message". Muted chats and exceptions work as
@@ -21,6 +33,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   notification shade, where you can make one a priority conversation.
 - On Android 13 and later, the chat list explains why Pingogram asks to show notifications before it asks. Choose
   "Not now" and it won't ask again; if you refused before, it offers your device's notification settings instead.
+- Settings → Notifications: turn notifications and message previews on or off for private chats, groups and
+  channels, choose whether mentions and replies notify in muted groups and whether pinned messages notify, and open
+  each kind's sound and vibration in your device's settings. These settings belong to your Telegram account, so they
+  apply on your other devices too. Exceptions lists the chats with settings of their own and whether they are muted
+  (and until when); tap one to mute it for an hour, 8 hours, a day or for good, unmute it or let it follow the default
+  again. "Reset all notification settings" restores everything after asking. If your device blocks Pingogram's
+  notifications, the page says so at the top and helps you turn them back on.
+- "Keep connected" (GitHub and F-Droid builds, off by default): keeps Pingogram connected in the background, so new
+  messages notify at once, at the cost of some battery. A quiet notification shows while it is on, with "Turn off".
+  It starts again after your device restarts, but only if you turned it on, and stops when you log out.
 - Sponsored messages: channels and chats with bots show Telegram's sponsored messages as a card labelled
   "Sponsored" (or "Recommended" for a recommended channel) below the newest posts, with the advertiser's button.
   Tap the button, a link or the picture to open it. The info button shows "About this ad": who placed it and more

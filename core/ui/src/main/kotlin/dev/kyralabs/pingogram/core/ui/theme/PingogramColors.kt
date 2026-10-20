@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.luminance
  * @property online presence dot for online users: Material green harmonized toward `primary`.
  * @property incomingBubble a message bubble of someone else and the content in it.
  * @property outgoingBubble a message bubble of the current user and the content in it.
+ * @property selectedBubble a selected message bubble of either side, in selection mode, and the content in it.
  * @property mediaOverlay behind labels and badges drawn on photos and videos (a duration, a play badge): `scrim`,
  *   translucent, so the picture shows through while the label stays legible.
  * @property onMediaOverlay text and icons on [mediaOverlay]: a near-white role (`inverseOnSurface` in light theme,
@@ -26,6 +27,7 @@ data class PingogramColors(
     val online: Color,
     val incomingBubble: BubbleColors,
     val outgoingBubble: BubbleColors,
+    val selectedBubble: BubbleColors,
     val mediaOverlay: Color,
     val onMediaOverlay: Color,
 )
@@ -38,12 +40,14 @@ data class PingogramColors(
  * wherever they keep 3:1 against [container]; where they do not, as on `primaryContainer` in the medium and high
  * contrast schemes, they fall back to [content], so every contrast level stays legible (§9).
  *
- * @property container the bubble: `surfaceContainerHigh` incoming, `primaryContainer` outgoing.
- * @property content text and icons on [container]: `onSurface` incoming, `onPrimaryContainer` outgoing.
+ * @property container the bubble: `surfaceContainerHigh` incoming, `primaryContainer` outgoing, `secondaryContainer`
+ *   selected.
+ * @property content text and icons on [container]: `onSurface` incoming, `onPrimaryContainer` outgoing,
+ *   `onSecondaryContainer` selected.
  * @property secondaryContent the time, "edited", "Forwarded from …": `onSurfaceVariant` incoming,
- *   `onPrimaryContainer` outgoing.
+ *   `onPrimaryContainer` outgoing, `onSecondaryContainer` selected.
  * @property block reply quotes, link previews and reactions inside the bubble, a tone that stands out from
- *   [container]: `surfaceContainerHighest` incoming, `surfaceContainerLow` outgoing.
+ *   [container]: `surfaceContainerHighest` incoming, `surfaceContainerLow` outgoing and selected.
  * @property blockContent the text in a [block]: `onSurfaceVariant`.
  * @property accent play buttons, the played part of a voice message's waveform, poll bars, progress, the chosen
  *   answer of a poll, the circles behind content icons.
@@ -97,6 +101,18 @@ internal fun pingogramColors(
                         container = colorScheme.primaryContainer,
                         content = colorScheme.onPrimaryContainer,
                         secondaryContent = colorScheme.onPrimaryContainer,
+                        block = colorScheme.surfaceContainerLow,
+                    ),
+                green = green,
+            ),
+        selectedBubble =
+            bubbleColors(
+                colorScheme = colorScheme,
+                roles =
+                    BubbleRoles(
+                        container = colorScheme.secondaryContainer,
+                        content = colorScheme.onSecondaryContainer,
+                        secondaryContent = colorScheme.onSecondaryContainer,
                         block = colorScheme.surfaceContainerLow,
                     ),
                 green = green,
