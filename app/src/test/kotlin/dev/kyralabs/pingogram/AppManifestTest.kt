@@ -23,9 +23,10 @@ import org.robolectric.annotation.Config
  * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
  * 2026-10-20); RECORD_AUDIO records voice messages (approved 2026-10-20), without requiring a microphone
  * of the device; ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
- * (approved 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
- * service before Android 12 only, so they stop at API 30, and its RECEIVE_BOOT_COMPLETED is left out, except in the
- * foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
+ * (approved 2026-10-20); WorkManager's WAKE_LOCK runs notification actions as a foreground service before Android 12
+ * only, so it stops at API 30; FOREGROUND_SERVICE and FOREGROUND_SERVICE_DATA_SYNC run the transfers the user started
+ * in WorkManager's foreground service of type dataSync (approved 2026-10-20); WorkManager's RECEIVE_BOOT_COMPLETED is
+ * left out, except in the foss flavor, whose "Keep connected" service needs its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
  * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
@@ -59,6 +60,8 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.USE_BIOMETRIC,
                 Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.FOREGROUND_SERVICE,
+                Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
                 Manifest.permission.ACCESS_NETWORK_STATE,
             ) + FlavorManifest.requestedPermissions,
             requested,
@@ -82,6 +85,8 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.USE_BIOMETRIC to "",
                 Manifest.permission.RECORD_AUDIO to "",
+                Manifest.permission.FOREGROUND_SERVICE to "",
+                Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
@@ -133,6 +138,23 @@ class AppManifestTest {
                 .single { it.androidAttribute("name").endsWith(".NotificationActionReceiver") }
 
         assertFalse("androidx.work.WorkManagerInitializer" in initializers)
+        assertEquals("false", receiver.androidAttribute("exported"))
+    }
+
+    @Test
+    fun `transfers run in WorkManager's foreground service of type dataSync, cancelled only by the app`() {
+        val manifest = mergedManifest()
+        val service =
+            manifest
+                .elements("service")
+                .single { it.androidAttribute("name") == "androidx.work.impl.foreground.SystemForegroundService" }
+        val receiver =
+            manifest
+                .elements("receiver")
+                .single { it.androidAttribute("name").endsWith(".TransferCancelReceiver") }
+
+        assertEquals("dataSync", service.androidAttribute("foregroundServiceType"))
+        assertEquals("false", service.androidAttribute("exported"))
         assertEquals("false", receiver.androidAttribute("exported"))
     }
 

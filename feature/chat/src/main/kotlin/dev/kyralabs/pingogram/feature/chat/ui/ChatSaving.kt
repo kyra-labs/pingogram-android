@@ -123,7 +123,7 @@ internal class ChatSaving(
 
     /** Downloads file [fileId]: its path once it is on the device; null if the download fails or stops. */
     private suspend fun download(fileId: Int): String? {
-        if (files.download(fileId, DownloadPriority.Visible) is Outcome.Failure) return null
+        if (files.download(fileId, DownloadPriority.Requested) is Outcome.Failure) return null
         var wasActive = false
         return files
             .observe(fileId)

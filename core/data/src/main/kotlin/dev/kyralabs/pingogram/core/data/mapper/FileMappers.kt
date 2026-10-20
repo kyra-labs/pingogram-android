@@ -50,7 +50,7 @@ internal fun TdApi.File.toFileUpload(): FileUpload =
 internal val DownloadPriority.tdlibPriority: Int
     get() =
         when (this) {
-            DownloadPriority.Visible -> VISIBLE_PRIORITY
+            DownloadPriority.Visible, DownloadPriority.Requested -> VISIBLE_PRIORITY
             DownloadPriority.Prefetch -> PREFETCH_PRIORITY
             DownloadPriority.Background -> BACKGROUND_PRIORITY
         }

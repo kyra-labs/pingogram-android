@@ -1,10 +1,12 @@
 package dev.kyralabs.pingogram.core.notifications
 
+import androidx.core.app.NotificationManagerCompat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.notificationScope
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -48,6 +50,15 @@ class PingogramChannelTest {
         val ids = PingogramChannel.entries.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
         assertTrue(ids.none { it.contains("telegram", ignoreCase = true) })
+    }
+
+    @Test
+    fun `transfers have a quiet channel of their own, without badge`() {
+        val transfers = PingogramChannel.Transfers
+
+        assertEquals("transfers", transfers.id)
+        assertEquals(NotificationManagerCompat.IMPORTANCE_LOW, transfers.importance)
+        assertFalse(transfers.showBadge)
     }
 
     @Test

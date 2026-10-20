@@ -11,6 +11,8 @@
     <string name="notification_channel_calls_description">Incoming calls</string>
     <string name="notification_channel_other">Other</string>
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
+    <string name="notification_channel_transfers">Transfers</string>
+    <string name="notification_channel_transfers_description">Progress of the files you send and download</string>
 
     <!-- Notification texts. -->
     <!-- Shown instead of a message when the chat's settings hide message previews. -->
@@ -33,4 +35,24 @@
     <string name="notification_mark_as_read">Mark as read</string>
     <!-- Shown briefly on older Android versions while a reply is sent or messages are marked as read. -->
     <string name="notification_working">Updating your chats…</string>
+
+    <!-- The progress notification of the files the user sends and downloads (FR-N4), while they are on their way. -->
+    <plurals name="transfer_sending">
+        <item quantity="one">Sending %d file</item>
+        <item quantity="other">Sending %d files</item>
+    </plurals>
+    <plurals name="transfer_downloading">
+        <item quantity="one">Downloading %d file</item>
+        <item quantity="other">Downloading %d files</item>
+    </plurals>
+    <plurals name="transfer_sending_and_downloading">
+        <item quantity="one">Sending and downloading %d file</item>
+        <item quantity="other">Sending and downloading %d files</item>
+    </plurals>
+    <!-- How much has been transferred, e.g. "1.2 MB of 4.5 MB". -->
+    <string name="transfer_progress">%1$s of %2$s</string>
+    <!-- The percentage of a transfer, short enough for the status bar chip of a Live Update (Android 16). -->
+    <string name="transfer_percent">%d%%</string>
+    <!-- Cancels every transfer: downloads stop, messages being sent are deleted. -->
+    <string name="transfer_cancel">Cancel</string>
 </resources>

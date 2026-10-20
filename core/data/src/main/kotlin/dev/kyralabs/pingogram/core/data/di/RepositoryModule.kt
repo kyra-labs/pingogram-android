@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
@@ -63,6 +64,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
+import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
@@ -92,6 +94,9 @@ interface RepositoryModule {
 
     @Binds
     fun fileRepository(repository: TdlibFileRepository): FileRepository
+
+    @Binds
+    fun transferRepository(repository: TdlibTransferRepository): TransferRepository
 
     @Binds
     fun chatRepository(repository: TdlibChatRepository): ChatRepository
