@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -79,7 +80,7 @@ internal fun ChatTopBar(
         navigationIcon = {
             when {
                 selectedCount != null -> {
-                    IconButton(onClick = onClearSelection) {
+                    IconButton(onClick = onClearSelection, shapes = IconButtonDefaults.shapes()) {
                         Icon(
                             painter = painterResource(UiR.drawable.ic_close),
                             contentDescription = stringResource(R.string.selection_clear),
@@ -88,7 +89,7 @@ internal fun ChatTopBar(
                 }
 
                 onBack != null -> {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                         Icon(
                             painter = painterResource(UiR.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.chat_back),

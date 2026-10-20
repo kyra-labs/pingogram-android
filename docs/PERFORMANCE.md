@@ -26,7 +26,8 @@ regresses by more than 10%.
 
 - `SplashScreen` API; keep the splash until `TdlibClient` reaches `Ready`/`WaitPhoneNumber` and the
   Appearance settings are read from DataStore (a few ms), **or** 300 ms, whichever is first; then
-  render cached chats immediately.
+  render cached chats immediately. The splash's exit animation (`docs/DESIGN_SYSTEM.md` §8) runs over the app's first
+  frame and holds nothing back; the splash theme for the next start is handed to the system off the main thread.
 - Hilt: `@Singleton` only for `TdlibClient`, repositories and DataStore; everything else
   scoped. No heavy work in `Application.onCreate()`; use `App Startup` initializers that are
   lazy except TDLib. WorkManager starts on demand (its App Startup initializer is removed; `PingogramApplication` is

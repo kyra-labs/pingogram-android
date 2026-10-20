@@ -32,6 +32,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -216,7 +217,7 @@ private fun SearchField(
         modifier = modifier,
         placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = {
-            IconButton(onClick = onBack) {
+            IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_arrow_back),
                     contentDescription = stringResource(R.string.search_back),
@@ -226,7 +227,7 @@ private fun SearchField(
         trailingIcon =
             if (hasText) {
                 {
-                    IconButton(onClick = onClear) {
+                    IconButton(onClick = onClear, shapes = IconButtonDefaults.shapes()) {
                         Icon(
                             painter = painterResource(UiR.drawable.ic_close),
                             contentDescription = stringResource(R.string.search_clear),

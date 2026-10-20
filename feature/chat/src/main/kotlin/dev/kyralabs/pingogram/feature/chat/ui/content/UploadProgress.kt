@@ -74,7 +74,11 @@ internal fun UploadRing(
                 trackColor = trackColor,
             )
         }
-        IconButton(onClick = onCancel, colors = IconButtonDefaults.iconButtonColors(contentColor = color)) {
+        IconButton(
+            onClick = onCancel,
+            shapes = IconButtonDefaults.shapes(),
+            colors = IconButtonDefaults.iconButtonColors(contentColor = color),
+        ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_close),
                 contentDescription = stringResource(R.string.attach_cancel_upload),

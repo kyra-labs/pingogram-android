@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash screen backgrounds (docs/DESIGN_SYSTEM.md §8): the background of the scheme the app starts in, one per
+         splash screen theme (themes.xml, SplashScreenThemes.kt). The dynamic ones follow the wallpaper on Android 12+
+         (values-v31, values-v34); before, the app's scheme is the brand's, and so are they. -->
+    <color name="splash_dynamic_light">@color/brand_background_light</color>
+    <color name="splash_dynamic_dark">@color/brand_background_dark</color>
+    <color name="splash_black">#FF000000</color>
+    <!-- The theme mode "System": light here, dark in values-night. -->
+    <color name="splash_dynamic">@color/splash_dynamic_light</color>
+    <color name="splash_dynamic_amoled">@color/splash_dynamic_light</color>
+    <color name="splash_brand_amoled">@color/brand_background_light</color>
+</resources>

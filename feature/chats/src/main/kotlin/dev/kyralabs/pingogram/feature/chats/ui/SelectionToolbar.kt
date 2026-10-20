@@ -16,6 +16,7 @@ import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -59,7 +60,7 @@ internal fun SelectionToolbar(
                 tooltip = { PlainTooltip { Text(label) } },
                 state = rememberTooltipState(),
             ) {
-                IconButton(onClick = { onAction(action) }) {
+                IconButton(onClick = { onAction(action) }, shapes = IconButtonDefaults.shapes()) {
                     Icon(painter = painterResource(action.icon), contentDescription = label)
                 }
             }

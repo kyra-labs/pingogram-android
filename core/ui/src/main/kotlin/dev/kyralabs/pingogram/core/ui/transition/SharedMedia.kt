@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.core.ui.transition
 
-import android.animation.ValueAnimator
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.EnterExitState
@@ -221,14 +220,6 @@ internal fun viewerCounterpart(
     shapes: SharedMediaShapes?,
     messageId: Long,
 ): () -> CornerBasedShape = { shapes?.get(messageId) ?: FullBleedShape }
-
-/**
- * Whether the system asks for reduced motion: animations are off (an animator duration scale of 0, which Compose
- * applies to every animation by ending it at once). Content that moves in ways that carry no information, such as a
- * container transform, steps aside then (`docs/DESIGN_SYSTEM.md` §5).
- */
-@Composable
-fun isReducedMotion(): Boolean = remember { !ValueAnimator.areAnimatorsEnabled() }
 
 /** What the two sides of a container transform of message [messageId] share. */
 @Immutable

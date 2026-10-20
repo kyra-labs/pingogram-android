@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +50,7 @@ internal fun PagesState(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            TextButton(onClick = onRetry) {
+            TextButton(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.chat_retry), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         } else {
@@ -86,7 +87,7 @@ internal fun ChatError(
         containerColor = MaterialTheme.colorScheme.errorContainer,
         iconColor = MaterialTheme.colorScheme.onErrorContainer,
         action = {
-            Button(onClick = onRetry) {
+            Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.chat_retry), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         },
