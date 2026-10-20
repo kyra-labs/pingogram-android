@@ -81,6 +81,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Containers**: with two panes, each is its own rounded container on the window's `surfaceContainer`
  *   ([paneContainer]), and a drag handle between them resizes the list ([PaneDragHandle]) between Material's fixed
  *   widths and an even split. The width is saved with the scaffold, so it survives rotation and process death.
+ * - **New chat**: the list's "New chat" button, at the bottom end of the list pane, opens [onOpenNewChat], pushed
+ *   above the whole layout as the archive is.
  * - **Motion**: the scaffold's pane motion; panes that stay change their bounds on the slow spatial spring, as large
  *   layout changes do (§5).
  */
@@ -90,6 +92,7 @@ internal fun ChatsListDetail(
     onOpenArchive: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
+    onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigator =
@@ -119,6 +122,7 @@ internal fun ChatsListDetail(
                     onOpenChat = { chatId ->
                         if (twoPanes) navigator.show(chatId, scope) else onOpenChat(chatId)
                     },
+                    onOpenNewChat = onOpenNewChat,
                     openChatId = shownChatId,
                 )
             }

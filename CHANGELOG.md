@@ -64,6 +64,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
   or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
   it, and when you forwarded to one other chat, opens that chat.
+- A "New chat" button on the chat list. It shrinks to an icon while you scroll down and grows back when you scroll
+  up, and opens a New chat screen that grows out of it, with your contacts to start a conversation with. New group,
+  New channel and New contact are listed there and come in a later version. An empty chat list offers the same
+  button.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a

@@ -30,6 +30,12 @@ interface SearchRepository {
     suspend fun searchContacts(query: String): Outcome<ImmutableList<Chat>>
 
     /**
+     * Every contact of the user as its private chat, as [searchContacts] finds them, sorted by name: the people the
+     * New chat screen offers to write to (`REQUIREMENTS.md` FR-L7). A contact whose chat cannot be read is left out.
+     */
+    suspend fun contacts(): Outcome<ImmutableList<Chat>>
+
+    /**
      * Public chats, channels and users whose username or title matches [query], outside the user's chats and
      * contacts: the "Global search" of the official apps.
      */

@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -77,8 +78,44 @@ class ChatListRecompositionTest {
         // The bar is pinned: the list scrolled under it and stayed where it was.
         assertEquals(barBottom, list.fetchSemanticsNode().boundsInRoot.top)
         assertTrue("${listState.firstVisibleItemIndex}", listState.firstVisibleItemIndex > 0)
-        // The bar takes the scroll through its scroll behavior, read in the layout and draw phases.
-        assertEquals(emptyList<String>(), counter.recomposedOwnFunctions)
+        // The bar takes the scroll through its scroll behavior, read in the layout and draw phases. Only the "New
+        // chat" button composes again, as it collapses (`dragging the list back and forth…` counts it).
+        assertEquals(
+            emptyList<String>(),
+            counter.recomposedOwnFunctions.filterNot { it.endsWith(NEW_CHAT_BUTTON) },
+        )
+    }
+
+    @Test
+    fun `dragging the list back and forth recomposes the New chat button once per direction, and nothing else`() {
+        setScreen(connection = ConnectionStatus.Ready)
+        val list = composeRule.onNodeWithTag(CHAT_LIST_TEST_TAG)
+        // The counter sees a composable compose again only from its second time on: collapse and expand it once.
+        dragBackAndForth(list)
+        counter.reset()
+
+        dragBackAndForth(list)
+
+        // Collapsed on the way down, expanded on the way back: two recompositions in 60 frames of dragging.
+        assertEquals(
+            listOf(NEW_CHAT_BUTTON, NEW_CHAT_BUTTON),
+            counter.recomposedOwnFunctions.map { it.substringAfterLast('.') },
+        )
+    }
+
+    /** Drags [list] towards its end for [DRAG_FRAMES] frames, then halfway back, and lets it settle. */
+    private fun dragBackAndForth(list: SemanticsNodeInteraction) {
+        list.performTouchInput { down(center) }
+        repeat(DRAG_FRAMES) {
+            list.performTouchInput { moveBy(Offset(0f, -DRAG_STEP)) }
+            frame()
+        }
+        repeat(DRAG_FRAMES) {
+            list.performTouchInput { moveBy(Offset(0f, DRAG_STEP / 2)) }
+            frame()
+        }
+        list.performTouchInput { up() }
+        repeat(SETTLE_FRAMES) { frame() }
     }
 
     @Test
@@ -168,5 +205,6 @@ class ChatListRecompositionTest {
         const val SETTLE_FRAMES = 60
         const val SCREEN_KEY = "chats"
         const val CHAT_LIST_TEST_TAG = "chat_list"
+        const val NEW_CHAT_BUTTON = "NewChatButton"
     }
 }
