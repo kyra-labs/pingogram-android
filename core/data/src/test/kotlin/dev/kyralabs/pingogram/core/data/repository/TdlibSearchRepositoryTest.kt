@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -292,6 +293,43 @@ class TdlibSearchRepositoryTest {
             assertEquals(listOf(2L), page.messages.map { it.message.id })
             // Each chat is read once per page.
             assertEquals(1, client.sentOf<TdApi.GetChat>().count { it.chatId == UNKNOWN_CHAT })
+        }
+
+    @Test
+    fun `photos and videos, and links, are searched with TDLib's filters`() =
+        runTest {
+            client.on(TdApi.SearchMessages::class) {
+                TdResult.Success(TdApi.FoundMessages(1, arrayOf(message(id = 7, chatId = 1)), ""))
+            }
+            val repository = repository()
+
+            val media = repository.searchMessages("cat", offset = null, MessageSearchFilter.PhotoAndVideo).page()
+            repository.searchMessages("cat", offset = null, MessageSearchFilter.Url)
+
+            assertEquals(listOf(7L), media.messages.map { it.message.id })
+            val (photos, links) = client.sentOf<TdApi.SearchMessages>()
+            assertTrue(photos.filter is TdApi.SearchMessagesFilterPhotoAndVideo)
+            assertEquals("cat", photos.query)
+            assertTrue(links.filter is TdApi.SearchMessagesFilterUrl)
+        }
+
+    @Test
+    fun `a blank query finds every photo and video, or every link, but no messages without a filter`() =
+        runTest {
+            client.on(TdApi.SearchMessages::class) {
+                TdResult.Success(TdApi.FoundMessages(1, arrayOf(message(id = 7, chatId = 1)), "o"))
+            }
+            val repository = repository()
+
+            val media = repository.searchMessages(" ", offset = null, MessageSearchFilter.PhotoAndVideo).page()
+            val links = repository.searchMessages("", offset = "o", MessageSearchFilter.Url).page()
+            val all = repository.searchMessages("", offset = null, MessageSearchFilter.All).page()
+
+            assertEquals(listOf(7L), media.messages.map { it.message.id })
+            assertEquals(listOf(7L), links.messages.map { it.message.id })
+            assertTrue(all.messages.isEmpty())
+            assertEquals(listOf("", ""), client.sentOf<TdApi.SearchMessages>().map { it.query })
+            assertEquals("o", client.sentOf<TdApi.SearchMessages>().last().offset)
         }
 
     @Test

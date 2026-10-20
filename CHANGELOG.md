@@ -78,8 +78,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
   After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
   remove it. Changing or turning off the passcode asks for it first.
+- Search filters: chips under the search field narrow the results to chats, contacts, messages, media (photos and
+  videos) or links. Media and Links also work without typing anything, showing every photo and video or every link
+  in your chats.
+- On tablets and other wide screens, search opens in the chat list's place next to the conversation, and a chat or
+  message you find opens beside it. Back closes that conversation first, then search.
 
 ### Changed
+- Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
+  under the search field replaces the loading animations in every section, a section that failed shows its error in
+  a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
   shaped icon, which turns into a warning sign when something needs fixing or Telegram asks you to wait. "Next" is a
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot

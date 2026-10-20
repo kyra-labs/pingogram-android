@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.supergroup
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import dev.kyralabs.pingogram.feature.chats.ui.FakeSearchRepository.Companion.found
 import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.DEBOUNCE_MILLIS
+import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.KEY_FILTER
 import dev.kyralabs.pingogram.feature.chats.ui.SearchViewModel.Companion.KEY_QUERY
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -528,6 +529,119 @@ class SearchViewModelTest {
             val highlight = searching("ada LOV").results.highlight
 
             assertEquals(listOf(0..2, 4..6), highlight.ranges("Ada Lovelace"))
+        }
+
+    // Filters
+
+    @Test
+    fun `the filter starts at All and searches every section`() =
+        runTest {
+            val viewModel = searching("ada")
+
+            assertEquals(SearchFilter.All, viewModel.uiState.value.filter)
+            assertEquals(SearchFilter.All, viewModel.results.filter)
+            assertEquals(
+                listOf("chats:ada", "contacts:ada", "messages:ada:null", "public:ada"),
+                search.calls.filterNot { it == "top" || it == "recents" }.sorted(),
+            )
+        }
+
+    @Test
+    fun `a filter searches the query again at once, only in its sections`() =
+        runTest {
+            search.onSearchChats = { flowOf(found(chat(2))) }
+            val viewModel = searching("ada")
+            search.calls.clear()
+
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Contacts))
+
+            assertEquals(SearchFilter.Contacts, viewModel.uiState.value.filter)
+            assertEquals(listOf("contacts:ada"), search.calls)
+            val results = viewModel.results
+            assertEquals(SearchFilter.Contacts, results.filter)
+            // The sections it leaves out found nothing, and do not count as searching.
+            assertEquals(emptyList<Long>(), results.chats.ids())
+            assertEquals(emptyList<Long>(), results.global.ids())
+            assertEquals(emptyList<Pair<Long, Long>>(), results.messages.ids())
+            assertFalse(results.isSearching)
+        }
+
+    @Test
+    fun `chats searches the user's chats and public chats, messages only the messages`() =
+        runTest {
+            val viewModel = searching("ada")
+            search.calls.clear()
+
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Chats))
+            val chats = search.calls.toList()
+            search.calls.clear()
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Messages))
+
+            assertEquals(listOf("chats:ada", "public:ada"), chats.sorted())
+            assertEquals(listOf("messages:ada:null"), search.calls)
+        }
+
+    @Test
+    fun `media and links search messages with their filter`() =
+        runTest {
+            val viewModel = searching("ada")
+            search.calls.clear()
+
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Media))
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Links))
+
+            assertEquals(listOf("messages:ada:null:PhotoAndVideo", "messages:ada:null:Url"), search.calls)
+        }
+
+    @Test
+    fun `media without a query finds every photo and video instead of the suggestions`() =
+        runTest {
+            search.onSearchMessages = { _, _ -> page(foundMessage(2, 10)) }
+            val viewModel = viewModel()
+
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Media))
+
+            assertTrue("messages::null:PhotoAndVideo" in search.calls)
+            assertEquals("", viewModel.results.query)
+            assertEquals(listOf(2L to 10L), viewModel.results.messages.ids())
+        }
+
+    @Test
+    fun `other filters keep the suggestions while the query is empty, without reading them again`() =
+        runTest {
+            val viewModel = viewModel()
+
+            send(viewModel, SearchEvent.FilterChanged(SearchFilter.Contacts))
+
+            assertEquals(SearchFilter.Contacts, viewModel.uiState.value.filter)
+            assertFalse(viewModel.suggestions.isLoading)
+            assertEquals(1, search.callsOf("top").size)
+        }
+
+    @Test
+    fun `the filter survives process death`() =
+        runTest {
+            val handle = SavedStateHandle(mapOf(KEY_FILTER to SearchFilter.Links.name))
+
+            val viewModel = searching("ada", viewModel(handle))
+
+            assertEquals(SearchFilter.Links, viewModel.uiState.value.filter)
+            // Links show without a query too, then the query's.
+            assertEquals("messages:ada:null:Url", search.callsOf("messages").last())
+        }
+
+    @Test
+    fun `search is searching while a section still searches`() =
+        runTest {
+            val server = CompletableDeferred<Outcome<ImmutableList<Chat>>>()
+            search.onSearchPublicChats = { server.await() }
+
+            val viewModel = searching("ada")
+
+            assertTrue(viewModel.results.isSearching)
+            server.complete(found())
+            runCurrent()
+            assertFalse(viewModel.results.isSearching)
         }
 
     // Opening results
