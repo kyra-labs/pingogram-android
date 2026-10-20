@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -17,6 +19,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.AccountUiModel
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadUiState
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedSenderItem
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersUiState
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageUiState
@@ -74,13 +77,27 @@ internal object SettingsPreviewData {
 
     val storage =
         DataStorageUiState(
+            autoDownload = AutoDownloadSettings(),
             usage =
                 StorageUsageState.Content(
                     StorageUsage(filesSize = 1_534_000_000, fileCount = 3_456, databaseSize = 85_200_000),
                 ),
         )
 
-    val storageError = DataStorageUiState(usage = StorageUsageState.Error(DomainError.Network))
+    val storageError =
+        DataStorageUiState(autoDownload = AutoDownloadSettings(), usage = StorageUsageState.Error(DomainError.Network))
+
+    /** Wi-Fi with the defaults: photos, videos up to 10 MB, files up to 3 MB, voice and video messages. */
+    val autoDownloadWiFi =
+        AutoDownloadUiState(network = AutoDownloadNetwork.WiFi, rules = AutoDownloadSettings.DefaultWiFiRules)
+
+    /** Mobile data with photos only, while Data Saver holds it back. */
+    val autoDownloadMobileDataSaver =
+        AutoDownloadUiState(
+            network = AutoDownloadNetwork.Mobile,
+            rules = AutoDownloadSettings.DefaultMobileRules,
+            isDataSaverOn = true,
+        )
 
     // Privacy and security
 

@@ -70,6 +70,8 @@ import kotlinx.collections.immutable.persistentMapOf
  * @param mediaShape the corners edge-to-edge media shows in the bubble, which clips it: the bubble's own where the
  *   media meets its edge, square where a header or a caption follows. The container transform starts and ends there.
  * @param uploads the uploads of the bubble's messages being sent, by message id; empty for the others.
+ * @param mediaDownloads whether photos download by themselves, and the downloads the user asked for: photos the rules
+ *   leave for a tap show a download button ([ChatEvent.DownloadFile], [ChatEvent.CancelDownload]).
  */
 @Composable
 internal fun MessageContentBody(
@@ -81,6 +83,7 @@ internal fun MessageContentBody(
     modifier: Modifier = Modifier,
     mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
+    mediaDownloads: MediaDownloads = MediaDownloads(),
 ) {
     val album = bubble.album
     val content = bubble.content
@@ -94,12 +97,15 @@ internal fun MessageContentBody(
                 shape = mediaShape,
                 uploads = uploads,
                 onCancelUpload = { messageId -> onEvent(ChatEvent.CancelUpload(listOf(messageId))) },
+                downloads = mediaDownloads,
+                onDownload = { fileId -> onEvent(ChatEvent.DownloadFile(fileId)) },
+                onCancelDownload = { fileId -> onEvent(ChatEvent.CancelDownload(fileId)) },
             )
         }
 
         content.isEdgeToEdge || content.isBare -> {
             Box {
-                MediaContent(bubble.id, content, onEvent, modifier, mediaShape)
+                MediaContent(bubble.id, content, onEvent, modifier, mediaShape, mediaDownloads)
                 uploads[bubble.id]?.let { upload ->
                     MediaUploadProgress(
                         upload = upload,
@@ -131,19 +137,51 @@ private fun MediaContent(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
     mediaShape: CornerBasedShape,
+    mediaDownloads: MediaDownloads,
 ) {
     val onOpen = { onEvent(ChatEvent.OpenMedia(messageId)) }
     // Only what the viewer shows (no self-destructing media) shares its bounds with it.
     val shared = modifier.sharedMediaBounds(messageId, mediaShape, enabled = content.opensInViewer)
     when (content) {
-        is MessageContent.Photo -> MessagePhoto(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.Video -> MessageVideo(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.Animation -> MessageAnimation(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.VideoNote -> MessageVideoNote(content, onOpen, modifier)
-        is MessageContent.Sticker -> MessageSticker(content, modifier)
-        is MessageContent.AnimatedEmoji -> MessageAnimatedEmoji(content, modifier)
-        is MessageContent.Dice -> MessageDice(content, modifier)
-        else -> Unit
+        is MessageContent.Photo -> {
+            MessagePhoto(
+                content = content,
+                onOpen = onOpen,
+                modifier = shared,
+                shape = RectangleShape,
+                downloads = mediaDownloads,
+                onDownload = { fileId -> onEvent(ChatEvent.DownloadFile(fileId)) },
+                onCancelDownload = { fileId -> onEvent(ChatEvent.CancelDownload(fileId)) },
+            )
+        }
+
+        is MessageContent.Video -> {
+            MessageVideo(content, onOpen, shared, shape = RectangleShape)
+        }
+
+        is MessageContent.Animation -> {
+            MessageAnimation(content, onOpen, shared, shape = RectangleShape)
+        }
+
+        is MessageContent.VideoNote -> {
+            MessageVideoNote(content, onOpen, modifier)
+        }
+
+        is MessageContent.Sticker -> {
+            MessageSticker(content, modifier)
+        }
+
+        is MessageContent.AnimatedEmoji -> {
+            MessageAnimatedEmoji(content, modifier)
+        }
+
+        is MessageContent.Dice -> {
+            MessageDice(content, modifier)
+        }
+
+        else -> {
+            Unit
+        }
     }
 }
 

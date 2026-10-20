@@ -7,6 +7,8 @@ dependencies {
     api(projects.core.domain)
     implementation(projects.core.datastore)
     implementation(projects.core.tdlib)
+    // ContextCompat.registerReceiver (AndroidNetworkRepository's Data Saver receiver); only an older core comes along.
+    implementation(libs.androidx.core)
 
     testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)

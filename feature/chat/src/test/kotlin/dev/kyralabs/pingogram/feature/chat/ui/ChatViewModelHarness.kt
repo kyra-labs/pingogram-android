@@ -49,6 +49,7 @@ abstract class ChatViewModelHarness {
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
+    protected val autoDownloads = FakeAutoDownloadPolicy()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -92,6 +93,7 @@ abstract class ChatViewModelHarness {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
                 audioPlayer = player,
+                autoDownloadPolicy = autoDownloads,
                 log = { logged += it },
                 initialMessageId = messageId,
             )

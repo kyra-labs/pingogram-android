@@ -32,6 +32,8 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
+import kotlinx.collections.immutable.toPersistentSet
 import java.io.File
 
 /** Which bubbles a [ContentSample] is shown in. */
@@ -60,8 +62,8 @@ internal class ContentSample(
 )
 
 /**
- * Every component of this package in its states, named for the screenshot goldens: photo loading and loaded, albums
- * of 2, 3, 4, 7 and 10, video, GIF, stickers, voice messages idle, playing and downloading, a video message, music,
+ * Every component of this package in its states, named for the screenshot goldens: photo loading and loaded, waiting
+ * for a tap on its download button and downloading on request, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps), video, GIF, stickers, voice messages idle, playing and downloading, a video message, music,
  * files in their three download states, location, venue, contact, polls before and after voting, a quiz, a closed
  * poll, a die, an animated emoji, game and invoice, story and expired media.
  */
@@ -73,11 +75,27 @@ internal val ContentSamples: List<ContentSample> =
         ContentSample("photo", SampleBubbles.Incoming, edgeToEdge = true) { _, _ ->
             MessagePhoto(ContentPreviewData.photo(rememberSampleMinithumbnail()), onOpen = {})
         },
+        ContentSample("photoTapToDownload", SampleBubbles.Incoming, edgeToEdge = true, imagesLoading = true) { _, _ ->
+            MessagePhoto(ContentPreviewData.photo(rememberSampleMinithumbnail()), onOpen = {}, downloads = TapToDownload)
+        },
+        ContentSample("photoDownloadRequested", SampleBubbles.Incoming, edgeToEdge = true, imagesLoading = true) { _, _ ->
+            val photo = ContentPreviewData.photo(rememberSampleMinithumbnail())
+            val requested = remember(photo) { photo.photo.sizes.map { it.file.id }.toPersistentSet() }
+            MessagePhoto(photo, onOpen = {}, downloads = MediaDownloads(photos = false, requested = requested))
+        },
         albumSample(2),
         albumSample(3),
         albumSample(4),
         albumSample(7),
         albumSample(10),
+        ContentSample("album3TapToDownload", SampleBubbles.Outgoing, edgeToEdge = true, imagesLoading = true) { _, _ ->
+            val minithumbnail = rememberSampleMinithumbnail()
+            MediaAlbum(
+                items = remember(minithumbnail) { ContentPreviewData.album(3, minithumbnail) },
+                onOpen = {},
+                downloads = TapToDownload,
+            )
+        },
         ContentSample("video", SampleBubbles.Incoming, edgeToEdge = true) { _, _ ->
             MessageVideo(ContentPreviewData.video(rememberSampleMinithumbnail()), onOpen = {})
         },
@@ -192,6 +210,9 @@ internal val ContentSamples: List<ContentSample> =
             )
         },
     )
+
+/** Photos that the rules of the current network leave for a tap. */
+private val TapToDownload = MediaDownloads(photos = false)
 
 private fun albumSample(count: Int) =
     ContentSample("album$count", SampleBubbles.Outgoing, edgeToEdge = true) { _, _ ->

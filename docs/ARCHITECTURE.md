@@ -146,7 +146,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `minithumbnail` bytes).
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
-- Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
+  DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
+  Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`
+  (`core:data`, `ACCESS_NETWORK_STATE`) follows the default network and Data Saver; `DefaultAutoDownloadPolicy` combines
+  both into the rules in effect (`AutoDownloadPolicy`). The conversation enforces them (`ChatAutoDownloads`): the files
+  of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
+  `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
+  download button.
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.

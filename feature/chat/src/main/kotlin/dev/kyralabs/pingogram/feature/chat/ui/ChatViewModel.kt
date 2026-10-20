@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
+import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -125,6 +126,9 @@ import java.util.Locale
  * - **Files** ([ChatFiles]): the files of the loaded voice messages, songs and documents are followed through
  *   [FileRepository.observe] into [ChatUiState.fileStates], on [dispatcher], for as long as they are loaded. Documents
  *   download and cancel on request. Failures go out as [ChatEffect.ShowError] snackbars.
+ * - **Automatic download** ([ChatAutoDownloads], `docs/PERFORMANCE.md` §7): under the rules of the current network
+ *   ([AutoDownloadPolicy]), the files of the messages on screen download by themselves, and photos download in their
+ *   bubbles or wait for a tap on their download button ([ChatUiState.mediaDownloads]).
  * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
@@ -185,6 +189,7 @@ class ChatViewModel internal constructor(
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
     audioPlayer: AudioPlayer,
+    autoDownloadPolicy: AutoDownloadPolicy,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
 ) : ViewModel() {
@@ -207,6 +212,7 @@ class ChatViewModel internal constructor(
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         audioPlayer: AudioPlayer,
+        autoDownloadPolicy: AutoDownloadPolicy,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
         chatId,
@@ -227,6 +233,7 @@ class ChatViewModel internal constructor(
         dispatcher,
         Locale::getDefault,
         audioPlayer,
+        autoDownloadPolicy,
         AndroidChatLog,
         messageId,
     )
@@ -269,6 +276,8 @@ class ChatViewModel internal constructor(
     val effects: Flow<ChatEffect> = effectChannel.receiveAsFlow()
 
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
+
+    private val autoDownloads = ChatAutoDownloads(fileRepository, autoDownloadPolicy.rules, viewModelScope)
 
     private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
 
@@ -544,6 +553,7 @@ class ChatViewModel internal constructor(
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
+            .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -557,6 +567,7 @@ class ChatViewModel internal constructor(
             composer.start()
             attachments.start()
             views.start()
+            autoDownloads.start()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
@@ -575,8 +586,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.ToggleTime -> shownTimes.update { it.toggling(event.messageId) }
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
-            is ChatEvent.DownloadFile -> files.download(event.fileId)
-            is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
+            is ChatEvent.DownloadFile -> download(event.fileId)
+            is ChatEvent.CancelDownload -> cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
@@ -679,6 +690,23 @@ class ChatViewModel internal constructor(
     private fun onMessagesVisible(messageIds: Set<Long>) {
         views.setVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
+        val messages =
+            history.replayCache
+                .firstOrNull()
+                ?.messages
+                .orEmpty()
+        autoDownloads.setVisible(messages.filter { it.id in messageIds }.map { it.content })
+    }
+
+    /** Downloads [fileId] on request: a document's, or a photo's that the rules leave for a tap. */
+    private fun download(fileId: Int) {
+        autoDownloads.requested(fileId)
+        files.download(fileId)
+    }
+
+    private fun cancelDownload(fileId: Int) {
+        autoDownloads.cancelled(fileId)
+        files.cancelDownload(fileId)
     }
 
     /** Finds the chat again if that failed, and opens again or loads the pages that failed ([ChatWindow.retry]). */

@@ -36,11 +36,20 @@ data object EditProfileRoute
 data object AppearanceRoute
 
 /**
- * Data and storage settings (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes and clearing its cache,
- * `:feature:settings`, pushed above the Settings tab.
+ * Data and storage settings (`REQUIREMENTS.md` FR-S1): automatic download, how much space Pingogram takes and clearing
+ * its cache, `:feature:settings`, pushed above the Settings tab.
  */
 @Serializable
 data object DataStorageRoute
+
+/**
+ * What downloads by itself on one kind of network, pushed above [DataStorageRoute]. [network] is the name of an
+ * `AutoDownloadNetwork` of `:core:domain`, which this module does not depend on.
+ */
+@Serializable
+data class AutoDownloadRoute(
+    val network: String,
+)
 
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code, license and the open-source licenses,

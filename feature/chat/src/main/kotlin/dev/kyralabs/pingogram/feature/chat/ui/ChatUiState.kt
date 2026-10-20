@@ -16,7 +16,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 
 /**
  * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8): the header, the messages and
@@ -39,6 +41,8 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
  * @property selection selection mode: the selected messages and the toolbar's actions; null outside it.
  * @property report the sheet that reports messages; null while it is closed.
+ * @property mediaDownloads whether the photos in the bubbles download by themselves on the current network, and the
+ *   ones the user asked to download meanwhile.
  */
 @Immutable
 data class ChatUiState(
@@ -57,6 +61,18 @@ data class ChatUiState(
     val sponsoredSheet: SponsoredSheet? = null,
     val selection: MessageSelection? = null,
     val report: ReportSheet? = null,
+    val mediaDownloads: MediaDownloads = MediaDownloads(),
+)
+
+/**
+ * How the photos in the bubbles download (`docs/PERFORMANCE.md` §7): by themselves while the automatic download rules
+ * of the current network allow [photos]; otherwise each shows a download button, and those in [requested] (by file id)
+ * a download in progress, until they show.
+ */
+@Immutable
+data class MediaDownloads(
+    val photos: Boolean = true,
+    val requested: ImmutableSet<Int> = persistentSetOf(),
 )
 
 /**

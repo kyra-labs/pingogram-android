@@ -15,9 +15,8 @@
     <!-- WorkManager (notification actions) declares these four. It needs WAKE_LOCK and FOREGROUND_SERVICE only before
          Android 12, where expedited work runs as a foreground service that holds a wake lock while a reply is sent
          (approved by the owner on 2026-10-19); from Android 12 on it runs as an expedited job, so both stop at API 30.
-         ACCESS_NETWORK_STATE serves only network constraints, which Pingogram's work has none of (TDLib queues
-         requests while offline), and RECEIVE_BOOT_COMPLETED only reschedules work after a reboot, which its
-         short-lived work does not need: both are left out. The foss flavor's manifest declares FOREGROUND_SERVICE for
+         ACCESS_NETWORK_STATE is declared below for Pingogram's own use. RECEIVE_BOOT_COMPLETED only reschedules work
+         after a reboot, which its short-lived work does not need: it is left out. The foss flavor's manifest declares FOREGROUND_SERVICE for
          every version and RECEIVE_BOOT_COMPLETED for its "Keep connected" service (src/foss/AndroidManifest.xml). Media3 ExoPlayer (feature:chat) declares
          ACCESS_NETWORK_STATE and WAKE_LOCK too; it plays only files TDLib downloaded and sets no wake mode. -->
     <uses-permission
@@ -28,9 +27,12 @@
         android:name="android.permission.FOREGROUND_SERVICE"
         android:maxSdkVersion="30"
         tools:node="replace" />
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
+    <!-- Which network the device uses (Wi-Fi, mobile data, roaming) and whether it is metered, read from
+         ConnectivityManager's default network callback (approved by the owner on 2026-10-20): automatic download
+         follows the rules of the current network (Settings → Data and storage, docs/PERFORMANCE.md §7), and TDLib is
+         told of every new network (setNetworkType), so it reconnects at once. A normal permission, granted at install;
+         nothing is sent anywhere. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED"
         tools:node="remove" />

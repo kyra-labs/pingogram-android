@@ -289,7 +289,7 @@ private fun MessageList(
     val fileStates = state.fileStates
     val playback = state.playback
     val selectedIds = state.selection?.messageIds
-    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts)
+    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads)
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current

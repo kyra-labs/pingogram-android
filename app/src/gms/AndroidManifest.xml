@@ -8,8 +8,8 @@
     <!-- Firebase Cloud Messaging declares INTERNET, POST_NOTIFICATIONS, WAKE_LOCK, ACCESS_NETWORK_STATE and
          com.google.android.c2dm.permission.RECEIVE (receiving its messages). WAKE_LOCK here for every version, not
          only to API 30 as in the main manifest: FCM holds a wake lock while it hands a push to the service, without
-         which "service start may be delayed" in Doze. ACCESS_NETWORK_STATE stays out (main manifest): FCM checks for
-         it and does without; only its token refresh task, which auto-init off leaves idle, reads connectivity. -->
+         which "service start may be delayed" in Doze. ACCESS_NETWORK_STATE comes from the main manifest, for automatic
+         download. -->
     <uses-permission
         android:name="android.permission.WAKE_LOCK"
         tools:node="replace" />

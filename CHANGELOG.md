@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Automatic download: Settings → Data and storage now says what downloads by itself on mobile data, on Wi-Fi and while
+  roaming, and each opens a page with switches for photos, videos and GIFs, files, and voice and video messages, with a
+  size limit for videos and for files. By default Wi-Fi downloads photos, videos up to 10 MB, files up to 3 MB and voice
+  and video messages; mobile data downloads photos; roaming downloads nothing. Conversations follow the network you
+  are on: a photo that doesn't download by itself shows a download button, and other media downloads when you tap it,
+  as before. While Android's Data Saver is on, nothing downloads by itself on mobile data. Stickers, profile photos and
+  previews always download.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who

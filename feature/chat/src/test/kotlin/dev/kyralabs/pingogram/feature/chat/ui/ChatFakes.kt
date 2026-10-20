@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
@@ -29,6 +30,7 @@ import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -654,6 +656,13 @@ class FakeTimePatterns : TimePatterns {
                 "yMd" to "M/d/y",
             )
     }
+}
+
+/** [AutoDownloadPolicy] whose [rules] tests set: photos only, as on mobile data by default, unless [initial]. */
+class FakeAutoDownloadPolicy(
+    initial: AutoDownloadRules = AutoDownloadRules(photos = true),
+) : AutoDownloadPolicy {
+    override val rules = MutableStateFlow(initial)
 }
 
 /**

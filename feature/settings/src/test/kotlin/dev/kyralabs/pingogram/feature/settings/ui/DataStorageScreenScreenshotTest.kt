@@ -42,6 +42,10 @@ class DataStorageScreenScreenshotTest {
     fun clearCacheDialogDark() = capture("clearCacheDialogDark", ThemeMode.Dark, withDialog)
 
     @Test
+    fun dataSaverLight() =
+        capture("dataSaverLight", ThemeMode.Light, SettingsPreviewData.storage.copy(isDataSaverOn = true))
+
+    @Test
     fun clearingLight() =
         capture("clearingLight", ThemeMode.Light, SettingsPreviewData.storage.copy(isClearingCache = true))
 
@@ -52,6 +56,6 @@ class DataStorageScreenScreenshotTest {
         themeMode: ThemeMode,
         state: DataStorageUiState,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        DataStorageScreen(state = state, onEvent = {}, onBack = {})
+        DataStorageScreen(state = state, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
     }
 }
