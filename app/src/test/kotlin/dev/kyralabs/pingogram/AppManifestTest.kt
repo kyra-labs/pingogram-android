@@ -32,7 +32,7 @@ import org.robolectric.annotation.Config
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
- * themed icons.
+ * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -157,6 +157,13 @@ class AppManifestTest {
             assertNotNull(drawable.foreground)
             assertNotNull(drawable.monochrome)
         }
+    }
+
+    @Test
+    fun `Android 13 and later list the languages Pingogram ships in its language settings`() {
+        val application = mergedManifest().elements("application").single()
+
+        assertEquals("@xml/locales_config", application.androidAttribute("localeConfig"))
     }
 
     private companion object {

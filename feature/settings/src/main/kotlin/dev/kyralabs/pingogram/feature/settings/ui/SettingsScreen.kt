@@ -42,7 +42,6 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
@@ -92,9 +91,9 @@ internal fun SettingsRoute(
  * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
  * page scrolls, as the chat list's does, then the logged-in account's card ([AccountCard], which opens Edit profile)
  * and groups of segmented rows ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
- * have them: General (Appearance, Notifications, Data and storage), Privacy and security, About, and "Log out" on its
- * own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar and ends clear of
- * it ([screenContentWindowInsets]).
+ * have them: General (Appearance, Notifications, Data and storage, Language), Privacy and security, About, and
+ * "Log out" on its own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar
+ * and ends clear of it ([screenContentWindowInsets]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,65 +134,6 @@ internal fun SettingsScreen(
             onConfirm = { onEvent(SettingsEvent.ConfirmLogOut) },
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
         )
-    }
-}
-
-/**
- * The groups of rows that open the other settings pages: General (Appearance, Notifications, Data and storage), Privacy
- * and security, About.
- */
-@Composable
-private fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
-    SettingsGroup {
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_appearance),
-                summary = stringResource(R.string.settings_appearance_summary),
-                icon = R.drawable.ic_palette,
-                shapes = shapes,
-                onClick = { onOpenPage(SettingsPage.Appearance) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_notifications),
-                summary = stringResource(R.string.settings_notifications_summary),
-                icon = UiR.drawable.ic_notifications,
-                shapes = shapes,
-                onClick = { onOpenPage(SettingsPage.Notifications) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_data_storage),
-                summary = stringResource(R.string.settings_data_storage_summary),
-                icon = R.drawable.ic_storage,
-                shapes = shapes,
-                onClick = { onOpenPage(SettingsPage.DataStorage) },
-            )
-        }
-    }
-    SettingsGroup {
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_privacy_security),
-                summary = stringResource(R.string.settings_privacy_security_summary),
-                icon = R.drawable.ic_shield,
-                shapes = shapes,
-                onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
-            )
-        }
-    }
-    SettingsGroup {
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_about),
-                summary = stringResource(R.string.settings_about_summary),
-                icon = R.drawable.ic_info,
-                shapes = shapes,
-                onClick = { onOpenPage(SettingsPage.About) },
-            )
-        }
     }
 }
 

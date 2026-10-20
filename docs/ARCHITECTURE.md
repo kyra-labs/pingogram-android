@@ -67,6 +67,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
+- **Language** (FR-S1, §6.4): the languages Pingogram ships are those of `:app`'s `res/xml/locales_config.xml`, which
+  Android 13+ lists in its app language settings (`android:localeConfig`), Settings → Language lists on every version,
+  and the build packages resources for (`androidResources.localeFilters`, derived from the file in
+  `app/build.gradle.kts`, so libraries add no other languages). `core:domain`'s `AppLanguageRepository` is bound in
+  `:app` (`PlatformAppLanguageRepository`): from Android 13 it is Android's per-app language (`LocaleManager`), which
+  Android applies by creating the activity again, read anew at each collection since Android's settings change it too.
+  Before Android 13 the choice is kept in DataStore (`core:datastore`'s `DataStoreLanguagePreference`) and
+  `MainActivity` applies it itself, without AppCompat: `attachBaseContext` gives it a configuration context in the
+  language (`contextInLanguage`, which sets the process's default locale too) and it creates itself again when the
+  language read later or chosen in Settings differs, composing nothing until they match; reading it is never blocking,
+  so the first activity of a process with a chosen language is created twice, behind the splash screen. Notifications
+  and other text drawn outside the activity keep the system's language there. Telegram's own language packs
+  (`language_pack_id`) are not used.
 - **Theme**: `MainActivityViewModel.appearance` (null until the settings are read) feeds
   `PingogramTheme` in `MainActivity`, which also styles the system bar icons for the theme it
   resolves to. The splash screen waits for the settings as for TDLib's first login step (at most
