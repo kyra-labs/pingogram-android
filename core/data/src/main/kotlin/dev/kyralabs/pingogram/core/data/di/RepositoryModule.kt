@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageReposito
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
@@ -54,6 +55,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 
 /**
  * Binds the repositories to their interfaces. Caching ones also join the set in [UpdateCacheModule]. One binding per
@@ -95,6 +97,9 @@ interface RepositoryModule {
 
     @Binds
     fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository
+
+    @Binds
+    fun voiceNoteRepository(repository: TdlibVoiceNoteRepository): VoiceNoteRepository
 
     @Binds
     fun chatActionRepository(repository: TdlibChatActionRepository): ChatActionRepository

@@ -21,7 +21,8 @@ import org.robolectric.annotation.Config
  * so it is declared up to API 28 and not requested on newer runtimes. The FileProvider that hands TDLib's files to
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
  * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
- * 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
+ * 2026-10-20); RECORD_AUDIO records voice messages (approved 2026-10-20), without requiring a microphone
+ * of the device; WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
  * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
@@ -56,6 +57,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.USE_BIOMETRIC,
+                Manifest.permission.RECORD_AUDIO,
             ) + FlavorManifest.requestedPermissions,
             requested,
         )
@@ -77,6 +79,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_COARSE_LOCATION to "",
                 Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.USE_BIOMETRIC to "",
+                Manifest.permission.RECORD_AUDIO to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,
@@ -102,6 +105,16 @@ class AppManifestTest {
             ),
             features.filterKeys { it.startsWith("android.hardware.location") },
         )
+    }
+
+    @Test
+    fun `the microphone is used where there is one, not required to install`() {
+        val microphone =
+            mergedManifest()
+                .elements("uses-feature")
+                .single { it.androidAttribute("name") == "android.hardware.microphone" }
+
+        assertEquals("false", microphone.androidAttribute("required"))
     }
 
     @Test

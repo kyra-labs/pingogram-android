@@ -9,14 +9,16 @@ import androidx.compose.material3.SnackbarResult
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeActionLabel
 
 /**
  * Shows [message], the snackbar of [effect], with the action its effect has ([actionLabelOf]), which runs [onAction]
  * with the effect when tapped: after forwarding to one other chat ([ChatEffect.Forwarded.openChatId]) it opens the
  * chat, after saving one file ([SelectionEffect.Saved.open]) it opens the file (a snackbar follows if no app can, the
  * text [onAction] returns), before the storage permission it goes
- * on to ask for it, after a refusal it opens the app's settings. A snackbar with an action stays until it is dismissed
- * or replaced (Material's default). Returns once the snackbar is gone.
+ * on to ask for it, after a refusal it opens the app's settings; the same for the microphone a voice message needs.
+ * A snackbar with an action stays until it is dismissed or replaced (Material's default). Returns once the snackbar
+ * is gone.
  */
 internal suspend fun SnackbarHostState.showNotice(
     message: String,
@@ -37,6 +39,7 @@ private fun actionLabelOf(effect: ChatEffect): Int? =
         effect is SelectionEffect.Saved && effect.open != null -> R.string.save_open
         effect == SelectionEffect.RequestStoragePermission -> R.string.save_storage_continue
         effect == SelectionEffect.StoragePermissionDenied -> R.string.save_storage_settings
+        effect is VoiceEffect -> voiceNoticeActionLabel(effect)
         else -> null
     }
 
