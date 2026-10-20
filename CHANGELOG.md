@@ -84,6 +84,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
   After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
   remove it. Changing or turning off the passcode asks for it first.
+- Search filters: chips under the search field narrow the results to chats, contacts, messages, media (photos and
+  videos) or links. Media and Links also work without typing anything, showing every photo and video or every link
+  in your chats.
+- On tablets and other wide screens, search opens in the chat list's place next to the conversation, and a chat or
+  message you find opens beside it. Back closes that conversation first, then search.
 - Voice messages: while the message field is empty, a microphone button sits where the send button goes. Hold it to
   record and release to send; slide toward the start to cancel, or slide up to keep recording hands-free, then send,
   delete or pause and go on. The recording shows how long it is and a live waveform of your voice, and the message
@@ -93,6 +98,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   phone pauses a recording, which waits for you to go on, send or delete it.
 
 ### Changed
+- Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
+  under the search field replaces the loading animations in every section, a section that failed shows its error in
+  a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
   shaped icon, which turns into a warning sign when something needs fixing or Telegram asks you to wait. "Next" is a
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
@@ -138,6 +146,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The media viewer's actions now sit in a floating toolbar at the bottom, each button named when you press and hold
   it, with further actions under "More options". On tablets the caption and the video controls no longer stretch
   across the whole screen.
+- In a chat, the name at the top is set a little bolder, and while someone is typing three dots pulse before "is
+  typing…". TalkBack announces when someone starts typing. The dots stay still when animations are turned off.
+- Code, code blocks and hidden spoilers in messages sit on rounded backgrounds instead of square ones, and a hidden
+  spoiler is a softer tinted block.
+- The button that jumps to the newest message is the regular size of a floating button, with the number of unread
+  messages on its corner.
+- In dark theme, photos, videos and GIFs in a chat are slightly dimmed so they don't glare; the media viewer still
+  shows them at full brightness.
+- Custom emoji reactions that haven't loaded show a soft placeholder instead of a dark dot, and stickers without an
+  emoji show a rounded placeholder while they load.
 
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the

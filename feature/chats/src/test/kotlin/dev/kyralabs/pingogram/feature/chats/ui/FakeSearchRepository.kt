@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -14,9 +15,9 @@ import kotlinx.coroutines.flow.flow
 /**
  * [SearchRepository] for the tests of [SearchViewModel] and [NewChatViewModel]: each search answers with its handler,
  * finding nothing by default, and every call is recorded ([calls]) as `chats:<query>`, `contacts:<query>`,
- * `public:<query>`, `messages:<query>:<offset>`, `allContacts`, `recents`, `top`, `add:<id>`, `remove:<id>` or
- * `clear`; calls cancelled while they wait are recorded in [cancelled] too. The recent chats are a list the changes act
- * on.
+ * `public:<query>`, `messages:<query>:<offset>` (with `:<filter>` after it for photos and videos or links),
+ * `allContacts`, `recents`, `top`, `add:<id>`, `remove:<id>` or `clear`; calls cancelled while they wait are recorded
+ * in [cancelled] too. The recent chats are a list the changes act on.
  */
 class FakeSearchRepository : SearchRepository {
     val calls = mutableListOf<String>()
@@ -53,7 +54,11 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun searchMessages(
         query: String,
         offset: String?,
-    ) = record("messages:$query:$offset") { onSearchMessages(query, offset) }
+        filter: MessageSearchFilter,
+    ): Outcome<FoundMessages> {
+        val call = "messages:$query:$offset" + if (filter == MessageSearchFilter.All) "" else ":$filter"
+        return record(call) { onSearchMessages(query, offset) }
+    }
 
     override suspend fun recentChats() = record("recents") { Outcome.Success(recents.toImmutableList()) }
 

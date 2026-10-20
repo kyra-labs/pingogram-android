@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -31,8 +32,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Still (WebP)** stickers are loaded by Coil at that size.
  * - **Animated (TGS) and video (WebM)** stickers show their thumbnail when it is a picture; animating them comes with
  *   the sticker renderer (`docs/ARCHITECTURE.md`, Files and media).
- * - Until the picture shows, and when there is none, the sticker's emoji stands in for it, and fades out as the
- *   picture fades in.
+ * - Until the picture shows, and when there is none, the sticker's emoji stands in for it, or, for a sticker without
+ *   one, a rounded tonal shape ([StickerStandIn]); it fades out as the picture fades in. Stickers have transparent
+ *   backgrounds, so nothing else is drawn behind them, and they are never dimmed in dark theme: they are artwork.
  *
  * Screen readers hear "😀 Sticker".
  */
@@ -115,10 +117,10 @@ private fun StickerImage(
         }
     Box(modifier.size(displaySize), contentAlignment = Alignment.Center) {
         if (pictureId == null) {
-            LargeEmoji(sticker.emoji, minOf(displaySize.width, displaySize.height))
+            StickerStandIn(sticker.emoji, displaySize)
         } else {
             val alpha = rememberImageAlpha(pictureId)
-            LargeEmoji(sticker.emoji, minOf(displaySize.width, displaySize.height), Modifier.fadingOutAs(alpha))
+            StickerStandIn(sticker.emoji, displaySize, Modifier.fadingOutAs(alpha))
             val density = LocalDensity.current
             TdlibImage(
                 fileId = pictureId,
@@ -129,6 +131,27 @@ private fun StickerImage(
                 contentScale = ContentScale.Fit,
             )
         }
+    }
+}
+
+/**
+ * What a sticker of [displaySize] shows until its picture does, and without one: its [emoji], or, when it has none, a
+ * rounded tonal shape (`surfaceContainerHigh`, `extraLarge` corners), never a hard-edged block.
+ */
+@Composable
+private fun StickerStandIn(
+    emoji: String,
+    displaySize: DpSize,
+    modifier: Modifier = Modifier,
+) {
+    if (emoji.isBlank()) {
+        Box(
+            modifier
+                .size(displaySize)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.extraLarge),
+        )
+    } else {
+        LargeEmoji(emoji, minOf(displaySize.width, displaySize.height), modifier)
     }
 }
 

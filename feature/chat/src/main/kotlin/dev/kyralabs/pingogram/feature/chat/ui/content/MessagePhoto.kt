@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Photo
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -32,6 +34,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   for the media viewer.
  * - **Hidden**: spoilers and self-destructing photos show only the blurred minithumbnail; revealing them is the
  *   viewer's job.
+ * - **Dark theme**: dimmed to 90% of its brightness, as all media in the conversation (`docs/DESIGN_SYSTEM.md` §10);
+ *   the media viewer shows it undimmed.
  *
  * Tapping it calls [onOpen]. Screen readers hear "Photo".
  *
@@ -74,6 +78,8 @@ internal fun MessagePhoto(
 /**
  * [photo] cropped to fill [displaySize]: its blurred minithumbnail, and over it the smallest size that covers the box
  * ([selectPhotoSize]), faded in once loaded. With [hidden], the minithumbnail only. The caller sizes and clips it.
+ * Both are tinted by [colorFilter]: dimmed in dark theme by default (`docs/DESIGN_SYSTEM.md` §10); null for a photo
+ * that is no media, such as a sponsor's avatar.
  */
 @Composable
 internal fun PhotoImage(
@@ -81,9 +87,10 @@ internal fun PhotoImage(
     displaySize: DpSize,
     hidden: Boolean,
     modifier: Modifier = Modifier,
+    colorFilter: ColorFilter? = MaterialTheme.pingogramColors.mediaColorFilter,
 ) {
     Box(modifier) {
-        MinithumbnailPlaceholder(photo.minithumbnail, displaySize, Modifier.matchParentSize())
+        MinithumbnailPlaceholder(photo.minithumbnail, displaySize, Modifier.matchParentSize(), colorFilter)
         if (!hidden) {
             val density = LocalDensity.current
             val widthPx = with(density) { displaySize.width.roundToPx() }
@@ -96,6 +103,7 @@ internal fun PhotoImage(
                     heightPx = heightPx,
                     alpha = rememberImageAlpha(size.file.id),
                     modifier = Modifier.matchParentSize(),
+                    colorFilter = colorFilter,
                 )
             }
         }

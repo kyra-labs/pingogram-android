@@ -1,14 +1,12 @@
 package dev.kyralabs.pingogram.ui
 
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -19,6 +17,8 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,14 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
-import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
@@ -42,7 +42,11 @@ import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
+import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
+import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.navigation.isFullScreen
@@ -50,7 +54,6 @@ import dev.kyralabs.pingogram.navigation.isInHierarchy
 import dev.kyralabs.pingogram.navigation.isInMainGraph
 import dev.kyralabs.pingogram.navigation.navigateToTopLevelDestination
 import dev.kyralabs.pingogram.navigation.topLevelDestination
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The app shell: the `NavHost` and the app's navigation (`docs/DESIGN_SYSTEM.md` §6–7). [uiState] decides between the
@@ -74,13 +77,18 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (a conversation, the archive) would do that in the frames that start and end its transition. Screens pushed on top
  * of a tab do not read them.
  *
+ * Global search (`docs/DESIGN_SYSTEM.md` §6 "Global search") opens from the search button: pushed full screen above
+ * the tab in compact and medium windows, docked in the Chats tab's list pane in expanded and wider ones
+ * ([GlobalSearchState]), which the Chats tab then shows. The button grows into search and back: the shell is a
+ * [SharedTransitionLayout] around the navigation and the `NavHost`, whose scope goes down through
+ * [LocalSharedTransitionScope] to both, and the button is away while search shows ([rememberSearchOpen]).
+ *
  * [chatToOpen] (from a notification) is opened above the chat list once the account is logged in, then reported to
  * [onChatOpened]; nobody logged in drops it ([PingogramNavHost]).
  *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PingogramApp(
     uiState: MainActivityUiState,
@@ -106,49 +114,129 @@ fun PingogramApp(
     // that tab. A plain holder rather than state: the shell recomposes whenever the current tab changes.
     val lastTab = remember { LastTab() }
     val barTab = currentTab?.also { lastTab.tab = it } ?: lastTab.tab
-    val adaptiveType = pingogramNavigationSuiteType(currentWindowAdaptiveInfoV2().windowSizeClass)
+    val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
+    val adaptiveType = pingogramNavigationSuiteType(windowSizeClass)
     val floatingBar = adaptiveType == NavigationSuiteType.ShortNavigationBarCompact
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
     val floatingBarSpace = inMainGraph && floatingBar
     val floatingBarSlot = showNavigation && floatingBar && currentTab != null
     val showRail = showNavigation && !floatingBar
-    val openSearch = { navController.navigate(SearchRoute) { launchSingleTop = true } }
-    NavigationSuiteScaffold(
-        navigationItems = { PingogramNavigationItems(navController, adaptiveType) },
-        modifier = modifier,
-        navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
-        // The scaffold shows its primary action even without navigation.
-        primaryActionContent = { if (showRail) SearchButton(adaptiveType, onClick = openSearch) },
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            CompositionLocalProvider(
-                LocalNavigationBarInsets provides
-                    if (floatingBarSpace) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
-                LocalNavigationBarVisibility provides navigationBarVisibility,
+    val search = rememberGlobalSearchState()
+    val searchOpen by rememberSearchOpen(navController, search)
+    val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
+    SharedTransitionLayout(modifier) {
+        ProvideSharedTransitionScope(this) {
+            NavigationSuiteScaffold(
+                navigationItems = { PingogramNavigationItems(navController, adaptiveType) },
+                navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
+                // The scaffold shows its primary action even without navigation.
+                primaryActionContent = { if (showRail) RailSearchButton(adaptiveType, searchOpen, search, openSearch) },
             ) {
-                if (uiState == MainActivityUiState.Loading) {
-                    // The same progress as the login flow's first step: TDLib is still starting.
-                    AuthProgressScreen(isLoggingOut = false)
-                } else {
-                    PingogramNavHost(navController, uiState, chatToOpen = chatToOpen, onChatOpened = onChatOpened)
+                Box(Modifier.fillMaxSize()) {
+                    CompositionLocalProvider(
+                        LocalNavigationBarInsets provides
+                            if (floatingBarSpace) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
+                        LocalNavigationBarVisibility provides navigationBarVisibility,
+                    ) {
+                        AppContent(uiState, navController, search, chatToOpen, onChatOpened)
+                    }
+                    // Compact windows only: composed there even while hidden (FloatingNavigationBar).
+                    if (floatingBar) {
+                        FloatingNavigationBar(
+                            visible = floatingBarSlot && !navigationBarVisibility.isHidden,
+                            selected = barTab,
+                            onSelect = { navController.navigateToTopLevelDestination(it) },
+                            onSearch = openSearch,
+                            searchOpen = searchOpen,
+                            search = search,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .windowInsetsPadding(WindowInsets.navigationBars)
+                                    .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
+                        )
+                    }
                 }
-            }
-            // Compact windows only: composed there even while hidden (FloatingNavigationBar).
-            if (floatingBar) {
-                FloatingNavigationBar(
-                    visible = floatingBarSlot && !navigationBarVisibility.isHidden,
-                    selected = barTab,
-                    onSelect = { navController.navigateToTopLevelDestination(it) },
-                    onSearch = openSearch,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomCenter)
-                            .windowInsetsPadding(WindowInsets.navigationBars)
-                            .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
-                )
             }
         }
     }
+}
+
+/** Progress while [uiState] is not known yet, the `NavHost` once it is; signed out, docked [search] closes. */
+@Composable
+private fun AppContent(
+    uiState: MainActivityUiState,
+    navController: NavHostController,
+    search: GlobalSearchState,
+    chatToOpen: Long?,
+    onChatOpened: () -> Unit,
+) {
+    ResetSearchWhenSignedOut(uiState, search)
+    if (uiState == MainActivityUiState.Loading) {
+        // The same progress as the login flow's first step: TDLib is still starting.
+        AuthProgressScreen(isLoggingOut = false)
+    } else {
+        PingogramNavHost(
+            navController = navController,
+            uiState = uiState,
+            search = search,
+            chatToOpen = chatToOpen,
+            onChatOpened = onChatOpened,
+        )
+    }
+}
+
+/**
+ * Whether search shows: docked in the Chats tab's list pane ([GlobalSearchState.isDocked]), or anywhere on the back
+ * stack, also below a conversation it opened. The search button is away meanwhile, so it never opens a second search
+ * and only search's own coming and going moves it ([SearchButtonSlot]). Derived, so that only opening or leaving search
+ * recomposes the shell.
+ */
+@Composable
+private fun rememberSearchOpen(
+    navController: NavController,
+    search: GlobalSearchState,
+): State<Boolean> {
+    val currentEntry = navController.currentBackStackEntryAsState()
+    return remember(navController, currentEntry, search) {
+        derivedStateOf {
+            // Read for every change of the destination, which is when the back stack changes.
+            currentEntry.value
+            search.isDocked || runCatching { navController.getBackStackEntry<SearchRoute>() }.isSuccess
+        }
+    }
+}
+
+/**
+ * Opens global search (`docs/DESIGN_SYSTEM.md` §6 "Global search"): [docked] in the Chats tab's list pane, which the
+ * Chats tab shows first, or pushed full screen above the tab.
+ */
+private fun NavController.openSearch(
+    search: GlobalSearchState,
+    docked: Boolean,
+) {
+    if (docked) {
+        search.isDocked = true
+        if (currentDestination?.hasRoute<ChatsRoute>() != true) navigateToTopLevelDestination(TopLevelDestination.Chats)
+    } else {
+        navigate(SearchRoute) { launchSingleTop = true }
+    }
+}
+
+/**
+ * Where search docks (`docs/DESIGN_SYSTEM.md` §6, §7): in windows of expanded width and wider, where the Chats tab
+ * shows its list beside the conversation. Compact and medium windows have one pane, and search is a destination.
+ */
+private fun WindowSizeClass.docksSearch(): Boolean =
+    isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
+
+/** Closes docked search when nobody is logged in, so the next login starts on the chat list. */
+@Composable
+private fun ResetSearchWhenSignedOut(
+    uiState: MainActivityUiState,
+    search: GlobalSearchState,
+) {
+    LaunchedEffect(uiState, search) { if (uiState == MainActivityUiState.SignedOut) search.isDocked = false }
 }
 
 /** The last tab the user was on, which the floating bar keeps showing while a pushed screen hides it. */
@@ -181,37 +269,6 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
             NavigationSuiteType.WideNavigationRailCollapsed
         }
     }
-
-/**
- * The rail's primary action: global search, as the floating bar's detached button is in compact windows. The
- * collapsed rail shows a FAB, the expanded one an extended FAB with its label (`docs/DESIGN_SYSTEM.md` §6). The rail's
- * header places it at its start edge, so it brings its own start padding, as in Material's rail samples.
- */
-@Composable
-private fun SearchButton(
-    navigationSuiteType: NavigationSuiteType,
-    onClick: () -> Unit,
-) {
-    val expanded = navigationSuiteType == NavigationSuiteType.WideNavigationRailExpanded
-    val modifier = Modifier.padding(start = RAIL_HEADER_START_PADDING)
-    val icon = painterResource(UiR.drawable.ic_search)
-    val label = stringResource(R.string.nav_search)
-    if (expanded) {
-        ExtendedFloatingActionButton(
-            onClick = onClick,
-            icon = { Icon(painter = icon, contentDescription = null) },
-            text = { Text(label) },
-            modifier = modifier,
-        )
-    } else {
-        FloatingActionButton(onClick = onClick, modifier = modifier) {
-            Icon(painter = icon, contentDescription = label)
-        }
-    }
-}
-
-/** Centers a 56 dp FAB over the items of the 96 dp wide collapsed rail; Material has no token for it. */
-private val RAIL_HEADER_START_PADDING = 20.dp
 
 /**
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only

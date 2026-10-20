@@ -153,7 +153,8 @@ internal fun ReactionBadges(
 /**
  * A reaction's emoji, with its count when more than one person added it, on a round `surfaceContainerHighest` badge,
  * or `secondaryContainer` when the user chose it too: [chosenFraction] blends them, read in the draw phase. A button
- * if [onClick] is not null.
+ * if [onClick] is not null. A custom emoji without its picture shows a tonal dot: the content color as a tint of the
+ * badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark.
  */
 @Composable
 private fun ReactionBadge(
@@ -169,7 +170,7 @@ private fun ReactionBadge(
             reaction.label,
             MaterialTheme.typography.titleMedium,
             MaterialTheme.sizes.inlineIconSmall,
-            content,
+            { lerp(container(), content(), CUSTOM_EMOJI_TINT) },
         )
         if (reaction.count > 1) {
             BasicText(
@@ -253,6 +254,9 @@ private fun BlockCard(
         content = content,
     )
 }
+
+/** How strongly a custom emoji's placeholder tints its badge with the content color: Material's disabled opacity. */
+private const val CUSTOM_EMOJI_TINT = 0.38f
 
 /** How many reaction badges a bubble shows before "+N". */
 internal const val MAX_REACTION_BADGES = 3

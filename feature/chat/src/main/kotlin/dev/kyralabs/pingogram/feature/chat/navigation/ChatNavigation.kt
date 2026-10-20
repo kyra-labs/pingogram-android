@@ -41,15 +41,17 @@ fun NavGraphBuilder.chatScreen(
 /**
  * The conversation of chat [chatId] in the detail pane of the Chats tab's list-detail layout (`docs/ARCHITECTURE.md`,
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
- * i.e. when the pane shows alone. [onOpenMedia] opens a tapped photo, video or GIF in the media viewer, full screen
- * above the whole layout; [onOpenChat] the chat messages were forwarded to.
+ * i.e. when the pane shows alone, opened at [messageId] if not null (a message found by search). [onOpenMedia] opens a
+ * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
+ * were forwarded to.
  *
- * Each chat gets a fresh composition and view model: its own saved UI state (the scroll position), and a
- * [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own ([rememberViewModelStoreOwner]), which
- * keeps the view model across rotations and clears it as soon as the pane shows another chat or leaves, closing the
- * chat first. In the store of the Chats tab every chat ever shown would keep its view model, and its messages, until
- * logout (`docs/PERFORMANCE.md` §3). The cost: the view model's `SavedStateHandle` (where the unread divider was)
- * survives rotations but not process death, since the tab's saved state holds only the handles of its own store.
+ * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
+ * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own
+ * ([rememberViewModelStoreOwner]), which keeps the view model across rotations and clears it as soon as the pane shows
+ * another chat or leaves, closing the chat first. In the store of the Chats tab every chat ever shown would keep its
+ * view model, and its messages, until logout (`docs/PERFORMANCE.md` §3). The cost: the view model's `SavedStateHandle`
+ * (where the unread divider was) survives rotations but not process death, since the tab's saved state holds only the
+ * handles of its own store.
  */
 @Composable
 fun ChatPane(
@@ -58,11 +60,13 @@ fun ChatPane(
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     onOpenChat: (chatId: Long) -> Unit = {},
+    messageId: Long? = null,
 ) {
-    key(chatId) {
+    key(chatId, messageId) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
             ChatRoute(
                 chatId = chatId,
+                messageId = messageId,
                 onBack = onBack,
                 onOpenMedia = onOpenMedia,
                 modifier = modifier,

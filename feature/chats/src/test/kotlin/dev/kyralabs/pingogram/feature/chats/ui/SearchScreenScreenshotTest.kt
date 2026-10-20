@@ -16,9 +16,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Global search's states (`REQUIREMENTS.md` FR-L6): the suggestions, the hint, results in every section with the
- * query's words highlighted, a section still searching, a section that failed, and a query that found nothing; in
- * light and dark on a compact phone, and on an expanded window, where the field and the list keep a comfortable width.
+ * Global search's states (`REQUIREMENTS.md` FR-L6): the suggestions, the hint, results in segmented groups with the
+ * query's words highlighted, a section still searching (the progress indicator under the chips), sections that failed,
+ * a query that found nothing, and the Media filter without a query; in light and dark on a compact phone, and on an
+ * expanded window, where the field, the chips and the list keep a comfortable width.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -60,6 +61,15 @@ class SearchScreenScreenshotTest {
     @Test
     fun noResultsDark() = capture("noResultsDark", SearchPreviewData.noResults, ThemeMode.Dark)
 
+    @Test
+    fun mediaLight() = capture("mediaLight", SearchPreviewData.media, ThemeMode.Light)
+
+    @Test
+    fun mediaDark() = capture("mediaDark", SearchPreviewData.media, ThemeMode.Dark)
+
+    @Test
+    fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ThemeMode.Light)
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         name: String,
@@ -76,7 +86,12 @@ class SearchScreenScreenshotTest {
                 )
             }
         }
+        // Past the progress indicator's delay, so a search still running shows it.
+        composeRule.mainClock.advanceTimeBy(PROGRESS_DELAY_MILLIS)
         composeRule.waitForIdle()
         captureScreenRoboImage(goldenPath(javaClass, name))
     }
 }
+
+/** Longer than search's progress indicator waits before it shows, and its fade in. */
+private const val PROGRESS_DELAY_MILLIS = 1_000L
