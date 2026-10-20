@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import android.os.SystemClock
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -34,6 +35,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
@@ -54,6 +56,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
+import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
+import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentMap
@@ -148,6 +153,10 @@ import java.util.Locale
  *   location (found by the sheet's own `ShareLocationViewModel`) and a poll ([ChatUiState.poll], [pollEditor]), each
  *   taking the composer's reply along. The uploads of the messages being sent
  *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ * - **Voice messages** ([ChatRecorder]): held, locked, paused, sent or cancelled from the composer's microphone on the
+ *   [VoiceRecorder], as [voiceRecording] (kept out of [uiState], like the forward sheet, as only the composer shows
+ *   it); recording stops what plays, the screen stopping locks and pauses it, and clearing the view model throws it
+ *   away.
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -186,8 +195,11 @@ class ChatViewModel internal constructor(
     private val dispatcher: CoroutineDispatcher,
     private val locale: () -> Locale,
     audioPlayer: AudioPlayer,
+    voiceRecorder: VoiceRecorder,
+    voiceNoteRepository: VoiceNoteRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
+    recordingClock: () -> Long = SystemClock::elapsedRealtime,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -208,6 +220,8 @@ class ChatViewModel internal constructor(
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         audioPlayer: AudioPlayer,
+        voiceRecorder: VoiceRecorder,
+        voiceNoteRepository: VoiceNoteRepository,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
         chatId,
@@ -228,6 +242,8 @@ class ChatViewModel internal constructor(
         dispatcher,
         Locale::getDefault,
         audioPlayer,
+        voiceRecorder,
+        voiceNoteRepository,
         AndroidChatLog,
         messageId,
     )
@@ -326,6 +342,22 @@ class ChatViewModel internal constructor(
             replies = composer,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    private val recorder =
+        ChatRecorder(
+            chatId = chatId,
+            recorder = voiceRecorder,
+            repository = voiceNoteRepository,
+            scope = viewModelScope,
+            replies = composer,
+            clock = recordingClock,
+            onStart = { playback.pause() },
+            onEffect = { effectChannel.trySend(it) },
+            log = log,
+        )
+
+    /** The voice message being recorded in the composer; null while there is none. */
+    val voiceRecording: StateFlow<VoiceRecordingUiState?> get() = recorder.state
 
     /** The messages the composer's bars show that are not loaded. */
     private val composerTargets = ComposerTargets(chatId, messageRepository, viewModelScope, composer::onMessageGone)
@@ -552,11 +584,13 @@ class ChatViewModel internal constructor(
         // Leaving the screen frees the player, and deletes picked files that were never sent.
         addCloseable { playback.release() }
         addCloseable { attachments.release() }
+        addCloseable { recorder.release() }
         // The screen creates the view model in the frame that first composes it. What it starts runs once that frame is
         // done (dispatched, not at once as the main thread's immediate dispatcher would), so the frame does not wait.
         viewModelScope.launch(Dispatchers.Main) {
             composer.start()
             attachments.start()
+            recorder.start()
             views.start()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
@@ -588,6 +622,7 @@ class ChatViewModel internal constructor(
             ChatEvent.CancelEdit -> composer.cancelEdit()
             is SponsoredEvent -> sponsored.onEvent(event)
             is SelectionEvent -> selectionEvents.onEvent(event)
+            is VoiceEvent -> recorder.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -655,7 +690,8 @@ class ChatViewModel internal constructor(
      * Opens or closes the chat in TDLib when that changes. Undispatched, so the request is sent before this returns:
      * a close as the screen leaves, right before the view model's scope is cancelled, still reaches TDLib. A failure
      * changes nothing: TDLib then just does not prioritize the chat. Stopping also pauses what plays: nothing plays in
-     * the background; and it saves the composer's draft at once, also before the scope is cancelled.
+     * the background; locks and pauses a voice recording, as the microphone is not the app's in the background; and it
+     * saves the composer's draft at once, also before the scope is cancelled.
      */
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
@@ -663,6 +699,7 @@ class ChatViewModel internal constructor(
         if (!open) {
             composer.flush()
             playback.pause()
+            recorder.onStopped()
             views.setOpen(false)
         }
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {

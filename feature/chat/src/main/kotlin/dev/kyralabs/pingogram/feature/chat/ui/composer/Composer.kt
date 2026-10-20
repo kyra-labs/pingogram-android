@@ -87,6 +87,11 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
+import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -101,7 +106,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
- * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach].
+ * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach]. The microphone in
+ * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
+ * [onVoiceEvent]).
  */
 @Composable
 internal fun ChatBottomBar(
@@ -115,9 +122,12 @@ internal fun ChatBottomBar(
     onShowBarMessage: (messageId: Long) -> Unit = {},
     onCloseBar: () -> Unit = {},
     onAttach: () -> Unit = {},
+    recording: VoiceRecordingUiState? = null,
+    onVoiceEvent: (VoiceEvent) -> Unit = {},
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
+    val drag = remember { RecordDrag() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
         val insets = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
         when (composer) {
@@ -137,7 +147,16 @@ internal fun ChatBottomBar(
             is ComposerUiState.Available -> {
                 Column(insets) {
                     BarArea(composer.bar, onShowBarMessage, onCloseBar)
-                    Composer(composer, text, onSend, onFocusChanged, focus, onAttach, now)
+                    Composer(
+                        composer,
+                        text,
+                        onSend,
+                        onFocusChanged,
+                        focus,
+                        onAttach,
+                        VoiceInput(recording, onVoiceEvent, drag),
+                        now,
+                    )
                 }
             }
 
@@ -174,7 +193,9 @@ private fun BarArea(
  * beside it, which grows in on the motion scheme's spatial spring; while editing, a check ([SaveEditButton]) in its
  * place, also for an emptied caption, and no attach button. Formatting comes from the selection
  * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
- * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field.
+ * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field. While the
+ * field is empty the microphone ([RecordButton]) is in the send button's place; while it records, the recording bar
+ * ([RecordingBar]) takes the place of the attach button and the field.
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
@@ -185,6 +206,7 @@ private fun Composer(
     onFocusChanged: (Boolean) -> Unit,
     focus: ComposerFocusState,
     onAttach: () -> Unit,
+    voice: VoiceInput,
     now: () -> Instant = Instant::now,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -209,15 +231,20 @@ private fun Composer(
         horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
-        Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
-        ComposerField(
-            text = text,
-            onSend = { send(SendOptions()) },
-            onLink = { linking = it },
-            onFocusChanged = onFocusChanged,
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-        )
-        ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true })
+        val recording = voice.recording
+        if (recording != null) {
+            RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
+        } else {
+            Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
+            ComposerField(
+                text = text,
+                onSend = { send(SendOptions()) },
+                onLink = { linking = it },
+                onFocusChanged = onFocusChanged,
+                modifier = Modifier.weight(1f).focusRequester(focusRequester),
+            )
+        }
+        ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
     }
     linking?.let { selection ->
         LinkDialog(
@@ -242,9 +269,12 @@ private fun Composer(
 }
 
 /**
- * The button beside the text field while there is something to send ([canSend]): the check that saves an [edit] (also
- * for an emptied caption), else the send button, whose menu schedules where [canSchedule] ([onSchedule]).
+ * The button beside the text field: the check that saves an [edit] while there is something to save (also for an
+ * emptied caption); else the send button while there is something to send ([canSend]), whose menu schedules where
+ * [canSchedule] ([onSchedule]), and the microphone ([RecordButton]) while there is not. While a voice message records,
+ * the record button stays, also when an edit starts meanwhile.
  */
+@Suppress("LongParameterList") // What to save or send and how, and the voice recording.
 @Composable
 private fun RowScope.ComposerAction(
     edit: ComposerBar.Edit?,
@@ -252,11 +282,17 @@ private fun RowScope.ComposerAction(
     canSchedule: Boolean,
     send: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
+    voice: VoiceInput,
 ) {
+    val recording = voice.recording
     if (edit != null) {
-        Appearing(visible = canSend || edit.canBeEmpty) { SaveEditButton(onSave = { send(SendOptions()) }) }
+        // An edit started while a recording goes on hands-free waits until the recording is sent or deleted.
+        Appearing(visible = recording == null && (canSend || edit.canBeEmpty)) {
+            SaveEditButton(onSave = { send(SendOptions()) })
+        }
+        Appearing(visible = recording != null) { RecordButton(recording, voice.drag, voice.onEvent) }
     } else {
-        Appearing(visible = canSend) {
+        Appearing(visible = canSend && recording == null) {
             SendButton(
                 canSchedule = canSchedule,
                 onSend = { send(SendOptions()) },
@@ -264,8 +300,19 @@ private fun RowScope.ComposerAction(
                 onSchedule = onSchedule,
             )
         }
+        Appearing(visible = !canSend || recording != null) { RecordButton(recording, voice.drag, voice.onEvent) }
     }
 }
+
+/**
+ * The voice recording in progress ([recording], null while none), where what the user does with it goes, and where the
+ * finger holding the microphone is ([drag]), which the button and the recording bar share.
+ */
+private data class VoiceInput(
+    val recording: VoiceRecordingUiState?,
+    val onEvent: (VoiceEvent) -> Unit,
+    val drag: RecordDrag,
+)
 
 /**
  * Shows [content] while [visible]: it grows in from nothing on the motion scheme's fast spatial spring, and fades in on

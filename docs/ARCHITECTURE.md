@@ -142,6 +142,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+- So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
+  call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
+  and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
@@ -158,6 +161,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
 - Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Voice messages (FR-C5) are recorded by `feature:chat`'s `ChatRecorder` (a part of `ChatViewModel`, its state kept
+  out of `ChatUiState` as only the composer shows it) into a file `VoiceNoteRepository.newVoiceNoteFile`
+  (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
+  with `sendVoiceNote` (`inputMessageVoiceNote`); like
+  picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
+  refused.
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.

@@ -23,14 +23,15 @@ import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
  * The snackbars of forwarding, selecting, reporting and saving, for [ChatEffects]: their text ([noticeOf], with error
  * details if [showErrorDetails]) and what their action does ([onAction]): open the chat forwarded to, open the one
  * file saved to Downloads, go on to the storage permission ([activity]'s rationale shown first where the system wants
- * it), or open the app's settings after it was refused.
+ * it), or open the app's settings after it was refused; the same for the microphone a voice message needs. The
+ * system's requests for both come from [permissions].
  */
 @Stable
 internal class NoticeActions(
     private val context: Context,
     private val activity: Activity?,
     private val showErrorDetails: Boolean,
-    private val requestStoragePermission: () -> Unit,
+    private val permissions: NoticePermissions,
     private val onOpenChat: (chatId: Long) -> Unit,
     private val files: NoticeFiles,
 ) {
@@ -44,7 +45,7 @@ internal class NoticeActions(
                 resources = resources,
                 copyText = files.copyText,
                 showsStorageRationale = activity.showsStorageRationale(),
-                requestStoragePermission = requestStoragePermission,
+                requestStoragePermission = permissions.requestStorage,
             )
         } else {
             forwardNotice(resources, effect, showErrorDetails)
@@ -63,12 +64,17 @@ internal class NoticeActions(
             }
 
             SelectionEffect.RequestStoragePermission -> {
-                requestStoragePermission()
+                permissions.requestStorage()
                 ""
             }
 
-            SelectionEffect.StoragePermissionDenied -> {
+            SelectionEffect.StoragePermissionDenied, VoiceEffect.MicrophoneDenied -> {
                 context.openAppSettings()
+                ""
+            }
+
+            VoiceEffect.ExplainMicrophone -> {
+                permissions.requestMicrophone()
                 ""
             }
 
@@ -78,6 +84,15 @@ internal class NoticeActions(
         }
 }
 
+/**
+ * The system's permission requests the snackbars' actions start: the storage permission that saving needs on Android
+ * 8–9 ([requestStorage]), and the microphone that voice messages need ([requestMicrophone]).
+ */
+internal class NoticePermissions(
+    val requestStorage: () -> Unit,
+    val requestMicrophone: () -> Unit,
+)
+
 /** How the screen opens a downloaded file in another app ([openFile]) and puts a text on the clipboard ([copyText]). */
 internal class NoticeFiles(
     val openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult,
@@ -86,7 +101,8 @@ internal class NoticeFiles(
 
 /**
  * The [NoticeActions] of the screen, with the request for the storage permission that saving needs on Android 8–9,
- * whose answer goes to [onEvent] ([SelectionEvent.StoragePermissionResult]).
+ * whose answer goes to [onEvent] ([SelectionEvent.StoragePermissionResult]), and the one for the microphone that voice
+ * messages need ([VoiceEvent.PermissionAnswered]).
  */
 @Composable
 internal fun rememberNoticeActions(
@@ -100,11 +116,19 @@ internal fun rememberNoticeActions(
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             currentOnEvent(SelectionEvent.StoragePermissionResult(granted))
         }
+    val microphone =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            currentOnEvent(VoiceEvent.PermissionAnswered(granted))
+        }
     return NoticeActions(
         context = LocalContext.current,
         activity = LocalActivity.current,
         showErrorDetails = showErrorDetails,
-        requestStoragePermission = { permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) },
+        permissions =
+            NoticePermissions(
+                requestStorage = { permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) },
+                requestMicrophone = { microphone.launch(Manifest.permission.RECORD_AUDIO) },
+            ),
         onOpenChat = onOpenChat,
         files = files,
     )

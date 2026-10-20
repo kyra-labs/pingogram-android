@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Rounded "mic" (wght 400, GRAD 0, opsz 24, FILL 1), Apache License 2.0:
+     https://fonts.google.com/icons. Generated from the SVG; the group moves its viewBox (0 -960 960 960) to 0,0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M360 -520V-760Q360 -810 395 -845Q430 -880 480 -880Q530 -880 565 -845Q600 -810 600 -760V-520Q600 -470 565 -435Q530 -400 480 -400Q430 -400 395 -435Q360 -470 360 -520ZM520 -760V-520Q520 -503 508.5 -491.5Q497 -480 480 -480Q463 -480 451.5 -491.5Q440 -503 440 -520V-760Q440 -777 451.5 -788.5Q463 -800 480 -800Q497 -800 508.5 -788.5Q520 -777 520 -760ZM440 -160V-243Q348 -256 282.5 -321Q217 -386 203 -479Q201 -496 212 -508Q223 -520 240 -520Q257 -520 268.5 -508.5Q280 -497 284 -480Q298 -410 353.5 -365Q409 -320 480 -320Q552 -320 607 -365.5Q662 -411 676 -480Q680 -497 691.5 -508.5Q703 -520 720 -520Q737 -520 748 -508Q759 -496 757 -479Q743 -388 678 -322Q613 -256 520 -243V-160Q520 -143 508.5 -131.5Q497 -120 480 -120Q463 -120 451.5 -131.5Q440 -143 440 -160ZM520 -520V-760Q520 -777 508.5 -788.5Q497 -800 480 -800Q463 -800 451.5 -788.5Q440 -777 440 -760V-520Q440 -503 451.5 -491.5Q463 -480 480 -480Q497 -480 508.5 -491.5Q520 -503 520 -520Z" />
+    </group>
+</vector>

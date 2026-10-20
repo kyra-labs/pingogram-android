@@ -95,6 +95,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in your chats.
 - On tablets and other wide screens, search opens in the chat list's place next to the conversation, and a chat or
   message you find opens beside it. Back closes that conversation first, then search.
+- Voice messages: while the message field is empty, a microphone button sits where the send button goes. Hold it to
+  record and release to send; slide toward the start to cancel, or slide up to keep recording hands-free, then send,
+  delete or pause and go on. The recording shows how long it is and a live waveform of your voice, and the message
+  replies to the message you are replying to. Recordings shorter than a second aren't sent. With a screen reader or
+  a keyboard, the button records hands-free right away. Pingogram asks for the microphone the first time you hold the
+  button and explains why first; if you refused, it offers your device's settings. Leaving the app or turning the
+  phone pauses a recording, which waits for you to go on, send or delete it.
 
 ### Changed
 - Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
