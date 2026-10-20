@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
+  default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
+  and later the choice is the same as in Android's own app language settings, which the page also opens; on Android
+  8 to 12 Pingogram keeps it itself.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
@@ -80,6 +84,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   remove it. Changing or turning off the passcode asks for it first.
 
 ### Changed
+- Pingogram now shows every screen in its own languages only: built-in texts of the libraries it uses (the date
+  picker, for example) no longer switch to your phone's language when Pingogram has no translation for it, and the
+  download is a little smaller.
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
   shaped icon, which turns into a warning sign when something needs fixing or Telegram asks you to wait. "Next" is a
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot

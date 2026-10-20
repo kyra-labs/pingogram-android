@@ -29,7 +29,7 @@ import org.robolectric.annotation.Config
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
  * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
- * themed icons.
+ * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -118,6 +118,13 @@ class AppManifestTest {
             assertNotNull(drawable.foreground)
             assertNotNull(drawable.monochrome)
         }
+    }
+
+    @Test
+    fun `Android 13 and later list the languages Pingogram ships in its language settings`() {
+        val application = mergedManifest().elements("application").single()
+
+        assertEquals("@xml/locales_config", application.androidAttribute("localeConfig"))
     }
 
     private companion object {

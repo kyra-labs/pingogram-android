@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
@@ -347,6 +348,17 @@ class PingogramAppTest {
 
         assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
         assertNoNavigation()
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
+        text(SettingsR.string.settings_language).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<LanguageRoute>() == true)
+        // The page's radio rows are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
 

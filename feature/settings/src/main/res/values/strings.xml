@@ -19,6 +19,8 @@
     <!-- Settings home -->
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_summary">Pingogram\'s own language</string>
     <string name="settings_data_storage">Data and storage</string>
     <string name="settings_data_storage_summary">Storage usage, clear cache</string>
     <string name="settings_about">About</string>
@@ -57,6 +59,18 @@
     <string name="settings_contrast_follows_system">Follows your device\'s contrast setting</string>
     <!-- Before Android 14, wallpaper colors have no contrast levels. -->
     <string name="settings_contrast_brand_colors">Medium and high contrast use Pingogram\'s colors instead of your wallpaper\'s</string>
+
+    <!-- Language (FR-S1, per-app language) -->
+    <!-- Spoken by screen readers for the progress indicator while the languages load. -->
+    <string name="settings_language_loading">Loading languages</string>
+    <string name="settings_section_app_language">App language</string>
+    <!-- The choice that follows the device's language; the device's language, named in itself, shows below it. -->
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_footer">Text that Pingogram has no translation for yet shows in English.</string>
+    <!-- Android 13+: the heading above the row that opens Android's own app language settings. -->
+    <string name="settings_section_android">Android</string>
+    <string name="settings_language_android_settings">App language in Android settings</string>
+    <string name="settings_language_android_settings_summary">The same choice, where Android lists every app\'s language</string>
 
     <!-- Data and storage -->
     <string name="settings_section_storage_usage">Storage usage</string>
