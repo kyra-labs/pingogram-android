@@ -67,6 +67,9 @@ import androidx.compose.ui.unit.dp
  *   of one.
  * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
  * @property passcodeDot the diameter of a dot that stands for an entered digit of a passcode.
+ * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
+ * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.
+ * @property recordingLockDistance how far it slides up to lock the recording, which then goes on hands-free.
  */
 @Immutable
 data class PingogramSizes(
@@ -108,6 +111,9 @@ data class PingogramSizes(
     val fabMedium: Dp = 80.dp,
     val pinPadMaxWidth: Dp = 360.dp,
     val passcodeDot: Dp = 14.dp,
+    val recordingDot: Dp = 10.dp,
+    val recordingCancelDistance: Dp = 112.dp,
+    val recordingLockDistance: Dp = 72.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

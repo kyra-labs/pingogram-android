@@ -12,6 +12,13 @@
          and later (REQUIREMENTS.md FR-S1, approved by the owner on 2026-10-20). A normal permission: Android grants it
          at install, and the system's prompt asks the user each time. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Recording voice messages in the composer (REQUIREMENTS.md FR-C5, approved by the owner on 2026-10-20), only
+         while the conversation is on screen. Asked at run time at the first hold of the microphone, after a snackbar
+         says why. Devices without a microphone can still install the app (and do everything else). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
     <!-- WorkManager (notification actions) declares these four. It needs WAKE_LOCK and FOREGROUND_SERVICE only before
          Android 12, where expedited work runs as a foreground service that holds a wake lock while a reply is sent
          (approved by the owner on 2026-10-19); from Android 12 on it runs as an expedited job, so both stop at API 30.

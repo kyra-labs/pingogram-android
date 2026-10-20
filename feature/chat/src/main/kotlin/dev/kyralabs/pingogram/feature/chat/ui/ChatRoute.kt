@@ -36,6 +36,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusStat
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -76,6 +77,7 @@ internal fun ChatRoute(
     locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
     LifecycleStartEffect(viewModel) {
         viewModel.onEvent(ChatEvent.Started)
         onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
@@ -118,6 +120,7 @@ internal fun ChatRoute(
         composerText = viewModel.composerText,
         composerFocus = composerFocus,
         attach = attach,
+        recording = recording,
         reportComment = viewModel.reportComment,
     )
     val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
@@ -138,7 +141,9 @@ internal fun ChatRoute(
  * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
  * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
  * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
- * where the system wants that, and its answer goes to [onEvent].
+ * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
+ * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
+ * once it is refused, and say to hold the button or that recording failed.
  * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
  * (`docs/DESIGN_SYSTEM.md` §5).
  */
@@ -179,6 +184,7 @@ internal fun ChatEffects(
                     ChatEffect.MessageUnavailable,
                     ChatEffect.ActionUnavailable,
                     is ChatEffect.SponsoredNotice,
+                    is VoiceEffect,
                     -> {
                         resources.getString(effect.noticeText())
                     }
@@ -287,6 +293,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
         ChatEffect.ActionUnavailable -> R.string.message_action_unavailable
         is ChatEffect.SponsoredNotice -> notice.text
+        is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable
     }
 

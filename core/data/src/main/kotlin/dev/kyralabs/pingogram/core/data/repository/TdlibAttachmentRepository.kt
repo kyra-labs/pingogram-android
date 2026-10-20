@@ -189,7 +189,7 @@ class TdlibAttachmentRepository internal constructor(
 }
 
 /** `sendMessage` of [content] to [chatId] with [options], replying as [replyTo] says. */
-private suspend fun TdlibClient.sendMessage(
+internal suspend fun TdlibClient.sendMessage(
     chatId: Long,
     content: TdApi.InputMessageContent,
     options: SendOptions,
