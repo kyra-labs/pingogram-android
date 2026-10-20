@@ -12,12 +12,57 @@
     </style>
 
     <!-- Launch theme (core-splashscreen); installSplashScreen() switches to Theme.Pingogram. The icon is the launcher
-         icon's mark on its white circle, so it reads on the light and the dark window alike. -->
-    <style name="Theme.Pingogram.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/window_background</item>
+         icon's mark on its white circle, so it reads on the light and the dark window alike. The background is the
+         default Appearance's: the system's theme mode with dynamic color (brand colors before Android 12). -->
+    <style name="Theme.Pingogram.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/splash_dynamic</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
         <item name="postSplashScreenTheme">@style/Theme.Pingogram</item>
+    </style>
+
+    <!-- The splash screens of the other Appearance settings, which Android 13+ shows from the next start on
+         (SplashScreenThemes.kt). -->
+    <style name="Theme.Pingogram.Starting.SystemBrand">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.SystemDynamicAmoled">
+        <item name="windowSplashScreenBackground">@color/splash_dynamic_amoled</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.SystemBrandAmoled">
+        <item name="windowSplashScreenBackground">@color/splash_brand_amoled</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Light">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Light.Dynamic">
+        <item name="windowSplashScreenBackground">@color/splash_dynamic_light</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Light.Brand">
+        <item name="windowSplashScreenBackground">@color/brand_background_light</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Dark">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Dark.Dynamic">
+        <item name="windowSplashScreenBackground">@color/splash_dynamic_dark</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Dark.Brand">
+        <item name="windowSplashScreenBackground">@color/brand_background_dark</item>
+    </style>
+
+    <style name="Theme.Pingogram.Starting.Dark.Black">
+        <item name="windowSplashScreenBackground">@color/splash_black</item>
     </style>
 
 </resources>

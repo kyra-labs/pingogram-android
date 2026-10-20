@@ -11,6 +11,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
+import androidx.annotation.StyleRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -22,6 +24,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.core.common.Dispatcher
+import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
@@ -33,6 +37,7 @@ import dev.kyralabs.pingogram.language.contextInLanguage
 import dev.kyralabs.pingogram.language.inAppLanguageOf
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +46,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -50,7 +56,10 @@ import javax.inject.Inject
  *
  * The theme follows the Appearance settings ([MainActivityViewModel.appearance]), and so do the system bars' icons:
  * light on a dark theme, dark on a light one, whatever the system's own setting. Nothing is composed until the settings
- * are read, so the app never draws in a theme the user did not choose; the splash screen covers that wait.
+ * are read, so the app never draws in a theme the user did not choose; the splash screen covers that wait. It then
+ * fades out over the app as its icon grows ([animateExit]). On Android 13+ the next start's splash screen takes the
+ * background of the theme the settings resolve to ([splashScreenThemeOf]); the system keeps it, so it is set off the
+ * main thread whenever it changes.
  *
  * The app's language (Settings → Language) is Android's from Android 13 on, which creates the activity again when it
  * changes. Before, the activity takes it itself: its context is in the language chosen when it is attached
@@ -75,6 +84,10 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
+
+    @Inject
+    @Dispatcher(IO)
+    lateinit var io: CoroutineDispatcher
 
     @Inject
     lateinit var appLanguageRepository: PlatformAppLanguageRepository
@@ -103,6 +116,7 @@ class MainActivity : ComponentActivity() {
         // The bound reference creates the view model now, which starts listening to TDLib, reading the settings and
         // the splash time limit.
         splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
+        splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
         enableEdgeToEdge()
         if (savedInstanceState == null) openChatOf(intent)
         languageApplied = followAppLanguage()
@@ -206,6 +220,10 @@ class MainActivity : ComponentActivity() {
                 navigationBarStyle = SystemBarStyle.auto(LIGHT_SCRIM, DARK_SCRIM) { dark },
             )
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val splashScreenTheme = splashScreenThemeOf(settings)
+            LaunchedEffect(splashScreenTheme) { persistSplashScreenTheme(splashScreenTheme) }
+        }
         PingogramTheme(
             themeMode = settings.themeMode,
             dynamicColor = settings.dynamicColor,
@@ -214,6 +232,12 @@ class MainActivity : ComponentActivity() {
             content = content,
         )
     }
+
+    /** Sets the splash screen theme of the next starts; the system keeps it, through a call to it. */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private suspend fun persistSplashScreenTheme(
+        @StyleRes theme: Int,
+    ) = withContext(io) { splashScreen.setSplashScreenTheme(theme) }
 
     private companion object {
         // enableEdgeToEdge()'s own scrims behind three-button navigation where the system draws none (before Android

@@ -284,10 +284,6 @@ class SharedMediaTest {
      * Sets the animator duration scale as the system's developer setting does: 0 turns animations off. The platform's
      * setter is hidden from the SDK, so it is called by reflection.
      */
-    private fun setAnimatorDurationScale(scale: Float) {
-        ValueAnimator::class.java.getMethod("setDurationScale", Float::class.javaPrimitiveType).invoke(null, scale)
-    }
-
     private companion object {
         const val MESSAGE = 42L
         const val OTHER_MESSAGE = 43L

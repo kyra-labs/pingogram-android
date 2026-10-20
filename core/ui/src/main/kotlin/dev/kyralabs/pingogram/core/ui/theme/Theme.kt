@@ -26,9 +26,10 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * When a setting changes, every color role cross-fades to the new scheme on the motion scheme's default effects spring
  * ([animateColorScheme]); the first scheme shows at once, so the app never starts with a crossfade.
  *
- * Ripples are the Material 3 opacity state layers (hover 8%, focus 10%, pressed 10%, dragged 16%).
- * Reduced motion needs no extra code: Compose scales every animation, springs included, by the
- * system animator duration scale, and a scale of 0 makes them finish immediately.
+ * Ripples are the Material 3 state layers (hover 8%, pressed 10%, dragged 16%); keyboard focus shows Material 3
+ * Expressive's inset focus ring rather than a 10% focus layer (`docs/DESIGN_SYSTEM.md` §2.3).
+ * Compose scales every animation, springs included, by the system animator duration scale, and a scale of 0 makes them
+ * finish immediately; shape morphs and container transforms also step aside then (`isReducedMotion`).
  *
  * @param dynamicColor Material You colors on Android 12+; brand colors otherwise or when false.
  * @param contrast used where the system has no contrast setting (before Android 14).
@@ -60,7 +61,7 @@ fun PingogramTheme(
             LocalPingogramColors provides pingogramColors,
             LocalPingogramSpacing provides DefaultSpacing,
             LocalPingogramSizes provides DefaultSizes,
-            LocalRippleThemeConfiguration provides RippleDefaults.OpacityFocusThemeConfiguration,
+            LocalRippleThemeConfiguration provides RippleDefaults.InsetFocusRingThemeConfiguration,
             LocalThemeSettings provides settings,
             content = content,
         )

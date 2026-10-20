@@ -115,7 +115,11 @@ private fun DownloadButton(
     colors: BubbleColors,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick, colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent)) {
+    IconButton(
+        onClick = onClick,
+        shapes = IconButtonDefaults.shapes(),
+        colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+    ) {
         Icon(painterResource(UiR.drawable.ic_download), contentDescription = stringResource(R.string.content_download))
     }
 }
@@ -127,7 +131,11 @@ private fun CancelDownloadButton(
     onClick: () -> Unit,
 ) {
     DownloadRing(progress = progress, colors = colors) {
-        IconButton(onClick = onClick, colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent)) {
+        IconButton(
+            onClick = onClick,
+            shapes = IconButtonDefaults.shapes(),
+            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.accent),
+        ) {
             Icon(
                 painter = painterResource(UiR.drawable.ic_close),
                 contentDescription = stringResource(R.string.content_cancel_download),

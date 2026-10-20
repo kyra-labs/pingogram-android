@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- background of the dark brand scheme (core/ui Color.kt) -->
-    <color name="window_background">#FF121318</color>
+    <color name="window_background">@color/brand_background_dark</color>
 </resources>

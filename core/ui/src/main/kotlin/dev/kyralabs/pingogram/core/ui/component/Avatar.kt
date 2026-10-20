@@ -56,6 +56,7 @@ import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderColorsOnSelection
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.snapWhenReducedMotion
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
@@ -127,7 +128,7 @@ fun Avatar(
                 selected = selected,
                 avatarShape = MaterialShapes.Circle,
                 mark = SelectedMark(painterResource(R.drawable.ic_check), colors.primary, colors.onPrimary),
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                animationSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultSpatialSpec()),
             ).onlineIndicator(
                 online = isOnline,
                 dotColor = MaterialTheme.pingogramColors.online,
