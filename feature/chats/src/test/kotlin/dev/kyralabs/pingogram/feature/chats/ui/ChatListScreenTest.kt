@@ -12,22 +12,30 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -261,6 +269,90 @@ class ChatListScreenTest {
         composeRule.onNodeWithContentDescription(string(R.string.chat_list_archive_back)).performClick()
 
         assertEquals(1, backs)
+    }
+
+    // New chat
+
+    @Test
+    fun `the New chat button opens the New chat screen`() {
+        setScreen(ChatListPreviewData.content)
+
+        composeRule.onNode(newChatButton).assertIsDisplayed().performClick()
+
+        assertEquals(listOf(ChatListEvent.NewChat), events)
+    }
+
+    @Test
+    fun `the New chat button collapses as the list scrolls towards its end and expands as it scrolls back`() {
+        setScreen(ChatListPreviewData.content)
+        val label = string(R.string.new_chat)
+        val list = composeRule.onNode(hasScrollAction())
+        val expandedWidth =
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width
+
+        list.performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+        val collapsedWidth =
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width
+        list.performTouchInput { swipeDown() }
+        composeRule.waitForIdle()
+
+        assertTrue("$collapsedWidth < $expandedWidth", collapsedWidth < expandedWidth)
+        assertEquals(
+            expandedWidth,
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width,
+        )
+        composeRule.onNode(newChatButton).assertContentDescriptionEquals(label)
+    }
+
+    @Test
+    fun `the New chat button hides in selection mode`() {
+        setScreen(ChatListPreviewData.selecting)
+
+        assertNewChatButtonHidden()
+    }
+
+    @Test
+    fun `the archive has no New chat button`() {
+        setScreen(ChatListPreviewData.archived)
+
+        composeRule.onNode(newChatButton).assertDoesNotExist()
+    }
+
+    @Test
+    fun `no chats yet offers a New chat button`() {
+        setScreen(ChatListPreviewData.empty)
+
+        composeRule.onNode(hasText(string(R.string.new_chat)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(ChatListEvent.NewChat), events)
+    }
+
+    @Test
+    fun `an empty archive offers no New chat button`() {
+        setScreen(ChatListPreviewData.archivedEmpty)
+
+        composeRule.onNode(hasText(string(R.string.new_chat))).assertDoesNotExist()
+    }
+
+    /** The "New chat" floating action button: named for screen readers, whether or not it shows its label. */
+    private val newChatButton: SemanticsMatcher
+        get() = hasContentDescription(string(R.string.new_chat)) and hasClickAction()
+
+    /** The button is not on screen: scaled away by its animation, or not there at all. */
+    private fun assertNewChatButtonHidden() {
+        composeRule.waitForIdle()
+        val buttons = composeRule.onAllNodes(newChatButton)
+        repeat(buttons.fetchSemanticsNodes().size) { buttons[it].assertIsNotDisplayed() }
     }
 
     // The delete dialog

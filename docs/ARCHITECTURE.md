@@ -91,7 +91,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   composable is reused in the detail pane. `:app` composes it (`ChatsListDetail`, a
   `NavigableListDetailPaneScaffold`) from `feature:chats`' `ChatListPane` and `feature:chat`'s
   `ChatPane`; the navigator holds the open chat. With one pane (compact, medium) a tap still pushes
-  `ChatRoute`, and the archive pushes it on every window.
+  `ChatRoute`, and the archive pushes it on every window. New chat (`NewChatRoute`, `feature:chats`) is pushed above
+  the Chats tab on every window too; a contact's chat takes its place on the back stack, so back from the chat
+  returns to the chat list.
 - Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
@@ -99,9 +101,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
 - Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
   down as `LocalSharedTransitionScope`; destinations that share content provide their animated
-  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.sharedMediaBounds` (a no-op
-  without both) runs the container transform of a photo, video or GIF between the conversation
-  (pushed or in the detail pane) and the media viewer, keyed by message id.
+  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.containerTransform` (a no-op
+  without both) runs a container transform between the two destinations' content of one key:
+  `Modifier.sharedMediaBounds` that of a photo, video or GIF between the conversation (pushed or in the
+  detail pane) and the media viewer, keyed by message id, and the Chats tab's "New chat" button grows
+  into the New chat screen.
 
 ## Threading
 

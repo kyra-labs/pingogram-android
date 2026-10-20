@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -293,6 +294,36 @@ class PingogramAppTest {
         composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // New chat (FR-L7)
+
+    @Test
+    fun `the New chat button grows into New chat above the chats tab, and back returns to the chats`() {
+        tdlib.on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
+        setApp()
+        awaitText(ChatsR.string.chat_list_empty_title)
+        val button = composeRule.onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
+        val buttonBounds = button.fetchSemanticsNode().boundsInRoot
+
+        composeRule.mainClock.autoAdvance = false
+        button.performClick()
+        repeat(TRANSFORM_FRAMES) { composeRule.mainClock.advanceTimeByFrame() }
+        composeRule.waitForIdle()
+
+        // Early in the container transform the screen is still about the button's size, where the button was.
+        val back = composeRule.onNodeWithContentDescription(string(ChatsR.string.new_chat_back))
+        val growing = back.fetchSemanticsNode().boundsInRoot
+        assertTrue("$growing in $buttonBounds", growing.top > buttonBounds.top - buttonBounds.height)
+        composeRule.mainClock.autoAdvance = true
+        awaitText(ChatsR.string.new_chat_no_contacts)
+        assertTrue(navController.currentDestination?.hasRoute<NewChatRoute>() == true)
+        assertTrue(back.fetchSemanticsNode().boundsInRoot.top < buttonBounds.top / 2)
+        assertNoNavigation()
+        back.performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_chats).assertIsSelected()
+        assertTrue(navController.currentDestination?.hasRoute<ChatsRoute>() == true)
     }
 
     // Settings pages (FR-S1)
@@ -769,6 +800,9 @@ class PingogramAppTest {
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
         const val HALF_GESTURE = 0.5f
+
+        /** A few frames into a container transform. */
+        const val TRANSFORM_FRAMES = 3
 
         /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
         val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f

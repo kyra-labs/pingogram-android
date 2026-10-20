@@ -309,6 +309,10 @@ class ChatListViewModel internal constructor(
                 effectChannel.trySend(ChatListEffect.OpenArchive)
             }
 
+            ChatListEvent.NewChat -> {
+                effectChannel.trySend(ChatListEffect.OpenNewChat)
+            }
+
             is ChatListEvent.ConfirmDelete -> {
                 confirmDelete(event.forEveryone)
             }
