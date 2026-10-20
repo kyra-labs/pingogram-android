@@ -47,17 +47,26 @@ class TransfersWorker
         private val transferRepository: TransferRepository,
         private val builder: TransferNotificationBuilder,
     ) : CoroutineWorker(context, parameters) {
-        @OptIn(ExperimentalCoroutinesApi::class)
         override suspend fun doWork(): Result {
             val first = transferRepository.transfers.value
-            if (first.isEmpty) return Result.success()
+            if (!first.isEmpty && enterForeground(first)) follow()
+            return Result.success()
+        }
+
+        /** Shows [transfers] as the foreground service's notification; false if Android refuses that now. */
+        private suspend fun enterForeground(transfers: Transfers): Boolean =
             try {
-                setForeground(foregroundInfo(first))
+                setForeground(foregroundInfo(transfers))
+                true
             } catch (refused: IllegalStateException) {
                 // ForegroundServiceStartNotAllowedException (Android 12+): the app went to the background meanwhile.
                 Log.w(TAG, "Transfers not in the foreground: ${refused.javaClass.simpleName}")
-                return Result.success()
+                false
             }
+
+        /** Updates the notification until [LINGER] after the last transfer ended. */
+        @OptIn(ExperimentalCoroutinesApi::class)
+        private suspend fun follow() {
             transferRepository.transfers
                 .transformLatest { transfers ->
                     // An end waits, and a transfer that begins meanwhile cancels the wait.
@@ -69,7 +78,6 @@ class TransfersWorker
                     builder.update(transfers)
                     delay(UPDATE_INTERVAL)
                 }
-            return Result.success()
         }
 
         /** Before Android 12, expedited work runs in WorkManager's foreground service from the start. */

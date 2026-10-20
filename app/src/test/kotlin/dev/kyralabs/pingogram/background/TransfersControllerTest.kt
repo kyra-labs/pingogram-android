@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-/** When the transfers' worker starts: as the user's transfers begin in the foreground, or the user comes back to them. */
+/** When the transfers' worker starts: as the user's transfers begin in the foreground, or when the user returns. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransfersControllerTest {
     private val transfers = FakeTransferRepository()

@@ -155,11 +155,17 @@ private data class TransferState(
     }
 
     private fun sending(message: TdApi.Message): TransferState {
-        if (!message.isOutgoing || message.sendingState !is TdApi.MessageSendingStatePending) return this
-        val file = message.content.fileToUpload() ?: return this
-        if (file.remote.isUploadingCompleted) return this
-        val upload = Upload(message.chatId, file.id, Progress(file.remote.uploadedSize, file.knownSize))
-        return copy(uploads = uploads.put(message.id, upload))
+        val beingSent = message.isOutgoing && message.sendingState is TdApi.MessageSendingStatePending
+        val file =
+            if (beingSent) {
+                message.content.fileToUpload()?.takeUnless {
+                    it.remote.isUploadingCompleted
+                }
+            } else {
+                null
+            }
+        val upload = file?.let { Upload(message.chatId, it.id, Progress(it.remote.uploadedSize, it.knownSize)) }
+        return if (upload == null) this else copy(uploads = uploads.put(message.id, upload))
     }
 
     private fun withoutUpload(messageId: Long): TransferState =
