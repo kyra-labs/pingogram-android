@@ -89,6 +89,14 @@ data object BlockedUsersRoute
 @Serializable
 data object ActiveSessionsRoute
 
+/** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object PasscodeLockRoute
+
+/** Setting a new passcode, entered twice, pushed above [PasscodeLockRoute]. */
+@Serializable
+data object SetPasscodeRoute
+
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.

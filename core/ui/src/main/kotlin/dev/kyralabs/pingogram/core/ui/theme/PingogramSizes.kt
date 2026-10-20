@@ -60,6 +60,8 @@ import androidx.compose.ui.unit.dp
  * @property waveformBarWidth the width of one bar of a voice message's waveform.
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
  * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
+ * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
+ * @property passcodeDot the diameter of a dot that stands for an entered digit of a passcode.
  */
 @Immutable
 data class PingogramSizes(
@@ -98,6 +100,8 @@ data class PingogramSizes(
     val waveformBarWidth: Dp = 3.dp,
     val waveformBarGap: Dp = 2.dp,
     val attachmentPreview: Dp = 120.dp,
+    val pinPadMaxWidth: Dp = 360.dp,
+    val passcodeDot: Dp = 14.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

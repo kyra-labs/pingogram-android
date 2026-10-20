@@ -39,6 +39,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
   or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
   it, and when you forwarded to one other chat, opens that chat.
+- Passcode lock: Privacy and security → Passcode lock asks for a PIN of 4 to 8 digits, or a password, whenever you
+  come back to Pingogram: immediately, or after 1 minute, 5 minutes or an hour in the background, and always after a
+  restart. On Android 10 and later you can unlock with your fingerprint or face instead. While locked, nothing of your
+  chats shows, screenshots are blocked, and a notification you tap opens its chat only after you unlock. "Hide content
+  in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
+  After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
+  remove it. Changing or turning off the passcode asks for it first.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a

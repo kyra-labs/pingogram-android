@@ -331,4 +331,71 @@
     <string name="settings_discard_profile_dialog_title">Discard changes?</string>
     <string name="settings_discard_profile_dialog_text">Your changes to your name, username and bio haven\'t been saved.</string>
     <string name="settings_discard_profile_dialog_confirm">Discard</string>
+
+    <!-- Passcode lock (REQUIREMENTS.md FR-S1): its row on Privacy and security, its page, setting a passcode, and the
+         lock screen. -->
+    <string name="settings_passcode_lock">Passcode lock</string>
+    <string name="settings_passcode_lock_on">On</string>
+    <string name="settings_passcode_lock_off">Off</string>
+    <string name="settings_passcode_lock_loading">Loading passcode lock settings</string>
+    <string name="settings_passcode_turn_on">Turn passcode on</string>
+    <string name="settings_passcode_off_footer">Ask for a passcode whenever you come back to Pingogram, so nobody else who uses this device can read your chats. If you forget it, you\'ll have to log out and log in again, and secret chats will be lost.</string>
+    <string name="settings_passcode_section_passcode">Passcode</string>
+    <string name="settings_passcode_change">Change passcode</string>
+    <string name="settings_passcode_turn_off">Turn passcode off</string>
+    <string name="settings_passcode_on_footer">If you forget your passcode, you\'ll have to log out and log in again. Secret chats will be lost.</string>
+    <string name="settings_passcode_section_auto_lock">Auto-lock</string>
+    <string name="settings_passcode_auto_lock_immediately">Immediately</string>
+    <string name="settings_passcode_auto_lock_one_minute">After 1 minute</string>
+    <string name="settings_passcode_auto_lock_five_minutes">After 5 minutes</string>
+    <string name="settings_passcode_auto_lock_one_hour">After 1 hour</string>
+    <string name="settings_passcode_auto_lock_footer">How long Pingogram can stay in the background before it asks for the passcode again. It always asks after a restart.</string>
+    <string name="settings_passcode_section_unlock">Unlock and privacy</string>
+    <string name="settings_passcode_biometric">Unlock with fingerprint or face</string>
+    <string name="settings_passcode_biometric_summary">Use the biometrics set up on this device instead of the passcode</string>
+    <string name="settings_passcode_hide_content">Hide content in recent apps</string>
+    <string name="settings_passcode_hide_content_summary">Recent apps show Pingogram without your chats</string>
+    <string name="settings_passcode_hide_content_summary_secure">Recent apps show Pingogram without your chats. This also blocks screenshots in Pingogram.</string>
+    <string name="settings_passcode_turn_off_dialog_title">Turn passcode off?</string>
+    <string name="settings_passcode_turn_off_dialog_text">Anyone who uses this device will be able to open Pingogram and read your chats.</string>
+    <string name="settings_passcode_turn_off_dialog_confirm">Turn off</string>
+    <string name="settings_passcode_set_title">Set passcode</string>
+    <string name="settings_passcode_create_pin">Choose a PIN</string>
+    <string name="settings_passcode_create_password">Choose a password</string>
+    <string name="settings_passcode_confirm_pin">Enter the PIN again</string>
+    <string name="settings_passcode_confirm_password">Enter the password again</string>
+    <string name="settings_passcode_create_pin_hint">4 to 8 digits</string>
+    <string name="settings_passcode_create_password_hint">At least 4 characters</string>
+    <string name="settings_passcode_confirm_hint">To make sure it\'s right</string>
+    <string name="settings_passcode_use_password">Use a password</string>
+    <string name="settings_passcode_use_pin">Use a PIN</string>
+    <string name="settings_passcode_too_short_pin">A PIN needs 4 to 8 digits</string>
+    <string name="settings_passcode_too_short_password">A password needs at least 4 characters</string>
+    <string name="settings_passcode_mismatch">They didn\'t match. Choose it again.</string>
+    <string name="settings_passcode_next">Next</string>
+    <string name="settings_passcode_save">Save</string>
+    <string name="settings_passcode_verify_title">Enter your passcode</string>
+    <string name="settings_passcode_verify_hint">To change the passcode lock</string>
+    <string name="settings_passcode_label">Passcode</string>
+    <string name="settings_passcode_wrong">Wrong passcode</string>
+    <!-- %1$s: the time left, e.g. "30 seconds" or "2 minutes". -->
+    <string name="settings_passcode_wait">Too many attempts. Try again in %1$s.</string>
+    <plurals name="settings_passcode_digits_entered">
+        <item quantity="one">%1$d digit entered</item>
+        <item quantity="other">%1$d digits entered</item>
+    </plurals>
+    <string name="settings_passcode_no_digits">No digits entered</string>
+    <string name="settings_passcode_delete">Delete</string>
+    <string name="lock_title">Pingogram is locked</string>
+    <string name="lock_hint_pin">Enter your PIN</string>
+    <string name="lock_hint_password">Enter your password</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_forgot">Forgot passcode?</string>
+    <string name="lock_biometric">Unlock with fingerprint or face</string>
+    <string name="lock_biometric_prompt_title">Unlock Pingogram</string>
+    <string name="lock_biometric_prompt_cancel">Use passcode</string>
+    <string name="lock_forgot_dialog_title">Log out to remove the passcode?</string>
+    <string name="lock_forgot_dialog_text">A forgotten passcode can\'t be recovered. Logging out removes it and deletes this account\'s data from this device, including secret chats, which exist only here. Your other chats stay in your Telegram account, and you can log in again.</string>
+    <string name="lock_forgot_dialog_confirm">Log out</string>
+    <string name="lock_logging_out">Logging out</string>
 </resources>

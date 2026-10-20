@@ -3,9 +3,14 @@ package dev.kyralabs.pingogram
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.PasscodeSettings
+import dev.kyralabs.pingogram.core.domain.model.PasscodeType
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.tdlib.AuthState
+import dev.kyralabs.pingogram.core.testing.FakeAppLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +40,8 @@ class MainActivityViewModelTest {
 
     // The settings are read already unless a test says otherwise.
     private val appearance = FakeAppearanceRepository(initial = AppearanceSettings())
+    private val appLock = FakeAppLockRepository()
+    private val passcodes = FakePasscodeRepository()
 
     @BeforeEach
     fun setUp() {
@@ -53,6 +60,8 @@ class MainActivityViewModelTest {
         MainActivityViewModel(
             TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
             appearanceRepository,
+            appLock,
+            passcodes,
             timeSource,
         ).also { runCurrent() }
 
@@ -241,5 +250,62 @@ class MainActivityViewModelTest {
 
             viewModel.onChatOpened()
             assertEquals(null, viewModel.chatToOpen.value)
+        }
+
+    @Test
+    fun `keeps the splash screen until the lock is known, for at most 300 ms`() =
+        runTest {
+            client.authState.value = AuthState.Ready
+            appLock.setState(LockState.Unknown)
+            val viewModel = viewModel()
+            assertTrue(viewModel.keepSplashScreen())
+
+            appLock.setState(LockState.Locked)
+            assertEquals(LockState.Locked, viewModel.lock.value)
+            assertFalse(viewModel.keepSplashScreen())
+        }
+
+    @Test
+    fun `tells the lock when the app leaves the screen and comes back`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.onAppHidden()
+            viewModel.onAppShown()
+
+            assertEquals(1, appLock.hiddenCount)
+            assertEquals(1, appLock.shownCount)
+        }
+
+    @Test
+    fun `hides the content from recent apps only with a passcode and the setting on`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.hideContent.value)
+
+            passcodes.setPasscode("1234", PasscodeType.Pin)
+            runCurrent()
+            assertTrue(viewModel.hideContent.value)
+
+            passcodes.setHideContent(false)
+            runCurrent()
+            assertFalse(viewModel.hideContent.value)
+        }
+
+    @Test
+    fun `shows the content in recent apps without a passcode, whatever the setting`() =
+        runTest {
+            val withoutPasscode = FakePasscodeRepository(PasscodeSettings(hideContent = true))
+
+            val viewModel =
+                MainActivityViewModel(
+                    TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), TimeSource.Monotonic),
+                    appearance,
+                    appLock,
+                    withoutPasscode,
+                    timeSource,
+                ).also { runCurrent() }
+
+            assertFalse(viewModel.hideContent.value)
         }
 }

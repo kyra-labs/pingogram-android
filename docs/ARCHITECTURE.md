@@ -73,6 +73,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   300 ms, `docs/PERFORMANCE.md` §2), and nothing is composed before they are known, so the app never
   draws in a theme the user did not choose. A change made in Appearance reaches the theme through the
   same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1).
+- **Passcode lock** (FR-S1, `docs/adr/0003-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
+  `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
+  settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
+  settings and the login steps: locked at every start with a passcode, again after the auto-lock delay out of sight
+  (`MainActivity.onStop`/`onStart`, not for configuration changes), never while signed out; it counts wrong attempts
+  and makes the next ones wait. `MainActivity` waits for it like for the Appearance settings, then `LockableApp`
+  (`:app`) shows `feature:settings`' `AppLockRoute` instead of `PingogramApp`, which leaves the composition while
+  locked and keeps its saved state (`rememberSaveableStateHolder`), so nothing of it draws, runs or reaches screen
+  readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
+  "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
+  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
