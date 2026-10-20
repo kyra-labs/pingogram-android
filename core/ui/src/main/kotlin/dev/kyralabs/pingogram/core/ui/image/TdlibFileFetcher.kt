@@ -59,16 +59,17 @@ class TdlibFileFetcher internal constructor(
                 is FileState.NotDownloaded -> if (!state.canBeDownloaded) fail("cannot be downloaded")
                 is FileState.Downloading -> if (state.isActive) started = true
             }
-            if (!image.download) return null
-            // Only an inactive state that follows an active one: right after the request, TDLib may still report the
-            // state from before it.
-            val active = state is FileState.Downloading && state.isActive
-            if (started && !active) fail("the download stopped")
-            if (!requested) {
-                requested = true
-                fileRepository
-                    .download(image.fileId, DownloadPriority.Visible)
-                    .onFailure { error -> fail("the download was refused ($error)") }
+            if (image.download) {
+                // Only an inactive state that follows an active one: right after the request, TDLib may still report
+                // the state from before it.
+                val active = state is FileState.Downloading && state.isActive
+                if (started && !active) fail("the download stopped")
+                if (!requested) {
+                    requested = true
+                    fileRepository
+                        .download(image.fileId, DownloadPriority.Visible)
+                        .onFailure { error -> fail("the download was refused ($error)") }
+                }
             }
             return null
         }

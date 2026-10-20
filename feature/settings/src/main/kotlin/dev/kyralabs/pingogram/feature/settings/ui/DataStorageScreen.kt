@@ -81,9 +81,9 @@ internal fun DataStorageRoute(
 
 /**
  * Data and storage (`REQUIREMENTS.md` FR-S1): what downloads by itself on mobile data, Wi-Fi and roaming, each a row
- * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded files and databases take, as
- * TDLib reports it, and "Clear cache", which deletes the downloaded files after a destructive confirmation
- * ([ClearCacheDialog]) and shows progress while it runs.
+ * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
+ * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
+ * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs.
  */
 @Composable
 internal fun DataStorageScreen(
@@ -144,42 +144,6 @@ internal fun DataStorageScreen(
         )
     }
 }
-
-/**
- * "Automatic download": a row per kind of network that says what downloads by itself on it and opens its page, and,
- * while Data Saver is on, a note that nothing does on mobile data meanwhile.
- */
-@Composable
-private fun AutoDownloadGroup(
-    settings: AutoDownloadSettings,
-    isDataSaverOn: Boolean,
-    onOpen: (AutoDownloadNetwork) -> Unit,
-) {
-    SettingsGroup(
-        title = stringResource(R.string.settings_section_auto_download),
-        footer = if (isDataSaverOn) stringResource(R.string.settings_auto_download_data_saver_footer) else null,
-    ) {
-        for (network in AutoDownloadNetwork.entries) {
-            item(key = network) { shapes ->
-                PageItem(
-                    title = stringResource(network.titleRes()),
-                    summary = autoDownloadSummary(settings.rulesFor(network)),
-                    icon = network.iconRes(),
-                    shapes = shapes,
-                    onClick = { onOpen(network) },
-                )
-            }
-        }
-    }
-}
-
-@DrawableRes
-private fun AutoDownloadNetwork.iconRes(): Int =
-    when (this) {
-        AutoDownloadNetwork.Mobile -> R.drawable.ic_signal_cellular_alt
-        AutoDownloadNetwork.WiFi -> R.drawable.ic_wifi
-        AutoDownloadNetwork.Roaming -> R.drawable.ic_public
-    }
 
 /** The downloaded files: their size and how many there are. */
 @Composable

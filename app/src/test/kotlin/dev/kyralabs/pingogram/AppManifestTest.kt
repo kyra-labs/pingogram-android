@@ -23,7 +23,8 @@ import org.robolectric.annotation.Config
  * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
  * 2026-10-20); ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
  * (approved 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
- * service before Android 12 only, so they stop at API 30, and its RECEIVE_BOOT_COMPLETED is left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
+ * service before Android 12 only, so they stop at API 30, and its RECEIVE_BOOT_COMPLETED is left out, except in the
+ * foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
  * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission

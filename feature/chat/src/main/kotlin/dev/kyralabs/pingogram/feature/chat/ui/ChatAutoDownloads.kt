@@ -25,12 +25,13 @@ import kotlinx.coroutines.launch
  *   does not start again by itself. Nothing is cancelled when the rules change or a message leaves the screen: the
  *   media viewer may be showing the same file. Only messages on screen count, never the whole history.
  * - **Photos** download in their bubbles while the rules allow photos ([state]); otherwise each shows a download
- *   button, and the photos the user asked for ([requested]) show a download in progress until they show.
+ *   button, and the photos the user asked for ([download]) show a download in progress until they show.
  *
  * A failed download is dropped: the file shows its download button, or downloads when tapped.
  */
 internal class ChatAutoDownloads(
     private val repository: FileRepository,
+    private val files: ChatFiles,
     private val rules: Flow<AutoDownloadRules>,
     private val scope: CoroutineScope,
 ) {
@@ -61,13 +62,15 @@ internal class ChatAutoDownloads(
         visible.value = contents
     }
 
-    /** The user asked to download [fileId] (the download itself is [ChatFiles]'). */
-    fun requested(fileId: Int) {
+    /** The user asked to download [fileId]: a document's, or a photo's the rules leave for a tap ([ChatFiles]). */
+    fun download(fileId: Int) {
         requestedFiles.update { it.add(fileId) }
+        files.download(fileId)
     }
 
     /** The user cancelled the download of [fileId]. */
-    fun cancelled(fileId: Int) {
+    fun cancelDownload(fileId: Int) {
         requestedFiles.update { it.remove(fileId) }
+        files.cancelDownload(fileId)
     }
 }

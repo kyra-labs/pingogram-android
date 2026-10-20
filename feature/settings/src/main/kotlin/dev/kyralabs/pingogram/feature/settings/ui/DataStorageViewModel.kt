@@ -23,9 +23,9 @@ import javax.inject.Inject
 
 /**
  * The Data and storage page (`REQUIREMENTS.md` FR-S1): what downloads by itself on each kind of network
- * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram takes, loaded when the page opens,
- * and clearing the cache of downloaded files after a confirmation, which shows how much it freed and loads the usage
- * again.
+ * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram
+ * takes, loaded when the page opens, and clearing the cache of downloaded files after a confirmation, which shows how
+ * much it freed and loads the usage again.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; clearing in progress does not, as
  * TDLib finishes it anyway and the usage is loaded again.

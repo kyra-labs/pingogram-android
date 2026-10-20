@@ -130,6 +130,7 @@ internal fun MessageContentBody(
  * Photos, videos and GIFs, edge to edge, sharing their bounds with the media viewer (from [mediaShape]); stickers,
  * animated emoji, dice and video messages, bare.
  */
+@Suppress("LongParameterList") // The message, its content, and how it shows and downloads in the bubble.
 @Composable
 private fun MediaContent(
     messageId: Long,

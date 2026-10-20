@@ -84,8 +84,8 @@ val AutoDownloadSizeLimits: List<Long> =
 
 /**
  * The automatic download rules of each kind of network, kept on this device across logouts like the Appearance
- * settings. The defaults are `docs/PERFORMANCE.md` §7's: on Wi-Fi photos, videos up to 10 MB, files up to 3 MB and voice
- * and video messages; on mobile data photos only; while roaming nothing.
+ * settings. The defaults are `docs/PERFORMANCE.md` §7's: on Wi-Fi photos, videos up to 10 MB, files up to 3 MB and
+ * voice and video messages; on mobile data photos only; while roaming nothing.
  */
 data class AutoDownloadSettings(
     val mobile: AutoDownloadRules = DefaultMobileRules,

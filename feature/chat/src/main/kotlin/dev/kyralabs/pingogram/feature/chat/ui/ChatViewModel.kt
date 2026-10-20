@@ -278,7 +278,7 @@ class ChatViewModel internal constructor(
 
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
 
-    private val autoDownloads = ChatAutoDownloads(fileRepository, autoDownloadPolicy.rules, viewModelScope)
+    private val autoDownloads = ChatAutoDownloads(fileRepository, files, autoDownloadPolicy.rules, viewModelScope)
 
     private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
 
@@ -587,8 +587,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.ToggleTime -> shownTimes.update { it.toggling(event.messageId) }
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
-            is ChatEvent.DownloadFile -> download(event.fileId)
-            is ChatEvent.CancelDownload -> cancelDownload(event.fileId)
+            is ChatEvent.DownloadFile -> autoDownloads.download(event.fileId)
+            is ChatEvent.CancelDownload -> autoDownloads.cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
@@ -699,17 +699,6 @@ class ChatViewModel internal constructor(
                 ?.messages
                 .orEmpty()
         autoDownloads.setVisible(messages.filter { it.id in messageIds }.map { it.content })
-    }
-
-    /** Downloads [fileId] on request: a document's, or a photo's that the rules leave for a tap. */
-    private fun download(fileId: Int) {
-        autoDownloads.requested(fileId)
-        files.download(fileId)
-    }
-
-    private fun cancelDownload(fileId: Int) {
-        autoDownloads.cancelled(fileId)
-        files.cancelDownload(fileId)
     }
 
     /** Finds the chat again if that failed, and opens again or loads the pages that failed ([ChatWindow.retry]). */

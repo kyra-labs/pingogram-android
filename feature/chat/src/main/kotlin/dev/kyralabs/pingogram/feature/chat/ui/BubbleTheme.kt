@@ -77,6 +77,7 @@ internal fun rememberBubbleTheme(): BubbleTheme {
  * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction badge ([reactions]), and the
  * actions screen readers get on every bubble ([shortcuts]), and how photos download ([mediaDownloads]).
  */
+@Suppress("LongParameterList") // One holder for what every bubble shares, so the bubbles take a single parameter.
 @Stable
 internal class BubbleResources(
     val theme: BubbleTheme,
