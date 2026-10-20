@@ -210,7 +210,8 @@ private fun NavGraphBuilder.mainGraph(
                 )
             }
         }
-        contactsScreen()
+        // Until the contacts list lands, the Contacts tab sends to New chat, which lists the contacts.
+        contactsScreen(onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } })
         // Settings pages are pushed above the tab on every window, as the archive is.
         settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
         settingsPages(

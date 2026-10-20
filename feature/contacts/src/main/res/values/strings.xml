@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="contacts_placeholder_title">No contacts yet</string>
-    <string name="contacts_placeholder_body">Your contacts arrive in an upcoming release. The people you talk to will show up here.</string>
+    <string name="contacts_title">Contacts</string>
+    <string name="contacts_placeholder_title">Contacts are coming in a later version</string>
+    <string name="contacts_placeholder_body">Until then, New chat lists your contacts, so you can start a chat with any of them.</string>
+    <string name="contacts_new_chat">New chat</string>
 </resources>
