@@ -1,12 +1,12 @@
-package dev.kyralabs.pingogram.push
+package dev.kyralabs.pingogram.core.data.repository
 
 /**
  * The payload `processPushNotification` takes: "JSON-encoded push notification payload with all fields sent by the
  * server, and `google.sent_time` and `google.notification.sound` fields added" (td_api.tl). Firebase hands the fields
- * of a data message over as strings ([data]), [sentTime] in milliseconds, and the sound only for a message with a
- * notification part, which Telegram does not send to apps that encrypt their pushes.
+ * of a data message over as strings, the sent time in milliseconds, and a sound only for a message with a notification
+ * part; without one the field is left out.
  *
- * Plain Kotlin, so it is tested on the JVM without Play services.
+ * Built here rather than in the `gms` flavor, which only passes Firebase's fields on ([TdlibPushRepository]).
  */
 internal object PushPayload {
     fun json(

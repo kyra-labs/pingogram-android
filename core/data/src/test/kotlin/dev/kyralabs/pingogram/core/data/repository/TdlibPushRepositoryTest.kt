@@ -220,9 +220,12 @@ class TdlibPushRepositoryTest {
             notifications.pending.value = true
             val repository = repository()
 
-            val result = async { repository.processPush("""{"p":"abc"}""") }
+            val result = async { repository.processPush(mapOf("p" to "abc"), 1_000, null) }
             runCurrent()
-            assertEquals(listOf("""{"p":"abc"}"""), client.sentOf<TdApi.ProcessPushNotification>().map { it.payload })
+            assertEquals(
+                listOf("""{"p":"abc","google.sent_time":1000}"""),
+                client.sentOf<TdApi.ProcessPushNotification>().map { it.payload },
+            )
             assertFalse(result.isCompleted)
 
             notifications.pending.value = false
@@ -237,7 +240,7 @@ class TdlibPushRepositoryTest {
             client.on(TdApi.ProcessPushNotification::class, TdResult.Failure(TdError(406, "")))
             val repository = repository()
 
-            val result = async { repository.processPush("{}") }
+            val result = async { repository.processPush(emptyMap(), 0, null) }
             runCurrent()
             assertFalse(result.isCompleted)
 
@@ -254,7 +257,7 @@ class TdlibPushRepositoryTest {
             client.on(TdApi.ProcessPushNotification::class) { never.await() }
             val repository = repository()
 
-            val result = async { repository.processPush("{}") }
+            val result = async { repository.processPush(emptyMap(), 0, null) }
             advanceTimeBy(TdlibPushRepository.PUSH_TIMEOUT + 1.seconds)
 
             assertTrue(result.isCompleted)
@@ -268,7 +271,7 @@ class TdlibPushRepositoryTest {
             notifications.pending.value = true
             val repository = repository()
 
-            val result = async { repository.processPush("{}") }
+            val result = async { repository.processPush(emptyMap(), 0, null) }
             advanceTimeBy(TdlibPushRepository.SETTLE_TIMEOUT + 1.seconds)
 
             assertTrue(result.isCompleted)

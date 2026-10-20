@@ -105,8 +105,9 @@ distributor picker in Settings, the connector dependency and testing against sev
      `FLOOD_WAIT` is waited out (at most three attempts), other failures are dropped for the next start. At logout it
      deletes the FCM token (`FirebaseMessaging.deleteToken`), so no push reaches the device after it, whatever
      Telegram's server does with the ended session.
-   - `PingogramMessagingService` (`gms`, not exported) builds the payload (`PushPayload`, the data fields plus
-     `google.sent_time` and the sound) and calls `processPushNotification` on Firebase's worker thread, waiting at most
+   - `PingogramMessagingService` (`gms`, not exported) passes each push's fields to `TdlibPushRepository`, which builds
+     the payload (`PushPayload`: the data fields plus `google.sent_time` and the sound) and calls
+     `processPushNotification`, on Firebase's worker thread, waiting at most
      6 s for TDLib (its start included), then at most 3 s for held-back notifications (`updateHavePendingNotifications`)
      or, after a 406, for the connection. Firebase gives `onMessageReceived` "a short execution window" and sends
      "long-running tasks (10 seconds or more)" to WorkManager; TDLib normally answers well within a second, so no

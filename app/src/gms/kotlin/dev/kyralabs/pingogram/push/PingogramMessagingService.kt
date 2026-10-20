@@ -25,9 +25,8 @@ class PingogramMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val payload = PushPayload.json(message.data, message.sentTime, message.notification?.sound)
         // Firebase's worker thread, never the main thread; the wait is bounded by processPush.
-        runBlocking { pushRepository.processPush(payload) }
+        runBlocking { pushRepository.processPush(message.data, message.sentTime, message.notification?.sound) }
     }
 
     // onDeletedMessages: Firebase dropped pushes it could not deliver. Nothing to do: TDLib fetches everything new

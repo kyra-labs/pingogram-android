@@ -43,8 +43,8 @@ import kotlin.time.Duration.Companion.seconds
  * - **Logout** (Ready to anything else): the token is deleted at the push service. TDLib does not unregister by
  *   itself, but logging out ends the session Telegram registered the token for, and TDLib deletes its database with
  *   the key; deleting the token makes sure no push reaches the device even so.
- * - **A push** ([processPush]) goes to `processPushNotification`, which TDLib accepts before it is fully started (it
- *   waits for its database) and answers once its notification updates are out.
+ * - **A push** ([processPush]) goes to `processPushNotification` as JSON ([PushPayload]), which TDLib accepts before
+ *   it is fully started (it waits for its database) and answers once its notification updates are out.
  */
 @Singleton
 class TdlibPushRepository
@@ -89,7 +89,12 @@ class TdlibPushRepository
             if (tokenSource != null) this.token.value = token
         }
 
-        override suspend fun processPush(payload: String): Outcome<Unit> {
+        override suspend fun processPush(
+            data: Map<String, String>,
+            sentTimeMillis: Long,
+            notificationSound: String?,
+        ): Outcome<Unit> {
+            val payload = PushPayload.json(data, sentTimeMillis, notificationSound)
             val processed =
                 withTimeoutOrNull(PUSH_TIMEOUT) {
                     client.send(TdApi.ProcessPushNotification(payload)).toOutcome().map {}

@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.push
+package dev.kyralabs.pingogram.core.data.repository
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

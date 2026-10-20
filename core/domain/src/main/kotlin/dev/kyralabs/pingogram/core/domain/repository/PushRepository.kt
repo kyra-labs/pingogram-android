@@ -20,12 +20,17 @@ interface PushRepository {
     fun onNewToken(token: String)
 
     /**
-     * Hands a received push, [payload] (its data as JSON), to TDLib and returns once TDLib has turned it into
-     * notifications, or after a few seconds, the time a push service gives an app: TDLib may have to connect first, or
-     * hold back notifications for a moment. Fails with `DomainError.Silent` for a push TDLib cannot read without
-     * connecting (it then fetches what is new itself), or another `DomainError`.
+     * Hands a received push to TDLib: its [data] fields as the push service delivered them, the time Telegram sent it
+     * ([sentTimeMillis]) and the sound of its notification part, if it has one ([notificationSound]). Returns once
+     * TDLib has turned it into notifications, or after a few seconds, the time a push service gives an app: TDLib may
+     * have to connect first, or hold back notifications for a moment. Fails with `DomainError.Silent` for a push TDLib
+     * cannot read without connecting (it then fetches what is new itself), or another `DomainError`.
      */
-    suspend fun processPush(payload: String): Outcome<Unit>
+    suspend fun processPush(
+        data: Map<String, String>,
+        sentTimeMillis: Long,
+        notificationSound: String?,
+    ): Outcome<Unit>
 }
 
 /**
