@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import android.icu.text.ListFormatter
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,7 +33,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * For screen readers it is one node: "Archived chats, Ada, Grace and Alan, 2 unread chats".
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ArchiveRow(
     entry: ArchiveEntry,

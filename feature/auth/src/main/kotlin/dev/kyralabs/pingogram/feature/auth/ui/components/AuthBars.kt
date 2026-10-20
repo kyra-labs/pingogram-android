@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -42,7 +41,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Back navigation ([onBack], null when back leaves the flow) and, while not connected, the connection status as the
  * title, announced to screen readers (`docs/DESIGN_SYSTEM.md` §9).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AuthTopBar(
     connection: ConnectionStatus,

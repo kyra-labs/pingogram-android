@@ -2,6 +2,9 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
@@ -12,6 +15,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -38,12 +42,18 @@ class DataStorageScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<DataStorageEvent>()
+    private val opened = mutableListOf<AutoDownloadNetwork>()
     private var backs = 0
 
     private fun setScreen(state: DataStorageUiState) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                DataStorageScreen(state = state, onEvent = { events += it }, onBack = { backs++ })
+                DataStorageScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onOpenAutoDownload = { opened += it },
+                    onBack = { backs++ },
+                )
             }
         }
     }
@@ -51,6 +61,15 @@ class DataStorageScreenTest {
     private fun string(
         @StringRes id: Int,
     ) = RuntimeEnvironment.getApplication().getString(id)
+
+    /** A node with [text], spaces in it matching non-breaking ones, as Android's file sizes have. */
+    private fun hasPlainText(text: String) =
+        SemanticsMatcher("has text \"$text\"") { node ->
+            node.config
+                .getOrNull(SemanticsProperties.Text)
+                .orEmpty()
+                .any { plainSpaces(it.text) == text }
+        }
 
     private fun dialogButton(
         @StringRes id: Int,
@@ -62,6 +81,28 @@ class DataStorageScreenTest {
 
         composeRule.onNodeWithText("1.5 GB · 3,456 files").assertExists()
         composeRule.onNodeWithText("85 MB · chats, messages and settings").assertExists()
+    }
+
+    @Test
+    fun `each network says what downloads by itself and opens its page`() {
+        setScreen(SettingsPreviewData.storage)
+
+        composeRule
+            .onNode(hasPlainText("Photos, Videos up to 10 MB, Files up to 3 MB, and Voice and video messages"))
+            .assertExists()
+        composeRule.onNodeWithText("Photos").assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_auto_download_nothing)).assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_auto_download_roaming)).performClick()
+        composeRule.onNodeWithText(string(R.string.settings_auto_download_wifi)).performClick()
+
+        assertEquals(listOf(AutoDownloadNetwork.Roaming, AutoDownloadNetwork.WiFi), opened)
+    }
+
+    @Test
+    fun `Data Saver adds a note`() {
+        setScreen(SettingsPreviewData.storage.copy(isDataSaverOn = true))
+
+        composeRule.onNodeWithText(string(R.string.settings_auto_download_data_saver_footer)).assertExists()
     }
 
     @Test

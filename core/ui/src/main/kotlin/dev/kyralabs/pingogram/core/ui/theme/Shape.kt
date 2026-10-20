@@ -46,7 +46,6 @@ val PingogramShapes =
  * animation invalidates drawing only, never composition. With reduced motion (animations turned off in
  * the system settings, [isReducedMotion]) the shape snaps to its end instead of morphing (§5).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun rememberMorphShape(
     start: RoundedPolygon,

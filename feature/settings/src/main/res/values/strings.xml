@@ -22,7 +22,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_summary">Pingogram\'s own language</string>
     <string name="settings_data_storage">Data and storage</string>
-    <string name="settings_data_storage_summary">Storage usage, clear cache</string>
+    <string name="settings_data_storage_summary">Automatic download, storage usage</string>
     <string name="settings_about">About</string>
     <string name="settings_about_summary">Version, source code, license</string>
     <string name="settings_privacy_security">Privacy and security</string>
@@ -73,6 +73,39 @@
     <string name="settings_language_android_settings_summary">The same choice, where Android lists every app\'s language</string>
 
     <!-- Data and storage -->
+    <string name="settings_section_auto_download">Automatic download</string>
+    <string name="settings_auto_download_mobile">Mobile data</string>
+    <string name="settings_auto_download_wifi">Wi-Fi</string>
+    <string name="settings_auto_download_roaming">Roaming</string>
+    <!-- A network's summary when nothing downloads by itself on it. -->
+    <string name="settings_auto_download_nothing">Nothing</string>
+    <!-- Items of a network's summary, joined in the language's list format, e.g. "Photos, Videos up to 10 MB and
+         Files up to 3 MB". %1$s is a size such as "10 MB". -->
+    <string name="settings_auto_download_list_photos">Photos</string>
+    <string name="settings_auto_download_list_videos">Videos up to %1$s</string>
+    <string name="settings_auto_download_list_files">Files up to %1$s</string>
+    <string name="settings_auto_download_list_voice">Voice and video messages</string>
+    <string name="settings_auto_download_data_saver_footer">Data Saver is on: on mobile data, media downloads only when you tap it</string>
+    <!-- The automatic download page of one kind of network. -->
+    <string name="settings_auto_download_section">Download automatically</string>
+    <string name="settings_auto_download_photos">Photos</string>
+    <string name="settings_auto_download_photos_summary">At the size they show in chats</string>
+    <string name="settings_auto_download_videos">Videos and GIFs</string>
+    <string name="settings_auto_download_videos_summary">So they play at once</string>
+    <string name="settings_auto_download_video_limit">Largest video</string>
+    <string name="settings_auto_download_files">Files</string>
+    <string name="settings_auto_download_files_summary">Documents and music</string>
+    <string name="settings_auto_download_file_limit">Largest file</string>
+    <string name="settings_auto_download_voice">Voice and video messages</string>
+    <string name="settings_auto_download_voice_summary">So they play at once</string>
+    <!-- A size limit: %1$s is a number such as "10" or "2". -->
+    <string name="settings_size_megabytes">%1$s MB</string>
+    <string name="settings_size_gigabytes">%1$s GB</string>
+    <!-- %1$s is a size such as "10 MB". -->
+    <string name="settings_auto_download_up_to">Up to %1$s</string>
+    <string name="settings_auto_download_footer">Stickers, profile photos and previews always download. Everything else downloads when you tap it.</string>
+    <string name="settings_auto_download_data_saver">Data Saver is on</string>
+    <string name="settings_auto_download_data_saver_summary">Media downloads only when you tap it, until you turn Data Saver off or let Pingogram use data freely in Android\'s settings</string>
     <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>
