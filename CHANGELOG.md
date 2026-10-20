@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
+  they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
+  at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
+  in the background, and works without Google Play services. If you allow only an approximate location, that is what
+  is sent, and the sheet offers to ask for the precise one; if location is turned off, a snackbar takes you to the
+  setting.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
