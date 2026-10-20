@@ -93,8 +93,8 @@ internal fun SettingsRoute(
  * page scrolls, as the chat list's does, then the logged-in account's card ([AccountCard], which opens Edit profile)
  * and groups of segmented rows ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
  * have them: General (Appearance, Notifications, Data and storage), Privacy and security, About, and "Log out" on its
- * own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar and ends clear of it
- * ([screenContentWindowInsets]).
+ * own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar and ends clear of
+ * it ([screenContentWindowInsets]).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

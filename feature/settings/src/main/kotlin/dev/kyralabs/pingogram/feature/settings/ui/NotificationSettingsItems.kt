@@ -67,46 +67,7 @@ internal fun ScopeGroup(
         onEvent(NotificationSettingsEvent.ChangeScope(scope, changed))
     }
     SettingsGroup(title = stringResource(scope.titleRes())) {
-        item(key = NOTIFY) { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_notifications_notify),
-                summary = stringResource(scope.notifySummaryRes()),
-                checked = !settings.isMuted,
-                shapes = shapes,
-                onCheckedChange = { change(settings.copy(isMuted = !it)) },
-            )
-        }
-        item(key = PREVIEW) { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_notifications_preview),
-                summary = stringResource(R.string.settings_notifications_preview_summary),
-                checked = settings.showPreview,
-                shapes = shapes,
-                onCheckedChange = { change(settings.copy(showPreview = it)) },
-            )
-        }
-        if (scope == NotificationScope.GroupChats) {
-            item(key = MENTIONS) { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_notifications_mentions),
-                    summary = stringResource(R.string.settings_notifications_mentions_summary),
-                    checked = settings.mentions,
-                    shapes = shapes,
-                    onCheckedChange = { change(settings.copy(mentions = it)) },
-                )
-            }
-        }
-        if (scope != NotificationScope.PrivateChats) {
-            item(key = PINNED) { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_notifications_pinned),
-                    summary = stringResource(R.string.settings_notifications_pinned_summary),
-                    checked = settings.pinnedMessages,
-                    shapes = shapes,
-                    onCheckedChange = { change(settings.copy(pinnedMessages = it)) },
-                )
-            }
-        }
+        scopeSwitches(scope, settings, change)
         item(key = SOUND) { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_notifications_sound),
@@ -130,6 +91,57 @@ internal fun ScopeGroup(
                 shapes = shapes,
                 supportingContent = { Text(stringResource(R.string.settings_notifications_exceptions_summary)) },
                 onClick = onOpenExceptions,
+            )
+        }
+    }
+}
+
+/**
+ * The switches of [scope]'s group: notifications on or off, message previews, mentions (groups) and pinned messages
+ * (groups and channels), each calling [change] with [settings] changed.
+ */
+private fun SettingsGroupScope.scopeSwitches(
+    scope: NotificationScope,
+    settings: ScopeNotificationSettings,
+    change: (ScopeNotificationSettings) -> Unit,
+) {
+    item(key = NOTIFY) { shapes ->
+        SwitchItem(
+            title = stringResource(R.string.settings_notifications_notify),
+            summary = stringResource(scope.notifySummaryRes()),
+            checked = !settings.isMuted,
+            shapes = shapes,
+            onCheckedChange = { change(settings.copy(isMuted = !it)) },
+        )
+    }
+    item(key = PREVIEW) { shapes ->
+        SwitchItem(
+            title = stringResource(R.string.settings_notifications_preview),
+            summary = stringResource(R.string.settings_notifications_preview_summary),
+            checked = settings.showPreview,
+            shapes = shapes,
+            onCheckedChange = { change(settings.copy(showPreview = it)) },
+        )
+    }
+    if (scope == NotificationScope.GroupChats) {
+        item(key = MENTIONS) { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_notifications_mentions),
+                summary = stringResource(R.string.settings_notifications_mentions_summary),
+                checked = settings.mentions,
+                shapes = shapes,
+                onCheckedChange = { change(settings.copy(mentions = it)) },
+            )
+        }
+    }
+    if (scope != NotificationScope.PrivateChats) {
+        item(key = PINNED) { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_notifications_pinned),
+                summary = stringResource(R.string.settings_notifications_pinned_summary),
+                checked = settings.pinnedMessages,
+                shapes = shapes,
+                onCheckedChange = { change(settings.copy(pinnedMessages = it)) },
             )
         }
     }

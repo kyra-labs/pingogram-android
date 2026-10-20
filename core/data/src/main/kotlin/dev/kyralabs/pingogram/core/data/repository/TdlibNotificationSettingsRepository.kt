@@ -91,16 +91,22 @@ class TdlibNotificationSettingsRepository
                     is Outcome.Success -> listed.value.chatIds
                     is Outcome.Failure -> return listed
                 }
+            return chatExceptions(chatIds)
+        }
+
+        /** Chats [chatIds] as exceptions, read at once; any failure but `NotFound` fails them all. */
+        private suspend fun chatExceptions(chatIds: LongArray): Outcome<List<NotificationException>> {
             val chats = coroutineScope { chatIds.map { async { client.request(TdApi.GetChat(it)) } }.awaitAll() }
             val error =
                 chats.firstNotNullOfOrNull { chat ->
                     (chat as? Outcome.Failure)?.error?.takeUnless { it == DomainError.NotFound }
                 }
-            if (error != null) return Outcome.Failure(error)
             val now = clock.now().epochSecond
-            return Outcome.Success(
-                chats.mapNotNull { (it as? Outcome.Success)?.value?.toNotificationException(now) },
-            )
+            return if (error != null) {
+                Outcome.Failure(error)
+            } else {
+                Outcome.Success(chats.mapNotNull { (it as? Outcome.Success)?.value?.toNotificationException(now) })
+            }
         }
 
         override val chatMuteChanges: Flow<ChatMuteChange> =

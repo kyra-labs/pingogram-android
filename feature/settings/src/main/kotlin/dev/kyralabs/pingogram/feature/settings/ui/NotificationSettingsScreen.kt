@@ -1,14 +1,9 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.Manifest
-import android.app.Activity
-import android.content.ActivityNotFoundException
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
@@ -16,14 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -105,46 +97,6 @@ internal fun NotificationSettingsRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
-    )
-}
-
-/** Starts a screen of Android's settings; nothing on a system without it (none known). */
-private fun Context.openSystemSettings(intent: Intent) {
-    try {
-        startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        // No such settings screen: nothing to open.
-    }
-}
-
-/** Reads what Android allows Pingogram's notifications and reports it to [onChecked]. */
-@Composable
-private fun rememberAccessCheck(onChecked: (NotificationSettingsEvent) -> Unit): () -> Unit {
-    val activity = LocalActivity.current
-    val context = LocalContext.current
-    val currentOnChecked by rememberUpdatedState(onChecked)
-    return remember(activity, context) { { currentOnChecked(accessOf(context, activity)) } }
-}
-
-private fun accessOf(
-    context: Context,
-    activity: Activity?,
-): NotificationSettingsEvent.AccessChecked {
-    val manager = NotificationManagerCompat.from(context)
-    val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    val permission = Manifest.permission.POST_NOTIFICATIONS
-    return NotificationSettingsEvent.AccessChecked(
-        notificationsEnabled = manager.areNotificationsEnabled(),
-        permissionGranted =
-            !needsPermission ||
-                ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED,
-        shouldShowRationale = needsPermission && activity?.shouldShowRequestPermissionRationale(permission) == true,
-        blockedChannels =
-            NotificationScope.entries
-                .filter { scope ->
-                    manager.getNotificationChannelCompat(PingogramChannel.of(scope).id)?.importance ==
-                        NotificationManagerCompat.IMPORTANCE_NONE
-                }.toSet(),
     )
 }
 
