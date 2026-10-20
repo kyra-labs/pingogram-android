@@ -34,6 +34,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   version and license. Tap one to read the full license text, which you can select and copy, and to open its
   website. The list is made from the app's own build, so it always matches what you installed, and it works
   offline.
+- Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
+  opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
+  comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
+  or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
+  it, and when you forwarded to one other chat, opens that chat.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
