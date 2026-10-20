@@ -75,8 +75,9 @@ internal fun rememberBubbleTheme(): BubbleTheme {
 /**
  * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), the
  * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction badge ([reactions]), and the
- * actions screen readers get on every bubble ([shortcuts]).
+ * actions screen readers get on every bubble ([shortcuts]), and how photos download ([mediaDownloads]).
  */
+@Suppress("LongParameterList") // One holder for what every bubble shares, so the bubbles take a single parameter.
 @Stable
 internal class BubbleResources(
     val theme: BubbleTheme,
@@ -85,23 +86,25 @@ internal class BubbleResources(
     val jump: MessageJumpState,
     val reactions: ReactionToggleState,
     val shortcuts: MessageShortcuts,
+    val mediaDownloads: MediaDownloads,
 )
 
 /**
- * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state and the [shortcuts]
- * stay.
+ * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state, the [shortcuts] and
+ * the [mediaDownloads] stay.
  */
 @Composable
 internal fun rememberBubbleResources(
     jump: MessageJumpState,
     shortcuts: MessageShortcuts,
+    mediaDownloads: MediaDownloads = MediaDownloads(),
 ): BubbleResources {
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
     val reactions = rememberReactionToggleState()
-    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts) {
-        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts)
+    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads) {
+        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads)
     }
 }
 
