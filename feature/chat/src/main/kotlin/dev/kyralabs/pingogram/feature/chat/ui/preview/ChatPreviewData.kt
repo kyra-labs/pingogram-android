@@ -38,6 +38,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -58,14 +59,7 @@ internal object ChatPreviewData {
     val canWrite =
         ComposerUiState.Available(
             canSchedule = true,
-            attachOptions =
-                persistentListOf(
-                    AttachOption.Gallery,
-                    AttachOption.Camera,
-                    AttachOption.File,
-                    AttachOption.Location,
-                    AttachOption.Contact,
-                ),
+            attachOptions = AttachOption.entries.filter { it != AttachOption.Poll }.toPersistentList(),
         )
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */

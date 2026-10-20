@@ -43,8 +43,10 @@ import javax.inject.Singleton
  * [AttachmentRepository] on TDLib and the app's cache ([UploadFiles]). Preparing and reading picked content runs on
  * [io] ([AttachmentPreparer], through the [ContentSource] and [MediaProcessor] seams); sending only sends requests: the
  * messages reach the conversation through TDLib's updates as being sent, as text messages do, and their copies are
- * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here.
+ * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here. One function per kind of
+ * attachment, as in [AttachmentRepository] (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,

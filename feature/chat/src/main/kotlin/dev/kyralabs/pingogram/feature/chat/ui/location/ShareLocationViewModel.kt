@@ -30,15 +30,16 @@ import kotlin.time.Duration.Companion.seconds
  * the sheet shows, for the conversation to send (`ChatEvent.SendLocation`, which takes the composer's reply along).
  *
  * - **Opening** ([ShareLocationEvent.Open]): with the location allowed but turned off, no sheet opens and a snackbar
- *   offers the location settings ([ShareLocationEffect.LocationOff]). Without the location allowed, the sheet first says
- *   why Pingogram asks ([ShareLocationUiState.Permission]), then Android asks ([ShareLocationEffect.RequestPermission]);
- *   once Android no longer asks, the button opens the app's settings instead. An approximate location (Android 12+) is
- *   enough: it is what is sent, and the sheet offers to ask for the precise one.
- * - **Searching** ([ShareLocationUiState.Locating]): [DeviceLocationRepository.locate] runs only while the sheet is open
- *   and the screen collects [uiState] (it stops [STOP_TIMEOUT_MILLIS] after the app goes to the background, and starts
- *   again on return), showing the best location so far. Without a first location within [FIRST_LOCATION_TIMEOUT], or
- *   with no provider to ask, it stops: [ShareLocationUiState.NotFound], with "Try again". The location turned off
- *   meanwhile closes the sheet with the snackbar.
+ *   offers the location settings ([ShareLocationEffect.LocationOff]). Without the location allowed, the sheet first
+ *   says why Pingogram asks ([ShareLocationUiState.Permission]), then Android asks
+ *   ([ShareLocationEffect.RequestPermission]); once Android no longer asks, the button opens the app's settings
+ *   instead. An approximate location (Android 12+) is enough: it is what is sent, and the sheet offers to ask for the
+ *   precise one.
+ * - **Searching** ([ShareLocationUiState.Locating]): [DeviceLocationRepository.locate] runs only while the sheet is
+ *   open and the screen collects [uiState] (it stops [STOP_TIMEOUT_MILLIS] after the app goes to the background, and
+ *   starts again on return), showing the best location so far. Without a first location within
+ *   [FIRST_LOCATION_TIMEOUT], or with no provider to ask, it stops: [ShareLocationUiState.NotFound], with "Try again".
+ *   The location turned off meanwhile closes the sheet with the snackbar.
  * - **Process death**: whether the sheet is open, and whether Android no longer asks, are kept in [savedState]; the
  *   search starts again.
  */
@@ -122,7 +123,9 @@ class ShareLocationViewModel
             }
         }
 
-        /** Android answered: a refusal for good turns the button into settings; a location turned off closes the sheet. */
+        /**
+         * Android answered: a refusal for good turns the button into settings; a location turned off closes the sheet.
+         */
         private fun permissionResult(canAskAgain: Boolean) {
             access.value = repository.access()
             if (access.value == LocationAccess.None) {
@@ -134,8 +137,8 @@ class ShareLocationViewModel
         }
 
         /**
-         * Whether the location is allowed but turned off, which the snackbar then says. Without the permission the sheet
-         * asks for it first.
+         * Whether the location is allowed but turned off, which the snackbar then says. Without the permission the
+         * sheet asks for it first.
          */
         private fun locationOff(): Boolean {
             val off = access.value != LocationAccess.None && !repository.isLocationEnabled()

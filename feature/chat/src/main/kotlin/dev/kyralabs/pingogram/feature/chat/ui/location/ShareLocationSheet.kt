@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.location
 
-import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -9,22 +8,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +28,6 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,12 +38,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,21 +50,16 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ScheduleDialog
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendButton
-import dev.kyralabs.pingogram.feature.chat.ui.preview.LocationPreviewData
 import kotlinx.coroutines.launch
 import java.time.Instant
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The "Location" sheet of the attach menu (`REQUIREMENTS.md` FR-C5; `docs/DESIGN_SYSTEM.md` §6 "Share location"): a
@@ -139,6 +126,7 @@ internal fun ShareLocationSheet(
 }
 
 /** The sheet's title and its step, scrolling when they do not fit (landscape, large font scales). */
+@Suppress("LongParameterList") // The step, what the send menu offers, and what its buttons do.
 @Composable
 internal fun ShareLocationContent(
     state: ShareLocationUiState,
@@ -194,9 +182,8 @@ internal fun ShareLocationContent(
                     NotFoundStep(onEvent)
                 }
 
-                ShareLocationUiState.Closed -> {
-                    Unit
-                }
+                // The sheet is gone: nothing to show while it hides.
+                ShareLocationUiState.Closed -> {}
             }
         }
     }
@@ -325,7 +312,6 @@ private fun FoundLocation(
     val distance =
         remember(location.accuracyMeters, locale) { location.accuracyMeters?.let { accuracyText(it, locale) } }
     val accuracy = distance?.let { stringResource(R.string.location_accuracy, it) }
-    val motion = MaterialTheme.motionScheme
     LocationBadge(MaterialShapes.Cookie9Sided)
     Column(
         modifier =
@@ -355,8 +341,17 @@ private fun FoundLocation(
             )
         }
     }
+    RefiningNote(visible = state.isRefining)
+    if (state.isApproximate) ApproximateNote(onEvent)
+}
+
+/** While a better location is still likely: the wavy indicator and "Improving accuracy…". */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RefiningNote(visible: Boolean) {
+    val motion = MaterialTheme.motionScheme
     AnimatedVisibility(
-        visible = state.isRefining,
+        visible = visible,
         enter = expandVertically(motion.defaultSpatialSpec()) + fadeIn(motion.defaultEffectsSpec()),
         exit = shrinkVertically(motion.defaultSpatialSpec()) + fadeOut(motion.fastEffectsSpec()),
     ) {
@@ -372,16 +367,19 @@ private fun FoundLocation(
             )
         }
     }
-    if (state.isApproximate) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.location_approximate),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelLarge,
-            )
-            TextButton(onClick = { onEvent(ShareLocationEvent.AskPrecise) }, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(R.string.location_use_precise), style = MaterialTheme.typography.labelLarge)
-            }
+}
+
+/** An approximate location: says so, with "Use precise location". */
+@Composable
+private fun ApproximateNote(onEvent: (ShareLocationEvent) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.location_approximate),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+        )
+        TextButton(onClick = { onEvent(ShareLocationEvent.AskPrecise) }, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.location_use_precise), style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -423,120 +421,4 @@ private fun NotFoundStep(onEvent: (ShareLocationEvent) -> Unit) {
     }
 }
 
-/**
- * A step's actions as in Google's flows: the primary one at the end, the [secondary] one as a text button at the
- * start (none where it is null). They wrap below each other where both do not fit (large font scales).
- */
-@Composable
-private fun StepActions(
-    @StringRes secondary: Int?,
-    onSecondary: () -> Unit,
-    modifier: Modifier = Modifier,
-    primary: @Composable () -> Unit,
-) {
-    FlowRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (secondary != null) {
-            TextButton(onClick = onSecondary, shapes = ButtonDefaults.shapes()) {
-                Text(stringResource(secondary), style = MaterialTheme.typography.labelLarge)
-            }
-        } else {
-            Box {}
-        }
-        primary()
-    }
-}
-
-/** A filled button of the default size with the press morph, its label `labelLargeEmphasized`. */
-@Composable
-private fun PrimaryButton(
-    @StringRes text: Int,
-    onClick: () -> Unit,
-) {
-    Button(onClick = onClick, shapes = ButtonDefaults.shapes()) {
-        Text(stringResource(text), style = MaterialTheme.typography.labelLargeEmphasized)
-    }
-}
-
-/** The location pin on a [shape] of `primaryContainer`, decorative (`docs/DESIGN_SYSTEM.md` §4). */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun LocationBadge(
-    shape: RoundedPolygon,
-    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    iconColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
-) {
-    val badgeSize = MaterialTheme.sizes.headlineBadge
-    Box(
-        modifier = Modifier.size(badgeSize).background(containerColor, shape.toShape()),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_location_on_filled),
-            contentDescription = null,
-            modifier = Modifier.size(badgeSize / 2),
-            tint = iconColor,
-        )
-    }
-}
-
 private const val TABULAR_FIGURES = "tnum"
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationPermissionPreview() {
-    PingogramPreview { ShareLocationPreviewContent(ShareLocationUiState.Permission()) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationDeniedPreview() {
-    PingogramPreview { ShareLocationPreviewContent(ShareLocationUiState.Permission(deniedForGood = true)) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationSearchingPreview() {
-    PingogramPreview { ShareLocationPreviewContent(ShareLocationUiState.Locating()) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationFoundPreview() {
-    PingogramPreview { ShareLocationPreviewContent(LocationPreviewData.found) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationRefiningPreview() {
-    PingogramPreview { ShareLocationPreviewContent(LocationPreviewData.refining) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationApproximatePreview() {
-    PingogramPreview { ShareLocationPreviewContent(LocationPreviewData.approximate) }
-}
-
-@PingogramPreviews
-@Composable
-private fun ShareLocationNotFoundPreview() {
-    PingogramPreview { ShareLocationPreviewContent(ShareLocationUiState.NotFound) }
-}
-
-@Composable
-private fun ShareLocationPreviewContent(state: ShareLocationUiState) {
-    ShareLocationContent(
-        state = state,
-        canSchedule = true,
-        canOpenMaps = true,
-        onEvent = {},
-        onSend = { _, _ -> },
-        onSchedule = {},
-        modifier = Modifier.padding(top = MaterialTheme.spacing.large),
-    )
-}

@@ -43,8 +43,8 @@ internal class LocationInputs(
 
 /**
  * The route's [LocationInputs] for [viewModel]: its state while the screen is started, the screen's start as
- * [ShareLocationEvent.Started] (back from the system settings), and its effects ([ShareLocationEffects]), whose snackbar
- * shows on [snackbarHostState].
+ * [ShareLocationEvent.Started] (back from the system settings), and its effects ([ShareLocationEffects]), whose
+ * snackbar shows on [snackbarHostState].
  */
 @Composable
 internal fun rememberLocationInputs(

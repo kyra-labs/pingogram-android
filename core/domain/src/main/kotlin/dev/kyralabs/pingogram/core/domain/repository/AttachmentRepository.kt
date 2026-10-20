@@ -19,7 +19,9 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
  *
  * Every send fails with `DomainError.FloodWait`, `DomainError.Network` for a request that gets no answer in time,
  * `DomainError.FileTooLarge`, `DomainError.SendingNotAllowed`, or another `DomainError` when TDLib refuses it.
+ * One function per kind of attachment (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 interface AttachmentRepository {
     /**
      * Copies the file at [uri] (a `content://` URI a picker returned) into the app's cache and prepares it as [kind]

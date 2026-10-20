@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -51,6 +52,9 @@ class AndroidDeviceLocationRepository
 
         override fun isLocationEnabled(): Boolean = manager?.let(LocationManagerCompat::isLocationEnabled) == true
 
+        // Checked right here: providersFor gives no provider without a location permission (`:app` declares both),
+        // and a permission revoked meanwhile throws the SecurityException caught below.
+        @SuppressLint("MissingPermission")
         override fun locate(): Flow<DeviceLocation> =
             callbackFlow {
                 val manager = manager
@@ -106,7 +110,13 @@ class AndroidDeviceLocationRepository
                     // The permission was revoked meanwhile.
                     close()
                 }
-                awaitClose { listeners.forEach { LocationManagerCompat.removeUpdates(manager, it) } }
+                awaitClose {
+                    try {
+                        listeners.forEach { LocationManagerCompat.removeUpdates(manager, it) }
+                    } catch (_: SecurityException) {
+                        // Revoked meanwhile: Android stopped the updates with the permission.
+                    }
+                }
             }
 
         private fun granted(permission: String): Boolean =

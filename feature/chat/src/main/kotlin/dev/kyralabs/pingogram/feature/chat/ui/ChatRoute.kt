@@ -59,8 +59,9 @@ import java.util.Locale
  * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
  * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
  * snackbar says when no app opens; the "Location" sheet has its own view model ([ShareLocationViewModel], keyed by
- * the chat like this one), which finds the location the conversation then sends. The forward sheet ([ForwardBottomSheet]) shows over the screen while the view model
- * has one; the snackbar after forwarding to one other chat opens it through [onOpenChat].
+ * the chat like this one), which finds the location the conversation then sends. The forward sheet
+ * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
+ * chat opens it through [onOpenChat].
  */
 @Composable
 internal fun ChatRoute(

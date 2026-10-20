@@ -43,7 +43,7 @@ Options for showing it:
 - Both permissions are asked together after the sheet says why, so Android 12+ offers "Approximate"; an approximate
   location is sent as it is (Telegram takes accuracy up to 1.5 km), and the sheet offers to ask for the precise one.
 - No map: the sheet shows the coordinates, their accuracy, and "Open in maps" where an app on the device handles
-  `geo:` links (the app's manifest declares that `<queries>` intent, so Android 11+ answers the check).
+  `geo:` links (`feature:chat`'s manifest declares that `<queries>` intent, so Android 11+ answers the check).
 - No live location: it would need background location or a foreground service for its whole period.
 
 ## Consequences
