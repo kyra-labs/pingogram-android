@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Send as a channel: in groups and channels where you can post as a channel you own or anonymously, the composer
+  starts with the avatar of who your messages go out as. Tap it to choose your account, one of your channels or
+  "Anonymous admin"; the choice is kept for the chat. Channels that only Telegram Premium users can post as are shown
+  but cannot be chosen.
 - Emoji and stickers: the smiley at the start of the message field opens a panel in the keyboard's place, at the
   keyboard's height, so nothing jumps when you switch back and forth. The Emoji tab has every emoji your phone can
   show, by category, with the ones you used last first; tapping one puts it where the cursor is, and the panel's

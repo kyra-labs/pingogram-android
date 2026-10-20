@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -57,6 +58,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.ChatSendAs
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsChoice
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -161,6 +165,9 @@ import java.util.Locale
  *   [VoiceRecorder], as [voiceRecording] (kept out of [uiState], like the forward sheet, as only the composer shows
  *   it); recording stops what plays, the screen stopping locks and pauses it, and clearing the view model throws it
  *   away.
+ * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
+ *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
+ *   [uiState] like the forward sheet).
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -201,6 +208,7 @@ class ChatViewModel internal constructor(
     audioPlayer: AudioPlayer,
     voiceRecorder: VoiceRecorder,
     voiceNoteRepository: VoiceNoteRepository,
+    sendAsRepository: SendAsRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
@@ -227,6 +235,7 @@ class ChatViewModel internal constructor(
         audioPlayer: AudioPlayer,
         voiceRecorder: VoiceRecorder,
         voiceNoteRepository: VoiceNoteRepository,
+        sendAsRepository: SendAsRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
@@ -250,6 +259,7 @@ class ChatViewModel internal constructor(
         audioPlayer,
         voiceRecorder,
         voiceNoteRepository,
+        sendAsRepository,
         autoDownloadPolicy,
         AndroidChatLog,
         messageId,
@@ -367,6 +377,19 @@ class ChatViewModel internal constructor(
 
     /** The voice message being recorded in the composer; null while there is none. */
     val voiceRecording: StateFlow<VoiceRecordingUiState?> get() = recorder.state
+
+    private val sendAs =
+        ChatSendAs(
+            chatId = chatId,
+            chats = chatRepository,
+            users = userRepository,
+            repository = sendAsRepository,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
+    val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
 
     /** The messages the composer's bars show that are not loaded. */
     private val composerTargets = ComposerTargets(chatId, messageRepository, viewModelScope, composer::onMessageGone)
@@ -586,6 +609,7 @@ class ChatViewModel internal constructor(
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
+            .combine(sendAs.button) { state, sendAs -> state.withSendAs(sendAs) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
@@ -634,6 +658,7 @@ class ChatViewModel internal constructor(
             is SponsoredEvent -> sponsored.onEvent(event)
             is SelectionEvent -> selectionEvents.onEvent(event)
             is VoiceEvent -> recorder.onEvent(event)
+            is SendAsEvent -> sendAs.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -958,6 +983,12 @@ private fun ComposerUiState.Available.withBar(
     attachOptions: ImmutableList<AttachOption>,
 ): ComposerUiState.Available =
     copy(bar = bar, attachOptions = if (bar is ComposerBar.Edit) persistentListOf() else attachOptions)
+
+/** The state with [sendAs] on the composer, where the user can write and is not editing: an edit keeps its sender. */
+private fun ChatUiState.withSendAs(sendAs: SendAsChoice?): ChatUiState {
+    val available = composer as? ComposerUiState.Available ?: return this
+    return copy(composer = available.copy(sendAs = sendAs.takeIf { available.bar !is ComposerBar.Edit }))
+}
 
 /**
  * The location or venue of loaded message [messageId], as the effect that shows it in a maps app, named after the

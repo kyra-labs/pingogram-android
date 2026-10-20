@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -64,7 +65,7 @@ import java.util.Locale
  * the chat like this one), which finds the location the conversation then sends; so does the emoji and sticker panel
  * ([EmojiPanelViewModel]), whose stickers the conversation sends. The forward sheet
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
- * chat opens it through [onOpenChat].
+ * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]).
  */
 @Composable
 internal fun ChatRoute(
@@ -131,6 +132,8 @@ internal fun ChatRoute(
     )
     val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
     forwardSheet?.let { ForwardBottomSheet(it, viewModel.forwardComment, viewModel::onEvent) }
+    val sendAsSheet by viewModel.sendAsSheet.collectAsStateWithLifecycle()
+    sendAsSheet?.let { SendAsBottomSheet(it, viewModel::onEvent) }
 }
 
 /**

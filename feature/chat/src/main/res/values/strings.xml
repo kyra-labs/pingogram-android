@@ -142,6 +142,15 @@
     <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
     <string name="composer_bar_show">Show message</string>
 
+    <!-- Send-as (FR-C5): the composer's avatar of who new messages go out as, for screen readers. -->
+    <string name="send_as_button">Send as %1$s</string>
+    <string name="send_as_title">Send messages as</string>
+    <string name="send_as_account">Your account</string>
+    <string name="send_as_channel">Channel</string>
+    <string name="send_as_anonymous">Anonymous admin</string>
+    <string name="send_as_group">Group</string>
+    <!-- A sender only Telegram Premium users can choose. Informational only, never an offer. -->
+    <string name="send_as_needs_premium">Needs Telegram Premium</string>
 
     <!-- The emoji and sticker panel, which takes the keyboard's place below the composer -->
     <!-- The button at the start of the text field that opens the panel, for screen readers. -->

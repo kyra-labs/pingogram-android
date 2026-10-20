@@ -226,6 +226,7 @@ private fun ChatScreenBottomBar(
             onAttach = onAttach,
             recording = recording,
             onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
+            onSendAs = { onEvent(SendAsEvent.Open) },
             panel = emojiPanel,
             onPanelEvent = onEmojiPanelEvent,
             onSendSticker = { sticker ->

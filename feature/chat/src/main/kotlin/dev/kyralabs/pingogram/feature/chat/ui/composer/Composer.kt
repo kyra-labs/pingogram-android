@@ -113,9 +113,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
  * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
- * [onVoiceEvent]). The smiley at the start of the field opens the emoji and sticker panel ([EmojiPanel], showing
- * [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its stickers
- * are sent through [onSendSticker], and what it loads goes to [onPanelEvent].
+ * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
+ * picker through [onSendAs]. The smiley at the start of the field opens the emoji and sticker panel ([EmojiPanel],
+ * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
+ * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent].
  */
 @Composable
 internal fun ChatBottomBar(
@@ -131,6 +132,7 @@ internal fun ChatBottomBar(
     onAttach: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
+    onSendAs: () -> Unit = {},
     panel: EmojiPanelUiState = EmojiPanelUiState(),
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
     onSendSticker: (Sticker) -> Unit = {},
@@ -170,6 +172,7 @@ internal fun ChatBottomBar(
                         VoiceInput(recording, onVoiceEvent, drag),
                         panelState,
                         now,
+                        onSendAs,
                     )
                     PanelArea(panelState) {
                         EmojiPanel(
@@ -224,7 +227,8 @@ private fun BarArea(
  * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
  * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field. While the
  * field is empty the microphone ([RecordButton]) is in the send button's place; while it records, the recording bar
- * ([RecordingBar]) takes the place of the attach button and the field.
+ * ([RecordingBar]) takes the place of the attach button and the field. Before the attach button, the send-as avatar
+ * ([LeadingButtons]) where the user can choose who they send as ([onSendAs]).
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
@@ -238,6 +242,7 @@ private fun Composer(
     voice: VoiceInput,
     panel: ComposerPanelState,
     now: () -> Instant = Instant::now,
+    onSendAs: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val edit = composer.bar as? ComposerBar.Edit
@@ -265,7 +270,7 @@ private fun Composer(
         if (recording != null) {
             RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
         } else {
-            Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
+            LeadingButtons(composer, onAttach, onSendAs)
             ComposerField(
                 text = text,
                 onSend = { send(SendOptions()) },
@@ -341,7 +346,7 @@ private data class VoiceInput(
  * its effects spring; the text field beside it makes room.
  */
 @Composable
-private fun RowScope.Appearing(
+internal fun RowScope.Appearing(
     visible: Boolean,
     content: @Composable () -> Unit,
 ) {

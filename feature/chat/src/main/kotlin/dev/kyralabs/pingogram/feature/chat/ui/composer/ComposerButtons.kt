@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The buttons beside the composer's text field: sending, with its menu of other ways to send, and saving an edit.
@@ -101,6 +103,20 @@ internal fun SendButton(
             }
         },
     )
+}
+
+/**
+ * The buttons before the text field: the send-as avatar ([SendAsButton]) where the user can choose who they send as,
+ * then the attach button where the chat takes attachments, which grows in and out ([Appearing]).
+ */
+@Composable
+internal fun RowScope.LeadingButtons(
+    composer: ComposerUiState.Available,
+    onAttach: () -> Unit,
+    onSendAs: () -> Unit,
+) {
+    composer.sendAs?.let { SendAsButton(it, onSendAs) }
+    Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
 }
 
 /**
