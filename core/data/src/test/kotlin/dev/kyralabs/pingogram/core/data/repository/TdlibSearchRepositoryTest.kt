@@ -179,6 +179,36 @@ class TdlibSearchRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository().searchContacts("gr"))
         }
 
+    @Test
+    fun `all contacts are their private chats, sorted by name, without the ones that cannot be read`() =
+        runTest {
+            client.on(TdApi.GetContacts::class) { TdResult.Success(TdApi.Users(4, longArrayOf(7, 8, 9, UNKNOWN_CHAT))) }
+            client.on(TdApi.CreatePrivateChat::class) { request ->
+                TdResult.Success(chat(id = request.userId, type = TdApi.ChatTypePrivate(request.userId)))
+            }
+            val names = mapOf(7L to "Grace", 8L to "ada", 9L to "Bea")
+            client.on(TdApi.GetChat::class) { request ->
+                names[request.chatId]?.let { TdResult.Success(chat(id = request.chatId, title = it)) }
+                    ?: failure(400, "Chat not found")
+            }
+
+            val contacts = repository().contacts()
+
+            assertEquals(listOf(8L, 9L, 7L), contacts.ids())
+            assertEquals(
+                listOf(7L, 8L, 9L, UNKNOWN_CHAT),
+                client.sentOf<TdApi.CreatePrivateChat>().map { it.userId }.sorted(),
+            )
+        }
+
+    @Test
+    fun `failing to read the contacts reports its error`() =
+        runTest {
+            client.on(TdApi.GetContacts::class, failure(429, "Too Many Requests: retry after 3"))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(3)), repository().contacts())
+        }
+
     // Public chats
 
     @Test

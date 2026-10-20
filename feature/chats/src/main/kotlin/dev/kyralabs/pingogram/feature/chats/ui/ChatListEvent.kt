@@ -52,6 +52,9 @@ sealed interface ChatListEvent {
     /** The archive row was tapped. */
     data object OpenArchive : ChatListEvent
 
+    /** The "New chat" button, or the one of the empty Chats tab, was tapped. */
+    data object NewChat : ChatListEvent
+
     /**
      * The delete dialog was confirmed; [forEveryone] if its check box was checked, which only one chat offers
      * ([DeleteDialog.Single.forEveryone]).

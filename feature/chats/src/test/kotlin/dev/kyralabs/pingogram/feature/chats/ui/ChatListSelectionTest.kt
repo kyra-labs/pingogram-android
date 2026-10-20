@@ -229,6 +229,17 @@ class ChatListSelectionTest : ChatListViewModelHarness() {
             assertEquals(listOf(ChatListEffect.OpenArchive), effects)
         }
 
+    @Test
+    fun `the New chat buttons open the New chat screen`() =
+        runTest {
+            val viewModel = mainList()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ChatListEvent.NewChat)
+
+            assertEquals(listOf(ChatListEffect.OpenNewChat), effects)
+        }
+
     // The archive
 
     @Test

@@ -51,8 +51,8 @@ fun ProvideNavAnimatedVisibilityScope(
 }
 
 /**
- * The container transform of a photo, video or GIF between the conversation and the media viewer
- * (`docs/DESIGN_SYSTEM.md` §5): while the `NavHost` moves between them, this content and the other destination's
+ * The container transform ([containerTransform]) of a photo, video or GIF between the conversation and the media
+ * viewer (`docs/DESIGN_SYSTEM.md` §5): while the `NavHost` moves between them, this content and the other destination's
  * content of the same message [messageId] share their bounds, which grow or shrink on the motion scheme's default
  * spatial spring, the two crossfading on its default effects spring. Both are measured to the moving bounds, so a
  * photo cropped in its bubble uncrops as it grows. While they move they are drawn above both screens, clipped to a
@@ -70,6 +70,26 @@ fun Modifier.sharedMediaBounds(
     shape: CornerBasedShape,
     counterpartShape: CornerBasedShape,
     enabled: Boolean = true,
+): Modifier = containerTransform(SharedMediaKey(messageId), shape, counterpartShape, enabled)
+
+/**
+ * A container transform between two destinations of the `NavHost` (`docs/DESIGN_SYSTEM.md` §5): while it moves between
+ * them, this content and the other destination's content of the same [key] share their bounds, which grow or shrink on
+ * the motion scheme's default spatial spring, the two crossfading on its default effects spring. Both are measured to
+ * the moving bounds. While they move they are drawn above both screens, clipped to a shape that morphs from
+ * [counterpartShape], the other side's corners, to [shape], this side's, on the same spatial spring: e.g. from a
+ * floating action button's corners to a screen's square ones and back.
+ *
+ * Each side simply comes and goes with its screen, sharing nothing, without the scopes (previews, tests, a screen
+ * outside the `NavHost`), when not [enabled], with reduced motion ([isReducedMotion]), and whenever the other side
+ * shows no content of [key]. [key] must be equal on both sides and on no other content, e.g. a data object.
+ */
+@Composable
+fun Modifier.containerTransform(
+    key: Any,
+    shape: CornerBasedShape,
+    counterpartShape: CornerBasedShape,
+    enabled: Boolean = true,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
     val visibilityScope = LocalNavAnimatedVisibilityScope.current
@@ -79,15 +99,15 @@ fun Modifier.sharedMediaBounds(
     val spatial = motionScheme.defaultSpatialSpec<Float>()
     // This side's share of the transition: 1 while it shows, 0 while the other side does; drives the corners.
     val shown =
-        visibilityScope.transition.animateFloat(transitionSpec = { spatial }, label = "sharedMediaShape") { state ->
-            if (state == EnterExitState.Visible) 1f else 0f
+        visibilityScope.transition.animateFloat(transitionSpec = { spatial }, label = "containerTransformShape") {
+            if (it == EnterExitState.Visible) 1f else 0f
         }
     val clip = remember(shape, counterpartShape, shown) { MorphingClip(counterpartShape, shape) { shown.value } }
     val boundsSpec = motionScheme.defaultSpatialSpec<Rect>()
     val boundsTransform = remember(boundsSpec) { BoundsTransform { _, _ -> boundsSpec } }
     return with(transitionScope) {
-        this@sharedMediaBounds.sharedBounds(
-            sharedContentState = rememberSharedContentState(SharedMediaKey(messageId)),
+        this@containerTransform.sharedBounds(
+            sharedContentState = rememberSharedContentState(key),
             animatedVisibilityScope = visibilityScope,
             enter = fadeIn(motionScheme.defaultEffectsSpec()),
             exit = fadeOut(motionScheme.defaultEffectsSpec()),

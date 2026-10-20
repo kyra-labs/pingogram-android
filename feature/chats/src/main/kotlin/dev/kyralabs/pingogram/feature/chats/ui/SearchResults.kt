@@ -250,7 +250,7 @@ private fun Modifier.row(
 
 /** A section's name: a heading in `titleSmallEmphasized` and `primary` (`docs/DESIGN_SYSTEM.md` §3.3); [action]. */
 @Composable
-private fun SectionHeader(
+internal fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
@@ -289,7 +289,7 @@ private fun SectionLoading(modifier: Modifier = Modifier) {
 
 /** A section, or a page of messages, that failed: the error's text and "Try again" ([onRetry]). */
 @Composable
-private fun SectionError(
+internal fun SectionError(
     error: DomainError,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
