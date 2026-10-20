@@ -59,6 +59,14 @@ sealed interface ChatEvent {
     ) : ChatEvent
 
     /**
+     * The bubble of message [messageId] was tapped where nothing else takes the tap: its time and state show, or hide
+     * again, where its group shows them on its last bubble only.
+     */
+    data class ToggleTime(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /**
      * The photo, video, GIF or video message [messageId] (an album's item, by its own message) was tapped: a photo,
      * video or GIF opens in the media viewer ([ChatEffect.OpenMedia]). Video messages and self-destructing media do not
      * open there.

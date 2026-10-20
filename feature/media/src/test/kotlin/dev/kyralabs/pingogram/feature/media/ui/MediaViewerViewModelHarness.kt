@@ -34,6 +34,7 @@ abstract class MediaViewerViewModelHarness {
     protected val files = FakeFileRepository()
     protected val users = FakeUserRepository()
     protected val chats = FakeChatRepository()
+    protected val messageActions = FakeMessageActionRepository()
     internal val player = FakeVideoPlayer()
     protected val sharedStorage = FakeSharedStorageRepository()
 
@@ -63,6 +64,7 @@ abstract class MediaViewerViewModelHarness {
                 fileRepository = files,
                 userRepository = users,
                 chatRepository = chats,
+                messageActions = messageActions,
                 clock = FakeWallClock(NOW),
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

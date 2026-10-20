@@ -17,6 +17,7 @@ import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -334,6 +335,98 @@ class MediaViewerScreenTest {
         )
     }
 
+    // Delete, More and tooltips
+
+    @Test
+    fun `Delete shows where it is allowed and asks first`() {
+        setScreen(MediaPreviewData.allActions)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertHasClickAction().performClick()
+
+        assertEquals(MediaViewerEvent.Delete, events.last())
+    }
+
+    @Test
+    fun `Delete is hidden where it is not allowed`() {
+        setScreen(MediaPreviewData.withActions)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_delete))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the confirmation deletes for everyone only when checked, or cancels`() {
+        setScreen(MediaPreviewData.deleteConfirmation)
+
+        composeRule.onNode(hasText(string(R.string.media_delete_photo_title))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_delete_confirm))).performClick()
+        composeRule.onNode(hasText(string(R.string.media_delete_for_everyone))).performClick()
+        composeRule.onNode(hasText(string(R.string.media_delete_confirm))).performClick()
+        composeRule.onNode(hasText(string(R.string.media_delete_cancel))).performClick()
+
+        assertEquals(
+            listOf(
+                MediaViewerEvent.DeleteConfirmed(forEveryone = false),
+                MediaViewerEvent.DeleteConfirmed(forEveryone = true),
+                MediaViewerEvent.DeleteDismissed,
+            ),
+            events.filter { it is MediaViewerEvent.DeleteConfirmed || it == MediaViewerEvent.DeleteDismissed },
+        )
+    }
+
+    @Test
+    fun `More offers Show in chat and Copy, which send their events`() {
+        setScreen(MediaPreviewData.withActions)
+
+        moreButton().assertHasClickAction().performClick()
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertIsDisplayed().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertDoesNotExist()
+        moreButton().performClick()
+        composeRule.onNode(hasText(string(R.string.media_copy))).assertIsDisplayed().performClick()
+
+        assertEquals(listOf(MediaViewerEvent.ShowInChat, MediaViewerEvent.Copy), events.takeLast(2))
+    }
+
+    @Test
+    fun `where the content may not leave Telegram, More offers only Show in chat`() {
+        setScreen(MediaPreviewData.protectedContent)
+
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_copy))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a video cannot be copied`() {
+        setScreen(MediaPreviewData.video.copy(actions = MediaActions(canSave = true)))
+
+        moreButton().performClick()
+
+        composeRule.onNode(hasText(string(R.string.media_show_in_chat))).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.media_copy))).assertDoesNotExist()
+    }
+
+    @Test
+    fun `each toolbar button names itself in a tooltip on a long press`() {
+        setScreen(MediaPreviewData.allActions)
+        val labels = listOf(R.string.media_share, R.string.media_save, R.string.media_delete, R.string.media_more)
+
+        labels.map(::string).forEach { label ->
+            composeRule.onNode(hasContentDescription(label)).performTouchInput { longClick() }
+            composeRule.waitForIdle()
+
+            composeRule.onNode(hasText(label)).assertIsDisplayed()
+            // A plain tooltip goes by itself after a while.
+            composeRule.mainClock.advanceTimeBy(TOOLTIP_TIMEOUT_MILLIS)
+            composeRule.waitForIdle()
+            composeRule.onNode(hasText(label)).assertDoesNotExist()
+        }
+    }
+
+    private fun moreButton(): SemanticsNodeInteraction =
+        composeRule.onNode(hasContentDescription(string(R.string.media_more)))
+
     private fun SemanticsNodeInteraction.performCustomAction(label: String) {
         val action =
             fetchSemanticsNode().config[SemanticsActions.CustomActions].single { it.label == label }
@@ -347,5 +440,8 @@ class MediaViewerScreenTest {
     private companion object {
         /** Longer than any double tap timeout, so a single tap counts as one. */
         const val DOUBLE_TAP_TIMEOUT_MILLIS = 1_000L
+
+        /** Longer than a plain tooltip shows. */
+        const val TOOLTIP_TIMEOUT_MILLIS = 3_000L
     }
 }

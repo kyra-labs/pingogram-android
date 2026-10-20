@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,6 +38,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
@@ -69,10 +69,11 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * ([predictiveBackPopExit]); the viewer follows the gesture itself.
  *
  * The `NavHost` is a [SharedTransitionLayout], whose scope goes to the destinations through
- * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
- * ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share their photos, videos and GIFs
- * (the container transform of `sharedMediaBounds`), and the Chats tab's "New chat" button grows into the New chat
- * screen (`containerTransform`).
+ * [LocalSharedTransitionScope] ([ProvideSharedTransitionScope]), and each destination that shares content provides its
+ * own animated visibility scope ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share
+ * their photos, videos and GIFs (the container transform of `sharedMediaBounds`), which morph between the corners the
+ * media shows in its bubble and the viewer's, and the Chats tab's "New chat" button grows into the New chat screen
+ * (`containerTransform`).
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -90,7 +91,7 @@ internal fun PingogramNavHost(
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
     val startSignedIn = rememberSaveable { uiState == MainActivityUiState.SignedIn }
     SharedTransitionLayout(modifier) {
-        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+        ProvideSharedTransitionScope(this) {
             NavHost(
                 navController = navController,
                 startDestination = if (startSignedIn) MainGraph else AuthRoute,
@@ -236,7 +237,10 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             onOpenMedia = openMedia,
             onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
         )
-        mediaViewerScreen(onBack = { navController.popBackStack() })
+        mediaViewerScreen(
+            onBack = { navController.popBackStack() },
+            onShowInChat = { chatId, messageId -> navController.showMessageInChat(chatId, messageId) },
+        )
     }
 }
 

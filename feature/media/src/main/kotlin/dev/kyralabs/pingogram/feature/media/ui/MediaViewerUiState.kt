@@ -41,7 +41,7 @@ sealed interface MediaViewerUiState {
      * @property files the states of the files of the shown item and its neighbours, by file id: each item's full file
      *   ([ViewerMedia.fileId]) and a photo's other sizes; a file TDLib has not reported yet is missing.
      * @property playback the video or GIF in the player; null when none is.
-     * @property actions what the bottom app bar offers for the current item: Share and Save.
+     * @property actions what the toolbar offers for the current item: Share, Save, Delete, and in its menu Copy.
      */
     data class Content(
         val items: ImmutableList<MediaItem>,
@@ -56,27 +56,55 @@ sealed interface MediaViewerUiState {
 }
 
 /**
- * Share and Save of the current item (`REQUIREMENTS.md` FR-C6, FR-C10), from `MediaSharing`.
+ * What the toolbar offers for the current item (`REQUIREMENTS.md` FR-C6, FR-C10): Share, Save and Copy from
+ * `MediaSharing`, Delete from `MediaDeletion`. "Show in chat" is always there.
  *
- * @property canSave both show: Telegram lets the content leave it (the chat does not protect its content, and TDLib
- *   says the message can be saved). False while that is not known.
+ * @property canSave Share, Save and (for photos) Copy show: Telegram lets the content leave it (the chat does not
+ *   protect its content, and TDLib says the message can be saved). False while that is not known.
+ * @property canDelete Delete shows: TDLib says the message can be deleted, for the user or for everyone. False while
+ *   that is not known.
  * @property pending the action waiting for the item's file to download, or copying it into the gallery; null if none.
  * @property showsStorageRationale Android 8–9: why saving needs the storage permission shows, before asking for it.
+ * @property deleteConfirmation the confirmation before the current item is deleted, while it shows; null otherwise.
  */
 @Immutable
 data class MediaActions(
     val canSave: Boolean = false,
+    val canDelete: Boolean = false,
     val pending: MediaAction? = null,
     val showsStorageRationale: Boolean = false,
+    val deleteConfirmation: DeleteConfirmation? = null,
 )
 
-/** What the bottom app bar does with the current item's file. */
+/** What the toolbar does with the current item's file. */
 enum class MediaAction {
     /** Hand it to another app through the system's share sheet. */
     Share,
 
     /** Copy it into the gallery, `Pictures/Pingogram` or `Movies/Pingogram`. */
     Save,
+
+    /** Put the photo on the clipboard, for pasting into another app. */
+    Copy,
+}
+
+/** The confirmation before message [messageId]'s media is deleted, for whom [scope] says. */
+@Immutable
+data class DeleteConfirmation(
+    val messageId: Long,
+    val scope: DeleteScope,
+)
+
+/** For whom deleting a message deletes it, as TDLib allows (`getMessageProperties`). */
+enum class DeleteScope {
+    /** Only for the user; the others keep it. */
+    ForMe,
+
+    /** For everyone in the chat (supergroups, channels, and messages only one side has). */
+    ForEveryone,
+
+    /** For the user, or, if they choose, for everyone. */
+    Choice,
 }
 
 /**
@@ -214,6 +242,23 @@ sealed interface MediaViewerEvent {
     /** Save was tapped: the current item's file is copied into the gallery, once it is downloaded. */
     data object Save : MediaViewerEvent
 
+    /** Copy was chosen: the current photo goes to the clipboard, once it is downloaded. */
+    data object Copy : MediaViewerEvent
+
+    /** Delete was tapped: the confirmation shows. */
+    data object Delete : MediaViewerEvent
+
+    /** The confirmation was answered with Delete: for everyone if the user chose that ([forEveryone]). */
+    data class DeleteConfirmed(
+        val forEveryone: Boolean,
+    ) : MediaViewerEvent
+
+    /** The confirmation was cancelled. */
+    data object DeleteDismissed : MediaViewerEvent
+
+    /** "Show in chat" was chosen: the conversation opens at the current item's message. */
+    data object ShowInChat : MediaViewerEvent
+
     /**
      * The screen checked, after [MediaViewerEffect.CheckStoragePermission], whether the system wants the reason for
      * the storage permission shown first ([showRationale]).
@@ -260,6 +305,27 @@ sealed interface MediaViewerEffect {
 
     /** The file is in the gallery: a snackbar says so. */
     data object SavedToGallery : MediaViewerEffect
+
+    /** Put the downloaded photo at [path] on the clipboard, as the type its extension names, else [mimeType]. */
+    data class CopyImage(
+        val path: String,
+        val mimeType: String,
+    ) : MediaViewerEffect {
+        // The path ends in the file's name.
+        override fun toString() = "CopyImage(mimeType=$mimeType, …)"
+    }
+
+    /** The photo could not be copied (TDLib cannot download it): a snackbar says so. */
+    data object CopyFailed : MediaViewerEffect
+
+    /** Open the conversation of chat [chatId] at message [messageId]. */
+    data class ShowInChat(
+        val chatId: Long,
+        val messageId: Long,
+    ) : MediaViewerEffect
+
+    /** The user deleted the last item the viewer showed: it closes. */
+    data object Close : MediaViewerEffect
 
     /** The file could not be saved into the gallery: a snackbar says so. */
     data object SaveFailed : MediaViewerEffect

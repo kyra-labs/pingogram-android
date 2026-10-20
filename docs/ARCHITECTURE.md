@@ -100,12 +100,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).
 - Shared elements: the `NavHost` sits in a `SharedTransitionLayout`, whose scope `core:ui` hands
-  down as `LocalSharedTransitionScope`; destinations that share content provide their animated
-  visibility scope (`ProvideNavAnimatedVisibilityScope`), and `Modifier.containerTransform` (a no-op
-  without both) runs a container transform between the two destinations' content of one key:
-  `Modifier.sharedMediaBounds` that of a photo, video or GIF between the conversation (pushed or in the
-  detail pane) and the media viewer, keyed by message id, and the Chats tab's "New chat" button grows
-  into the New chat screen.
+  down as `LocalSharedTransitionScope` (`ProvideSharedTransitionScope`); destinations that share content
+  provide their animated visibility scope (`ProvideNavAnimatedVisibilityScope`), and
+  `Modifier.containerTransform` (a no-op without both) runs a container transform between the two
+  destinations' content of one key: the Chats tab's "New chat" button grows into the New chat screen.
+  `Modifier.sharedMediaBounds` (the bubble's side) and `Modifier.sharedMediaViewerBounds` (the viewer's)
+  run that of a photo, video or GIF between the conversation (pushed or in the detail pane) and the media
+  viewer, keyed by message id. Each bubble publishes its media's clip shape in `SharedMediaShapes`
+  (`LocalSharedMediaShapes`, from a `Modifier.Node` while it is laid out), so the viewer morphs from and
+  back to exactly those corners.
+- "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
+  conversation of the same chat below it, if there is one.
 
 ## Threading
 

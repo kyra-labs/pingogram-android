@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -137,7 +138,10 @@ internal fun ChatRoute(
  * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
  * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
  * where the system wants that, and its answer goes to [onEvent].
+ * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
+ * (`docs/DESIGN_SYSTEM.md` §5).
  */
+@Suppress("CyclomaticComplexMethod") // One branch per effect, all in one place: the compiler sees none is missed.
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
@@ -156,6 +160,7 @@ internal fun ChatEffects(
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
+    val haptics = LocalHapticFeedback.current
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -200,6 +205,10 @@ internal fun ChatEffects(
 
                     is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect -> {
                         noticeActions.noticeOf(effect)
+                    }
+
+                    ChatEffect.SendFailed -> {
+                        haptics.rejectSend()
                     }
                 }
             if (message.isNotEmpty()) {

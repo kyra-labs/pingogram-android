@@ -5,6 +5,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.navOptions
+import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
@@ -51,5 +52,23 @@ internal fun NavController.navigateToChatAboveList(chatId: Long) {
     navigate(ChatRoute(chatId)) {
         popUpTo(TopLevelDestination.Start.route)
         launchSingleTop = true
+    }
+}
+
+/**
+ * Leaves the media viewer for the conversation of chat [chatId] at message [messageId] ("Show in chat"): the viewer
+ * goes, and the conversation opens at the message, pushed as from search, in place of the conversation of the same chat
+ * the viewer was opened from, so back still leads where it did. On expanded windows, where the viewer opens above the
+ * list-detail layout, the conversation is pushed above it, as search's results are.
+ */
+internal fun NavController.showMessageInChat(
+    chatId: Long,
+    messageId: Long,
+) {
+    if (currentDestination.isFullScreen()) popBackStack()
+    val below = currentBackStackEntry
+    val sameChat = below?.destination?.hasRoute<ChatRoute>() == true && below.toRoute<ChatRoute>().chatId == chatId
+    navigate(ChatRoute(chatId, messageId)) {
+        if (sameChat) popUpTo<ChatRoute> { inclusive = true }
     }
 }

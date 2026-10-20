@@ -23,10 +23,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What the conversation composes again while the user scrolls and as messages come in (`docs/PERFORMANCE.md` §4: no
- * recomposition of what stays on screen), counted with [RecompositionCounter] frame by frame on the test clock. The
- * counter starts before the screen first composes, so it knows every composable's first composition and counts every
- * later one.
+ * What the conversation composes again while the user scrolls, as messages come in and when a bubble's time is tapped
+ * to show (`docs/PERFORMANCE.md` §4: no recomposition of what stays on screen), counted with [RecompositionCounter]
+ * frame by frame on the test clock. The counter starts before the screen first composes, so it knows every
+ * composable's first composition and counts every later one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -92,6 +92,20 @@ class ChatRecompositionTest {
         val functions = counter.recomposedOwnFunctions
         assertTrue(functions.toString(), functions.any { "MessageList" in it })
         assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `showing a bubble's time composes only that bubble`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        state = before.replacing(newest.copy(showsTime = !newest.showsTime))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
     }
 
     @Test

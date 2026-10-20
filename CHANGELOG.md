@@ -74,6 +74,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   up, and opens a New chat screen that grows out of it, with your contacts to start a conversation with. New group,
   New channel and New contact are listed there and come in a later version. An empty chat list offers the same
   button.
+- More you can do with a photo or video you are viewing: delete it (where Telegram lets you, for yourself or for
+  everyone, after asking), jump to it in its chat with "Show in chat", and copy a photo to paste it into another
+  app. Copying and sharing stay off in chats that don't allow saving their content.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
@@ -103,6 +106,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   button.
 - On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
   handle between them resizes the list. With no chat open, the empty panel lines up with the list.
+- Messages are tidier, as in Google Messages: a run of messages from one person shows the time only under the last
+  one. Tap any message to see its time, and tap it again to hide it. TalkBack still reads every message's time.
+- Message text sits a little closer to the sides of its bubble, so more fits on a line.
+- Replies and link previews inside a message are rounded cards without the colored bar at their side.
+- A message that could not be sent says "Not sent · Tap to retry" under it in red. Tap it to send the message again.
+  The phone also vibrates briefly when a message fails to send while the chat is open (Android 14 and later). In
+  channels and Saved Messages, messages being sent and failed ones now show it too.
+- Reactions under a message are easier to tap: each reacts to touches a bit around it, without looking bigger.
+- The media viewer's actions now sit in a floating toolbar at the bottom, each button named when you press and hold
+  it, with further actions under "More options". On tablets the caption and the video controls no longer stretch
+  across the whole screen.
+
+### Fixed
+- Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the
+  shape it has in its message, including the square edge above a caption and the corners of an album.
 
 ## [0.3.0-beta.2] - 2026-10-19
 
