@@ -593,13 +593,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
             is ChatEvent.Forward -> messageActions.forward(event.messageId)
-            is ChatEvent.ForwardQueryChanged -> forwarding.setQuery(event.query)
-            is ChatEvent.ToggleForwardTarget -> forwarding.toggle(event.chatId)
-            is ChatEvent.SetForwardHideSenderName -> forwarding.setHideSenderName(event.hide)
-            is ChatEvent.SetForwardHideCaptions -> forwarding.setHideCaptions(event.hide)
-            ChatEvent.LoadMoreForwardTargets -> forwarding.loadMore()
-            ChatEvent.SendForward -> forwarding.send()
-            ChatEvent.DismissForward -> forwarding.dismiss()
+            is ForwardEvent -> forwarding.onEvent(event)
             else -> onAttachEvent(event)
         }
     }

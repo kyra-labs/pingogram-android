@@ -155,7 +155,7 @@ class ChatForwardTest : ChatViewModelHarness() {
             runViewModelTest {
                 val viewModel = conversation()
 
-                send(viewModel, ChatEvent.Forward(3), ChatEvent.ToggleForwardTarget(ME), ChatEvent.SendForward)
+                send(viewModel, ChatEvent.Forward(3), ForwardEvent.ToggleTarget(ME), ForwardEvent.Send)
 
                 assertEquals(listOf("forward:$PRIVATE_CHAT:[2, 3]:$ME:false:false"), messageActions.calls)
             }
@@ -168,13 +168,13 @@ class ChatForwardTest : ChatViewModelHarness() {
                 send(viewModel, ChatEvent.Forward(3))
                 assertEquals(true to true, viewModel.sheet?.let { it.canHideSenderName to it.hasCaptions })
 
-                send(viewModel, ChatEvent.DismissForward, ChatEvent.Forward(1))
+                send(viewModel, ForwardEvent.Dismiss, ChatEvent.Forward(1))
                 assertEquals(true to false, viewModel.sheet?.let { it.canHideSenderName to it.hasCaptions })
 
                 messageActions.onProperties = {
                     Outcome.Success(FakeMessageActionRepository.ALL_ALLOWED.copy(canBeCopied = false))
                 }
-                send(viewModel, ChatEvent.DismissForward, ChatEvent.Forward(1))
+                send(viewModel, ForwardEvent.Dismiss, ChatEvent.Forward(1))
                 assertEquals(false, viewModel.sheet?.canHideSenderName)
             }
 
@@ -213,9 +213,9 @@ class ChatForwardTest : ChatViewModelHarness() {
         fun `dismissing closes the sheet without forwarding`() =
             runViewModelTest {
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.ToggleTarget(ME))
 
-                send(viewModel, ChatEvent.DismissForward)
+                send(viewModel, ForwardEvent.Dismiss)
 
                 assertNull(viewModel.sheet)
                 assertEquals(emptyList<String>(), messageActions.calls)
@@ -225,11 +225,11 @@ class ChatForwardTest : ChatViewModelHarness() {
         fun `opening again starts over`() =
             runViewModelTest {
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(3), ChatEvent.ToggleForwardTarget(ME))
-                send(viewModel, ChatEvent.SetForwardHideCaptions(true))
+                send(viewModel, ChatEvent.Forward(3), ForwardEvent.ToggleTarget(ME))
+                send(viewModel, ForwardEvent.SetHideCaptions(true))
                 viewModel.forwardComment.state.edit { append("Look") }
 
-                send(viewModel, ChatEvent.DismissForward, ChatEvent.Forward(3))
+                send(viewModel, ForwardEvent.Dismiss, ChatEvent.Forward(3))
 
                 assertEquals(emptySet<Long>(), viewModel.sheet?.selectedIds)
                 assertFalse(viewModel.sheet!!.hideCaptions)
@@ -307,9 +307,9 @@ class ChatForwardTest : ChatViewModelHarness() {
                 chats.onLoadChats = { Outcome.Success(more) }
                 send(viewModel, ChatEvent.Forward(1))
 
-                send(viewModel, ChatEvent.LoadMoreForwardTargets)
+                send(viewModel, ForwardEvent.LoadMore)
                 more = false
-                send(viewModel, ChatEvent.LoadMoreForwardTargets, ChatEvent.LoadMoreForwardTargets)
+                send(viewModel, ForwardEvent.LoadMore, ForwardEvent.LoadMore)
 
                 assertEquals(2, chats.loadChatsCalls)
             }
@@ -324,7 +324,7 @@ class ChatForwardTest : ChatViewModelHarness() {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
 
-                send(viewModel, ChatEvent.ForwardQueryChanged("G"), ChatEvent.ForwardQueryChanged("Gr"))
+                send(viewModel, ForwardEvent.QueryChanged("G"), ForwardEvent.QueryChanged("Gr"))
                 advanceTimeBy(ChatForwarding.DEBOUNCE_MILLIS - 1)
                 runCurrent()
                 assertEquals(emptyList<String>(), search.chatQueries)
@@ -343,7 +343,7 @@ class ChatForwardTest : ChatViewModelHarness() {
                 val results = MutableSharedFlow<Outcome<kotlinx.collections.immutable.ImmutableList<Chat>>>()
                 search.onSearchChats = { results }
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ForwardQueryChanged("Ada"))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.QueryChanged("Ada"))
                 advanceTimeBy(ChatForwarding.DEBOUNCE_MILLIS + 1)
                 runCurrent()
                 assertTrue(viewModel.sheet!!.isLoading)
@@ -352,7 +352,7 @@ class ChatForwardTest : ChatViewModelHarness() {
                 runCurrent()
                 assertEquals(listOf(PRIVATE_CHAT), viewModel.targetIds)
 
-                send(viewModel, ChatEvent.ForwardQueryChanged(""))
+                send(viewModel, ForwardEvent.QueryChanged(""))
 
                 assertFalse(viewModel.sheet!!.isSearching)
                 assertEquals(ME, viewModel.targetIds?.first())
@@ -363,7 +363,7 @@ class ChatForwardTest : ChatViewModelHarness() {
             runViewModelTest {
                 search.onSearchChats = { flowOf(Outcome.Failure(DomainError.FloodWait(5))) }
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ForwardQueryChanged("Ada"))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.QueryChanged("Ada"))
 
                 advanceTimeBy(ChatForwarding.DEBOUNCE_MILLIS + 1)
                 runCurrent()
@@ -377,9 +377,9 @@ class ChatForwardTest : ChatViewModelHarness() {
             runViewModelTest {
                 search.onSearchChats = { flowOf(Outcome.Success(persistentListOf(group))) }
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.ToggleTarget(ME))
 
-                send(viewModel, ChatEvent.ForwardQueryChanged("Gr"))
+                send(viewModel, ForwardEvent.QueryChanged("Gr"))
                 advanceTimeBy(ChatForwarding.DEBOUNCE_MILLIS + 1)
                 runCurrent()
 
@@ -395,10 +395,10 @@ class ChatForwardTest : ChatViewModelHarness() {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
 
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT), ForwardEvent.ToggleTarget(ME))
                 assertEquals(listOf(GROUP_CHAT, ME), viewModel.sheet?.selectedIds?.toList())
 
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT))
                 assertEquals(setOf(ME), viewModel.sheet?.selectedIds)
             }
 
@@ -408,13 +408,13 @@ class ChatForwardTest : ChatViewModelHarness() {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(3))
 
-                send(viewModel, ChatEvent.SetForwardHideCaptions(true))
+                send(viewModel, ForwardEvent.SetHideCaptions(true))
                 assertEquals(true to true, viewModel.sheet!!.let { it.hideSenderName to it.hideCaptions })
 
-                send(viewModel, ChatEvent.SetForwardHideSenderName(false))
+                send(viewModel, ForwardEvent.SetHideSenderName(false))
                 assertEquals(false to false, viewModel.sheet!!.let { it.hideSenderName to it.hideCaptions })
 
-                send(viewModel, ChatEvent.SetForwardHideSenderName(true))
+                send(viewModel, ForwardEvent.SetHideSenderName(true))
                 assertEquals(true to false, viewModel.sheet!!.let { it.hideSenderName to it.hideCaptions })
             }
     }
@@ -426,11 +426,11 @@ class ChatForwardTest : ChatViewModelHarness() {
             runViewModelTest {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(2))
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT), ChatEvent.ToggleForwardTarget(ME))
-                send(viewModel, ChatEvent.SetForwardHideCaptions(true))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT), ForwardEvent.ToggleTarget(ME))
+                send(viewModel, ForwardEvent.SetHideCaptions(true))
                 viewModel.forwardComment.state.edit { append("Look at this") }
 
-                send(viewModel, ChatEvent.SendForward)
+                send(viewModel, ForwardEvent.Send)
 
                 assertNull(viewModel.sheet)
                 assertEquals(
@@ -447,10 +447,10 @@ class ChatForwardTest : ChatViewModelHarness() {
         fun `a blank comment is not sent`() =
             runViewModelTest {
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.ToggleTarget(ME))
                 viewModel.forwardComment.state.edit { append("  ") }
 
-                send(viewModel, ChatEvent.SendForward)
+                send(viewModel, ForwardEvent.Send)
 
                 assertEquals(listOf(null), messageActions.forwardComments)
             }
@@ -461,7 +461,7 @@ class ChatForwardTest : ChatViewModelHarness() {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
 
-                send(viewModel, ChatEvent.SendForward)
+                send(viewModel, ForwardEvent.Send)
 
                 assertEquals(emptyList<String>(), messageActions.calls)
                 assertEquals(1, viewModel.sheet?.messageCount)
@@ -471,10 +471,10 @@ class ChatForwardTest : ChatViewModelHarness() {
         fun `one other chat is named, and can be opened from the snackbar`() =
             runViewModelTest {
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ToggleForwardTarget(GROUP_CHAT))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.ToggleTarget(GROUP_CHAT))
 
                 viewModel.effects.test {
-                    send(viewModel, ChatEvent.SendForward)
+                    send(viewModel, ForwardEvent.Send)
 
                     assertEquals(ChatEffect.Forwarded(1, UiText.Plain("Group"), openChatId = GROUP_CHAT), awaitItem())
                 }
@@ -484,10 +484,10 @@ class ChatForwardTest : ChatViewModelHarness() {
         fun `this chat is not opened again`() =
             runViewModelTest {
                 val viewModel = conversation()
-                send(viewModel, ChatEvent.Forward(1), ChatEvent.ToggleForwardTarget(PRIVATE_CHAT))
+                send(viewModel, ChatEvent.Forward(1), ForwardEvent.ToggleTarget(PRIVATE_CHAT))
 
                 viewModel.effects.test {
-                    send(viewModel, ChatEvent.SendForward)
+                    send(viewModel, ForwardEvent.Send)
 
                     assertEquals(ChatEffect.Forwarded(1, UiText.Plain("Ada Lovelace"), openChatId = null), awaitItem())
                 }
@@ -498,10 +498,10 @@ class ChatForwardTest : ChatViewModelHarness() {
             runViewModelTest {
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT), ForwardEvent.ToggleTarget(ME))
 
                 viewModel.effects.test {
-                    send(viewModel, ChatEvent.SendForward)
+                    send(viewModel, ForwardEvent.Send)
 
                     assertEquals(ChatEffect.Forwarded(2), awaitItem())
                 }
@@ -522,10 +522,10 @@ class ChatForwardTest : ChatViewModelHarness() {
                 }
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT), ForwardEvent.ToggleTarget(ME))
 
                 viewModel.effects.test {
-                    send(viewModel, ChatEvent.SendForward)
+                    send(viewModel, ForwardEvent.Send)
 
                     assertEquals(
                         ChatEffect.ForwardFailed(DomainError.SendingNotAllowed, failed = 1, forwarded = 1),
@@ -541,10 +541,10 @@ class ChatForwardTest : ChatViewModelHarness() {
                 messageActions.onAction = { Outcome.Failure(DomainError.FloodWait(30)) }
                 val viewModel = conversation()
                 send(viewModel, ChatEvent.Forward(1))
-                send(viewModel, ChatEvent.ToggleForwardTarget(GROUP_CHAT), ChatEvent.ToggleForwardTarget(ME))
+                send(viewModel, ForwardEvent.ToggleTarget(GROUP_CHAT), ForwardEvent.ToggleTarget(ME))
 
                 viewModel.effects.test {
-                    send(viewModel, ChatEvent.SendForward)
+                    send(viewModel, ForwardEvent.Send)
 
                     assertEquals(
                         ChatEffect.ForwardFailed(DomainError.FloodWait(30), failed = 2, forwarded = 0),

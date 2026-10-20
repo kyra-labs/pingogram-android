@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerField
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -112,13 +113,13 @@ internal fun ForwardOptions(
             SwitchRow(
                 title = stringResource(R.string.forward_hide_sender),
                 checked = sheet.hideSenderName,
-                onCheckedChange = { onEvent(ChatEvent.SetForwardHideSenderName(it)) },
+                onCheckedChange = { onEvent(ForwardEvent.SetHideSenderName(it)) },
             )
             if (sheet.hasCaptions) {
                 SwitchRow(
                     title = stringResource(R.string.forward_hide_captions),
                     checked = sheet.hideCaptions,
-                    onCheckedChange = { onEvent(ChatEvent.SetForwardHideCaptions(it)) },
+                    onCheckedChange = { onEvent(ForwardEvent.SetHideCaptions(it)) },
                 )
             }
         }

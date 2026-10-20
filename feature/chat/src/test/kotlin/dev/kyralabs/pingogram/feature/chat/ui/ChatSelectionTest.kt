@@ -267,7 +267,7 @@ class ChatSelectionTest : ChatViewModelHarness() {
                 assertEquals(3, viewModel.forwardSheet.value?.messageCount)
                 assertEquals(setOf(1L, 4L, 5L), viewModel.selectedIds)
 
-                send(viewModel, ChatEvent.ToggleForwardTarget(PRIVATE_CHAT), ChatEvent.SendForward)
+                send(viewModel, ForwardEvent.ToggleTarget(PRIVATE_CHAT), ForwardEvent.Send)
 
                 assertNull(viewModel.selection)
                 assertTrue(messageActions.calls.any { it.startsWith("forward:$PRIVATE_CHAT:[1, 4, 5]") })

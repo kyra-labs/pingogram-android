@@ -173,7 +173,7 @@ internal fun ChatEffects(
                     }
 
                     is ChatEffect.OpenLocation -> {
-                        if (context.openMap(effect)) "" else resources.getString(R.string.content_no_maps_app)
+                        context.openMap(effect, resources)
                     }
 
                     is ChatEffect.MessageScheduled -> {
@@ -297,13 +297,19 @@ internal fun Context.copyPlainText(text: String) {
     clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.message_copy_label), text))
 }
 
-/** Opens [location] in a maps app with a `geo:` link, false if no app on the device handles one. */
-private fun Context.openMap(location: ChatEffect.OpenLocation): Boolean =
+/**
+ * Opens [location] in a maps app with a `geo:` link; the snackbar's text if no app on the device handles one, else
+ * nothing.
+ */
+private fun Context.openMap(
+    location: ChatEffect.OpenLocation,
+    resources: Resources,
+): String =
     try {
         startActivity(Intent(Intent.ACTION_VIEW, geoUri(location).toUri()))
-        true
+        ""
     } catch (_: ActivityNotFoundException) {
-        false
+        resources.getString(R.string.content_no_maps_app)
     }
 
 /**
