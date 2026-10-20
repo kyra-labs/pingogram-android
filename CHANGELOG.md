@@ -37,6 +37,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Push notifications for builds with Google Play services (the "gms" build, not yet published): new messages arrive
   through Firebase Cloud Messaging even when Pingogram is closed. Telegram encrypts each push for your device, so
   Google only sees that something arrived. The GitHub releases stay free of Google's services.
+- Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
+  opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
+  comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
+  or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
+  it, and when you forwarded to one other chat, opens that chat.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
@@ -49,6 +54,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   instead of six or seven.
 - Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
   their name on a long press.
+- Folder tabs that don't fit scroll the selected folder into view and fade out at the edge, so no tab is cut off
+  without a hint. A chat being swiped keeps its rounded shape as it slides.
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
 - Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes

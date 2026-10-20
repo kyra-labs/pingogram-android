@@ -48,6 +48,13 @@ interface ChatRepository {
      */
     suspend fun getChat(id: Long): Outcome<Chat>
 
+    /**
+     * The private chat with user [userId], which TDLib creates on the device if the user never had one, e.g. the
+     * current user's Saved Messages before anything was saved. TDLib answers from memory for a user it knows; it then
+     * announces the chat, which [chat] follows. `DomainError.NotFound` for a user TDLib does not know.
+     */
+    suspend fun privateChat(userId: Long): Outcome<Chat>
+
     /** The user's chat folders in their order, then every change; empty without folders. */
     val folders: Flow<ImmutableList<ChatFolder>>
 

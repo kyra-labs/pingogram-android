@@ -526,6 +526,7 @@ internal object ChatPreviewData {
                 persistentListOf(
                     MessageAction.Reply,
                     MessageAction.Copy,
+                    MessageAction.Forward,
                     MessageAction.Edit,
                     MessageAction.Pin,
                     MessageAction.PinForSelf,
@@ -547,6 +548,7 @@ internal object ChatPreviewData {
                 persistentListOf(
                     MessageAction.Reply,
                     MessageAction.Copy,
+                    MessageAction.Forward,
                     MessageAction.Pin,
                     MessageAction.Delete,
                 ),

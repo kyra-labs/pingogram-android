@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
+import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -30,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioKind
@@ -43,6 +46,7 @@ import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.Instant
@@ -54,7 +58,8 @@ import java.util.Locale
 
 /**
  * The chats TDLib announced ([chats]); [getChat] answers with [onGetChat]; opening and closing are recorded, and so
- * are the messages viewed, which [onViewMessages] answers.
+ * are the messages viewed, which [onViewMessages] answers. The main chat list is [mainList]; [loadChats] counts its
+ * calls and answers with [onLoadChats]; [privateChat] records the user and answers with the announced chat.
  */
 class FakeChatRepository : ChatRepository {
     val chats = MutableStateFlow<Map<Long, Chat>>(emptyMap())
@@ -78,6 +83,17 @@ class FakeChatRepository : ChatRepository {
     fun setChats(vararg chats: Chat) {
         this.chats.value = chats.associateBy { it.id }
     }
+
+    /** The main chat list, in its order. */
+    val mainList = MutableStateFlow<List<Chat>>(emptyList())
+
+    /** How often [loadChats] was called. */
+    var loadChatsCalls = 0
+
+    var onLoadChats: suspend () -> Outcome<Boolean> = { Outcome.Success(false) }
+
+    /** The users whose private chat [privateChat] was asked for. */
+    val privateChatRequests = mutableListOf<Long>()
 
     override fun chat(id: Long): Flow<Chat?> = chats.map { it[id] }.distinctUntilChanged()
 
@@ -104,12 +120,21 @@ class FakeChatRepository : ChatRepository {
         return onViewMessages(messageIds)
     }
 
-    override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> = unused()
+    override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> =
+        if (list == ChatListType.Main) mainList.map { it.toImmutableList() } else unused()
 
     override suspend fun loadChats(
         list: ChatListType,
         limit: Int,
-    ): Outcome<Boolean> = unused()
+    ): Outcome<Boolean> {
+        loadChatsCalls++
+        return onLoadChats()
+    }
+
+    override suspend fun privateChat(userId: Long): Outcome<Chat> {
+        privateChatRequests += userId
+        return chats.value[userId]?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
+    }
 
     override val folders: Flow<ImmutableList<ChatFolder>> get() = unused()
 
@@ -433,6 +458,21 @@ class FakeMessageActionRepository : MessageActionRepository {
         messageIds: List<Long>,
     ) = record("resend:$chatId:$messageIds")
 
+    /** The comment of every forward, in order; null where there was none. */
+    val forwardComments = mutableListOf<FormattedText?>()
+
+    override suspend fun forward(
+        fromChatId: Long,
+        messageIds: List<Long>,
+        toChatId: Long,
+        comment: FormattedText?,
+        options: ForwardOptions,
+    ): Outcome<Unit> {
+        forwardComments += comment
+        val flags = "${options.hideSenderName}:${options.hideCaptions}"
+        return record("forward:$fromChatId:$messageIds:$toChatId:$flags")
+    }
+
     private suspend fun record(call: String): Outcome<Unit> {
         calls += call
         return onAction(call)
@@ -447,8 +487,46 @@ class FakeMessageActionRepository : MessageActionRepository {
                 canBeDeletedOnlyForSelf = true,
                 canBeDeletedForAllUsers = true,
                 canBeSaved = true,
+                canBeForwarded = true,
+                canBeCopied = true,
+                canBeCopiedToSecretChat = true,
             )
     }
+}
+
+/**
+ * Chat search: [searchChats] records each query and emits what [onSearchChats] gives for it (nothing by default); the
+ * rest of global search is not used by the conversation.
+ */
+class FakeSearchRepository : SearchRepository {
+    /** Every query searched, in order. */
+    val chatQueries = mutableListOf<String>()
+
+    var onSearchChats: (String) -> Flow<Outcome<ImmutableList<Chat>>> = { flowOf(Outcome.Success(persistentListOf())) }
+
+    override fun searchChats(query: String): Flow<Outcome<ImmutableList<Chat>>> {
+        chatQueries += query
+        return onSearchChats(query)
+    }
+
+    override suspend fun searchContacts(query: String): Outcome<ImmutableList<Chat>> = unused()
+
+    override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> = unused()
+
+    override suspend fun searchMessages(
+        query: String,
+        offset: String?,
+    ): Outcome<FoundMessages> = unused()
+
+    override suspend fun recentChats(): Outcome<ImmutableList<Chat>> = unused()
+
+    override suspend fun addRecentChat(chatId: Long): Outcome<Unit> = unused()
+
+    override suspend fun removeRecentChat(chatId: Long): Outcome<Unit> = unused()
+
+    override suspend fun clearRecentChats(): Outcome<Unit> = unused()
+
+    override suspend fun topPeople(): Outcome<ImmutableList<Chat>> = unused()
 }
 
 class FakeUserRepository : UserRepository {
@@ -470,11 +548,11 @@ class FakeGroupRepository : GroupRepository {
     val basicGroupMap = MutableStateFlow<Map<Long, BasicGroup>>(emptyMap())
     val supergroupMap = MutableStateFlow<Map<Long, Supergroup>>(emptyMap())
 
-    override val basicGroups: Flow<ImmutableMap<Long, BasicGroup>> get() = unused()
+    override val basicGroups: Flow<ImmutableMap<Long, BasicGroup>> get() = basicGroupMap.map { it.toImmutableMap() }
 
     override fun basicGroup(id: Long): Flow<BasicGroup?> = basicGroupMap.map { it[id] }.distinctUntilChanged()
 
-    override val supergroups: Flow<ImmutableMap<Long, Supergroup>> get() = unused()
+    override val supergroups: Flow<ImmutableMap<Long, Supergroup>> get() = supergroupMap.map { it.toImmutableMap() }
 
     override fun supergroup(id: Long): Flow<Supergroup?> = supergroupMap.map { it[id] }.distinctUntilChanged()
 }

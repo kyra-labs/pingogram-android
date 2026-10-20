@@ -8,8 +8,10 @@ import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -26,6 +28,7 @@ import javax.inject.Singleton
  * history through TDLib's updates (`updateMessageInteractionInfo`, `updateMessageContent`, `updateMessageEdited`,
  * `updateMessageIsPinned`, `updateDeleteMessages`, `updateMessageSendFailed`), which `TdlibMessageRepository` applies.
  * TDLib applies reactions, deletions and pins at once, before Telegram confirms them; edits once Telegram has them.
+ * Forwarded messages reach the target chat's history as new messages being sent (`updateNewMessage`).
  */
 @Suppress("TooManyFunctions") // One function per message action of the interface, each a single TDLib request.
 @Singleton
@@ -46,6 +49,9 @@ class TdlibMessageActionRepository
                     canBeDeletedOnlyForSelf = properties.canBeDeletedOnlyForSelf,
                     canBeDeletedForAllUsers = properties.canBeDeletedForAllUsers,
                     canBeSaved = properties.canBeSaved,
+                    canBeForwarded = properties.canBeForwarded,
+                    canBeCopied = properties.canBeCopied,
+                    canBeCopiedToSecretChat = properties.canBeCopiedToSecretChat,
                 )
             }
 
@@ -179,7 +185,59 @@ class TdlibMessageActionRepository
             }
         }
 
+        /**
+         * The comment as `sendMessage` of an `inputMessageText` that keeps the target chat's draft (`clear_draft`
+         * false: the user wrote the comment in the forward sheet, not in that chat), then `forwardMessages` of the
+         * messages in increasing order, as td_api.tl requires, to the chat itself (no topic), sent now with a sound.
+         * TDLib answers with null for each message it does not forward.
+         */
+        override suspend fun forward(
+            fromChatId: Long,
+            messageIds: List<Long>,
+            toChatId: Long,
+            comment: FormattedText?,
+            options: ForwardOptions,
+        ): Outcome<Unit> {
+            if (comment != null) {
+                val content = TdApi.InputMessageText(comment.toTdFormattedText(), null, false)
+                val sent = client.request(TdApi.SendMessage(toChatId, null, null, NOW, null, content))
+                if (sent is Outcome.Failure) return sent
+            }
+            val ids = messageIds.distinct().sorted().toLongArray()
+            val request =
+                TdApi.ForwardMessages(
+                    toChatId,
+                    null,
+                    fromChatId,
+                    ids,
+                    NOW,
+                    options.hideSenderName,
+                    options.hideSenderName && options.hideCaptions,
+                )
+            return when (val result = client.request(request)) {
+                is Outcome.Failure -> {
+                    result
+                }
+
+                is Outcome.Success -> {
+                    if (result.value.messages.any { it == null }) {
+                        NOT_FORWARDED
+                    } else {
+                        Outcome.Success(
+                            Unit,
+                        )
+                    }
+                }
+            }
+        }
+
         private companion object {
+            /** Sent at once, with a notification: the forward sheet offers no options for that. */
+            val NOW: TdApi.MessageSendOptions get() = SendOptions().toTdOptions()
+
+            /** A message TDLib did not forward: its content is not allowed in the target chat. */
+            val NOT_FORWARDED = Outcome.Failure(DomainError.SendingNotAllowed)
+
             /** Reactions per row of TDLib's reaction picker; it offers up to two rows of top reactions. */
             const val REACTION_ROW_SIZE = 8
 

@@ -96,6 +96,9 @@ enum class MessageAction {
     /** Copy its text or caption, as plain text. */
     Copy,
 
+    /** Forward it to other chats, from the forward sheet. */
+    Forward,
+
     /** Edit its text or caption in the composer. */
     Edit,
 

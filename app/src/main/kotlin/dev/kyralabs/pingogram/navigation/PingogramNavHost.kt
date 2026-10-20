@@ -216,7 +216,12 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             },
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
-        chatScreen(onBack = { navController.popBackStack() }, onOpenMedia = openMedia)
+        // The chat messages were forwarded to goes above the conversation they came from, so back returns there.
+        chatScreen(
+            onBack = { navController.popBackStack() },
+            onOpenMedia = openMedia,
+            onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
+        )
         mediaViewerScreen(onBack = { navController.popBackStack() })
     }
 }
