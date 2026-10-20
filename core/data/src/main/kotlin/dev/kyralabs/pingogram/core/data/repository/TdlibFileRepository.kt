@@ -29,13 +29,15 @@ import javax.inject.Singleton
 /**
  * [FileRepository] on TDLib's file API. Only files being observed are cached: [observe] and [observeUpload] add a file
  * for as long as they are collected (counting collectors), so the cache holds what is on screen, and `updateFile` for
- * other files is ignored. Observing a file again asks TDLib, which answers from memory.
+ * other files is ignored. Observing a file again asks TDLib, which answers from memory. Downloads the user asked for
+ * ([DownloadPriority.Requested]) go through [TdlibTransferRepository], which follows them as transfers.
  */
 @Singleton
 class TdlibFileRepository
     @Inject
     constructor(
         private val client: TdlibClient,
+        private val transfers: TdlibTransferRepository,
         @ApplicationScope scope: CoroutineScope,
     ) : FileRepository,
         TdlibUpdateCache {
@@ -70,6 +72,8 @@ class TdlibFileRepository
             fileId: Int,
             priority: DownloadPriority,
         ): Outcome<Unit> {
+            // The user's own downloads are transfers that keep the app running in the background (FR-N4).
+            if (priority == DownloadPriority.Requested) return transfers.download(fileId, priority.tdlibPriority)
             // The whole file (offset 0, no limit), answered at once rather than when the download completes.
             val function = TdApi.DownloadFile(fileId, priority.tdlibPriority, 0, 0, false)
             return client.request(function).map {}

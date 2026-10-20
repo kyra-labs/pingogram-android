@@ -17,13 +17,14 @@ import javax.inject.Singleton
  * and a renamed id loses what the user chose.
  *
  * Messages and calls pop up ([NotificationManagerCompat.IMPORTANCE_HIGH]); channel posts and everything else only
- * sound.
+ * sound. The progress of transfers ([Transfers]) is silent and shows no badge.
  */
 enum class PingogramChannel(
     val id: String,
     @param:StringRes val title: Int,
     @param:StringRes val description: Int,
     val importance: Int,
+    val showBadge: Boolean = true,
 ) {
     PrivateChats(
         "private_chats",
@@ -54,6 +55,15 @@ enum class PingogramChannel(
         R.string.notification_channel_other,
         R.string.notification_channel_other_description,
         NotificationManagerCompat.IMPORTANCE_DEFAULT,
+    ),
+
+    /** The files the user sends and downloads, while they are on their way (`TransfersWorker`, FR-N4). */
+    Transfers(
+        "transfers",
+        R.string.notification_channel_transfers,
+        R.string.notification_channel_transfers_description,
+        NotificationManagerCompat.IMPORTANCE_LOW,
+        showBadge = false,
     ),
     ;
 
@@ -106,6 +116,7 @@ class NotificationChannels
                         .Builder(channel.id, channel.importance)
                         .setName(context.getString(channel.title))
                         .setDescription(context.getString(channel.description))
+                        .setShowBadge(channel.showBadge)
                         .build()
                 }
             NotificationManagerCompat.from(context).createNotificationChannelsCompat(channels)

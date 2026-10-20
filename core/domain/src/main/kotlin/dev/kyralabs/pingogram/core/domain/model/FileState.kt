@@ -66,4 +66,10 @@ enum class DownloadPriority {
 
     /** Needed later, e.g. a download that continues in the background. */
     Background,
+
+    /**
+     * Asked for by the user: a download tapped, a file being saved. As soon as [Visible], and a transfer of its own
+     * (`TransferRepository`), which keeps the app running in the background until it ends (`REQUIREMENTS.md` FR-N4).
+     */
+    Requested,
 }

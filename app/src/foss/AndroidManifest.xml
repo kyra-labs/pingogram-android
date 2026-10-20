@@ -4,12 +4,8 @@
 
     <!-- "Keep connected" (foss only, off by default; docs/adr/0003-keep-connected-foreground-service.md), approved by
          the owner on 2026-10-19 and pinned by AppManifestTest. The gms flavor ships none of this.
-         FOREGROUND_SERVICE: run KeepConnectedService in the foreground on every version; replaces the main manifest's
-         declaration, which WorkManager needs only up to API 30.
+         FOREGROUND_SERVICE, which it needs on every version, comes from the main manifest (transfers).
          FOREGROUND_SERVICE_SPECIAL_USE: its type on Android 14+, specialUse, explained by the service's subtype below. -->
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE"
-        tools:node="replace" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <!-- Starts the service again after a reboot, only for users who turned "Keep connected" on: the receiver is disabled
          here and enabled by KeepConnectedController only while the setting is on. Replaces the main manifest's removal

@@ -26,7 +26,8 @@ class TdlibFileRepositoryTest {
             on(TdApi.GetFile::class) { request -> TdResult.Success(file(id = request.fileId, size = SIZE)) }
         }
 
-    private fun TestScope.repository() = TdlibFileRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibFileRepository(client, TdlibTransferRepository(client, backgroundScope), backgroundScope)
 
     private fun downloading(downloadedSize: Long) =
         file(id = FILE_ID, size = SIZE, downloadedSize = downloadedSize, isDownloadingActive = true)

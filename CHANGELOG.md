@@ -19,6 +19,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Animated stickers play, in chats and in the sticker panel, once they are downloaded. To save battery, at most eight
   play at once, only while they are on screen and Pingogram is in front, and not at all when animations are turned off
   in Android's settings. Video stickers still show a still picture.
+- Files you send and files you tap to download keep going when you leave Pingogram: while they are on their way, a quiet
+  notification in the new "Transfers" channel shows how many files and how much of them, with "Cancel", and it goes
+  away a moment after the last one. Files you save from a selection count too. Photos and videos that download by
+  themselves never keep Pingogram running in the background.
 - Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
   default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
   and later the choice is the same as in Android's own app language settings, which the page also opens; on Android

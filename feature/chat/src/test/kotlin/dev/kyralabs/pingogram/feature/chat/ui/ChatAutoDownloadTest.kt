@@ -125,7 +125,7 @@ class ChatAutoDownloadTest : ChatViewModelHarness() {
 
             send(viewModel, ChatEvent.DownloadFile(PHOTO_FILE))
             assertEquals(persistentSetOf(PHOTO_FILE), viewModel.state.mediaDownloads.requested)
-            assertEquals(listOf("download:$PHOTO_FILE:Visible"), files.calls)
+            assertEquals(listOf("download:$PHOTO_FILE:Requested"), files.calls)
 
             send(viewModel, ChatEvent.CancelDownload(PHOTO_FILE))
             assertEquals(persistentSetOf<Int>(), viewModel.state.mediaDownloads.requested)
