@@ -165,7 +165,7 @@ messages off for Telegram Premium subscribers (`toggleHasSponsoredMessagesEnable
 | G41 | Every bubble carries its own time, often on its own line: denser and taller than Google Messages, which shows times per group and on a swipe. | M | `chat/BubbleMeta.kt`, `chat/MessageBubble.kt` | Time on the last bubble of a group (or on tap); full times in the semantics | [Google Messages features][9to5-gm-features] | D15 | Done |
 | G42 | Reply quotes and link previews use a colored leading bar, and voice uses a bar waveform: the most Telegram-like elements. §11 says not to reproduce Telegram's styling. | S–M | `chat/BubbleParts.kt` (`QuoteBlock`), `chat/content/Waveform.kt` | Tonal rounded quote card without the bar; waveform kept or a `LinearWavyProgressIndicator`-style scrubber | `DESIGN_SYSTEM.md` §11 | D16 | Done |
 | G43 | The brand fallback palette is `SchemeTonalSpot`, which turns the icon's vivid `#2156C4` into a greyish `#495D92` primary. | S | `tools/theme/generate.mjs`, `ui/theme/Color.kt` | Generate `SchemeVibrant`/`SchemeExpressive`/`SchemeFidelity` side by side and choose | [m3 color system][m3-color-system] | D12 | Done |
-| G44 | `DESIGN_SYSTEM.md` has outdated or self-contradictory rules (see §6). | S | `docs/DESIGN_SYSTEM.md`, `CLAUDE.md`, `REQUIREMENTS.md` | Doc PR after the owner decisions | §6 | several | Open |
+| G44 | `DESIGN_SYSTEM.md` has outdated or self-contradictory rules (see §6). | S | `docs/DESIGN_SYSTEM.md`, `CLAUDE.md`, `REQUIREMENTS.md` | Doc PR after the owner decisions | §6 | several | Done: the owner decisions of 2026-10-19 are in the docs; row 30 verified 2026-10-20 |
 | G63 | The chat list spends 176 dp on its header at rest (112 dp medium flexible bar + 64 dp folder row) before the first chat. | S | `chats/ChatListTopBar.kt`, `chats/ChatListScreen.kt` | Small `TopAppBar` with `titleLargeEmphasized`; `pinnedScrollBehavior` | [m3 app bars][m3-app-bars]; §5.10 | D25 | Done |
 | G64 | Folder tab row is 64 dp for 40 dp buttons. | S | `chats/FolderTabs.kt` | `spacing.small` above and below (56 dp) | §5.10 | D26 | Done |
 | G65 | Chat row avatars are 56 dp; Material's list avatar is 40 dp. | S | `ui/theme/PingogramSizes.kt`, `chats/ChatListItem.kt`, `chats/ArchiveRow.kt` | New `avatarRow` = 48 dp | [m3 lists][m3-lists]; §5.10 | D27 | Done |
@@ -173,7 +173,7 @@ messages off for Telegram Premium subscribers (`toggleHasSponsoredMessagesEnable
 | G67 | Composer bar 72 dp with a 56 dp field and 56 dp buttons. | M | `chat/composer/Composer.kt`, `ComposerButtons.kt` | `BasicTextField` + `TextFieldDefaults.decorator` (48 dp pill, tonal colors); `IconButtonDefaults.smallContainerSize()`; send at `SplitButtonDefaults.SmallContainerHeight` | §5.10; [Google Messages composer][9to5-gm-chat] | D29 | Blocked: M3 session |
 | G68 | Bubble text sits 16 dp from the bubble's sides. | S | `chat/MessageBubble.kt`, `DESIGN_SYSTEM.md` §4 | `spacing.medium` horizontal padding | §5.10 | D30 | Done |
 | G69 | Auth main buttons are 56 dp and full width. | S | `auth/components/AuthComponents.kt` | Default `Button` height, bottom end; secondary `TextButton` bottom start; Welcome keeps the medium size | §5.10 | D31 | Done |
-| G70 | No density check in the per-screen audit. | S | `DESIGN_SYSTEM.md` §12 | Add: ≥ 9 chat rows and one-line bubbles ≤ 40 dp on a 412 × 915 dp phone at 100% font | §5.10 | — | Open |
+| G70 | No density check in the per-screen audit. | S | `DESIGN_SYSTEM.md` §12 | Add: ≥ 9 chat rows and one-line bubbles ≤ 40 dp on a 412 × 915 dp phone at 100% font | §5.10 | — | Done: `DESIGN_SYSTEM.md` §7 (density check) and §12 |
 
 ### Nice to have
 
@@ -196,7 +196,7 @@ messages off for Telegram Premium subscribers (`toggleHasSponsoredMessagesEnable
 | G59 | `GRAD −25` in dark is a no-op (the font's `GRAD` is 0–100); high contrast does not use the optional `GRAD +25`. | S | `ui/theme/Type.kt`, `DESIGN_SYSTEM.md` §3, `CLAUDE.md` 4b | Drop −25 from the docs; optionally +25 in high contrast | `DESIGN_SYSTEM.md` §3.1 | D11 | Partly done: GRAD 0; the optional high-contrast +25 open |
 | G60 | Performance rules: bubbles are nested `Column`/`Box`, not one custom `Layout` per type (`PERFORMANCE.md` §4); the viewer builds page descriptions in composition (`MediaViewerScreen.kt:343-429`). | L / S | `chat/MessageBubble.kt`, `media/MediaViewerScreen.kt` | Custom `Layout` per bubble frame; strings in `semantics {}` | `PERFORMANCE.md` §4, §10 | — | Open |
 | G61 | Auth predictive back only scales the step; it does not seek the shared-axis step transition. | S–M | `auth/AuthRoute.kt:156-214` | `SeekableTransitionState` driven by the back progress | [predictive back design][dac-predictive-back] | — | Open |
-| G62 | Material's typography (August 2026) adapts line heights to four script-height categories; nothing covers it. | S | `ui/theme/Type.kt`, `DESIGN_SYSTEM.md` §3 | Track until Compose exposes it; note in §3 | [m3 typography][m3-type] | — | Open |
+| G62 | Material's typography (August 2026) adapts line heights to four script-height categories; nothing covers it. | S | `ui/theme/Type.kt`, `DESIGN_SYSTEM.md` §3 | Track until Compose exposes it; note in §3 | [m3 typography][m3-type] | — | Done: tracked in `DESIGN_SYSTEM.md` §3.2 until Compose exposes it |
 
 ---
 
@@ -666,7 +666,9 @@ times, but it is the font working as intended. **Keep it** (D32); the layout cha
 
 Rules that are outdated, contradict current Google guidance, contradict each other, or are not implemented. **Applied
 2026-10-19**: after the owner's decisions, `DESIGN_SYSTEM.md`, `REQUIREMENTS.md`, `CLAUDE.md` and `ROADMAP.md` were
-updated along these lines. Row 30 (compileSdk 37) stays open until the AARs are checked.
+updated along these lines. Row 30 was checked on 2026-10-20: Compose 1.12's `ui` and `foundation`, material3
+1.5.0-beta01 and navigation-compose 2.10.2 declare `minCompileSdk=37` in their AAR metadata, so the rationale stands
+and `REQUIREMENTS.md` §3 now cites it.
 
 | # | Where | Today | Problem | Proposal |
 |---|---|---|---|---|
