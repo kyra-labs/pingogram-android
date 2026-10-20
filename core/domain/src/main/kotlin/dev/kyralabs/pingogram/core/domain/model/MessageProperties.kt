@@ -33,6 +33,8 @@ data class MessageProperties(
     val canBeCopied: Boolean = false,
     /** It can be forwarded into a secret chat, which takes only copies. */
     val canBeCopiedToSecretChat: Boolean = false,
+    /** It can be reported to Telegram's moderators (td_api.tl `messageProperties.can_report_chat`, `reportChat`). */
+    val canBeReported: Boolean = false,
 )
 
 /**

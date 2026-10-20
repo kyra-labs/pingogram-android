@@ -19,10 +19,10 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
-import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -80,8 +80,8 @@ import javax.inject.Inject
  *   released with the view model.
  * - **Spoilers**: hidden until tapped ([MediaViewerEvent.RevealSpoiler]), except the opened item's.
  * - **Share and Save** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's file goes
- *   to the share sheet ([MediaViewerEffect.ShareFile]) or into the gallery through [MediaFileActions], once it is
- *   downloaded, after the storage permission on Android 8–9.
+ *   to the share sheet ([MediaViewerEffect.ShareFile]) or into the gallery through the [SharedStorageRepository], once
+ *   it is downloaded, after the storage permission on Android 8–9.
  * - **Items** are mapped on [dispatcher] by a [MediaItemMapper]: senders' names, and dates in the zone, the language
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
  *
@@ -104,7 +104,7 @@ class MediaViewerViewModel internal constructor(
     private val applicationScope: CoroutineScope,
     locale: () -> Locale,
     private val videoPlayer: VideoPlayer,
-    fileActions: MediaFileActions,
+    sharedStorage: SharedStorageRepository,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -118,7 +118,7 @@ class MediaViewerViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
-        fileActions: MediaFileActions,
+        sharedStorage: SharedStorageRepository,
     ) : this(
         savedStateHandle.toRoute<MediaViewerRoute>(),
         savedStateHandle,
@@ -132,7 +132,7 @@ class MediaViewerViewModel internal constructor(
         applicationScope,
         Locale::getDefault,
         videoPlayer,
-        fileActions,
+        sharedStorage,
     )
 
     private val chatId = route.chatId
@@ -159,7 +159,7 @@ class MediaViewerViewModel internal constructor(
         MediaSharing(
             canBeSaved = { messageId -> mediaRepository.canBeSaved(chatId, messageId) },
             isProtected = chatRepository.chat(chatId).map { chat -> chat?.hasProtectedContent != false },
-            fileActions = fileActions,
+            sharedStorage = sharedStorage,
             savedStateHandle = savedStateHandle,
             scope = viewModelScope,
             effects = effectChannel,
