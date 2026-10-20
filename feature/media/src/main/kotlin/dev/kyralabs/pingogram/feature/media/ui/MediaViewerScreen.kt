@@ -68,9 +68,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   in front keeps the page shown; newer media to the end. Each page is a [MediaPage]. The page the pager settles on
  *   goes to the view model ([MediaViewerEvent.PageSettled]). While the photo is zoomed in, the pager does not turn.
  * - **Chrome**: [ViewerTopBar] (back, sender and date, "3 of 120") and [ViewerBottomBar] (caption, a video's controls,
- *   and in the slot of the bottom app bar's actions, [ViewerActions]: Share and Save, where Telegram allows them),
- *   faded in and out on the motion scheme's effects springs when the media is tapped; hidden, the system bars hide too
- *   ([ImmersiveSystemBars]). On Android 8–9 the reason for the storage permission shows when the state asks for it
+ *   and the floating toolbar of actions, [ViewerToolbar]: Share and Save where Telegram allows them, Delete where TDLib
+ *   does, and More with "Show in chat" and Copy), faded in and out on the motion scheme's effects springs when the
+ *   media is tapped; hidden, the system bars hide too ([ImmersiveSystemBars]). Delete asks first
+ *   ([DeleteMediaDialog]); on Android 8–9 the reason for the storage permission shows when the state asks for it
  *   ([StorageRationaleDialog]).
  * - **Leaving**: predictive back ([PredictiveBackDismiss]) shrinks the content towards 90% and fades the background
  *   with the gesture; a swipe down (or up) while not zoomed moves the content with the finger and fades the background,
@@ -137,21 +138,29 @@ internal fun MediaViewerScreen(
         if (content?.actions?.showsStorageRationale == true) {
             StorageRationaleDialog(onAnswer = { onEvent(MediaViewerEvent.StorageRationaleAnswered(it)) })
         }
+        val deleteConfirmation = content?.actions?.deleteConfirmation
+        if (content != null && deleteConfirmation != null) {
+            DeleteMediaDialog(
+                confirmation = deleteConfirmation,
+                media = content.current.media,
+                onConfirm = { onEvent(MediaViewerEvent.DeleteConfirmed(it)) },
+                onDismiss = { onEvent(MediaViewerEvent.DeleteDismissed) },
+            )
+        }
     }
 }
 
 /**
- * The bottom app bar's actions for the current item of [content] ([ViewerActions]), with its full file's state for a
- * Share or Save that waits for it; none where Telegram does not let the content leave it.
+ * The toolbar of actions on the current item of [content] ([ViewerToolbar]), with its full file's state for a Share,
+ * Save or Copy that waits for it; Copy for photos only.
  */
 private fun actionsOf(
     content: MediaViewerUiState.Content,
     onEvent: (MediaViewerEvent) -> Unit,
-): (@Composable () -> Unit)? {
-    val actions = content.actions
-    if (!actions.canSave) return null
-    val fileState = content.files[content.current.media.fileId]
-    return { ViewerActions(actions, fileState, onEvent) }
+): @Composable () -> Unit {
+    val media = content.current.media
+    val fileState = content.files[media.fileId]
+    return { ViewerToolbar(content.actions, canCopy = media is ViewerMedia.Image, fileState, onEvent) }
 }
 
 /** Whether the viewer's chrome shows; tapping the media toggles it. Saved, so it survives rotation. */

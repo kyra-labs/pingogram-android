@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
@@ -79,9 +80,13 @@ import javax.inject.Inject
  *   on the device and the screen is started; it pauses when the page changes or the screen stops, and the player is
  *   released with the view model.
  * - **Spoilers**: hidden until tapped ([MediaViewerEvent.RevealSpoiler]), except the opened item's.
- * - **Share and Save** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's file goes
- *   to the share sheet ([MediaViewerEffect.ShareFile]) or into the gallery through the [SharedStorageRepository], once
- *   it is downloaded, after the storage permission on Android 8–9.
+ * - **Share, Save and Copy** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's
+ *   file goes to the share sheet ([MediaViewerEffect.ShareFile]), into the gallery through the
+ *   [SharedStorageRepository], after the storage permission on Android 8–9, or a photo to the clipboard
+ *   ([MediaViewerEffect.CopyImage]), once it is downloaded.
+ * - **Delete** ([MediaDeletion]): offered where TDLib allows it, after a confirmation; deleting the last item closes
+ *   the viewer ([MediaViewerEffect.Close]).
+ * - **Show in chat** opens the conversation at the current item's message ([MediaViewerEffect.ShowInChat]).
  * - **Items** are mapped on [dispatcher] by a [MediaItemMapper]: senders' names, and dates in the zone, the language
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
  *
@@ -98,6 +103,7 @@ class MediaViewerViewModel internal constructor(
     fileRepository: FileRepository,
     userRepository: UserRepository,
     chatRepository: ChatRepository,
+    messageActions: MessageActionRepository,
     clock: WallClock,
     timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -113,6 +119,7 @@ class MediaViewerViewModel internal constructor(
         fileRepository: FileRepository,
         userRepository: UserRepository,
         chatRepository: ChatRepository,
+        messageActions: MessageActionRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -126,6 +133,7 @@ class MediaViewerViewModel internal constructor(
         fileRepository,
         userRepository,
         chatRepository,
+        messageActions,
         clock,
         timePatterns,
         dispatcher,
@@ -163,6 +171,18 @@ class MediaViewerViewModel internal constructor(
             savedStateHandle = savedStateHandle,
             scope = viewModelScope,
             effects = effectChannel,
+        )
+
+    private val deletion =
+        MediaDeletion(
+            properties = { messageId -> messageActions.properties(chatId, messageId) },
+            delete = { messageId, forEveryone -> messageActions.delete(chatId, listOf(messageId), forEveryone) },
+            scope = viewModelScope,
+            onFailure = effectChannel::showError,
+            // Deleting the last item closes the viewer; TDLib's report of the deletion may come before or after.
+            onDeleted = { messageId ->
+                if (viewer.value.showsNothingBut(messageId)) effectChannel.trySend(MediaViewerEffect.Close)
+            },
         )
 
     private val downloads =
@@ -215,14 +235,16 @@ class MediaViewerViewModel internal constructor(
     internal val surfacePlayer: Player? get() = videoPlayer.surfacePlayer
 
     /** The current item's message id while it is loaded. */
-    private val currentId: Flow<Long?> =
-        viewer
-            .map { viewer ->
-                viewer.currentId.takeIf { (viewer.window?.indexOf(it) ?: -1) >= 0 }
-            }.distinctUntilChanged()
+    private val currentId: Flow<Long?> = viewer.map { it.loadedCurrentId }.distinctUntilChanged()
+
+    /** What the toolbar offers for the current item. */
+    private val actions: Flow<MediaActions> =
+        combine(sharing.state(currentId), deletion.state(currentId)) { actions, deletion ->
+            actions.copy(canDelete = deletion.canDelete, deleteConfirmation = deletion.confirmation)
+        }
 
     val uiState: StateFlow<MediaViewerUiState> =
-        combine(listing, files, playback.state, sharing.state(currentId), ::uiStateOf)
+        combine(listing, files, playback.state, actions, ::uiStateOf)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), MediaViewerUiState.Loading)
 
     init {
@@ -239,18 +261,73 @@ class MediaViewerViewModel internal constructor(
 
     fun onEvent(event: MediaViewerEvent) {
         when (event) {
-            MediaViewerEvent.Started -> playback.setStarted(true)
-            MediaViewerEvent.Stopped -> playback.setStarted(false)
-            is MediaViewerEvent.PageSettled -> onPageSettled(event.messageId)
-            MediaViewerEvent.Retry -> retry()
-            is MediaViewerEvent.RevealSpoiler -> revealedSpoilers.update { it.adding(event.messageId) }
-            MediaViewerEvent.PlayPause -> playback.playPause()
-            is MediaViewerEvent.Seek -> playback.seek(event.fraction)
-            MediaViewerEvent.Share -> sharing.start(MediaAction.Share)
-            MediaViewerEvent.Save -> sharing.start(MediaAction.Save)
-            is MediaViewerEvent.StoragePermissionChecked -> sharing.permission.onChecked(event.showRationale)
-            is MediaViewerEvent.StorageRationaleAnswered -> sharing.permission.onRationaleAnswered(event.proceed)
-            is MediaViewerEvent.StoragePermissionResult -> sharing.permission.onResult(event.granted)
+            MediaViewerEvent.Started -> {
+                playback.setStarted(true)
+            }
+
+            MediaViewerEvent.Stopped -> {
+                playback.setStarted(false)
+            }
+
+            is MediaViewerEvent.PageSettled -> {
+                onPageSettled(event.messageId)
+            }
+
+            MediaViewerEvent.Retry -> {
+                retry()
+            }
+
+            is MediaViewerEvent.RevealSpoiler -> {
+                revealedSpoilers.update { it.adding(event.messageId) }
+            }
+
+            MediaViewerEvent.PlayPause -> {
+                playback.playPause()
+            }
+
+            is MediaViewerEvent.Seek -> {
+                playback.seek(event.fraction)
+            }
+
+            MediaViewerEvent.Share -> {
+                sharing.start(MediaAction.Share)
+            }
+
+            MediaViewerEvent.Save -> {
+                sharing.start(MediaAction.Save)
+            }
+
+            MediaViewerEvent.Copy -> {
+                sharing.start(MediaAction.Copy)
+            }
+
+            MediaViewerEvent.Delete -> {
+                deletion.request()
+            }
+
+            is MediaViewerEvent.DeleteConfirmed -> {
+                deletion.confirm(event.forEveryone)
+            }
+
+            MediaViewerEvent.DeleteDismissed -> {
+                deletion.dismiss()
+            }
+
+            MediaViewerEvent.ShowInChat -> {
+                viewer.value.loadedCurrentId?.let { effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, it)) }
+            }
+
+            is MediaViewerEvent.StoragePermissionChecked -> {
+                sharing.permission.onChecked(event.showRationale)
+            }
+
+            is MediaViewerEvent.StorageRationaleAnswered -> {
+                sharing.permission.onRationaleAnswered(event.proceed)
+            }
+
+            is MediaViewerEvent.StoragePermissionResult -> {
+                sharing.permission.onResult(event.granted)
+            }
         }
     }
 
@@ -362,7 +439,7 @@ class MediaViewerViewModel internal constructor(
 
     /**
      * Downloads around the current item, puts its video or GIF in the player once its file is on the device, and
-     * tells [sharing] which item is current.
+     * tells [sharing] and [deletion] which item is current.
      */
     private fun focus(
         viewer: Viewer,
@@ -373,6 +450,7 @@ class MediaViewerViewModel internal constructor(
         if (window == null || index < 0) {
             playback.show(null)
             sharing.focus(null, files)
+            deletion.focus(null)
             return
         }
         downloads.focus(window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 }, index, files)
@@ -380,6 +458,7 @@ class MediaViewerViewModel internal constructor(
         val media = message.content.toViewerMedia()
         playback.show(media?.playTarget(message.id, files))
         sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
+        deletion.focus(message.id)
     }
 
     private fun updateWindow(transform: (MediaWindow) -> MediaWindow) =
@@ -424,6 +503,12 @@ private data class Viewer(
     val currentId: Long,
 ) {
     val window: MediaWindow? get() = (load as? MediaLoad.Loaded)?.window
+
+    /** The current item's message id while it is loaded; null otherwise. */
+    val loadedCurrentId: Long? get() = currentId.takeIf { (window?.indexOf(it) ?: -1) >= 0 }
+
+    /** Nothing but message [messageId] is loaded, or nothing at all. */
+    fun showsNothingBut(messageId: Long): Boolean = window?.messages.orEmpty().all { it.id == messageId }
 
     /** The files of the current item and its neighbours, which the viewer follows. */
     fun nearbyFileIds(): Set<Int> {

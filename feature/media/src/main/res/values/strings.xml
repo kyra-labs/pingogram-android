@@ -29,7 +29,7 @@
     <string name="media_caption_collapse">Show less of the caption</string>
     <string name="media_downloading">Downloading</string>
     <string name="media_playback_failed">This video can\'t be played</string>
-    <!-- The bottom app bar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
+    <!-- The toolbar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
     <string name="media_share">Share</string>
     <string name="media_save">Save to gallery</string>
     <!-- State of the Share button while the file downloads before it is shared -->
@@ -47,4 +47,28 @@
     <string name="media_storage_rationale_body">On this version of Android, Pingogram needs access to storage to add photos and videos to your gallery. It only adds the ones you save.</string>
     <string name="media_storage_rationale_not_now">Not now</string>
     <string name="media_storage_rationale_continue">Continue</string>
+    <string name="media_delete">Delete</string>
+    <!-- The toolbar's button that opens the menu of further actions -->
+    <string name="media_more">More options</string>
+    <!-- Opens the conversation at the message of the shown photo or video -->
+    <string name="media_show_in_chat">Show in chat</string>
+    <!-- Puts the shown photo on the clipboard -->
+    <string name="media_copy">Copy</string>
+    <!-- State of the More button while the photo downloads before it is copied -->
+    <string name="media_copy_pending">Preparing to copy</string>
+    <!-- The clipboard's label of a copied photo -->
+    <string name="media_copy_label">Photo</string>
+    <string name="media_copied">Photo copied</string>
+    <string name="media_copy_failed">This photo can\'t be copied</string>
+    <!-- The confirmation before the shown photo, video or GIF is deleted -->
+    <string name="media_delete_photo_title">Delete photo?</string>
+    <string name="media_delete_video_title">Delete video?</string>
+    <string name="media_delete_gif_title">Delete GIF?</string>
+    <string name="media_delete_for_me_body">This deletes it only for you.</string>
+    <string name="media_delete_for_everyone_body">This deletes it for everyone in this chat.</string>
+    <!-- When the user may also delete it for the others, with the check box below -->
+    <string name="media_delete_choice_body">This deletes it for you.</string>
+    <string name="media_delete_for_everyone">Delete for everyone</string>
+    <string name="media_delete_confirm">Delete</string>
+    <string name="media_delete_cancel">Cancel</string>
 </resources>

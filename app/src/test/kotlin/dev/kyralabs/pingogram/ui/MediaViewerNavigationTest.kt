@@ -64,7 +64,8 @@ import dev.kyralabs.pingogram.feature.media.R as MediaR
  *
  * The `NavHost` is a `SharedTransitionLayout`, so the photo grows out of its bubble and shrinks back into it
  * (`sharedMediaBounds`): opening and every way of closing (the back button, predictive back, a swipe down, a zoomed
- * photo, a photo paged to) end on the right screen with the bubble back in the conversation.
+ * photo, a photo paged to) end on the right screen with the bubble back in the conversation. "Show in chat" leaves the
+ * viewer for the conversation at the photo's message.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class)
@@ -147,6 +148,22 @@ class MediaViewerNavigationTest {
         composeRule.onNode(hasContentDescription(string(MediaR.string.media_back))).performClick()
         composeRule.waitForIdle()
         assertTrue(navController.currentDestination?.hasRoute<ChatRoute>() == true)
+    }
+
+    @Test
+    fun `Show in chat replaces the viewer and the conversation below with the conversation at the message`() {
+        setApp()
+        openAdaAndTapPhoto()
+        awaitNode(photoPage)
+
+        composeRule.onNode(hasContentDescription(string(MediaR.string.media_more))).performClick()
+        awaitNode(hasText(string(MediaR.string.media_show_in_chat)))
+        composeRule.onNode(hasText(string(MediaR.string.media_show_in_chat))).performClick()
+
+        awaitConversation()
+        assertEquals(ChatRoute(ADA, PHOTO_MESSAGE), navController.currentBackStackEntry?.toRoute<ChatRoute>())
+        // The conversation the viewer was opened from gave way: back goes to the chat list.
+        assertTrue(navController.previousBackStackEntry?.destination?.hasRoute<ChatRoute>() == false)
     }
 
     @Test
