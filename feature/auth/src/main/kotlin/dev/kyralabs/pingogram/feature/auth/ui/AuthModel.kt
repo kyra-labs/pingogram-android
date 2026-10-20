@@ -24,6 +24,8 @@ internal data class AuthModel(
     val restarting: Boolean = false,
     val pendingAction: AuthAction? = null,
     val floodWaitSeconds: Long? = null,
+    /** The whole flood wait, for its progress: the seconds Telegram asked to wait. */
+    val floodWaitTotalSeconds: Long = 0,
     val phone: PhoneForm = PhoneForm(),
     val code: CodeForm = CodeForm(),
     val password: PasswordForm = PasswordForm(),
@@ -55,6 +57,8 @@ internal data class CodeForm(
     /** The last code Telegram rejected; it is not submitted again by itself. */
     val rejectedCode: String? = null,
     val resendInSeconds: Long = 0,
+    /** The whole resend countdown, for its progress: the seconds left when this code's step first arrived. */
+    val resendTotalSeconds: Long = 0,
     /** TDLib's raw number of the current code and its display form, once formatted. */
     val formattedPhoneNumber: Pair<String, String>? = null,
 )
@@ -114,7 +118,7 @@ internal fun AuthModel.withStep(step: AuthStep): AuthModel {
     return when (step) {
         AuthStep.WaitPhoneNumber -> base.atPhoneNumber()
 
-        is AuthStep.WaitCode -> base.copy(code = base.code.copy(resendInSeconds = step.resendAvailableAt.secondsLeft()))
+        is AuthStep.WaitCode -> base.copy(code = resendCountdown(step))
 
         is AuthStep.WaitPassword -> if (keepLocal) base else base.copy(password = PasswordForm())
 
@@ -127,6 +131,17 @@ internal fun AuthModel.withStep(step: AuthStep): AuthModel {
 
         else -> base
     }
+}
+
+/**
+ * The code form with the resend countdown of [step]. Its total is the time left when the code's step first arrived
+ * (TDLib's timeout, unless the screen was created later), so the same step reported again keeps it.
+ */
+private fun AuthModel.resendCountdown(step: AuthStep.WaitCode): CodeForm {
+    val left = step.resendAvailableAt.secondsLeft()
+    val sameCode = (this.step as? AuthStep.WaitCode)?.resendAvailableAt == step.resendAvailableAt
+    val total = if (sameCode && code.resendTotalSeconds > 0) code.resendTotalSeconds else left
+    return code.copy(resendInSeconds = left, resendTotalSeconds = total)
 }
 
 /** Steps of the email login, during which an address entered in it stays known (and TDLib starting up). */

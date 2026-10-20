@@ -234,7 +234,7 @@ class AuthViewModel internal constructor(
     }
 
     private fun closeCountryPicker() {
-        updatePhone { it.copy(isPickerOpen = false, pickerQuery = "") }
+        update { it.afterBack(BackTarget.CloseCountryPicker) }
     }
 
     private fun onCountrySelected(isoCode: String) {
@@ -284,7 +284,7 @@ class AuthViewModel internal constructor(
     // Not blocked by a flood wait: it only ends the unauthorized session.
     private fun cancelQrCode() {
         if (model.step !is AuthStep.WaitOtherDeviceConfirmation || model.restarting) return
-        update { it.copy(restarting = true, pendingAction = AuthAction.CancelQrCode) }
+        update { it.afterBack(BackTarget.CancelQrCode) }
         viewModelScope.launch {
             val outcome = authRepository.cancelQrCode()
             update { it.copy(pendingAction = null, restarting = it.restarting && outcome is Outcome.Success) }
@@ -400,7 +400,7 @@ class AuthViewModel internal constructor(
                 step is AuthStep.WaitEmailCode ||
                 step is AuthStep.WaitPremiumPurchase
         if (!acceptsNewNumber) return
-        update { it.copy(editingPhone = true, phone = it.phone.copy(error = null)) }
+        update { it.afterBack(BackTarget.ChangeNumber) }
         loadCountries()
     }
 
@@ -597,17 +597,16 @@ class AuthViewModel internal constructor(
 
     // Back
 
+    /**
+     * Local navigation by [afterBack], which the UI state also uses to show where back leads
+     * ([AuthUiState.backStep]).
+     */
     private fun onBack() {
-        when (model.backTarget()) {
-            BackTarget.Welcome -> update { it.copy(welcomeDone = false, phone = it.phone.copy(error = null)) }
-            BackTarget.CloseCountryPicker -> closeCountryPicker()
-            BackTarget.StopChangingNumber -> update { it.copy(editingPhone = false) }
+        when (val target = model.backTarget()) {
             BackTarget.ChangeNumber -> changePhoneNumber()
-            BackTarget.LeaveRecovery -> updatePassword { PasswordForm(password = it.password) }
-            BackTarget.CloseTermsOfService -> updateRegistration { it.copy(isTermsOpen = false) }
-            BackTarget.StopChangingEmail -> update { it.copy(editingEmail = false) }
             BackTarget.CancelQrCode -> cancelQrCode()
             null -> Unit
+            else -> update { it.afterBack(target) }
         }
     }
 
@@ -616,7 +615,7 @@ class AuthViewModel internal constructor(
     /**
      * Sends one request at a time, and none while Telegram asks to wait; [action] shows progress until it answers.
      * Failures go next to [errorField] when they concern it, to a flood wait countdown, or to a snackbar; [onFailure]
-     * then sees the raw error.
+     * then sees the raw error. A code or password Telegram accepts or rejects gets its haptic ([inputFeedback]).
      *
      * With [awaitsStep], success means TDLib moves on to another (or a renewed) step. Its answer and that step arrive
      * on separate paths, in either order; when the answer comes first, progress stays until the step arrives, so the
@@ -635,6 +634,7 @@ class AuthViewModel internal constructor(
         val stepsBefore = stepCount
         viewModelScope.launch {
             val outcome = request()
+            inputFeedback(action, outcome)
             if (outcome is Outcome.Success && awaitsStep && stepCount == stepsBefore) {
                 awaitingStep = onSuccess
                 return@launch
@@ -671,11 +671,26 @@ class AuthViewModel internal constructor(
         }
     }
 
+    /**
+     * `Confirm` when Telegram accepts a code or password the user entered, `Reject` when it rejects one as wrong or
+     * expired (`docs/DESIGN_SYSTEM.md` §5); other failures (network, flood wait) are not about the input.
+     */
+    private fun inputFeedback(
+        action: AuthAction,
+        outcome: Outcome<Unit>,
+    ) {
+        if (action !in InputChecks) return
+        when {
+            outcome is Outcome.Success -> sendEffect(AuthEffect.InputAccepted)
+            outcome is Outcome.Failure && outcome.error.rejectsInput -> sendEffect(AuthEffect.InputRejected)
+        }
+    }
+
     private fun startFloodWait(seconds: Long) {
         floodWaitJob?.cancel()
         floodWaitJob =
             countdownTo(timeSource.markNow() + seconds.seconds) { left ->
-                update { it.copy(floodWaitSeconds = left.takeIf { s -> s > 0 }) }
+                update { it.copy(floodWaitSeconds = left.takeIf { s -> s > 0 }, floodWaitTotalSeconds = seconds) }
             }
     }
 
@@ -733,3 +748,17 @@ class AuthViewModel internal constructor(
 /** Telegram rejected the code itself (a 406 included): the same code must not be submitted again by itself. */
 private val DomainError.rejectsCode: Boolean
     get() = this == DomainError.CodeInvalid || this == DomainError.CodeExpired || this == DomainError.Silent
+
+/** Telegram rejected the code or password itself, rather than failing to check it. */
+private val DomainError.rejectsInput: Boolean
+    get() = rejectsCode || this == DomainError.PasswordInvalid || this == DomainError.PasswordRecoveryExpired
+
+/** The requests that send a code or password the user entered for Telegram to check. */
+private val InputChecks =
+    setOf(
+        AuthAction.SubmitCode,
+        AuthAction.SubmitPassword,
+        AuthAction.SubmitRecoveryCode,
+        AuthAction.SubmitNewPassword,
+        AuthAction.SubmitEmailCode,
+    )
