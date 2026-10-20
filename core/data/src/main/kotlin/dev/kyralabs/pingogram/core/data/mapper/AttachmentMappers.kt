@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import org.drinkless.tdlib.TdApi
 
 // What the attach menu sends, as TDLib's input message contents (td_api.tl of the pinned TDLib, 1.8.68).
@@ -97,6 +98,14 @@ internal fun DeviceLocation.toInputMessageLocation(): TdApi.InputMessageLocation
 
 /** td_api.tl `location.horizontal_accuracy`: 0–1500 m. */
 private const val MAX_HORIZONTAL_ACCURACY = 1500.0
+
+/**
+ * `inputMessageSticker` of a sticker TDLib already knows (from a sticker set, the recent or the favorite ones): its
+ * file by id, which TDLib sends as the existing remote file without uploading anything, its size and its emoji, so the
+ * chat list's preview shows "😀 Sticker". No thumbnail: the remote file has its own.
+ */
+internal fun Sticker.toInputMessageSticker(): TdApi.InputMessageSticker =
+    TdApi.InputMessageSticker(TdApi.InputSticker(TdApi.InputFileId(file.id), null, width, height), emoji)
 
 /**
  * `inputMessagePoll` of this poll: plain question and options (only Premium users may add custom emoji), no

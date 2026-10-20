@@ -84,9 +84,12 @@ regresses by more than 10%.
   `TextLayoutResult` cache for bubble sizing; avoid `AnnotatedString` rebuilds on recomposition.
 - Images: Coil 3 `AsyncImage` with explicit `size`, `crossfade` via motion scheme, hardware
   bitmaps, memory cache 25% of app memory class, disk cache delegated to TDLib (no second copy).
-- Stickers/animations: rlottie (or equivalent) rendering to a frame cache keyed by (sticker,
-  size); max 8 concurrently animating items; pause everything off-screen and when the window
-  loses focus; GIF/WebP via Coil's animated decoder with frame-rate cap 30 fps.
+- Stickers/animations: Lottie behind `StickerAnimationDecoder` (`docs/adr/0008-lottie-for-animated-stickers.md`)
+  rendering off the main thread, with a frame cache keyed by (sticker, size) that holds each sticker's first frame
+  (8 MB LRU; whole animations would take ~17 MB each) and two bitmaps per playing sticker; max 8 concurrently
+  animating items at ≤ 30 fps; pause everything off-screen (a frame not drawn within 250 ms) and when the window
+  loses focus; a new frame invalidates only the sticker's own layer; GIF/WebP via Coil's animated decoder with
+  frame-rate cap 30 fps.
 - Composition tracing enabled in benchmark builds; compiler metrics (`-P …reportsDestination`)
   reviewed in PRs that touch `feature:chat`; any unstable class in UI state is a build error
   (custom `compose_compiler_config.conf` stability file).
@@ -124,7 +127,7 @@ regresses by more than 10%.
   WorkManager under 15 min.
 - Foreground service (`dataSync`) only while an upload/download the user started is in progress;
   stopped within 5 s of completion (`TransfersWorker`: 2 s after the last transfer, plus at most the 1 s between
-  notification updates). Automatic downloads never start it (`docs/adr/0008-background-transfers.md`).
+  notification updates). Automatic downloads never start it (`docs/adr/0009-background-transfers.md`).
 - `gms` flavor: FCM push (`registerDevice`, encrypted) so TDLib can sleep. A push wakes the process for at most
   6 s + 3 s (`TdlibPushRepository`: `processPushNotification`, then held-back notifications), not a foreground
   service. The token is registered at login and at each start, which TDLib answers locally when it is unchanged; no

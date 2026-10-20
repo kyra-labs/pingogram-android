@@ -10,6 +10,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Emoji and stickers: the smiley at the start of the message field opens a panel in the keyboard's place, at the
+  keyboard's height, so nothing jumps when you switch back and forth. The Emoji tab has every emoji your phone can
+  show, by category, with the ones you used last first; tapping one puts it where the cursor is, and the panel's
+  backspace deletes a whole emoji at a time. The Stickers tab has your favorite and recently used stickers and every
+  sticker set you added, each a tap away in the row at the top; tapping a sticker sends it right away, as a reply if you
+  were replying. Back or the keyboard button brings the keyboard back.
+- Animated stickers play, in chats and in the sticker panel, once they are downloaded. To save battery, at most eight
+  play at once, only while they are on screen and Pingogram is in front, and not at all when animations are turned off
+  in Android's settings. Video stickers still show a still picture.
 - Files you send and files you tap to download keep going when you leave Pingogram: while they are on their way, a quiet
   notification in the new "Transfers" channel shows how many files and how much of them, with "Cancel", and it goes
   away a moment after the last one. Files you save from a selection count too. Photos and videos that download by

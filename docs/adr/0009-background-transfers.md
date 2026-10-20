@@ -1,4 +1,4 @@
-# 0008 — Background transfers in WorkManager's `dataSync` foreground service
+# 0009 — Background transfers in WorkManager's `dataSync` foreground service
 
 Date: 2026-10-20 · Status: accepted
 

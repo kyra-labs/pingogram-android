@@ -18,5 +18,10 @@ dependencies {
     // in the features that show selection mode.
     implementation(libs.androidx.activity.compose)
 
+    // Animated (TGS) stickers, drawn into bitmaps by LottieDrawable (sticker/LottieStickerDecoder.kt,
+    // docs/adr/0008-lottie-for-animated-stickers.md). Not its AppCompat dependency: only LottieAnimationView, a View,
+    // needs it, and Pingogram has no Views (CLAUDE.md rule 4).
+    implementation(libs.lottie) { exclude(group = "androidx.appcompat", module = "appcompat") }
+
     testImplementation(libs.kotlinx.coroutines.test)
 }

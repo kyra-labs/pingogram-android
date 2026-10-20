@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 
 /**
@@ -43,6 +44,10 @@ class FakeAttachmentRepository : AttachmentRepository {
     /** The location, options and reply of every [sendLocation] call. */
     val sentLocations = mutableListOf<Triple<DeviceLocation, SendOptions, Long?>>()
     var onSendLocation: suspend (DeviceLocation) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** The sticker, options and reply of every [sendSticker] call. */
+    val sentStickers = mutableListOf<Triple<Sticker, SendOptions, Long?>>()
+    var onSendSticker: suspend (Sticker) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     val sentPolls = mutableListOf<SentPoll>()
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }
@@ -106,6 +111,16 @@ class FakeAttachmentRepository : AttachmentRepository {
     ): Outcome<Unit> {
         sentLocations += Triple(location, options, replyToMessageId)
         return onSendLocation(location)
+    }
+
+    override suspend fun sendSticker(
+        chatId: Long,
+        sticker: Sticker,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> {
+        sentStickers += Triple(sticker, options, replyToMessageId)
+        return onSendSticker(sticker)
     }
 
     override suspend fun sendPoll(

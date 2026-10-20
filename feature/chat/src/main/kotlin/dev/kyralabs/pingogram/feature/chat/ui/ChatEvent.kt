@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
@@ -159,6 +160,11 @@ sealed interface ChatEvent {
     data class SendLocation(
         val location: DeviceLocation,
         val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** A sticker tapped in the composer's sticker panel: [sticker] is sent at once, with the composer's reply. */
+    data class SendSticker(
+        val sticker: Sticker,
     ) : ChatEvent
 
     /** The remove button of item [key] of the preview. */
