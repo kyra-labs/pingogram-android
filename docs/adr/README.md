@@ -6,4 +6,5 @@ One file per significant decision, `NNNN-title.md`, with Context · Decision · 
 | ADR | Decision |
 |---|---|
 | [0002](0002-open-source-licenses.md) | Open-source licenses screen: our own Gradle task lists each variant's dependencies and POM licenses at build time (not AboutLibraries, owner decision D17); our own Compose screens |
-| [0003](0003-passcode-lock.md) | Passcode lock: the platform's `BiometricPrompt` (Android 10+, strong biometrics, no `androidx.biometric`: it needs a `FragmentActivity` and brings AppCompat); PBKDF2-HMAC-SHA512 with 210,000 rounds; a growing wait after five wrong passcodes |
+| [0003](0003-keep-connected-foreground-service.md) | "Keep connected" (foss only): a `specialUse` foreground service keeps TDLib's connection open while the user wants it; not `dataSync` (6 h/day on Android 15) nor `remoteMessaging` (cross-device relay) |
+| [0004](0004-passcode-lock.md) | Passcode lock: the platform's `BiometricPrompt` (Android 10+, strong biometrics, no `androidx.biometric`: it needs a `FragmentActivity` and brings AppCompat); PBKDF2-HMAC-SHA512 with 210,000 rounds; a growing wait after five wrong passcodes |

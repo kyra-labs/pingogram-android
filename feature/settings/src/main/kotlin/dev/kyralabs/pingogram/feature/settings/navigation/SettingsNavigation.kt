@@ -7,6 +7,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
@@ -14,6 +15,8 @@ import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
@@ -21,6 +24,7 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
@@ -29,6 +33,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceS
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as NotificationExceptionsScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
@@ -55,11 +61,12 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
 }
 
 /**
- * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [DataStorageRoute],
- * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
+ * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
+ * [NotificationSettingsRoute], [DataStorageRoute], [AboutRoute] and [PrivacySecurityRoute], and the ones these push
+ * above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute] and [PasscodeLockRoute] above Privacy and
- * security, [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute]
- * above it. [onBack] leaves each of them; Edit
+ * security, [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and
+ * [OpenSourceLibraryRoute] above it. [onBack] leaves each of them; Edit
  * profile leaves with [onProfileSaved] once it saved, which the app implements with [popBackStackAfterProfileSaved].
  */
 fun NavGraphBuilder.settingsPages(
@@ -69,6 +76,22 @@ fun NavGraphBuilder.settingsPages(
 ) {
     composable<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     composable<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
+    composable<NotificationSettingsRoute> {
+        NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
+    }
+    composable<NotificationExceptionsRoute> { entry ->
+        val scope =
+            NotificationScope.entries.firstOrNull {
+                it.name ==
+                    entry.toRoute<NotificationExceptionsRoute>().scope
+            }
+        if (scope != null) {
+            NotificationExceptionsScreenRoute(scope = scope, onBack = onBack)
+        } else {
+            // A kind of chats this version does not know, e.g. from a back stack restored after an update.
+            LaunchedEffect(Unit) { onBack() }
+        }
+    }
     composable<DataStorageRoute> { DataStorageScreenRoute(onBack = onBack) }
     composable<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     composable<OpenSourceLicensesRoute> {
@@ -114,6 +137,7 @@ private val SettingsPage.route: Any
         when (this) {
             SettingsPage.EditProfile -> EditProfileRoute
             SettingsPage.Appearance -> AppearanceRoute
+            SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
@@ -126,4 +150,10 @@ private val PrivacySecurityPage.route: Any
             PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
+        }
+
+private val NotificationSettingsPage.route: Any
+    get() =
+        when (this) {
+            is NotificationSettingsPage.Exceptions -> NotificationExceptionsRoute(scope.name)
         }

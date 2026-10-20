@@ -3,10 +3,13 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOption
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
@@ -21,6 +24,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -29,7 +33,7 @@ import org.junit.jupiter.api.Test
 /**
  * The requests [TdlibMessageActionRepository] sends for the message actions (`REQUIREMENTS.md` FR-C6, FR-C7), and how
  * it maps TDLib's answers: properties, available reactions without Premium-only or paid ones, reactions, edits, delete
- * for oneself or everyone, pins with their options, resending, and forwarding with a comment and options.
+ * for oneself or everyone, pins with their options, resending, forwarding with a comment and options, and reporting.
  */
 class TdlibMessageActionRepositoryTest {
     private val client = FakeTdlibClient()
@@ -61,6 +65,7 @@ class TdlibMessageActionRepositoryTest {
                         canBeForwarded = true
                         canBeCopied = true
                         canBeCopiedToSecretChat = false
+                        canReportChat = true
                         customEmojiIds = longArrayOf()
                     }
                 client.on(TdApi.GetMessageProperties::class, TdResult.Success(properties))
@@ -81,6 +86,7 @@ class TdlibMessageActionRepositoryTest {
                             canBeForwarded = true,
                             canBeCopied = true,
                             canBeCopiedToSecretChat = false,
+                            canBeReported = true,
                         ),
                     ),
                     result,
@@ -608,6 +614,69 @@ class TdlibMessageActionRepositoryTest {
                 client.on(TdApi.ForwardMessages::class, TdResult.Failure(TdError(420, "FLOOD_WAIT_30")))
 
                 val result = repository.forward(CHAT, listOf(MESSAGE), TARGET, null, ForwardOptions())
+
+                assertEquals(Outcome.Failure(DomainError.FloodWait(30)), result)
+            }
+    }
+
+    @Nested
+    inner class Reporting {
+        @Test
+        fun `the first report sends an empty option and the messages, a chosen option its id and the comment`() =
+            runTest {
+                client.on(TdApi.ReportChat::class, TdResult.Success(TdApi.ReportChatResultOk()))
+
+                repository.report(CHAT, listOf(MESSAGE, MESSAGE + 1), ReportOptionId.Initial)
+                repository.report(CHAT, listOf(MESSAGE), ReportOptionId(byteArrayOf(7, 8)), "It is spam")
+
+                val requests = client.sentOf<TdApi.ReportChat>()
+                assertEquals(listOf(CHAT, CHAT), requests.map { it.chatId })
+                assertEquals(
+                    listOf(listOf(MESSAGE, MESSAGE + 1), listOf(MESSAGE)),
+                    requests.map { it.messageIds.toList() },
+                )
+                assertArrayEquals(ByteArray(0), requests[0].optionId)
+                assertArrayEquals(byteArrayOf(7, 8), requests[1].optionId)
+                assertEquals(listOf("", "It is spam"), requests.map { it.text })
+            }
+
+        @Test
+        fun `each report result maps`() =
+            runTest {
+                val options =
+                    arrayOf(TdApi.ReportOption(byteArrayOf(1), "Spam"), TdApi.ReportOption(byteArrayOf(2), "Violence"))
+                val answers =
+                    listOf(
+                        TdApi.ReportChatResultOk() to ChatReportResult.Reported,
+                        TdApi.ReportChatResultOptionRequired("Why?", options) to
+                            ChatReportResult.OptionRequired(
+                                "Why?",
+                                persistentListOf(
+                                    ReportOption(ReportOptionId(byteArrayOf(1)), "Spam"),
+                                    ReportOption(ReportOptionId(byteArrayOf(2)), "Violence"),
+                                ),
+                            ),
+                        TdApi.ReportChatResultTextRequired(byteArrayOf(3), true) to
+                            ChatReportResult.TextRequired(ReportOptionId(byteArrayOf(3)), isOptional = true),
+                        TdApi.ReportChatResultMessagesRequired() to ChatReportResult.MessagesRequired,
+                    )
+
+                for ((answer, expected) in answers) {
+                    client.on(TdApi.ReportChat::class, TdResult.Success(answer))
+
+                    assertEquals(
+                        Outcome.Success(expected),
+                        repository.report(CHAT, listOf(MESSAGE), ReportOptionId.Initial),
+                    )
+                }
+            }
+
+        @Test
+        fun `a refused report fails with its error`() =
+            runTest {
+                client.on(TdApi.ReportChat::class, TdResult.Failure(TdError(420, "FLOOD_WAIT_30")))
+
+                val result = repository.report(CHAT, listOf(MESSAGE), ReportOptionId.Initial)
 
                 assertEquals(Outcome.Failure(DomainError.FloodWait(30)), result)
             }

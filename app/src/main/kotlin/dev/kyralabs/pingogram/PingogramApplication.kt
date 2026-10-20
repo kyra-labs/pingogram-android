@@ -7,6 +7,7 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
+import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -32,6 +33,10 @@ class PingogramApplication :
     @Inject
     lateinit var notificationRenderer: NotificationRenderer
 
+    /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" in `foss`. */
+    @Inject
+    lateinit var backgroundConnection: BackgroundConnection
+
     /** Creates the workers with Hilt (notification actions); WorkManager asks for it when first used. */
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -44,6 +49,8 @@ class PingogramApplication :
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
+        // Starts or stops the "Keep connected" service as its setting and the login change (foss; nothing in gms).
+        backgroundConnection.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()

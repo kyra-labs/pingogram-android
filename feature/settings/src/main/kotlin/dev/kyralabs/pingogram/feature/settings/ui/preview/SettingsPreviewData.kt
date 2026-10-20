@@ -1,13 +1,16 @@
 package dev.kyralabs.pingogram.feature.settings.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -18,8 +21,12 @@ import dev.kyralabs.pingogram.feature.settings.ui.BlockedSenderItem
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersUiState
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageUiState
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileUiState
+import dev.kyralabs.pingogram.feature.settings.ui.ExceptionsState
 import dev.kyralabs.pingogram.feature.settings.ui.LicenseItem
 import dev.kyralabs.pingogram.feature.settings.ui.MoreBlockedSenders
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionItem
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryItem
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesUiState
@@ -28,6 +35,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
 import dev.kyralabs.pingogram.feature.settings.ui.ProfileAccount
 import dev.kyralabs.pingogram.feature.settings.ui.ProfileFields
+import dev.kyralabs.pingogram.feature.settings.ui.ScopeSettingsState
 import dev.kyralabs.pingogram.feature.settings.ui.SessionItem
 import dev.kyralabs.pingogram.feature.settings.ui.SessionsState
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsUiState
@@ -37,6 +45,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
 import dev.kyralabs.pingogram.feature.settings.ui.reflowLicenseText
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** Sample states of the settings screens, for previews and screenshot tests. */
@@ -317,6 +326,64 @@ internal object SettingsPreviewData {
         first: String,
         second: String,
     ) = UiText.resource(R.string.settings_session_parts, first, second)
+
+    /** The defaults of a new account: everything notifies, channels' pinned messages too, groups muted by the user. */
+    val notifications =
+        NotificationSettingsUiState(
+            scopes =
+                ScopeSettingsState.Content(
+                    persistentMapOf(
+                        NotificationScope.PrivateChats to scopeSettings(),
+                        NotificationScope.GroupChats to scopeSettings(isMuted = true),
+                        NotificationScope.ChannelChats to scopeSettings(showPreview = false),
+                    ),
+                ),
+            isKeepConnectedOffered = true,
+        )
+
+    /** Android shows no notification of Pingogram, and the channels' channel is off. */
+    val notificationsBlocked =
+        notifications.copy(
+            notificationsBlocked = true,
+            blockedChannels = persistentSetOf(NotificationScope.ChannelChats),
+            keepConnected = true,
+        )
+
+    val notificationExceptionItems =
+        persistentListOf(
+            NotificationExceptionItem(
+                chatId = 21,
+                title = "Analytical Engine Society",
+                photo = null,
+                status = UiText.resource(R.string.settings_exception_muted),
+                mute = ChatMute.MutedForever,
+            ),
+            NotificationExceptionItem(
+                chatId = 22,
+                title = "Difference Engine No. 2",
+                photo = null,
+                status = UiText.resource(R.string.settings_exception_muted_until, "6:30 PM"),
+                mute = ChatMute.MutedUntil(1_792_000_000),
+            ),
+            NotificationExceptionItem(
+                chatId = 23,
+                title = "Royal Society",
+                photo = null,
+                status = UiText.resource(R.string.settings_exception_unmuted),
+                mute = ChatMute.Unmuted,
+            ),
+        )
+
+    val notificationExceptions =
+        NotificationExceptionsUiState(
+            scope = NotificationScope.GroupChats,
+            exceptions = ExceptionsState.Content(notificationExceptionItems),
+        )
+
+    private fun scopeSettings(
+        isMuted: Boolean = false,
+        showPreview: Boolean = true,
+    ) = ScopeNotificationSettings(isMuted, showPreview, pinnedMessages = true, mentions = true)
 
     private fun online() = UiText.resource(R.string.settings_session_online)
 }

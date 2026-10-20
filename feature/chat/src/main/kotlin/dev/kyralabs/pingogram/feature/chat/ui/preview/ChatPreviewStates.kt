@@ -24,6 +24,8 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 incomingActionsSheet,
                 reactionPickerSheet,
                 deleteConfirmation,
+                SelectionPreviewData.selecting,
+                SelectionPreviewData.reporting,
                 replying,
                 editing,
                 loading,

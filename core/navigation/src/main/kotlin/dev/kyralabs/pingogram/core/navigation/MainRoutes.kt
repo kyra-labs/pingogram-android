@@ -98,6 +98,22 @@ data object PasscodeLockRoute
 data object SetPasscodeRoute
 
 /**
+ * Notifications (`REQUIREMENTS.md` FR-S1): the defaults of private chats, groups and channels, "Keep connected" and
+ * resetting them, `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object NotificationSettingsRoute
+
+/**
+ * The chats of one kind with notification settings of their own, pushed above [NotificationSettingsRoute]. [scope] is
+ * the name of a `NotificationScope` of `:core:domain`, which this module does not depend on.
+ */
+@Serializable
+data class NotificationExceptionsRoute(
+    val scope: String,
+)
+
+/**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.
  */

@@ -78,7 +78,9 @@ sealed interface SponsoredReportResult {
     ) : SponsoredReportResult
 }
 
-/** A reason to choose when reporting a sponsored message: [text] says it, [id] goes back to TDLib. */
+/**
+ * A reason to choose when reporting a sponsored message or messages of a chat: [text] says it, [id] goes back to TDLib.
+ */
 data class ReportOption(
     val id: ReportOptionId,
     val text: String,

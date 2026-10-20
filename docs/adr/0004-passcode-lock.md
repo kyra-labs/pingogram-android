@@ -1,4 +1,4 @@
-# 0003 — Passcode lock: platform BiometricPrompt and PBKDF2
+# 0004 — Passcode lock: platform BiometricPrompt and PBKDF2
 
 Date: 2026-10-20 · Status: accepted (biometric library choice to be confirmed by the owner)
 

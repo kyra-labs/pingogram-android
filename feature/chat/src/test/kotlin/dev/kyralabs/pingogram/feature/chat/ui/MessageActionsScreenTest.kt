@@ -329,7 +329,7 @@ class MessageActionsScreenTest {
 
         val actions = customActionsOf(ADA_LAST)
 
-        assertEquals(listOf(string(R.string.message_actions)), actions)
+        assertEquals(listOf(string(R.string.selection_start), string(R.string.message_actions)), actions)
     }
 
     @Test

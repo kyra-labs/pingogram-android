@@ -8,7 +8,7 @@ import javax.crypto.spec.PBEKeySpec
 /**
  * Hashes passcodes for the passcode lock with PBKDF2-HMAC-SHA512 from the platform's `SecretKeyFactory` (Android 8
  * and later; no crypto library), a random 16-byte salt per passcode and [iterations] rounds, OWASP's recommendation for
- * this hash (`docs/adr/0003-passcode-lock.md`). A hash keeps its own salt and rounds, so raising [iterations] later
+ * this hash (`docs/adr/0004-passcode-lock.md`). A hash keeps its own salt and rounds, so raising [iterations] later
  * still checks the passcodes set before.
  *
  * Slow on purpose (some hundred milliseconds on a phone): call it off the main thread.

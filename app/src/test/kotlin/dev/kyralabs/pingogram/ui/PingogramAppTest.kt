@@ -59,6 +59,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
@@ -387,6 +389,50 @@ class PingogramAppTest {
         pressBack()
         composeRule.waitForIdle()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `notifications open above the settings tab, and exceptions above them`() {
+        tdlib.on(TdApi.GetScopeNotificationSettings::class, TdResult.Success(TdApi.ScopeNotificationSettings()))
+        tdlib.on(TdApi.GetChatNotificationSettingsExceptions::class, TdResult.Success(TdApi.Chats(0, longArrayOf())))
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_notifications).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
+        assertNoNavigation()
+        composeRule
+            .onAllNodesWithText(
+                string(SettingsR.string.settings_notifications_exceptions),
+            )[0]
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        val route = navController.currentBackStackEntry?.toRoute<NotificationExceptionsRoute>()
+        assertEquals("PrivateChats", route?.scope)
+        awaitText(SettingsR.string.settings_exceptions_empty_title)
+        pressBack()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
+        pressBack()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `exceptions of a kind of chats this version does not know go back`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        composeRule.runOnUiThread { navController.navigate(NotificationSettingsRoute) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnUiThread { navController.navigate(NotificationExceptionsRoute("SomethingNew")) }
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
     }
 
     @Test

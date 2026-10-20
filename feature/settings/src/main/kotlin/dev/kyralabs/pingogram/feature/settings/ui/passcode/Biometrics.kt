@@ -25,7 +25,7 @@ import javax.inject.Inject
 
 // Unlocking with a fingerprint or the face, through the platform's BiometricPrompt (Android 10 and later), without
 // androidx.biometric: its stable release needs a FragmentActivity and brings AppCompat
-// (docs/adr/0003-passcode-lock.md).
+// (docs/adr/0004-passcode-lock.md).
 
 /** Whether this device can unlock the app with biometrics right now: strong ones set up, Android 10 or later. */
 fun interface BiometricAvailability {

@@ -73,7 +73,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   300 ms, `docs/PERFORMANCE.md` §2), and nothing is composed before they are known, so the app never
   draws in a theme the user did not choose. A change made in Appearance reaches the theme through the
   same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1).
-- **Passcode lock** (FR-S1, `docs/adr/0003-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
+- **Passcode lock** (FR-S1, `docs/adr/0004-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
   settings and the login steps: locked at every start with a passcode, again after the auto-lock delay out of sight
@@ -142,7 +142,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
-  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), behind `MediaFileActions`.
+  directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
+  same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
 
 ## Notifications
 
@@ -161,7 +162,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `GROUP_ALERT_CHILDREN`, so they do not alert. Chats on screen get no notification. After a restart, notifications
   TDLib no longer knows are cancelled; logging out cancels everything and removes the conversation shortcuts.
 - Channels (`PingogramChannel`, `NotificationChannels`): Private chats (secret chats too), Groups, Channels, Calls,
-  Other, created at every start; the one place that decides channels, for the notification settings to extend.
+  Other, created at every start; the one place that decides channels, except the `foss` flavor's "Connection" channel
+  of "Keep connected", which only that flavor creates, with its service.
 - Android 11+: a long-lived conversation shortcut per chat (`ConversationShortcuts`), linked by `setShortcutId` and
   `LocusId`, so notifications show in the conversation section. No share target yet (sharing into a chat needs a chat
   picker and a prefilled composer); no bubbles yet (they need a resizable chat activity of their own).
@@ -175,6 +177,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - Android 13+: the chat list asks for `POST_NOTIFICATIONS` with a card above the list (`NotificationPromptHost`,
   `feature:chats`); "Not now" and the first request are kept in DataStore (`NotificationPromptRepository`), so it never
   nags, and after a final refusal it offers the app's notification settings.
+- Notification settings (Settings → Notifications, `feature:settings`): `TdlibNotificationSettingsRepository`
+  (`core:data`, no cache: TDLib keeps them) reads and sets the defaults of each `NotificationScope`
+  (`getScopeNotificationSettings`, `setScopeNotificationSettings`, which replace every field, so it reads first and
+  changes only what Pingogram shows), lists the exceptions (`getChatNotificationSettingsExceptions` without comparing
+  sounds, then `getChat` for each), changes a chat's mute (`setChatNotificationSettings`, the time left of a limited
+  mute turned into its end with the `WallClock`), resets everything (`resetAllNotificationSettings`) and follows
+  `updateScopeNotificationSettings` and `updateChatNotificationSettings`. Sounds stay with Android: the page opens each
+  scope's channel (`PingogramChannel.of(scope)`) in the system settings. It shares the chat list's
+  `NotificationPromptRepository` to ask for the permission while Android still shows its dialog.
+- Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
+  `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
+  (`KeepConnectedService`, type `specialUse`, its own low-importance "Connection" channel), run by
+  `KeepConnectedController` from the setting (`KeepConnectedRepository`, DataStore), the login and the app being in
+  the foreground, with a boot receiver enabled only while the setting is on
+  (`docs/adr/0003-keep-connected-foreground-service.md`). `gms`: nothing yet, until FCM (FR-N3).
 - `core:notifications` depends on `core:domain`, `core:common` and `core:ui` (previews, names, avatar colors), never
   on `core:data` or TDLib.
 
