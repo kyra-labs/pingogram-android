@@ -97,6 +97,19 @@ data object PasscodeLockRoute
 @Serializable
 data object SetPasscodeRoute
 
+/** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object TwoStepVerificationRoute
+
+/**
+ * One of 2-step verification's flows (setting, changing or removing the password, the recovery email, a forgotten
+ * password), pushed above [TwoStepVerificationRoute]; [flow] is the flow's name.
+ */
+@Serializable
+data class TwoStepVerificationFlowRoute(
+    val flow: String,
+)
+
 /**
  * Notifications (`REQUIREMENTS.md` FR-S1): the defaults of private chats, groups and channels, "Keep connected" and
  * resetting them, `:feature:settings`, pushed above the Settings tab.

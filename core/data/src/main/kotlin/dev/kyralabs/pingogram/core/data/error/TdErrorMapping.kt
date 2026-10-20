@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The [DomainError] for a TDLib error (`docs/ARCHITECTURE.md`, Error handling). Telegram's error names
@@ -11,7 +12,13 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
  * ("First name must be non-empty") are matched too.
  */
 internal fun TdError.toDomainError(): DomainError {
-    val floodWait = retryAfter
+    val floodWait =
+        retryAfter ?: TOO_FRESH
+            .find(message)
+            ?.groupValues
+            ?.get(1)
+            ?.toLongOrNull()
+            ?.seconds
     return when {
         floodWait != null -> {
             DomainError.FloodWait(floodWait.inWholeSeconds)
@@ -49,6 +56,13 @@ private const val UNAUTHORIZED = 401
 private const val NOT_FOUND = 404
 private const val SILENT = 406
 
+/**
+ * Telegram's refusals to change 2-step verification for a while, with the seconds left: `PASSWORD_TOO_FRESH_x` (the
+ * password was set only recently) and `SESSION_TOO_FRESH_x` (this session logged in only recently). The user can only
+ * wait, as for `FLOOD_WAIT_x`.
+ */
+private val TOO_FRESH = Regex("""^(?:PASSWORD|SESSION)_TOO_FRESH_(\d+)""")
+
 /** An upper-case Telegram error name at the start of the message, e.g. `PHONE_NUMBER_INVALID`. */
 private val ERROR_NAME = Regex("""^[A-Z][A-Z0-9_]*(?![a-z])""")
 
@@ -72,6 +86,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "EMAIL_CODE_EXPIRED" to DomainError.CodeExpired,
         // account.verifyEmail, which checks the email code of an address entered during login.
         "EMAIL_VERIFY_EXPIRED" to DomainError.CodeExpired,
+        // account.confirmPasswordEmail: the recovery email's confirmation code is too old.
+        "EMAIL_HASH_EXPIRED" to DomainError.CodeExpired,
         "PASSWORD_HASH_INVALID" to DomainError.PasswordInvalid,
         "FIRSTNAME_INVALID" to DomainError.FirstNameInvalid,
         "LASTNAME_INVALID" to DomainError.LastNameInvalid,

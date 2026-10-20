@@ -24,9 +24,13 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
+import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
+import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationResult
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveSessionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
@@ -42,6 +46,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as Privacy
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRoute as SettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
 /**
  * Adds the Settings tab, [SettingsRoute], to the graph. Its rows call [onOpen] with the route of the page they open,
@@ -64,15 +70,18 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [AboutRoute] and [PrivacySecurityRoute], and the ones these push
  * above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
- * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute] and [PasscodeLockRoute] above Privacy and
- * security, [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and
- * [OpenSourceLibraryRoute] above it. [onBack] leaves each of them; Edit
- * profile leaves with [onProfileSaved] once it saved, which the app implements with [popBackStackAfterProfileSaved].
+ * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
+ * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
+ * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
+ * [onBack] leaves each of them; Edit profile leaves with [onProfileSaved] once it saved, which the app implements with
+ * [popBackStackAfterProfileSaved], and a flow of 2-step verification with [onTwoStepVerificationDone] once it is done,
+ * which the app implements with [popBackStackAfterTwoStepVerification].
  */
 fun NavGraphBuilder.settingsPages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
     onProfileSaved: () -> Unit,
+    onTwoStepVerificationDone: (TwoStepVerificationResult) -> Unit,
 ) {
     composable<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     composable<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
@@ -118,6 +127,35 @@ fun NavGraphBuilder.settingsPages(
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
     }
     composable<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
+    twoStepVerificationPages(onOpen, onBack, onTwoStepVerificationDone)
+}
+
+/** [TwoStepVerificationRoute] and the flows it pushes above itself, [TwoStepVerificationFlowRoute]. */
+private fun NavGraphBuilder.twoStepVerificationPages(
+    onOpen: (route: Any) -> Unit,
+    onBack: () -> Unit,
+    onDone: (TwoStepVerificationResult) -> Unit,
+) {
+    composable<TwoStepVerificationRoute> { entry ->
+        val results = entry.savedStateHandle
+        val result by results.getStateFlow<String?>(TWO_STEP_VERIFICATION_RESULT, null).collectAsStateWithLifecycle()
+        TwoStepVerificationScreenRoute(
+            result = TwoStepVerificationResult.entries.firstOrNull { it.name == result },
+            onResultShown = { results[TWO_STEP_VERIFICATION_RESULT] = null },
+            onOpen = { onOpen(TwoStepVerificationFlowRoute(it.name)) },
+            onBack = onBack,
+        )
+    }
+    composable<TwoStepVerificationFlowRoute> { entry ->
+        val name = entry.toRoute<TwoStepVerificationFlowRoute>().flow
+        val flow = TwoStepVerificationFlow.entries.firstOrNull { it.name == name }
+        if (flow != null) {
+            TwoStepVerificationFlowScreenRoute(flow = flow, onFinished = onDone, onBack = onBack)
+        } else {
+            // A flow this version does not know, e.g. from a back stack restored after an update.
+            LaunchedEffect(Unit) { onBack() }
+        }
+    }
 }
 
 /**
@@ -131,6 +169,18 @@ fun NavController.popBackStackAfterProfileSaved() {
 
 /** The result Edit profile leaves for the Settings tab: true once it saved the profile. */
 private const val PROFILE_SAVED_RESULT = "settings.profileSaved"
+
+/**
+ * Leaves a flow of 2-step verification once it is done, back to the 2-step verification page below it, which then says
+ * what it did ([result]) in a snackbar: a result in the page's saved state, as Navigation returns results.
+ */
+fun NavController.popBackStackAfterTwoStepVerification(result: TwoStepVerificationResult) {
+    previousBackStackEntry?.savedStateHandle?.set(TWO_STEP_VERIFICATION_RESULT, result.name)
+    popBackStack()
+}
+
+/** The result a flow of 2-step verification leaves for its page: the name of its [TwoStepVerificationResult]. */
+private const val TWO_STEP_VERIFICATION_RESULT = "settings.twoStepVerificationResult"
 
 private val SettingsPage.route: Any
     get() =
@@ -149,6 +199,7 @@ private val PrivacySecurityPage.route: Any
             is PrivacySecurityPage.Setting -> PrivacySettingRoute(setting.name)
             PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
+            PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
         }
 

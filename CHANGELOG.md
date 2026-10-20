@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Two-step verification in Settings → Privacy and security: set a password with a hint and a recovery email (confirmed
+  with the code Telegram sends there), change it, turn it off, or change the recovery email, each after entering the
+  current password. A forgotten password is reset with a code sent to the recovery email, or, without one, after
+  Telegram's waiting period of several days, which the page shows with when it ends and lets you cancel. A recovery
+  email still waiting for its code can be confirmed or dropped later. Wrong passwords and codes show at the field,
+  and when Telegram asks to wait, a countdown says how long.
 - Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
   they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
   at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
