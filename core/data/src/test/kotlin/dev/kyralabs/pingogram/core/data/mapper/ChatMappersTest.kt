@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType

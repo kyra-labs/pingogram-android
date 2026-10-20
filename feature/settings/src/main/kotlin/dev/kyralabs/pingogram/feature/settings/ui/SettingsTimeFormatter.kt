@@ -16,7 +16,8 @@ import javax.inject.Inject
  * - when a session was last active: today the time, "9:41 AM" ("09:41" on the 24-hour clock, [is24HourClock]); the
  *   six days before the weekday, "Mon"; earlier this year the day and month, "Mar 17"; before that the date,
  *   "3/17/2025";
- * - a moment in full, the date and the time, "Mar 17, 2026, 9:41 AM".
+ * - a moment in full, the date and the time, "Mar 17, 2026, 9:41 AM";
+ * - when something ends: today the time, "6:30 PM", later the date and the time.
  *
  * View models build it through [SettingsTimeFormats], once per zone, language and clock setting. Times in the future
  * (a clock behind Telegram's) count as today. A platform pattern java.time cannot read falls back to java.time's own
@@ -55,6 +56,15 @@ internal class SettingsTimeFormatter(
 
     /** The date and time of [epochSeconds] (Unix time). */
     fun dateTime(epochSeconds: Long): String = dateTime.format(Instant.ofEpochSecond(epochSeconds).atZone(zone))
+
+    /** When something that lasts ends at [epochSeconds] (Unix time), as of [now]: the time if today, else in full. */
+    fun until(
+        epochSeconds: Long,
+        now: Instant,
+    ): String {
+        val end = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+        return if (end.toLocalDate() == now.atZone(zone).toLocalDate()) time.format(end) else dateTime(epochSeconds)
+    }
 
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(

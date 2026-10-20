@@ -25,6 +25,8 @@
     <string name="settings_about_summary">Version, source code, license</string>
     <string name="settings_privacy_security">Privacy and security</string>
     <string name="settings_privacy_security_summary">Who can see you, blocked users, active sessions</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_summary">Messages, groups, channels, exceptions</string>
     <string name="settings_log_out">Log out</string>
     <string name="settings_log_out_summary">Remove this account from Pingogram on this device</string>
     <!-- Spoken by screen readers for the progress indicator while logging out. -->
@@ -331,4 +333,77 @@
     <string name="settings_discard_profile_dialog_title">Discard changes?</string>
     <string name="settings_discard_profile_dialog_text">Your changes to your name, username and bio haven\'t been saved.</string>
     <string name="settings_discard_profile_dialog_confirm">Discard</string>
+    <!-- Notifications (FR-S1, FR-N1) -->
+    <!-- Spoken by screen readers for the progress indicator while the settings load. -->
+    <string name="settings_notifications_loading">Loading notification settings</string>
+    <!-- A banner at the top when Android shows none of Pingogram's notifications (permission refused, or turned off). -->
+    <string name="settings_notifications_off">Notifications are off</string>
+    <string name="settings_notifications_off_summary">Pingogram can\'t tell you about new messages. Tap to turn notifications on.</string>
+    <!-- The headings of the kinds of chats with default settings of their own. -->
+    <string name="settings_notifications_private_chats">Private chats</string>
+    <string name="settings_notifications_groups">Groups</string>
+    <string name="settings_notifications_channels">Channels</string>
+    <string name="settings_notifications_notify">Notifications</string>
+    <string name="settings_notifications_notify_private_chats">New messages in one-to-one and secret chats</string>
+    <string name="settings_notifications_notify_groups">New messages in groups</string>
+    <string name="settings_notifications_notify_channels">New posts in channels</string>
+    <string name="settings_notifications_preview">Message previews</string>
+    <string name="settings_notifications_preview_summary">Show the text of messages in notifications</string>
+    <string name="settings_notifications_mentions">Mentions and replies</string>
+    <string name="settings_notifications_mentions_summary">Notify about messages to you, even in muted groups</string>
+    <string name="settings_notifications_pinned">Pinned messages</string>
+    <string name="settings_notifications_pinned_summary">Notify when a message is pinned</string>
+    <!-- Opens Android's settings of the kind of chats' notification channel. -->
+    <string name="settings_notifications_sound">Sound and vibration</string>
+    <string name="settings_notifications_sound_summary">Set in Android\'s notification settings</string>
+    <string name="settings_notifications_sound_blocked">Turned off in Android\'s notification settings</string>
+    <string name="settings_notifications_exceptions">Exceptions</string>
+    <string name="settings_notifications_exceptions_summary">Chats with settings of their own</string>
+    <string name="settings_notifications_section_background">Background</string>
+    <!-- A foreground service that keeps the connection open (foss builds only); the summary states its cost. -->
+    <string name="settings_keep_connected">Keep connected</string>
+    <string name="settings_keep_connected_summary">Stay connected in the background, so new messages arrive at once. Uses more battery and shows a notification while on.</string>
+    <string name="settings_notifications_reset">Reset all notification settings</string>
+    <string name="settings_notifications_reset_summary">Unmute every chat and restore the defaults</string>
+    <!-- Spoken by screen readers for the progress indicator while resetting. -->
+    <string name="settings_notifications_resetting">Resetting notification settings</string>
+    <string name="settings_notifications_reset_dialog_title">Reset notification settings?</string>
+    <string name="settings_notifications_reset_dialog_text">Every chat will use the default notification settings again, and the defaults of private chats, groups and channels will be restored. This applies to your Telegram account on all your devices.</string>
+    <string name="settings_notifications_reset_dialog_confirm">Reset</string>
+    <!-- Snackbar after resetting. -->
+    <string name="settings_notifications_reset_done">Notification settings reset</string>
+
+    <!-- Notification exceptions: the chats of a kind with settings of their own. -->
+    <string name="settings_exceptions_private_chats">Private chat exceptions</string>
+    <string name="settings_exceptions_groups">Group exceptions</string>
+    <string name="settings_exceptions_channels">Channel exceptions</string>
+    <!-- Spoken by screen readers for the progress indicator while the list loads. -->
+    <string name="settings_exceptions_loading">Loading exceptions</string>
+    <plurals name="settings_exceptions_header">
+        <item quantity="one">%1$s chat</item>
+        <item quantity="other">%1$s chats</item>
+    </plurals>
+    <string name="settings_exceptions_empty_title">No exceptions</string>
+    <string name="settings_exceptions_empty_body">Chats you mute or unmute on their own show here.</string>
+    <string name="settings_exception_muted">Muted</string>
+    <!-- %1$s is when the mute ends: a time today ("6:30 PM"), or a date and time. -->
+    <string name="settings_exception_muted_until">Muted until %1$s</string>
+    <string name="settings_exception_unmuted">Notifications on</string>
+    <string name="settings_exception_default">Uses the default</string>
+    <!-- Spoken by screen readers for a row's remove button. %1$s is the chat. -->
+    <string name="settings_exception_remove">Remove the exception for %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while a change is saved. %1$s is the chat. -->
+    <string name="settings_exception_changing">Changing notifications of %1$s</string>
+    <!-- The mute options of a chat, in a sheet. -->
+    <plurals name="settings_mute_for_hours">
+        <item quantity="one">Mute for %d hour</item>
+        <item quantity="other">Mute for %d hours</item>
+    </plurals>
+    <plurals name="settings_mute_for_days">
+        <item quantity="one">Mute for %d day</item>
+        <item quantity="other">Mute for %d days</item>
+    </plurals>
+    <string name="settings_mute_forever">Mute forever</string>
+    <string name="settings_unmute">Unmute</string>
+    <string name="settings_mute_use_default">Use the default</string>
 </resources>

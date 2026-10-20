@@ -7,6 +7,7 @@ import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -71,6 +72,17 @@ enum class PingogramChannel(
                 chatType is ChatType.Private || chatType is ChatType.Secret -> PrivateChats
                 chatType is ChatType.Supergroup && chatType.isChannel -> Channels
                 else -> Groups
+            }
+
+        /**
+         * The channel of the messages of [scope]'s chats, whose sound, vibration and importance Settings →
+         * Notifications opens in the system settings.
+         */
+        fun of(scope: NotificationScope): PingogramChannel =
+            when (scope) {
+                NotificationScope.PrivateChats -> PrivateChats
+                NotificationScope.GroupChats -> Groups
+                NotificationScope.ChannelChats -> Channels
             }
     }
 }
