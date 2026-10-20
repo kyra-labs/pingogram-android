@@ -179,6 +179,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   shows them at full brightness.
 - Custom emoji reactions that haven't loaded show a soft placeholder instead of a dark dot, and stickers without an
   emoji show a rounded placeholder while they load.
+- The launch screen matches your theme: its background follows your wallpaper colors on Android 12 and later, and on
+  Android 13 and later also your Appearance choices (light or dark, wallpaper or Pingogram colors, AMOLED black) from
+  the next start on. It no longer cuts away: it fades out as its icon grows.
+- With a keyboard, the focused button or row shows a ring instead of a faint tint, which is easier to follow on
+  tablets and Chromebooks.
+- Turning animations off in Android's settings now applies while Pingogram is open, and shapes that change, such as a
+  selected chat's avatar turning into a check, switch at once instead of morphing.
+- More buttons change shape while you press them: back and close buttons in top bars, the media viewer's buttons,
+  dialog buttons and "Try again" buttons.
 
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the

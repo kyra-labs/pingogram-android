@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12 and 13 have no color roles: the neutral variant palette's tones 99 and 10, next to the 98 and 6 of
+         the app's dynamic background (core/ui DynamicColorScheme.kt), which are no platform resources. -->
+    <color name="splash_dynamic_light">@android:color/system_neutral2_10</color>
+    <color name="splash_dynamic_dark">@android:color/system_neutral2_900</color>
+</resources>

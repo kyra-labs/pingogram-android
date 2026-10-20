@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 14+: the platform's background roles, which the app's dynamic scheme reads too. -->
+    <color name="splash_dynamic_light">@android:color/system_background_light</color>
+    <color name="splash_dynamic_dark">@android:color/system_background_dark</color>
+</resources>

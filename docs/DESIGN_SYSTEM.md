@@ -380,7 +380,11 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 
   No raw `Vibrator` patterns.
 - Reduced motion: if animator duration scale is 0, replace springs with snaps and skip shape
-  morphs; essential information is never conveyed by motion alone.
+  morphs; essential information is never conveyed by motion alone. Compose already ends every animation at once then;
+  `isReducedMotion()` (`core:ui`) follows the scale while the app runs (Android 13+: `ValueAnimator`'s duration scale
+  listener, which also sees Battery Saver; before: the `ANIMATOR_DURATION_SCALE` setting), and what goes through
+  `core:ui` steps aside with it: shape morphs snap to their end (`rememberMorphShape`, the selected avatar,
+  `snapWhenReducedMotion`), container transforms turn off.
 - Performance rule: animate with `graphicsLayer {}` / `Modifier.offset {}` lambdas, never by
   recomposing layout for each frame (see `docs/PERFORMANCE.md`).
 
@@ -519,6 +523,15 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 - Launcher icon: adaptive (foreground / background / **monochrome** layers), themed icon
   support; splash via `core-splashscreen` using the same vector. Notification small icon:
   monochrome 24 dp glyph.
+- Splash screen: the icon (static; the owner's artwork has no animated version) on the white icon circle, on the
+  `background` of the theme the app starts in. The manifest's theme has the system's theme mode with dynamic color
+  (Android 12+: the wallpaper's neutral palette, the platform's background roles from 14; brand colors before 12); on
+  Android 13+ `MainActivity` hands the system the splash theme of the current Appearance settings
+  (`SplashScreen.setSplashScreenTheme`, `SplashScreenThemes.kt`: theme mode, dynamic or brand, AMOLED black), which it
+  shows from the next start on. Before 13 the splash cannot know the settings: the app has not read them yet. It
+  leaves by fading out on `defaultEffectsSpec` while its icon grows on `defaultSpatialSpec`
+  (`setOnExitAnimationListener`, the expressive motion scheme outside composition, scaled by the animator duration
+  scale), over the app's first frame.
 - The owner's artwork lives in `art/` (SVG, the source); the app's vectors are converted from it:
   `app` `ic_launcher_*` (the mark `#2156C4` on white, the icon's own colors, also on the splash
   screen's icon circle), `core:notifications` `ic_notification`, `core:ui` `ic_pingogram` (the mark)
