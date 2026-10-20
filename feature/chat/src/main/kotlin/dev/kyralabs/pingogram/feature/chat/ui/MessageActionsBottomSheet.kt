@@ -54,7 +54,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The actions of a long-pressed message (`REQUIREMENTS.md` FR-C6, FR-C7; `docs/DESIGN_SYSTEM.md` §6 "Message actions",
  * "Reactions picker"): a [ModalBottomSheet] with the quick reactions on top as a row of [ToggleButton]s, which scrolls
  * sideways when they do not fit, with a button at its end that opens the reactions picker where it shows more; then
- * the actions as list items, deleting in `error`.
+ * the actions as list items, reporting and deleting in `error`.
  *
  * - **Reactions picker** ([ReactionPickerContent]), while [MessageActionsSheet.showsPicker]: it takes the place of the
  *   quick reactions and the actions, the sheet's content crossfading on the motion scheme's default effects springs
@@ -190,7 +190,7 @@ private fun MoreReactionsButton(onClick: () -> Unit) {
     }
 }
 
-/** One action: its icon and label in a clickable list item on the sheet's color; deleting in `error`. */
+/** One action: its icon and label in a clickable list item on the sheet's color; reporting and deleting in `error`. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ActionItem(
@@ -198,7 +198,7 @@ private fun ActionItem(
     onClick: () -> Unit,
 ) {
     val label = stringResource(action.label)
-    val destructive = action == MessageAction.Delete
+    val destructive = action.isDestructive
     val scheme = MaterialTheme.colorScheme
     ListItem(
         onClick = onClick,
@@ -214,7 +214,11 @@ private fun ActionItem(
     }
 }
 
-private val MessageAction.label: Int
+/** Reporting and deleting, which menus show in `error`. */
+internal val MessageAction.isDestructive: Boolean
+    get() = this == MessageAction.Delete || this == MessageAction.Report
+
+internal val MessageAction.label: Int
     @StringRes get() =
         when (this) {
             MessageAction.Resend -> R.string.message_action_resend
@@ -225,10 +229,13 @@ private val MessageAction.label: Int
             MessageAction.Pin -> R.string.message_action_pin
             MessageAction.PinForSelf -> R.string.message_action_pin_for_self
             MessageAction.Unpin -> R.string.message_action_unpin
+            MessageAction.SaveToDownloads -> R.string.message_action_save_to_downloads
+            MessageAction.Select -> R.string.message_action_select
+            MessageAction.Report -> R.string.message_action_report
             MessageAction.Delete -> R.string.message_action_delete
         }
 
-private val MessageAction.icon: Int
+internal val MessageAction.icon: Int
     @DrawableRes get() =
         when (this) {
             MessageAction.Resend -> UiR.drawable.ic_refresh
@@ -238,6 +245,9 @@ private val MessageAction.icon: Int
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
+            MessageAction.SaveToDownloads -> UiR.drawable.ic_download
+            MessageAction.Select -> UiR.drawable.ic_check_circle
+            MessageAction.Report -> UiR.drawable.ic_error
             MessageAction.Delete -> UiR.drawable.ic_delete
         }
 
@@ -252,6 +262,9 @@ private fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Pin -> ChatEvent.Pin(messageId)
         MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)
         MessageAction.Unpin -> ChatEvent.Unpin(messageId)
+        MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(messageId)
+        MessageAction.Select -> SelectionEvent.Select(messageId)
+        MessageAction.Report -> SelectionEvent.Report(messageId)
         MessageAction.Delete -> ChatEvent.Delete(messageId)
     }
 

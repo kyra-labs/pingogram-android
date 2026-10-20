@@ -1,9 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -27,10 +24,6 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -40,7 +33,6 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
 
 /**
  * The selection toolbar (`REQUIREMENTS.md` FR-L8, `docs/DESIGN_SYSTEM.md` §6): an expressive
@@ -113,32 +105,6 @@ internal fun SelectionToolbarHost(
     ) { actions ->
         if (actions != null) SelectionToolbar(actions = actions, onAction = onAction)
     }
-}
-
-/**
- * Leaves selection mode with back while [enabled] (`docs/ARCHITECTURE.md`, Navigation: `PredictiveBackHandler` for
- * selection mode): the gesture's progress, for the toolbar to follow ([SelectionToolbarHost]), and [onBack] once it
- * completes. A cancelled gesture springs back on the motion scheme's fast spatial spring.
- */
-@Composable
-internal fun rememberSelectionBack(
-    enabled: Boolean,
-    onBack: () -> Unit,
-): Animatable<Float, AnimationVector1D> {
-    val progress = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    val settle = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-    val currentOnBack by rememberUpdatedState(onBack)
-    PredictiveBackHandler(enabled = enabled) { events ->
-        try {
-            events.collect { event -> progress.snapTo(event.progress) }
-            currentOnBack()
-        } finally {
-            // Also after a cancelled gesture, when this coroutine can no longer animate.
-            scope.launch { progress.animateTo(0f, settle) }
-        }
-    }
-    return progress
 }
 
 @PingogramPreviews

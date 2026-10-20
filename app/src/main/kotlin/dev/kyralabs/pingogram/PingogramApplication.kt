@@ -7,8 +7,8 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
+import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
-import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import javax.inject.Inject
@@ -33,9 +33,9 @@ class PingogramApplication :
     @Inject
     lateinit var notificationRenderer: NotificationRenderer
 
-    /** Registers for push notifications at every login (gms; does nothing in foss, which has no push service). */
+    /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
-    lateinit var pushRepository: PushRepository
+    lateinit var backgroundConnection: BackgroundConnection
 
     /** Creates the workers with Hilt (notification actions); WorkManager asks for it when first used. */
     @Inject
@@ -49,8 +49,9 @@ class PingogramApplication :
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
-        // Follows the login to register the push token with Telegram, or delete it at logout (gms only).
-        pushRepository.start()
+        // foss: starts or stops the "Keep connected" service as its setting and the login change; gms: registers the
+        // push token with Telegram at every login and deletes it at logout.
+        backgroundConnection.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()

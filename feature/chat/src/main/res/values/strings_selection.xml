@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Selecting, reporting and saving messages (ui/ChatSelection, ChatReporting, ChatSaving and their screens). -->
+    <!-- Message actions: start selection mode with this message. -->
+    <string name="message_action_select">Select</string>
+    <!-- Message actions and the selection toolbar: report to Telegram's moderators. -->
+    <string name="message_action_report">Report</string>
+    <!-- Message actions: copy the message's file into the phone's Downloads folder. -->
+    <string name="message_action_save_to_downloads">Save to Downloads</string>
+    <!-- The selection toolbar's copy button: the texts of the selected messages. -->
+    <string name="selection_action_copy">Copy text</string>
+
+    <!-- The top bar in selection mode: %d is how many messages are selected. -->
+    <plurals name="selection_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <!-- The top bar's close button in selection mode, for screen readers. -->
+    <string name="selection_clear">Clear selection</string>
+    <!-- Screen readers: what tapping a message does in selection mode. -->
+    <string name="selection_select">Select</string>
+    <string name="selection_deselect">Deselect</string>
+    <!-- Screen readers: the custom action that starts selection mode with a message. -->
+    <string name="selection_start">Select message</string>
+    <!-- The header of each message when several are copied: %1$s is the sender, %2$s when it was sent. -->
+    <string name="selection_copy_header">%1$s, [%2$s]</string>
+
+    <!-- The report sheet. Its reasons come from Telegram. -->
+    <string name="report_title">Report</string>
+    <!-- The report step that asks for a comment. -->
+    <string name="report_comment_title">Tell us more</string>
+    <string name="report_comment_body">Moderators see what you write here along with the messages.</string>
+    <string name="report_comment_label">Comment</string>
+    <string name="report_comment_label_optional">Comment (optional)</string>
+    <string name="report_send">Send report</string>
+    <!-- A snackbar once the report is sent. -->
+    <string name="report_sent">Thanks, the report was sent</string>
+
+    <!-- Snackbars of "Save to Downloads". -->
+    <string name="save_downloading">Downloading to save it…</string>
+    <!-- One file was saved. -->
+    <string name="save_done">Saved to Downloads</string>
+    <!-- Several files were saved: %d is how many. -->
+    <plurals name="save_done_many">
+        <item quantity="one">%d file saved to Downloads</item>
+        <item quantity="other">%d files saved to Downloads</item>
+    </plurals>
+    <!-- The action of the snackbar after one file was saved. -->
+    <string name="save_open">Open</string>
+    <string name="save_failed">Couldn\'t save to Downloads</string>
+    <!-- Android 8 and 9 only: why saving needs the storage permission, before the system asks for it. -->
+    <string name="save_storage_rationale">To save files to Downloads, Pingogram needs access to your storage</string>
+    <string name="save_storage_continue">Continue</string>
+    <string name="save_storage_denied">Saving to Downloads needs access to your storage</string>
+    <string name="save_storage_settings">Settings</string>
+</resources>

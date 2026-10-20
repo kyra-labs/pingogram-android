@@ -100,7 +100,7 @@ distributor picker in Settings, the connector dependency and testing against sev
      `com.google.android.play` module; `check` runs it for every `foss` variant and each `foss` build runs its own.
    - Code: `core:domain` `PushRepository` and `PushTokenSource`; `core:data` `TdlibPushRepository` with an
      `Optional<PushTokenSource>` (`@BindsOptionalOf`): `gms` binds `FirebasePushTokenSource`, `foss` binds nothing and
-     the repository does nothing. `PingogramApplication` starts it. At every login (and start while logged in) it
+     the repository does nothing. `gms`' `BackgroundConnection` (`FirebasePushConnection`) starts it. At every login (and start while logged in) it
      registers FCM's current token, `encrypt = true`, no other user ids; a new token (`onNewToken`) follows at once; a
      `FLOOD_WAIT` is waited out (at most three attempts), other failures are dropped for the next start. At logout it
      deletes the FCM token (`FirebaseMessaging.deleteToken`), so no push reaches the device after it, whatever
@@ -120,7 +120,8 @@ distributor picker in Settings, the connector dependency and testing against sev
      service (not exported), Firebase's init provider and component discovery, and Google's data transport (idle
      with delivery metrics off), plus the permissions `com.google.android.c2dm.permission.RECEIVE` and `WAKE_LOCK`
      for every version; `AppManifestTest` pins both flavors (see Consequences).
-   - The notification settings' "Keep connected" (`foss`, separate PR) is not offered in `gms`.
+   - The notification settings' "Keep connected" (`foss`, `docs/adr/0003-keep-connected-foreground-service.md`) is
+     not offered in `gms`, whose `BackgroundConnection` is the FCM registration.
 2. **`foss` keeps TDLib's own connection** for now (and the optional "Keep connected" service from the notification
    settings work). **UnifiedPush is a follow-up after M3**, not part of v0.3.0: start with `deviceTokenSimplePush`
    (a wake-up; simple and needs no payload format), behind a distributor picker, tested with ntfy and NextPush, and
@@ -140,7 +141,8 @@ distributor picker in Settings, the connector dependency and testing against sev
 - **Network**: the `gms` flavor talks to Google (FCM, Firebase Installations) once logged in, an exception to
   `REQUIREMENTS.md` §6.2 that FR-N3 asks for; `foss` talks to Telegram only, enforced by the build.
 - **Size and startup**: `gms` APKs grow by Firebase Messaging and Play services' client libraries: 0.8 MB in a debug
-  universal APK (without R8); release sizes are not measured yet. Firebase's init provider runs at every `gms` process start (a few ms); the benchmarks measure `foss`.
+  universal APK (without R8); release sizes are not measured yet. Firebase's init provider runs at every `gms` process
+  start (a few ms); the benchmarks measure `foss`.
 - **Permissions** (`gms` only, normal permissions without a prompt, approved by the owner as "the gms flavor's FCM
   permissions"): `com.google.android.c2dm.permission.RECEIVE` (receive FCM messages) and `WAKE_LOCK` for every version
   (FCM holds a wake lock while it hands a push to the service and logs "service start may be delayed" without it;

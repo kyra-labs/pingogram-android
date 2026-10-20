@@ -13,10 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import org.w3c.dom.Element
-import java.io.File
-import java.util.Properties
-import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * The merged manifest requests exactly the platform permissions the owner approved (CLAUDE.md). Without
@@ -26,10 +22,11 @@ import javax.xml.parsers.DocumentBuilderFactory
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
  * (approved 2026-10-19); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
- * left out.
- * The gms flavor adds Firebase Cloud Messaging (approved as "the gms flavor's FCM permissions",
- * docs/adr/0004-push-delivery.md): its c2dm RECEIVE permission and WAKE_LOCK for every version, its receiver guarded by
- * Play services' SEND permission, and a private messaging service; FCM's auto-init stays off. foss has none of it.
+ * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
+ * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
+ * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
+ * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
+ * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */
@@ -48,9 +45,12 @@ class AppManifestTest {
                 .toSet()
 
         // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
-        // not requested; gms keeps FCM's WAKE_LOCK.
-        val expected = setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS)
-        assertEquals(if (isGms) expected + Manifest.permission.WAKE_LOCK else expected, requested)
+        // not requested.
+        assertEquals(
+            setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS) +
+                FlavorManifest.requestedPermissions,
+            requested,
+        )
     }
 
     @Test
@@ -66,41 +66,11 @@ class AppManifestTest {
             mapOf(
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
-                Manifest.permission.WAKE_LOCK to if (isGms) "" else "30",
-                Manifest.permission.FOREGROUND_SERVICE to "30",
+                Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
-            ),
+            ) + FlavorManifest.declaredPermissions,
             declared,
         )
-    }
-
-    @Test
-    fun `only gms receives Firebase Cloud Messaging, through a private service, without auto-init`() {
-        val manifest = mergedManifest()
-        val permissions = manifest.elements("uses-permission").map { it.androidAttribute("name") }
-        val components =
-            listOf("service", "receiver", "provider", "activity").flatMap { tag ->
-                manifest.elements(tag).map { it.androidAttribute("name") }
-            }
-        val googleServices =
-            components.filter { it.startsWith("com.google.firebase.") || it.startsWith("com.google.android.") }
-
-        if (!isGms) {
-            assertFalse(C2DM_RECEIVE in permissions)
-            assertEquals(emptyList<String>(), googleServices)
-            return
-        }
-        val service =
-            manifest.elements("service").single { it.androidAttribute("name").endsWith(".PingogramMessagingService") }
-        val receiver = manifest.elements("receiver").single { it.androidAttribute("name") == FCM_RECEIVER }
-        val metaData =
-            manifest.elements("meta-data").associate { it.androidAttribute("name") to it.androidAttribute("value") }
-
-        assertTrue(C2DM_RECEIVE in permissions)
-        assertEquals("false", service.androidAttribute("exported"))
-        assertEquals("com.google.android.c2dm.permission.SEND", receiver.androidAttribute("permission"))
-        assertEquals("false", metaData["firebase_messaging_auto_init_enabled"])
-        assertEquals("false", metaData["firebase_data_collection_default_enabled"])
     }
 
     @Test
@@ -145,36 +115,9 @@ class AppManifestTest {
         }
     }
 
-    /** The merged manifest Robolectric runs, as the Android Gradle plugin's test config names it. */
-    private fun mergedManifest(): Element {
-        val config = Properties()
-        javaClass.classLoader!!.getResourceAsStream("com/android/tools/test_config.properties").use(config::load)
-        val file = File(config.getProperty("android_merged_manifest"))
-        return DocumentBuilderFactory
-            .newInstance()
-            .apply { isNamespaceAware = true }
-            .newDocumentBuilder()
-            .parse(file)
-            .documentElement
-    }
-
-    private fun Element.elements(tag: String): List<Element> {
-        val nodes = getElementsByTagName(tag)
-        return (0 until nodes.length).map { nodes.item(it) as Element }
-    }
-
-    private fun Element.androidAttribute(name: String): String = getAttributeNS(ANDROID_NAMESPACE, name)
-
     private companion object {
-        const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
-
         /** What the test libraries (androidx.test's activity scenarios) add to the unit tests' manifest only. */
         val TEST_ONLY_PERMISSIONS = setOf("android.permission.REORDER_TASKS")
         const val GET_META_DATA = PackageManager.GET_META_DATA
-
-        const val C2DM_RECEIVE = "com.google.android.c2dm.permission.RECEIVE"
-        const val FCM_RECEIVER = "com.google.firebase.iid.FirebaseInstanceIdReceiver"
-
-        val isGms = BuildConfig.FLAVOR == "gms"
     }
 }

@@ -76,6 +76,8 @@ dependencies {
     // core:notifications.
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // "Keep connected" (foss only) starts its service while the app is in the foreground (ProcessLifecycleOwner).
+    "fossImplementation"(libs.androidx.lifecycle.process)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.profileinstaller)
 

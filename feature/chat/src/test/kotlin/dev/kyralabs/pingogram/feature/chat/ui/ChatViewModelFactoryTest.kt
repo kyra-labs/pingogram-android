@@ -69,6 +69,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 chatActionRepository = actions,
                 fileRepository = files,
                 searchRepository = search,
+                sharedStorageRepository = sharedStorage,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),

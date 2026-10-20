@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,24 +14,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.ZeroCornerSize
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.ResolvedTextDirection
@@ -55,6 +63,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.ceil
 import kotlin.math.max
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at
@@ -83,6 +92,11 @@ import kotlin.math.max
  *   `semantics` block, only when something reads the semantics tree, not in every bubble's composition.
  * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
+ * - **Selection mode** ([selection], `docs/DESIGN_SYSTEM.md` §2.2, §6): a check at the row's start, filled in
+ *   `primary` once [RowSelection.isSelected], when the bubble takes `secondaryContainer`; a tap or a long press
+ *   anywhere on the row selects or deselects it ([SelectionEvent.Toggle]) with a toggle haptic, and nothing inside
+ *   takes the tap. Screen readers hear whether it is selected, and its click and long click toggle it; outside
+ *   selection mode a custom action starts it with the message ([SelectionEvent.Select]).
  * - **Reactions**: tapping a badge adds or takes back the user's reaction ([ChatEvent.ToggleReaction]) with a toggle
  *   haptic, the badge crossfading on the motion scheme's fast effects spring ([ReactionToggleState]); "+N" opens the
  *   actions sheet at its reactions picker ([ChatEvent.ShowAllReactions]), where all of them show.
@@ -103,61 +117,68 @@ internal fun MessageBubbleRow(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
+    selection: RowSelection? = null,
 ) {
     val strings = LocalResources.current
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
-    val haptics = LocalHapticFeedback.current
-    val showActions =
-        remember(bubble.id, onEvent, haptics) {
-            {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onEvent(ChatEvent.ShowMessageActions(bubble.id))
-            }
-        }
+    val showActions = rememberActionsOpener(bubble.id, onEvent)
+    val isSelected = selection?.isSelected == true
+    val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
-                .onLongPress(showActions)
+                .then(if (selection != null) Modifier.onSelectionTap(toggle) else Modifier.onLongPress(showActions))
                 .clearAndSetSemantics {
                     contentDescription = bubbleDescription(strings, bubble)
-                    onLongClick(label = strings.getString(R.string.message_actions)) {
-                        showActions()
-                        true
+                    if (selection != null) {
+                        selectionSemantics(strings, isSelected, toggle)
+                    } else {
+                        onLongClick(label = strings.getString(R.string.message_actions)) {
+                            showActions()
+                            true
+                        }
+                        customActions =
+                            bubbleActions(
+                                resources = strings,
+                                bubble = bubble,
+                                fileState = fileState,
+                                isPlaying = playback.isPlaying,
+                                shortcuts = resources.shortcuts,
+                                uploads = uploads,
+                                onEvent = onEvent,
+                            )
                     }
-                    customActions =
-                        bubbleActions(
-                            resources = strings,
-                            bubble = bubble,
-                            fileState = fileState,
-                            isPlaying = playback.isPlaying,
-                            shortcuts = resources.shortcuts,
-                            uploads = uploads,
-                            onEvent = onEvent,
-                        )
                 },
-        horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.Bottom,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
-        MessageBubble(
-            bubble = bubble,
-            fileState = fileState,
-            playback = playback,
-            resources = resources,
-            onEvent = onEvent,
-            uploads = uploads,
-            modifier = Modifier.alignBy { it.bubbleBottom() },
-        )
+        if (selection != null) SelectionCheck(isSelected)
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
+            MessageBubble(
+                bubble = bubble,
+                fileState = fileState,
+                playback = playback,
+                resources = resources,
+                onEvent = onEvent,
+                uploads = uploads,
+                isSelected = isSelected,
+                modifier = Modifier.alignBy { it.bubbleBottom() },
+            )
+        }
     }
 }
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
  * [messageShortcuts], a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
- * actions sheet, last. Cancelling the [uploads] comes first, while there are some.
+ * selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -179,6 +200,7 @@ private fun bubbleActions(
     val fixed =
         listOfNotNull(uploadAction(uploads), replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
             messageShortcuts(bubble, shortcuts)
+    val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =
         bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
             val label = reactionToggleLabel(resources, chip.label, chip.isChosen)
@@ -191,7 +213,7 @@ private fun bubbleActions(
         } else {
             emptyList()
         }
-    return fixed.map { action(resources.getString(it.label), it.event) } + reactions + allReactions +
+    return fixed.map { action(resources.getString(it.label), it.event) } + reactions + allReactions + select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 
@@ -204,9 +226,10 @@ private fun MessageBubble(
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     uploads: ImmutableMap<Long, MessageUpload>,
+    isSelected: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val style = resources.theme.styleOf(bubble.isOutgoing)
+    val style = resources.theme.styleOf(bubble.isOutgoing, isSelected)
     val position = bubble.position
     val shape = resources.theme.shapes.of(bubble.isOutgoing, position.joinsPrevious, position.joinsNext)
     val sizes = MaterialTheme.sizes

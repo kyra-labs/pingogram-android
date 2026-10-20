@@ -550,6 +550,8 @@ internal object ChatPreviewData {
                     MessageAction.Copy,
                     MessageAction.Forward,
                     MessageAction.Pin,
+                    MessageAction.Select,
+                    MessageAction.Report,
                     MessageAction.Delete,
                 ),
             picker =
