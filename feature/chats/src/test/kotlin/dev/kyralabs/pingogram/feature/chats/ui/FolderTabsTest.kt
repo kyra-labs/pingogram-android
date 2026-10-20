@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -24,7 +27,7 @@ import org.robolectric.annotation.Config
 
 /**
  * The folder tabs as a Material 3 Expressive button group (FR-L3, `docs/DESIGN_SYSTEM.md` §6): every folder stays a
- * tab when they do not fit, and a pressed tab grows while its neighbours shrink.
+ * tab when they do not fit, the selected one always in view, and a pressed tab grows while its neighbours shrink.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -39,21 +42,26 @@ class FolderTabsTest {
 
     @Test
     fun `folders that do not fit stay tabs, reached by scrolling`() {
-        val tabs =
-            persistentListOf(
-                FolderTab.AllChats(unreadCount = 0),
-                FolderTab.Folder(id = 1, title = "Colleagues from work", unreadCount = 3),
-                FolderTab.Folder(id = 2, title = "Family and close friends", unreadCount = 0),
-                FolderTab.Folder(id = 3, title = "Channels I read every day", unreadCount = 12),
-                FolderTab.Folder(id = 4, title = "Bots and automations", unreadCount = 0),
-                FolderTab.Folder(id = 5, title = "Archive of old projects", unreadCount = 1),
-            )
-        setTabs(tabs)
+        setTabs(LONG_TABS)
 
         tab("Archive of old projects").performScrollTo().assertIsDisplayed().performClick()
         tab("All chats").performScrollTo().assertIsDisplayed()
 
         assertEquals(listOf<Int?>(5), selected)
+    }
+
+    @Test
+    fun `the selected folder is brought into view, at once and when another is selected`() {
+        setTabs(LONG_TABS, selectedFolderId = 5)
+        tab("Archive of old projects").assertIsDisplayed()
+
+        selectedFolderId = null
+        composeRule.waitForIdle()
+        tab("All chats").assertIsDisplayed()
+
+        selectedFolderId = 3
+        composeRule.waitForIdle()
+        tab("Channels I read every day").assertIsDisplayed()
     }
 
     @Test
@@ -88,10 +96,16 @@ class FolderTabsTest {
         assertEquals(listOf(1, null), selected)
     }
 
-    private fun setTabs(tabs: ImmutableList<FolderTab>) {
+    private var selectedFolderId by mutableStateOf<Int?>(null)
+
+    private fun setTabs(
+        tabs: ImmutableList<FolderTab>,
+        selectedFolderId: Int? = null,
+    ) {
+        this.selectedFolderId = selectedFolderId
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                FolderTabs(tabs = tabs, selectedFolderId = null, onSelect = { selected += it })
+                FolderTabs(tabs = tabs, selectedFolderId = this.selectedFolderId, onSelect = { selected += it })
             }
         }
     }
@@ -107,6 +121,17 @@ class FolderTabsTest {
         listOf("All chats", "Work", "Family").map { tab(it).fetchSemanticsNode().size.width }
 
     private companion object {
+        /** Six folders with long names: more than a compact window shows. */
+        val LONG_TABS =
+            persistentListOf(
+                FolderTab.AllChats(unreadCount = 0),
+                FolderTab.Folder(id = 1, title = "Colleagues from work", unreadCount = 3),
+                FolderTab.Folder(id = 2, title = "Family and close friends", unreadCount = 0),
+                FolderTab.Folder(id = 3, title = "Channels I read every day", unreadCount = 12),
+                FolderTab.Folder(id = 4, title = "Bots and automations", unreadCount = 0),
+                FolderTab.Folder(id = 5, title = "Archive of old projects", unreadCount = 1),
+            )
+
         /** Long enough for the press to be reported (it waits for a possible scroll) and its spring to settle. */
         const val PRESS_MILLIS = 1_000L
     }

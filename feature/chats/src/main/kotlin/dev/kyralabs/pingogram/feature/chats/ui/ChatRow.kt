@@ -66,8 +66,9 @@ import kotlin.math.abs
  *   folder that keeps archived chats it stays, its swipe turned to unarchive. One swipe runs one action
  *   ([rememberOnSwiped]), and a row that comes back to the list is at rest: its swipe state is not saved.
  * - **Behind the row**: the action's icon and label on its tonal container ([swipeColors]), drawn only while the row
- *   is away from its place. The icon grows to full size on the motion scheme's fast spatial spring as the swipe
- *   crosses the threshold, and back when it returns, with a `TextHandleMove` haptic each way
+ *   is away from its place. The row itself takes its `large` container meanwhile, as when pressed, so it never slides
+ *   with a square edge past the action's rounded one. The icon grows to full size on the motion scheme's fast spatial
+ *   spring as the swipe crosses the threshold, and back when it returns, with a `TextHandleMove` haptic each way
  *   ([swipeThresholdFeedback]). Everything moving is read in the draw phase, so a swipe never recomposes.
  * - **Selection**: in selection mode ([selectionMode]) swipes are off and a tap selects; a long press starts selection
  *   (the list item's long click gives the `LongPress` haptic). Screen readers hear the row as a check box then.
@@ -91,6 +92,8 @@ internal fun ChatRow(
     // archived chat) would come back with Undo swiped away, and run its swipe again at once.
     val state = remember { SwipeToDismissBoxState(SwipeToDismissBoxValue.Settled, threshold) }
     val iconScale = remember { Animatable(SWIPE_ICON_RESTING_SCALE) }
+    // Changes only when a swipe starts or ends, not in every frame of it.
+    val dragged by remember(state) { derivedStateOf { state.dismissDirection != SwipeToDismissBoxValue.Settled } }
     val resources = LocalResources.current
     SwipeToDismissBox(
         state = state,
@@ -127,6 +130,7 @@ internal fun ChatRow(
             onLongClickLabel = if (selectionMode) null else stringResource(R.string.chat_list_select),
             selected = selected,
             open = open,
+            dragged = dragged,
         )
     }
 }
