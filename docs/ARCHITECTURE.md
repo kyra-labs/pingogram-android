@@ -187,7 +187,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatEvent.SendSticker` → `ChatAttachments` → `AttachmentRepository.sendSticker`), so it takes the composer's reply
   along. The panel takes the keyboard's place (`ComposerPanelState`, `PanelArea`): it takes the keyboard's last height
   and stays until the keyboard is fully up, read from the IME insets in the layout phase, so switching moves nothing.
-- Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
+  DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
+  Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`
+  (`core:data`, `ACCESS_NETWORK_STATE`) follows the default network and Data Saver; `DefaultAutoDownloadPolicy` combines
+  both into the rules in effect (`AutoDownloadPolicy`). The conversation enforces them (`ChatAutoDownloads`): the files
+  of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
+  `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
+  download button.
 - Voice messages (FR-C5) are recorded by `feature:chat`'s `ChatRecorder` (a part of `ChatViewModel`, its state kept
   out of `ChatUiState` as only the composer shows it) into a file `VoiceNoteRepository.newVoiceNoteFile`
   (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent

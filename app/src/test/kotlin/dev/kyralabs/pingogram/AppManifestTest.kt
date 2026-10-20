@@ -22,9 +22,10 @@ import org.robolectric.annotation.Config
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
  * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
  * 2026-10-20); RECORD_AUDIO records voice messages (approved 2026-10-20), without requiring a microphone
- * of the device; WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
- * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
- * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
+ * of the device; ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
+ * (approved 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
+ * service before Android 12 only, so they stop at API 30, and its RECEIVE_BOOT_COMPLETED is left out, except in the
+ * foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
  * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
@@ -58,6 +59,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.USE_BIOMETRIC,
                 Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.ACCESS_NETWORK_STATE,
             ) + FlavorManifest.requestedPermissions,
             requested,
         )
@@ -80,6 +82,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.USE_BIOMETRIC to "",
                 Manifest.permission.RECORD_AUDIO to "",
+                Manifest.permission.ACCESS_NETWORK_STATE to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,

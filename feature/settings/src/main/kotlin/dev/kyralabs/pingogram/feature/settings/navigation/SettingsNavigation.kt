@@ -7,11 +7,13 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
+import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
@@ -35,6 +37,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRes
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveSessionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadRoute as AutoDownloadScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
@@ -73,6 +76,7 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
  * ones these push above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
+ * [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
  * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
@@ -104,7 +108,18 @@ fun NavGraphBuilder.settingsPages(
             LaunchedEffect(Unit) { onBack() }
         }
     }
-    composable<DataStorageRoute> { DataStorageScreenRoute(onBack = onBack) }
+    composable<DataStorageRoute> {
+        DataStorageScreenRoute(onOpenAutoDownload = { onOpen(AutoDownloadRoute(it.name)) }, onBack = onBack)
+    }
+    composable<AutoDownloadRoute> { entry ->
+        val network = AutoDownloadNetwork.entries.firstOrNull { it.name == entry.toRoute<AutoDownloadRoute>().network }
+        if (network != null) {
+            AutoDownloadScreenRoute(network = network, onBack = onBack)
+        } else {
+            // A network this version does not know, e.g. from a back stack restored after an update.
+            LaunchedEffect(Unit) { onBack() }
+        }
+    }
     composable<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     composable<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     composable<OpenSourceLicensesRoute> {

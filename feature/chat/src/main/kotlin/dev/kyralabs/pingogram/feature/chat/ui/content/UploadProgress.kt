@@ -86,3 +86,42 @@ internal fun UploadRing(
         }
     }
 }
+
+/**
+ * The download button of a photo that automatic download leaves for a tap (`docs/PERFORMANCE.md` §7), drawn over it
+ * like [MediaUploadProgress]: a download [IconButton] in `onMediaOverlay` on a `mediaOverlay` circle ([onDownload]);
+ * while [isDownloading], an indeterminate wavy ring around a cancel button ([onCancel]) instead.
+ */
+@Composable
+internal fun MediaDownloadButton(
+    isDownloading: Boolean,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.pingogramColors
+    Box(
+        modifier
+            .size(WavyProgressIndicatorDefaults.CircularContainerSize)
+            .background(colors.mediaOverlay, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isDownloading) {
+            CircularWavyProgressIndicator(
+                Modifier.matchParentSize(),
+                color = colors.onMediaOverlay,
+                trackColor = Color.Transparent,
+            )
+        }
+        IconButton(
+            onClick = if (isDownloading) onCancel else onDownload,
+            colors = IconButtonDefaults.iconButtonColors(contentColor = colors.onMediaOverlay),
+        ) {
+            Icon(
+                painter = painterResource(if (isDownloading) UiR.drawable.ic_close else UiR.drawable.ic_download),
+                contentDescription =
+                    stringResource(if (isDownloading) R.string.content_cancel_download else R.string.content_download),
+            )
+        }
+    }
+}

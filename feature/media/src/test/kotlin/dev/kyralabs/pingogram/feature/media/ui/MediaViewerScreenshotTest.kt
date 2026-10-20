@@ -9,10 +9,9 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performSemanticsAction
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaPreviewData
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,24 +38,43 @@ class MediaViewerScreenshotTest(
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun light() = capture("light", ThemeMode.Light)
+    fun light() = capture(ScreenshotVariant.Light)
 
     @Test
-    fun dark() = capture("dark", ThemeMode.Dark)
+    fun dark() = capture(ScreenshotVariant.Dark)
 
     @Test
     @Config(qualifiers = EXPANDED)
-    fun expanded() = capture("expanded", ThemeMode.Light)
+    fun expanded() = capture(ScreenshotVariant.Light, goldenName = "expanded")
+
+    @Test
+    fun amoled() = captureAudit(ScreenshotVariant.Amoled)
+
+    @Test
+    fun highContrast() = captureAudit(ScreenshotVariant.HighContrast)
+
+    @Test
+    fun rtl() = captureAudit(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun medium() = captureAudit(ScreenshotVariant.Medium)
+
+    /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
+    private fun captureAudit(variant: ScreenshotVariant) {
+        assumeTrue(stateName == "photo")
+        capture(variant)
+    }
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
-        variant: String,
-        themeMode: ThemeMode,
+        variant: ScreenshotVariant,
+        goldenName: String = variant.goldenName,
     ) {
         val shot = SHOTS.getValue(stateName)
         composeRule.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+                ScreenshotTheme(variant) {
                     PreviewImages(loading = shot.imagesLoading) {
                         MediaViewerScreen(state = shot.state, onEvent = {}, onBack = {})
                     }
@@ -70,7 +88,7 @@ class MediaViewerScreenshotTest(
                 .performSemanticsAction(SemanticsActions.OnClick)
             composeRule.waitForIdle()
         }
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$variant"))
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$goldenName"))
     }
 
     /** A state to capture, with its images loading or not, and its chrome shown or hidden. */

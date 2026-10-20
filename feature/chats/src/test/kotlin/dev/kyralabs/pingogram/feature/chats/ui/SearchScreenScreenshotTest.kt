@@ -6,8 +6,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.SearchPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -31,53 +29,67 @@ class SearchScreenScreenshotTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun suggestionsLight() = capture("suggestionsLight", SearchPreviewData.suggestions, ThemeMode.Light)
+    fun suggestionsLight() = capture("suggestionsLight", SearchPreviewData.suggestions, ScreenshotVariant.Light)
 
     @Test
-    fun suggestionsDark() = capture("suggestionsDark", SearchPreviewData.suggestions, ThemeMode.Dark)
+    fun suggestionsDark() = capture("suggestionsDark", SearchPreviewData.suggestions, ScreenshotVariant.Dark)
 
     @Test
-    fun hintLight() = capture("hintLight", SearchPreviewData.hint, ThemeMode.Light)
+    fun hintLight() = capture("hintLight", SearchPreviewData.hint, ScreenshotVariant.Light)
 
     @Test
-    fun resultsLight() = capture("resultsLight", SearchPreviewData.results, ThemeMode.Light)
+    fun resultsLight() = capture("resultsLight", SearchPreviewData.results, ScreenshotVariant.Light)
 
     @Test
-    fun resultsDark() = capture("resultsDark", SearchPreviewData.results, ThemeMode.Dark)
+    fun resultsDark() = capture("resultsDark", SearchPreviewData.results, ScreenshotVariant.Dark)
 
     @Test
     @Config(qualifiers = EXPANDED)
-    fun resultsExpanded() = capture("resultsExpanded", SearchPreviewData.results, ThemeMode.Light)
+    fun resultsExpanded() = capture("resultsExpanded", SearchPreviewData.results, ScreenshotVariant.Light)
 
     @Test
-    fun searchingLight() = capture("searchingLight", SearchPreviewData.loading, ThemeMode.Light)
+    fun resultsAmoled() = capture("resultsAmoled", SearchPreviewData.results, ScreenshotVariant.Amoled)
 
     @Test
-    fun sectionErrorLight() = capture("sectionErrorLight", SearchPreviewData.error, ThemeMode.Light)
+    fun resultsHighContrast() =
+        capture("resultsHighContrast", SearchPreviewData.results, ScreenshotVariant.HighContrast)
 
     @Test
-    fun noResultsLight() = capture("noResultsLight", SearchPreviewData.noResults, ThemeMode.Light)
+    fun resultsRtl() = capture("resultsRtl", SearchPreviewData.results, ScreenshotVariant.Rtl)
 
     @Test
-    fun noResultsDark() = capture("noResultsDark", SearchPreviewData.noResults, ThemeMode.Dark)
+    @Config(qualifiers = MEDIUM)
+    fun resultsMedium() = capture("resultsMedium", SearchPreviewData.results, ScreenshotVariant.Medium)
 
     @Test
-    fun mediaLight() = capture("mediaLight", SearchPreviewData.media, ThemeMode.Light)
+    fun searchingLight() = capture("searchingLight", SearchPreviewData.loading, ScreenshotVariant.Light)
 
     @Test
-    fun mediaDark() = capture("mediaDark", SearchPreviewData.media, ThemeMode.Dark)
+    fun sectionErrorLight() = capture("sectionErrorLight", SearchPreviewData.error, ScreenshotVariant.Light)
 
     @Test
-    fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ThemeMode.Light)
+    fun noResultsLight() = capture("noResultsLight", SearchPreviewData.noResults, ScreenshotVariant.Light)
+
+    @Test
+    fun noResultsDark() = capture("noResultsDark", SearchPreviewData.noResults, ScreenshotVariant.Dark)
+
+    @Test
+    fun mediaLight() = capture("mediaLight", SearchPreviewData.media, ScreenshotVariant.Light)
+
+    @Test
+    fun mediaDark() = capture("mediaDark", SearchPreviewData.media, ScreenshotVariant.Dark)
+
+    @Test
+    fun noMediaLight() = capture("noMediaLight", SearchPreviewData.noMedia, ScreenshotVariant.Light)
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         name: String,
         state: SearchUiState,
-        themeMode: ThemeMode,
+        variant: ScreenshotVariant,
     ) {
         composeRule.setContent {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+            ScreenshotTheme(variant) {
                 SearchScreen(
                     state = state,
                     textFieldState = remember { TextFieldState(SearchPreviewData.queryOf(state)) },

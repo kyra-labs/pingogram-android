@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -57,6 +58,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - Each item grows into the media viewer and shrinks back into its cell ([sharedMediaBounds]) by its own message, of
  *   [messageIds] (in the order of [items]; none in previews), from and to exactly the corners it shows there.
  * - An item being sent shows its upload ([uploads], by message id) with a cancel button ([onCancelUpload]).
+ * - Photos follow automatic download ([downloads]) as in [MessagePhoto]: where it leaves them for a tap, each shows a
+ *   download button ([onDownload], [onCancelDownload]) until it is downloaded.
  *
  * The caption, if any, is the bubble's: Telegram shows the caption of the album's one captioned item below it.
  */
@@ -70,6 +73,9 @@ internal fun MediaAlbum(
     messageIds: ImmutableList<Long> = persistentListOf(),
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     onCancelUpload: (messageId: Long) -> Unit = {},
+    downloads: MediaDownloads = MediaDownloads(),
+    onDownload: (fileId: Int) -> Unit = {},
+    onCancelDownload: (fileId: Int) -> Unit = {},
 ) {
     val density = LocalDensity.current
     val widthPx = with(density) { maxWidth.roundToPx() }
@@ -79,6 +85,8 @@ internal fun MediaAlbum(
     val cellShape = MaterialTheme.shapes.extraSmall
     val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val openLabel = stringResource(R.string.content_open)
+    val albumDownloads =
+        remember(downloads, onDownload, onCancelDownload) { AlbumDownloads(downloads, onDownload, onCancelDownload) }
     Layout(
         content = {
             shown.forEachIndexed { index, item ->
@@ -98,7 +106,12 @@ internal fun MediaAlbum(
                         ).clip(itemShape)
                         .clickable(onClickLabel = openLabel) { onOpen(index) },
                 ) {
-                    AlbumItem(item = item, displaySize = cellSize, modifier = Modifier.matchParentSize())
+                    AlbumItem(
+                        item = item,
+                        displaySize = cellSize,
+                        modifier = Modifier.matchParentSize(),
+                        downloads = albumDownloads,
+                    )
                     messageId?.let(uploads::get)?.let { upload ->
                         MediaUploadProgress(
                             upload = upload,
@@ -194,11 +207,19 @@ private fun albumAspectRatio(item: MessageContent): Float {
     return if (width > 0 && height > 0) width.toFloat() / height else 1f
 }
 
+/** How an album's photos download: [MediaAlbum]'s parameters of the same names. */
+private class AlbumDownloads(
+    val downloads: MediaDownloads,
+    val onDownload: (fileId: Int) -> Unit,
+    val onCancelDownload: (fileId: Int) -> Unit,
+)
+
 @Composable
 private fun AlbumItem(
     item: MessageContent,
     displaySize: DpSize,
     modifier: Modifier,
+    downloads: AlbumDownloads,
 ) {
     when (item) {
         is MessageContent.Photo -> {
@@ -208,6 +229,9 @@ private fun AlbumItem(
                 displaySize = displaySize,
                 hidden = item.hasSpoiler || item.isSecret,
                 modifier = modifier.semantics { contentDescription = description },
+                downloads = downloads.downloads,
+                onDownload = downloads.onDownload,
+                onCancelDownload = downloads.onCancelDownload,
             )
         }
 

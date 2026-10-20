@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,7 +45,6 @@ import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The Chats tab's top bar with the folder tabs ([ChatListTopBar]), or the archive's ([ArchiveTopBar]). */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatListScreenTopBar(
     state: ChatListUiState,
@@ -82,7 +80,6 @@ internal fun ChatListScreenTopBar(
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
  * lists, which would drop the selection, waits until the selection is done.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatListTopBar(
     state: ChatListUiState,
@@ -134,7 +131,6 @@ internal fun ChatListTopBar(
  * `surfaceContainer` above the list's sheet. In selection mode it shows how many chats are selected, with a button
  * that clears the selection in place of back.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ArchiveTopBar(
     selectedCount: Int?,

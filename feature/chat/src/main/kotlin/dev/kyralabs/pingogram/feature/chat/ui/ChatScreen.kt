@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Scaffold
@@ -113,7 +112,6 @@ import kotlinx.collections.immutable.ImmutableSet
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatScreen(
     state: ChatUiState,
@@ -315,7 +313,7 @@ private fun MessageList(
     val fileStates = state.fileStates
     val playback = state.playback
     val selectedIds = state.selection?.messageIds
-    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts)
+    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads)
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current

@@ -47,7 +47,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Expressive shape, morphs while "Start messaging" is pressed. On wide windows and in landscape the hero and the brand
  * are the start pane, the rest the end one.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun WelcomeScreen(
     onEvent: (AuthEvent) -> Unit,

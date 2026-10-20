@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -55,7 +54,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * ([SearchChatSegment]). A recent chat has a button that removes it ([onRemove]). Screen readers hear the row as one
  * ([chatDescription]), and the remove button on its own.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SearchChatRow(
     item: SearchChatItem,
@@ -157,7 +155,6 @@ private fun ChatSubtitle(text: String) {
  * date at the end, and two lines of the message after its sender in a group, the query's words highlighted
  * ([highlight]) in `primary`. Screen readers hear "Chat, Sender: text, date".
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SearchMessageRow(
     item: SearchMessageItem,

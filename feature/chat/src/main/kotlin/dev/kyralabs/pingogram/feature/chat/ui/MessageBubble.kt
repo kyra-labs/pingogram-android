@@ -359,6 +359,7 @@ private fun MediaBubble(
                 onEvent = onEvent,
                 mediaShape = mediaShape,
                 uploads = uploads,
+                mediaDownloads = resources.mediaDownloads,
             )
             if (captionless && bubble.showsTime) {
                 OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))

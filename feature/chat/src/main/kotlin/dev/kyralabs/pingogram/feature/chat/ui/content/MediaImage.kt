@@ -59,10 +59,10 @@ internal fun rememberImageAlpha(key: Any): Animatable<Float, AnimationVector1D> 
 
 /**
  * TDLib file [fileId] as an image, decoded by Coil at [widthPx] × [heightPx] (`docs/PERFORMANCE.md` §4; the fetcher
- * downloads it at visible priority). It fades in through [alpha] on the motion scheme's default effects spring once
- * it is loaded from disk, and shows at once when Coil's memory cache has it, so lists do not flicker while scrolling.
- * [colorFilter] tints it, e.g. the dark theme's dim of photos ([pingogramColors]' `mediaColorFilter`). Decorative: the
- * component around it describes it.
+ * downloads it at visible priority, or, without [download], waits until something else downloaded it). It fades in
+ * through [alpha] on the motion scheme's default effects spring once it is loaded from disk, and shows at once when
+ * Coil's memory cache has it, so lists do not flicker while scrolling. [colorFilter] tints it, e.g. the dark theme's
+ * dim of photos ([pingogramColors]' `mediaColorFilter`). Decorative: the component around it describes it.
  */
 @Composable
 internal fun TdlibImage(
@@ -73,13 +73,14 @@ internal fun TdlibImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     colorFilter: ColorFilter? = null,
+    download: Boolean = true,
 ) {
     val context = LocalPlatformContext.current
     val request =
-        remember(context, fileId, widthPx, heightPx) {
+        remember(context, fileId, widthPx, heightPx, download) {
             ImageRequest
                 .Builder(context)
-                .data(TdlibFileImage(fileId))
+                .data(TdlibFileImage(fileId, download))
                 .size(widthPx.coerceAtLeast(1), heightPx.coerceAtLeast(1))
                 .build()
         }

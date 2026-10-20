@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.auth.ui.components
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
@@ -122,7 +121,6 @@ internal fun AuthPasswordField(
  * Shows or hides the password: Material Symbols "visibility" while shown, "visibility_off" while hidden. Screen
  * readers hear one label, "Show password", and its checked state.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PasswordVisibilityToggle(
     isVisible: Boolean,
