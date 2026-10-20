@@ -8,12 +8,18 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.feature.media.ui.MediaViewerRoute as MediaViewer
 
 /**
- * Adds the media viewer, [MediaViewerRoute], to the graph, with the `NavHost`'s transitions; [onBack] leaves it. The
- * viewer handles system back itself, following the predictive back gesture. The destination provides its animated
- * visibility scope, so the media grows out of its bubble in the conversation and shrinks back into it.
+ * Adds the media viewer, [MediaViewerRoute], to the graph, with the `NavHost`'s transitions; [onBack] leaves it, and
+ * [onShowInChat] leaves it for the conversation of the chat at the shown message ("Show in chat"). The viewer handles
+ * system back itself, following the predictive back gesture. The destination provides its animated visibility scope,
+ * so the media grows out of its bubble in the conversation and shrinks back into it.
  */
-fun NavGraphBuilder.mediaViewerScreen(onBack: () -> Unit) {
-    composable<MediaViewerRoute> { ProvideNavAnimatedVisibilityScope(this) { MediaViewer(onBack = onBack) } }
+fun NavGraphBuilder.mediaViewerScreen(
+    onBack: () -> Unit,
+    onShowInChat: (chatId: Long, messageId: Long) -> Unit,
+) {
+    composable<MediaViewerRoute> {
+        ProvideNavAnimatedVisibilityScope(this) { MediaViewer(onBack = onBack, onShowInChat = onShowInChat) }
+    }
 }
 
 /** Opens the media viewer on the photo, video or GIF [messageId] of chat [chatId]; once, however often it is tapped. */
