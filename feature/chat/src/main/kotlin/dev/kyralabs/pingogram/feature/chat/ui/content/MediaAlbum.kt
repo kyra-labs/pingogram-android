@@ -4,19 +4,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasurePolicy
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -25,10 +28,10 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
@@ -46,12 +49,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Layout**: one custom [Layout] ([albumLayout]): rows [maxWidth] wide whose items keep their aspect ratios, chosen
  *   so the album comes out about square, `mediaAlbumGap` apart. In a narrower bubble the mosaic scales down.
  * - **Items**: photos as in [MessagePhoto], videos and GIFs as their thumbnail with their length or "GIF"; each in
- *   `extraSmall` corners inside the album's [shape], so only the album's outer corners are round. Spoilers show only
- *   their blurred minithumbnail. Other content, which albums never hold, shows as a tonal cell.
+ *   `extraSmall` corners, except where it meets a corner of the album, where it takes the album's own corner of
+ *   [shape] ([albumItemShape]), so only the album's outer corners are round. Spoilers show only their blurred
+ *   minithumbnail. Other content, which albums never hold, shows as a tonal cell.
  * - Tapping an item calls [onOpen] with its index in [items]. Telegram albums hold at most [MAX_ALBUM_ITEMS]; more are
  *   left out.
  * - Each item grows into the media viewer and shrinks back into its cell ([sharedMediaBounds]) by its own message, of
- *   [messageIds] (in the order of [items]; none in previews), from and to its `extraSmall` corners.
+ *   [messageIds] (in the order of [items]; none in previews), from and to exactly the corners it shows there.
  * - An item being sent shows its upload ([uploads], by message id) with a cancel button ([onCancelUpload]).
  *
  * The caption, if any, is the bubble's: Telegram shows the caption of the album's one captioned item below it.
@@ -61,7 +65,7 @@ internal fun MediaAlbum(
     items: ImmutableList<MessageContent>,
     onOpen: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
-    shape: Shape = MaterialTheme.shapes.large,
+    shape: CornerBasedShape = MaterialTheme.shapes.large,
     maxWidth: Dp = MaterialTheme.sizes.mediaMaxWidth,
     messageIds: ImmutableList<Long> = persistentListOf(),
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
@@ -73,6 +77,7 @@ internal fun MediaAlbum(
     val shown = if (items.size > MAX_ALBUM_ITEMS) items.subList(0, MAX_ALBUM_ITEMS) else items
     val layout = remember(shown, widthPx, gapPx) { albumLayout(shown.map(::albumAspectRatio), widthPx, gapPx) }
     val cellShape = MaterialTheme.shapes.extraSmall
+    val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val openLabel = stringResource(R.string.content_open)
     Layout(
         content = {
@@ -80,14 +85,17 @@ internal fun MediaAlbum(
                 val cell = layout.cells[index]
                 val cellSize = with(density) { DpSize(cell.width.toDp(), cell.height.toDp()) }
                 val messageId = messageIds.getOrNull(index)
+                val itemShape =
+                    remember(cell, layout, shape, cellShape, ltr) {
+                        albumItemShape(cell, layout, shape, cellShape, ltr)
+                    }
                 Box(
                     Modifier
                         .sharedMediaBounds(
                             messageId = messageId ?: 0L,
-                            shape = cellShape,
-                            counterpartShape = FullBleedShape,
+                            shape = itemShape,
                             enabled = messageId != null && item.opensInViewer,
-                        ).clip(cellShape)
+                        ).clip(itemShape)
                         .clickable(onClickLabel = openLabel) { onOpen(index) },
                 ) {
                     AlbumItem(item = item, displaySize = cellSize, modifier = Modifier.matchParentSize())
@@ -143,6 +151,36 @@ private fun IntRect.scaled(scale: Float): IntRect =
             (bottom * scale).roundToInt(),
         )
     }
+
+/**
+ * The corners of the item in [cell] of [album]: [cellShape]'s, except where the cell meets a corner of the album, where
+ * the album's own corner of [albumShape] shows (the bubble's, which clips the album), unless that one is square (below
+ * a header, above a caption). The cells are placed as laid out, left to right: [ltr] maps them to start and end.
+ */
+internal fun albumItemShape(
+    cell: IntRect,
+    album: AlbumLayout,
+    albumShape: CornerBasedShape,
+    cellShape: CornerBasedShape,
+    ltr: Boolean,
+): CornerBasedShape {
+    val top = cell.top == 0
+    val bottom = cell.bottom == album.height
+    val start = if (ltr) cell.left == 0 else cell.right == album.width
+    val end = if (ltr) cell.right == album.width else cell.left == 0
+
+    fun corner(
+        atAlbumCorner: Boolean,
+        album: CornerSize,
+        cell: CornerSize,
+    ) = if (atAlbumCorner && album != ZeroCornerSize) album else cell
+    return cellShape.copy(
+        topStart = corner(top && start, albumShape.topStart, cellShape.topStart),
+        topEnd = corner(top && end, albumShape.topEnd, cellShape.topEnd),
+        bottomEnd = corner(bottom && end, albumShape.bottomEnd, cellShape.bottomEnd),
+        bottomStart = corner(bottom && start, albumShape.bottomStart, cellShape.bottomStart),
+    )
+}
 
 /** Width / height of an album item, from its largest photo size or the video's size; 1 when unknown. */
 private fun albumAspectRatio(item: MessageContent): Float {

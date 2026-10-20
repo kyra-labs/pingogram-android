@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Share and Save of the viewer's current item (`REQUIREMENTS.md` FR-C6 "save to downloads", FR-C10), for
- * [MediaViewerViewModel]: what the bottom app bar offers ([state]) and what its buttons do. Main thread only.
+ * Share, Save and Copy of the viewer's current item (`REQUIREMENTS.md` FR-C6 "save to downloads", FR-C10), for
+ * [MediaViewerViewModel]: what the toolbar offers ([state]) and what its buttons do. Main thread only.
  *
  * - **Allowed** only where Telegram lets the content leave it: the chat does not protect its content ([isProtected],
  *   true while the chat is not known) and TDLib says the message can be saved ([canBeSaved], `ChatMediaRepository`),
@@ -33,8 +33,9 @@ import kotlinx.coroutines.launch
  *   A tap while it downloads waits for it, with the download's progress on the button; turning the page drops the
  *   wait. A file TDLib cannot download, or a failed download ([onDownloadFailed]), ends it.
  * - **Share** goes out as [MediaViewerEffect.ShareFile], which the screen hands to the system's share sheet.
- * - **Save** copies the file into the gallery ([SharedStorageRepository.saveToGallery]), then a snackbar says how that
- *   went. On Android 8–9 the storage permission comes first ([permission]).
+ * - **Copy**, for photos only, goes out as [MediaViewerEffect.CopyImage], which the screen puts on the clipboard.
+ * - **Save** copies the file into the gallery ([SharedStorageRepository.saveToGallery]), then a snackbar says how
+ *   that went. On Android 8–9 the storage permission comes first ([permission]).
  */
 internal class MediaSharing(
     private val canBeSaved: suspend (messageId: Long) -> Outcome<Boolean>,
@@ -60,7 +61,7 @@ internal class MediaSharing(
     /** The storage permission that saving needs on Android 8–9, asked for when Save is tapped. */
     val permission = StoragePermissionRequest(savedStateHandle, effects, onGranted = ::saveAfterPermission)
 
-    /** What the bottom app bar offers for the item of message [currentId] (null while there is none). */
+    /** What the toolbar offers for the item of message [currentId] (null while there is none). */
     fun state(currentId: Flow<Long?>): Flow<MediaActions> =
         combine(
             isProtected,
@@ -97,12 +98,14 @@ internal class MediaSharing(
     }
 
     /**
-     * Shares or saves the current item, once its file is there; a Save asks for the storage permission first where
-     * that is needed. Nothing while another action waits, or where the item cannot be saved.
+     * Shares, saves or copies the current item, once its file is there; a Save asks for the storage permission first
+     * where that is needed. Nothing while another action waits, where the item cannot be saved, or for a Copy of
+     * anything but a photo.
      */
     fun start(action: MediaAction) {
-        val target = current?.takeIf { canSave(it.messageId) } ?: return
-        if (pending.value != null) return
+        val target =
+            current?.takeIf { canSave(it.messageId) && (action != MediaAction.Copy || it.media is ViewerMedia.Image) }
+        if (target == null || pending.value != null) return
         if (action == MediaAction.Save && sharedStorage.needsStoragePermission()) {
             permission.ask(target.messageId)
         } else {
@@ -171,6 +174,11 @@ internal class MediaSharing(
             MediaAction.Share -> {
                 pending.value = null
                 effects.trySend(MediaViewerEffect.ShareFile(path, media.fallbackMimeType))
+            }
+
+            MediaAction.Copy -> {
+                pending.value = null
+                effects.trySend(MediaViewerEffect.CopyImage(path, media.fallbackMimeType))
             }
 
             MediaAction.Save -> {
@@ -271,6 +279,7 @@ private val MediaAction.failure: MediaViewerEffect
         when (this) {
             MediaAction.Share -> MediaViewerEffect.ShareFailed
             MediaAction.Save -> MediaViewerEffect.SaveFailed
+            MediaAction.Copy -> MediaViewerEffect.CopyFailed
         }
 
 /**
