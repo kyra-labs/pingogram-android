@@ -114,7 +114,9 @@ fun PingogramTheme(
 | Selected bubble | `secondaryContainer` / `onSecondaryContainer` (`pingogramColors.selectedBubble`); its check at the row's start a filled check circle in `primary`, unselected rings in `outline` |
 | Emoji-only message | no container; time and state `onSurfaceVariant`, read checks `primary` |
 | Sponsored message | filled `Card` with its default colors (`CardDefaults.cardColors()`: `surfaceContainerHighest` / `onSurface`, a step above incoming bubbles); label "Sponsored" / "Recommended" `onSurfaceVariant`; the advertiser's button `FilledTonalButton` (`secondaryContainer` / `onSecondaryContainer`); TDLib's accent color id is not used |
-| Reaction badge | `surfaceContainerHighest` / `onSurfaceVariant`, chosen `secondaryContainer` / `onSecondaryContainer`, a `surface` ring; a 48 dp touch target around the 28 dp badge |
+| Reaction badge | `surfaceContainerHighest` / `onSurfaceVariant`, chosen `secondaryContainer` / `onSecondaryContainer`, a `surface` ring; a 48 dp touch target around the 28 dp badge. A custom emoji without its picture: a dot of the content color as a 38% tint of the badge, never a dark mark |
+| Code and hidden spoilers in a bubble | code and `pre` blocks on the bubble's block color; a hidden spoiler a block of `pingogramColors` `spoiler`: the bubble's secondary content as the lightest tint of its container that keeps 3:1 against it (§9), its text transparent |
+| Typing in the conversation header | the status in `primary`, after three dots in `primary` |
 | Service / date pill | `surfaceContainerHighest` / `onSurfaceVariant` |
 | Unread badge | `primary` / `onPrimary`; muted: `surfaceVariant` / `onSurfaceVariant` |
 | Mentions / links | `primary`; visited/secondary links `tertiary` |
@@ -303,8 +305,14 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   alone), as Google Messages does. Tapping a bubble shows its time, and screen readers always hear it.
 - Radius: user-adjustable later in Appearance settings (`extraLarge` by default).
 - Reply quotes and link previews are tonal rounded cards (`medium` corners, the bubble's block color) without a
-  leading accent bar. Inline code, `pre` blocks and spoilers sit on `small`-rounded backgrounds. Voice messages
-  keep their waveform.
+  leading accent bar. Inline code, `pre` blocks and hidden spoilers sit on `small`-rounded backgrounds, drawn behind
+  the text from its layout (`textBlocks`, `core:ui`; a span background can only be a rectangle): inline code and
+  spoilers one per line they cover, a `pre` block one around all of its lines, each `sizes.textBlockPadding` wider than
+  its text at both ends. They are computed once per layout and drawn in the draw phase. A hidden spoiler is a plain
+  tonal block, without noise or animation. Voice messages keep their waveform.
+- Stickers have no container: their artwork is transparent. Until the picture shows, the sticker's emoji stands in;
+  a sticker without one shows a `surfaceContainerHigh` placeholder with `extraLarge` corners, never a hard-edged
+  block.
 - Emoji-only messages (1–3 emoji and nothing else, no formatting, reply or forward) show in
   `displaySmall` without a bubble, the time and state below them.
 - Reactions sit on a bubble's bottom corner on the far side as round badges (§2.2), up to three
@@ -326,6 +334,11 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   default; press feedback, FAB menu, chips → spatial fast; large layout changes (expanding app
   bar, list-detail pane) → spatial slow; color/alpha crossfades → effects default; reactions,
   typing dots, send confirmation → effects fast.
+- Typing dots (the conversation header, while someone types or does something else in the chat): three dots before
+  the text, which says what is happening. Each brightens from 38% to full opacity and fades back on
+  `fastEffectsSpec`, the next starting as it fades; the opacity is read in the draw phase, so nothing composes again
+  per frame (`TypingDots`, `feature:chat`). Under an `InfiniteAnimationPolicy` (Compose UI tests) the loop runs as the
+  policy allows; with reduced motion the dots stand still at full opacity.
 - Navigation transitions:
   - **Shared-axis X** for every screen pushed above a tab: conversation, archive, search, settings pages. It is
     built in `core:ui` (`sharedAxisXEnter` / `sharedAxisXExit`): a slide by `SharedAxisDistance` on
@@ -377,7 +390,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 |---|---|
 | Chat list top bar | Small `TopAppBar` (64 dp, `titleLargeEmphasized`, pinned) on `surfaceContainer`, the list on a rounded sheet below (`ContentSheet`). The chat list is a dense list, and a medium flexible bar cost ~1.5 rows at rest. Search opens from the navigation's search button. The connection pill (FR-L5) sits below the bar |
 | Global search | **Compact and medium** (one pane): a full-screen destination (`SearchRoute`) pushed above the tab, with the M3 search bar expanded, built from `SearchBarDefaults.InputField` with the bar's colors, divider and full-screen insets. Not `ExpandedFullScreenSearchBar`, which opens a dialog window that would stay above the chats a result opens and outside predictive back. Medium windows keep it: they have one pane, so there is no list beside a detail to dock into, and a docked popup over a single pane would hide what it searches. **Expanded and wider**: docked, as Material asks (owner decision D6): the field and its results take the place of the chat list in the Chats tab's list pane (`SearchPane`), from any tab (the Chats tab shows first), and a result opens in the detail pane (a message at that message) while search stays; back closes that conversation first, then search. A window that shrinks while search is docked keeps it in its one pane, full window. Opened from the search button of the floating navigation bar or the rail, which grows into search with a container transform (§5) and is away while search shows, keeping its place. Under the field: a row of `FilterChip`s (`FilterChipDefaults.shapes()`, scrolling sideways where they do not fit): All, Chats (the user's and public chats), Contacts, Messages, Media (photos and videos) and Links (TDLib's `searchMessagesFilterPhotoAndVideo` / `searchMessagesFilterUrl`); Media and Links also find without a query, every one in the chats. Results come in sections, each a group of segmented list items (`ListItemDefaults.segmentedShapes` / `segmentedColors`, `SegmentedGap` apart, inset by the window margin as settings rows are) with gaps between groups, under `titleSmallEmphasized` labels; a section still searching or that found nothing is left out. One `LinearWavyProgressIndicator` over the divider under the chips while anything searches, after 200 ms (§5), taking no height so nothing moves; a section's error (or the next page's, ending the messages' group) in an `errorContainer` segment: the error icon, the text and a "Try again" `TextButton` in `onErrorContainer` |
-| Conversation top bar | `TopAppBar` small, avatar + two-line title (`titleMediumEmphasized`), on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`). At most two filled icon-button actions (Material: avoid overflow menus in app bars). The title opens the profile (M4) |
+| Conversation top bar | `TopAppBar` small, avatar + two-line title (`titleMediumEmphasized`), on `surfaceContainer` with the messages on a rounded sheet below (`ContentSheet`). At most two filled icon-button actions (Material: avoid overflow menus in app bars); none yet, as none of them exists: calls (M5) and search in the chat (M6), never an overflow menu or buttons that do nothing. The title opens the profile once it has a route (M4); until then it is not clickable. While someone is doing something in the chat, typing dots precede the status (§5) and the title is a polite live region, so screen readers announce it; the status otherwise is not one, as "last seen" changes every minute |
 | Folder tabs | `ButtonGroup` connected `ToggleButton`s with `animateWidth` press physics in a 56 dp row (40 dp buttons, `spacing.small` above and below), in a horizontal scroll that brings the selected button into view and fades at the edges, so the group never overflows into its menu; selected label `labelLargeEmphasized`; fallback `PrimaryScrollableTabRow` if > 6 |
 | Main navigation | **Compact width: floating navigation bar** (§6.1). Medium and expanded widths, and windows of compact height (phones in landscape): `NavigationSuiteScaffold` → `WideNavigationRail` collapsed, the search `FloatingActionButton` in its header. Large and extra-large widths (≥ 1200 dp): the rail expanded, search as an `ExtendedFloatingActionButton` |
 | New chat | One `MediumExtendedFloatingActionButton` "New chat" (filled edit icon, collapsing to the medium FAB on scroll down, `Modifier.animateFloatingActionButton`), bottom-end above the floating navigation bar or in the list pane. It opens the New chat screen (new group, new channel, new contact, then contacts under a `titleSmallEmphasized` header; a small top bar on `surfaceContainer` and the list on a `ContentSheet`, as the archive) with a container transform, and hides in selection mode. Not a FAB menu: Material says not to pair one with a floating toolbar or a navigation rail |
@@ -526,6 +539,12 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 
 - Dark uses the M3 dark scheme (not inverted light); surfaces follow the tonal ladder;
   Google Sans Flex at `GRAD` 0 (§3.1); images get a 0.9 `ColorFilter` dim only in media-heavy lists.
+- The conversation counts as one: in dark theme, photos, videos, GIFs, video messages and albums in it (their
+  minithumbnails too, and the media of sponsored messages) are dimmed to 90% of their brightness with a color matrix
+  (`pingogramColors.mediaColorFilter`, null in light theme), so bright pictures do not glare among dark surfaces.
+  Stickers, custom emoji and avatars are not dimmed: they are artwork or identity, not photos. The media viewer shows
+  media undimmed, at full brightness on its `scrim`, as the place to look at them. Link previews show no image yet;
+  when they do, theirs is dimmed too.
 - Medium/high contrast schemes change colors only; typography weight is unchanged (Material
   rule), but `GRAD +25` may be applied in high contrast for readability.
 

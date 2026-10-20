@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
+import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -134,9 +136,28 @@ private fun SponsoredContent(
                 }
             val text =
                 remember(card.text, styles, onLink) {
-                    card.text.toAnnotatedString(styles, spoilersRevealed = true, onLinkClick = onLink)
+                    card.text.toAnnotatedString(
+                        styles,
+                        spoilersRevealed = true,
+                        onLinkClick = onLink,
+                        drawsBlocks = true,
+                    )
                 }
-            Text(text = text, style = MaterialTheme.typography.bodyMedium)
+            // Code on rounded blocks, as in the bubbles.
+            val blocks = remember { TextBlocksLayout() }
+            Text(
+                text = text,
+                modifier =
+                    Modifier.textBlocks(
+                        layout = blocks,
+                        codeColor = styles.codeBackground,
+                        spoilerColor = styles.spoilerColor,
+                        shape = MaterialTheme.shapes.small,
+                        horizontalPadding = MaterialTheme.sizes.textBlockPadding,
+                    ),
+                style = MaterialTheme.typography.bodyMedium,
+                onTextLayout = blocks.onTextLayout,
+            )
         }
     }
 }
@@ -156,6 +177,8 @@ private fun SponsoredHeader(
                 displaySize = DpSize(size, size),
                 hidden = false,
                 modifier = Modifier.padding(end = MaterialTheme.spacing.medium).size(size).clip(CircleShape),
+                // An avatar: never dimmed like the media.
+                colorFilter = null,
             )
         }
         Column(Modifier.weight(1f)) {

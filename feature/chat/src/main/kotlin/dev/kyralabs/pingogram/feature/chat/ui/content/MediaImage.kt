@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -60,7 +61,8 @@ internal fun rememberImageAlpha(key: Any): Animatable<Float, AnimationVector1D> 
  * TDLib file [fileId] as an image, decoded by Coil at [widthPx] × [heightPx] (`docs/PERFORMANCE.md` §4; the fetcher
  * downloads it at visible priority). It fades in through [alpha] on the motion scheme's default effects spring once
  * it is loaded from disk, and shows at once when Coil's memory cache has it, so lists do not flicker while scrolling.
- * Decorative: the component around it describes it.
+ * [colorFilter] tints it, e.g. the dark theme's dim of photos ([pingogramColors]' `mediaColorFilter`). Decorative: the
+ * component around it describes it.
  */
 @Composable
 internal fun TdlibImage(
@@ -70,6 +72,7 @@ internal fun TdlibImage(
     alpha: Animatable<Float, AnimationVector1D>,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    colorFilter: ColorFilter? = null,
 ) {
     val context = LocalPlatformContext.current
     val request =
@@ -87,6 +90,7 @@ internal fun TdlibImage(
         contentDescription = null,
         modifier = modifier.graphicsLayer { this.alpha = alpha.value },
         contentScale = contentScale,
+        colorFilter = colorFilter,
         onSuccess = { state ->
             // Coil's own crossfade is a tween (DESIGN_SYSTEM.md §5), so the fade is ours, as in core:ui's Avatar.
             val loaded = state.result.dataSource
@@ -105,15 +109,16 @@ internal fun Modifier.fadingOutAs(imageAlpha: Animatable<Float, AnimationVector1
 
 /**
  * What a photo or video shows until its image is loaded, and instead of it while it is hidden (spoilers,
- * self-destructing media): the [minithumbnail] blurred, cropped to fill [displaySize]. The blur needs Android 12;
- * before that, and without a minithumbnail, it is a tonal placeholder in `surfaceContainerHighest`. The minithumbnail
- * is decoded once per photo (it is about 40 px wide).
+ * self-destructing media): the [minithumbnail] blurred, cropped to fill [displaySize], tinted by [colorFilter] as the
+ * image over it is. The blur needs Android 12; before that, and without a minithumbnail, it is a tonal placeholder in
+ * `surfaceContainerHighest`. The minithumbnail is decoded once per photo (it is about 40 px wide).
  */
 @Composable
 internal fun MinithumbnailPlaceholder(
     minithumbnail: Minithumbnail?,
     displaySize: DpSize,
     modifier: Modifier = Modifier,
+    colorFilter: ColorFilter? = null,
 ) {
     val bitmap =
         if (minithumbnail != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -129,6 +134,7 @@ internal fun MinithumbnailPlaceholder(
             contentDescription = null,
             modifier = modifier.blur(minithumbnailBlur(bitmap, displaySize), BlurredEdgeTreatment.Rectangle),
             contentScale = ContentScale.Crop,
+            colorFilter = colorFilter,
         )
     }
 }

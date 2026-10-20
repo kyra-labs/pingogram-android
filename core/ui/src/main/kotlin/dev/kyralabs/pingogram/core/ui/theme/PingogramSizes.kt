@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
  * @property badgeIcon an icon inside a `Badge`, e.g. the `@` of an unread mention; the size of a badge's digits.
  * @property inlineProgressIndicator an indeterminate progress indicator within a line of `labelLarge` text, e.g. in
  *   the chat list's connection pill.
+ * @property textBlockPadding how far the rounded background of inline code, a code block or a hidden spoiler reaches
+ *   past its text at either end, so the glyphs keep clear of its corners.
  * @property bubbleMaxWidthFraction the widest a message bubble gets, as a fraction of the conversation's width, so
  *   incoming and outgoing bubbles stay apart.
  * @property bubbleMaxWidth the widest a message bubble gets on wide windows, where [bubbleMaxWidthFraction] would make
@@ -82,6 +84,7 @@ data class PingogramSizes(
     val inlineIconSmall: Dp = 16.dp,
     val badgeIcon: Dp = 12.dp,
     val inlineProgressIndicator: Dp = 20.dp,
+    val textBlockPadding: Dp = 2.dp,
     val bubbleMaxWidthFraction: Float = 0.8f,
     val bubbleMaxWidth: Dp = 560.dp,
     val reactionBadge: Dp = 28.dp,

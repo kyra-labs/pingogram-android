@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,7 +48,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
+import dev.kyralabs.pingogram.core.ui.text.hasTextBlocks
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
@@ -446,7 +450,11 @@ private fun ColumnScope.BubbleBody(
     }
 }
 
-/** The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. */
+/**
+ * The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
+ * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
+ * draw phase.
+ */
 @Composable
 private fun BubbleText(
     bubble: ChatItem.Bubble,
@@ -457,12 +465,39 @@ private fun BubbleText(
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
-    Text(
-        text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick),
-        color = style.colors.content,
-        style = MaterialTheme.typography.bodyLarge,
-        onTextLayout = onTextLayout,
-    )
+    val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick)
+    if (text.hasTextBlocks()) {
+        val blocks = remember { TextBlocksLayout() }
+        val currentOnTextLayout by rememberUpdatedState(onTextLayout)
+        val onLayout =
+            remember(blocks) {
+                { result: TextLayoutResult ->
+                    blocks.onTextLayout(result)
+                    currentOnTextLayout(result)
+                }
+            }
+        Text(
+            text = text,
+            modifier =
+                Modifier.textBlocks(
+                    layout = blocks,
+                    codeColor = style.text.codeBackground,
+                    spoilerColor = style.text.spoilerColor,
+                    shape = MaterialTheme.shapes.small,
+                    horizontalPadding = MaterialTheme.sizes.textBlockPadding,
+                ),
+            color = style.colors.content,
+            style = MaterialTheme.typography.bodyLarge,
+            onTextLayout = onLayout,
+        )
+    } else {
+        Text(
+            text = text,
+            color = style.colors.content,
+            style = MaterialTheme.typography.bodyLarge,
+            onTextLayout = onTextLayout,
+        )
+    }
 }
 
 /** The text's latest layout, read by [TrailingMeta] right after the text was measured. Not composition state. */

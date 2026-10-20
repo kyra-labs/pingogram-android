@@ -23,10 +23,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What the conversation composes again while the user scrolls, as messages come in and when a bubble's time is tapped
- * to show (`docs/PERFORMANCE.md` §4: no recomposition of what stays on screen), counted with [RecompositionCounter]
- * frame by frame on the test clock. The counter starts before the screen first composes, so it knows every
- * composable's first composition and counts every later one.
+ * What the conversation composes again while the user scrolls, as messages come in, when someone starts typing and
+ * when a bubble's time is tapped to show (`docs/PERFORMANCE.md` §4: no recomposition of what stays on screen), counted
+ * with [RecompositionCounter] frame by frame on the test clock. The counter starts before the screen first composes,
+ * so it knows every composable's first composition and counts every later one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -106,6 +106,21 @@ class ChatRecompositionTest {
         val functions = counter.recomposedOwnFunctions
         assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
         assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
+    }
+
+    @Test
+    fun `someone starting to type composes the top bar's title and none of the bubbles`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val typing = ChatSubtitle.Action(UiText.Plain("Ada is typing…"))
+        state = before.copy(header = before.header?.copy(subtitle = typing))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // The list runs again (it takes the whole state), but every bubble on screen skips.
+        val functions = counter.recomposedOwnFunctions
+        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTopBarKt.ChatTitle") })
+        assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
     }
 
     @Test

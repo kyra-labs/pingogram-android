@@ -139,6 +139,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The media viewer's actions now sit in a floating toolbar at the bottom, each button named when you press and hold
   it, with further actions under "More options". On tablets the caption and the video controls no longer stretch
   across the whole screen.
+- In a chat, the name at the top is set a little bolder, and while someone is typing three dots pulse before "is
+  typing…". TalkBack announces when someone starts typing. The dots stay still when animations are turned off.
+- Code, code blocks and hidden spoilers in messages sit on rounded backgrounds instead of square ones, and a hidden
+  spoiler is a softer tinted block.
+- The button that jumps to the newest message is the regular size of a floating button, with the number of unread
+  messages on its corner.
+- In dark theme, photos, videos and GIFs in a chat are slightly dimmed so they don't glare; the media viewer still
+  shows them at full brightness.
+- Custom emoji reactions that haven't loaded show a soft placeholder instead of a dark dot, and stickers without an
+  emoji show a rounded placeholder while they load.
 
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the

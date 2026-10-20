@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -153,6 +155,26 @@ class PingogramColorsTest {
             }
             assertTrue(bubble.onAccent.contrastWith(bubble.accent) >= 3f)
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource("false, Standard", "false, High", "true, Standard", "true, High")
+    fun `a hidden spoiler is a tint of the bubble that keeps 3 to 1 against it`(
+        dark: Boolean,
+        contrast: Contrast,
+    ) {
+        val colors = pingogramColors(brandColorScheme(dark, contrast), dark)
+
+        listOf(colors.incomingBubble, colors.outgoingBubble, colors.selectedBubble).forEach { bubble ->
+            assertTrue(bubble.spoiler.contrastWith(bubble.container) >= 3f, "${bubble.spoiler} on ${bubble.container}")
+            assertNotEquals(bubble.secondaryContent, bubble.spoiler)
+        }
+    }
+
+    @Test
+    fun `dims media in dark theme only`() {
+        assertNull(pingogramColors(brandColorScheme(dark = false, Contrast.Standard), dark = false).mediaColorFilter)
+        assertNotNull(pingogramColors(brandColorScheme(dark = true, Contrast.Standard), dark = true).mediaColorFilter)
     }
 
     private fun String.toColor() = Color(toLong(radix = 16))
