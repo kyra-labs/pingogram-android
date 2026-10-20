@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_dynamic">@color/splash_dynamic_dark</color>
+    <color name="splash_dynamic_amoled">@color/splash_black</color>
+    <color name="splash_brand_amoled">@color/splash_black</color>
+</resources>

@@ -57,6 +57,7 @@ internal fun DeleteChatDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(forEveryone) },
+                shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(
@@ -75,7 +76,7 @@ internal fun DeleteChatDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
                 Text(
                     text = stringResource(R.string.chat_list_cancel),
                     style = MaterialTheme.typography.labelLargeEmphasized,

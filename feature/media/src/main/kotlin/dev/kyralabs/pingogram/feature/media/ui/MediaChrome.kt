@@ -88,7 +88,7 @@ internal fun ViewerTopBar(
         title = { if (item != null) ViewerTitle(item) },
         modifier = modifier.background(Brush.verticalGradient(listOf(overlay, Color.Transparent))),
         navigationIcon = {
-            IconButton(onClick = onBack) {
+            IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_arrow_back),
                     contentDescription = stringResource(R.string.media_back),

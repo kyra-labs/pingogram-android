@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
@@ -131,7 +132,7 @@ private fun RemoveRecentButton(
     title: String,
     onRemove: () -> Unit,
 ) {
-    IconButton(onClick = onRemove) {
+    IconButton(onClick = onRemove, shapes = IconButtonDefaults.shapes()) {
         Icon(
             painter = painterResource(UiR.drawable.ic_close),
             contentDescription = stringResource(R.string.search_remove_recent, title),

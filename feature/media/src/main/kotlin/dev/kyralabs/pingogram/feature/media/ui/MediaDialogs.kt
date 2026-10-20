@@ -40,7 +40,7 @@ internal fun StorageRationaleDialog(onAnswer: (proceed: Boolean) -> Unit) {
     AlertDialog(
         onDismissRequest = { onAnswer(false) },
         confirmButton = {
-            TextButton(onClick = { onAnswer(true) }) {
+            TextButton(onClick = { onAnswer(true) }, shapes = ButtonDefaults.shapes()) {
                 Text(
                     text = stringResource(R.string.media_storage_rationale_continue),
                     style = MaterialTheme.typography.labelLargeEmphasized,
@@ -48,7 +48,7 @@ internal fun StorageRationaleDialog(onAnswer: (proceed: Boolean) -> Unit) {
             }
         },
         dismissButton = {
-            TextButton(onClick = { onAnswer(false) }) {
+            TextButton(onClick = { onAnswer(false) }, shapes = ButtonDefaults.shapes()) {
                 Text(
                     text = stringResource(R.string.media_storage_rationale_not_now),
                     style = MaterialTheme.typography.labelLargeEmphasized,
@@ -94,6 +94,7 @@ internal fun DeleteMediaDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(forEveryone) },
+                shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(
@@ -103,7 +104,7 @@ internal fun DeleteMediaDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
                 Text(
                     stringResource(R.string.media_delete_cancel),
                     style = MaterialTheme.typography.labelLargeEmphasized,

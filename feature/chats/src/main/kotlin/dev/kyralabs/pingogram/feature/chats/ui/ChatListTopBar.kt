@@ -18,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -153,7 +154,7 @@ internal fun ArchiveTopBar(
             if (selectedCount != null) {
                 ClearSelectionButton(onClearSelection)
             } else {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                     Icon(
                         painter = painterResource(UiR.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.chat_list_archive_back),
@@ -214,7 +215,7 @@ private fun SelectionTitle(
 /** Leaves selection mode, in the top bar's navigation slot. */
 @Composable
 private fun ClearSelectionButton(onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
         Icon(
             painter = painterResource(UiR.drawable.ic_close),
             contentDescription = stringResource(R.string.chat_list_clear_selection),
