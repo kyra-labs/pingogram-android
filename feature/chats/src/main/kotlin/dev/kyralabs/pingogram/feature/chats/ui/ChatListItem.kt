@@ -69,6 +69,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param onClick opens the chat, or selects it in selection mode; null makes the row not clickable.
  * @param onLongClick e.g. starts selection; only with [onClick].
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
+ * @param dragged the row is being swiped: it takes its `large` container, as when pressed ([ChatRow]).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -80,6 +81,7 @@ internal fun ChatListItem(
     onLongClickLabel: String? = null,
     selected: Boolean = false,
     open: Boolean = false,
+    dragged: Boolean = false,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
@@ -106,7 +108,7 @@ internal fun ChatListItem(
             supportingContent = supporting,
             onLongClick = onLongClick,
             onLongClickLabel = onLongClickLabel,
-            shapes = listItemShapes(selected = selected, open = open),
+            shapes = listItemShapes(rounded = selected || open || dragged),
             colors = listItemColors(selected || open),
             contentPadding = contentPadding,
             content = headline,
@@ -166,14 +168,11 @@ private fun listItemColors(selected: Boolean): ListItemColors {
     )
 }
 
-/** The list item's shapes, with its selected shape in place of its resting one while [selected] or [open]. */
+/** The list item's shapes, with its selected shape (`large`) in place of its resting one while [rounded]. */
 @Composable
-private fun listItemShapes(
-    selected: Boolean,
-    open: Boolean,
-): ListItemShapes {
+private fun listItemShapes(rounded: Boolean): ListItemShapes {
     val shapes = ListItemDefaults.shapes()
-    return if (selected || open) shapes.copy(shape = shapes.selectedShape) else shapes
+    return if (rounded) shapes.copy(shape = shapes.selectedShape) else shapes
 }
 
 /**

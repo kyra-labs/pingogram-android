@@ -46,6 +46,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   instead of six or seven.
 - Selected chats get rounded corners instead of turning into pills, and the buttons of the selection toolbar show
   their name on a long press.
+- Folder tabs that don't fit scroll the selected folder into view and fade out at the edge, so no tab is cut off
+  without a hint. A chat being swiped keeps its rounded shape as it slides.
 - The "+N" badge under a message with many reactions now opens the reactions picker with all of them, instead of
   the message's actions. TalkBack offers the same as "All reactions".
 - Chats without a photo show their initials in a circle in one of four calm colors, instead of six different shapes

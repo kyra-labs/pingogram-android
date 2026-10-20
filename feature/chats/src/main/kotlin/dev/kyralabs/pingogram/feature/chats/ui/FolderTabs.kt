@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonGroup
@@ -26,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -75,6 +76,9 @@ internal fun FolderTabs(
  * maximum width). A press shares the width out anew without changing its sum, so the scroll stays put. Each tab still
  * has a menu entry, should the group overflow after all. With animations off (reduced motion) the press and the
  * shapes change at once.
+ *
+ * The selected tab is always in view ([rememberTabScroll]), and the row fades out at an edge it can scroll past
+ * ([fadingEdges]), so a tab is never cut by the window's edge without a hint that more follow.
  */
 @Composable
 private fun FolderButtonGroup(
@@ -88,13 +92,15 @@ private fun FolderButtonGroup(
     val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
+    val scroll = rememberTabScroll(tabs.size, selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId })
     ButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
         modifier =
             modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
+                .fadingEdges(scroll.state)
+                .horizontalScroll(scroll.state)
                 .selectableGroup()
                 // A 56 dp row: the buttons' 48 dp touch targets, so 8 dp above and below their 40 dp containers.
                 .padding(
@@ -119,7 +125,10 @@ private fun FolderButtonGroup(
                         shapes = connectedShapes(index, tabs.lastIndex),
                         colors = colors,
                         interactionSource = interactionSource,
-                        modifier = Modifier.animateWidth(interactionSource),
+                        modifier =
+                            Modifier
+                                .animateWidth(interactionSource)
+                                .onPlaced { scroll.buttonBounds[index] = it.boundsInParent() },
                     )
                 },
                 menuContent = { menu ->
