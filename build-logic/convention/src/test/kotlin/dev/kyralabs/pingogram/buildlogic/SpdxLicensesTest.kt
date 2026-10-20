@@ -25,6 +25,8 @@ class SpdxLicensesTest {
             "BSD-3-Clause                             | https://opensource.org/licenses/BSD-3-Clause   | BSD-3-Clause",
             "-                                        | http://opensource.org/licenses/BSD-3-Clause/   | BSD-3-Clause",
             "Boost Software License 1.0               | -                                              | BSL-1.0",
+            "Android Software Development Kit License | -                                    | LicenseRef-Android-SDK",
+            "- | https://developer.android.com/studio/terms.html | LicenseRef-Android-SDK",
         ],
     )
     fun `maps the spellings and links POMs use to SPDX ids`(

@@ -207,7 +207,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - `android:allowBackup="false"`, exclude TDLib dirs from any backup.
 - Optional app passcode with biometric prompt; screen obscured in recents when enabled.
 - Network only to Telegram data centers (via TDLib) and user-requested links; no third-party
-  network calls. `networkSecurityConfig` with cleartext disabled.
+  network calls (the `gms` flavor's push service, FR-N3, is the one exception; `foss` has none). `networkSecurityConfig` with cleartext disabled.
 - Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release.
 
 ### 6.3 Accessibility (Google standards)

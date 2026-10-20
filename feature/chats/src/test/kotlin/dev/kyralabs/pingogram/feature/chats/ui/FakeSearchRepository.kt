@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * [SearchRepository] for the tests of [SearchViewModel]: each search answers with its handler, finding nothing by
- * default, and every call is recorded ([calls]) as `chats:<query>`, `contacts:<query>`, `public:<query>`,
- * `messages:<query>:<offset>`, `recents`, `top`, `add:<id>`, `remove:<id>` or `clear`; calls cancelled while they wait
- * are recorded in [cancelled] too. The recent chats are a list the changes act on.
+ * [SearchRepository] for the tests of [SearchViewModel] and [NewChatViewModel]: each search answers with its handler,
+ * finding nothing by default, and every call is recorded ([calls]) as `chats:<query>`, `contacts:<query>`,
+ * `public:<query>`, `messages:<query>:<offset>`, `allContacts`, `recents`, `top`, `add:<id>`, `remove:<id>` or
+ * `clear`; calls cancelled while they wait are recorded in [cancelled] too. The recent chats are a list the changes act
+ * on.
  */
 class FakeSearchRepository : SearchRepository {
     val calls = mutableListOf<String>()
@@ -24,6 +25,7 @@ class FakeSearchRepository : SearchRepository {
     var onSearchChats: (String) -> Flow<Outcome<ImmutableList<Chat>>> = { flow { emit(found()) } }
     var onSearchContacts: suspend (String) -> Outcome<ImmutableList<Chat>> = { found() }
     var onSearchPublicChats: suspend (String) -> Outcome<ImmutableList<Chat>> = { found() }
+    var onContacts: suspend () -> Outcome<ImmutableList<Chat>> = { found() }
     var onSearchMessages: suspend (String, String?) -> Outcome<FoundMessages> = { _, _ ->
         Outcome.Success(FoundMessages(persistentListOf(), nextOffset = null, totalCount = null))
     }
@@ -45,6 +47,8 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun searchContacts(query: String) = record("contacts:$query") { onSearchContacts(query) }
 
     override suspend fun searchPublicChats(query: String) = record("public:$query") { onSearchPublicChats(query) }
+
+    override suspend fun contacts() = record("allContacts") { onContacts() }
 
     override suspend fun searchMessages(
         query: String,

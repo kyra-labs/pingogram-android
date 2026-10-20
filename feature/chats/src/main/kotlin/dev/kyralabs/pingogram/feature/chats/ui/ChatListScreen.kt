@@ -53,6 +53,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
@@ -66,6 +67,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewStates
 import kotlinx.collections.immutable.ImmutableList
@@ -89,7 +91,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Selection mode**: the floating navigation bar steps aside ([HideNavigationBar]) for the [SelectionToolbar] in
  *   its place, and the list ends clear of the toolbar on every window size. Back (predictive, with the toolbar
  *   following the gesture) and the top bar's close button leave it.
- * - **Snackbars** show above the floating bar or toolbar; the delete confirmation is a dialog ([DeleteChatDialog]).
+ * - **New chat** (Chats tab only): the [NewChatButton] at the bottom end, above the floating navigation bar or in the
+ *   list pane, collapsing while the list scrolls towards its end; it hides in selection mode. The list's end keeps
+ *   clear of it. "No chats yet" has a button for the same screen.
+ * - **Snackbars** show above the floating bar or toolbar, and the "New chat" button; the delete confirmation is a
+ *   dialog ([DeleteChatDialog]).
  * - **Open chat**: beside the conversation of [openChatId] (the list pane on expanded windows), that chat's row looks
  *   and reads as selected ([ChatListItem]); not in selection mode, whose own selection the toolbar acts on.
  * - **Header**: [header] shows at the top of the sheet, above the list, which does not scroll it away: the request to
@@ -112,13 +118,26 @@ internal fun ChatListScreen(
     val backProgress = rememberSelectionBack(enabled = selection != null) { onEvent(ChatListEvent.ClearSelection) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val folderSwitch = remember { FolderSwitch() }
+    val newChatButton = rememberNewChatButtonState()
     Box(modifier) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier =
+                Modifier
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .nestedScroll(newChatButton.nestedScrollConnection),
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack) },
             snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = {
+                if (state.kind == ChatListKind.Chats) {
+                    NewChatButton(
+                        state = newChatButton,
+                        visible = selection == null,
+                        onClick = { onEvent(ChatListEvent.NewChat) },
+                    )
+                }
+            },
             contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
         ) { innerPadding ->
             ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header)
@@ -176,7 +195,8 @@ private fun ChatListBody(
 ) {
     val state = rememberShownList(uiState, listState, folderSwitch)
     val animateRows = folderSwitch.animateRows
-    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+    ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
+        val contentPadding = rememberClearOfNewChatButton(sheetPadding, state.kind)
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
             Box(
@@ -205,6 +225,7 @@ private fun ChatListBody(
                             ChatListEmpty(
                                 kind = state.kind,
                                 isFolder = content.isFolder,
+                                onNewChat = { onEvent(ChatListEvent.NewChat) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -495,11 +516,16 @@ private fun Modifier.listRow(
             )
     }
 
+/**
+ * The empty archive, folder or Chats tab; the Chats tab's has a "New chat" button ([onNewChat]), the screen's next
+ * step (`docs/DESIGN_SYSTEM.md` §6, Empty states).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChatListEmpty(
     kind: ChatListKind,
     isFolder: Boolean,
+    onNewChat: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -532,6 +558,14 @@ private fun ChatListEmpty(
                 title = stringResource(R.string.chat_list_empty_title),
                 body = stringResource(R.string.chat_list_empty_body),
                 modifier = modifier,
+                action = {
+                    Button(onClick = onNewChat) {
+                        Text(
+                            text = stringResource(R.string.new_chat),
+                            style = MaterialTheme.typography.labelLargeEmphasized,
+                        )
+                    }
+                },
             )
         }
     }

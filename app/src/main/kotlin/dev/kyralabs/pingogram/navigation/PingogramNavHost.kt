@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.MainGraph
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.ui.theme.SharedAxisDistance
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughEnter
 import dev.kyralabs.pingogram.core.ui.theme.fadeThroughExit
@@ -41,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
+import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
 import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
@@ -69,7 +71,8 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * The `NavHost` is a [SharedTransitionLayout], whose scope goes to the destinations through
  * [LocalSharedTransitionScope], and each destination that shares content provides its own animated visibility scope
  * ([ProvideNavAnimatedVisibilityScope]): the conversation and the media viewer share their photos, videos and GIFs
- * (the container transform of `sharedMediaBounds`).
+ * (the container transform of `sharedMediaBounds`), and the Chats tab's "New chat" button grows into the New chat
+ * screen (`containerTransform`).
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -195,6 +198,7 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
                     onOpenArchive = { navController.navigate(ArchiveRoute) { launchSingleTop = true } },
                     onOpenChat = openChat,
                     onOpenMedia = openMedia,
+                    onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
                 )
             }
         }
@@ -216,6 +220,16 @@ private fun NavGraphBuilder.mainGraph(navController: NavHostController) {
             },
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+        // A contact's chat takes the New chat screen's place, as in Google Messages: back returns to the chat list.
+        newChatScreen(
+            onBack = { navController.popBackStack() },
+            onOpenChat = { chatId ->
+                navController.navigate(ChatRoute(chatId)) {
+                    popUpTo<NewChatRoute> { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
         // The chat messages were forwarded to goes above the conversation they came from, so back returns there.
         chatScreen(
             onBack = { navController.popBackStack() },

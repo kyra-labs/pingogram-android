@@ -56,11 +56,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   version and license. Tap one to read the full license text, which you can select and copy, and to open its
   website. The list is made from the app's own build, so it always matches what you installed, and it works
   offline.
+- Push notifications for builds with Google Play services (the "gms" build, not yet published): new messages arrive
+  through Firebase Cloud Messaging even when Pingogram is closed. Telegram encrypts each push for your device, so
+  Google only sees that something arrived. The GitHub releases stay free of Google's services.
 - Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
   opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
   comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
   or files with a caption "Hide captions" leaves the captions out. An album is forwarded whole. A snackbar confirms
   it, and when you forwarded to one other chat, opens that chat.
+- A "New chat" button on the chat list. It shrinks to an icon while you scroll down and grows back when you scroll
+  up, and opens a New chat screen that grows out of it, with your contacts to start a conversation with. New group,
+  New channel and New contact are listed there and come in a later version. An empty chat list offers the same
+  button.
 - Passcode lock: Privacy and security → Passcode lock asks for a PIN of 4 to 8 digits, or a password, whenever you
   come back to Pingogram: immediately, or after 1 minute, 5 minutes or an hour in the background, and always after a
   restart. On Android 10 and later you can unlock with your fingerprint or face instead. While locked, nothing of your

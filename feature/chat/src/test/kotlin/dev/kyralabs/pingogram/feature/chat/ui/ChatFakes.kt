@@ -552,6 +552,8 @@ class FakeSearchRepository : SearchRepository {
 
     override suspend fun searchContacts(query: String): Outcome<ImmutableList<Chat>> = unused()
 
+    override suspend fun contacts(): Outcome<ImmutableList<Chat>> = unused()
+
     override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> = unused()
 
     override suspend fun searchMessages(

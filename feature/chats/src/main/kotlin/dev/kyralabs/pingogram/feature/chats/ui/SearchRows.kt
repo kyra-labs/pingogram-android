@@ -51,8 +51,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * A chat, contact, public chat or recent chat in search (`docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the small
  * avatar, the name with the chat list's badges ([ChatTitle]), and the username or member count below, on the search
- * bar's container. A recent chat has a button that removes it ([onRemove]). Screen readers hear the row as one
- * ([chatDescription]), and the remove button on its own.
+ * bar's container, or on whatever [containerColor] the row lies on. A recent chat has a button that removes it
+ * ([onRemove]). Screen readers hear the row as one ([chatDescription]), and the remove button on its own.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -61,6 +61,7 @@ internal fun SearchChatRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onRemove: (() -> Unit)? = null,
+    containerColor: Color = rowContainerColor,
 ) {
     val title = item.title.resolve()
     val subtitle = item.subtitle?.resolve()
@@ -76,7 +77,7 @@ internal fun SearchChatRow(
                 size = MaterialTheme.sizes.avatarSmall,
                 isOnline = item.isOnline,
                 placeholderIcon = item.placeholderIcon,
-                onlineRingColor = rowContainerColor,
+                onlineRingColor = containerColor,
             )
         },
         trailingContent =

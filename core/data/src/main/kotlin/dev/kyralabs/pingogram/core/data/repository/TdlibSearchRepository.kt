@@ -15,10 +15,12 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import org.drinkless.tdlib.TdApi
+import java.text.Collator
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,7 +32,8 @@ import javax.inject.Singleton
  * - **Chats**: `searchChats` (TDLib's index of the chats on the device) and `searchChatsOnServer`, sent together; the
  *   local answer goes out first.
  * - **Contacts**: `searchContacts`, then `createPrivateChat` for each user, which TDLib answers from memory for a
- *   contact.
+ *   contact. All contacts: `getContacts`, their chats asked for all at once, then sorted by name in the user's
+ *   language.
  * - **Public chats**: `searchPublicChats`; TDLib leaves out the user's chats and contacts.
  * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset.
  * - **Recently found chats**: `searchRecentlyFoundChats` with an empty query, which returns the whole list (TDLib has
@@ -87,16 +90,23 @@ class TdlibSearchRepository
                 users.userIds
                     .toList()
                     .distinct()
-                    .mapNotNull { privateChat(it) }
+                    .mapNotNull { chatRepository.privateChat(client, it) }
                     .toImmutableList()
             }
         }
 
-        /** The private chat with user [userId], created on the device if needed; null if that fails. */
-        private suspend fun privateChat(userId: Long): Chat? {
-            val created = client.request(TdApi.CreatePrivateChat(userId, false)).getOrNull() ?: return null
-            return chatRepository.getChat(created.id).getOrNull()
-        }
+        override suspend fun contacts(): Outcome<ImmutableList<Chat>> =
+            client.request(TdApi.GetContacts()).map { users ->
+                val chats =
+                    coroutineScope {
+                        users.userIds
+                            .distinct()
+                            .map { async { chatRepository.privateChat(client, it) } }
+                            .awaitAll()
+                    }
+                val collator = Collator.getInstance()
+                chats.filterNotNull().sortedWith { a, b -> collator.compare(a.title, b.title) }.toImmutableList()
+            }
 
         override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> {
             val text = query.trim()
@@ -145,6 +155,15 @@ private suspend fun ChatRepository.chatsFound(found: Outcome<TdApi.Chats>): Outc
         is Outcome.Success -> Outcome.Success(chatsOf(found.value.chatIds.toList()))
         is Outcome.Failure -> found
     }
+
+/** The private chat with user [userId], created on the device by [client] if needed; null if that fails. */
+private suspend fun ChatRepository.privateChat(
+    client: TdlibClient,
+    userId: Long,
+): Chat? {
+    val created = client.request(TdApi.CreatePrivateChat(userId, false)).getOrNull() ?: return null
+    return getChat(created.id).getOrNull()
+}
 
 /** The chats with [ids], in their order; one that cannot be read (deleted meanwhile, a timeout) is left out. */
 private suspend fun ChatRepository.chatsOf(ids: List<Long>): ImmutableList<Chat> =

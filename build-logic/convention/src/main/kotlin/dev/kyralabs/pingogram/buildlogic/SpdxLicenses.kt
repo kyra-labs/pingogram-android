@@ -59,6 +59,15 @@ object SpdxLicenses {
                 name = "SIL Open Font License 1.1",
                 url = "https://openfontlicense.org",
             ),
+            // Google Play services and a few Firebase libraries, gms flavor only (docs/adr/0004-push-delivery.md): not
+            // open source and not on the SPDX list, hence SPDX's LicenseRef- form. The text is the one the SDK manager
+            // ships with every SDK package (package.xml, license "android-sdk-license"); the link shows Google's
+            // current version.
+            SpdxLicense(
+                id = "LicenseRef-Android-SDK",
+                name = "Android Software Development Kit License",
+                url = "https://developer.android.com/studio/terms",
+            ),
         )
 
     private val byId: Map<String, SpdxLicense> = all.associateBy(SpdxLicense::id)
