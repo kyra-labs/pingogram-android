@@ -59,6 +59,23 @@ internal fun previewText(
     return remember(parts) { parts.toPreviewText() }
 }
 
+/**
+ * This preview after [time] ("9:41 AM · Alice: Hi"), in tabular figures, for rows that show their time on the preview's
+ * line ([timeOnPreviewLine]). The description's [PreviewText.text] stays the same: it names the time elsewhere.
+ */
+internal fun PreviewText.after(time: String): PreviewText {
+    val styled =
+        buildAnnotatedString {
+            withStyle(SpanStyle(fontFeatureSettings = TABULAR_FIGURES)) { append(time) }
+            append(TIME_SEPARATOR)
+            append(this@after.styled)
+        }
+    return PreviewText(styled, text)
+}
+
+private const val TABULAR_FIGURES = "tnum"
+private const val TIME_SEPARATOR = " · "
+
 /** The label ("Draft:", "Alice:") and the text of a preview, each in its color. */
 private data class PreviewParts(
     val label: String? = null,

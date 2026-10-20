@@ -19,6 +19,6 @@ class ContactsScreenScreenshotTest {
 
     private fun capture(themeMode: ThemeMode) =
         captureRoboImage {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) { ContactsScreen() }
+            PingogramTheme(themeMode = themeMode, dynamicColor = false) { ContactsScreen(onOpenNewChat = {}) }
         }
 }

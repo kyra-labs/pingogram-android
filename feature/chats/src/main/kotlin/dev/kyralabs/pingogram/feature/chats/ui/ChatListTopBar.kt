@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -73,7 +74,8 @@ internal fun ChatListScreenTopBar(
  * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
  * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (64 dp) with
  * `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the screen (§7). The connection pill
- * ([ConnectionPill]) sits below the bar.
+ * ([ConnectionPill]) sits below the bar. The title, the pill and the tabs keep the window margin ([windowMargin]): on
+ * medium and wider windows they line up with the rows' content.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
@@ -88,10 +90,14 @@ internal fun ChatListTopBar(
     onClearSelection: () -> Unit,
 ) {
     val selectedCount = state.selection?.chatIds?.size
+    // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
+    val margin = windowMargin()
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
             TopAppBar(
+                // The bar insets its title by the compact margin itself.
+                modifier = Modifier.padding(horizontal = margin - MaterialTheme.spacing.windowMarginCompact),
                 title = {
                     SelectionTitle(
                         title = stringResource(R.string.chat_list_title),
@@ -107,17 +113,15 @@ internal fun ChatListTopBar(
                     ),
                 scrollBehavior = scrollBehavior,
             )
-            // In line with the title, which the bar insets by 16 dp, and with the tabs.
-            ConnectionPill(
-                connection = state.connection,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact),
-            )
+            // In line with the title and with the tabs.
+            ConnectionPill(connection = state.connection, modifier = Modifier.padding(horizontal = margin))
             if (state.folderTabs.isNotEmpty()) {
                 FolderTabs(
                     tabs = state.folderTabs,
                     selectedFolderId = state.selectedFolderId,
                     onSelect = onSelectFolder,
                     enabled = selectedCount == null,
+                    margin = margin,
                 )
             }
         }

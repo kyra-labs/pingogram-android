@@ -155,6 +155,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   button.
 - On tablets and other wide windows, the chat list and the open chat each sit in their own rounded panel, and a
   handle between them resizes the list. With no chat open, the empty panel lines up with the list.
+- Tap the Chats tab while you're on it to jump back to the top of the chat list. The highlight behind the selected
+  tab in the floating bar now grows out from its middle.
+- The Contacts tab has a title bar and a rounded panel like the Chats tab, says plainly that contacts are coming in a
+  later version, and offers "New chat", which lists your contacts in the meantime.
+- Empty and error screens feel calmer: the shape behind the picture turns gently now and then (it stays still when
+  animations are turned off), and errors show a soft rounded shape instead of a spiky one.
+- With very large text, the chat list shows each chat's time at the start of the message preview instead of beside
+  the name, so long names are no longer cut short.
+- On tablets and other wide windows, the chat list's title, connection status and folder tabs line up with the chats
+  below them.
 - Messages are tidier, as in Google Messages: a run of messages from one person shows the time only under the last
   one. Tap any message to see its time, and tap it again to hide it. TalkBack still reads every message's time.
 - Message text sits a little closer to the sides of its bubble, so more fits on a line.

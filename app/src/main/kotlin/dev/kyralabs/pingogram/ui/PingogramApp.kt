@@ -38,7 +38,9 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -86,6 +88,9 @@ import dev.kyralabs.pingogram.navigation.topLevelDestination
  * [chatToOpen] (from a notification) is opened above the chat list once the account is logged in, then reported to
  * [onChatOpened]; nobody logged in drops it ([PingogramNavHost]).
  *
+ * Tapping the tab that is already selected, in the floating bar or the rail, scrolls its screen back to the top: the
+ * shell reports it through [tabReselection] ([LocalTabReselection]) instead of navigating.
+ *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
@@ -95,6 +100,7 @@ fun PingogramApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     navigationBarVisibility: NavigationBarVisibility = remember { NavigationBarVisibility() },
+    tabReselection: TabReselection = remember { TabReselection() },
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
 ) {
@@ -127,7 +133,7 @@ fun PingogramApp(
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
-                navigationItems = { PingogramNavigationItems(navController, adaptiveType) },
+                navigationItems = { PingogramNavigationItems(navController, adaptiveType, tabReselection) },
                 navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
                 // The scaffold shows its primary action even without navigation.
                 primaryActionContent = { if (showRail) RailSearchButton(adaptiveType, searchOpen, search, openSearch) },
@@ -137,6 +143,7 @@ fun PingogramApp(
                         LocalNavigationBarInsets provides
                             if (floatingBarSpace) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
                         LocalNavigationBarVisibility provides navigationBarVisibility,
+                        LocalTabReselection provides tabReselection,
                     ) {
                         AppContent(uiState, navController, search, chatToOpen, onChatOpened)
                     }
@@ -145,7 +152,8 @@ fun PingogramApp(
                         FloatingNavigationBar(
                             visible = floatingBarSlot && !navigationBarVisibility.isHidden,
                             selected = barTab,
-                            onSelect = { navController.navigateToTopLevelDestination(it) },
+                            // The bar shows only on a tab itself.
+                            onSelect = { navController.selectTab(it, currentTab, tabReselection) },
                             onSearch = openSearch,
                             searchOpen = searchOpen,
                             search = search,
@@ -239,6 +247,22 @@ private fun ResetSearchWhenSignedOut(
     LaunchedEffect(uiState, search) { if (uiState == MainActivityUiState.SignedOut) search.isDocked = false }
 }
 
+/**
+ * Goes to the tab of [destination], or, if the user is on it already ([currentTab]: the tab itself, not a screen pushed
+ * above it), tells its screen to go back to the top ([tabReselection]).
+ */
+private fun NavController.selectTab(
+    destination: TopLevelDestination,
+    currentTab: TopLevelDestination?,
+    tabReselection: TabReselection,
+) {
+    if (destination == currentTab) {
+        tabReselection.reselect(destination.route)
+    } else {
+        navigateToTopLevelDestination(destination)
+    }
+}
+
 /** The last tab the user was on, which the floating bar keeps showing while a pushed screen hides it. */
 private class LastTab {
     var tab: TopLevelDestination? = null
@@ -272,12 +296,14 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
 
 /**
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only
- * the items and never the `NavHost` content.
+ * the items and never the `NavHost` content. Tapping the item of the tab the user is on, not a screen pushed above it,
+ * reports it to [tabReselection], whose screen scrolls back to the top.
  */
 @Composable
 private fun PingogramNavigationItems(
     navController: NavController,
     navigationSuiteType: NavigationSuiteType,
+    tabReselection: TabReselection,
 ) {
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentEntry?.destination
@@ -285,7 +311,9 @@ private fun PingogramNavigationItems(
         val selected = currentDestination.isInHierarchy(destination)
         NavigationSuiteItem(
             selected = selected,
-            onClick = { navController.navigateToTopLevelDestination(destination) },
+            onClick = {
+                navController.selectTab(destination, currentDestination.topLevelDestination(), tabReselection)
+            },
             icon = {
                 Icon(
                     painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),

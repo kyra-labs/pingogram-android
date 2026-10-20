@@ -18,6 +18,7 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,7 +45,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * One chat in a chat list (`REQUIREMENTS.md` FR-L2, `docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the avatar, the
  * name with its badges, a one-line preview ([ChatPreviewText]), and the time with the unread badges at the end
- * ([ChatMeta]). For the main list, the archive and folders alike; swipe actions and selection wrap or extend it.
+ * ([ChatMeta]). At large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
+ * column is only as wide as the badges and the name keeps most of its line; the row stays two lines tall. The preview
+ * stays one plain text: the list item reads its baselines while it measures, to tell one line from several. For the
+ * main list, the archive and folders alike; swipe actions and selection wrap or extend it.
  *
  * Everything shown is in [item], mapped by the ViewModel: the row resolves texts and builds the preview's styled text,
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
@@ -88,8 +92,10 @@ internal fun ChatListItem(
     // Built in the semantics blocks, so only when something reads the semantics tree.
     val resources = LocalResources.current
     val leading = @Composable { ChatAvatar(item, title, selected, open) }
-    val trailing = @Composable { ChatMeta(item) }
-    val supporting = @Composable { ChatPreviewText(preview) }
+    val timeOnPreviewLine = timeOnPreviewLine()
+    val shownPreview = if (timeOnPreviewLine) remember(preview, item.time) { preview.after(item.time) } else preview
+    val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
+    val supporting = @Composable { ChatPreviewText(shownPreview) }
     val headline = @Composable { ChatTitle(title, item.isSecret, item.badge, item.isMuted, item.isUnread) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
