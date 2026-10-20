@@ -53,6 +53,11 @@ data class Chat(
      * restricts everything in the read-only service chats).
      */
     val permissions: ChatPermissions,
+    /**
+     * Who new messages in the chat are sent as, which the user can change (send-as, `REQUIREMENTS.md` FR-C5): the
+     * user, a channel they own, or the group itself for an anonymous admin. Null where the user cannot choose.
+     */
+    val messageSender: MessageSender? = null,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

@@ -56,6 +56,7 @@ object ChatFixtures {
         lastReadOutboxMessageId: Long = 0,
         draft: ChatDraft? = null,
         permissions: ChatPermissions = ChatPermissions.All,
+        messageSender: MessageSender? = null,
     ) = Chat(
         id = id,
         type = type,
@@ -74,6 +75,7 @@ object ChatFixtures {
         hasProtectedContent = false,
         messageAutoDeleteTime = 0,
         permissions = permissions,
+        messageSender = messageSender,
     )
 
     val groupChat = chat(id = GROUP_CHAT, type = ChatType.BasicGroup(BASIC_GROUP_ID), title = "Group")

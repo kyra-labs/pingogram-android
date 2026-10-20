@@ -41,6 +41,7 @@ abstract class ChatViewModelHarness {
     protected val messageActions = FakeMessageActionRepository()
     protected val attachments = FakeAttachmentRepository()
     protected val voiceNotes = FakeVoiceNoteRepository()
+    protected val sendAs = FakeSendAsRepository()
     protected val sponsored = FakeSponsoredMessageRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
@@ -97,6 +98,7 @@ abstract class ChatViewModelHarness {
                 audioPlayer = player,
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
+                sendAsRepository = sendAs,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

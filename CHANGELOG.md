@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Send as a channel: in groups and channels where you can post as a channel you own or anonymously, the composer
+  starts with the avatar of who your messages go out as. Tap it to choose your account, one of your channels or
+  "Anonymous admin"; the choice is kept for the chat. Channels that only Telegram Premium users can post as are shown
+  but cannot be chosen.
 - Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
   default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
   and later the choice is the same as in Android's own app language settings, which the page also opens; on Android

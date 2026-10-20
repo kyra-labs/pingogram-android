@@ -584,9 +584,11 @@ class FakeUserRepository : UserRepository {
 
     override val users: Flow<ImmutableMap<Long, User>> = userMap
 
-    override fun user(id: Long): Flow<User?> = unused()
+    override fun user(id: Long): Flow<User?> = userMap.map { it[id] }.distinctUntilChanged()
 
-    override suspend fun getUser(id: Long): Outcome<User> = unused()
+    /** A user of [setUsers], else [DomainError.NotFound]. */
+    override suspend fun getUser(id: Long): Outcome<User> =
+        userMap.value[id]?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
 }
 
 class FakeGroupRepository : GroupRepository {

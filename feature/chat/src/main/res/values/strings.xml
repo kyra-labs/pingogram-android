@@ -142,6 +142,16 @@
     <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
     <string name="composer_bar_show">Show message</string>
 
+    <!-- Send-as (FR-C5): the composer's avatar of who new messages go out as, for screen readers. -->
+    <string name="send_as_button">Send as %1$s</string>
+    <string name="send_as_title">Send messages as</string>
+    <string name="send_as_account">Your account</string>
+    <string name="send_as_channel">Channel</string>
+    <string name="send_as_anonymous">Anonymous admin</string>
+    <string name="send_as_group">Group</string>
+    <!-- A sender only Telegram Premium users can choose. Informational only, never an offer. -->
+    <string name="send_as_needs_premium">Needs Telegram Premium</string>
+
     <!-- Voice messages (the composer's microphone, in the send button's place while the field is empty) -->
     <!-- The microphone, for screen readers, which record without holding it. -->
     <string name="voice_record">Record voice message</string>

@@ -88,6 +88,7 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
@@ -108,7 +109,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
  * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
- * [onVoiceEvent]).
+ * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
+ * picker through [onSendAs].
  */
 @Composable
 internal fun ChatBottomBar(
@@ -124,6 +126,7 @@ internal fun ChatBottomBar(
     onAttach: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
+    onSendAs: () -> Unit = {},
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
@@ -156,6 +159,7 @@ internal fun ChatBottomBar(
                         onAttach,
                         VoiceInput(recording, onVoiceEvent, drag),
                         now,
+                        onSendAs,
                     )
                 }
             }
@@ -195,7 +199,8 @@ private fun BarArea(
  * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
  * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field. While the
  * field is empty the microphone ([RecordButton]) is in the send button's place; while it records, the recording bar
- * ([RecordingBar]) takes the place of the attach button and the field.
+ * ([RecordingBar]) takes the place of the attach button and the field. Before the attach button, the send-as avatar
+ * ([SendAsButton]) where the user can choose who they send as ([onSendAs]).
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
@@ -208,6 +213,7 @@ private fun Composer(
     onAttach: () -> Unit,
     voice: VoiceInput,
     now: () -> Instant = Instant::now,
+    onSendAs: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val edit = composer.bar as? ComposerBar.Edit
@@ -235,6 +241,7 @@ private fun Composer(
         if (recording != null) {
             RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
         } else {
+            composer.sendAs?.let { SendAsButton(it, onSendAs) }
             Appearing(visible = composer.attachOptions.isNotEmpty()) { AttachButton(onAttach) }
             ComposerField(
                 text = text,

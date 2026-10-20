@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toChatPermissions
 import dev.kyralabs.pingogram.core.data.mapper.toChatPosition
 import dev.kyralabs.pingogram.core.data.mapper.toChatPositions
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.toProfilePhoto
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatList
@@ -377,6 +378,10 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
 
         is TdApi.UpdateChatPermissions -> {
             ChatChange(update.chatId) { it.copy(permissions = update.permissions.toChatPermissions()) }
+        }
+
+        is TdApi.UpdateChatMessageSender -> {
+            ChatChange(update.chatId) { it.copy(messageSender = update.messageSenderId?.toMessageSender()) }
         }
 
         else -> {
