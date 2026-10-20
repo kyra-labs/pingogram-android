@@ -5,6 +5,9 @@ keystore.properties
 *.keystore
 !app/debug.keystore
 keystore.b64
+# Firebase configuration of the gms flavor (docs/OWNER_SETUP.md §8b), and any service-account key by mistake
+google-services.json
+*firebase-adminsdk*.json
 
 # TDLib binaries (downloaded by Gradle)
 core/tdlib/libs/

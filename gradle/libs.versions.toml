@@ -28,8 +28,14 @@ assertj = "3.27.7"
 # (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
 coil = "3.6.3"
 composeBom = "2026.09.00"
+# FCM push in the gms flavor only (REQUIREMENTS.md FR-N3, approved by the owner; docs/adr/0004-push-delivery.md): the BOM
+# pins firebase-messaging and the Firebase and Play services libraries it brings. No other Firebase product.
+firebaseBom = "35.0.2"
 # detekt-cli runs in its own JVM (pingogram.detekt), so its embedded Kotlin compiler never meets ours.
 detekt = "1.23.8"
+# The Google Services plugin turns the owner's git-ignored google-services.json into the resources Firebase reads;
+# :app applies it only when the file exists (pingogram.android.gms, docs/adr/0004-push-delivery.md).
+googleServices = "4.5.0"
 gradleVersionsPlugin = "0.54.0"
 hilt = "2.60.1"
 # javax.inject annotations (@Qualifier for core:common's @Dispatcher); the API's only release
@@ -100,6 +106,9 @@ androidx-work-runtime = { group = "androidx.work", name = "work-runtime", versio
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "androidxWork" }
 # AsyncImage and the singleton ImageLoader; brings coil-core (okio, coroutines). No network artifact (see coil above).
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+# Version from firebase-bom.
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 # Test-only: HiltTestApplication, @HiltAndroidTest and @BindValue for the Robolectric tests of :app
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
@@ -113,6 +122,8 @@ junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engi
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+# Task.await() for Firebase's tasks (gms only); firebase-messaging brings it at this version anyway.
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
@@ -131,6 +142,7 @@ pingogram-detekt-rules = { group = "dev.kyralabs.pingogram.buildlogic", name = "
 # Build-logic dependencies (compileOnly in build-logic/convention)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
 compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
+google-services-gradlePlugin = { group = "com.google.gms", name = "google-services", version.ref = "googleServices" }
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
 ktlint-gradlePlugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlintGradlePlugin" }
@@ -147,6 +159,7 @@ android-library = { id = "com.android.library", version.ref = "androidGradlePlug
 android-lint = { id = "com.android.lint", version.ref = "androidGradlePlugin" }
 android-test = { id = "com.android.test", version.ref = "androidGradlePlugin" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxBenchmark" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -160,6 +173,7 @@ roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 pingogram-android-application = { id = "pingogram.android.application" }
 pingogram-android-compose = { id = "pingogram.android.compose" }
 pingogram-android-feature = { id = "pingogram.android.feature" }
+pingogram-android-gms = { id = "pingogram.android.gms" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-licenses = { id = "pingogram.android.licenses" }

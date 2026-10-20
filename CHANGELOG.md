@@ -56,6 +56,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   version and license. Tap one to read the full license text, which you can select and copy, and to open its
   website. The list is made from the app's own build, so it always matches what you installed, and it works
   offline.
+- Push notifications for builds with Google Play services (the "gms" build, not yet published): new messages arrive
+  through Firebase Cloud Messaging even when Pingogram is closed. Telegram encrypts each push for your device, so
+  Google only sees that something arrived. The GitHub releases stay free of Google's services.
 - Forward messages: "Forward" in a message's actions (where Telegram allows it; protected content can't be forwarded)
   opens a sheet with your chats, Saved Messages first, and a search. Pick one or more chats you can write in, add a
   comment if you like, and send. "Hide sender's name" sends copies without "Forwarded from", and for photos, videos
