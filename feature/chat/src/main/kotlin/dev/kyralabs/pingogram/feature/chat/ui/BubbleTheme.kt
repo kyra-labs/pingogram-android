@@ -27,16 +27,25 @@ internal class BubbleStyle(
 )
 
 /**
- * The [BubbleStyle] of both sides and the bubble [shapes] by side and place in a group, built once per theme for the
- * whole list.
+ * The [BubbleStyle] of both sides and of a selected bubble (selection mode, either side), and the bubble [shapes] by
+ * side and place in a group, built once per theme for the whole list.
  */
 @Immutable
 internal class BubbleTheme(
     val incoming: BubbleStyle,
     val outgoing: BubbleStyle,
+    val selected: BubbleStyle,
     val shapes: MessageBubbleShapes,
 ) {
-    fun styleOf(isOutgoing: Boolean): BubbleStyle = if (isOutgoing) outgoing else incoming
+    fun styleOf(
+        isOutgoing: Boolean,
+        isSelected: Boolean = false,
+    ): BubbleStyle =
+        when {
+            isSelected -> selected
+            isOutgoing -> outgoing
+            else -> incoming
+        }
 }
 
 @Composable
@@ -44,15 +53,19 @@ internal fun rememberBubbleTheme(): BubbleTheme {
     val bubbles = MaterialTheme.pingogramColors
     val incoming = bubbles.incomingBubble
     val outgoing = bubbles.outgoingBubble
+    val selected = bubbles.selectedBubble
     val incomingText =
         rememberFormattedTextStyles(codeBackground = incoming.block, spoilerColor = incoming.secondaryContent)
     val outgoingText =
         rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.secondaryContent)
+    val selectedText =
+        rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.secondaryContent)
     val shapes = MaterialTheme.shapes
-    return remember(incoming, outgoing, incomingText, outgoingText, shapes) {
+    return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes) {
         BubbleTheme(
             incoming = BubbleStyle(incoming, incomingText),
             outgoing = BubbleStyle(outgoing, outgoingText),
+            selected = BubbleStyle(selected, selectedText),
             shapes = MessageBubbleShapes(shapes),
         )
     }

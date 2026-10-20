@@ -2,17 +2,19 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import kotlinx.collections.immutable.ImmutableMap
 
 /**
  * What the user does to a message of the conversation (`REQUIREMENTS.md` FR-C6, FR-C7): what TDLib allows for it, its
- * reactions, editing, deleting, pinning, forwarding and sending it again. Nothing is kept here: the changes reach the
- * message through TDLib's updates, which `MessageRepository.history` applies.
+ * reactions, editing, deleting, pinning, forwarding, sending it again and reporting it. Nothing is kept here: the
+ * changes reach the message through TDLib's updates, which `MessageRepository.history` applies.
  *
  * Every call fails with a `DomainError`: `FloodWait`, `Network` for a request that gets no answer in time, `NotFound`
  * for a message or chat TDLib does not know, or another one when TDLib refuses it.
@@ -131,6 +133,19 @@ interface MessageActionRepository {
         comment: FormattedText?,
         options: ForwardOptions,
     ): Outcome<Unit>
+
+    /**
+     * Reports [messageIds] of chat [chatId] to Telegram's moderators: first with [ReportOptionId.Initial], then with
+     * the option the user chose among those TDLib asked for ([ChatReportResult.OptionRequired]), and with the user's
+     * [text] where TDLib asked for one ([ChatReportResult.TextRequired]). Each message must be one TDLib lets be
+     * reported (`MessageProperties.canBeReported`). One call per step the user takes: never repeated on its own.
+     */
+    suspend fun report(
+        chatId: Long,
+        messageIds: List<Long>,
+        option: ReportOptionId,
+        text: String = "",
+    ): Outcome<ChatReportResult>
 
     companion object {
         /** How many messages [forward] takes at once (td_api.tl `forwardMessages.message_ids`). */

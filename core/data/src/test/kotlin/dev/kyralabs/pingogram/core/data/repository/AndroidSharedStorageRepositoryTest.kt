@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.media.ui.files
+package dev.kyralabs.pingogram.core.data.repository
 
 import android.content.ContentProvider
 import android.content.ContentUris
@@ -6,6 +6,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -22,30 +23,33 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
- * [AndroidMediaFileActions] on Robolectric: on Android 10 and later the copy goes through `MediaStore` (a fake media
- * provider records what it is told), without any permission, pending until written and removed if the copy fails;
- * the copy into the public album of Android 8–9 keeps files of the same name.
+ * [AndroidSharedStorageRepository] on Robolectric: on Android 10 and later the copy goes through `MediaStore` (a fake
+ * media provider records what it is told), without any permission, pending until written and removed if the copy fails;
+ * the copy into the public folder of Android 8–9 keeps files of the same name. Saving to Downloads goes into
+ * Download/Pingogram the same way.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-class AndroidMediaFileActionsTest {
+@Config(sdk = [34])
+class AndroidSharedStorageRepositoryTest {
     @get:Rule
     val folder = TemporaryFolder()
 
     private val context = RuntimeEnvironment.getApplication()
     private val bytes = byteArrayOf(1, 2, 3, 4, 5)
 
-    private fun TestScope.actions() = AndroidMediaFileActions(context, StandardTestDispatcher(testScheduler))
+    private fun TestScope.actions() = AndroidSharedStorageRepository(context, StandardTestDispatcher(testScheduler))
 
     private fun file(name: String): File = folder.newFile(name).apply { writeBytes(bytes) }
 
     @Test
     fun `Android 10 and later need no permission`() {
-        assertFalse(AndroidMediaFileActions(context, StandardTestDispatcher()).needsStoragePermission())
+        assertFalse(AndroidSharedStorageRepository(context, StandardTestDispatcher()).needsStoragePermission())
     }
 
     @Test
@@ -55,7 +59,7 @@ class AndroidMediaFileActionsTest {
             val written = ByteArrayOutputStream()
             shadowOf(context.contentResolver).registerOutputStream(IMAGE_ITEM, written)
 
-            val saved = actions().saveToGallery(GalleryItem(file("file_50.jpg").path, "image/jpeg", "Pingogram_50"))
+            val saved = actions().saveToGallery(SharedFile(file("file_50.jpg").path, "image/jpeg", "Pingogram_50"))
 
             assertTrue(saved)
             val (collection, values) = store.inserted.single()
@@ -76,7 +80,7 @@ class AndroidMediaFileActionsTest {
             val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
             shadowOf(context.contentResolver).registerOutputStream(VIDEO_ITEM, ByteArrayOutputStream())
 
-            val saved = actions().saveToGallery(GalleryItem(file("file_51.mp4").path, "video/mp4", "Pingogram_51"))
+            val saved = actions().saveToGallery(SharedFile(file("file_51.mp4").path, "video/mp4", "Pingogram_51"))
 
             assertTrue(saved)
             val (collection, values) = store.inserted.single()
@@ -92,7 +96,7 @@ class AndroidMediaFileActionsTest {
             val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
             shadowOf(context.contentResolver).registerOutputStream(IMAGE_ITEM, ByteArrayOutputStream())
 
-            actions().saveToGallery(GalleryItem(file("file_52").path, "image/jpeg", "Pingogram_52"))
+            actions().saveToGallery(SharedFile(file("file_52").path, "image/jpeg", "Pingogram_52"))
 
             val values = store.inserted.single().second
             assertEquals("Pingogram_52.jpg", values.getAsString(MediaStore.MediaColumns.DISPLAY_NAME))
@@ -106,7 +110,7 @@ class AndroidMediaFileActionsTest {
             shadowOf(context.contentResolver).registerOutputStream(IMAGE_ITEM, ByteArrayOutputStream())
             val missing = File(folder.root, "gone.jpg").path
 
-            val saved = actions().saveToGallery(GalleryItem(missing, "image/jpeg", "Pingogram_53"))
+            val saved = actions().saveToGallery(SharedFile(missing, "image/jpeg", "Pingogram_53"))
 
             assertFalse(saved)
             assertEquals(listOf(IMAGE_ITEM), store.deleted)
@@ -119,20 +123,20 @@ class AndroidMediaFileActionsTest {
             val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
             store.refuses = true
 
-            val saved = actions().saveToGallery(GalleryItem(file("file_54.jpg").path, "image/jpeg", "Pingogram_54"))
+            val saved = actions().saveToGallery(SharedFile(file("file_54.jpg").path, "image/jpeg", "Pingogram_54"))
 
             assertFalse(saved)
         }
 
-    // Android 8–9 (Robolectric's runtime for them is not among the build's) copy into the public album directory.
+    // Android 8–9 (Robolectric's runtime for them is not among the build's) copy into the public folder.
 
     @Test
-    fun `the album copy makes its directory and keeps a file of the same name`() {
+    fun `the folder copy makes its directory and keeps a file of the same name`() {
         val album = File(folder.root, "Pictures/Pingogram")
         val source = file("file_55.jpg")
 
-        val first = copyIntoAlbum(source, album, "Pingogram_55.jpg")
-        val second = copyIntoAlbum(source, album, "Pingogram_55.jpg")
+        val first = copyIntoFolder(source, album, "Pingogram_55.jpg")
+        val second = copyIntoFolder(source, album, "Pingogram_55.jpg")
 
         assertEquals(File(album, "Pingogram_55.jpg"), first)
         assertEquals(File(album, "Pingogram_55 (1).jpg"), second)
@@ -140,7 +144,63 @@ class AndroidMediaFileActionsTest {
         assertArrayEquals(bytes, second.readBytes())
     }
 
+    @Test
+    fun `a document goes into Download-Pingogram under its own name`() =
+        runTest {
+            val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
+            val written = ByteArrayOutputStream()
+            shadowOf(context.contentResolver).registerOutputStream(DOWNLOAD_ITEM, written)
+
+            val saved =
+                actions().saveToDownloads(
+                    SharedFile(file("Report 2026.pdf").path, "application/pdf", "Report 2026"),
+                )
+
+            assertTrue(saved)
+            val (collection, values) = store.inserted.single()
+            assertEquals(DOWNLOADS, collection)
+            assertEquals("Report 2026.pdf", values.getAsString(MediaStore.MediaColumns.DISPLAY_NAME))
+            assertEquals("application/pdf", values.getAsString(MediaStore.MediaColumns.MIME_TYPE))
+            assertEquals("Download/Pingogram", values.getAsString(MediaStore.MediaColumns.RELATIVE_PATH))
+            assertEquals(1, values.getAsInteger(MediaStore.MediaColumns.IS_PENDING))
+            assertArrayEquals(bytes, written.toByteArray())
+            assertEquals(
+                0,
+                store.updated
+                    .single()
+                    .second
+                    .getAsInteger(MediaStore.MediaColumns.IS_PENDING),
+            )
+        }
+
+    @Test
+    fun `a photo saved to Downloads goes there too, not into the gallery`() =
+        runTest {
+            val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
+            shadowOf(context.contentResolver).registerOutputStream(DOWNLOAD_ITEM, ByteArrayOutputStream())
+
+            actions().saveToDownloads(SharedFile(file("file_56.jpg").path, "image/jpeg", "Pingogram_56"))
+
+            val (collection, values) = store.inserted.single()
+            assertEquals(DOWNLOADS, collection)
+            assertEquals("Pingogram_56.jpg", values.getAsString(MediaStore.MediaColumns.DISPLAY_NAME))
+        }
+
+    @Test
+    fun `a file of unknown type without an extension is saved as binary`() =
+        runTest {
+            val store = Robolectric.setupContentProvider(FakeMediaStore::class.java, MediaStore.AUTHORITY)
+            shadowOf(context.contentResolver).registerOutputStream(DOWNLOAD_ITEM, ByteArrayOutputStream())
+
+            actions().saveToDownloads(SharedFile(file("file_57").path, "application/x-unknown-kind", "notes"))
+
+            val values = store.inserted.single().second
+            assertEquals("notes.bin", values.getAsString(MediaStore.MediaColumns.DISPLAY_NAME))
+        }
+
     private companion object {
+        val DOWNLOADS: Uri = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val DOWNLOAD_ITEM: Uri = ContentUris.withAppendedId(DOWNLOADS, 1)
         val IMAGES: Uri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         val VIDEOS: Uri = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
@@ -151,8 +211,9 @@ class AndroidMediaFileActionsTest {
 }
 
 /**
- * The media provider's side of what [AndroidMediaFileActions] does: the items inserted (refused while [refuses]),
- * updated and deleted, by URI with their values. Writing goes through the content resolver's registered streams.
+ * The media provider's side of what [AndroidSharedStorageRepository] does: the items inserted (refused while
+ * [refuses]), updated and deleted, by URI with their values. Writing goes through the content resolver's registered
+ * streams.
  */
 class FakeMediaStore : ContentProvider() {
     val inserted = mutableListOf<Pair<Uri, ContentValues>>()
