@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -37,6 +38,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceS
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.LanguageRoute as LanguageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as NotificationExceptionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
@@ -51,8 +53,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRou
 
 /**
  * Adds the Settings tab, [SettingsRoute], to the graph. Its rows call [onOpen] with the route of the page they open,
- * which the app pushes above the tab: [EditProfileRoute], [AppearanceRoute], [DataStorageRoute], [AboutRoute] or
- * [PrivacySecurityRoute]. Once Edit profile saved the profile ([popBackStackAfterProfileSaved]), the tab says so.
+ * which the app pushes above the tab: [EditProfileRoute], [AppearanceRoute], [NotificationSettingsRoute],
+ * [DataStorageRoute], [LanguageRoute], [AboutRoute] or [PrivacySecurityRoute]. Once Edit profile saved the profile
+ * ([popBackStackAfterProfileSaved]), the tab says so.
  */
 fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
     composable<SettingsRoute> { entry ->
@@ -68,8 +71,8 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
 
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
- * [NotificationSettingsRoute], [DataStorageRoute], [AboutRoute] and [PrivacySecurityRoute], and the ones these push
- * above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
+ * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
+ * ones these push above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
  * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
@@ -102,6 +105,7 @@ fun NavGraphBuilder.settingsPages(
         }
     }
     composable<DataStorageRoute> { DataStorageScreenRoute(onBack = onBack) }
+    composable<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     composable<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     composable<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
@@ -189,6 +193,7 @@ private val SettingsPage.route: Any
             SettingsPage.Appearance -> AppearanceRoute
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
+            SettingsPage.Language -> LanguageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
         }

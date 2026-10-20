@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
+  default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
+  and later the choice is the same as in Android's own app language settings, which the page also opens; on Android
+  8 to 12 Pingogram keeps it itself.
 - Two-step verification in Settings → Privacy and security: set a password with a hint and a recovery email (confirmed
   with the code Telegram sends there), change it, turn it off, or change the recovery email, each after entering the
   current password. A forgotten password is reset with a code sent to the recovery email, or, without one, after
@@ -104,6 +108,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   phone pauses a recording, which waits for you to go on, send or delete it.
 
 ### Changed
+- Pingogram now shows every screen in its own languages only: built-in texts of the libraries it uses (the date
+  picker, for example) no longer switch to your phone's language when Pingogram has no translation for it, and the
+  download is a little smaller.
 - Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
   under the search field replaces the loading animations in every section, a section that failed shows its error in
   a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.

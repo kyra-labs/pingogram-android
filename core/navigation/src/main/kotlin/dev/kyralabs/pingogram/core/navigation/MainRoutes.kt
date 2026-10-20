@@ -36,6 +36,13 @@ data object EditProfileRoute
 data object AppearanceRoute
 
 /**
+ * The app's language (`REQUIREMENTS.md` FR-S1, §6.4): the system's or one of the languages Pingogram ships,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object LanguageRoute
+
+/**
  * Data and storage settings (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes and clearing its cache,
  * `:feature:settings`, pushed above the Settings tab.
  */

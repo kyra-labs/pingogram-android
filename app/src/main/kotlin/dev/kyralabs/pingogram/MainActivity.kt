@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
@@ -19,6 +20,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
@@ -26,8 +28,20 @@ import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
+import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
+import dev.kyralabs.pingogram.language.contextInLanguage
+import dev.kyralabs.pingogram.language.inAppLanguageOf
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * The only activity. Draws edge to edge behind transparent system bars; Compose handles the insets
@@ -37,6 +51,12 @@ import dev.kyralabs.pingogram.ui.PingogramApp
  * The theme follows the Appearance settings ([MainActivityViewModel.appearance]), and so do the system bars' icons:
  * light on a dark theme, dark on a light one, whatever the system's own setting. Nothing is composed until the settings
  * are read, so the app never draws in a theme the user did not choose; the splash screen covers that wait.
+ *
+ * The app's language (Settings → Language) is Android's from Android 13 on, which creates the activity again when it
+ * changes. Before, the activity takes it itself: its context is in the language chosen when it is attached
+ * ([attachBaseContext], [contextInLanguage]); a language read only later (the first activity of a process, a few
+ * milliseconds after it starts) or changed in Settings creates it again ([recreate]) before anything is composed in
+ * another language.
  *
  * A notification or a conversation shortcut opens a chat through the intent that starts the activity, or, when it runs
  * already, through [onNewIntent] ([NotificationIntents.chatIdOf]). A restored activity (rotation, process death) does
@@ -56,6 +76,26 @@ import dev.kyralabs.pingogram.ui.PingogramApp
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
 
+    @Inject
+    lateinit var appLanguageRepository: PlatformAppLanguageRepository
+
+    /** Before Android 13: the language [attachBaseContext] gave this activity, null for the system's. */
+    private var attachedLanguageTag: String? = null
+
+    /** Whether the activity is in the app's language; before Android 13, false until the language is read. */
+    private lateinit var languageApplied: StateFlow<Boolean>
+
+    override fun attachBaseContext(newBase: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            super.attachBaseContext(newBase)
+        } else {
+            // Not read yet: the system's languages, which the activity keeps if no other language was chosen.
+            val language = inAppLanguageOf(newBase)
+            attachedLanguageTag = language?.languageTag
+            super.attachBaseContext(contextInLanguage(newBase, language))
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
         val splashScreen = installSplashScreen()
@@ -65,11 +105,13 @@ class MainActivity : ComponentActivity() {
         splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
         enableEdgeToEdge()
         if (savedInstanceState == null) openChatOf(intent)
+        languageApplied = followAppLanguage()
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             val lock by viewModel.lock.collectAsStateWithLifecycle()
+            val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
             val settings = appearance
-            if (settings != null && lock != LockState.Unknown) {
+            if (settings != null && lock != LockState.Unknown && inAppLanguage) {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
@@ -128,6 +170,22 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         openChatOf(intent)
+    }
+
+    /**
+     * Before Android 13, creates the activity again once the app's language differs from the one it was attached in,
+     * and returns whether it is in it; from Android 13 on, Android does both.
+     */
+    private fun followAppLanguage(): StateFlow<Boolean> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return MutableStateFlow(true)
+        val inAppLanguage = appLanguageRepository.inAppLanguage
+        lifecycleScope.launch {
+            inAppLanguage.filterNotNull().first { it.languageTag != attachedLanguageTag }
+            recreate()
+        }
+        return inAppLanguage
+            .map { it != null && it.languageTag == attachedLanguageTag }
+            .stateIn(lifecycleScope, SharingStarted.Eagerly, initialValue = false)
     }
 
     /** Opens the chat [intent] names, if it is a notification's or a conversation shortcut's. */

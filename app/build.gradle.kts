@@ -16,6 +16,21 @@ android {
         applicationId = "dev.kyralabs.pingogram"
     }
 
+    // Only the languages Pingogram ships (docs/PERFORMANCE.md §8): those of res/xml/locales_config.xml, which Android
+    // 13+ and Settings → Language list. The libraries' translations of other languages are left out, so a screen never
+    // mixes Pingogram's English with, say, a date picker in the system's German, and the APK is smaller.
+    androidResources {
+        localeFilters += shippedLanguages(file("src/main/res/xml/locales_config.xml"))
+    }
+
+    // Settings → Language switches among these languages at run time, so a bundle installs all of them, not only the
+    // device's (Play would otherwise leave out the others, and Pingogram downloads nothing from Play).
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -104,8 +119,27 @@ dependencies {
 
     // Navigation and view model tests run the real repositories on FakeTdlibClient, bound with Hilt (docs/TESTING.md).
     testImplementation(projects.core.testing)
+    // The language repository's tests keep the app's settings in a DataStore of their own.
+    testImplementation(libs.androidx.datastore.preferences)
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)
 }
+
+/**
+ * The languages a locale config lists (the `android:name` of each `<locale>`, BCP 47 tags) as resource qualifiers:
+ * "en", "pt-rBR" for "pt-BR", "b+sr+Latn" for "sr-Latn".
+ */
+fun shippedLanguages(localeConfig: File): List<String> =
+    Regex("""<locale\s+android:name="([^"]+)"""")
+        .findAll(localeConfig.readText())
+        .map { match ->
+            val parts = match.groupValues[1].split('-')
+            when {
+                parts.size == 1 -> parts[0]
+                parts.size == 2 && parts[1].length == 2 -> "${parts[0]}-r${parts[1]}"
+                else -> parts.joinToString("+", prefix = "b+")
+            }
+        }.toList()
+        .also { check(it.isNotEmpty()) { "$localeConfig lists no languages" } }
