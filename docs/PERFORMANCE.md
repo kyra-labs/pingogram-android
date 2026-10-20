@@ -120,8 +120,12 @@ regresses by more than 10%.
   WorkManager under 15 min.
 - Foreground service (`dataSync`) only while an upload/download the user started is in progress;
   stopped within 5 s of completion.
-- `gms` flavor: FCM push (`registerDevice`) so TDLib can sleep; `foss` uses TDLib's
-  keep-alive (documented in Settings → Notifications as the trade-off).
+- `gms` flavor: FCM push (`registerDevice`) so TDLib can sleep. `foss` has only TDLib's connection, which lives as
+  long as Android keeps the process: by default notifications arrive while the app runs. "Keep connected" (Settings →
+  Notifications, off by default, `docs/adr/0003-keep-connected-foreground-service.md`) keeps the process and the
+  connection alive with a `specialUse` foreground service; the switch says under it that this uses more battery, and
+  the background battery budget of §1 is measured with it off. It adds no polling or alarm: the wakeups are TDLib's
+  keep-alive and the updates Telegram sends.
 - Respect Doze and App Standby buckets; never request battery-optimization exemptions by default.
 
 ## 7. Network & data

@@ -13,10 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import org.w3c.dom.Element
-import java.io.File
-import java.util.Properties
-import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * The merged manifest requests exactly the platform permissions the owner approved (CLAUDE.md). Without
@@ -26,7 +22,9 @@ import javax.xml.parsers.DocumentBuilderFactory
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
  * (approved 2026-10-19); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
- * left out.
+ * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
+ * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
+ * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver).
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons.
  */
@@ -46,7 +44,11 @@ class AppManifestTest {
 
         // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
         // not requested.
-        assertEquals(setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS), requested)
+        assertEquals(
+            setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS) +
+                FlavorManifest.requestedPermissions,
+            requested,
+        )
     }
 
     @Test
@@ -63,9 +65,8 @@ class AppManifestTest {
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
                 Manifest.permission.WAKE_LOCK to "30",
-                Manifest.permission.FOREGROUND_SERVICE to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
-            ),
+            ) + FlavorManifest.declaredPermissions,
             declared,
         )
     }
@@ -112,29 +113,7 @@ class AppManifestTest {
         }
     }
 
-    /** The merged manifest Robolectric runs, as the Android Gradle plugin's test config names it. */
-    private fun mergedManifest(): Element {
-        val config = Properties()
-        javaClass.classLoader!!.getResourceAsStream("com/android/tools/test_config.properties").use(config::load)
-        val file = File(config.getProperty("android_merged_manifest"))
-        return DocumentBuilderFactory
-            .newInstance()
-            .apply { isNamespaceAware = true }
-            .newDocumentBuilder()
-            .parse(file)
-            .documentElement
-    }
-
-    private fun Element.elements(tag: String): List<Element> {
-        val nodes = getElementsByTagName(tag)
-        return (0 until nodes.length).map { nodes.item(it) as Element }
-    }
-
-    private fun Element.androidAttribute(name: String): String = getAttributeNS(ANDROID_NAMESPACE, name)
-
     private companion object {
-        const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
-
         /** What the test libraries (androidx.test's activity scenarios) add to the unit tests' manifest only. */
         val TEST_ONLY_PERMISSIONS = setOf("android.permission.REORDER_TASKS")
         const val GET_META_DATA = PackageManager.GET_META_DATA
