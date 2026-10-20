@@ -40,7 +40,7 @@
          in the foreground only, while its sheet is open: there is no background location permission and no live
          location. The sheet explains why before Android asks; both are asked together, so Android 12 and later let the
          user pick an approximate location, which is then what is sent. The platform's LocationManager finds it, no
-         Google Play services (docs/adr/0004-platform-location-manager.md). -->
+         Google Play services (docs/adr/0005-platform-location-manager.md). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Devices without GPS (Chromebooks, some tablets) still install Pingogram, and find their location through the

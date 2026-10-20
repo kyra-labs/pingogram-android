@@ -33,7 +33,7 @@ class PingogramApplication :
     @Inject
     lateinit var notificationRenderer: NotificationRenderer
 
-    /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" in `foss`. */
+    /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
     lateinit var backgroundConnection: BackgroundConnection
 
@@ -49,7 +49,8 @@ class PingogramApplication :
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
-        // Starts or stops the "Keep connected" service as its setting and the login change (foss; nothing in gms).
+        // foss: starts or stops the "Keep connected" service as its setting and the login change; gms: registers the
+        // push token with Telegram at every login and deletes it at logout.
         backgroundConnection.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.

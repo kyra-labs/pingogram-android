@@ -138,6 +138,15 @@ Options set via `setOption`:
 
 Other useful options: `ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
 
+### Push notifications (`gms` only)
+
+`registerDevice(deviceTokenFirebaseCloudMessaging(token, encrypt = true), [])` at every login and start while logged
+in, and for each new FCM token; `processPushNotification(payload)` for each push (it may come before TDLib is fully
+started). TDLib keeps the token, re-registers it at every start by itself and answers an unchanged registration
+locally; it does not unregister on `logOut`, so the app deletes the FCM token instead. Telegram sends the pushes only
+with the FCM credentials uploaded for the `api_id` at my.telegram.org, and only on the production DC
+(`docs/adr/0004-push-delivery.md`).
+
 ## Authorization state machine
 
 ```

@@ -26,6 +26,7 @@ ktlint {
 dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.compose.gradlePlugin)
+    compileOnly(libs.google.services.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.ktlint.gradlePlugin)
@@ -69,6 +70,10 @@ gradlePlugin {
         register("androidFeature") {
             id = libs.plugins.pingogram.android.feature.pluginId
             implementationClass = "AndroidFeatureConventionPlugin"
+        }
+        register("androidGms") {
+            id = libs.plugins.pingogram.android.gms.pluginId
+            implementationClass = "AndroidGmsConventionPlugin"
         }
         register("androidHilt") {
             id = libs.plugins.pingogram.android.hilt.pluginId

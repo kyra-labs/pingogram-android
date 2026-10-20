@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.pingogram.android.roborazzi)
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.pingogram.android.licenses)
+    // Firebase for the gms flavor's push notifications, and the check that keeps foss free of it.
+    alias(libs.plugins.pingogram.android.gms)
 }
 
 android {
@@ -40,13 +42,14 @@ android {
         }
     }
 
-    // foss: no Google services, the default for GitHub releases. gms: FCM push (M3).
+    // foss: no Google services, the default for GitHub releases. gms: FCM push (docs/adr/0004-push-delivery.md).
     flavorDimensions += "distribution"
     productFlavors {
         create("foss") {
             dimension = "distribution"
             isDefault = true
         }
+        // google-services.json for its Firebase project: app/src/gms/ (pingogram.android.gms, docs/OWNER_SETUP.md).
         create("gms") {
             dimension = "distribution"
         }
@@ -93,6 +96,11 @@ dependencies {
     implementation(projects.feature.media)
     implementation(projects.feature.profile)
     implementation(projects.feature.settings)
+
+    // FCM push, gms only (docs/adr/0004-push-delivery.md); foss never sees Firebase or Play services.
+    "gmsImplementation"(platform(libs.firebase.bom))
+    "gmsImplementation"(libs.firebase.messaging)
+    "gmsImplementation"(libs.kotlinx.coroutines.play.services)
 
     // Navigation and view model tests run the real repositories on FakeTdlibClient, bound with Hilt (docs/TESTING.md).
     testImplementation(projects.core.testing)
