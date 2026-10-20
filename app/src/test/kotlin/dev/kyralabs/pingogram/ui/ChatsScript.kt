@@ -69,6 +69,10 @@ internal object ChatsScript {
         tdlib.on(TdApi.CloseChat::class, TdResult.Success(TdApi.Ok()))
     }
 
+    /** The message of [olderMessage] in [chatId]'s history, e.g. for search to find. */
+    fun olderMessageOf(chatId: Long): TdApi.Message =
+        histories.getValue(chatId).first { (it.content as? TdApi.MessageText)?.text?.text == olderMessage[chatId] }
+
     /** The `openChat` and `closeChat` requests sent, in order: `+101` opened chat 101, `-101` closed it. */
     fun openAndClose(tdlib: FakeTdlibClient): List<String> =
         tdlib.sent.mapNotNull { function ->

@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -107,6 +108,31 @@ class FormattedTextAnnotationsTest {
             listOf(Styled("code", monospace), Styled("pre", monospace), Styled("kotlin", monospace)),
             annotated.styled(),
         )
+    }
+
+    @Test
+    fun `text that draws its blocks marks code and pre instead of giving them a background`() {
+        val text = "code pre kotlin"
+        val annotated =
+            FormattedText(
+                text,
+                listOf(
+                    entity(text, "code", TextEntityType.Code),
+                    entity(text, "pre", TextEntityType.Pre),
+                    entity(text, "kotlin", TextEntityType.PreCode("kotlin")),
+                ).toImmutableList(),
+            ).toAnnotatedString(styles, drawsBlocks = true)
+
+        val monospace = SpanStyle(fontFamily = FontFamily.Monospace)
+        assertEquals(
+            listOf(Styled("code", monospace), Styled("pre", monospace), Styled("kotlin", monospace)),
+            annotated.styled(),
+        )
+        assertEquals(
+            listOf("code" to TextBlock.CODE, "pre" to TextBlock.PRE, "kotlin" to TextBlock.PRE),
+            annotated.blocks(),
+        )
+        assertTrue(annotated.hasTextBlocks())
     }
 
     @Test
@@ -262,6 +288,28 @@ class FormattedTextAnnotationsTest {
         assertEquals(listOf("link"), annotated.links().map { it.first })
     }
 
+    @Test
+    fun `text that draws its blocks hides a spoiler as transparent text over a marked block`() {
+        val text = "a secret"
+        val annotated =
+            FormattedText(text, listOf(entity(text, "secret", TextEntityType.Spoiler)).toImmutableList())
+                .toAnnotatedString(styles, drawsBlocks = true)
+
+        assertEquals(listOf(Styled("secret", SpanStyle(color = Color.Transparent))), annotated.styled())
+        assertEquals(listOf("secret" to TextBlock.SPOILER), annotated.blocks())
+    }
+
+    @Test
+    fun `a revealed spoiler draws no block`() {
+        val text = "a secret"
+        val annotated =
+            FormattedText(text, listOf(entity(text, "secret", TextEntityType.Spoiler)).toImmutableList())
+                .toAnnotatedString(styles, spoilersRevealed = true, drawsBlocks = true)
+
+        assertEquals(emptyList<Pair<String, String>>(), annotated.blocks())
+        assertFalse(annotated.hasTextBlocks())
+    }
+
     // Offsets
 
     @Test
@@ -364,6 +412,9 @@ class FormattedTextAnnotationsTest {
         spanStyles.map {
             Styled(text.substring(it.start, it.end), it.item)
         }
+
+    private fun AnnotatedString.blocks(): List<Pair<String, String>> =
+        getStringAnnotations(TEXT_BLOCK_TAG, 0, length).map { text.substring(it.start, it.end) to it.item }
 
     private fun AnnotatedString.links(): List<Pair<String, LinkAnnotation>> =
         getLinkAnnotations(0, length).map { text.substring(it.start, it.end) to it.item }

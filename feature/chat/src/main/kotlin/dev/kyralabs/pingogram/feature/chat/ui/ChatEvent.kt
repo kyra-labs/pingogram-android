@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
@@ -153,6 +154,12 @@ sealed interface ChatEvent {
     ) : ChatEvent {
         override fun toString() = "AttachContact(…)"
     }
+
+    /** The "Location" sheet's send button: [location], the device's, is sent as [options] say. */
+    data class SendLocation(
+        val location: DeviceLocation,
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
 
     /** The remove button of item [key] of the preview. */
     data class RemoveAttachment(

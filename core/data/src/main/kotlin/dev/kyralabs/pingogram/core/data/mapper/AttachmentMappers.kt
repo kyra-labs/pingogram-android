@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import org.drinkless.tdlib.TdApi
 
@@ -75,6 +76,19 @@ internal const val MAX_ALBUM_SIZE = 10
 /** `inputMessageContact` of this contact, with no vCard. */
 internal fun Contact.toInputMessageContact(): TdApi.InputMessageContact =
     TdApi.InputMessageContact(TdApi.Contact(phoneNumber, firstName, lastName, "", userId))
+
+/**
+ * `inputMessageLocation` of this location, a point (TDLib sends live locations as `inputMessageLiveLocation`): its
+ * accuracy within td_api.tl's 0–1500 m, 0 where Android gave none, as Telegram reads 0 as unknown. An approximate
+ * location (about 2 km on Android 12 and later) goes as accurate to 1.5 km, the most Telegram takes.
+ */
+internal fun DeviceLocation.toInputMessageLocation(): TdApi.InputMessageLocation {
+    val accuracy = accuracyMeters?.toDouble()?.coerceIn(0.0, MAX_HORIZONTAL_ACCURACY) ?: 0.0
+    return TdApi.InputMessageLocation(TdApi.Location(location.latitude, location.longitude, accuracy))
+}
+
+/** td_api.tl `location.horizontal_accuracy`: 0–1500 m. */
+private const val MAX_HORIZONTAL_ACCURACY = 1500.0
 
 /**
  * `inputMessagePoll` of this poll: plain question and options (only Premium users may add custom emoji), no

@@ -6,6 +6,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.ui.ArchivedChatsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
@@ -62,15 +63,25 @@ fun NavGraphBuilder.newChatScreen(
 }
 
 /**
- * Adds global search, [SearchDestination], to the graph; [onBack] leaves it. A chat it found calls [onOpenChat] with
- * its id, a message it found [onOpenMessage] with its chat and its id.
+ * Adds global search, [SearchDestination], to the graph: the full-screen search of compact and medium windows
+ * (`docs/DESIGN_SYSTEM.md` §6 "Global search"), which the app's search button grows into (a container transform
+ * through the app's shared transition scope, [state]); [onBack] leaves it. A chat it found calls [onOpenChat] with its
+ * id, a message it found [onOpenMessage] with its chat and its id.
  */
 fun NavGraphBuilder.searchScreen(
+    state: GlobalSearchState,
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
 ) {
     composable<SearchDestination> {
-        SearchRoute(onBack = onBack, onOpenChat = onOpenChat, onOpenMessage = onOpenMessage)
+        ProvideNavAnimatedVisibilityScope(this) {
+            SearchRoute(
+                onBack = onBack,
+                onOpenChat = onOpenChat,
+                onOpenMessage = onOpenMessage,
+                modifier = Modifier.searchTransform(state, FullBleedShape),
+            )
+        }
     }
 }

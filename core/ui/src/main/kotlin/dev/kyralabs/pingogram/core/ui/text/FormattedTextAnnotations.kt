@@ -32,6 +32,9 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
  *   nothing yet. Custom emoji show the regular emoji the text holds for them; dates stay as written.
  * - **Spoilers** are hidden as blocks of [FormattedTextStyles.spoilerColor] until [spoilersRevealed]; tapping a hidden
  *   one calls [onSpoilerClick] (a [LinkAnnotation.Clickable] tagged [SPOILER_TAG]), and links inside it stay inert.
+ * - **Blocks**: with [drawsBlocks], code, pre blocks and hidden spoilers get no span background. They are marked with
+ *   [TEXT_BLOCK_TAG] annotations instead (the hidden spoilers' text turned transparent), and [textBlocks] draws them
+ *   as rounded shapes behind the laid-out text. A span background is a rectangle and cannot be rounded.
  *
  * Building it costs a pass over the entities and an allocation per span: build it once per text and theme and keep
  * it, never on every recomposition (`docs/PERFORMANCE.md` §4). Listeners end up in the result, so pass ones that stay
@@ -42,6 +45,7 @@ fun FormattedText.toAnnotatedString(
     spoilersRevealed: Boolean = false,
     onSpoilerClick: LinkInteractionListener? = null,
     onLinkClick: LinkInteractionListener? = null,
+    drawsBlocks: Boolean = false,
 ): AnnotatedString {
     val ranges = entities.mapNotNull { it.rangeIn(text) }
     if (ranges.isEmpty()) return AnnotatedString(text)
@@ -52,8 +56,9 @@ fun FormattedText.toAnnotatedString(
         .Builder(text)
         .apply {
             for (range in ranges) {
-                val style = range.type.spanStyle(styles)
+                val style = range.type.spanStyle(styles, drawsBlocks)
                 if (style != null) addStyle(style, range.start, range.end)
+                if (drawsBlocks) addBlock(range.type.block(), range.start, range.end)
                 val url = range.type.url(text.substring(range.start, range.end))
                 if (url != null && hiddenSpoilers.none { it.overlaps(range) }) {
                     addLink(LinkAnnotation.Url(url, linkStyles, onLinkClick), range.start, range.end)
@@ -61,9 +66,15 @@ fun FormattedText.toAnnotatedString(
             }
             addDecorations(ranges)
             // Last, so that a hidden spoiler covers every other style within it.
-            val hidden = SpanStyle(color = styles.spoilerColor, background = styles.spoilerColor)
+            val hidden =
+                if (drawsBlocks) {
+                    SpanStyle(color = Color.Transparent)
+                } else {
+                    SpanStyle(color = styles.spoilerColor, background = styles.spoilerColor)
+                }
             for (spoiler in hiddenSpoilers) {
                 addStyle(hidden, spoiler.start, spoiler.end)
+                if (drawsBlocks) addBlock(TextBlock.SPOILER, spoiler.start, spoiler.end)
                 if (onSpoilerClick != null) {
                     // Its own styles, or the link would get the default link look over the hidden text.
                     val link = LinkAnnotation.Clickable(SPOILER_TAG, TextLinkStyles(style = hidden), onSpoilerClick)
@@ -92,8 +103,31 @@ private fun TextEntity.rangeIn(text: String): EntityRange? {
     return if (end > start) EntityRange(start, end, type) else null
 }
 
-/** The style of an entity of this type; null for those that only link, decorate, hide, or show as written. */
-private fun TextEntityType.spanStyle(styles: FormattedTextStyles): SpanStyle? =
+/** Marks [start] to [end] as a block of [kind] ([TextBlock]) for [textBlocks] to draw; nothing without a [kind]. */
+private fun AnnotatedString.Builder.addBlock(
+    kind: String?,
+    start: Int,
+    end: Int,
+) {
+    if (kind != null) addStringAnnotation(TEXT_BLOCK_TAG, kind, start, end)
+}
+
+/** The block an entity of this type draws behind its text, if any; hidden spoilers are added on their own. */
+private fun TextEntityType.block(): String? =
+    when (this) {
+        TextEntityType.Code -> TextBlock.CODE
+        TextEntityType.Pre, is TextEntityType.PreCode -> TextBlock.PRE
+        else -> null
+    }
+
+/**
+ * The style of an entity of this type; null for those that only link, decorate, hide, or show as written. Code gets
+ * no background when the text [drawsBlocks] itself.
+ */
+private fun TextEntityType.spanStyle(
+    styles: FormattedTextStyles,
+    drawsBlocks: Boolean,
+): SpanStyle? =
     when (this) {
         TextEntityType.Bold -> {
             SpanStyle(fontWeight = styles.boldWeight)
@@ -104,7 +138,10 @@ private fun TextEntityType.spanStyle(styles: FormattedTextStyles): SpanStyle? =
         }
 
         TextEntityType.Code, TextEntityType.Pre, is TextEntityType.PreCode -> {
-            SpanStyle(fontFamily = FontFamily.Monospace, background = styles.codeBackground)
+            SpanStyle(
+                fontFamily = FontFamily.Monospace,
+                background = if (drawsBlocks) Color.Unspecified else styles.codeBackground,
+            )
         }
 
         TextEntityType.BlockQuote, TextEntityType.ExpandableBlockQuote -> {

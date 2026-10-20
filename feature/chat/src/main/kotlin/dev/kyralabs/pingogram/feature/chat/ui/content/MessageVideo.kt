@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
 import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.domain.model.VideoNote
+import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -158,7 +159,8 @@ internal fun VideoNote.still() = VideoStill(length, length, minithumbnail, thumb
 /**
  * The [still] of a video, a GIF or a video message, cropped to fill [displaySize]: its blurred minithumbnail and over
  * it its thumbnail (when that is a picture, see [asPicture]), faded in once loaded. With [hidden], the minithumbnail
- * only. The caller sizes and clips it.
+ * only. The caller sizes and clips it. In dark theme both are dimmed to 90% of their brightness, as all media in the
+ * conversation (`docs/DESIGN_SYSTEM.md` §10).
  */
 @Composable
 internal fun VideoThumbnail(
@@ -167,8 +169,9 @@ internal fun VideoThumbnail(
     hidden: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val dim = MaterialTheme.pingogramColors.mediaColorFilter
     Box(modifier) {
-        MinithumbnailPlaceholder(still.minithumbnail, displaySize, Modifier.matchParentSize())
+        MinithumbnailPlaceholder(still.minithumbnail, displaySize, Modifier.matchParentSize(), dim)
         val picture = still.thumbnail?.asPicture()
         if (!hidden && picture != null) {
             val density = LocalDensity.current
@@ -178,6 +181,7 @@ internal fun VideoThumbnail(
                 heightPx = with(density) { displaySize.height.roundToPx() },
                 alpha = rememberImageAlpha(picture.file.id),
                 modifier = Modifier.matchParentSize(),
+                colorFilter = dim,
             )
         }
     }

@@ -14,6 +14,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
   and later the choice is the same as in Android's own app language settings, which the page also opens; on Android
   8 to 12 Pingogram keeps it itself.
+- Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
+  they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
+  at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
+  in the background, and works without Google Play services. If you allow only an approximate location, that is what
+  is sent, and the sheet offers to ask for the precise one; if location is turned off, a snackbar takes you to the
+  setting.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
@@ -82,11 +88,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
   After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
   remove it. Changing or turning off the passcode asks for it first.
+- Search filters: chips under the search field narrow the results to chats, contacts, messages, media (photos and
+  videos) or links. Media and Links also work without typing anything, showing every photo and video or every link
+  in your chats.
+- On tablets and other wide screens, search opens in the chat list's place next to the conversation, and a chat or
+  message you find opens beside it. Back closes that conversation first, then search.
 
 ### Changed
 - Pingogram now shows every screen in its own languages only: built-in texts of the libraries it uses (the date
   picker, for example) no longer switch to your phone's language when Pingogram has no translation for it, and the
   download is a little smaller.
+- Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
+  under the search field replaces the loading animations in every section, a section that failed shows its error in
+  a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a
   shaped icon, which turns into a warning sign when something needs fixing or Telegram asks you to wait. "Next" is a
   normal-sized button at the bottom right, with the other choice ("Log in with QR code", "Wrong number?", "Forgot
@@ -132,6 +146,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The media viewer's actions now sit in a floating toolbar at the bottom, each button named when you press and hold
   it, with further actions under "More options". On tablets the caption and the video controls no longer stretch
   across the whole screen.
+- In a chat, the name at the top is set a little bolder, and while someone is typing three dots pulse before "is
+  typing…". TalkBack announces when someone starts typing. The dots stay still when animations are turned off.
+- Code, code blocks and hidden spoilers in messages sit on rounded backgrounds instead of square ones, and a hidden
+  spoiler is a softer tinted block.
+- The button that jumps to the newest message is the regular size of a floating button, with the number of unread
+  messages on its corner.
+- In dark theme, photos, videos and GIFs in a chat are slightly dimmed so they don't glare; the media viewer still
+  shows them at full brightness.
+- Custom emoji reactions that haven't loaded show a soft placeholder instead of a dark dot, and stickers without an
+  emoji show a rounded placeholder while they load.
 
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the

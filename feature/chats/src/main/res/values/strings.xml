@@ -117,6 +117,13 @@
     <string name="search_placeholder">Search chats, people and messages</string>
     <string name="search_back">Back</string>
     <string name="search_clear">Clear search</string>
+    <!-- The filter chips under the search field: everything, or one kind of result. -->
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_chats">Chats</string>
+    <string name="search_filter_contacts">Contacts</string>
+    <string name="search_filter_messages">Messages</string>
+    <string name="search_filter_media">Media</string>
+    <string name="search_filter_links">Links</string>
     <!-- Section headers. -->
     <string name="search_section_people">People</string>
     <string name="search_section_recent">Recent</string>
@@ -125,6 +132,9 @@
     <!-- Public chats, channels and users found by username, outside the user's chats and contacts. -->
     <string name="search_section_global">Global search</string>
     <string name="search_section_messages">Messages</string>
+    <!-- The messages section under the Media and Links filters. -->
+    <string name="search_section_media">Photos and videos</string>
+    <string name="search_section_links">Links</string>
     <!-- Recent searches: the button that empties them, and the button that removes one (%1$s is its name). -->
     <string name="search_clear_recents">Clear all</string>
     <string name="search_remove_recent">Remove %1$s from recent searches</string>
@@ -144,6 +154,11 @@
     <!-- A query that found nothing: %1$s is the query. -->
     <string name="search_no_results_title">No results for “%1$s”</string>
     <string name="search_no_results_body">Check the spelling, or try other words.</string>
+    <!-- The Media or Links filter without a query, when the chats have none. -->
+    <string name="search_no_media_title">No photos or videos</string>
+    <string name="search_no_media_body">Photos and videos sent in your chats show up here.</string>
+    <string name="search_no_links_title">No links</string>
+    <string name="search_no_links_body">Messages with links in your chats show up here.</string>
     <string name="search_retry">Try again</string>
     <!-- A section that is still searching, for screen readers. -->
     <string name="search_searching">Searching…</string>

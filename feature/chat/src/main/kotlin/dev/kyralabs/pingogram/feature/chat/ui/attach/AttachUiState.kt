@@ -11,8 +11,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 /**
- * What the composer's attach menu offers (`REQUIREMENTS.md` FR-C5), in its order. Location and the recent photos
- * need permissions the app does not ask for; they come later.
+ * What the composer's attach menu offers (`REQUIREMENTS.md` FR-C5), in its order. The recent photos would need media
+ * permissions the app does not ask for (`REQUIREMENTS.md` §7): the Photo Picker serves instead.
  */
 enum class AttachOption {
     /** Photos and videos from the system's Photo Picker, sent as photos and videos (an album). */
@@ -23,6 +23,9 @@ enum class AttachOption {
 
     /** Any files from the system's document picker, sent as documents. */
     File,
+
+    /** The device's location, found and sent in a sheet of its own (`location/ShareLocationSheet`). */
+    Location,
 
     /** A phone number from the system's contact picker. */
     Contact,

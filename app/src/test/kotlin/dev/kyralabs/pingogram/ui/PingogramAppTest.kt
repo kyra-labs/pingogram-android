@@ -783,8 +783,10 @@ class PingogramAppTest {
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
     }
 
+    /** No tab of the navigation bar or rail; search's filter chips, selectable too, are checkboxes. */
     private fun assertNoNavigation() {
-        composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
+        val isChip = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+        composeRule.onAllNodes(isSelectable() and !isChip).assertCountEquals(0)
     }
 
     /** Waits for [id]'s text: the login flow and the chat list get their state from a background dispatcher. */
