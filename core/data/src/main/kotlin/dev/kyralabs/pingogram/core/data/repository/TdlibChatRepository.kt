@@ -6,7 +6,6 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
-import dev.kyralabs.pingogram.core.data.mapper.NotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
@@ -27,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient

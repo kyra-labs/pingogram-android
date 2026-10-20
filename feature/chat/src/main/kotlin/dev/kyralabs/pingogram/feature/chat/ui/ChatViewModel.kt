@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.os.SystemClock
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -31,6 +32,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -138,6 +140,11 @@ import java.util.Locale
  *   (after a confirmation), sending again and toggling reactions; and the [ChatUiState.shortcuts] screen readers get.
  * - **Forwarding** ([ChatForwarding]): the forward sheet ([forwardSheet], kept out of [uiState] so the chats it lists
  *   do not recompose the conversation), with its comment ([forwardComment]), and forwarding to the picked chats.
+ * - **Selection mode** ([ChatSelection], [ChatUiState.selection]): the selected messages, kept across process death,
+ *   and the selection toolbar's actions (copying them with their senders and times, forwarding, reporting and deleting
+ *   them all); it ends once they are copied, forwarded, reported or deleted.
+ * - **Reporting** ([ChatReporting], [ChatUiState.report]) a message or the selected ones, with the reasons Telegram
+ *   asks for and a comment ([reportComment]); **saving** a message's files to Downloads ([ChatSaving]).
  * - **Attach menu** ([ChatAttachments]): what the composer's attach button offers in this chat
  *   ([ComposerUiState.Available.attachOptions]); picked photos, videos and files in a preview
  *   ([ChatUiState.attachPreview]) with its caption ([attachCaption]), a photo from the camera, a contact and a poll
@@ -178,6 +185,7 @@ class ChatViewModel internal constructor(
     chatActionRepository: ChatActionRepository,
     fileRepository: FileRepository,
     searchRepository: SearchRepository,
+    sharedStorageRepository: SharedStorageRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -202,6 +210,7 @@ class ChatViewModel internal constructor(
         chatActionRepository: ChatActionRepository,
         fileRepository: FileRepository,
         searchRepository: SearchRepository,
+        sharedStorageRepository: SharedStorageRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -221,6 +230,7 @@ class ChatViewModel internal constructor(
         chatActionRepository,
         fileRepository,
         searchRepository,
+        sharedStorageRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -344,6 +354,7 @@ class ChatViewModel internal constructor(
                 history = history.first(),
                 myUserId = userRepository.myUserId.first(),
                 canWrite = uiState.value.composer is ComposerUiState.Available,
+                users = userRepository.users.first(),
             )
         }
     }
@@ -357,6 +368,38 @@ class ChatViewModel internal constructor(
             current = actionContext,
             onEffect = { effectChannel.trySend(it) },
             onForward = { forwarding.open(it) },
+            onSelect = { selection.select(it) },
+            onReport = { reporting.start(it) },
+            onSave = { saving.save(it) },
+            onSelectionDeleted = { selection.clear() },
+        )
+
+    private val selection =
+        ChatSelection(
+            chatId = chatId,
+            repository = messageActionRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            current = actionContext,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    private val reporting =
+        ChatReporting(
+            chatId = chatId,
+            repository = messageActionRepository,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+            onReported = { selection.clear() },
+        )
+
+    private val saving =
+        ChatSaving(
+            files = fileRepository,
+            storage = sharedStorageRepository,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
         )
 
     private val forwarding =
@@ -372,11 +415,20 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    /** The events of selection mode, reporting and saving. */
+    private val selectionEvents =
+        ChatSelectionEvents(selection, reporting, saving, messageActions, forwarding) {
+            messageRepository.history(chatId).first()
+        }
+
     /** The forward sheet; null while none is open. */
     val forwardSheet: StateFlow<ForwardSheet?> get() = forwarding.sheet
 
     /** The comment of the forward sheet, for its text field; kept like [composerText]. */
     val forwardComment: ComposerText get() = forwarding.comment
+
+    /** The comment of a report that asks for one, for its text field; kept like [composerText]. */
+    val reportComment: TextFieldState get() = reporting.comment
 
     /** The text the composer edits, for its text field; the view model keeps it across rotations. */
     val composerText: ComposerText get() = composer.text
@@ -502,6 +554,8 @@ class ChatViewModel internal constructor(
             .combine(files.uploadsOf(history)) { state, uploads -> state.copy(uploads = uploads) }
             .combine(playback.state) { state, playback -> state.copy(playback = playback) }
             .combine(sponsored.state(history)) { state, ads -> state.withSponsored(ads) }
+            .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
+            .combine(reporting.sheet) { state, report -> state.copy(report = report) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -525,79 +579,59 @@ class ChatViewModel internal constructor(
     fun onEvent(event: ChatEvent) {
         when (event) {
             ChatEvent.Started -> setOpen(true)
-
             ChatEvent.Stopped -> setOpen(false)
-
             is ChatEvent.NearOldestChanged -> window.onNearOldestChanged(event.isNearOldest)
-
             is ChatEvent.NearNewestChanged -> window.onNearNewestChanged(event.isNearNewest)
-
             ChatEvent.ShowNewest -> window.showNewest()
-
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
-
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
-
             ChatEvent.Retry -> retry()
-
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
-
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)
-
             is ChatEvent.DownloadFile -> files.download(event.fileId)
-
             is ChatEvent.CancelDownload -> files.cancelDownload(event.fileId)
-
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
-
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
-
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
-
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
-
             is ChatEvent.Send -> composer.send(event.options)
-
             is ChatEvent.ComposerFocusChanged -> composer.setFocused(event.isFocused)
-
-            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
-
-            is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
-
-            ChatEvent.ExpandReactions -> messageActions.showPicker(true)
-
-            ChatEvent.CollapseReactions -> messageActions.showPicker(false)
-
-            ChatEvent.DismissMessageActions -> messageActions.dismiss()
-
-            is ChatEvent.Reply -> messageActions.reply(event.messageId)
-
             ChatEvent.CancelReply -> composer.cancelReply()
-
-            is ChatEvent.Copy -> messageActions.copy(event.messageId)
-
-            is ChatEvent.Edit -> messageActions.edit(event.messageId)
-
             ChatEvent.CancelEdit -> composer.cancelEdit()
+            is SponsoredEvent -> sponsored.onEvent(event)
+            is SelectionEvent -> selectionEvents.onEvent(event)
+            is VoiceEvent -> recorder.onEvent(event)
+            else -> onMessageEvent(event)
+        }
+    }
 
+    /** The events of the message actions, the reactions and the forward sheet, which [onEvent] hands on. */
+    private fun onMessageEvent(event: ChatEvent) {
+        when (event) {
+            is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
+            is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
+            ChatEvent.ExpandReactions -> messageActions.showPicker(true)
+            ChatEvent.CollapseReactions -> messageActions.showPicker(false)
+            ChatEvent.DismissMessageActions -> messageActions.dismiss()
+            is ChatEvent.Reply -> messageActions.reply(event.messageId)
+            is ChatEvent.Copy -> messageActions.copy(event.messageId)
+            is ChatEvent.Edit -> messageActions.edit(event.messageId)
             is ChatEvent.Pin -> messageActions.pin(event.messageId, event.onlyForSelf)
-
             is ChatEvent.Unpin -> messageActions.unpin(event.messageId)
-
             is ChatEvent.Delete -> messageActions.delete(event.messageId)
-
             is ChatEvent.ConfirmDelete -> messageActions.confirmDelete(event.forEveryone)
-
             ChatEvent.DismissDelete -> messageActions.dismissDelete()
-
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
-
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
-
             is ChatEvent.Forward -> messageActions.forward(event.messageId)
-
             is ForwardEvent -> forwarding.onEvent(event)
+            else -> onAttachEvent(event)
+        }
+    }
 
+    /** The events of the attach menu, its previews and the poll form, which [onMessageEvent] hands on. */
+    private fun onAttachEvent(event: ChatEvent) {
+        when (event) {
             is ChatEvent.AttachMedia -> attachments.pickMedia(event.uris)
 
             is ChatEvent.AttachFiles -> attachments.pickFiles(event.uris)
@@ -623,9 +657,8 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.CancelUpload -> attachments.cancelUpload(event.messageIds)
 
-            is SponsoredEvent -> sponsored.onEvent(event)
-
-            is VoiceEvent -> recorder.onEvent(event)
+            // The other events are handled by onEvent and onMessageEvent.
+            else -> Unit
         }
     }
 

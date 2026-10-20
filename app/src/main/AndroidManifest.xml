@@ -20,7 +20,8 @@
          (approved by the owner on 2026-10-19); from Android 12 on it runs as an expedited job, so both stop at API 30.
          ACCESS_NETWORK_STATE serves only network constraints, which Pingogram's work has none of (TDLib queues
          requests while offline), and RECEIVE_BOOT_COMPLETED only reschedules work after a reboot, which its
-         short-lived work does not need: both are left out. Media3 ExoPlayer (feature:chat) declares
+         short-lived work does not need: both are left out. The foss flavor's manifest declares FOREGROUND_SERVICE for
+         every version and RECEIVE_BOOT_COMPLETED for its "Keep connected" service (src/foss/AndroidManifest.xml). Media3 ExoPlayer (feature:chat) declares
          ACCESS_NETWORK_STATE and WAKE_LOCK too; it plays only files TDLib downloaded and sets no wake mode. -->
     <uses-permission
         android:name="android.permission.WAKE_LOCK"

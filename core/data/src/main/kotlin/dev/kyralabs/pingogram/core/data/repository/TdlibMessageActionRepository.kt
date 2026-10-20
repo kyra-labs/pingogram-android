@@ -7,10 +7,13 @@ import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOption
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -28,7 +31,8 @@ import javax.inject.Singleton
  * history through TDLib's updates (`updateMessageInteractionInfo`, `updateMessageContent`, `updateMessageEdited`,
  * `updateMessageIsPinned`, `updateDeleteMessages`, `updateMessageSendFailed`), which `TdlibMessageRepository` applies.
  * TDLib applies reactions, deletions and pins at once, before Telegram confirms them; edits once Telegram has them.
- * Forwarded messages reach the target chat's history as new messages being sent (`updateNewMessage`).
+ * Forwarded messages reach the target chat's history as new messages being sent (`updateNewMessage`). Reports go to
+ * Telegram's moderators (`reportChat`), one request per step the user takes.
  */
 @Suppress("TooManyFunctions") // One function per message action of the interface, each a single TDLib request.
 @Singleton
@@ -52,6 +56,7 @@ class TdlibMessageActionRepository
                     canBeForwarded = properties.canBeForwarded,
                     canBeCopied = properties.canBeCopied,
                     canBeCopiedToSecretChat = properties.canBeCopiedToSecretChat,
+                    canBeReported = properties.canReportChat,
                 )
             }
 
@@ -231,6 +236,16 @@ class TdlibMessageActionRepository
             }
         }
 
+        override suspend fun report(
+            chatId: Long,
+            messageIds: List<Long>,
+            option: ReportOptionId,
+            text: String,
+        ): Outcome<ChatReportResult> =
+            client
+                .request(TdApi.ReportChat(chatId, option.bytes, messageIds.toLongArray(), text))
+                .map { it.toChatReportResult() }
+
         private companion object {
             /** Sent at once, with a notification: the forward sheet offers no options for that. */
             val NOW: TdApi.MessageSendOptions get() = SendOptions().toTdOptions()
@@ -245,6 +260,29 @@ class TdlibMessageActionRepository
             val PAID_REACTION = DomainError.Unknown(400, "The paid reaction can't be changed here")
 
             val NOT_RESENT = Outcome.Failure(DomainError.Unknown(400, "The message can't be sent again"))
+        }
+    }
+
+/** What TDLib's answer to `reportChat` says; [ChatReportResult.MessagesRequired] for one a newer TDLib adds too. */
+private fun TdApi.ReportChatResult.toChatReportResult(): ChatReportResult =
+    when (this) {
+        is TdApi.ReportChatResultOk -> {
+            ChatReportResult.Reported
+        }
+
+        is TdApi.ReportChatResultOptionRequired -> {
+            ChatReportResult.OptionRequired(
+                title = title.orEmpty(),
+                options = options.map { ReportOption(ReportOptionId(it.id), it.text.orEmpty()) }.toImmutableList(),
+            )
+        }
+
+        is TdApi.ReportChatResultTextRequired -> {
+            ChatReportResult.TextRequired(ReportOptionId(optionId), isOptional)
+        }
+
+        else -> {
+            ChatReportResult.MessagesRequired
         }
     }
 

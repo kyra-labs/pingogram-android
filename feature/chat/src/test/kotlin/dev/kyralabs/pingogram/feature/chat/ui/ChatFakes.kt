@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
@@ -20,8 +21,10 @@ import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
@@ -33,6 +36,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioKind
@@ -473,6 +477,24 @@ class FakeMessageActionRepository : MessageActionRepository {
         return record("forward:$fromChatId:$messageIds:$toChatId:$flags")
     }
 
+    /** What [report] answers, by request; reported at once by default. */
+    var onReport: suspend (ReportOptionId, String) -> Outcome<ChatReportResult> = { _, _ ->
+        Outcome.Success(ChatReportResult.Reported)
+    }
+
+    /** `report:<chat>:<messages>:<option bytes>:<text>`, in order. */
+    val reports = mutableListOf<String>()
+
+    override suspend fun report(
+        chatId: Long,
+        messageIds: List<Long>,
+        option: ReportOptionId,
+        text: String,
+    ): Outcome<ChatReportResult> {
+        reports += "report:$chatId:$messageIds:${option.bytes.toList()}:$text"
+        return onReport(option, text)
+    }
+
     private suspend fun record(call: String): Outcome<Unit> {
         calls += call
         return onAction(call)
@@ -491,6 +513,25 @@ class FakeMessageActionRepository : MessageActionRepository {
                 canBeCopied = true,
                 canBeCopiedToSecretChat = true,
             )
+    }
+}
+
+/**
+ * Shared storage: [needsPermission] as tests set it; every file saved to Downloads is recorded ([savedToDownloads])
+ * and answered with [onSave].
+ */
+class FakeSharedStorageRepository : SharedStorageRepository {
+    var needsPermission = false
+    var onSave: suspend (SharedFile) -> Boolean = { true }
+    val savedToDownloads = mutableListOf<SharedFile>()
+
+    override fun needsStoragePermission(): Boolean = needsPermission
+
+    override suspend fun saveToGallery(file: SharedFile): Boolean = throw UnsupportedOperationException("Not used")
+
+    override suspend fun saveToDownloads(file: SharedFile): Boolean {
+        savedToDownloads += file
+        return onSave(file)
     }
 }
 

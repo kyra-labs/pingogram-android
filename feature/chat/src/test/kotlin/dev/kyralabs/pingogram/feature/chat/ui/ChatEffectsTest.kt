@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import android.Manifest
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.material3.SnackbarHost
@@ -21,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -45,7 +48,6 @@ class ChatEffectsTest {
     private val copied = mutableListOf<String>()
     private val composerFocus = ComposerFocusState()
     private val openedUris = mutableListOf<String>()
-    private val voiceActions = mutableListOf<VoiceEffect>()
 
     private fun setEffects(
         result: ExternalFileResult = ExternalFileResult.Started,
@@ -68,7 +70,6 @@ class ChatEffectsTest {
                         openedUris += uri
                         uriOpens
                     },
-                    onVoiceAction = { voiceActions += it },
                 )
                 SnackbarHost(snackbarHostState)
             }
@@ -206,7 +207,8 @@ class ChatEffectsTest {
         composeRule.onNodeWithText(string(R.string.voice_permission_allow)).performClick()
         composeRule.waitForIdle()
 
-        assertEquals(listOf<VoiceEffect>(VoiceEffect.ExplainMicrophone), voiceActions)
+        val request = shadowOf(composeRule.activity).lastRequestedPermission
+        assertEquals(listOf(Manifest.permission.RECORD_AUDIO), request?.requestedPermissions?.toList())
     }
 
     @Test
@@ -219,7 +221,8 @@ class ChatEffectsTest {
         composeRule.onNodeWithText(string(R.string.voice_permission_settings)).performClick()
         composeRule.waitForIdle()
 
-        assertEquals(listOf<VoiceEffect>(VoiceEffect.MicrophoneDenied), voiceActions)
+        val started = shadowOf(composeRule.activity).nextStartedActivity
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started?.action)
     }
 
     @Test

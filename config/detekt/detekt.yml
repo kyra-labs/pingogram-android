@@ -5,6 +5,19 @@ naming:
   FunctionNaming:
     # Composables are PascalCase, matching the ktlint exception in .editorconfig.
     ignoreAnnotated: ['Composable']
+    # detekt's default test excludes (test names are sentences in backticks), plus :app's flavor test sources
+    # (testFoss, testGms), which its defaults do not know.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/testFoss/**'
+      - '**/testGms/**'
 
 complexity:
   CyclomaticComplexMethod:
@@ -15,7 +28,7 @@ complexity:
     # Composables take state, callbacks and an optional `modifier`; parameters with defaults are optional.
     ignoreDefaultParameters: true
   TooManyFunctions:
-    # detekt's default test excludes, plus core:testing, which is test code too: fixture objects such as
+    # detekt's default test excludes and :app's flavor test sources, plus core:testing, which is test code too: fixture objects such as
     # TdApiFixtures hold one builder per TDLib type.
     excludes:
       - '**/test/**'
@@ -26,6 +39,8 @@ complexity:
       - '**/androidInstrumentedTest/**'
       - '**/jsTest/**'
       - '**/iosTest/**'
+      - '**/testFoss/**'
+      - '**/testGms/**'
       - '**/core/testing/src/main/**'
 
 style:
@@ -33,7 +48,7 @@ style:
     # A named property is not a magic number. Literal design values in feature code are caught by
     # PingogramHardcodedToken instead.
     ignorePropertyDeclaration: true
-    # detekt's default test excludes, plus core:ui's theme package: it is where the design tokens
+    # detekt's default test excludes and :app's flavor test sources, plus core:ui's theme package: it is where the design tokens
     # (and the color science behind harmonization) are written down as literals; and core:testing, which is
     # test code (fixture values).
     excludes:
@@ -45,6 +60,8 @@ style:
       - '**/androidInstrumentedTest/**'
       - '**/jsTest/**'
       - '**/iosTest/**'
+      - '**/testFoss/**'
+      - '**/testGms/**'
       - '**/core/ui/src/main/kotlin/**/theme/**'
       - '**/core/testing/src/main/**'
   UnusedPrivateMember:

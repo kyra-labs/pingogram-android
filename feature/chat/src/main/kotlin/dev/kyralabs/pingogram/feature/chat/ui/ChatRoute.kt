@@ -33,9 +33,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
-import dev.kyralabs.pingogram.feature.chat.ui.voice.openAppSettings
-import dev.kyralabs.pingogram.feature.chat.ui.voice.rememberMicrophoneRequest
-import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeAction
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -59,8 +56,7 @@ import java.util.Locale
  * view model's [ChatEffect]s show snackbars, open a downloaded document in another app or a location in a maps app, or
  * open a photo, video or GIF in the media viewer through [onOpenMedia], which the app navigates with (features do not
  * know each other). The attach menu's options open the system's pickers and the camera app ([AttachLaunchers]); a
- * snackbar says when no app opens. The composer's microphone asks for its permission through the system's request
- * ([rememberMicrophoneRequest]), whose answer goes back to the view model. The forward sheet ([ForwardBottomSheet])
+ * snackbar says when no app opens. The forward sheet ([ForwardBottomSheet])
  * shows over the screen while the view model has one; the snackbar after forwarding to one other chat opens it through
  * [onOpenChat].
  */
@@ -87,8 +83,6 @@ internal fun ChatRoute(
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
-    val requestMicrophone = rememberMicrophoneRequest(viewModel::onEvent)
-    val context = LocalContext.current
     val attach =
         rememberAttachInputs(
             launchers = launchers,
@@ -103,12 +97,12 @@ internal fun ChatRoute(
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
         onOpenChat = { currentOnOpenChat(it) },
         composerFocus = composerFocus,
+        onEvent = viewModel::onEvent,
         onLaunchCamera = { path ->
             launchers.takePhoto(path).also { launched ->
                 if (!launched) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false))
             }
         },
-        onVoiceAction = voiceNoticeAction(requestMicrophone) { context.openAppSettings() },
     )
     ChatScreen(
         state = state,
@@ -121,6 +115,7 @@ internal fun ChatRoute(
         composerFocus = composerFocus,
         attach = attach,
         recording = recording,
+        reportComment = viewModel.reportComment,
     )
     val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
     forwardSheet?.let { ForwardBottomSheet(it, viewModel.forwardComment, viewModel::onEvent) }
@@ -134,14 +129,16 @@ internal fun ChatRoute(
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can. A sponsored message's link opens through [openUri] (the platform's handler), or a
- * snackbar says that no app can; what came of reporting one is a snackbar too. After forwarding a snackbar says to
- * how many chats, or to which one, with an action that opens it through [onOpenChat] if it is another chat; or for
- * how many it failed, and why. The voice recording's snackbars explain the microphone permission, offer the app's
- * settings once it is refused, and say to hold the button or that recording failed; their actions (asking for the
- * permission, opening the settings) go to [onVoiceAction].
+ * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
+ * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
+ * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
+ * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
+ * texts at once, thank for a report, and say how saving to Downloads went, with an action that opens the one file
+ * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
+ * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
+ * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
+ * once it is refused, and say to hold the button or that recording failed.
  */
-@Suppress("LongMethod") // One short branch per kind of effect, in one place so a new kind cannot be forgotten.
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
@@ -154,11 +151,12 @@ internal fun ChatEffects(
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     onLaunchCamera: (path: String) -> Boolean = { false },
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
-    onVoiceAction: (VoiceEffect) -> Unit = {},
+    onEvent: (ChatEvent) -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
+    val noticeActions = rememberNoticeActions(onOpenChat, NoticeFiles(openFile, copyText), showErrorDetails, onEvent)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
         effects.collect { effect ->
@@ -185,11 +183,6 @@ internal fun ChatEffects(
                         context.openMap(effect, resources)
                     }
 
-                    is ChatEffect.OpenMedia -> {
-                        onOpenMedia(effect.messageId)
-                        ""
-                    }
-
                     is ChatEffect.MessageScheduled -> {
                         resources.getString(R.string.composer_scheduled, context.scheduledTime(effect.at))
                     }
@@ -199,39 +192,65 @@ internal fun ChatEffects(
                         copiedNotice(resources)
                     }
 
-                    ChatEffect.FocusComposer -> {
-                        composerFocus.request()
-                        ""
-                    }
-
-                    is ChatEffect.LaunchCamera -> {
-                        val launched = onLaunchCamera(effect.path)
-                        resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
-                    }
-
-                    is ChatEffect.Forwarded, is ChatEffect.ForwardFailed -> {
-                        forwardNotice(resources, effect, showErrorDetails)
+                    is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera -> {
+                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, resources)
                     }
 
                     is ChatEffect.OpenUrl -> {
                         if (openUri(effect.url)) "" else resources.getString(R.string.sponsored_no_app)
                     }
+
+                    is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect -> {
+                        noticeActions.noticeOf(effect)
+                    }
                 }
             if (message.isNotEmpty()) {
                 // Cancelling showSnackbar dismisses its snackbar.
                 snackbar?.cancel()
-                snackbar =
-                    launch { snackbarHostState.showNotice(message, effect, resources, onOpenChat, onVoiceAction) }
+                snackbar = launch { snackbarHostState.showNotice(message, effect, resources, noticeActions::onAction) }
             }
         }
     }
 }
 
 /**
+ * Hands [effect] to the screen: media to the viewer through [onOpenMedia], the focus to the composer through
+ * [composerFocus], a photo to take to the camera app through [onLaunchCamera]; the snackbar when no camera app opens,
+ * else nothing.
+ */
+private fun handOver(
+    effect: ChatEffect,
+    onOpenMedia: (messageId: Long) -> Unit,
+    composerFocus: ComposerFocusState,
+    onLaunchCamera: (path: String) -> Boolean,
+    resources: Resources,
+): String =
+    when (effect) {
+        is ChatEffect.OpenMedia -> {
+            onOpenMedia(effect.messageId)
+            ""
+        }
+
+        ChatEffect.FocusComposer -> {
+            composerFocus.request()
+            ""
+        }
+
+        is ChatEffect.LaunchCamera -> {
+            val launched = onLaunchCamera(effect.path)
+            resources.getString(R.string.attach_no_camera_app).takeUnless { launched }.orEmpty()
+        }
+
+        else -> {
+            ""
+        }
+    }
+
+/**
  * Opens the downloaded document of [effect] in another app through [openFile], with the chooser's title; the snackbar
  * when no app takes it or the file is gone, else nothing.
  */
-private fun Context.openedFileNotice(
+internal fun Context.openedFileNotice(
     effect: ChatEffect.OpenFile,
     resources: Resources,
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult,
@@ -243,10 +262,6 @@ private fun Context.openedFileNotice(
         ExternalFileResult.Unavailable -> resources.getString(R.string.content_file_unavailable)
     }
 }
-
-/** The snackbar after a copy: none from Android 13 on, which confirms copies itself. */
-private fun copiedNotice(resources: Resources): String =
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) resources.getString(R.string.message_copied) else ""
 
 /** The snackbar after reporting a sponsored message. */
 private val SponsoredReportNotice.text: Int

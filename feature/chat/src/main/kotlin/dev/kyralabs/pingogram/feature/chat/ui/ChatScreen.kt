@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -39,6 +40,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -62,6 +64,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 
 /**
  * The conversation (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8; `docs/DESIGN_SYSTEM.md` §5–6): the [ChatTopBar] on
@@ -96,13 +99,17 @@ import kotlinx.collections.immutable.ImmutableMap
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
  *   files show in their preview, a new poll in its form ([AttachSheets]). Sending them now scrolls to the newest
  *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.uploads]).
+ * - **Selection mode** ([ChatUiState.selection]): the top bar shows how many messages are selected with a close
+ *   button, the bubbles a check, and the selection toolbar ([SelectionBottomBar]) takes the composer's place, which
+ *   leaves with the keyboard. Back (predictive, the toolbar following the gesture) and the close button leave it.
+ * - **Report** of messages: its sheet ([ReportMessagesSheet]) with the reasons Telegram asks for, and the comment
+ *   ([reportComment]).
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
  */
-@Suppress("LongMethod") // The scaffold and its slots: each is a call with its own handful of arguments.
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatScreen(
@@ -117,8 +124,13 @@ internal fun ChatScreen(
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     attach: AttachInputs = remember { AttachInputs() },
     recording: VoiceRecordingUiState? = null,
+    reportComment: TextFieldState = remember { TextFieldState() },
 ) {
     val content = state.content
+    val selection = state.selection
+    val clearSelection = { onEvent(SelectionEvent.Clear) }
+    val selectionBack = rememberSelectionBack(enabled = selection != null, onBack = clearSelection)
+    LeaveComposerWhileSelecting(selecting = selection != null)
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
@@ -128,25 +140,24 @@ internal fun ChatScreen(
     }
     Scaffold(
         modifier = modifier,
-        topBar = { ChatTopBar(state.header, onBack) },
-        bottomBar = {
-            val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
-            ChatBottomBar(
-                composer = state.composer,
-                text = composerText,
-                onSend = { options ->
-                    onEvent(ChatEvent.Send(options))
-                    // An edited message stays where it is.
-                    if (!editing) scrollToSent(options)
-                },
-                onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
-                focus = composerFocus,
-                onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
-                onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
-                onAttach = { attachMenuOpen = true },
-                recording = recording,
-                onVoiceEvent = voiceEvents(onEvent, onSent = { scrollToSent(SendOptions()) }),
+        topBar = {
+            ChatTopBar(
+                header = state.header,
+                onBack = onBack,
+                selectedCount = selection?.messageIds?.size,
+                onClearSelection = clearSelection,
             )
+        },
+        bottomBar = {
+            ChatScreenBottomBar(
+                state = state,
+                recording = recording,
+                composerText = composerText,
+                composerFocus = composerFocus,
+                selectionBack = { selectionBack.value },
+                onEvent = onEvent,
+                onSent = scrollToSent,
+            ) { attachMenuOpen = true }
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -163,7 +174,7 @@ internal fun ChatScreen(
             ChatBody(state, onEvent, listState, jumpState, contentPadding)
         }
     }
-    ChatSheets(state, onEvent)
+    ChatSheets(state, onEvent, reportComment)
     AttachSheets(
         state = state,
         inputs = attach,
@@ -172,6 +183,62 @@ internal fun ChatScreen(
         onEvent = onEvent,
         onSent = scrollToSent,
     )
+}
+
+/**
+ * The bottom of the screen: the composer ([ChatBottomBar]), or in selection mode the selection toolbar in its place
+ * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
+ * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
+ */
+@Suppress("LongParameterList") // The state, the recording, the composer's text and focus, what its buttons do.
+@Composable
+private fun ChatScreenBottomBar(
+    state: ChatUiState,
+    recording: VoiceRecordingUiState?,
+    composerText: ComposerText,
+    composerFocus: ComposerFocusState,
+    selectionBack: () -> Float,
+    onEvent: (ChatEvent) -> Unit,
+    onSent: (SendOptions) -> Unit,
+    onAttach: () -> Unit,
+) {
+    SelectionBottomBar(
+        actions = state.selection?.actions,
+        backProgress = selectionBack,
+        onAction = { onEvent(SelectionEvent.Act(it)) },
+    ) {
+        val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
+        ChatBottomBar(
+            composer = state.composer,
+            text = composerText,
+            onSend = { options ->
+                onEvent(ChatEvent.Send(options))
+                if (!editing) onSent(options)
+            },
+            onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
+            focus = composerFocus,
+            onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
+            onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+            onAttach = onAttach,
+            recording = recording,
+            onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
+        )
+    }
+}
+
+/**
+ * What shows over the conversation: a message's actions, the report of messages with its [reportComment], "About this
+ * ad" of a sponsored message, and the confirmation before messages are deleted.
+ */
+@Composable
+private fun ChatSheets(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+    reportComment: TextFieldState,
+) {
+    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
+    state.report?.let { ReportMessagesSheet(it, reportComment, onEvent) }
+    state.sponsoredSheet?.let { SponsoredMessageSheet(it, onEvent) }
     state.deleteDialog?.let { dialog ->
         DeleteMessagesAlert(
             dialog = dialog,
@@ -179,16 +246,6 @@ internal fun ChatScreen(
             onDismiss = { onEvent(ChatEvent.DismissDelete) },
         )
     }
-}
-
-/** The sheets over the conversation: a message's actions, and "About this ad" of a sponsored message. */
-@Composable
-private fun ChatSheets(
-    state: ChatUiState,
-    onEvent: (ChatEvent) -> Unit,
-) {
-    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
-    state.sponsoredSheet?.let { SponsoredMessageSheet(it, onEvent) }
 }
 
 /** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
@@ -245,6 +302,7 @@ private fun MessageList(
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
+    val selectedIds = state.selection?.messageIds
     val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts)
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
@@ -273,7 +331,7 @@ private fun MessageList(
         }
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
-            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier)
+            ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, selectedIds)
         }
         if (content.isLoadingOlder || content.olderError != null) {
             pagesState(OLDER_KEY, content.isLoadingOlder, content.olderError, R.string.chat_older_error, onEvent)
@@ -313,7 +371,8 @@ private fun LazyListScope.pagesState(
 
 /**
  * One entry of the list: a message with the state of its file, the uploads of its messages being sent and its playback
- * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message.
+ * (only the message in the player has one), a service message, a date, the unread divider or a sponsored message. In
+ * selection mode ([selectedIds] not null) a bubble shows whether it is selected: an album's when any of its items is.
  */
 @Suppress("LongParameterList") // The entry, the states that change apart from it, and what the bubbles share.
 @Composable
@@ -325,6 +384,7 @@ private fun ChatItemRow(
     bubbleResources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier = Modifier,
+    selectedIds: ImmutableSet<Long>? = null,
 ) {
     when (item) {
         is ChatItem.Bubble -> {
@@ -338,6 +398,7 @@ private fun ChatItemRow(
                 onEvent = onEvent,
                 modifier = modifier,
                 uploads = item.uploadsIn(uploads),
+                selection = selectedIds?.let { ids -> item.selectionIn(ids) },
             )
         }
 

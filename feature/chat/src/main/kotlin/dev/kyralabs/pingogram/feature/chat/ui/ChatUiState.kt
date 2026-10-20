@@ -37,6 +37,8 @@ import kotlinx.collections.immutable.persistentMapOf
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
  * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
+ * @property selection selection mode: the selected messages and the toolbar's actions; null outside it.
+ * @property report the sheet that reports messages; null while it is closed.
  */
 @Immutable
 data class ChatUiState(
@@ -53,6 +55,8 @@ data class ChatUiState(
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
     val sponsoredSheet: SponsoredSheet? = null,
+    val selection: MessageSelection? = null,
+    val report: ReportSheet? = null,
 )
 
 /**

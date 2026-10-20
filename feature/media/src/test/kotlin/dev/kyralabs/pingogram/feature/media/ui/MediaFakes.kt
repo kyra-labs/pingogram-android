@@ -14,15 +14,15 @@ import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
-import dev.kyralabs.pingogram.feature.media.ui.files.GalleryItem
-import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -350,17 +350,19 @@ internal class FakeVideoPlayer : VideoPlayer {
  * Saving into a gallery that does what tests say: [needsPermission] as on Android 8–9 without the permission, and
  * [onSave] answering each copy, which goes to [saved] first.
  */
-class FakeMediaFileActions : MediaFileActions {
+class FakeSharedStorageRepository : SharedStorageRepository {
     var needsPermission = false
-    var onSave: suspend (GalleryItem) -> Boolean = { true }
-    val saved = mutableListOf<GalleryItem>()
+    var onSave: suspend (SharedFile) -> Boolean = { true }
+    val saved = mutableListOf<SharedFile>()
 
     override fun needsStoragePermission(): Boolean = needsPermission
 
-    override suspend fun saveToGallery(item: GalleryItem): Boolean {
-        saved += item
-        return onSave(item)
+    override suspend fun saveToGallery(file: SharedFile): Boolean {
+        saved += file
+        return onSave(file)
     }
+
+    override suspend fun saveToDownloads(file: SharedFile): Boolean = unused()
 }
 
 private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the media viewer")

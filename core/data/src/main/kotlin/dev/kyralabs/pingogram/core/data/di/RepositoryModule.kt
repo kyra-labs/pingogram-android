@@ -4,6 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
@@ -17,6 +18,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -38,10 +40,12 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -117,4 +121,10 @@ interface RepositoryModule {
 
     @Binds
     fun notificationRepository(repository: TdlibNotificationRepository): NotificationRepository
+
+    @Binds
+    fun notificationSettingsRepository(repository: TdlibNotificationSettingsRepository): NotificationSettingsRepository
+
+    @Binds
+    fun sharedStorageRepository(repository: AndroidSharedStorageRepository): SharedStorageRepository
 }

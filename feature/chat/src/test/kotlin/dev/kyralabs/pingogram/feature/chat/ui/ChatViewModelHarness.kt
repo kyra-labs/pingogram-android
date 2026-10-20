@@ -46,6 +46,7 @@ abstract class ChatViewModelHarness {
     protected val actions = FakeChatActionRepository()
     protected val files = FakeFileRepository()
     protected val search = FakeSearchRepository()
+    protected val sharedStorage = FakeSharedStorageRepository()
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
@@ -87,6 +88,7 @@ abstract class ChatViewModelHarness {
                 chatActionRepository = actions,
                 fileRepository = files,
                 searchRepository = search,
+                sharedStorageRepository = sharedStorage,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
