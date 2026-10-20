@@ -30,7 +30,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The loading indicator while older or newer messages load ([isLoading]), or [errorText] with a retry when they could
  * not be loaded ([error]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PagesState(
     isLoading: Boolean,

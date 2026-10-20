@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonColors
@@ -35,7 +34,6 @@ internal class ReactionButtonStyle(
     val colors: ToggleButtonColors,
 )
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun rememberReactionButtonStyle(): ReactionButtonStyle {
     val scheme = MaterialTheme.colorScheme
@@ -56,7 +54,6 @@ internal fun rememberReactionButtonStyle(): ReactionButtonStyle {
  * with its emoji in `titleLarge` (a custom emoji's [picture] or its placeholder). A tapped one changes at once, with a
  * toggle haptic, while the sheet hides ([onToggle]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ReactionToggleButton(
     reaction: ReactionOption,

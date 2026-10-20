@@ -55,8 +55,11 @@ regresses by more than 10%.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
   `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
   concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).
-- Auto-download rules per network type (`setNetworkType` from `ConnectivityManager`: mobile,
-  Wi-Fi, roaming, metered); respect Android Data Saver and Battery Saver.
+- Auto-download rules per network type (the default network from `ConnectivityManager`'s callback: Wi-Fi, mobile,
+  roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
+  Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
+  messages on screen auto-download (`ChatAutoDownloads`, prefetch priority, once per file per screen), never the whole
+  history; a started download is not cancelled when the network or the screen changes, as the viewer may show it.
 - Storage: schedule `optimizeStorage` weekly via WorkManager (TTL 30 days, keep pinned) and
   expose "Clear cache" with `getStorageStatisticsFast`.
 - Online state: `setOption("online", true)` only while a visible Activity exists; false on
@@ -135,8 +138,9 @@ regresses by more than 10%.
 
 ## 7. Network & data
 
-- Auto-download defaults: Wi-Fi — photos, videos ≤ 10 MB, files ≤ 3 MB; mobile — photos only;
-  roaming — nothing. User-configurable with the M3 Expressive slider.
+- Auto-download defaults: Wi-Fi — photos, videos ≤ 10 MB, files ≤ 3 MB, voice and video messages; mobile — photos
+  only; roaming — nothing. User-configurable per network in Settings → Data and storage, sizes with the M3 Expressive
+  slider. Offline, the last network's rules stay. Stickers, avatars and thumbnails always download (a few KB each).
 - Image sizes: request the smallest TDLib `PhotoSize` ≥ the target view size; full size only in
   the viewer.
 - Prefetch only the next page of history and visible-row avatars; nothing speculative on mobile.

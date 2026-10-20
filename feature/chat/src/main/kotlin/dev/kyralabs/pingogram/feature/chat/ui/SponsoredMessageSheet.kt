@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -97,7 +96,6 @@ internal fun SponsoredMessageSheet(
 }
 
 /** What sponsored messages are, the advertiser, more about the ad, "Report ad" and the note on Telegram Premium. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AboutAd(
     sheet: SponsoredSheet,
@@ -164,7 +162,6 @@ private fun AboutAd(
 }
 
 /** Why the ad is reported: the back button, Telegram's question and its reasons, disabled while [isReporting]. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReportStep(
     report: SponsoredReportStep,
@@ -202,7 +199,6 @@ private fun ReportStep(
 }
 
 /** The report on its way. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReportProgress() {
     val spacing = MaterialTheme.spacing

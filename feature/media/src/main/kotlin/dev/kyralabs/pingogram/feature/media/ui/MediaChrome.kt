@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
@@ -75,7 +73,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * theme's `scrim`, translucent) that fades into the media: back, the sender and the date as a two-line title, and
  * "3 of 120" ([position]) at the end. Before the media is there, [item] is null and only back shows.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ViewerTopBar(
     item: MediaItem?,
@@ -134,7 +131,6 @@ private fun ViewerTitle(item: MediaItem) {
 }
 
 /** The default height, or the height of the two lines of the title with some room when they need more. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun titleHeight(): Dp {
     val typography = MaterialTheme.typography
@@ -245,7 +241,6 @@ private fun ExpandableCaption(
  * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
  * there. The times recompose only when the second changes.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VideoControls(
     playback: VideoPlayback,

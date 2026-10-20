@@ -24,7 +24,9 @@ import java.io.IOException
  * keeps the file, so Coil needs no disk cache of its own (`docs/PERFORMANCE.md` §4).
  *
  * The request fails with a [TdlibFileImageException] when TDLib cannot download the file, refuses the download, or
- * the download stops before completing (it failed, or something cancelled it); it is not retried.
+ * the download stops before completing (it failed, or something cancelled it); it is not retried. An image without
+ * [TdlibFileImage.download] asks for nothing and never gives up: it waits until the file is downloaded (a tap on its
+ * download button, which the user may cancel and tap again) or the request is cancelled.
  *
  * Cancelling the request, e.g. when the image leaves the screen, stops waiting but lets TDLib's download finish:
  * avatars and thumbnails are about 10 KB, so finishing costs less than cancelling and starting over, and the file is
@@ -57,15 +59,17 @@ class TdlibFileFetcher internal constructor(
                 is FileState.NotDownloaded -> if (!state.canBeDownloaded) fail("cannot be downloaded")
                 is FileState.Downloading -> if (state.isActive) started = true
             }
-            // Only an inactive state that follows an active one: right after the request, TDLib may still report the
-            // state from before it.
-            val active = state is FileState.Downloading && state.isActive
-            if (started && !active) fail("the download stopped")
-            if (!requested) {
-                requested = true
-                fileRepository
-                    .download(image.fileId, DownloadPriority.Visible)
-                    .onFailure { error -> fail("the download was refused ($error)") }
+            if (image.download) {
+                // Only an inactive state that follows an active one: right after the request, TDLib may still report
+                // the state from before it.
+                val active = state is FileState.Downloading && state.isActive
+                if (started && !active) fail("the download stopped")
+                if (!requested) {
+                    requested = true
+                    fileRepository
+                        .download(image.fileId, DownloadPriority.Visible)
+                        .onFailure { error -> fail("the download was refused ($error)") }
+                }
             }
             return null
         }

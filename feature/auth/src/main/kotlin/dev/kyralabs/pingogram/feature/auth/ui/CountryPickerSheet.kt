@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -53,7 +52,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * bar's input field on its container, then the countries, the one of the phone number field selected and scrolled
  * into view. The sheet handles back and dismissal itself.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CountryPickerSheet(
     state: CountryPickerUiState,
@@ -115,7 +114,6 @@ internal fun CountryPickerSheet(
  * The search bar's input field (`SearchBarDefaults.InputField`) on the search bar's container, with a clear button
  * while there is text. It keeps its own text, which the view model filters by.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CountrySearchField(
     query: String,

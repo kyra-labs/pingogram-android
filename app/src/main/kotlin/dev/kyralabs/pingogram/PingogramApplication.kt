@@ -9,6 +9,7 @@ import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
+import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -42,6 +43,10 @@ class PingogramApplication :
     @Inject
     lateinit var transfersController: TransfersController
 
+    /** Tells TDLib about every new network the device uses, so it reconnects at once (docs/PERFORMANCE.md §3). */
+    @Inject
+    lateinit var networkTypeReporter: TdlibNetworkTypeReporter
+
     /** Creates the workers with Hilt (notification actions, transfers); WorkManager asks for it when first used. */
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -59,6 +64,8 @@ class PingogramApplication :
         backgroundConnection.start()
         // Starts the transfers' foreground service while the user's uploads and downloads run; WorkManager only then.
         transfersController.start()
+        // Sends TDLib the network type once it has its parameters, and again at every new network.
+        networkTypeReporter.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()

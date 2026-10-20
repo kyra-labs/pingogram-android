@@ -173,13 +173,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `minithumbnail` bytes).
 - Animated stickers (TGS = gzipped Lottie JSON): render with `rlottie` or Lottie Compose
   (decision in ROADMAP M3; prefer rlottie for performance, keep it behind an interface).
-- Auto-download rules stored in DataStore and enforced in `MessageRepository` per network type.
+- Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
+  DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
+  Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`
+  (`core:data`, `ACCESS_NETWORK_STATE`) follows the default network and Data Saver; `DefaultAutoDownloadPolicy` combines
+  both into the rules in effect (`AutoDownloadPolicy`). The conversation enforces them (`ChatAutoDownloads`): the files
+  of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
+  `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
+  download button.
 - Background transfers (FR-N4, `docs/adr/0008-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
   its deletion, progress from `updateFile`), and the downloads asked for with `DownloadPriority.Requested` (a document
-  tapped in a bubble, files saved from a selection), which `TdlibFileRepository` hands it. Automatic downloads and
-  what is on screen use the other priorities and never count. `:app`'s `TransfersController` starts `core:notifications`'
+  or a photo tapped in a bubble, files saved from a selection), which `TdlibFileRepository` hands it. Automatic downloads
+  (prefetch) and what is on screen (visible) never count. `:app`'s `TransfersController` starts `core:notifications`'
   `TransfersWorker` (unique expedited work) as transfers begin while the app is in the foreground, or when the user
   comes back to them; the worker runs in WorkManager's foreground service with type `dataSync`, shows their progress
   in the "Transfers" channel (`TransferNotificationBuilder`, `ProgressStyle` on Android 16) with "Cancel"

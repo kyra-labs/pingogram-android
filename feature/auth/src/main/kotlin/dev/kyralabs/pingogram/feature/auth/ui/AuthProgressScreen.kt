@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +20,6 @@ import dev.kyralabs.pingogram.feature.auth.R
  * TDLib is starting or restarting ([AuthStepUiState.Loading]), logging out ([isLoggingOut], FR-A8), or the account
  * is logged in and the app is leaving the flow ([AuthStepUiState.Done]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AuthProgressScreen(
     isLoggingOut: Boolean,

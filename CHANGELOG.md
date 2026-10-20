@@ -10,7 +10,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- Files you send and documents you download keep going when you leave Pingogram: while they are on their way, a quiet
+- Files you send and files you tap to download keep going when you leave Pingogram: while they are on their way, a quiet
   notification in the new "Transfers" channel shows how many files and how much of them, with "Cancel", and it goes
   away a moment after the last one. Files you save from a selection count too. Photos and videos that download by
   themselves never keep Pingogram running in the background.
@@ -30,6 +30,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in the background, and works without Google Play services. If you allow only an approximate location, that is what
   is sent, and the sheet offers to ask for the precise one; if location is turned off, a snackbar takes you to the
   setting.
+- Automatic download: Settings → Data and storage now says what downloads by itself on mobile data, on Wi-Fi and while
+  roaming, and each opens a page with switches for photos, videos and GIFs, files, and voice and video messages, with a
+  size limit for videos and for files. By default Wi-Fi downloads photos, videos up to 10 MB, files up to 3 MB and voice
+  and video messages; mobile data downloads photos; roaming downloads nothing. Conversations follow the network you
+  are on: a photo that doesn't download by itself shows a download button, and other media downloads when you tap it,
+  as before. While Android's Data Saver is on, nothing downloads by itself on mobile data. Stickers, profile photos and
+  previews always download.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
@@ -196,6 +203,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the
   shape it has in its message, including the square edge above a caption and the corners of an album.
+- In right-to-left languages, the phone number at login reads left to right, the calling code first ("+44 7911
+  123456"), instead of showing its digit groups and the "+" reversed.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

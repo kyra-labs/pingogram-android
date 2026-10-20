@@ -25,7 +25,7 @@ Options considered:
 
 - `TransferRepository` (`core:domain`, `TdlibTransferRepository` in `core:data`) counts the user's transfers: the file
   of each message being sent from this device, and the downloads asked for with the new `DownloadPriority.Requested`
-  (a document tapped, files saved from a selection). Everything else keeps its priority and never counts.
+  (a document or photo tapped, files saved from a selection). Everything else keeps its priority and never counts.
 - `TransfersWorker` (`core:notifications`) runs as unique, expedited work (`APPEND_OR_REPLACE`: one queued behind a
   worker that is about to end), calls `setForeground` with `FOREGROUND_SERVICE_TYPE_DATA_SYNC` at once, updates its
   notification at most once a second and ends 2 s after the last transfer. `:app`'s `TransfersController` starts it as

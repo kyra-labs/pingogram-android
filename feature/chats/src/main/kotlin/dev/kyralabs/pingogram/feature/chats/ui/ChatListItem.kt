@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
@@ -75,7 +74,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
  * @param dragged the row is being swiped: it takes its `large` container, as when pressed ([ChatRow]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatListItem(
     item: ChatListItemModel,

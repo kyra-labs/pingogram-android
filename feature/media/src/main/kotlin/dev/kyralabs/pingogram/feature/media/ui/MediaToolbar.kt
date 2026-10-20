@@ -57,7 +57,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * indicator while the file is copied into the gallery; meanwhile Share, Save and Copy are disabled. Screen readers hear
  * what each button does and that it is under way.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ViewerToolbar(
     actions: MediaActions,
@@ -111,7 +110,6 @@ internal fun ViewerToolbar(
  * More, and the menu it opens: "Show in chat", then "Copy" where [canCopy] (disabled unless [copyEnabled]). A menu of
  * one group ([DropdownMenuGroup]) whose items take the expressive menu's shapes; choosing one closes it.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MoreMenu(
     canCopy: Boolean,
@@ -160,7 +158,6 @@ private fun MoreMenu(
 
 /** An item of the More menu, [index] of [count]: its [icon] and [label]. */
 @Suppress("LongParameterList") // What the item shows, where it is in the group, and what it does.
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MenuItem(
     @DrawableRes icon: Int,
@@ -190,7 +187,7 @@ private class Pending(
  * its file is ([PendingIndicator]).
  */
 @Suppress("LongParameterList") // What the button shows and says, whether it can be used, and its pending state.
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ToolbarButton(
     @DrawableRes icon: Int,
