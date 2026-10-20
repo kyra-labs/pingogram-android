@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -62,7 +61,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The whole screen is the counterpart of the "New chat" button's container transform ([NewChatButton]): it grows out
  * of the button and shrinks back into it, its corners morphing between the button's and its own square ones.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewChatScreen(
     state: NewChatUiState,
@@ -90,7 +88,6 @@ internal fun NewChatScreen(
 }
 
 /** The small top bar: back and "New chat" in `titleLargeEmphasized`, on the screen's `surfaceContainer`. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewChatTopBar(onBack: () -> Unit) {
     TopAppBar(

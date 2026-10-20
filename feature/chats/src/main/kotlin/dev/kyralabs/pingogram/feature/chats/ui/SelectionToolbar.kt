@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -41,7 +40,7 @@ import kotlinx.collections.immutable.persistentListOf
  * label for screen readers and in a [PlainTooltip] on a long press or hover. Five buttons fit the narrowest phones at
  * any font scale, as icons do not grow with it.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SelectionToolbar(
     actions: ImmutableList<ChatRowAction>,
@@ -74,7 +73,6 @@ internal fun SelectionToolbar(
  * on the motion scheme's springs, and shrinks with a predictive back gesture ([backProgress], 0 to 1) that leaves
  * selection mode.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SelectionToolbarHost(
     selection: ChatSelection?,

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialShapes
@@ -353,7 +352,7 @@ private val BACK_BEHAVIOR = BackNavigationBehavior.PopUntilCurrentDestinationCha
  * The detail pane while no chat is open: an empty state (`docs/DESIGN_SYSTEM.md` §6) on the same sheet as a
  * conversation's, below an empty top bar of a conversation's height, so its container lines up with the list's.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun NoChatSelected(modifier: Modifier = Modifier) {
     Scaffold(

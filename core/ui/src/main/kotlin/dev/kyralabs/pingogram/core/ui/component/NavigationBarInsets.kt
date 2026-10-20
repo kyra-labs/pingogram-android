@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.runtime.Composable
@@ -33,7 +32,6 @@ fun screenContentWindowInsets(): WindowInsets =
  * (`FloatingToolbarDefaults.ScreenOffset` above the system navigation bar): the system navigation bar, the toolbar and
  * the margin below it, and the same margin again above it, so the end of a list rests clear of the toolbar.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun floatingToolbarInsets(): WindowInsets =
     WindowInsets.navigationBars.add(

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.WavyProgressIndicatorDefaults
@@ -202,7 +201,6 @@ private fun BoxScope.VideoLayers(
 }
 
 /** A determinate wavy indicator of the download of [state], while it is not complete; nothing once it is or unknown. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DownloadProgress(
     state: FileState?,

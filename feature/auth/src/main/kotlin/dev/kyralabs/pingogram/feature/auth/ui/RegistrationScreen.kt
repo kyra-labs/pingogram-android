@@ -158,7 +158,7 @@ private fun TermsAcceptance(
 }
 
 /** Telegram's terms of service in a sheet, with the minimum age; accepting checks the box. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TermsOfServiceSheet(
     text: String,
