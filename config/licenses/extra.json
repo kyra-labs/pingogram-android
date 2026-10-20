@@ -24,6 +24,14 @@
       "website": "https://fonts.google.com/icons",
       "developers": ["Google"],
       "licenses": ["Apache-2.0"]
+    },
+    {
+      "id": "unicode-emoji",
+      "name": "Unicode Emoji data",
+      "description": "The emoji of the emoji panel and their groups, from Unicode's emoji-test.txt, bundled with the app.",
+      "website": "https://www.unicode.org/emoji/",
+      "developers": ["Unicode, Inc."],
+      "licenses": ["Unicode-3.0"]
     }
   ]
 }

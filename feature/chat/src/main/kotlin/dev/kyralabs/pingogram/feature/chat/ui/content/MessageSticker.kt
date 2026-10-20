@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -22,6 +24,9 @@ import androidx.compose.ui.unit.DpSize
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.ui.sticker.AnimatedSticker
+import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
+import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -30,8 +35,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * keeping its aspect ratio, on the chat's background.
  *
  * - **Still (WebP)** stickers are loaded by Coil at that size.
- * - **Animated (TGS) and video (WebM)** stickers show their thumbnail when it is a picture; animating them comes with
- *   the sticker renderer (`docs/ARCHITECTURE.md`, Files and media).
+ * - **Animated (TGS)** stickers play once their file is downloaded ([StickerImage]), their thumbnail before, when it
+ *   is a picture; **video (WebM)** stickers show their thumbnail.
  * - Until the picture shows, and when there is none, the sticker's emoji stands in for it, or, for a sticker without
  *   one, a rounded tonal shape ([StickerStandIn]); it fades out as the picture fades in. Stickers have transparent
  *   backgrounds, so nothing else is drawn behind them, and they are never dimmed in dark theme: they are artwork.
@@ -94,13 +99,17 @@ internal fun MessageDice(
 
 /**
  * [sticker] fitted into [displaySize]: its picture (the sticker itself if it is a still, else its thumbnail if that
- * is a picture) over its emoji, which fades out as the picture fades in.
+ * is a picture) over its emoji, which fades out as the picture fades in. An animated (TGS) sticker plays through the
+ * app's [AnimatedStickers] ([LocalAnimatedStickers]; none in previews) once its file is downloaded: its first frame
+ * replaces the picture and the emoji at once, as they show the same artwork (unless [animate] is false, as for a set's
+ * picture in the sticker panel). Video (WebM) stickers keep their thumbnail.
  */
 @Composable
-private fun StickerImage(
+internal fun StickerImage(
     sticker: Sticker,
     displaySize: DpSize,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
+    animate: Boolean = true,
 ) {
     val pictureId =
         when (sticker.format) {
@@ -115,20 +124,32 @@ private fun StickerImage(
                     ?.id
             }
         }
+    val animated = LocalAnimatedStickers.current?.takeIf { animate && sticker.format == StickerFormat.Tgs }
+    // 1 once the animation shows its first frame; read in the draw phase.
+    val animationShown = remember(sticker.file.id) { mutableFloatStateOf(0f) }
+    val hiddenByAnimation = Modifier.graphicsLayer { alpha = 1f - animationShown.floatValue }
     Box(modifier.size(displaySize), contentAlignment = Alignment.Center) {
         if (pictureId == null) {
-            StickerStandIn(sticker.emoji, displaySize)
+            StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation)
         } else {
             val alpha = rememberImageAlpha(pictureId)
-            StickerStandIn(sticker.emoji, displaySize, Modifier.fadingOutAs(alpha))
+            StickerStandIn(sticker.emoji, displaySize, hiddenByAnimation.fadingOutAs(alpha))
             val density = LocalDensity.current
             TdlibImage(
                 fileId = pictureId,
                 widthPx = with(density) { displaySize.width.roundToPx() },
                 heightPx = with(density) { displaySize.height.roundToPx() },
                 alpha = alpha,
-                modifier = Modifier.matchParentSize(),
+                modifier = hiddenByAnimation.matchParentSize(),
                 contentScale = ContentScale.Fit,
+            )
+        }
+        if (animated != null) {
+            AnimatedSticker(
+                stickers = animated,
+                fileId = sticker.file.id,
+                modifier = Modifier.matchParentSize(),
+                onFirstFrame = { animationShown.floatValue = 1f },
             )
         }
     }

@@ -8,10 +8,12 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 
 /**
  * What the composer's attach menu sends (`REQUIREMENTS.md` FR-C5): photos, videos and files the user picked, a photo
- * from the camera, the device's location, a contact and a poll; and cancelling an upload in progress.
+ * from the camera, the device's location, a contact and a poll, and the sticker panel's stickers; and cancelling an
+ * upload in progress.
  *
  * Picked files are prepared first ([prepare]): copied into the app's private cache, where they stay readable after the
  * picker's read grant ends, and made ready for TDLib. Each copy then belongs to the caller until it is sent ([send]),
@@ -87,6 +89,17 @@ interface AttachmentRepository {
     suspend fun sendLocation(
         chatId: Long,
         location: DeviceLocation,
+        options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Sends [sticker], picked in the composer's sticker panel, to chat [chatId] as [options] say, replying to
+     * [replyToMessageId] if it is not null. Telegram then puts it first among the recent stickers.
+     */
+    suspend fun sendSticker(
+        chatId: Long,
+        sticker: Sticker,
         options: SendOptions = SendOptions(),
         replyToMessageId: Long? = null,
     ): Outcome<Unit>

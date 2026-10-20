@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
@@ -28,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -164,6 +166,14 @@ class TdlibAttachmentRepository internal constructor(
         replyToMessageId: Long?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, location.toInputMessageLocation(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendSticker(
+        chatId: Long,
+        sticker: Sticker,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyToMessageId?.let(::replyToMessage))
 
     override suspend fun sendPoll(
         chatId: Long,
