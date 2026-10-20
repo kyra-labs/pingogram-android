@@ -115,7 +115,7 @@ private fun ButtonGroupScope.deleteKey(
             FilledTonalButton(
                 onClick = onDelete,
                 shapes = ButtonDefaults.shapesFor(KeyHeight),
-                modifier = keyModifier(interactionSource),
+                modifier = Modifier.key(this@deleteKey, interactionSource),
                 enabled = enabled,
                 contentPadding = KeyPadding,
                 interactionSource = interactionSource,
@@ -145,7 +145,7 @@ private fun ButtonGroupScope.submitKey(
             Button(
                 onClick = { if (!isChecking) onSubmit() },
                 shapes = ButtonDefaults.shapesFor(KeyHeight),
-                modifier = keyModifier(interactionSource).semantics { contentDescription = label },
+                modifier = Modifier.key(this@submitKey, interactionSource).semantics { contentDescription = label },
                 enabled = enabled || isChecking,
                 contentPadding = KeyPadding,
                 interactionSource = interactionSource,
@@ -187,7 +187,7 @@ private fun ButtonGroupScope.digitKey(
             FilledTonalButton(
                 onClick = { onDigit(key) },
                 shapes = ButtonDefaults.shapesFor(KeyHeight),
-                modifier = keyModifier(interactionSource),
+                modifier = Modifier.key(this@digitKey, interactionSource),
                 enabled = enabled,
                 contentPadding = KeyPadding,
                 interactionSource = interactionSource,
@@ -199,12 +199,19 @@ private fun ButtonGroupScope.digitKey(
     )
 }
 
-/** A key's size in its row: an equal share of the width, at least a medium button tall, growing when pressed. */
-private fun ButtonGroupScope.keyModifier(interactionSource: MutableInteractionSource): Modifier =
-    Modifier
-        .weight(1f)
-        .animateWidth(interactionSource)
-        .heightIn(min = KeyHeight)
+/**
+ * A key's size in its row ([scope]): an equal share of the width, at least a medium button tall, growing when pressed.
+ */
+private fun Modifier.key(
+    scope: ButtonGroupScope,
+    interactionSource: MutableInteractionSource,
+): Modifier =
+    with(scope) {
+        this@key
+            .weight(1f)
+            .animateWidth(interactionSource)
+            .heightIn(min = KeyHeight)
+    }
 
 /** No padding of their own: every key is as tall as the row, its digit or icon centered, whatever the font scale. */
 private val KeyPadding = PaddingValues(0.dp)

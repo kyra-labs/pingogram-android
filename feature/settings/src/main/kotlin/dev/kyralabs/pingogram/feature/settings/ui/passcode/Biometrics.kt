@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui.passcode
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -44,6 +45,8 @@ internal class PlatformBiometricAvailability
         override fun canAuthenticate(): Boolean =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canAuthenticateSinceQ()
 
+        // USE_BIOMETRIC is declared in :app's manifest (pinned by AppManifestTest), which a library's lint cannot see.
+        @SuppressLint("MissingPermission")
         @RequiresApi(Build.VERSION_CODES.Q)
         private fun canAuthenticateSinceQ(): Boolean {
             val manager = context.getSystemService(BiometricManager::class.java) ?: return false
@@ -57,6 +60,8 @@ internal class PlatformBiometricAvailability
         }
 
         // Android 10's only check; Android 11 deprecated it for the one with authenticator classes used above.
+        // USE_BIOMETRIC is declared in :app's manifest, as above.
+        @SuppressLint("MissingPermission")
         @Suppress("DEPRECATION")
         @RequiresApi(Build.VERSION_CODES.Q)
         private fun canAuthenticateQ(manager: BiometricManager): Int = manager.canAuthenticate()
@@ -107,6 +112,8 @@ internal fun rememberBiometricPrompt(onSucceeded: () -> Unit): BiometricPromptLa
     }
 }
 
+// USE_BIOMETRIC is declared in :app's manifest (pinned by AppManifestTest), which a library's lint cannot see.
+@SuppressLint("MissingPermission")
 @RequiresApi(Build.VERSION_CODES.Q)
 private fun showPrompt(
     context: Context,
