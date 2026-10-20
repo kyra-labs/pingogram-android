@@ -346,6 +346,40 @@ class ChatScreenTest {
     }
 
     @Test
+    fun `tapping a bubble whose group shows the time on its last one shows its own`() {
+        setScreen(groupChat())
+
+        // "Message 1", the first of the group, without its time: the time shows on "Message 2", the last.
+        composeRule.onNodeWithContentDescription(FIRST_OF_GROUP, substring = true).performTouchInput {
+            click(Offset(TEXT_X.toPx(), centerY))
+        }
+        composeRule.onNodeWithContentDescription(LAST_OF_GROUP, substring = true).performTouchInput {
+            click(Offset(TEXT_X.toPx(), centerY))
+        }
+
+        assertEquals(listOf(ChatEvent.ToggleTime(1)), events.filterIsInstance<ChatEvent.ToggleTime>())
+    }
+
+    @Test
+    fun `a bubble without its time still says it to screen readers`() {
+        setScreen(groupChat())
+
+        composeRule.onNodeWithContentDescription("Ada, 9:40 AM: Message 1").assertIsDisplayed()
+    }
+
+    @Test
+    fun `tapping Not sent under a failed message sends it again`() {
+        setScreen(ChatPreviewData.privateChat)
+
+        composeRule.onNodeWithContentDescription(FAILED, substring = true).performTouchInput {
+            // In the label under the outgoing bubble, at the end.
+            click(bottomRight - Offset(LABEL_INSET.toPx(), LABEL_INSET.toPx()))
+        }
+
+        assertEquals(listOf(ChatEvent.Resend(8)), events.filterIsInstance<ChatEvent.Resend>())
+    }
+
+    @Test
     fun `tapping a reply quote shows the replied message`() {
         setScreen(replyChat())
 
@@ -427,6 +461,21 @@ class ChatScreenTest {
             }
         }
         composeRule.waitForIdle()
+    }
+
+    /** "Message 1" and "Message 2", incoming, a group whose time shows on "Message 2", the last, alone. */
+    private fun groupChat(): ChatUiState {
+        val today = UiText.resource(R.string.chat_date_today)
+        val items =
+            listOf(
+                bubble(2, "Message 2").copy(position = GroupPosition.Last),
+                bubble(1, "Message 1").copy(position = GroupPosition.First, time = "9:40 AM", showsTime = false),
+                ChatItem.DateSeparator(1, today),
+            )
+        return ChatUiState(
+            header = ChatPreviewData.privateChat.header,
+            content = ChatContent.Content(items.toImmutableList(), reachedStart = true, isLoadingOlder = false, null),
+        )
     }
 
     /** "Message 2" replying to "Message 1", both incoming, in a private chat. */
@@ -538,6 +587,16 @@ class ChatScreenTest {
 
         /** The replying message of [replyChat], as screen readers hear it, in part. */
         const val REPLY = "Reply to Ada: Message 1"
+
+        const val FIRST_OF_GROUP = "Message 1"
+        const val LAST_OF_GROUP = "Message 2"
+        const val FAILED = "This one didn't go through"
+
+        /** Inside the text of an incoming bubble, from its start, past its padding. */
+        val TEXT_X = 24.dp
+
+        /** From the bottom end of a failed message's row: inside its "Not sent" label. */
+        val LABEL_INSET = 8.dp
 
         /** A point inside the reply quote of [replyChat]'s incoming bubble, from the bubble's top start. */
         val QUOTE_X = 32.dp

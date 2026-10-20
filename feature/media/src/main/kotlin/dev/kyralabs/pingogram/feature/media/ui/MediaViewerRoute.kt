@@ -3,8 +3,11 @@ package dev.kyralabs.pingogram.feature.media.ui
 import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,7 +34,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
+import dev.kyralabs.pingogram.core.ui.file.mimeTypeOfFile
 import dev.kyralabs.pingogram.core.ui.file.shareTdlibFile
+import dev.kyralabs.pingogram.core.ui.file.tdlibFileUri
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.media.R
@@ -43,8 +48,9 @@ import kotlinx.coroutines.launch
 /**
  * The media viewer of the route's message, pushed above everything: hoists its [MediaViewerViewModel] and tells it
  * when the screen is started and stopped, which plays and pauses. Its [MediaViewerEffect]s show snackbars (one for a
- * failed page offers to try again), hand a file to the system's share sheet, and on Android 8–9 check and ask for the
- * storage permission that saving needs ([MediaViewerEffects]). [onBack] leaves it.
+ * failed page offers to try again), hand a file to the system's share sheet, put a photo on the clipboard, and on
+ * Android 8–9 check and ask for the storage permission that saving needs ([MediaViewerEffects]). [onBack] leaves it,
+ * as deleting the last item does; [onShowInChat] opens the conversation at the current item's message.
  *
  * Videos draw on Media3's [PlayerSurface] in a `TextureView`: unlike a `SurfaceView`, it scales, moves and fades with
  * the page (predictive back, swipe to close, and the container transform that opens the viewer), at a little more
@@ -54,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun MediaViewerRoute(
     onBack: () -> Unit,
+    onShowInChat: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MediaViewerViewModel = hiltViewModel(),
 ) {
@@ -63,7 +70,13 @@ internal fun MediaViewerRoute(
         onStopOrDispose { viewModel.onEvent(MediaViewerEvent.Stopped) }
     }
     val snackbarHostState = remember { SnackbarHostState() }
-    MediaViewerEffects(viewModel.effects, snackbarHostState, onEvent = viewModel::onEvent)
+    MediaViewerEffects(
+        effects = viewModel.effects,
+        snackbarHostState = snackbarHostState,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        onShowInChat = onShowInChat,
+    )
     MediaViewerScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -87,6 +100,9 @@ internal fun MediaViewerRoute(
  *   file that cannot be played, shared or saved; a file saved into the gallery; a refused storage permission, offering
  *   the app's settings, where it can be granted once the system no longer asks.
  * - **Share**: the file goes to the system's share sheet with the activity ([shareTdlibFile]); a snackbar if it cannot.
+ * - **Copy**: the photo goes on the clipboard as a `content://` URI of the app's `FileProvider` ([copy]),
+ *   which apps that paste it may read; a snackbar says so below Android 13, where the system shows no confirmation.
+ * - **Show in chat** and **Close** go to [onShowInChat] and [onBack].
  * - **Storage permission** (Android 8–9): whether the system wants its reason shown first
  *   ([ActivityCompat.shouldShowRequestPermissionRationale]), and the system's request, whose answer goes back.
  */
@@ -95,12 +111,16 @@ private fun MediaViewerEffects(
     effects: Flow<MediaViewerEffect>,
     snackbarHostState: SnackbarHostState,
     onEvent: (MediaViewerEvent) -> Unit,
+    onBack: () -> Unit,
+    onShowInChat: (chatId: Long, messageId: Long) -> Unit,
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val currentOnEvent by rememberUpdatedState(onEvent)
+    val currentOnBack by rememberUpdatedState(onBack)
+    val currentOnShowInChat by rememberUpdatedState(onShowInChat)
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             currentOnEvent(MediaViewerEvent.StoragePermissionResult(granted))
@@ -117,26 +137,24 @@ private fun MediaViewerEffects(
                     )
                 }
 
-                MediaViewerEffect.PlaybackFailed -> {
-                    snackbars.show(resources.getString(R.string.media_playback_failed))
-                }
-
                 is MediaViewerEffect.ShareFile -> {
                     context.share(effect, resources.getString(R.string.media_share))?.let { failure ->
                         snackbars.show(resources.getString(failure))
                     }
                 }
 
-                MediaViewerEffect.ShareFailed -> {
-                    snackbars.show(resources.getString(R.string.media_share_failed))
+                is MediaViewerEffect.CopyImage -> {
+                    context.copy(effect, resources.getString(R.string.media_copy_label))?.let { message ->
+                        snackbars.show(resources.getString(message))
+                    }
                 }
 
-                MediaViewerEffect.SavedToGallery -> {
-                    snackbars.show(resources.getString(R.string.media_saved))
+                is MediaViewerEffect.ShowInChat -> {
+                    currentOnShowInChat(effect.chatId, effect.messageId)
                 }
 
-                MediaViewerEffect.SaveFailed -> {
-                    snackbars.show(resources.getString(R.string.media_save_failed))
+                MediaViewerEffect.Close -> {
+                    currentOnBack()
                 }
 
                 MediaViewerEffect.CheckStoragePermission -> {
@@ -153,6 +171,10 @@ private fun MediaViewerEffects(
                         actionLabel = resources.getString(R.string.media_storage_settings),
                         onAction = { context.openAppSettings() },
                     )
+                }
+
+                else -> {
+                    effect.snackbarMessage?.let { snackbars.show(resources.getString(it)) }
                 }
             }
         }
@@ -196,6 +218,37 @@ private fun Context.share(
         ExternalFileResult.NoApp -> R.string.media_no_share_app
         ExternalFileResult.Unavailable -> R.string.media_share_failed
     }
+
+/** What a snackbar says for an effect that only shows one; null for the others. */
+@get:StringRes
+private val MediaViewerEffect.snackbarMessage: Int?
+    get() =
+        when (this) {
+            MediaViewerEffect.PlaybackFailed -> R.string.media_playback_failed
+            MediaViewerEffect.ShareFailed -> R.string.media_share_failed
+            MediaViewerEffect.SavedToGallery -> R.string.media_saved
+            MediaViewerEffect.SaveFailed -> R.string.media_save_failed
+            MediaViewerEffect.CopyFailed -> R.string.media_copy_failed
+            else -> null
+        }
+
+/**
+ * Puts the photo of [effect] on the clipboard, labelled [label], as a `content://` URI of the app's `FileProvider`:
+ * the clipboard grants apps that paste it read access. What a snackbar says then: that it failed, or below Android 13,
+ * where the system shows no confirmation of its own, that it is copied; null otherwise.
+ */
+@StringRes
+private fun Context.copy(
+    effect: MediaViewerEffect.CopyImage,
+    label: String,
+): Int? {
+    val uri = tdlibFileUri(effect.path)
+    val clipboard = getSystemService(ClipboardManager::class.java)
+    if (uri == null || clipboard == null) return R.string.media_copy_failed
+    val mimeType = mimeTypeOfFile(effect.path) ?: effect.mimeType
+    clipboard.setPrimaryClip(ClipData(label, arrayOf(mimeType), ClipData.Item(uri)))
+    return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) R.string.media_copied else null
+}
 
 /** Whether the system wants the reason for the storage permission shown before asking for it again. */
 private fun Activity?.showsStorageRationale(): Boolean =

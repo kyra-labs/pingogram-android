@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -62,6 +64,7 @@ import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import java.util.Locale
@@ -147,9 +150,9 @@ internal fun positionText(position: MediaPosition): String =
 
 /**
  * The bottom of the viewer's chrome, over a gradient of `mediaOverlay` rising from the bottom: the current item's
- * caption ([ExpandableCaption]), a video's controls ([VideoControls]) once it is in the player, and [actions] below
- * them: the slot of the bottom app bar's actions (Share and Save, `ViewerActions`). Nothing at all when there is
- * nothing to show.
+ * caption ([ExpandableCaption]) and a video's controls ([VideoControls]) once it is in the player, at most
+ * `contentMaxWidth` wide and centered on wide windows, and [actions] below them, centered: the slot of the floating
+ * toolbar (`ViewerToolbar`). Nothing at all when there is nothing to show.
  */
 @Composable
 internal fun ViewerBottomBar(
@@ -162,6 +165,7 @@ internal fun ViewerBottomBar(
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
     if (item.caption.text.isEmpty() && controls == null && actions == null) return
     val overlay = MaterialTheme.pingogramColors.mediaOverlay
+    val maxWidth = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)
     Column(
         modifier =
             modifier
@@ -171,14 +175,15 @@ internal fun ViewerBottomBar(
                     WindowInsets.navigationBars.union(
                         WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
                     ),
-                ).padding(top = MaterialTheme.spacing.extraLarge, bottom = MaterialTheme.spacing.medium),
+                ).padding(top = MaterialTheme.spacing.extraLarge, bottom = FloatingToolbarDefaults.ScreenOffset),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (item.caption.text.isNotEmpty()) {
             ExpandableCaption(
                 caption = item.caption,
                 key = item.messageId,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact).then(maxWidth),
             )
         }
         val media = item.media
@@ -187,7 +192,7 @@ internal fun ViewerBottomBar(
                 playback = controls,
                 durationSeconds = media.video.duration,
                 onEvent = onEvent,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small).then(maxWidth),
             )
         }
         actions?.invoke()

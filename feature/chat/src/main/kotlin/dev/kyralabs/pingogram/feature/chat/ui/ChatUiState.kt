@@ -193,15 +193,20 @@ sealed interface ChatItem {
 
     /**
      * A message in a bubble. Grouped messages (same sender, a few minutes apart, the same day) share a stack: the
-     * name on the first, the avatar on the last ([position]).
+     * name on the first, the avatar, the time and the state on the last ([position]).
      *
      * @property sender who sent it, for screen readers ("You" for outgoing messages); shown as the name on the first
      *   bubble of a group in group chats ([showsSenderName]).
      * @property senderId the sender's user or chat id, which colors its name and picks its avatar placeholder.
      * @property avatar the sender's avatar beside the last bubble of a group; null elsewhere.
      * @property hasAvatarColumn the bubble leaves room for an avatar: incoming messages in group chats.
-     * @property time when it was sent, formatted for the list.
-     * @property status where an outgoing message is; null for incoming ones and in channels.
+     * @property time when it was sent, formatted for the list; screen readers always hear it.
+     * @property showsTime the time and the state show: on the last bubble of a group and on a message alone, as Google
+     *   Messages shows them, and on a bubble whose time was tapped to show ([ChatEvent.ToggleTime]).
+     * @property status where an outgoing message is; null for incoming ones. In channels and Saved Messages, where
+     *   nobody else reads them, only while it is sent or when sending failed.
+     * @property canResend sending failed and TDLib can send it again (an album: one of its items): its "Not sent" label
+     *   offers to retry ([ChatEvent.Resend]).
      * @property forwardedFrom "Forwarded from X"; null if it was not forwarded.
      * @property reply the quote of the message it replies to; null if it replies to nothing.
      * @property content what the message shows, for [MessageContentBody].
@@ -241,6 +246,8 @@ sealed interface ChatItem {
         override val date: UiText,
         val album: MessageAlbum? = null,
         val isEmojiOnly: Boolean = false,
+        val showsTime: Boolean = true,
+        val canResend: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -334,7 +341,7 @@ enum class OutgoingStatus {
     /** On its way to Telegram: a clock. */
     Pending,
 
-    /** Sending failed: an error icon. */
+    /** Sending failed: a "Not sent" label under the bubble. */
     Failed,
 
     /** Telegram has it; nobody read it yet: one check. */
