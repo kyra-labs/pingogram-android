@@ -10,6 +10,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Language: Settings → Language chooses Pingogram's language apart from your phone's, or follows the phone's (the
+  default). Pingogram ships in English for now; the page lists every language once translations arrive. On Android 13
+  and later the choice is the same as in Android's own app language settings, which the page also opens; on Android
+  8 to 12 Pingogram keeps it itself.
+- Two-step verification in Settings → Privacy and security: set a password with a hint and a recovery email (confirmed
+  with the code Telegram sends there), change it, turn it off, or change the recovery email, each after entering the
+  current password. A forgotten password is reset with a code sent to the recovery email, or, without one, after
+  Telegram's waiting period of several days, which the page shows with when it ends and lets you cancel. A recovery
+  email still waiting for its code can be confirmed or dropped later. Wrong passwords and codes show at the field,
+  and when Telegram asks to wait, a countdown says how long.
 - Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
   they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
   at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
@@ -96,8 +106,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in your chats.
 - On tablets and other wide screens, search opens in the chat list's place next to the conversation, and a chat or
   message you find opens beside it. Back closes that conversation first, then search.
+- Voice messages: while the message field is empty, a microphone button sits where the send button goes. Hold it to
+  record and release to send; slide toward the start to cancel, or slide up to keep recording hands-free, then send,
+  delete or pause and go on. The recording shows how long it is and a live waveform of your voice, and the message
+  replies to the message you are replying to. Recordings shorter than a second aren't sent. With a screen reader or
+  a keyboard, the button records hands-free right away. Pingogram asks for the microphone the first time you hold the
+  button and explains why first; if you refused, it offers your device's settings. Leaving the app or turning the
+  phone pauses a recording, which waits for you to go on, send or delete it.
 
 ### Changed
+- Pingogram now shows every screen in its own languages only: built-in texts of the libraries it uses (the date
+  picker, for example) no longer switch to your phone's language when Pingogram has no translation for it, and the
+  download is a little smaller.
 - Search looks like the rest of the app: results come in rounded groups under their headings, one wavy progress line
   under the search field replaces the loading animations in every section, a section that failed shows its error in
   a red box with "Try again", and the search screen grows out of the search button and shrinks back into it.

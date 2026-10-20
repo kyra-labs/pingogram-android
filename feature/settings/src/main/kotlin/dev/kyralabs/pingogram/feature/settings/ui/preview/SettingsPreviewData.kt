@@ -46,6 +46,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.StorageUsageState
 import dev.kyralabs.pingogram.feature.settings.ui.TwoStepVerificationSummary
 import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
 import dev.kyralabs.pingogram.feature.settings.ui.reflowLicenseText
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.PendingPasswordReset
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowUiState
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationStep
+import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationUiState
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
@@ -124,6 +129,31 @@ internal object SettingsPreviewData {
             twoStepVerification =
                 TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
         )
+
+    val twoStepOn = TwoStepVerificationUiState.Content(hasPassword = true, hasRecoveryEmail = true)
+
+    val twoStepOff = TwoStepVerificationUiState.Content(hasPassword = false, hasRecoveryEmail = false)
+
+    /** A password whose reset waits, and a new recovery email waiting for its code. */
+    val twoStepPending =
+        TwoStepVerificationUiState.Content(
+            hasPassword = true,
+            hasRecoveryEmail = false,
+            pendingEmailPattern = "a***@e***.com",
+            pendingReset = PendingPasswordReset(date = "Oct 27, 2026, 9:41 AM", canCompleteNow = false),
+        )
+
+    /** A flow at [step] of [flow], with the hint and the address a code went to. */
+    fun twoStepFlow(
+        flow: TwoStepVerificationFlow,
+        step: TwoStepVerificationStep,
+    ) = TwoStepVerificationFlowUiState(
+        flow = flow,
+        step = step,
+        passwordHint = "First pet",
+        emailPattern = "a***@e***.com",
+        canGoBack = step != TwoStepVerificationStep.CurrentPassword,
+    )
 
     val privacySetting =
         PrivacySettingUiState(

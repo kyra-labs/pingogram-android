@@ -21,7 +21,8 @@ import org.robolectric.annotation.Config
  * so it is declared up to API 28 and not requested on newer runtimes. The FileProvider that hands TDLib's files to
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
  * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
- * 2026-10-20); ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
+ * 2026-10-20); RECORD_AUDIO records voice messages (approved 2026-10-20), without requiring a microphone
+ * of the device; ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
  * (approved 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its RECEIVE_BOOT_COMPLETED is left out, except in the
  * foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
@@ -32,7 +33,7 @@ import org.robolectric.annotation.Config
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
- * themed icons.
+ * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -57,6 +58,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.USE_BIOMETRIC,
+                Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.ACCESS_NETWORK_STATE,
             ) + FlavorManifest.requestedPermissions,
             requested,
@@ -79,6 +81,7 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_COARSE_LOCATION to "",
                 Manifest.permission.ACCESS_FINE_LOCATION to "",
                 Manifest.permission.USE_BIOMETRIC to "",
+                Manifest.permission.RECORD_AUDIO to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
@@ -105,6 +108,16 @@ class AppManifestTest {
             ),
             features.filterKeys { it.startsWith("android.hardware.location") },
         )
+    }
+
+    @Test
+    fun `the microphone is used where there is one, not required to install`() {
+        val microphone =
+            mergedManifest()
+                .elements("uses-feature")
+                .single { it.androidAttribute("name") == "android.hardware.microphone" }
+
+        assertEquals("false", microphone.androidAttribute("required"))
     }
 
     @Test
@@ -147,6 +160,13 @@ class AppManifestTest {
             assertNotNull(drawable.foreground)
             assertNotNull(drawable.monochrome)
         }
+    }
+
+    @Test
+    fun `Android 13 and later list the languages Pingogram ships in its language settings`() {
+        val application = mergedManifest().elements("application").single()
+
+        assertEquals("@xml/locales_config", application.androidAttribute("localeConfig"))
     }
 
     private companion object {

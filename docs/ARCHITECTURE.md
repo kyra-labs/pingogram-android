@@ -67,6 +67,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
+- **Language** (FR-S1, §6.4): the languages Pingogram ships are those of `:app`'s `res/xml/locales_config.xml`, which
+  Android 13+ lists in its app language settings (`android:localeConfig`), Settings → Language lists on every version,
+  and the build packages resources for (`androidResources.localeFilters`, derived from the file in
+  `app/build.gradle.kts`, so libraries add no other languages). `core:domain`'s `AppLanguageRepository` is bound in
+  `:app` (`PlatformAppLanguageRepository`): from Android 13 it is Android's per-app language (`LocaleManager`), which
+  Android applies by creating the activity again, read anew at each collection since Android's settings change it too.
+  Before Android 13 the choice is kept in DataStore (`core:datastore`'s `DataStoreLanguagePreference`) and
+  `MainActivity` applies it itself, without AppCompat: `attachBaseContext` gives it a configuration context in the
+  language (`contextInLanguage`, which sets the process's default locale too) and it creates itself again when the
+  language read later or chosen in Settings differs, composing nothing until they match; reading it is never blocking,
+  so the first activity of a process with a chosen language is created twice, behind the splash screen. Notifications
+  and other text drawn outside the activity keep the system's language there. Telegram's own language packs
+  (`language_pack_id`) are not used.
 - **Theme**: `MainActivityViewModel.appearance` (null until the settings are read) feeds
   `PingogramTheme` in `MainActivity`, which also styles the system bar icons for the theme it
   resolves to. The splash screen waits for the settings as for TDLib's first login step (at most
@@ -84,6 +97,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **2-step verification** (FR-S1): `TwoStepVerificationRepository` (`core:domain`, `TdlibTwoStepVerificationRepository`
+  in `core:data`, no cache: TDLib has no updates for it) reads the state with `getPasswordState`, checks the current
+  password with `getRecoveryEmailAddress` and sets, changes, removes and recovers the password and its recovery email.
+  `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
+  pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
+  leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -136,6 +155,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+- So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
+  call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
+  and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).
@@ -159,6 +181,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
   `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
   download button.
+- Voice messages (FR-C5) are recorded by `feature:chat`'s `ChatRecorder` (a part of `ChatViewModel`, its state kept
+  out of `ChatUiState` as only the composer shows it) into a file `VoiceNoteRepository.newVoiceNoteFile`
+  (`TdlibVoiceNoteRepository`, `core:data`) makes in the upload cache (`uploads/<uuid>/voice.ogg` or `.m4a`), and sent
+  with `sendVoiceNote` (`inputMessageVoiceNote`); like
+  picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
+  refused.
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.

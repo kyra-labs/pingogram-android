@@ -23,7 +23,7 @@ sealed interface PrivacySecurityUiState {
      * @property rules the rules of every privacy setting Pingogram shows.
      * @property blockedCount how many users and chats are blocked.
      * @property sessionCount how many sessions the account has, this one included.
-     * @property twoStepVerification whether a 2-step verification password is set, read-only.
+     * @property twoStepVerification whether a 2-step verification password is set.
      * @property passcodeLock whether the passcode lock is on, on this device.
      */
     data class Content(
@@ -67,6 +67,8 @@ sealed interface PrivacySecurityPage {
     data object BlockedUsers : PrivacySecurityPage
 
     data object ActiveSessions : PrivacySecurityPage
+
+    data object TwoStepVerification : PrivacySecurityPage
 
     data object PasscodeLock : PrivacySecurityPage
 }

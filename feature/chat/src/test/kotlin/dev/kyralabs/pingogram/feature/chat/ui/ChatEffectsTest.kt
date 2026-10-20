@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import android.Manifest
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.material3.SnackbarHost
@@ -12,6 +14,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.R
@@ -24,6 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -31,7 +35,8 @@ import org.robolectric.annotation.Config
  * with the document's type and the chooser's title, and a snackbar when no app takes it or the file is gone. The app's
  * `FileProvider` itself is tested in `:app`, which declares it. Also a copied text ([ChatEffect.CopyText]), which goes
  * to the clipboard with a snackbar only before Android 13, a focus request for the composer, an action that is
- * not allowed, a sponsored message's link and what came of reporting one, and a failed send's haptic.
+ * not allowed, a sponsored message's link and what came of reporting one, a failed send's haptic; and the voice
+ * recording's snackbars, whose actions ask for the microphone permission or open the settings.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -216,4 +221,43 @@ class ChatEffectsTest {
     private fun string(
         @StringRes id: Int,
     ): String = RuntimeEnvironment.getApplication().getString(id)
+
+    @Test
+    fun `the microphone's reason is a snackbar whose action asks for the permission`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.ExplainMicrophone)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(string(R.string.voice_permission_rationale)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_allow)).performClick()
+        composeRule.waitForIdle()
+
+        val request = shadowOf(composeRule.activity).lastRequestedPermission
+        assertEquals(listOf(Manifest.permission.RECORD_AUDIO), request?.requestedPermissions?.toList())
+    }
+
+    @Test
+    fun `a refused microphone is a snackbar whose action opens the settings`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.MicrophoneDenied)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(string(R.string.voice_permission_denied)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_settings)).performClick()
+        composeRule.waitForIdle()
+
+        val started = shadowOf(composeRule.activity).nextStartedActivity
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started?.action)
+    }
+
+    @Test
+    fun `a recording too short to send says to hold, without an action`() {
+        setEffects()
+
+        effects.trySend(VoiceEffect.HoldToRecord)
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText(string(R.string.voice_hold_to_record)).assertExists()
+        composeRule.onNodeWithText(string(R.string.voice_permission_allow)).assertDoesNotExist()
+    }
 }

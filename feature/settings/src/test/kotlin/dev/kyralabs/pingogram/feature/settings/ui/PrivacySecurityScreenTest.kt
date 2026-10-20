@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -87,13 +86,15 @@ class PrivacySecurityScreenTest {
     }
 
     @Test
-    fun `two-step verification shows its state and opens nothing`() {
+    fun `two-step verification shows its state and opens its page`() {
         setScreen()
 
         composeRule
             .onNodeWithText(string(R.string.settings_two_step_verification_on_recovery_email), useUnmergedTree = true)
             .performScrollTo()
-        node(R.string.settings_two_step_verification).assertHasNoClickAction()
+        node(R.string.settings_two_step_verification).assertHasClickAction().performClick()
+
+        assertEquals(listOf(PrivacySecurityPage.TwoStepVerification), pages)
     }
 
     @Test

@@ -61,6 +61,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
+import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -89,7 +91,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   message now scrolls to the newest one, where it shows (asking for it when the loaded messages do not reach it).
  *   Where they cannot, a label says why; in a channel they only
  *   read, there is nothing. Its reply or edit bar shows its message in the list when tapped, as a reply quote does;
- *   [composerFocus] gives its text field the focus when the user starts a reply or an edit.
+ *   [composerFocus] gives its text field the focus when the user starts a reply or an edit. Its microphone records
+ *   voice messages ([recording], the view model's, kept apart from [state]); one sent scrolls to the newest message
+ *   too.
  * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
  *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
@@ -119,6 +123,7 @@ internal fun ChatScreen(
     composerText: ComposerText = remember { ComposerText() },
     composerFocus: ComposerFocusState = rememberComposerFocusState(),
     attach: AttachInputs = remember { AttachInputs() },
+    recording: VoiceRecordingUiState? = null,
     reportComment: TextFieldState = remember { TextFieldState() },
 ) {
     val content = state.content
@@ -144,9 +149,15 @@ internal fun ChatScreen(
             )
         },
         bottomBar = {
-            ChatScreenBottomBar(state, composerText, composerFocus, { selectionBack.value }, onEvent, scrollToSent) {
-                attachMenuOpen = true
-            }
+            ChatScreenBottomBar(
+                state = state,
+                recording = recording,
+                composerText = composerText,
+                composerFocus = composerFocus,
+                selectionBack = { selectionBack.value },
+                onEvent = onEvent,
+                onSent = scrollToSent,
+            ) { attachMenuOpen = true }
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -177,12 +188,13 @@ internal fun ChatScreen(
 /**
  * The bottom of the screen: the composer ([ChatBottomBar]), or in selection mode the selection toolbar in its place
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
- * [onSent], except an edit, whose message stays where it is.
+ * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
  */
-@Suppress("LongParameterList") // The state, the composer's text and focus, and what its buttons do, from ChatScreen.
+@Suppress("LongParameterList") // The state, the recording, the composer's text and focus, what its buttons do.
 @Composable
 private fun ChatScreenBottomBar(
     state: ChatUiState,
+    recording: VoiceRecordingUiState?,
     composerText: ComposerText,
     composerFocus: ComposerFocusState,
     selectionBack: () -> Float,
@@ -208,6 +220,8 @@ private fun ChatScreenBottomBar(
             onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
             onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
             onAttach = onAttach,
+            recording = recording,
+            onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
         )
     }
 }
