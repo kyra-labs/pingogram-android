@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.core.ui.sticker
 
-import androidx.core.graphics.createBitmap
 import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +20,7 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.IntSize
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
