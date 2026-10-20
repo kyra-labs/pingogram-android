@@ -25,7 +25,6 @@ import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -111,7 +110,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Stateless: [SearchRoute] hoists the view model and the field's state, and focuses the field on entry through
  * [focusRequester].
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SearchScreen(
     state: SearchUiState,
@@ -197,7 +195,6 @@ private fun SearchHeader(
  * The search bar's input field: the back arrow, the query with its placeholder, and the clear button while there is
  * text.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchField(
     textFieldState: TextFieldState,

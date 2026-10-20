@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -15,9 +14,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentType
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -98,7 +100,6 @@ fun PhoneNumberScreen(
  * fields), like the number fields beside it. Tapping it, or activating it with a screen reader, opens the country
  * picker sheet instead of a menu; the arrow turns while the sheet is open.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CountryField(
     country: CountryUiModel?,
@@ -139,6 +140,19 @@ private fun PhoneNumberFields(
     onDone: () -> Unit,
 ) {
     val transformation = remember(state.numberFormat) { PhoneNumberVisualTransformation(state.numberFormat) }
+    // A phone number reads left to right in every language: "+44 7911 123456", the calling code first.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        PhoneNumberRow(state, transformation, onEvent, onDone)
+    }
+}
+
+@Composable
+private fun PhoneNumberRow(
+    state: AuthStepUiState.PhoneNumber,
+    transformation: PhoneNumberVisualTransformation,
+    onEvent: (AuthEvent) -> Unit,
+    onDone: () -> Unit,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
         TextField(
             value = state.callingCode,

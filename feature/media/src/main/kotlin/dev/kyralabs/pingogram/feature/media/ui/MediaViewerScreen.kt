@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -214,7 +213,6 @@ private fun DismissibleContent(
 }
 
 /** The pages, or what shows instead of them. [modifier] keeps the states clear of the chrome; the pages ignore it. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ViewerContent(
     state: MediaViewerUiState,

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -130,7 +129,6 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
  * The search button ([onSearch]) grows into search and back ([SearchButtonSlot], through [search]'s container
  * transform), and is away while search is [searchOpen].
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PingogramNavigationBar(
     selected: TopLevelDestination?,
@@ -278,7 +276,6 @@ private fun Modifier.tabIndicator(
  * selection (the tab that grows most when emphasized and given its icon and wider padding), so selecting another tab
  * never switches between labels and icons.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun labelsFit(maxWidth: Dp): Boolean {
     val textMeasurer = rememberTextMeasurer()

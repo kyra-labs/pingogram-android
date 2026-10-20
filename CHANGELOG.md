@@ -192,6 +192,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the
   shape it has in its message, including the square edge above a caption and the corners of an album.
+- In right-to-left languages, the phone number at login reads left to right, the calling code first ("+44 7911
+  123456"), instead of showing its digit groups and the "+" reversed.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

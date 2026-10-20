@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -106,7 +105,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Header**: [header] shows at the top of the sheet, above the list, which does not scroll it away: the request to
  *   allow notifications ([NotificationPromptHost]) on the Chats tab.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatListScreen(
     state: ChatListUiState,
@@ -188,7 +186,6 @@ private fun contentWindowInsets(
  * frames stop here.
  */
 @Suppress("LongParameterList") // The state, events, list state and padding, the open chat, folder switch and header.
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,

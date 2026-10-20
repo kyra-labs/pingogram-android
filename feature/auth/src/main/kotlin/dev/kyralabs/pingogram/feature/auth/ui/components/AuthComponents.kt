@@ -224,7 +224,6 @@ internal fun AuthActionRow(
  * label, keeping its width, and keeps [text] for screen readers. [interactionSource] lets the screen react to presses
  * too.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AuthPrimaryButton(
     text: String,
@@ -260,7 +259,6 @@ internal fun AuthPrimaryButton(
  * A secondary action: a text button with a `labelLarge` label (`docs/DESIGN_SYSTEM.md` §3.3), e.g. "Forgot password?"
  * at the bottom start of a step, or "Resend code" in its form; shows progress like [AuthPrimaryButton].
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AuthTextButton(
     text: String,
