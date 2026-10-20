@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.location.LocationInputs
+import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationEvent
 import kotlinx.coroutines.launch
 
 /**
@@ -52,7 +54,7 @@ internal class AttachLaunchers(
 
     /**
      * Opens the gallery, the file picker or the contact picker for [option]; false when no app opens, and for the
-     * camera, whose file the view model makes first, and the poll form, which is the screen's.
+     * camera, whose file the view model makes first, and the location and poll sheets, which are the screen's.
      */
     fun pick(option: AttachOption): Boolean =
         when (option) {
@@ -70,7 +72,7 @@ internal class AttachLaunchers(
                 launching { contact.launch(Unit) }
             }
 
-            AttachOption.Camera, AttachOption.Poll -> {
+            AttachOption.Camera, AttachOption.Location, AttachOption.Poll -> {
                 false
             }
         }
@@ -123,7 +125,7 @@ internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunch
 /**
  * What the conversation's attach menu works with, from its route: [onPick] opens the picker of the option chosen in
  * the menu, [hasCamera] false leaves the camera out of it, [caption] is the preview's caption and [pollEditor] the
- * poll form, both the view model's.
+ * poll form, both the view model's, and [location] the "Location" sheet's.
  */
 @Stable
 internal class AttachInputs(
@@ -131,11 +133,13 @@ internal class AttachInputs(
     val hasCamera: Boolean = true,
     val caption: ComposerText = ComposerText(),
     val pollEditor: PollEditor = PollEditor(),
+    val location: LocationInputs = LocationInputs(),
 )
 
 /**
  * The route's [AttachInputs]: an option of the menu opens its picker through [launchers], and a snackbar on
- * [snackbarHostState] says when no app can; the camera and the poll form go to the view model through [onEvent].
+ * [snackbarHostState] says when no app can; the camera and the poll form go to the view model through [onEvent], the
+ * location to its sheet's ([location]).
  */
 @Composable
 internal fun rememberAttachInputs(
@@ -144,11 +148,12 @@ internal fun rememberAttachInputs(
     caption: ComposerText,
     pollEditor: PollEditor,
     snackbarHostState: SnackbarHostState,
+    location: LocationInputs = LocationInputs(),
 ): AttachInputs {
     val currentOnEvent by rememberUpdatedState(onEvent)
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
-    return remember(launchers, caption, pollEditor, snackbarHostState, resources, scope) {
+    return remember(launchers, caption, pollEditor, snackbarHostState, resources, scope, location) {
         AttachInputs(
             onPick = { option ->
                 when (option) {
@@ -158,6 +163,10 @@ internal fun rememberAttachInputs(
 
                     AttachOption.Poll -> {
                         currentOnEvent(ChatEvent.OpenPoll)
+                    }
+
+                    AttachOption.Location -> {
+                        location.onEvent(ShareLocationEvent.Open)
                     }
 
                     else -> {
@@ -171,6 +180,7 @@ internal fun rememberAttachInputs(
             hasCamera = launchers.hasCamera,
             caption = caption,
             pollEditor = pollEditor,
+            location = location,
         )
     }
 }

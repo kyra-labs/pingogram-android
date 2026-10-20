@@ -5,6 +5,8 @@ plugins {
 dependencies {
     // The photo picker for a new profile photo, and BackHandler for unsaved profile changes.
     implementation(libs.androidx.activity.compose)
+    // The window size class: the passcode entry lays out its keypad beside the header on windows of compact height.
+    implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)

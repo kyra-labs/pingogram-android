@@ -7,6 +7,8 @@ dependencies {
     api(projects.core.domain)
     implementation(projects.core.datastore)
     implementation(projects.core.tdlib)
+    // LocationManagerCompat and ContextCompat (AndroidDeviceLocationRepository, AndroidSharedStorageRepository).
+    implementation(libs.androidx.core)
 
     testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)

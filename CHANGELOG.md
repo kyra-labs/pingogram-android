@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Send your location: "Location" in the attach menu finds where you are and shows the coordinates and how accurate
+  they are, improving while you look, with "Open in maps" to check them in your maps app. Send it now, without sound or
+  at a time. Pingogram explains why before Android asks for the location, uses it only while the sheet is open, never
+  in the background, and works without Google Play services. If you allow only an approximate location, that is what
+  is sent, and the sheet offers to ask for the precise one; if location is turned off, a snackbar takes you to the
+  setting.
 - Select messages: "Select" in a message's actions starts selection mode. Tap or long-press other messages to select
   or deselect them (an album as a whole); selected messages turn a different color and show a check. The top bar
   shows how many are selected, and a toolbar in place of the composer copies their texts (several at once with who
@@ -71,6 +77,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - More you can do with a photo or video you are viewing: delete it (where Telegram lets you, for yourself or for
   everyone, after asking), jump to it in its chat with "Show in chat", and copy a photo to paste it into another
   app. Copying and sharing stay off in chats that don't allow saving their content.
+- Passcode lock: Privacy and security → Passcode lock asks for a PIN of 4 to 8 digits, or a password, whenever you
+  come back to Pingogram: immediately, or after 1 minute, 5 minutes or an hour in the background, and always after a
+  restart. On Android 10 and later you can unlock with your fingerprint or face instead. While locked, nothing of your
+  chats shows, screenshots are blocked, and a notification you tap opens its chat only after you unlock. "Hide content
+  in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
+  After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
+  remove it. Changing or turning off the passcode asks for it first.
 - Voice messages: while the message field is empty, a microphone button sits where the send button goes. Hold it to
   record and release to send; slide toward the start to cancel, or slide up to keep recording hands-free, then send,
   delete or pause and go on. The recording shows how long it is and a live waveform of your voice, and the message

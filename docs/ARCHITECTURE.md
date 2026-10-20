@@ -73,6 +73,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   300 ms, `docs/PERFORMANCE.md` §2), and nothing is composed before they are known, so the app never
   draws in a theme the user did not choose. A change made in Appearance reaches the theme through the
   same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1).
+- **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
+  `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
+  settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
+  settings and the login steps: locked at every start with a passcode, again after the auto-lock delay out of sight
+  (`MainActivity.onStop`/`onStart`, not for configuration changes), never while signed out; it counts wrong attempts
+  and makes the next ones wait. `MainActivity` waits for it like for the Appearance settings, then `LockableApp`
+  (`:app`) shows `feature:settings`' `AppLockRoute` instead of `PingogramApp`, which leaves the composition while
+  locked and keeps its saved state (`rememberSaveableStateHolder`), so nothing of it draws, runs or reaches screen
+  readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
+  "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
+  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,
@@ -151,6 +162,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   The media viewer saves into the gallery through `MediaStore` (Android 10+) or the public
   directories with `WRITE_EXTERNAL_STORAGE` (Android 8–9 only), and the conversation saves files into Downloads the
   same way, both behind `SharedStorageRepository` (`core:domain`; `AndroidSharedStorageRepository` in `core:data`).
+
+## Location
+
+- The attach menu's "Location" sends the device's location (`docs/adr/0006-platform-location-manager.md`).
+  `AndroidDeviceLocationRepository` (`core:data`, behind `core:domain`'s `DeviceLocationRepository`) reads the access the
+  permissions give and finds the location with the platform's `LocationManager` (`LocationManagerCompat`), never Google
+  Play services: a cold `Flow` of the best location so far, the last known one first, whose collection keeps the
+  providers on.
+- The sheet has its own view model, `ShareLocationViewModel` (`feature:chat`, keyed by the chat like `ChatViewModel`):
+  the permission step, the search while the sheet is open and the screen collects its state (`WhileSubscribed`, so it
+  stops in the background), a 30 s timeout for a first location, and the snackbar when the location is off. The route
+  asks Android for the permissions and opens the settings and the maps app (`LocationInputs`). Sending goes through
+  `ChatViewModel` (`ChatEvent.SendLocation` → `ChatAttachments` → `AttachmentRepository.sendLocation`), so the location
+  takes the composer's reply along like every attachment.
 
 ## Notifications
 

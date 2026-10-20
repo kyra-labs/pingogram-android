@@ -8,6 +8,10 @@
     <!-- Notifications of new messages (REQUIREMENTS.md FR-N1, approved by the owner on 2026-10-19). Android 13 and
          later ask the user at run time: the chat list explains why first, and asks once. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Unlocking the passcode lock with a fingerprint or the face through the system's BiometricPrompt, Android 10
+         and later (REQUIREMENTS.md FR-S1, approved by the owner on 2026-10-20). A normal permission: Android grants it
+         at install, and the system's prompt asks the user each time. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <!-- Recording voice messages in the composer (REQUIREMENTS.md FR-C5, approved by the owner on 2026-10-20), only
          while the conversation is on screen. Asked at run time at the first hold of the microphone, after a snackbar
          says why. Devices without a microphone can still install the app (and do everything else). -->
@@ -43,6 +47,24 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- Sending the device's location from the attach menu (REQUIREMENTS.md FR-C5, approved by the owner on 2026-10-20),
+         in the foreground only, while its sheet is open: there is no background location permission and no live
+         location. The sheet explains why before Android asks; both are asked together, so Android 12 and later let the
+         user pick an approximate location, which is then what is sent. The platform's LocationManager finds it, no
+         Google Play services (docs/adr/0006-platform-location-manager.md). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Devices without GPS (Chromebooks, some tablets) still install Pingogram, and find their location through the
+         network provider, or say they cannot. -->
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.network"
+        android:required="false" />
 
     <!-- enableOnBackInvokedCallback: predictive back (REQUIREMENTS.md §7). -->
     <application
