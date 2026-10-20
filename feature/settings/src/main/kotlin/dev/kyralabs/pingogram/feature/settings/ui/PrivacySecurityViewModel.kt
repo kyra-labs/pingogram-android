@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.TwoStepVerificationState
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
+import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
@@ -31,7 +32,8 @@ import javax.inject.Inject
 
 /**
  * The Privacy and security page (`REQUIREMENTS.md` FR-S1): the main choice of every privacy setting, how many users and
- * chats are blocked, how many sessions the account has, and whether 2-step verification is on.
+ * chats are blocked, how many sessions the account has, whether 2-step verification is on, and whether the passcode
+ * lock is on, which follows its settings as they change ([PasscodeRepository]).
  *
  * Everything loads at once when the page opens; if anything fails, the page shows why and offers to try again. TDLib's
  * changes of the privacy settings apply as they come, made here or elsewhere, so the page shows a choice made on a
@@ -46,6 +48,7 @@ class PrivacySecurityViewModel
         private val blockListRepository: BlockListRepository,
         private val sessionRepository: SessionRepository,
         private val twoStepVerificationRepository: TwoStepVerificationRepository,
+        private val passcodeRepository: PasscodeRepository,
         private val timeFormats: SettingsTimeFormats,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<PrivacySecurityUiState>(PrivacySecurityUiState.Loading)
@@ -56,10 +59,27 @@ class PrivacySecurityViewModel
         /** The changes TDLib reported since the running load started; its answers may predate them. */
         private val changedDuringLoad = mutableMapOf<PrivacySetting, PrivacyRules>()
 
+        /** Whether the passcode lock is on, as its settings last said. */
+        private var passcodeLock = false
+
         init {
             // Subscribed before the first request, so no change in between is missed.
             viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
                 privacyRepository.changes.collect(::onChange)
+            }
+            viewModelScope.launch {
+                passcodeRepository.settings.collect { settings ->
+                    passcodeLock = settings.isSet
+                    mutableUiState.update { state ->
+                        if (state is PrivacySecurityUiState.Content) {
+                            state.copy(
+                                passcodeLock = settings.isSet,
+                            )
+                        } else {
+                            state
+                        }
+                    }
+                }
             }
             load(keepContent = false)
         }
@@ -100,7 +120,10 @@ class PrivacySecurityViewModel
                         is Outcome.Success -> {
                             val content = loaded.value
                             mutableUiState.value =
-                                content.copy(rules = (content.rules + changedDuringLoad).toImmutableMap())
+                                content.copy(
+                                    rules = (content.rules + changedDuringLoad).toImmutableMap(),
+                                    passcodeLock = passcodeLock,
+                                )
                         }
 
                         is Outcome.Failure -> {

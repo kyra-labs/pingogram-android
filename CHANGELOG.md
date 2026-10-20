@@ -71,6 +71,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - More you can do with a photo or video you are viewing: delete it (where Telegram lets you, for yourself or for
   everyone, after asking), jump to it in its chat with "Show in chat", and copy a photo to paste it into another
   app. Copying and sharing stay off in chats that don't allow saving their content.
+- Passcode lock: Privacy and security → Passcode lock asks for a PIN of 4 to 8 digits, or a password, whenever you
+  come back to Pingogram: immediately, or after 1 minute, 5 minutes or an hour in the background, and always after a
+  restart. On Android 10 and later you can unlock with your fingerprint or face instead. While locked, nothing of your
+  chats shows, screenshots are blocked, and a notification you tap opens its chat only after you unlock. "Hide content
+  in recent apps" keeps your chats out of the recent apps screen (before Android 13 this also blocks screenshots).
+  After five wrong tries the lock makes you wait, longer each time. If you forget the passcode, you can log out to
+  remove it. Changing or turning off the passcode asks for it first.
 
 ### Changed
 - The login screens are clearer and fit wide and landscape screens: each step starts with a large title under a

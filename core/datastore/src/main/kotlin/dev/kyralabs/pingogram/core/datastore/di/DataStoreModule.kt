@@ -18,10 +18,12 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
+import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
+import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +45,9 @@ interface DataStoreModule {
 
     @Binds
     fun keepConnectedRepository(repository: DataStoreKeepConnectedRepository): KeepConnectedRepository
+
+    @Binds
+    fun passcodeRepository(repository: DataStorePasscodeRepository): PasscodeRepository
 
     companion object {
         @Provides

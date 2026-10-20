@@ -20,7 +20,8 @@ import org.robolectric.annotation.Config
  * media into the gallery on Android 8–9 only (approved 2026-10-18): later versions save through MediaStore without it,
  * so it is declared up to API 28 and not requested on newer runtimes. The FileProvider that hands TDLib's files to
  * other apps (approved the same day) is private and grants single URIs. POST_NOTIFICATIONS shows notifications
- * (approved 2026-10-19); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
+ * (approved 2026-10-19); USE_BIOMETRIC unlocks the passcode lock with the system's biometric prompt (approved
+ * 2026-10-20); WorkManager's WAKE_LOCK and FOREGROUND_SERVICE run notification actions as a foreground
  * service before Android 12 only, so they stop at API 30, and its ACCESS_NETWORK_STATE and RECEIVE_BOOT_COMPLETED are
  * left out, except in the foss flavor, whose "Keep connected" service needs FOREGROUND_SERVICE on every version, its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
@@ -47,8 +48,11 @@ class AppManifestTest {
         // Robolectric runs Android 14, where storage access up to API 28 and WorkManager's permissions up to API 30 are
         // not requested.
         assertEquals(
-            setOf(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS) +
-                FlavorManifest.requestedPermissions,
+            setOf(
+                Manifest.permission.INTERNET,
+                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.USE_BIOMETRIC,
+            ) + FlavorManifest.requestedPermissions,
             requested,
         )
     }
@@ -66,6 +70,7 @@ class AppManifestTest {
             mapOf(
                 Manifest.permission.INTERNET to "",
                 Manifest.permission.POST_NOTIFICATIONS to "",
+                Manifest.permission.USE_BIOMETRIC to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,

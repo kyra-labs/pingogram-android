@@ -245,6 +245,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Chat list preview / message text | `bodyMedium` (one line) / `bodyLarge` |
 | Timestamps, badges, meta | `labelSmall` (`tnum`) |
 | Verification codes | `headlineSmall` (`tnum`), centered, tracked 0.1 em wider (`typography.verificationCode`, `core:ui`); word and phrase codes `titleLarge` as typed text |
+| Passcode entry (lock screen, Passcode lock) | title `headlineMediumEmphasized` under a `MaterialShapes` badge, as an auth step; hint and errors `bodyMedium`; keypad digits `headlineSmall` |
 | Buttons | filled (primary) buttons `labelLargeEmphasized`; tonal, outlined and text buttons `labelLarge` |
 | Section headers in settings | `titleSmallEmphasized` in `primary` (settings pages; Settings home has none, §6) |
 | Account card name (Settings home) | `titleLarge`; phone `bodyLarge`, username `bodyMedium` in `onSurfaceVariant`; "Premium" label `labelMediumEmphasized` |
@@ -261,7 +262,8 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   - states: the selected avatar's `SoftBurst` check, the call screen avatar (`Boom` morph on ringing)
   - story rings
   - reaction bursts (`Burst`/`SoftBurst`)
-  - the QR login frame (`Cookie12Sided`) and the auth step badges
+  - the QR login frame (`Cookie12Sided`), the auth step badges and the passcode entry's badge (`Gem`, `Cookie4Sided` on
+    error)
   - loading indicator polygons
   - empty-state illustrations: soft shapes, so errors use `Cookie4Sided`, never the spiky `Burst`
 
@@ -406,6 +408,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
 | Tooltips / onboarding | `TooltipBox` with `PlainTooltip` on icon-only buttons in toolbars, `RichTooltip` for onboarding |
 | Date pickers (schedule) | `DatePicker` + `TimePicker` in `DatePickerDialog` |
 | Navigation drawer | not used (folders live in tabs) |
+| Lock screen and passcode entry | Full-window `Scaffold` on `surface` (nothing of the app behind it), centered column capped at `contentMaxWidth`: a `MaterialShapes.Gem` badge in `primaryContainer` that morphs to `Cookie4Sided` in `errorContainer` on a wrong passcode, the title, the hint or the error in `error`, then the PIN as dots (`sizes.passcodeDot`, `onSurface`, growing in on `fastSpatialSpec`) in a pill on `surfaceContainerHighest`, or a filled `SecureTextField` for a password. A wrong entry shakes the field on `fastSpatialSpec` with a `Reject` haptic. Keypad: one `ButtonGroup` per row (weights, `animateWidth`), medium (56 dp) `FilledTonalButton` keys with `ButtonDefaults.shapesFor` press morph and `KeyboardTap` haptics, the submit key a filled `Button` with a check (a `LoadingIndicator` while checking), at most `sizes.pinPadMaxWidth`. Below: "Forgot passcode?" `TextButton` at the start, a fingerprint `FilledTonalIconButton` at the end. Compact height: header, dots and actions at the start, keypad at the end. Forgetting asks with an `AlertDialog` (destructive) |
 | Empty states | `MaterialShapes` illustration (soft shapes; errors `Cookie4Sided`) + `headlineSmallEmphasized` + `bodyMedium` + a `Button` where there is a next step (the chat list's: "New chat") |
 
 ### 6.1 Floating navigation bar (compact windows)
