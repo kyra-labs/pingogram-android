@@ -122,7 +122,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
-  and stopping a recording wait for the audio input and the encoder (`docs/adr/0005-voice-recording.md`).
+  and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).
 - Dispatchers are injected (`@Dispatcher(IO)`, `@Dispatcher(Default)`) so tests can use
   `StandardTestDispatcher`. The qualifier lives in `core:common`; `:app`'s `DispatchersModule`
   provides the bindings (`core:common` is a plain JVM module without Hilt's plugin).

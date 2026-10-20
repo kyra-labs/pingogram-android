@@ -38,7 +38,7 @@ interface VoiceRecorder {
 }
 
 /**
- * How a voice message is recorded (`docs/adr/0005-voice-recording.md`): Ogg Opus, Telegram's own voice note format,
+ * How a voice message is recorded (`docs/adr/0007-voice-recording.md`): Ogg Opus, Telegram's own voice note format,
  * where the platform has an Opus encoder (Android 10 and later); AAC in an MP4 (`.m4a`) container before that, which
  * Telegram also takes as a voice note. [extension] is the file's: TDLib reads its type from it.
  */
