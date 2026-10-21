@@ -40,7 +40,7 @@ data class AccountUiModel(
     override fun toString() = "AccountUiModel(userId=$userId, …)"
 }
 
-/** The pages Settings opens, each pushed above the Settings tab. */
+/** The pages Settings opens, each pushed above the Settings tab, or beside Settings home on expanded windows. */
 enum class SettingsPage {
     EditProfile,
     Appearance,
@@ -50,3 +50,12 @@ enum class SettingsPage {
     About,
     PrivacySecurity,
 }
+
+/**
+ * Settings home as the list beside a page (`docs/DESIGN_SYSTEM.md` §7, expanded windows): its page rows are
+ * selectable, and the row of [openPage], the page shown beside it, reads as selected; none while no page is open.
+ */
+@Immutable
+data class SettingsPageSelection(
+    val openPage: SettingsPage?,
+)

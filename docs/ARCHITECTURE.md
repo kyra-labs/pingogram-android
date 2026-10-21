@@ -124,6 +124,15 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatRoute`, and the archive pushes it on every window. New chat (`NewChatRoute`, `feature:chats`) is pushed above
   the Chats tab on every window too; a contact's chat takes its place on the back stack, so back from the chat
   returns to the chat list.
+- Settings is a list-detail too (`SettingsListDetail`, `feature:settings`, composed by `settingsScreen` as the
+  `SettingsRoute` destination): Settings home as the list, the navigator holding the open page by its name. With one
+  pane a row pushes the page's route above the tab (`settingsPages`, every window narrower than expanded); with two
+  it shows the page in the detail pane, in a `NavHost` of its own that starts at the page and holds the pages it opens
+  above it (the same `settingsPages` graph, on its own `NavController`), with a `ViewModelStoreOwner` of its own
+  (`rememberViewModelStoreOwner`), so its view models survive configuration changes and are cleared when the page
+  closes. Back pops that `NavHost` first, then the navigator closes the page. Both list-detail layouts share their pane
+  parts from `core:ui` (`ListDetailPanes.kt`: the rounded pane container, the drag handle and its anchors, following
+  the window's directive, showing a detail in place of another).
 - Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
   TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection

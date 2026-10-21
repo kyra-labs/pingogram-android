@@ -7,6 +7,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     // The window size class: the passcode entry lays out its keypad beside the header on windows of compact height.
     implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)

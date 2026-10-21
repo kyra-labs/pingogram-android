@@ -1,8 +1,11 @@
 package dev.kyralabs.pingogram.feature.settings.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -29,6 +32,7 @@ import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
+import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
@@ -48,26 +52,27 @@ import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as Open
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.SettingsRoute as SettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
 /**
- * Adds the Settings tab, [SettingsRoute], to the graph. Its rows call [onOpen] with the route of the page they open,
- * which the app pushes above the tab: [EditProfileRoute], [AppearanceRoute], [NotificationSettingsRoute],
- * [DataStorageRoute], [LanguageRoute], [AboutRoute] or [PrivacySecurityRoute]. Once Edit profile saved the profile
- * ([popBackStackAfterProfileSaved]), the tab says so.
+ * Adds the Settings tab, [SettingsRoute], to the graph: Settings home, and on expanded windows the page it opens beside
+ * it ([SettingsListDetail]). With one pane its rows call [onOpen] with the route of the page they open, which the app
+ * pushes above the tab: [EditProfileRoute], [AppearanceRoute], [NotificationSettingsRoute], [DataStorageRoute],
+ * [LanguageRoute], [AboutRoute] or [PrivacySecurityRoute]. Once Edit profile saved the profile
+ * ([popBackStackAfterProfileSaved], or beside Settings home), the tab says so.
  */
 fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
     composable<SettingsRoute> { entry ->
         val results = entry.savedStateHandle
         val profileSaved by results.getStateFlow(PROFILE_SAVED_RESULT, false).collectAsStateWithLifecycle()
-        SettingsScreenRoute(
-            onOpenPage = { onOpen(it.route) },
+        SettingsListDetail(
+            onOpen = onOpen,
             profileSaved = profileSaved,
             onProfileSavedShown = { results[PROFILE_SAVED_RESULT] = false },
+            onProfileSaved = { results[PROFILE_SAVED_RESULT] = true },
         )
     }
 }
@@ -82,7 +87,8 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
  * [onBack] leaves each of them; Edit profile leaves with [onProfileSaved] once it saved, which the app implements with
  * [popBackStackAfterProfileSaved], and a flow of 2-step verification with [onTwoStepVerificationDone] once it is done,
- * which the app implements with [popBackStackAfterTwoStepVerification].
+ * which the app implements with [popBackStackAfterTwoStepVerification]. The detail pane of [SettingsListDetail] adds
+ * them to a `NavHost` of its own, with these callbacks on its own back stack.
  */
 fun NavGraphBuilder.settingsPages(
     onOpen: (route: Any) -> Unit,
@@ -90,12 +96,12 @@ fun NavGraphBuilder.settingsPages(
     onProfileSaved: () -> Unit,
     onTwoStepVerificationDone: (TwoStepVerificationResult) -> Unit,
 ) {
-    composable<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
-    composable<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
-    composable<NotificationSettingsRoute> {
+    settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
+    settingsPage<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
+    settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
-    composable<NotificationExceptionsRoute> { entry ->
+    settingsPage<NotificationExceptionsRoute> { entry ->
         val scope =
             NotificationScope.entries.firstOrNull {
                 it.name ==
@@ -108,10 +114,10 @@ fun NavGraphBuilder.settingsPages(
             LaunchedEffect(Unit) { onBack() }
         }
     }
-    composable<DataStorageRoute> {
+    settingsPage<DataStorageRoute> {
         DataStorageScreenRoute(onOpenAutoDownload = { onOpen(AutoDownloadRoute(it.name)) }, onBack = onBack)
     }
-    composable<AutoDownloadRoute> { entry ->
+    settingsPage<AutoDownloadRoute> { entry ->
         val network = AutoDownloadNetwork.entries.firstOrNull { it.name == entry.toRoute<AutoDownloadRoute>().network }
         if (network != null) {
             AutoDownloadScreenRoute(network = network, onBack = onBack)
@@ -120,18 +126,18 @@ fun NavGraphBuilder.settingsPages(
             LaunchedEffect(Unit) { onBack() }
         }
     }
-    composable<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
-    composable<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
-    composable<OpenSourceLicensesRoute> {
+    settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
+    settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
+    settingsPage<OpenSourceLicensesRoute> {
         OpenSourceLicensesScreenRoute(onOpenLibrary = { onOpen(OpenSourceLibraryRoute(it)) }, onBack = onBack)
     }
-    composable<OpenSourceLibraryRoute> { entry ->
+    settingsPage<OpenSourceLibraryRoute> { entry ->
         OpenSourceLibraryScreenRoute(libraryId = entry.toRoute<OpenSourceLibraryRoute>().libraryId, onBack = onBack)
     }
-    composable<PrivacySecurityRoute> {
+    settingsPage<PrivacySecurityRoute> {
         PrivacySecurityScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
-    composable<PrivacySettingRoute> { entry ->
+    settingsPage<PrivacySettingRoute> { entry ->
         val setting = PrivacySetting.entries.firstOrNull { it.name == entry.toRoute<PrivacySettingRoute>().setting }
         if (setting != null) {
             PrivacySettingScreenRoute(setting = setting, onBack = onBack)
@@ -140,12 +146,12 @@ fun NavGraphBuilder.settingsPages(
             LaunchedEffect(Unit) { onBack() }
         }
     }
-    composable<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
-    composable<ActiveSessionsRoute> { ActiveSessionsScreenRoute(onBack = onBack) }
-    composable<PasscodeLockRoute> {
+    settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
+    settingsPage<ActiveSessionsRoute> { ActiveSessionsScreenRoute(onBack = onBack) }
+    settingsPage<PasscodeLockRoute> {
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
     }
-    composable<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
+    settingsPage<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
     twoStepVerificationPages(onOpen, onBack, onTwoStepVerificationDone)
 }
 
@@ -155,7 +161,7 @@ private fun NavGraphBuilder.twoStepVerificationPages(
     onBack: () -> Unit,
     onDone: (TwoStepVerificationResult) -> Unit,
 ) {
-    composable<TwoStepVerificationRoute> { entry ->
+    settingsPage<TwoStepVerificationRoute> { entry ->
         val results = entry.savedStateHandle
         val result by results.getStateFlow<String?>(TWO_STEP_VERIFICATION_RESULT, null).collectAsStateWithLifecycle()
         TwoStepVerificationScreenRoute(
@@ -165,7 +171,7 @@ private fun NavGraphBuilder.twoStepVerificationPages(
             onBack = onBack,
         )
     }
-    composable<TwoStepVerificationFlowRoute> { entry ->
+    settingsPage<TwoStepVerificationFlowRoute> { entry ->
         val name = entry.toRoute<TwoStepVerificationFlowRoute>().flow
         val flow = TwoStepVerificationFlow.entries.firstOrNull { it.name == name }
         if (flow != null) {
@@ -174,6 +180,20 @@ private fun NavGraphBuilder.twoStepVerificationPages(
             // A flow this version does not know, e.g. from a back stack restored after an update.
             LaunchedEffect(Unit) { onBack() }
         }
+    }
+}
+
+/**
+ * A settings page of route [T]: [content], with its back button unless it is the page the detail pane of
+ * [SettingsListDetail] shows beside Settings home ([LocalSettingsPageWithoutBack]).
+ */
+private inline fun <reified T : Any> NavGraphBuilder.settingsPage(
+    noinline content: @Composable (NavBackStackEntry) -> Unit,
+) {
+    composable<T> { entry ->
+        CompositionLocalProvider(
+            LocalSettingsBackButton provides (LocalSettingsPageWithoutBack.current != T::class),
+        ) { content(entry) }
     }
 }
 
@@ -201,7 +221,7 @@ fun NavController.popBackStackAfterTwoStepVerification(result: TwoStepVerificati
 /** The result a flow of 2-step verification leaves for its page: the name of its [TwoStepVerificationResult]. */
 private const val TWO_STEP_VERIFICATION_RESULT = "settings.twoStepVerificationResult"
 
-private val SettingsPage.route: Any
+internal val SettingsPage.route: Any
     get() =
         when (this) {
             SettingsPage.EditProfile -> EditProfileRoute

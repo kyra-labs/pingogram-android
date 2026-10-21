@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -55,7 +56,7 @@ internal fun ExceptionsList(
     val style =
         SettingsListRowStyle(
             MaterialTheme.sizes.contentMaxWidth,
-            spacing.windowMarginCompact,
+            windowMargin(),
             MaterialTheme.motionScheme,
         )
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
