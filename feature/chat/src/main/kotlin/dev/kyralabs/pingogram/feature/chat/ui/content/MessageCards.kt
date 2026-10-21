@@ -20,6 +20,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.ExpiredMedia
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -242,7 +244,7 @@ private fun InfoText(
             color = colors.content,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleSmall.userContent,
         )
         if (!subtitle.isNullOrBlank()) {
             Text(
@@ -250,7 +252,8 @@ private fun InfoText(
                 color = colors.content,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
+                // Phone numbers and coordinates too, which read left to right in every language.
+                style = MaterialTheme.typography.bodySmall.numericContent,
             )
         }
     }

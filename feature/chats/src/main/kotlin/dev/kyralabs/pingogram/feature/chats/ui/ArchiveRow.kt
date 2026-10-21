@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
@@ -83,7 +84,7 @@ internal fun ArchiveRow(
                 color = colors.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
         },
     ) {

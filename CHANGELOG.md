@@ -214,12 +214,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   selected chat's avatar turning into a check, switch at once instead of morphing.
 - More buttons change shape while you press them: back and close buttons in top bars, the media viewer's buttons,
   dialog buttons and "Try again" buttons.
+- With high contrast (in Appearance, or Android's contrast setting on Android 14 and later), text is slightly bolder:
+  its strokes are thicker while it keeps its width, so nothing moves.
 
 ### Fixed
 - Closing the media viewer no longer makes the photo's corners jump at the end: it shrinks back into exactly the
   shape it has in its message, including the square edge above a caption and the corners of an album.
 - In right-to-left languages, the phone number at login reads left to right, the calling code first ("+44 7911
   123456"), instead of showing its digit groups and the "+" reversed.
+- Messages, captions, chat names, previews, link previews, sponsored messages and times read the way they are written
+  in any language: English in a right-to-left language keeps its punctuation at its end ("Thanks!", "9:41 AM",
+  "@ada") instead of moving it to the start, and Hebrew or Arabic messages read right to left in an English layout. A
+  shared contact's phone number and a location's coordinates read left to right.
 
 ## [0.3.0-beta.2] - 2026-10-19
 

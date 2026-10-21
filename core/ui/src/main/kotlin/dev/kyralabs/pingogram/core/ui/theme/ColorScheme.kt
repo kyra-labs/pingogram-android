@@ -20,8 +20,8 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
  * The [ColorScheme] for the current settings (`docs/DESIGN_SYSTEM.md` §2.1): Material You on
  * Android 12+ when [dynamicColor] is on ([systemDynamicColors]), otherwise the brand schemes from `Color.kt`.
  *
- * On Android 14+ the system contrast setting replaces [contrast], and the platform applies it to
- * dynamic schemes read from its color roles too.
+ * [contrast] is the level in effect: [PingogramTheme] passes the system's on Android 14+ ([systemContrastOrNull]),
+ * which the platform applies to dynamic schemes read from its color roles too.
  */
 @Composable
 fun rememberPingogramColorScheme(
@@ -33,9 +33,7 @@ fun rememberPingogramColorScheme(
     val context = LocalContext.current
     // Wallpaper and system theme changes arrive as configuration changes; they refresh dynamic colors.
     val configuration = LocalConfiguration.current
-    val effectiveContrast =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) systemContrast() else contrast
-    return remember(context, configuration, dark, dynamicColor, effectiveContrast, amoled) {
+    return remember(context, configuration, dark, dynamicColor, contrast, amoled) {
         val dynamic =
             if (dynamicColor &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -46,7 +44,7 @@ fun rememberPingogramColorScheme(
             }
         pingogramColorScheme(
             dark = dark,
-            contrast = effectiveContrast,
+            contrast = contrast,
             amoled = amoled,
             dynamicScheme = dynamic?.scheme,
             dynamicSchemeFollowsContrast = dynamic?.followsContrast ?: false,
@@ -116,7 +114,7 @@ internal fun ColorScheme.withAmoledSurfaces(): ColorScheme =
 
 /**
  * The system's contrast level, which the theme follows instead of the app's setting on Android 14+
- * ([rememberPingogramColorScheme]), updated when it changes; null before Android 14, which has none.
+ * ([PingogramTheme]: its colors and its typography), updated when it changes; null before Android 14, which has none.
  */
 @Composable
 fun systemContrastOrNull(): Contrast? =

@@ -20,8 +20,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * expressive motion scheme, Google Sans Flex, the expressive shape scale, [PingogramColors],
  * [PingogramSpacing] and [PingogramSizes].
  *
- * The typography follows the system's "Bold text" setting (Android 12+) without doubling it; see
- * [pingogramTypography].
+ * The typography follows the system's "Bold text" setting (Android 12+) without doubling it, and sets text a grade
+ * heavier with high contrast; see [pingogramTypography].
  *
  * When a setting changes, every color role cross-fades to the new scheme on the motion scheme's default effects spring
  * ([animateColorScheme]); the first scheme shows at once, so the app never starts with a crossfade.
@@ -32,7 +32,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * finish immediately; shape morphs and container transforms also step aside then (`isReducedMotion`).
  *
  * @param dynamicColor Material You colors on Android 12+; brand colors otherwise or when false.
- * @param contrast used where the system has no contrast setting (before Android 14).
+ * @param contrast used where the system has no contrast setting (before Android 14); from Android 14 the system's
+ *   contrast level replaces it ([systemContrastOrNull]), for the colors and the typography alike.
  * @param amoled true-black surfaces in dark theme.
  */
 @Composable
@@ -44,9 +45,10 @@ fun PingogramTheme(
     content: @Composable () -> Unit,
 ) {
     val dark = themeMode.isDark()
+    val effectiveContrast = systemContrastOrNull() ?: contrast
     val colorScheme =
         animateColorScheme(
-            target = rememberPingogramColorScheme(dark, dynamicColor, contrast, amoled),
+            target = rememberPingogramColorScheme(dark, dynamicColor, effectiveContrast, amoled),
             animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
         )
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
@@ -55,7 +57,8 @@ fun PingogramTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
         shapes = PingogramShapes,
-        typography = pingogramTypography(LocalConfiguration.current.fontWeightAdjustmentOrZero()),
+        typography =
+            pingogramTypography(LocalConfiguration.current.fontWeightAdjustmentOrZero(), effectiveContrast),
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,

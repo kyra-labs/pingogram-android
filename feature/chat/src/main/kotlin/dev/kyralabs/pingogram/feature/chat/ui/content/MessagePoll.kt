@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -61,7 +62,11 @@ internal fun MessagePoll(
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)) {
-            Text(text = poll.question.text, color = colors.content, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = poll.question.text,
+                color = colors.content,
+                style = MaterialTheme.typography.titleMedium.userContent,
+            )
             Text(
                 text = stringResource(pollLabel(poll).text),
                 color = colors.content,
@@ -103,7 +108,7 @@ private fun PollResult(
                 text = option.text.text,
                 modifier = Modifier.weight(1f),
                 color = colors.content,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
             PollMarkIcon(mark, barColor)
             Text(
@@ -168,7 +173,7 @@ private fun PollChoice(
                 colors = RadioButtonDefaults.colors(unselectedColor = colors.content),
             )
         }
-        Text(text = option.text.text, color = colors.content, style = MaterialTheme.typography.bodyMedium)
+        Text(text = option.text.text, color = colors.content, style = MaterialTheme.typography.bodyMedium.userContent)
     }
 }
 
