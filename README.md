@@ -28,9 +28,9 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
 > [!NOTE]
-> Pingogram is an **early beta** (0.3.0-beta.2). Everyday reading and writing works, but
-> notifications, voice recording, the sticker panel and calls are not there yet. See
-> [what works today](#what-works-today) and [what is missing](#not-yet).
+> Pingogram is an **early beta** (0.3.0-beta.3). Everyday messaging works, with notifications,
+> voice messages and stickers; profiles, group management, secret chats and calls are not there
+> yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
 
 ## Screenshots
 
@@ -121,26 +121,30 @@ light or dark theme.</sub>
   archive, mark as read, delete) and the archive.
 - **Conversations:** paged history that opens at the first unread message, Material 3 Expressive
   bubbles, formatted text, replies, forwarded headers, link previews and reactions; photos and
-  albums, videos, GIFs, static stickers, voice messages and music (playback), documents, polls,
-  locations and contacts; a full-screen media viewer with zoom, share and save.
+  albums, videos, GIFs, stickers (animated too), voice messages and music, documents, polls,
+  locations and contacts; sponsored messages in channels as Telegram requires; a full-screen
+  media viewer with zoom, share and save.
 - **Writing:** text with formatting, silent and scheduled send, drafts synced with your other
-  devices; reply, edit, delete, pin and react; attach photos and videos (as albums), files,
-  contacts, polls and quizzes, with captions and upload progress.
+  devices; reply, edit, delete, pin, react (with every reaction the chat allows), forward,
+  select, report and save; attach photos and videos (as albums), files, your location, contacts,
+  polls and quizzes; record voice messages; an emoji and sticker panel; send as a channel or
+  anonymously where Telegram allows it. Files you send or download keep going in the background.
+- **Notifications:** per chat, with replies and mark as read from the notification, settings and
+  exceptions per kind of chat, and an optional "Keep connected" mode for the GitHub builds.
 - **Search** across your chats, contacts, public chats and channels, and messages.
 - **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
-  active sessions, two-step verification status, appearance (system, light or dark theme, AMOLED
-  black, dynamic color, contrast), data and storage (usage, clear cache) and about.
+  active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
+  or face, notifications, appearance (system, light or dark theme, AMOLED black, dynamic color,
+  contrast), data and storage (usage, clear cache, automatic download per network), language and
+  about with the open-source licenses.
 - **Built the Android way:** a floating navigation bar on phones and a navigation rail with a
   list-detail layout on larger screens, edge-to-edge, predictive back, and layouts that hold up
   at 200% font size and with TalkBack.
 
 ### Not yet
 
-- Notifications (the app does not notify you of new messages yet)
-- Recording voice and video messages; the emoji and sticker panel; animated stickers
-- Forwarding messages
+- Recording video messages; sharing into a chat from other apps
 - Contacts, user and group profiles, creating groups and channels, starting secret chats
-- Notification and language settings, passcode lock
 - Voice and video calls
 
 The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster
@@ -152,8 +156,9 @@ start-up and smoother scrolling than the official app on the same device
 Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
 All releases before 1.0 are marked as pre-releases. Use `-universal.apk` unless you know your
 device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
-installs alongside other Telegram apps; until it has notifications, keep one of them if you
-rely on being notified.
+installs alongside other Telegram apps. The GitHub builds have no Google services, so new
+messages arrive while Pingogram runs; turn on Settings → Notifications → "Keep connected" to get
+them when it is closed.
 
 ## Building
 

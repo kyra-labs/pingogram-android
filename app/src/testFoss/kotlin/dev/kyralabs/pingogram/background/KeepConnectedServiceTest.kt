@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -90,10 +91,18 @@ class KeepConnectedServiceTest {
             ).startCommand(0, 2)
 
         assertTrue(shadowOf(controller.get()).isStoppedBySelf)
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { repository.keepConnected.first { !it } } }
+        // The service saves on the application scope, so the write may still be in flight here. A DataStore (1.2.1)
+        // collector that starts while a write is in flight can keep the old value until the next write, so read
+        // afresh until the saved value shows rather than wait on one collection.
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (repository.keepConnected.first()) delay(POLL_MILLIS)
+            }
+        }
     }
 
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
+        const val POLL_MILLIS = 10L
     }
 }
