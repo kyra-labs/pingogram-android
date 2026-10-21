@@ -60,12 +60,15 @@ the release workflow so the owner can install and test on a phone.
 - [x] WorkManager background downloads/uploads with foreground service (`dataSync`)
 - [x] `gms` flavor with FCM `registerDevice` (in every GitHub release next to `foss` from 0.3.0, `LICENSE-EXCEPTION.md`)
 - [x] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
-- [ ] Material 3 Expressive alignment: the Must and Should items of
-      `docs/audit/m3-expressive-gap-analysis.md` (decided 2026-10-19), density first (G63–G69)
+- [x] Material 3 Expressive alignment: the Must and Should items of
+      `docs/audit/m3-expressive-gap-analysis.md` (decided 2026-10-19), density first (G63–G69). G23's rest (the
+      conversation title opens the profile) is done in M4 with the profile; G53 (dialog widths) needs a device check
+      by the owner
 
 ## M4 — Contacts, profiles, groups, channels, secret chats → `v0.4.0`
 
-- [ ] Contacts list, add/edit/invite; user profile; shared media tabs
+- [ ] Contacts list, add/edit/invite; user profile; shared media tabs; the conversation title opens the profile
+      (audit G23's rest)
 - [ ] Group/channel info, members, admins, permissions, invite links, create/leave/delete
 - [ ] Forum topics, comments threads, pinned messages bar
 - [ ] Secret chats: create/accept, TTL, lock indicators
