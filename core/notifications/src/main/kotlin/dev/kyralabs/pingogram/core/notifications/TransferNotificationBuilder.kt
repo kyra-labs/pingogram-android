@@ -23,8 +23,8 @@ import kotlin.math.roundToInt
  * the low-importance [PingogramChannel.Transfers]; tapping it opens the app.
  *
  * - Android 16+: [NotificationCompat.ProgressStyle], which asks to be promoted to a Live Update with the percentage as
- *   its status bar text. Android promotes it only for apps that hold `POST_PROMOTED_NOTIFICATIONS`, which Pingogram
- *   does not request yet; until then it shows as a progress notification of the new style.
+ *   its status bar text. Android promotes it for apps that hold `POST_PROMOTED_NOTIFICATIONS` (`:app`'s manifest),
+ *   unless the user turned Live Updates off for Pingogram.
  * - Before: the standard progress bar.
  * - Android 12+ shows a foreground service's notification only after a few seconds, so a transfer that ends sooner
  *   shows none.

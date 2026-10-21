@@ -15,6 +15,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   stay free of Google services. Both are the same app, so installing one replaces the other and keeps your data.
 
 ### Changed
+- On Android 16, the progress of files you send or download shows as a Live Update in the status bar and on the lock
+  screen while Pingogram is in the background. Android's settings can turn it off for Pingogram.
 - License: Pingogram stays GPL-3.0-or-later, with an additional permission to combine it with Google's Play services
   and Firebase libraries, which the "-gms" builds need (`LICENSE-EXCEPTION.md`).
 - Settings on tablets and other wide windows shows its pages beside the list of settings, as the chats do: the page

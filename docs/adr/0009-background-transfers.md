@@ -37,8 +37,9 @@ Options considered:
   downloads and deletes the messages being sent (TDLib's way to cancel an upload). Android 12+ defers a foreground
   service's notification by a few seconds, so short transfers show none.
 - Android 16: `NotificationCompat.ProgressStyle`, asking for promotion to a Live Update (`setRequestPromotedOngoing`,
-  the percentage as status bar text). Android promotes only apps holding `POST_PROMOTED_NOTIFICATIONS`, which needs the
-  owner's approval and is not requested; until then it shows as a progress-style notification.
+  the percentage as status bar text). Android promotes only apps holding `POST_PROMOTED_NOTIFICATIONS`, a normal
+  permission granted at install, which Pingogram requests (approved by the owner on 2026-10-21); the user can turn Live
+  Updates off for the app in Android's settings.
 
 ## Consequences
 
