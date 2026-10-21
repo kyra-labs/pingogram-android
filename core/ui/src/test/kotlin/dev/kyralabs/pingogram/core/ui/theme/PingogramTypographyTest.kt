@@ -8,12 +8,14 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
+import dev.kyralabs.pingogram.core.domain.model.Contrast
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 
 /** Checks the type scale against `docs/DESIGN_SYSTEM.md` §3 by reading back each style's font settings. */
@@ -35,10 +37,26 @@ class PingogramTypographyTest {
         }
     }
 
-    @Test
-    fun `grade is 0 in every style`() {
-        pingogramTypography().styles().forEach { (name, style) ->
+    @ParameterizedTest
+    @EnumSource(Contrast::class, names = ["Standard", "Medium"])
+    fun `grade is 0 in every style at standard and medium contrast`(contrast: Contrast) {
+        pingogramTypography(contrast = contrast).styles().forEach { (name, style) ->
             style.fonts().forEach { assertEquals(0f, it.axis("GRAD"), name) }
+        }
+    }
+
+    @Test
+    fun `high contrast sets every style at grade 25 and changes nothing else`() {
+        val standard = pingogramTypography().styles()
+
+        pingogramTypography(contrast = Contrast.High).styles().forEach { (name, style) ->
+            val expected = standard.getValue(name)
+            assertEquals(expected.copy(fontFamily = null), style.copy(fontFamily = null), name)
+            assertEquals(
+                expected.fonts().map { it.axes() + ("GRAD" to 25f) },
+                style.fonts().map { it.axes() },
+                name,
+            )
         }
     }
 
@@ -148,9 +166,12 @@ class PingogramTypographyTest {
     }
 
     @Test
-    fun `builds the typography once per theme and Bold text adjustment`() {
+    fun `builds the typography once per Bold text adjustment and grade`() {
         assertSame(pingogramTypography(), pingogramTypography())
         assertSame(pingogramTypography(BOLD_TEXT), pingogramTypography(BOLD_TEXT))
+        assertSame(pingogramTypography(contrast = Contrast.High), pingogramTypography(contrast = Contrast.High))
+        // Medium contrast changes only colors, so it shares the standard typography.
+        assertSame(pingogramTypography(), pingogramTypography(contrast = Contrast.Medium))
     }
 
     @Test

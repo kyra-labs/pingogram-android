@@ -157,7 +157,7 @@ fun PingogramTheme(
 | Weight | `wght` | the Material 3 token weights (400, 500); emphasized styles +100 |
 | Width | `wdth` | 100 for every style |
 | Optical size | `opsz` | **always set equal to the style's font size in sp** (auto-opsz is not applied by Android) |
-| Grade | `GRAD` | 0 in both themes (the bundled file's range is 0–100; Google's own styles use 0) |
+| Grade | `GRAD` | 0 in both themes (the bundled file's range is 0–100; Google's own styles use 0); 25 with high contrast (§10) |
 | Slant | `slnt` | 0; italic = `slnt −10` (true variable slant, never fake italic) |
 | Round | `ROND` | **100 for the emphasized styles** (the rounded look Material 3 Expressive gives emphasis), 0 for the base styles |
 
@@ -170,6 +170,10 @@ fun PingogramTheme(
   `wght` 1–1000, `GRAD` **0–100**, `ROND` 0–100, `slnt` −10–0.
 - `GRAD` has no negative range, so a dark-theme −25 would be clamped to 0. The owner dropped it on 2026-10-19:
   text renders at grade 0 in both themes, like Google's own styles.
+- High contrast (the app's setting, or the system's on Android 14+, which the theme follows) sets every style at
+  `GRAD` 25: thicker strokes at the same advance widths, so nothing reflows (`GoogleSansFlexRenderingTest`). Standard
+  and medium contrast stay at 0. `pingogramTypography(fontWeightAdjustment, contrast)` caches one typography per
+  adjustment and grade, so standard and medium share one, and each grade's fonts are made once per process.
 - Small optical sizes set text wider and taller, as the font intends. Compared with the default `opsz` 18,
   `opsz` 14 sets a line about 5% wider and `opsz` 11–12 about 8–9% wider, with an x-height of 0.525–0.530 em
   instead of 0.510. So the same sp reads slightly larger than in apps that leave `opsz` at its default. This is
@@ -210,7 +214,7 @@ fun gsfFamily(weights: List<Int>, opsz: Float, rond: Float, grad: Int) = FontFam
   reload made a new typeface whose text the platform laid out and rasterized again.
 - `pingogramTypography()` builds the **full M3 Expressive type scale** (display, headline,
   title, body, label × large/medium/small = 15 styles) **and all 15 `*Emphasized` variants**
-  from the `Typography` constructor parameters, with `GRAD` 0.
+  from the `Typography` constructor parameters, with `GRAD` 0 (25 with high contrast, §3.1).
 - Mapping (weight / opsz / ROND): display, headline, `titleLarge` and body 400 · `titleMedium`,
   `titleSmall` and label 500 (the Material 3 token weights), each with `opsz` = size and ROND 0.
   Emphasized: weight +100 and ROND 100, as Google's emphasized Google Sans Flex families. (Compose's
@@ -551,6 +555,13 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   per message bubble ("{sender}, {time}: {content}, {status}"); `customActions` for swipe
   equivalents; `LiveRegion` for connection state; `role` set on custom toggles.
 - Font scale to 200% (non-linear on API 34+) without truncation; no fixed heights on text.
+- Text direction: content from people or Telegram (messages and captions, link previews, chat titles and previews,
+  names, usernames, sponsored messages, formatted times and dates) takes the direction of its first strong character
+  (`TextStyle.userContent`, `TextDirection.Content`, `core:ui`), as Android's `TextView` does, so English keeps its
+  punctuation at its end in a right-to-left layout and Hebrew reads right to left in a left-to-right one; its default
+  `TextAlign.Start` then follows the paragraph. Content that may have no letters (phone numbers, coordinates) reads left
+  to right without one (`numericContent`, `TextDirection.ContentOrLtr`). Pingogram's own strings keep the layout's
+  direction.
 - Keyboard & mouse: focus order, `Tab` navigation, Enter to send (Ctrl+Enter configurable),
   hover states on large screens.
 - Reduced motion & reduced transparency respected; no flashing content > 3 Hz.
@@ -559,7 +570,7 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 ## 10. Dark theme and contrast rules
 
 - Dark uses the M3 dark scheme (not inverted light); surfaces follow the tonal ladder;
-  Google Sans Flex at `GRAD` 0 (§3.1); images get a 0.9 `ColorFilter` dim only in media-heavy lists.
+  Google Sans Flex at `GRAD` 0 (25 with high contrast, §3.1); images get a 0.9 `ColorFilter` dim only in media-heavy lists.
 - The conversation counts as one: in dark theme, photos, videos, GIFs, video messages and albums in it (their
   minithumbnails too, and the media of sponsored messages) are dimmed to 90% of their brightness with a color matrix
   (`pingogramColors.mediaColorFilter`, null in light theme), so bright pictures do not glare among dark surfaces.
@@ -567,7 +578,8 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   media undimmed, at full brightness on its `scrim`, as the place to look at them. Link previews show no image yet;
   when they do, theirs is dimmed too.
 - Medium/high contrast schemes change colors only; typography weight is unchanged (Material
-  rule), but `GRAD +25` may be applied in high contrast for readability.
+  rule). High contrast applies the optional `GRAD +25` for readability (§3.1): heavier strokes without wider text or
+  another weight.
 
 ## 11. Don'ts
 
@@ -584,7 +596,8 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
 
 - [ ] Only `MaterialTheme.*` tokens; `PingogramHardcodedToken` detekt rule passes
 - [ ] Color roles per §2.2; light, dark, dynamic, AMOLED, medium & high contrast screenshots OK
-- [ ] Google Sans Flex styles per §3.3; `opsz` equals size; emphasized styles where specified; `GRAD` 0
+- [ ] Google Sans Flex styles per §3.3; `opsz` equals size; emphasized styles where specified; `GRAD` 0 (25 with high
+      contrast)
 - [ ] Density per §7: Material's component sizes; the screen is no bigger than Google's equivalent on the same phone
 - [ ] Shapes from the scale or `MaterialShapes`; at least one meaningful shape morph where the screen has a primary action
 - [ ] All animations use `motionScheme` specs; shared-element / container transform where listed in §5

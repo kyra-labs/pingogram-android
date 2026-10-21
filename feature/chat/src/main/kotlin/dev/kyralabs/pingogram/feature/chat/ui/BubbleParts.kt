@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -64,7 +65,7 @@ internal fun ReplyQuoteBlock(
                 color = accent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
         Text(
@@ -72,7 +73,7 @@ internal fun ReplyQuoteBlock(
             color = colors.blockContent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.userContent,
         )
     }
 }
@@ -91,7 +92,7 @@ internal fun LinkPreviewBlock(
                 color = primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
         if (preview.title.isNotBlank()) {
@@ -100,7 +101,7 @@ internal fun LinkPreviewBlock(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = LINK_TITLE_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall.userContent,
             )
         }
         if (preview.description.isNotBlank()) {
@@ -109,7 +110,7 @@ internal fun LinkPreviewBlock(
                 color = colors.blockContent,
                 maxLines = LINK_DESCRIPTION_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.userContent,
             )
         }
     }

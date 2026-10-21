@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -137,7 +138,7 @@ private fun MetaRow(
     ) {
         val style = MaterialTheme.typography.labelSmall
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
-        Text(bubble.time, color = color, maxLines = 1, style = style)
+        Text(bubble.time, color = color, maxLines = 1, style = style.userContent)
         bubble.status?.takeIf { it != OutgoingStatus.Failed }?.let { StatusIcon(it, statusTint(it)) }
     }
 }

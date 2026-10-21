@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.ui.theme
 
+import android.app.UiModeManager
 import android.content.ComponentName
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -29,10 +30,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.R
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -143,6 +147,39 @@ class GoogleSansFlexRenderingTest {
         assertTrue(render { it.titleMedium }.looksLike(render { plain.titleMedium.fontAlone(wght = 500f) }))
         // Read and unread chat titles stay apart (800 and 900).
         assertFalse(render { it.titleMedium }.looksLike(render { it.titleMediumEmphasized }))
+    }
+
+    // High contrast (the system's setting, which the theme follows on Android 14+) sets text at GRAD 25 (§10).
+    @Test
+    fun `with high contrast, the theme's styles render a grade heavier`() {
+        shadowOf(composeRule.activity.getSystemService(UiModeManager::class.java)).setContrast(1f)
+        val standard = pingogramTypography()
+
+        val highContrast = render { it.bodyLarge }
+
+        assertTrue(
+            highContrast.looksLike(render { standard.bodyLarge.withAxis("GRAD", HIGH_CONTRAST_GRADE.toFloat()) }),
+        )
+        assertTrue(highContrast.ink > render { standard.bodyLarge }.ink)
+    }
+
+    @Test
+    fun `high contrast's grade keeps every style's width, so no text reflows`() {
+        val standard = pingogramTypography().styles()
+        val highContrast = pingogramTypography(contrast = Contrast.High).styles()
+        var widths = emptyMap<String, Pair<Int, Int>>()
+        composeRule.setContent {
+            val measurer = rememberTextMeasurer()
+            widths =
+                standard.mapValues { (name, style) ->
+                    measurer.measure(SAMPLE_TEXT, style).size.width to
+                        measurer.measure(SAMPLE_TEXT, highContrast.getValue(name)).size.width
+                }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(standard.keys, widths.keys)
+        widths.forEach { (name, width) -> assertEquals(name, width.first, width.second) }
     }
 
     private class Rendering(

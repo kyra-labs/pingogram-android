@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -146,7 +147,7 @@ private fun ChatSubtitle(text: String) {
         modifier = Modifier.clearAndSetSemantics {},
         overflow = TextOverflow.Ellipsis,
         maxLines = 1,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.userContent,
     )
 }
 
@@ -199,7 +200,7 @@ internal fun SearchMessageRow(
                 modifier = Modifier.clearAndSetSemantics {},
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.userContent,
             )
         },
         supportingContent = {
@@ -208,7 +209,7 @@ internal fun SearchMessageRow(
                 modifier = Modifier.clearAndSetSemantics {},
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 2,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
         },
         colors = itemColors,

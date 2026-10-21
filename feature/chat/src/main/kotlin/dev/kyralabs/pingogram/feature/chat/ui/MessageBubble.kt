@@ -52,6 +52,7 @@ import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.hasTextBlocks
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
@@ -405,7 +406,7 @@ internal fun BubbleHeader(
             color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelLarge.userContent,
         )
     }
     bubble.forwardedFrom?.let { forwarded ->
@@ -488,14 +489,14 @@ private fun BubbleText(
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                 ),
             color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.userContent,
             onTextLayout = onLayout,
         )
     } else {
         Text(
             text = text,
             color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.userContent,
             onTextLayout = onTextLayout,
         )
     }
