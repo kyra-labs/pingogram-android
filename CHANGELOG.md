@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
 ### Added
 - Releases now include a second set of APKs with "-gms" in their names, for phones with Google Play services: they get
   notifications through Google's push service even when Pingogram is closed, without "Keep connected". The plain APKs
@@ -531,7 +533,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3
 [0.3.0-beta.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.1...v0.3.0-beta.2
 [0.3.0-beta.1]: https://github.com/kyra-labs/pingogram-android/compare/v0.2.0...v0.3.0-beta.1

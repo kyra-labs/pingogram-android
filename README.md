@@ -28,9 +28,9 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
 > [!NOTE]
-> Pingogram is an **early beta** (0.3.0-beta.3). Everyday messaging works, with notifications,
-> voice messages and stickers; profiles, group management, secret chats and calls are not there
-> yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
+> Pingogram is an **early beta** (0.3.0). Everyday messaging works, with notifications,
+> voice messages and stickers; contacts, profiles, group management, secret chats and calls are
+> not there yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
 
 ## Screenshots
 
@@ -156,9 +156,11 @@ start-up and smoother scrolling than the official app on the same device
 Get the APK from the [Releases page](https://github.com/kyra-labs/pingogram-android/releases).
 All releases before 1.0 are marked as pre-releases. Use `-universal.apk` unless you know your
 device's ABI, and verify it with `SHA256SUMS.txt`. Pingogram needs Android 8.0 or newer and
-installs alongside other Telegram apps. The GitHub builds have no Google services, so new
-messages arrive while Pingogram runs; turn on Settings → Notifications → "Keep connected" to get
-them when it is closed.
+installs alongside other Telegram apps. The plain APKs have no Google services, so new messages
+arrive while Pingogram runs; turn on Settings → Notifications → "Keep connected" to get them when
+it is closed. The APKs ending in `-gms` get notifications through Google's push service instead,
+on phones with Google Play services; both are the same app, and one replaces the other with your
+data kept.
 
 ## Building
 
