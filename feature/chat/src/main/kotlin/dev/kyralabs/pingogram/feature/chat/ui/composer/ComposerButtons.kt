@@ -5,13 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SplitButtonDefaults
@@ -35,12 +33,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The buttons beside the composer's text field: sending, with its menu of other ways to send, and saving an edit.
 
 /**
- * The send button, a [SplitButtonLayout] as tall as the text field: the leading button sends, the trailing one opens
- * the menu of other ways to send (without sound; at a time, where [canSchedule]). The trailing button's corners morph
- * to a full circle while the menu is open, and its arrow turns on the motion scheme's spatial spring. Not [enabled],
- * both parts are disabled, e.g. while picked files are being prepared.
+ * The send button, a small icon-only [SplitButtonLayout] (`SplitButtonDefaults.SmallContainerHeight`, 48 dp touch
+ * targets), so the text field beside it keeps most of the width (`docs/DESIGN_SYSTEM.md` §6 Composer): the leading
+ * button sends, the trailing one opens the menu of other ways to send (without sound; at a time, where [canSchedule]).
+ * The trailing button's corners morph to a full circle while the menu is open, and its arrow turns on the motion
+ * scheme's spatial spring. Not [enabled], both parts are disabled, e.g. while picked files are being prepared.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SendButton(
     canSchedule: Boolean,
@@ -50,7 +48,7 @@ internal fun SendButton(
     enabled: Boolean = true,
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
-    val height = ButtonDefaults.MediumContainerHeight
+    val height = SplitButtonDefaults.SmallContainerHeight
     val sendLabel = stringResource(R.string.composer_send)
     val optionsLabel = stringResource(R.string.composer_send_options)
     val arrowTurn by animateFloatAsState(
@@ -120,41 +118,38 @@ internal fun RowScope.LeadingButtons(
 }
 
 /**
- * The attach button at the start of the composer, as tall as the text field: an icon button in the Expressive shapes
- * that morph while pressed. It opens the attach menu ([onAttach]).
+ * The attach button at the start of the composer: a "+" in a small tonal circle (the icon button's default
+ * `IconButtonDefaults.smallContainerSize`, in a 48 dp touch target) whose shape morphs while pressed, as Google
+ * Messages' composer has it. It opens the attach menu ([onAttach]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AttachButton(onAttach: () -> Unit) {
-    IconButton(
+    FilledTonalIconButton(
         onClick = onAttach,
-        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
         shapes = IconButtonDefaults.shapes(),
     ) {
         Icon(
-            painter = painterResource(UiR.drawable.ic_attach_file),
+            painter = painterResource(UiR.drawable.ic_add),
             contentDescription = stringResource(R.string.attach),
-            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+            modifier = Modifier.size(IconButtonDefaults.smallIconSize),
         )
     }
 }
 
 /**
- * The button that saves an edit, in the send button's place and as tall: a filled icon button with a check, in the
- * Expressive shapes that morph as it is pressed.
+ * The button that saves an edit, in the send button's place and as tall: a small filled icon button with a check, in
+ * the Expressive shapes that morph as it is pressed.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SaveEditButton(onSave: () -> Unit) {
     FilledIconButton(
         onClick = onSave,
-        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()),
         shapes = IconButtonDefaults.shapes(),
     ) {
         Icon(
             painter = painterResource(UiR.drawable.ic_check),
             contentDescription = stringResource(R.string.composer_edit_save),
-            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+            modifier = Modifier.size(IconButtonDefaults.smallIconSize),
         )
     }
 }

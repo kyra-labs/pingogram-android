@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,7 +67,7 @@ internal fun RecordingBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.heightIn(min = OutlinedTextFieldDefaults.MinHeight),
+        modifier = modifier.heightIn(min = MaterialTheme.sizes.composerField),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
@@ -86,7 +85,7 @@ internal fun RecordingBar(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = OutlinedTextFieldDefaults.MinHeight)
+                        .heightIn(min = MaterialTheme.sizes.composerField)
                         .padding(
                             horizontal = if (locked) MaterialTheme.spacing.extraSmall else MaterialTheme.spacing.large,
                         ),

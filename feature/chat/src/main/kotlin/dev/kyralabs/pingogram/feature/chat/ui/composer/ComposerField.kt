@@ -1,0 +1,216 @@
+package dev.kyralabs.pingogram.feature.chat.ui.composer
+
+import android.view.KeyEvent.FLAG_SOFT_KEYBOARD
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
+import androidx.compose.foundation.text.input.OutputTransformation
+import androidx.compose.foundation.text.input.TextFieldDecorator
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.R
+
+/**
+ * The text field: a filled tonal pill like Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer), a [BasicTextField]
+ * with Material's text field decoration ([TextFieldDefaults.decorator], [TextFieldDefaults.tonalColors] on
+ * `surfaceContainerHighest`, a step above the bar) at `sizes.composerField` (48 dp) for one line, `extraLarge` corners,
+ * which make one line a full pill; `bodyLarge`, its direction taken from what is typed ([userContent]),
+ * [placeholder] ("Message") while empty, [leadingIcon] at its start (the conversation's emoji button). Enter on a
+ * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
+ * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
+ * address ([onLink]). The attach preview's caption and the forward sheet's comment are one too.
+ */
+@Composable
+internal fun ComposerField(
+    text: ComposerText,
+    onSend: () -> Unit,
+    onLink: (TextRange) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = stringResource(R.string.composer_placeholder),
+    leadingIcon: (@Composable () -> Unit)? = null,
+) {
+    val labels = rememberFormattingLabels()
+    val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
+    // onFocusChanged also reports the first state, unfocused: only changes are news.
+    val focus = remember { FocusReport() }
+    // tonalColors() fills the field with surfaceContainer, the composer bar's own color: one step up, as the recording
+    // bar, so the pill shows.
+    val container = MaterialTheme.colorScheme.surfaceContainerHighest
+    val colors =
+        TextFieldDefaults.tonalColors().copy(
+            focusedContainerColor = container,
+            unfocusedContainerColor = container,
+        )
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
+    val outputTransformation = rememberFormattingTransformation(text)
+    val textStyle =
+        MaterialTheme.typography.bodyLarge.userContent
+            .copy(color = if (focused) colors.focusedTextColor else colors.unfocusedTextColor)
+    CompositionLocalProvider(LocalTextSelectionColors provides colors.textSelectionColors) {
+        BasicTextField(
+            state = text.state,
+            modifier =
+                modifier
+                    .heightIn(min = MaterialTheme.sizes.composerField)
+                    .onFocusChanged { state ->
+                        if (state.isFocused != focus.isFocused) {
+                            focus.isFocused = state.isFocused
+                            onFocusChanged(state.isFocused)
+                        }
+                    }.onPreviewKeyEvent { event ->
+                        when {
+                            event.isSendKey() -> {
+                                onSend()
+                                true
+                            }
+
+                            else -> {
+                                formattingShortcut(event, text, onLink)
+                            }
+                        }
+                    }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
+                    .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
+            textStyle = textStyle,
+            inputTransformation = text.inputTransformation,
+            outputTransformation = outputTransformation,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            lineLimits = LINE_LIMITS,
+            interactionSource = interactionSource,
+            cursorBrush = SolidColor(colors.cursorColor),
+            decorator =
+                pillDecorator(
+                    text = text,
+                    outputTransformation = outputTransformation,
+                    interactionSource = interactionSource,
+                    colors = colors,
+                    placeholder = placeholder,
+                    leadingIcon = leadingIcon,
+                    focused = focused,
+                ),
+        )
+    }
+}
+
+/**
+ * The text field's decoration: Material's filled text field in [colors] on an `extraLarge` (pill) container, without a
+ * label, so its vertical padding is `spacing.medium` instead of the 16 dp that make `TextField` 56 dp tall. The
+ * [leadingIcon] (in the colors' leading icon color while [focused] or not) sits at the start of the pill, outside
+ * Material's icon slot, which centres it on the field: it stays at the bottom, level with the last line, as the field
+ * grows, as do the buttons beside the field.
+ */
+@Suppress("LongParameterList") // The decorator's own inputs: the field's state, its transformation and its slots.
+@Composable
+private fun pillDecorator(
+    text: ComposerText,
+    outputTransformation: OutputTransformation,
+    interactionSource: MutableInteractionSource,
+    colors: TextFieldColors,
+    placeholder: String,
+    leadingIcon: (@Composable () -> Unit)?,
+    focused: Boolean,
+): TextFieldDecorator {
+    val leadingIconColor = if (focused) colors.focusedLeadingIconColor else colors.unfocusedLeadingIconColor
+    val shape = MaterialTheme.shapes.extraLarge
+    val spacing = MaterialTheme.spacing
+    val material =
+        TextFieldDefaults.decorator(
+            state = text.state,
+            enabled = true,
+            lineLimits = LINE_LIMITS,
+            outputTransformation = outputTransformation,
+            interactionSource = interactionSource,
+            placeholder = { Text(placeholder, style = MaterialTheme.typography.bodyLarge) },
+            colors = colors,
+            contentPadding =
+                TextFieldDefaults.contentPaddingWithoutLabel(
+                    // After the icon's 48 dp touch target, as far from it as Material's icon slot keeps the text.
+                    start = if (leadingIcon != null) spacing.extraSmall else spacing.large,
+                    top = spacing.medium,
+                    end = spacing.large,
+                    bottom = spacing.medium,
+                ),
+            // Drawn below, behind the icon too.
+            container = {},
+        )
+    return TextFieldDecorator { innerTextField ->
+        Box {
+            TextFieldDefaults.Container(
+                enabled = true,
+                isError = false,
+                interactionSource = interactionSource,
+                modifier = Modifier.matchParentSize(),
+                colors = colors,
+                shape = shape,
+            )
+            Row(verticalAlignment = Alignment.Bottom) {
+                if (leadingIcon != null) {
+                    CompositionLocalProvider(LocalContentColor provides leadingIconColor, content = leadingIcon)
+                }
+                Box(Modifier.weight(1f)) { material.Decoration(innerTextField) }
+            }
+        }
+    }
+}
+
+/** Whether the text field had the focus when it last reported it; read in callbacks only, so not snapshot state. */
+private class FocusReport(
+    var isFocused: Boolean = false,
+)
+
+/**
+ * Enter pressed on a hardware keyboard without a modifier. The on-screen keyboard sends its Enter as a key event too,
+ * flagged as its own, and that one keeps starting a new line.
+ */
+private fun KeyEvent.isSendKey(): Boolean =
+    type == KeyEventType.KeyDown &&
+        (key == Key.Enter || key == Key.NumPadEnter) &&
+        !isShiftPressed &&
+        !isCtrlPressed &&
+        !isAltPressed &&
+        !isMetaPressed &&
+        nativeKeyEvent.flags and FLAG_SOFT_KEYBOARD == 0
+
+/** The lines the text field grows to before it scrolls. */
+private const val MAX_LINES = 6
+
+/** The text field's lines: as many as the text has, up to [MAX_LINES], then it scrolls. */
+private val LINE_LIMITS = TextFieldLineLimits.MultiLine(maxHeightInLines = MAX_LINES)
