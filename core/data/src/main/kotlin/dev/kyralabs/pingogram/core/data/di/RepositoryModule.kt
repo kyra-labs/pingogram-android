@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepo
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSendAsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
@@ -60,6 +61,7 @@ import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsReposit
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
@@ -150,6 +152,9 @@ interface RepositoryModule {
 
     @Binds
     fun sendAsRepository(repository: TdlibSendAsRepository): SendAsRepository
+
+    @Binds
+    fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository
 
     @Binds
     fun profileRepository(repository: TdlibProfileRepository): ProfileRepository

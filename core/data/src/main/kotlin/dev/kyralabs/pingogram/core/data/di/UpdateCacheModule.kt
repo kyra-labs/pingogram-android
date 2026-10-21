@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
  * The set of every [TdlibUpdateCache], which `PingogramApplication` injects so each cache exists, and is subscribed to
  * TDLib's updates, before TDLib starts. Every new caching repository joins it here.
  */
+@Suppress("TooManyFunctions") // One binding per cache: every caching repository must join the set here.
 @Module
 @InstallIn(SingletonComponent::class)
 interface UpdateCacheModule {
@@ -52,6 +54,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun groupCache(repository: TdlibGroupRepository): TdlibUpdateCache
+
+    /** TDLib announces each secret chat once, before its chat, and again only when it changes. */
+    @Binds
+    @IntoSet
+    fun secretChatCache(repository: TdlibSecretChatRepository): TdlibUpdateCache
 
     @Binds
     @IntoSet

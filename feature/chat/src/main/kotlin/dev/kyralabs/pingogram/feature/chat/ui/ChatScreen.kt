@@ -64,6 +64,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
@@ -89,7 +90,9 @@ import kotlinx.collections.immutable.ImmutableSet
  * - **Jump to a message** ([jumpState]): a tapped quote's message, or the message the conversation was opened at,
  *   comes as an anchor: the list centres it and highlights it.
  * - **States**: a loading indicator once loading takes a moment ([DelayedLoadingIndicator]; messages from TDLib's
- *   local database come sooner), an empty state, an error with retry, and a chat that does not exist.
+ *   local database come sooner), an empty state, an error with retry, and a chat that does not exist. A secret chat
+ *   shows what it is ([SecretChatIntro]) in place of the empty state, and above its oldest message once the list
+ *   reaches it.
  * - **Composer** ([composerText], the view model's): where the user can write, whatever the messages' state; sending a
  *   message now scrolls to the newest one, where it shows (asking for it when the loaded messages do not reach it).
  *   Where they cannot, a label says why; in a channel they only
@@ -215,6 +218,7 @@ private fun ChatScaffold(
                 onBack = onBack,
                 selectedCount = selection?.messageIds?.size,
                 onClearSelection = { onEvent(SelectionEvent.Clear) },
+                onSecretChatEvent = onEvent,
             )
         },
         bottomBar = bottomBar,
@@ -294,7 +298,14 @@ private fun BoxScope.ChatBody(
         }
 
         ChatContent.Empty -> {
-            ChatEmpty(bodyModifier)
+            val header = state.header
+            if (header?.secret != null) {
+                Box(bodyModifier.padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
+                    SecretChatIntro(header.title)
+                }
+            } else {
+                ChatEmpty(bodyModifier)
+            }
         }
 
         is ChatContent.Error -> {
@@ -362,6 +373,15 @@ private fun MessageList(
         items(content.items, key = { it.key }, contentType = { it.contentType }) { item ->
             val itemModifier = Modifier.entry(this, motionScheme, item.topSpacing(spacing.small, spacing.extraSmall))
             ChatItemRow(item, fileStates, state.uploads, playback, bubbleResources, onEvent, itemModifier, selectedIds)
+        }
+        val header = state.header
+        if (header?.secret != null && content.reachedStart) {
+            item(key = SECRET_INTRO_KEY, contentType = SECRET_INTRO) {
+                SecretChatIntro(
+                    name = header.title,
+                    modifier = Modifier.entry(this, motionScheme, spacing.small),
+                )
+            }
         }
         if (content.isLoadingOlder || content.olderError != null) {
             pagesState(OLDER_KEY, content.isLoadingOlder, content.olderError, R.string.chat_older_error, onEvent)
@@ -516,6 +536,8 @@ private const val SPONSORED = "sponsored"
 private const val OLDER_KEY = "older"
 private const val NEWER_KEY = "newer"
 private const val PAGES_STATE = "pages"
+private const val SECRET_INTRO_KEY = "secretIntro"
+private const val SECRET_INTRO = "secretIntro"
 
 // The conversation scroll benchmark and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list by
 // this tag, which `MainActivity` shows as a resource id.

@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
+import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
@@ -12,12 +14,16 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.shortName
+import dev.kyralabs.pingogram.core.ui.text.stateText
+import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import java.time.Instant
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
  * The top bar of the conversation (`REQUIREMENTS.md` FR-C8): the chat's name and avatar, and as subtitle, by
- * precedence, what people are doing in it, then its status ([status]). Saved Messages has neither.
+ * precedence, what people are doing in it, then its status ([status]). Saved Messages has neither. A secret chat
+ * (FR-E1) has its lock and self-destruct timer, and while it waits for the other user or after it ended, its state
+ * ("Waiting for Ada to come online", "Secret chat ended") in place of the status.
  */
 internal fun HeaderSources.toHeader(): ChatHeader {
     val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
@@ -45,19 +51,35 @@ internal fun HeaderSources.toHeader(): ChatHeader {
             when {
                 isSavedMessages -> null
                 action != null -> ChatSubtitle.Action(action)
-                else -> status()?.let(ChatSubtitle::Status)
+                else -> (secretState() ?: status())?.let(ChatSubtitle::Status)
             },
+        secret = secretHeader(),
     )
 }
 
 /**
+ * The lock, state and timer of a secret chat; null for other chats. One TDLib has not announced counts as pending:
+ * its lock and secure window show from the start.
+ */
+private fun HeaderSources.secretHeader(): SecretChatHeader? =
+    if (chat.type is ChatType.Secret) {
+        SecretChatHeader(secretChat?.state ?: SecretChatState.Pending, chat.messageAutoDeleteTime)
+    } else {
+        null
+    }
+
+/** What a secret chat that cannot be written to says; null for other chats and once it is ready. */
+private fun HeaderSources.secretState(): UiText? = secretChat?.stateText(user?.shortName() ?: UiText.Plain(chat.title))
+
+/**
  * What the header is made from, as of one emission: the chat, the member count of a group or channel (null while
- * unknown), what people are doing in the chat, the users (the chat's user, the names of people typing) and the
- * current user, and the minute.
+ * unknown), the secret chat of a secret chat (null for other chats, and while unknown), what people are doing in the
+ * chat, the users (the chat's user, the names of people typing) and the current user, and the minute.
  */
 internal class HeaderSources(
     val chat: Chat,
     val memberCount: Int?,
+    val secretChat: SecretChat? = null,
     val actions: List<SenderAction>,
     val people: ChatPeople,
     val now: Instant,

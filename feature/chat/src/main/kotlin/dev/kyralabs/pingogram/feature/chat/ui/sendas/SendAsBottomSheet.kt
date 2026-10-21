@@ -48,7 +48,9 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.SendAsEvent
+import dev.kyralabs.pingogram.feature.chat.ui.insetContentPadding
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SendAsPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
  * The send-as picker (`REQUIREMENTS.md` FR-C5), a [ModalBottomSheet] opened from the composer's avatar: "Send messages
@@ -138,7 +140,7 @@ private fun SendAsRow(
     onClick: () -> Unit,
 ) {
     val name = option.name.resolve()
-    val insets = rowInsets()
+    val insets = sheetRowInsets()
     ListItem(
         selected = option.selected,
         onClick = onClick,
@@ -177,23 +179,6 @@ private val SenderKind.label: Int
             SenderKind.Anonymous -> R.string.send_as_anonymous
             SenderKind.Group -> R.string.send_as_group
         }
-
-/** A row's inset in the sheet: `spacing.small` from its sides, half the segmented gap from the rows around. */
-@Composable
-private fun rowInsets(): PaddingValues =
-    PaddingValues(horizontal = MaterialTheme.spacing.small, vertical = ListItemDefaults.SegmentedGap / 2)
-
-/** The list item's content padding less [insets], so a row's content stays where the list item puts it. */
-private fun insetContentPadding(insets: PaddingValues): PaddingValues {
-    val padding = ListItemDefaults.ContentPadding
-    val direction = LayoutDirection.Ltr
-    return PaddingValues(
-        start = padding.calculateStartPadding(direction) - insets.calculateStartPadding(direction),
-        top = padding.calculateTopPadding() - insets.calculateTopPadding(),
-        end = padding.calculateEndPadding(direction) - insets.calculateEndPadding(direction),
-        bottom = padding.calculateBottomPadding() - insets.calculateBottomPadding(),
-    )
-}
 
 private const val CONTENT_TYPE_SENDER = "sender"
 

@@ -117,6 +117,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
   pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
   leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
+- **Secret chats** (FR-E1): TDLib does all of the cryptography and accepts the secret chats other users start by itself
+  (td_api.tl has no function for it). `SecretChatRepository` (`core:domain`, `TdlibSecretChatRepository` in `core:data`,
+  a `TdlibUpdateCache`: TDLib announces each secret chat once with `updateSecretChat`, before its chat) keeps every
+  `SecretChat` (state pending / ready / closed, outbound, layer, key hash as `EncryptionKeyHash`, which turns td_api.tl's
+  36 bytes into the 12 × 12 image's pixels and the hexadecimal pairs), starts one (`createNewSecretChat`, returning its
+  chat id), ends one (`closeSecretChat`) and sets the self-destruct timer, which is the chat's `messageAutoDeleteTime`
+  (`setChatMessageAutoDeleteTime`, any number of seconds in a secret chat). Deleting a secret chat closes it first
+  (`ChatDeletion`). The chat list shows the state of a chat that waits or ended in its preview (`core:ui`
+  `SecretChat.stateText`); `feature:chat`'s `ChatSecretChat` (a part of `ChatViewModel`) gives the header its lock,
+  state and timer, the composer its label while the chat is not ready, and keeps the timer and key sheets
+  (`secretChatSheet`) out of `ChatUiState`. Screenshot blocking: a screen asks for a secure window with `core:ui`'s
+  `SecureWindow` (requests counted in `SecureWindowRequests`, `LocalSecureWindow`), which `ChatRoute` does for a secret
+  chat and `MediaViewerRoute` for its media; `MainActivity` keeps `FLAG_SECURE` while the lock or any screen needs it, in
+  its one `SecureWindowEffect`, so neither clears the flag the other set.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

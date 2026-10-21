@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -95,6 +96,8 @@ data class MessagePlayback(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
+ * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
+ *   chats.
  */
 @Immutable
 data class ChatHeader(
@@ -103,8 +106,9 @@ data class ChatHeader(
     val photo: ProfilePhoto?,
     @param:DrawableRes val placeholderIcon: Int?,
     val subtitle: ChatSubtitle?,
+    val secret: SecretChatHeader? = null,
 ) {
-    override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, …)"
+    override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }
 
 /** The second line of the top bar. */
@@ -238,6 +242,9 @@ sealed interface ChatItem {
      *   older pages bring in more of the album.
      * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
      *   link preview, reply or forward: shown large, without a bubble.
+     * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
+     *   it was sent), shown with the time; null if it does not. TDLib gives no update as the time runs down once it is
+     *   read, so the bubble shows the timer itself, not a countdown.
      */
     data class Bubble(
         val id: Long,
@@ -264,6 +271,7 @@ sealed interface ChatItem {
         val isEmojiOnly: Boolean = false,
         val showsTime: Boolean = true,
         val canResend: Boolean = false,
+        val selfDestructSeconds: Int? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

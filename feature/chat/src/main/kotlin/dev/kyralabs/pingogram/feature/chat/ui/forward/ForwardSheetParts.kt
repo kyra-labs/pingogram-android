@@ -47,6 +47,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerField
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.insetContentPadding
+import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The rows, options and send button of the forward sheet (ForwardBottomSheet).
@@ -64,7 +66,7 @@ internal fun ForwardTargetRow(
     modifier: Modifier = Modifier,
 ) {
     val title = target.title.resolve()
-    val insets = rowInsets()
+    val insets = sheetRowInsets()
     val shapes = ListItemDefaults.shapes()
     ListItem(
         checked = selected,
@@ -190,26 +192,6 @@ private fun SwitchRow(
     ) {
         Text(title)
     }
-}
-
-/**
- * How far a row's container sits in from its place in the list, as in the chat list: [MaterialTheme.spacing]'s small
- * step from the sides of the sheet, and half of Material's gap between segmented list items from the rows around.
- */
-@Composable
-private fun rowInsets(): PaddingValues =
-    PaddingValues(horizontal = MaterialTheme.spacing.small, vertical = ListItemDefaults.SegmentedGap / 2)
-
-/** The list item's content padding less [insets], so a row's content stays where the list item puts it. */
-private fun insetContentPadding(insets: PaddingValues): PaddingValues {
-    val padding = ListItemDefaults.ContentPadding
-    val direction = LayoutDirection.Ltr
-    return PaddingValues(
-        start = padding.calculateStartPadding(direction) - insets.calculateStartPadding(direction),
-        top = padding.calculateTopPadding() - insets.calculateTopPadding(),
-        end = padding.calculateEndPadding(direction) - insets.calculateEndPadding(direction),
-        bottom = padding.calculateBottomPadding() - insets.calculateBottomPadding(),
-    )
 }
 
 /** The list item's colors on the sheet's color, or its selected colors for a picked chat. */

@@ -25,7 +25,8 @@ internal class PreviewText(
 
 /**
  * The second line of a row: typing in `primary`; "Draft:" in `tertiary` before the draft; the sender in `onSurface`
- * before the message, which is in `error` if it failed to send ([isFailed]); the rest in the row's `onSurfaceVariant`.
+ * before the message, which is in `error` if it failed to send ([isFailed]); the rest, a secret chat's state too, in
+ * the row's `onSurfaceVariant`.
  * Built again only when its texts or colors change.
  */
 @Composable
@@ -51,6 +52,10 @@ internal fun previewText(
                     text = preview.text.resolve(),
                     textColor = if (isFailed) colors.error else Color.Unspecified,
                 )
+            }
+
+            is ChatPreview.SecretChat -> {
+                PreviewParts(text = preview.text.resolve())
             }
 
             ChatPreview.None -> {

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatAction
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
@@ -211,6 +213,27 @@ class FakeGroupRepository : GroupRepository {
     override val supergroups: Flow<ImmutableMap<Long, Supergroup>> = supergroupMap
 
     override fun supergroup(id: Long): Flow<Supergroup?> = unused()
+}
+
+class FakeSecretChatRepository : SecretChatRepository {
+    val secretChatMap = MutableStateFlow<ImmutableMap<Int, SecretChat>>(persistentMapOf())
+
+    fun setSecretChats(vararg secretChats: SecretChat) {
+        secretChatMap.value = secretChats.associateBy { it.id }.toImmutableMap()
+    }
+
+    override val secretChats: Flow<ImmutableMap<Int, SecretChat>> = secretChatMap
+
+    override fun secretChat(id: Int): Flow<SecretChat?> = unused()
+
+    override suspend fun createSecretChat(userId: Long): Outcome<Long> = unused()
+
+    override suspend fun closeSecretChat(secretChatId: Int): Outcome<Unit> = unused()
+
+    override suspend fun setSelfDestructTime(
+        chatId: Long,
+        seconds: Int,
+    ): Outcome<Unit> = unused()
 }
 
 class FakeChatActionRepository : ChatActionRepository {

@@ -42,6 +42,7 @@ abstract class ChatViewModelHarness {
     protected val attachments = FakeAttachmentRepository()
     protected val voiceNotes = FakeVoiceNoteRepository()
     protected val sendAs = FakeSendAsRepository()
+    protected val secretChats = FakeSecretChatRepository()
     protected val sponsored = FakeSponsoredMessageRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
@@ -100,6 +101,7 @@ abstract class ChatViewModelHarness {
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
                 sendAsRepository = sendAs,
+                secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
                 log = { logged += it },
                 initialMessageId = messageId,
