@@ -97,6 +97,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
+  `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
+  `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which
+  makes TDLib announce them all), then the users of `UserRepository.users` that are contacts, sorted by name with a
+  `Collator` of the user's language; a contact added, renamed or deleted on any device changes the list by itself.
+  Search is TDLib's `searchContacts` (transliteration included) next to the view model's own filter; adding goes
+  through `importContacts` (a phone number, user id 0 when it is not on Telegram) or `searchPublicChat` + `addContact`
+  (a username), editing through `addContact` (keeping the note of `userFullInfo`), deleting through `removeContacts`,
+  and an invitation carries `getApplicationDownloadLink` (Telegram's download page offline), shared through Android's
+  share sheet from the route, without permissions. `feature:contacts` draws the tab (`ContactsViewModel`: alphabetical
+  sections by the language's `Collator`, a fast-scroll index for long lists, the query and the delete question in saved
+  state), Add contact (`NewContactRoute`, `NewContactViewModel`) and Edit contact (`EditContactRoute(userId)`,
+  `EditContactViewModel`), which `navigateToEditContact(userId)` opens from anywhere, e.g. a profile. The phone's own
+  contacts are not read (contact sync comes later).
 - **2-step verification** (FR-S1): `TwoStepVerificationRepository` (`core:domain`, `TdlibTwoStepVerificationRepository`
   in `core:data`, no cache: TDLib has no updates for it) reads the state with `getPasswordState`, checks the current
   password with `getRecoveryEmailAddress` and sets, changes, removes and recovers the password and its recovery email.

@@ -232,13 +232,25 @@ class NewChatViewModelTest {
         }
 
     @Test
-    fun `new group, channel and contact say they come later`() =
+    fun `new group and channel say they come later`() =
         runTest {
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
 
-            NewChatAction.entries.forEach { send(viewModel, NewChatEvent.Action(it)) }
+            send(viewModel, NewChatEvent.Action(NewChatAction.Group))
+            send(viewModel, NewChatEvent.Action(NewChatAction.Channel))
 
-            assertEquals(List(NewChatAction.entries.size) { NewChatEffect.NotAvailableYet }, effects)
+            assertEquals(listOf(NewChatEffect.NotAvailableYet, NewChatEffect.NotAvailableYet), effects)
+        }
+
+    @Test
+    fun `new contact opens Add contact`() =
+        runTest {
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, NewChatEvent.Action(NewChatAction.Contact))
+
+            assertEquals(listOf(NewChatEffect.AddContact), effects)
         }
 }

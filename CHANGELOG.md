@@ -9,6 +9,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Contacts: the Contacts tab lists your Telegram contacts alphabetically, with who is online and when the others were
+  last seen, and a letter index along the edge of long lists to jump to a letter. Search filters the list as you type.
+  Tap a contact to open your chat; long-press to edit or delete them. Add contacts by phone number or by username;
+  if a number is not on Telegram yet, you can send its owner an invitation to Telegram through any app. "Invite
+  friends" shares the same invitation. New chat's "New contact" opens Add contact too. Your phone's own contacts are
+  not read.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added

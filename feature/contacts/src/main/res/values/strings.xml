@@ -1,7 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Contacts tab (ContactsScreen) -->
     <string name="contacts_title">Contacts</string>
-    <string name="contacts_placeholder_title">Contacts are coming in a later version</string>
-    <string name="contacts_placeholder_body">Until then, New chat lists your contacts, so you can start a chat with any of them.</string>
-    <string name="contacts_new_chat">New chat</string>
+    <string name="contacts_search">Search contacts</string>
+    <string name="contacts_search_clear">Clear search</string>
+    <string name="contacts_add">Add contact</string>
+    <string name="contacts_invite">Invite friends</string>
+    <string name="contacts_loading">Loading contacts</string>
+    <string name="contacts_no_results">No contacts match your search</string>
+    <string name="contacts_empty_title">No contacts yet</string>
+    <string name="contacts_empty_body">Add people by their phone number or username to find them here and start a chat.</string>
+    <string name="contacts_error_title">Couldn\'t load your contacts</string>
+    <string name="contacts_retry">Try again</string>
+    <!-- The fast-scroll index along the list's edge, for screen readers: its value is a letter. -->
+    <string name="contacts_index">Alphabetical index</string>
+    <!-- What a long press on a contact does, for screen readers. -->
+    <string name="contacts_row_menu">Edit or delete</string>
+    <string name="contacts_edit">Edit</string>
+    <string name="contacts_delete">Delete</string>
+    <string name="contacts_delete_title">Delete contact?</string>
+    <!-- %1$s is the contact's name. -->
+    <string name="contacts_delete_text">%1$s will be removed from your Telegram contacts on all your devices. Your chat with them stays.</string>
+    <string name="contacts_delete_confirm">Delete</string>
+    <string name="contacts_dialog_cancel">Cancel</string>
+    <!-- Snackbar; %1$s is the contact's name. -->
+    <string name="contacts_deleted">%1$s was removed from your contacts</string>
+    <!-- Under a contact's name: what Telegram tells about when they were last online. -->
+    <string name="contacts_status_online">online</string>
+    <string name="contacts_status_just_now">last seen just now</string>
+    <plurals name="contacts_status_minutes">
+        <item quantity="one">last seen %d minute ago</item>
+        <item quantity="other">last seen %d minutes ago</item>
+    </plurals>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="contacts_status_today">last seen today at %1$s</string>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="contacts_status_yesterday">last seen yesterday at %1$s</string>
+    <!-- %1$s is a date, "Mar 17" or "3/17/2024". -->
+    <string name="contacts_status_date">last seen %1$s</string>
+    <!-- The contact's privacy settings hide when they were last online; Telegram tells roughly. -->
+    <string name="contacts_status_recently">last seen recently</string>
+    <string name="contacts_status_week">last seen within a week</string>
+    <string name="contacts_status_month">last seen within a month</string>
+    <string name="contacts_status_long_ago">last seen a long time ago</string>
+    <string name="contacts_status_bot">bot</string>
+
+    <!-- Inviting someone to Telegram through Android's share sheet. It invites to Telegram, not to this app. -->
+    <string name="contacts_invite_title">Invite to Telegram</string>
+    <!-- %1$s is the link to download Telegram. -->
+    <string name="contacts_invite_text">I\'m on Telegram, a free messaging app. Join me there so we can chat: %1$s</string>
+
+    <!-- Add contact and Edit contact (NewContactScreen, EditContactScreen) -->
+    <string name="contacts_back">Back</string>
+    <string name="contacts_method_phone">Phone number</string>
+    <string name="contacts_method_username">Username</string>
+    <string name="contacts_first_name">First name</string>
+    <string name="contacts_first_name_optional">First name (optional)</string>
+    <string name="contacts_last_name_optional">Last name (optional)</string>
+    <string name="contacts_phone_number">Phone number</string>
+    <string name="contacts_phone_number_note">With the country code, like +44 7911 123456</string>
+    <string name="contacts_username">Username</string>
+    <string name="contacts_username_note">Without names, the contact keeps the name they chose</string>
+    <string name="contacts_add_action">Add</string>
+    <string name="contacts_save">Save</string>
+    <string name="contacts_error_first_name">Enter a first name</string>
+    <string name="contacts_error_phone_number">Enter the whole number, with its country code</string>
+    <string name="contacts_error_username">No one on Telegram has this username</string>
+    <!-- %1$s is how long to wait, "1 minute 20 seconds". -->
+    <string name="contacts_flood_wait">Too many attempts. Try again in %1$s.</string>
+    <!-- %1$s is the phone number that was entered. -->
+    <string name="contacts_not_on_telegram_title">%1$s isn\'t on Telegram yet</string>
+    <string name="contacts_not_on_telegram_body">Invite them to Telegram. Once they join, you can add them and start a chat.</string>
+    <string name="contacts_change_number">Change number</string>
+    <string name="contacts_invite_action">Invite</string>
+    <string name="contacts_edit_title">Edit contact</string>
+    <string name="contacts_add_to_contacts">Add to contacts</string>
+    <string name="contacts_edit_loading">Loading contact</string>
+    <string name="contacts_edit_error_title">Couldn\'t load this person</string>
+    <string name="contacts_share_phone_number">Share my phone number</string>
+    <!-- %1$s is the contact's first name. -->
+    <string name="contacts_share_phone_number_summary">%1$s can see your number</string>
+    <string name="contacts_delete_contact">Delete contact</string>
 </resources>
