@@ -21,7 +21,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 /**
  * The set of every [TdlibUpdateCache], which `PingogramApplication` injects so each cache exists, and is subscribed to
  * TDLib's updates, before TDLib starts. Every new caching repository joins it here.
+ *
+ * One binding per caching repository, so it has as many functions as there are caches (`TooManyFunctions`): splitting
+ * it would scatter the one list of caches.
  */
+@Suppress("TooManyFunctions")
 @Module
 @InstallIn(SingletonComponent::class)
 interface UpdateCacheModule {

@@ -50,7 +50,11 @@ import javax.inject.Singleton
  *   ([ContactSyncStatus.NeedsPermission]) and nothing is read.
  * - **Logging out** (`authorizationStateLoggingOut`, or `Closed`) clears the settings and what is in memory, so the
  *   next account starts with sync off. It is a [TdlibUpdateCache] for that, subscribed before TDLib starts.
+ *
+ * The interface's six operations and the steps they share (syncing, sending, matching, forgetting, logging out) work on
+ * one state, so the class keeps them together (`TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibContactSyncRepository
     @Inject

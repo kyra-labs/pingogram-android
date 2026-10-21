@@ -57,11 +57,9 @@ class AndroidDeviceContactsRepository
                 val number = cursor.getColumnIndexOrThrow(Phone.NUMBER)
                 val normalized = cursor.getColumnIndexOrThrow(Phone.NORMALIZED_NUMBER)
                 while (cursor.moveToNext()) {
-                    val phone =
-                        internationalNumber(cursor.getString(number), cursor.getString(normalized), country)
-                            ?: continue
+                    val phone = internationalNumber(cursor.getString(number), cursor.getString(normalized), country)
                     // One entry per number: the first contact that has it.
-                    if (phone in contacts) continue
+                    if (phone == null || phone in contacts) continue
                     val displayName =
                         cursor
                             .getString(name)

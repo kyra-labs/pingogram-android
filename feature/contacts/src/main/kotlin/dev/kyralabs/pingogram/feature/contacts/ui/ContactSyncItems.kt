@@ -49,8 +49,8 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-// Contacts sync on the Contacts tab (docs/DESIGN_SYSTEM.md §6, "Contacts sync"): its offer, its paused state, its status
-// row, and the phone's contacts to invite.
+// Contacts sync on the Contacts tab (docs/DESIGN_SYSTEM.md §6, "Contacts sync"): its offer, its paused state, its
+// status row, and the phone's contacts to invite.
 
 /**
  * What the tab shows of contacts sync above the contacts, for [sync]: the offer or the paused state as a card

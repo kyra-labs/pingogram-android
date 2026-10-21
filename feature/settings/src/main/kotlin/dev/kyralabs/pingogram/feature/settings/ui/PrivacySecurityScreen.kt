@@ -153,32 +153,6 @@ private fun PrivacySettingItem(
     )
 }
 
-/** "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused. */
-@Composable
-private fun ContactsSection(
-    status: ContactSyncStatus,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    SettingsGroup(title = stringResource(R.string.settings_section_contacts)) {
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_contact_sync),
-                summary =
-                    stringResource(
-                        when (status) {
-                            ContactSyncStatus.Off -> R.string.settings_contact_sync_off
-                            ContactSyncStatus.NeedsPermission -> R.string.settings_contact_sync_paused
-                            is ContactSyncStatus.On -> R.string.settings_contact_sync_on
-                        },
-                    ),
-                checked = status != ContactSyncStatus.Off,
-                shapes = shapes,
-                onCheckedChange = onCheckedChange,
-            )
-        }
-    }
-}
-
 @Composable
 private fun SecuritySection(
     state: PrivacySecurityUiState.Content,
@@ -302,20 +276,6 @@ private fun PrivacySecurityScreenErrorPreview() {
             onEvent = {},
             onOpen = {},
             onBack = {},
-        )
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySecurityScreenContactSyncOnPreview() {
-    PingogramPreview {
-        PrivacySecurityScreen(
-            state = SettingsPreviewData.privacySecurity,
-            onEvent = {},
-            onOpen = {},
-            onBack = {},
-            contactSync = ContactSyncStatus.On(lastSyncedAt = null),
         )
     }
 }

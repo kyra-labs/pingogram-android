@@ -221,54 +221,14 @@ private fun ContactsList(
     ) {
         when (content) {
             is ContactsContent.Contacts -> {
-                item(key = ADD_ROW, contentType = ACTION_ROW) {
-                    ContactsActionRow(
-                        icon = UiR.drawable.ic_add,
-                        label = stringResource(R.string.contacts_add),
-                        onClick = callbacks.onAddContact,
-                        modifier = Modifier.row(this, maxWidth, motionScheme),
-                    )
-                }
-                item(key = INVITE_ROW, contentType = ACTION_ROW) {
-                    ContactsActionRow(
-                        icon = UiR.drawable.ic_share,
-                        label = stringResource(R.string.contacts_invite),
-                        onClick = { onEvent(ContactsEvent.Invite) },
-                        modifier = Modifier.row(this, maxWidth, motionScheme),
-                    )
-                }
-                if (showsSync) {
-                    item(key = SYNC_ROW, contentType = SYNC_ROW) {
-                        ContactSyncItem(
-                            sync = state.sync,
-                            controls = syncControls,
-                            onSyncEvent = callbacks.onSyncEvent,
-                            onDismissOffer = { onEvent(ContactsEvent.DismissSyncOffer) },
-                            modifier = Modifier.row(this, maxWidth, motionScheme),
-                        )
-                    }
-                }
+                actionItems(state.sync, syncControls, callbacks, maxWidth, motionScheme)
                 content.sections.forEach { section ->
                     stickyHeader(key = "$HEADER:${section.letter}", contentType = HEADER) {
                         SectionHeader(section.letter, Modifier.widthIn(max = maxWidth).fillMaxWidth())
                     }
                     contactItems(section.contacts, onEvent, onEditContact, maxWidth, motionScheme)
                 }
-                if (content.invites.isNotEmpty()) {
-                    stickyHeader(key = INVITES_HEADER, contentType = HEADER) {
-                        SectionHeader(
-                            stringResource(R.string.contacts_invite_section),
-                            Modifier.widthIn(max = maxWidth).fillMaxWidth(),
-                        )
-                    }
-                    items(content.invites, key = { "$INVITE:${it.key}" }, contentType = { INVITE }) { invite ->
-                        InviteRow(
-                            item = invite,
-                            onInvite = { onEvent(ContactsEvent.InvitePhoneContact(invite.phoneNumber)) },
-                            modifier = Modifier.row(this, maxWidth, motionScheme),
-                        )
-                    }
-                }
+                inviteItems(content.invites, onEvent, maxWidth, motionScheme)
             }
 
             is ContactsContent.Results -> {
@@ -296,70 +256,6 @@ private fun ContactsList(
     }
 }
 
-/** The rows of [contacts], keyed by user id. */
-private fun LazyListScope.contactItems(
-    contacts: ImmutableList<ContactItem>,
-    onEvent: (ContactsEvent) -> Unit,
-    onEditContact: (userId: Long) -> Unit,
-    maxWidth: Dp,
-    motionScheme: MotionScheme,
-) {
-    items(contacts, key = { it.userId }, contentType = { CONTACT_ROW }) { contact ->
-        ContactRow(
-            item = contact,
-            onClick = { onEvent(ContactsEvent.OpenChat(contact.userId)) },
-            onEdit = { onEditContact(contact.userId) },
-            onDelete = { onEvent(ContactsEvent.Delete(contact.userId)) },
-            modifier = Modifier.row(this, maxWidth, motionScheme),
-        )
-    }
-}
-
-/** The list index of each section's header: after the [leading] rows, each section's header and its contacts. */
-private fun headerIndices(
-    sections: ImmutableList<ContactSection>,
-    leading: Int,
-): ImmutableList<Int> =
-    sections
-        .runningFold(leading) { index, section -> index + 1 + section.contacts.size }
-        .dropLast(1)
-        .toImmutableList()
-
-/** A letter's header: `titleSmallEmphasized` in `primary` on the sheet's `surface`, so rows scroll under it. */
-@Composable
-private fun SectionHeader(
-    letter: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = letter,
-        modifier =
-            modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small)
-                .semantics { heading() },
-        color = MaterialTheme.colorScheme.primary,
-        style = MaterialTheme.typography.titleSmallEmphasized,
-    )
-}
-
-/** A row of [scope] at most [maxWidth] wide, animating as the list changes on the [motionScheme]'s springs. */
-private fun Modifier.row(
-    scope: LazyItemScope,
-    maxWidth: Dp,
-    motionScheme: MotionScheme,
-): Modifier =
-    with(scope) {
-        this@row
-            .widthIn(max = maxWidth)
-            .fillMaxWidth()
-            .animateItem(
-                fadeInSpec = motionScheme.defaultEffectsSpec(),
-                placementSpec = motionScheme.defaultSpatialSpec(),
-                fadeOutSpec = motionScheme.fastEffectsSpec(),
-            )
-    }
-
 /** What the tab's parts call, remembered once, so the list's composables skip when only their state stays. */
 @Stable
 internal class ContactsCallbacks(
@@ -371,18 +267,6 @@ internal class ContactsCallbacks(
 
 /** The test tag of the contacts list, for UI and recomposition tests. */
 internal const val CONTACTS_LIST_TEST_TAG = "contacts:list"
-
-// Keys and content types of the list's entries; a contact's key is its user id.
-private const val ACTION_ROW = "action"
-private const val ADD_ROW = "action:add"
-private const val INVITE_ROW = "action:invite"
-private const val ACTION_ROWS = 2
-private const val SYNC_ROW = "sync"
-private const val INVITES_HEADER = "header:invites"
-private const val INVITE = "invite"
-private const val HEADER = "header"
-private const val NO_RESULTS = "noResults"
-private const val CONTACT_ROW = "contact"
 
 @PingogramPreviews
 @Composable

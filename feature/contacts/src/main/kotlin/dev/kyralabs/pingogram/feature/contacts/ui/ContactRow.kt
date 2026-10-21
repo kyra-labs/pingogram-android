@@ -237,26 +237,6 @@ internal fun ContactsActionRow(
     )
 }
 
-/**
- * How far a row's container sits in from its place in the list, as the chat list's: [MaterialTheme.spacing]'s small
- * step from the sides of the sheet, and half of Material's gap between segmented list items from the rows around.
- */
-@Composable
-internal fun rowInsets(): PaddingValues =
-    PaddingValues(horizontal = MaterialTheme.spacing.small, vertical = ListItemDefaults.SegmentedGap / 2)
-
-/** The list item's content padding less [insets], so a row's content stays where the list item puts it. */
-internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
-    val padding = ListItemDefaults.ContentPadding
-    val direction = LayoutDirection.Ltr
-    return PaddingValues(
-        start = padding.calculateStartPadding(direction) - insets.calculateStartPadding(direction),
-        top = padding.calculateTopPadding() - insets.calculateTopPadding(),
-        end = padding.calculateEndPadding(direction) - insets.calculateEndPadding(direction),
-        bottom = padding.calculateBottomPadding() - insets.calculateBottomPadding(),
-    )
-}
-
 /** The list item's colors, or its selected colors in place of its resting ones. */
 @Composable
 private fun listItemColors(selected: Boolean): ListItemColors {

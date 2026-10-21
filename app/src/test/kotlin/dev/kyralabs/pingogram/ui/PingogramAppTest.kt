@@ -297,7 +297,11 @@ class PingogramAppTest {
     fun `back from search returns to the tab and its navigation bar`() {
         setApp()
         tab(R.string.nav_contacts).performClick()
-        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        // The navigation's search button; the Contacts tab's own search field is named "Search" by Material too.
+        val searchButton =
+            hasContentDescription(string(R.string.nav_search)) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        composeRule.onNode(searchButton).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(string(ChatsR.string.search_back)).performClick()
