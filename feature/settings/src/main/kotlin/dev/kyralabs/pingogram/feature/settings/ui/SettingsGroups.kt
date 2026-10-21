@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
@@ -110,7 +111,9 @@ internal fun SettingsSegment(
  * circle ([SettingsItemIcon]; [iconTone] for this row alone, the group's otherwise), [title] in the list item's
  * `bodyLarge`, [supportingContent] and [trailingContent]. With [onClick] it is clickable, and its shape morphs to the
  * list item's pressed shape on the motion scheme's fast spatial spring (the list item's own); without, it only shows.
- * Either way screen readers read it as one item.
+ * Either way screen readers read it as one item. With [selected] as well (a page row of Settings home beside the open
+ * page, `docs/DESIGN_SYSTEM.md` §7) it is selectable, in the list item's selected colors and shape while [selected]
+ * is true.
  */
 @Suppress("LongParameterList") // A list item's slots and states, and the icon's tone.
 @Composable
@@ -125,10 +128,27 @@ internal fun SettingsRow(
     enabled: Boolean = true,
     colors: ListItemColors = settingsRowColors(),
     iconTone: SettingsIconTone? = null,
+    selected: Boolean? = null,
 ) {
     val leadingContent: (@Composable () -> Unit)? =
-        icon?.let { { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled) } }
-    if (onClick != null) {
+        icon?.let {
+            { SettingsItemIcon(it, iconTone ?: LocalSettingsIconTone.current, enabled, selected = selected == true) }
+        }
+    if (onClick != null && selected != null) {
+        SegmentedListItem(
+            selected = selected,
+            onClick = onClick,
+            shapes = shapes,
+            modifier = modifier,
+            enabled = enabled,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            colors = colors,
+        ) {
+            Text(title)
+        }
+    } else if (onClick != null) {
         SegmentedListItem(
             onClick = onClick,
             shapes = shapes,
@@ -156,7 +176,10 @@ internal fun SettingsRow(
     }
 }
 
-/** A row that opens another settings page: its [icon], [title] and [summary]. */
+/**
+ * A row that opens another settings page: its [icon], [title] and [summary]; selectable with [selected] (see
+ * [SettingsRow]).
+ */
 @Composable
 internal fun PageItem(
     title: String,
@@ -164,6 +187,7 @@ internal fun PageItem(
     @DrawableRes icon: Int,
     shapes: ListItemShapes,
     onClick: () -> Unit,
+    selected: Boolean? = null,
 ) {
     SettingsRow(
         title = title,
@@ -171,6 +195,7 @@ internal fun PageItem(
         icon = icon,
         supportingContent = { Text(summary) },
         onClick = onClick,
+        selected = selected,
     )
 }
 
@@ -217,22 +242,19 @@ private val LocalSettingsIconTone = staticCompositionLocalOf { SettingsIconTone.
 /**
  * A row's leading icon, a Material Symbols drawable, in a tonal circle of [tone]'s container role (`primaryContainer`
  * and `onPrimaryContainer`…) as wide as a list item's leading avatar, so rows keep their heights; the row's text names
- * it for screen readers. A disabled row's icon fades like its text.
+ * it for screen readers. A disabled row's icon fades like its text. On a [selected] row, whose container is
+ * `secondaryContainer`, the circle is `primary` and the icon `onPrimary` whatever the tone, so it stays visible
+ * (`docs/DESIGN_SYSTEM.md` §2.2).
  */
 @Composable
 internal fun SettingsItemIcon(
     @DrawableRes icon: Int,
     tone: SettingsIconTone = LocalSettingsIconTone.current,
     enabled: Boolean = true,
+    selected: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
-    val (container, content) =
-        when (tone) {
-            SettingsIconTone.Primary -> colors.primaryContainer to colors.onPrimaryContainer
-            SettingsIconTone.Secondary -> colors.secondaryContainer to colors.onSecondaryContainer
-            SettingsIconTone.Tertiary -> colors.tertiaryContainer to colors.onTertiaryContainer
-            SettingsIconTone.Error -> colors.errorContainer to colors.onErrorContainer
-        }
+    val (container, content) = if (selected) colors.primary to colors.onPrimary else tone.colors(colors)
     Box(
         modifier =
             Modifier
@@ -247,6 +269,15 @@ internal fun SettingsItemIcon(
         )
     }
 }
+
+/** This tone's container role and the content role on it. */
+private fun SettingsIconTone.colors(colors: ColorScheme): Pair<Color, Color> =
+    when (this) {
+        SettingsIconTone.Primary -> colors.primaryContainer to colors.onPrimaryContainer
+        SettingsIconTone.Secondary -> colors.secondaryContainer to colors.onSecondaryContainer
+        SettingsIconTone.Tertiary -> colors.tertiaryContainer to colors.onTertiaryContainer
+        SettingsIconTone.Error -> colors.errorContainer to colors.onErrorContainer
+    }
 
 /** Material's disabled container and content opacities (`docs/DESIGN_SYSTEM.md` §2.2). */
 private const val DISABLED_CONTAINER = 0.12f

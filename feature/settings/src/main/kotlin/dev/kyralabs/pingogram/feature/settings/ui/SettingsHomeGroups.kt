@@ -10,11 +10,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The groups of rows that open the other settings pages: General (Appearance, Notifications, Data and storage,
  * Language), Privacy and security, About, their icons in circles of one container role per group: `primary`,
- * `tertiary`, `secondary` (`docs/DESIGN_SYSTEM.md` §2.2).
+ * `tertiary`, `secondary` (`docs/DESIGN_SYSTEM.md` §2.2). With a [selection] they are selectable, the open page's
+ * selected.
  */
 @Composable
-internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
-    GeneralGroup(onOpenPage)
+internal fun PageGroups(
+    onOpenPage: (SettingsPage) -> Unit,
+    selection: SettingsPageSelection? = null,
+) {
+    GeneralGroup(onOpenPage, selection)
     SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
         item { shapes ->
             PageItem(
@@ -22,6 +26,7 @@ internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_privacy_security_summary),
                 icon = R.drawable.ic_shield,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.PrivacySecurity },
                 onClick = { onOpenPage(SettingsPage.PrivacySecurity) },
             )
         }
@@ -33,6 +38,7 @@ internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_about_summary),
                 icon = R.drawable.ic_info,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.About },
                 onClick = { onOpenPage(SettingsPage.About) },
             )
         }
@@ -41,7 +47,10 @@ internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
 
 /** General: Appearance, Notifications, Data and storage, Language. */
 @Composable
-private fun GeneralGroup(onOpenPage: (SettingsPage) -> Unit) {
+private fun GeneralGroup(
+    onOpenPage: (SettingsPage) -> Unit,
+    selection: SettingsPageSelection?,
+) {
     SettingsGroup {
         item { shapes ->
             PageItem(
@@ -49,6 +58,7 @@ private fun GeneralGroup(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_appearance_summary),
                 icon = R.drawable.ic_palette,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.Appearance },
                 onClick = { onOpenPage(SettingsPage.Appearance) },
             )
         }
@@ -58,6 +68,7 @@ private fun GeneralGroup(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_notifications_summary),
                 icon = UiR.drawable.ic_notifications,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.Notifications },
                 onClick = { onOpenPage(SettingsPage.Notifications) },
             )
         }
@@ -67,6 +78,7 @@ private fun GeneralGroup(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_data_storage_summary),
                 icon = R.drawable.ic_storage,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.DataStorage },
                 onClick = { onOpenPage(SettingsPage.DataStorage) },
             )
         }
@@ -76,6 +88,7 @@ private fun GeneralGroup(onOpenPage: (SettingsPage) -> Unit) {
                 summary = stringResource(R.string.settings_language_summary),
                 icon = R.drawable.ic_language,
                 shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.Language },
                 onClick = { onOpenPage(SettingsPage.Language) },
             )
         }

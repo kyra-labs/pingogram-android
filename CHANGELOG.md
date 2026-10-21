@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- Settings on tablets and other wide windows shows its pages beside the list of settings, as the chats do: the page
+  you pick opens beside them, the pages it leads to open in its place, and back returns through them. Phones keep
+  opening each page full screen.
+- Settings pages have the large title of Settings itself, which shrinks into the top bar as you scroll, and line up
+  with their content on wide windows; on tablets and unfolded phones their content keeps a wider margin from the edges.
 - Settings look more like Android 16's: each row's icon sits in a small colored circle, one color per group; switches
   show a check in their knob when on, and buzz lightly as they turn on and off; the theme and contrast choices are a
   row of joined buttons that tick as you choose. Edit profile's fields sit directly on the page as rounded fields,

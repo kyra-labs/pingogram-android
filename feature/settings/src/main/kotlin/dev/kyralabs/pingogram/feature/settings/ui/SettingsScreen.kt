@@ -1,34 +1,21 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,7 +24,6 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
-import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -46,12 +32,13 @@ import kotlinx.coroutines.launch
 /**
  * The Settings tab: hoists [SettingsViewModel] and shows its errors in snackbars. A row calls [onOpenPage] with the
  * page it opens. [profileSaved] says that Edit profile just saved the profile, shown in a snackbar once:
- * [onProfileSavedShown] clears it.
+ * [onProfileSavedShown] clears it. Beside a page on an expanded window, [selection] says which page is open.
  */
 @Composable
 internal fun SettingsRoute(
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    selection: SettingsPageSelection? = null,
     profileSaved: Boolean = false,
     onProfileSavedShown: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -83,17 +70,19 @@ internal fun SettingsRoute(
         onEvent = viewModel::onEvent,
         onOpenPage = onOpenPage,
         modifier = modifier,
+        selection = selection,
         snackbarHostState = snackbarHostState,
     )
 }
 
 /**
- * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a [MediumFlexibleTopAppBar] that collapses as the
- * page scrolls, as the chat list's does, then the logged-in account's card ([AccountCard], which opens Edit profile)
+ * Settings (`REQUIREMENTS.md` FR-S1; `docs/DESIGN_SYSTEM.md` §6): a medium flexible top bar ([SettingsTopBar]) that
+ * collapses as the page scrolls, then the logged-in account's card ([AccountCard], which opens Edit profile)
  * and groups of segmented rows ([SettingsGroup]) without headings, as Google's Material 3 Expressive account menus
  * have them: General (Appearance, Notifications, Data and storage, Language), Privacy and security, About, and
  * "Log out" on its own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar
- * and ends clear of it ([screenContentWindowInsets]).
+ * and ends clear of it ([screenContentWindowInsets]). As the list of a list-detail layout, its page rows are
+ * selectable, and the [selection]'s open page reads as selected.
  */
 @Composable
 internal fun SettingsScreen(
@@ -101,6 +90,7 @@ internal fun SettingsScreen(
     onEvent: (SettingsEvent) -> Unit,
     onOpenPage: (SettingsPage) -> Unit,
     modifier: Modifier = Modifier,
+    selection: SettingsPageSelection? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -108,15 +98,21 @@ internal fun SettingsScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         // The page's color, which the transparent top bar shares.
         containerColor = settingsPageColor(),
-        topBar = { SettingsTopBar(scrollBehavior) },
+        topBar = { SettingsTopBar(title = stringResource(R.string.settings_title), scrollBehavior = scrollBehavior) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // The floating navigation bar covers the bottom of top-level screens.
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
         // Without headings between them the groups sit closer, as in the account menus.
         SettingsContent(innerPadding, groupSpacing = MaterialTheme.spacing.medium) {
-            state.account?.let { AccountCard(it, onEditProfile = { onOpenPage(SettingsPage.EditProfile) }) }
-            PageGroups(onOpenPage)
+            state.account?.let {
+                AccountCard(
+                    account = it,
+                    onEditProfile = { onOpenPage(SettingsPage.EditProfile) },
+                    selected = selection?.let { selection -> selection.openPage == SettingsPage.EditProfile },
+                )
+            }
+            PageGroups(onOpenPage, selection)
             SettingsGroup {
                 item { shapes ->
                     LogOutItem(
@@ -134,43 +130,6 @@ internal fun SettingsScreen(
             onDismiss = { onEvent(SettingsEvent.DismissLogOut) },
         )
     }
-}
-
-/**
- * The top bar: "Settings" in a transparent [MediumFlexibleTopAppBar] on the page's color, as wide as the page below
- * it, so the title lines up with the groups on wide windows.
- */
-@Composable
-private fun SettingsTopBar(scrollBehavior: TopAppBarScrollBehavior) {
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-        Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-            MediumFlexibleTopAppBar(
-                title = { SettingsTitle() },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
-                scrollBehavior = scrollBehavior,
-            )
-        }
-    }
-}
-
-/**
- * "Settings" in the emphasized variant of the style the bar sets: `headlineMedium` while expanded, `titleLarge`
- * collapsed (`docs/DESIGN_SYSTEM.md` §3.3). The bar composes the title once for each state.
- */
-@Composable
-private fun SettingsTitle() {
-    val typography = MaterialTheme.typography
-    val collapsed = LocalTextStyle.current.fontSize == typography.titleLarge.fontSize
-    Text(
-        text = stringResource(R.string.settings_title),
-        modifier = Modifier.semantics { heading() },
-        maxLines = 1,
-        style = if (collapsed) typography.titleLargeEmphasized else typography.headlineMediumEmphasized,
-    )
 }
 
 @PingogramPreviews

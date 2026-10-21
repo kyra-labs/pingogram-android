@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -61,7 +62,7 @@ internal fun BlockedUsersList(
     val style =
         SettingsListRowStyle(
             MaterialTheme.sizes.contentMaxWidth,
-            spacing.windowMarginCompact,
+            windowMargin(),
             MaterialTheme.motionScheme,
         )
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])

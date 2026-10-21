@@ -3,6 +3,9 @@
     <string name="settings_title">Settings</string>
     <!-- Spoken by screen readers for the back button of a settings page. -->
     <string name="settings_back">Back</string>
+    <!-- The page beside Settings home on a wide window while no page is open. -->
+    <string name="settings_no_page_selected_title">Pick a setting</string>
+    <string name="settings_no_page_selected_body">The page you open shows here, beside your settings.</string>
     <string name="settings_retry">Try again</string>
     <!-- The button that closes a confirmation without doing anything. -->
     <string name="settings_dialog_dismiss">Cancel</string>

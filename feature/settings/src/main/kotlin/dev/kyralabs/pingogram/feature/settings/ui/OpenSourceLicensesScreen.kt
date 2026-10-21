@@ -31,6 +31,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -121,7 +122,7 @@ private fun LibraryList(
     val style =
         SettingsListRowStyle(
             MaterialTheme.sizes.contentMaxWidth,
-            spacing.windowMarginCompact,
+            windowMargin(),
             MaterialTheme.motionScheme,
         )
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])

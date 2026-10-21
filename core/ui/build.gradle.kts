@@ -17,6 +17,9 @@ dependencies {
     // PredictiveBackHandler, for leaving selection mode with back (component/SelectionBack.kt). Already in the app and
     // in the features that show selection mode.
     implementation(libs.androidx.activity.compose)
+    // The list-detail layouts' shared pane parts (ListDetailPanes.kt).
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
 
     // Animated (TGS) stickers, drawn into bitmaps by LottieDrawable (sticker/LottieStickerDecoder.kt,
     // docs/adr/0008-lottie-for-animated-stickers.md). Not its AppCompat dependency: only LottieAnimationView, a View,

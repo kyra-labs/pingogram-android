@@ -46,28 +46,53 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
  * The whole card opens Edit profile ([onEditProfile]), and so does the chevron. Screen readers read the card as one
  * item that edits the profile; the chevron repeats the card's action for touch, so it is left out of the semantics
  * and of keyboard focus rather than announced twice. TDLib reports the account's changes, so they show here at once,
- * made in Edit profile or on another device.
+ * made in Edit profile or on another device. With [selected] (Settings home beside the open page on an expanded
+ * window) the card is selectable, in the list item's selected colors and shape while Edit profile is open.
  */
 @Composable
 internal fun AccountCard(
     account: AccountUiModel,
     onEditProfile: () -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean? = null,
 ) {
     val editProfile = stringResource(R.string.settings_edit_profile_button)
-    SegmentedListItem(
-        onClick = onEditProfile,
-        shapes = ListItemDefaults.shapes(shape = MaterialTheme.shapes.extraLarge),
-        // Names what a tap does; the list item's click supplies the action.
-        modifier = modifier.semantics { onClick(label = editProfile, action = null) },
-        leadingContent = { AccountAvatar(account) },
-        trailingContent = { ChevronButton(onEditProfile) },
-        supportingContent = { AccountDetails(account) },
-        verticalAlignment = Alignment.CenterVertically,
-        contentPadding = PaddingValues(MaterialTheme.spacing.large),
-        colors = settingsRowColors(),
-    ) {
-        Text(text = account.name, style = MaterialTheme.typography.titleLarge.userContent)
+    val shapes = ListItemDefaults.shapes(shape = MaterialTheme.shapes.extraLarge)
+    // Names what a tap does; the list item's click supplies the action.
+    val cardModifier = modifier.semantics { onClick(label = editProfile, action = null) }
+    val leadingContent = @Composable { AccountAvatar(account) }
+    val trailingContent = @Composable { ChevronButton(onEditProfile) }
+    val supportingContent = @Composable { AccountDetails(account) }
+    val contentPadding = PaddingValues(MaterialTheme.spacing.large)
+    val colors = settingsRowColors()
+    val name = @Composable { Text(text = account.name, style = MaterialTheme.typography.titleLarge.userContent) }
+    if (selected != null) {
+        SegmentedListItem(
+            selected = selected,
+            onClick = onEditProfile,
+            shapes = shapes,
+            modifier = cardModifier,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = contentPadding,
+            colors = colors,
+            content = name,
+        )
+    } else {
+        SegmentedListItem(
+            onClick = onEditProfile,
+            shapes = shapes,
+            modifier = cardModifier,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = contentPadding,
+            colors = colors,
+            content = name,
+        )
     }
 }
 

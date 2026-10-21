@@ -7,9 +7,12 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -40,10 +43,18 @@ class SettingsScreenTest {
     private val events = mutableListOf<SettingsEvent>()
     private val pages = mutableListOf<SettingsPage>()
 
-    private fun setScreen(state: SettingsUiState = SettingsPreviewData.content) {
+    private fun setScreen(
+        state: SettingsUiState = SettingsPreviewData.content,
+        selection: SettingsPageSelection? = null,
+    ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                SettingsScreen(state = state, onEvent = { events += it }, onOpenPage = { pages += it })
+                SettingsScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onOpenPage = { pages += it },
+                    selection = selection,
+                )
             }
         }
     }
@@ -71,6 +82,16 @@ class SettingsScreenTest {
             node.config.getOrElseNullable(SemanticsActions.OnClick) { null }?.label ==
                 string(R.string.settings_edit_profile_button)
         }
+
+    @Test
+    fun `beside edit profile, the account's card reads as selected and the page rows as not`() {
+        setScreen(selection = SettingsPageSelection(SettingsPage.EditProfile))
+
+        composeRule.onNode(hasText("Ada Lovelace", substring = true) and isSelectable()).assertIsSelected()
+        composeRule
+            .onNode(hasText(string(R.string.settings_appearance)) and isSelectable())
+            .assertIsNotSelected()
+    }
 
     @Test
     fun `tapping the account's card opens edit profile`() {
