@@ -49,6 +49,8 @@ deprecated (`docs/TDLIB.md`), and Argon2 or scrypt would need a native library.
 
 ## Consequences
 
+- The owner accepted this on 2026-10-21, biometric unlock from Android 10 included; it can change later through
+  `BiometricAvailability` and `rememberBiometricPrompt`.
 - No new dependency, no AppCompat, nothing added to the APK.
 - Biometric unlock is not offered on Android 8–9 (about 5% of devices); the passcode works everywhere.
 - The passcode lock protects the UI only. The data at rest is TDLib's database, encrypted with a key in the Android
