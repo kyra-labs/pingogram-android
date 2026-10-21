@@ -44,7 +44,6 @@ import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
-import dev.kyralabs.pingogram.feature.media.navigation.mediaViewerScreen
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterTwoStepVerification
@@ -75,6 +74,9 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * the media's corners in its bubble and the viewer's), the Chats tab's "New chat" button grows into the New chat
  * screen (`containerTransform`), and the shell's search button into search ([search], full screen or docked in the
  * Chats tab's list pane).
+ *
+ * The media viewer's Forward opens the forward sheet, a dialog destination of `feature:chat`, above it, and the viewer
+ * shows what came of it ([mediaViewer]).
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -246,10 +248,7 @@ private fun NavGraphBuilder.mainGraph(
             onOpenMedia = openMedia,
             onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
         )
-        mediaViewerScreen(
-            onBack = { navController.popBackStack() },
-            onShowInChat = { chatId, messageId -> navController.showMessageInChat(chatId, messageId) },
-        )
+        mediaViewer(navController)
     }
 }
 

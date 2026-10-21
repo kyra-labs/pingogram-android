@@ -181,3 +181,14 @@ data class MediaViewerRoute(
     val chatId: Long,
     val messageId: Long,
 )
+
+/**
+ * The forward sheet (`REQUIREMENTS.md` FR-C6) for messages [messageIds] of chat [fromChatId], `:feature:chat`: a
+ * dialog destination above the screen it is opened from, which stays visible below the sheet. The media viewer opens
+ * it for its current item; the conversation shows the same sheet in place, for its own messages.
+ */
+@Serializable
+data class ForwardRoute(
+    val fromChatId: Long,
+    val messageIds: List<Long>,
+)

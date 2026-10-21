@@ -30,6 +30,7 @@
     <string name="media_downloading">Downloading</string>
     <string name="media_playback_failed">This video can\'t be played</string>
     <!-- The toolbar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
+    <string name="media_forward">Forward</string>
     <string name="media_share">Share</string>
     <string name="media_save">Save to gallery</string>
     <!-- State of the Share button while the file downloads before it is shared -->

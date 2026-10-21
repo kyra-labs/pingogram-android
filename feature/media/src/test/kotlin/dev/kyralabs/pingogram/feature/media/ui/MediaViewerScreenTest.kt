@@ -347,6 +347,25 @@ class MediaViewerScreenTest {
     }
 
     @Test
+    fun `Forward shows where it is allowed, first, and opens the sheet`() {
+        setScreen(MediaPreviewData.allActions)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_forward))).assertHasClickAction().performClick()
+
+        assertEquals(MediaViewerEvent.Forward, events.last())
+        val forward = composeRule.onNode(hasContentDescription(string(R.string.media_forward))).fetchSemanticsNode()
+        val share = composeRule.onNode(hasContentDescription(string(R.string.media_share))).fetchSemanticsNode()
+        assertTrue(forward.boundsInRoot.left < share.boundsInRoot.left)
+    }
+
+    @Test
+    fun `Forward is hidden where it is not allowed`() {
+        setScreen(MediaPreviewData.withActions)
+
+        composeRule.onNode(hasContentDescription(string(R.string.media_forward))).assertDoesNotExist()
+    }
+
+    @Test
     fun `Delete is hidden where it is not allowed`() {
         setScreen(MediaPreviewData.withActions)
 
@@ -410,7 +429,14 @@ class MediaViewerScreenTest {
     @Test
     fun `each toolbar button names itself in a tooltip on a long press`() {
         setScreen(MediaPreviewData.allActions)
-        val labels = listOf(R.string.media_share, R.string.media_save, R.string.media_delete, R.string.media_more)
+        val labels =
+            listOf(
+                R.string.media_forward,
+                R.string.media_share,
+                R.string.media_save,
+                R.string.media_delete,
+                R.string.media_more,
+            )
 
         labels.map(::string).forEach { label ->
             composeRule.onNode(hasContentDescription(label)).performTouchInput { longClick() }

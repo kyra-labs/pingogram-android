@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.ui
 
 import androidx.activity.BackEventCompat
+import androidx.activity.ComponentDialog
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
@@ -31,6 +32,7 @@ import dagger.hilt.android.testing.UninstallModules
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
+import dev.kyralabs.pingogram.core.navigation.ForwardRoute
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
@@ -43,6 +45,8 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA_TITLE
+import dev.kyralabs.pingogram.ui.ChatsScript.GRACE
+import dev.kyralabs.pingogram.ui.ChatsScript.GRACE_TITLE
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -52,6 +56,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 import dev.kyralabs.pingogram.feature.media.R as MediaR
 
@@ -65,7 +70,8 @@ import dev.kyralabs.pingogram.feature.media.R as MediaR
  * The `NavHost` is a `SharedTransitionLayout`, so the photo grows out of its bubble and shrinks back into it
  * (`sharedMediaBounds`): opening and every way of closing (the back button, predictive back, a swipe down, a zoomed
  * photo, a photo paged to) end on the right screen with the bubble back in the conversation. "Show in chat" leaves the
- * viewer for the conversation at the photo's message.
+ * viewer for the conversation at the photo's message. Forward opens the forward sheet (`ForwardRoute`, a dialog
+ * destination) above the viewer, which stays below it, and back closes the sheet.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class)
@@ -123,6 +129,16 @@ class MediaViewerNavigationTest {
             tdlib.on(TdApi.SearchChatMessages::class) {
                 TdResult.Success(TdApi.FoundChatMessages(photos.size, photos.toTypedArray(), 0))
             }
+            tdlib.on(TdApi.ForwardMessages::class) { TdResult.Success(TdApi.Messages(1, arrayOf(photo))) }
+            // Ada's photos may be forwarded and saved.
+            tdlib.on(TdApi.GetMessageProperties::class) {
+                TdResult.Success(
+                    TdApi.MessageProperties().apply {
+                        canBeForwarded = true
+                        canBeSaved = true
+                    },
+                )
+            }
         }
 
     @BindValue
@@ -164,6 +180,65 @@ class MediaViewerNavigationTest {
         assertEquals(ChatRoute(ADA, PHOTO_MESSAGE), navController.currentBackStackEntry?.toRoute<ChatRoute>())
         // The conversation the viewer was opened from gave way: back goes to the chat list.
         assertTrue(navController.previousBackStackEntry?.destination?.hasRoute<ChatRoute>() == false)
+    }
+
+    @Test
+    fun `Forward opens the forward sheet above the viewer, and back closes it`() {
+        setApp()
+        openAdaAndTapPhoto()
+        val forward = hasContentDescription(string(MediaR.string.media_forward))
+        awaitNode(forward)
+
+        composeRule.onNode(forward).performClick()
+
+        val sheetTitle = hasText(string(ChatR.string.forward_title))
+        awaitNode(sheetTitle)
+        assertEquals(
+            ForwardRoute(ADA, listOf(PHOTO_MESSAGE)),
+            navController.currentBackStackEntry?.toRoute<ForwardRoute>(),
+        )
+        // The viewer stays below the sheet, without the navigation.
+        assertTrue(navController.previousBackStackEntry?.destination?.hasRoute<MediaViewerRoute>() == true)
+        composeRule.onNode(photoPage).assertExists()
+        assertNoNavigation()
+
+        // System back goes to the focused window, the sheet's: it hides, then the destination leaves.
+        composeRule.runOnUiThread {
+            (ShadowDialog.getLatestDialog() as ComponentDialog).onBackPressedDispatcher.onBackPressed()
+        }
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            navController.currentDestination?.hasRoute<MediaViewerRoute>() == true
+        }
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(sheetTitle).assertCountEquals(0)
+        composeRule.onNode(photoPage).assertIsDisplayed()
+    }
+
+    @Test
+    fun `after forwarding to one chat, the viewer's snackbar opens it in the viewer's place`() {
+        setApp()
+        openAdaAndTapPhoto()
+        val forward = hasContentDescription(string(MediaR.string.media_forward))
+        awaitNode(forward)
+        composeRule.onNode(forward).performClick()
+        val grace = hasText(GRACE_TITLE, substring = true) and hasClickAction()
+        awaitNode(grace)
+
+        composeRule.onNode(grace).performClick()
+        val send = hasText(string(ChatR.string.forward_send)) and hasClickAction()
+        awaitNode(send)
+        composeRule.onNode(send).performClick()
+
+        val open = hasText(string(ChatR.string.forward_open_chat)) and hasClickAction()
+        awaitNode(hasText(composeRule.activity.getString(ChatR.string.forward_done_to, GRACE_TITLE)))
+        assertTrue(navController.currentDestination?.hasRoute<MediaViewerRoute>() == true)
+        assertEquals(GRACE, tdlib.sentOf<TdApi.ForwardMessages>().single().chatId)
+        composeRule.onNode(open).performClick()
+
+        composeRule.waitUntil(TIMEOUT_MILLIS) { navController.currentDestination?.hasRoute<ChatRoute>() == true }
+        assertEquals(ChatRoute(GRACE), navController.currentBackStackEntry?.toRoute<ChatRoute>())
+        // The viewer gave way; back returns to the conversation it was opened from.
+        assertEquals(ChatRoute(ADA), navController.previousBackStackEntry?.toRoute<ChatRoute>())
     }
 
     @Test

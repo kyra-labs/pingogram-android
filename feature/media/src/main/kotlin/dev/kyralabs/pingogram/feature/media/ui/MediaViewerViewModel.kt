@@ -86,6 +86,8 @@ import javax.inject.Inject
  *   ([MediaViewerEffect.CopyImage]), once it is downloaded.
  * - **Delete** ([MediaDeletion]): offered where TDLib allows it, after a confirmation; deleting the last item closes
  *   the viewer ([MediaViewerEffect.Close]).
+ * - **Forward**: offered where TDLib allows it (never for protected content, `MediaDeletion` asks), it opens the
+ *   forward sheet for the current item's message ([MediaViewerEffect.Forward]).
  * - **Show in chat** opens the conversation at the current item's message ([MediaViewerEffect.ShowInChat]).
  * - **Items** are mapped on [dispatcher] by a [MediaItemMapper]: senders' names, and dates in the zone, the language
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
@@ -239,8 +241,16 @@ class MediaViewerViewModel internal constructor(
 
     /** What the toolbar offers for the current item. */
     private val actions: Flow<MediaActions> =
-        combine(sharing.state(currentId), deletion.state(currentId)) { actions, deletion ->
-            actions.copy(canDelete = deletion.canDelete, deleteConfirmation = deletion.confirmation)
+        combine(
+            sharing.state(currentId),
+            deletion.state(currentId),
+            deletion.canForward(currentId),
+        ) { actions, deletion, canForward ->
+            actions.copy(
+                canForward = canForward,
+                canDelete = deletion.canDelete,
+                deleteConfirmation = deletion.confirmation,
+            )
         }
 
     val uiState: StateFlow<MediaViewerUiState> =
@@ -315,6 +325,11 @@ class MediaViewerViewModel internal constructor(
 
             MediaViewerEvent.ShowInChat -> {
                 viewer.value.loadedCurrentId?.let { effectChannel.trySend(MediaViewerEffect.ShowInChat(chatId, it)) }
+            }
+
+            MediaViewerEvent.Forward -> {
+                val current = viewer.value.loadedCurrentId?.takeIf(deletion::allowsForward)
+                current?.let { effectChannel.trySend(MediaViewerEffect.Forward(chatId, it)) }
             }
 
             is MediaViewerEvent.StoragePermissionChecked -> {

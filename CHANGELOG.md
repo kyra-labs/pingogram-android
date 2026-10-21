@@ -13,6 +13,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Releases now include a second set of APKs with "-gms" in their names, for phones with Google Play services: they get
   notifications through Google's push service even when Pingogram is closed, without "Keep connected". The plain APKs
   stay free of Google services. Both are the same app, so installing one replaces the other and keeps your data.
+- Forward from the media viewer: the toolbar starts with Forward wherever Telegram lets the photo, video or GIF be
+  forwarded (never for protected content). It opens the same forward sheet as the conversation, over the viewer, and
+  after forwarding to one chat the snackbar there offers to open it.
 
 ### Changed
 - License: Pingogram stays GPL-3.0-or-later, with an additional permission to combine it with Google's Play services

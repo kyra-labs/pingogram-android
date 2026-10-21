@@ -474,6 +474,7 @@ class FakeMessageActionRepository : MessageActionRepository {
         fun properties(
             forSelf: Boolean = true,
             forEveryone: Boolean = true,
+            forward: Boolean = false,
         ) = MessageProperties(
             canBeReplied = false,
             canBeEdited = false,
@@ -481,6 +482,7 @@ class FakeMessageActionRepository : MessageActionRepository {
             canBeDeletedOnlyForSelf = forSelf,
             canBeDeletedForAllUsers = forEveryone,
             canBeSaved = true,
+            canBeForwarded = forward,
         )
     }
 }

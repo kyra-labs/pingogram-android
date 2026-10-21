@@ -57,8 +57,10 @@ sealed interface MediaViewerUiState {
 
 /**
  * What the toolbar offers for the current item (`REQUIREMENTS.md` FR-C6, FR-C10): Share, Save and Copy from
- * `MediaSharing`, Delete from `MediaDeletion`. "Show in chat" is always there.
+ * `MediaSharing`, Forward and Delete from `MediaDeletion`. "Show in chat" is always there.
  *
+ * @property canForward Forward shows: TDLib says the message can be forwarded (never protected content). False while
+ *   that is not known.
  * @property canSave Share, Save and (for photos) Copy show: Telegram lets the content leave it (the chat does not
  *   protect its content, and TDLib says the message can be saved). False while that is not known.
  * @property canDelete Delete shows: TDLib says the message can be deleted, for the user or for everyone. False while
@@ -69,6 +71,7 @@ sealed interface MediaViewerUiState {
  */
 @Immutable
 data class MediaActions(
+    val canForward: Boolean = false,
     val canSave: Boolean = false,
     val canDelete: Boolean = false,
     val pending: MediaAction? = null,
@@ -259,6 +262,9 @@ sealed interface MediaViewerEvent {
     /** "Show in chat" was chosen: the conversation opens at the current item's message. */
     data object ShowInChat : MediaViewerEvent
 
+    /** Forward was tapped: the forward sheet opens for the current item's message. */
+    data object Forward : MediaViewerEvent
+
     /**
      * The screen checked, after [MediaViewerEffect.CheckStoragePermission], whether the system wants the reason for
      * the storage permission shown first ([showRationale]).
@@ -320,6 +326,12 @@ sealed interface MediaViewerEffect {
 
     /** Open the conversation of chat [chatId] at message [messageId]. */
     data class ShowInChat(
+        val chatId: Long,
+        val messageId: Long,
+    ) : MediaViewerEffect
+
+    /** Open the forward sheet for message [messageId] of chat [chatId]. */
+    data class Forward(
         val chatId: Long,
         val messageId: Long,
     ) : MediaViewerEffect

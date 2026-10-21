@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * The toolbar's other actions in [MediaViewerViewModel]: Delete (`MediaDeletion`) where TDLib allows it, with its
- * confirmation, "Show in chat", and Copy of a photo (`MediaSharing`).
+ * confirmation, Forward where TDLib allows it, "Show in chat", and Copy of a photo (`MediaSharing`).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MediaViewerActionsTest : MediaViewerViewModelHarness() {
@@ -185,6 +185,60 @@ class MediaViewerActionsTest : MediaViewerViewModelHarness() {
                     assertEquals(MediaViewerEffect.ShowError(DomainError.Network), awaitItem())
                 }
                 assertEquals(50L, viewModel.current)
+            }
+    }
+
+    @Nested
+    inner class Forward {
+        @Test
+        fun `shows where TDLib lets the message be forwarded, and opens the sheet for the current item`() =
+            runViewModelTest {
+                messageActions.onProperties = { Outcome.Success(properties(forward = true)) }
+                val viewModel = viewModel(messageId = 50)
+
+                viewModel.effects.test {
+                    send(viewModel, MediaViewerEvent.PageSettled(51))
+                    assertTrue(viewModel.actions.canForward)
+                    send(viewModel, MediaViewerEvent.Forward)
+
+                    assertEquals(MediaViewerEffect.Forward(CHAT, 51), awaitItem())
+                }
+            }
+
+        @Test
+        fun `protected content does not show it, and the event opens nothing`() =
+            runViewModelTest {
+                chats.chats.value = mapOf(CHAT to chat(CHAT, "Engines").copy(hasProtectedContent = true))
+                messageActions.onProperties = {
+                    Outcome.Success(properties(forward = false).copy(canBeSaved = false))
+                }
+                val viewModel = viewModel(messageId = 50)
+
+                viewModel.effects.test {
+                    send(viewModel, MediaViewerEvent.Forward)
+
+                    expectNoEvents()
+                }
+                assertFalse(viewModel.actions.canForward)
+                assertFalse(viewModel.actions.canSave)
+            }
+
+        @Test
+        fun `does not show for a message TDLib does not let be forwarded, nor until it answers or when it fails`() =
+            runViewModelTest {
+                val answer = CompletableDeferred<Outcome<MessageProperties>>()
+                messageActions.onProperties = { id ->
+                    if (id == 50L) answer.await() else Outcome.Success(properties(forward = false))
+                }
+                val viewModel = viewModel(messageId = 50)
+                assertFalse(viewModel.actions.canForward)
+
+                answer.complete(Outcome.Failure(DomainError.Network))
+                runCurrent()
+                assertFalse(viewModel.actions.canForward)
+
+                send(viewModel, MediaViewerEvent.PageSettled(51))
+                assertFalse(viewModel.actions.canForward)
             }
     }
 

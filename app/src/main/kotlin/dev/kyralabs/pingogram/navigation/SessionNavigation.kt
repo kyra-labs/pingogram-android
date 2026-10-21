@@ -1,9 +1,17 @@
 package dev.kyralabs.pingogram.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.navigation.FloatingWindow
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
@@ -70,5 +78,25 @@ internal fun NavController.showMessageInChat(
     val sameChat = below?.destination?.hasRoute<ChatRoute>() == true && below.toRoute<ChatRoute>().chatId == chatId
     navigate(ChatRoute(chatId, messageId)) {
         if (sameChat) popUpTo<ChatRoute> { inclusive = true }
+    }
+}
+
+/**
+ * The back stack entry whose screen the `NavHost` shows: the current one, or below dialog destinations (the forward
+ * sheet, a [FloatingWindow]) the one under them, so that a dialog neither shows the navigation nor changes the tab.
+ */
+@Composable
+internal fun NavController.screenEntryAsState(): State<NavBackStackEntry?> {
+    val currentEntry = currentBackStackEntryAsState()
+    val visible = visibleEntries.collectAsState()
+    return remember(this, currentEntry, visible) {
+        derivedStateOf {
+            val entry = currentEntry.value
+            if (entry?.destination is FloatingWindow) {
+                visible.value.lastOrNull { it.destination !is FloatingWindow }
+            } else {
+                entry
+            }
+        }
     }
 }
