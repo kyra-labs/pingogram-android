@@ -60,9 +60,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Forwarding messages of chat [fromChatId] for `ChatViewModel` (`REQUIREMENTS.md` FR-C6): the forward [sheet], its
- * [comment], and the forwarding itself. It takes any messages of the chat ([open]), so a selection of several forwards
- * the same way as one message or an album.
+ * Forwarding messages of chat [fromChatId] for `ChatViewModel` and `ForwardViewModel` (`REQUIREMENTS.md` FR-C6): the
+ * forward [sheet], its [comment], and the forwarding itself. It takes any messages of the chat ([open]), so a
+ * selection of several forwards the same way as one message or an album.
  *
  * - **Opening** ([open]): TDLib's properties of every message, asked at once; the sheet opens with those TDLib lets be
  *   forwarded (protected content never is), else a snackbar says it is not possible ([ChatEffect.ActionUnavailable]).
@@ -80,7 +80,9 @@ import kotlinx.coroutines.launch
  *   it: the chats left would fail the same way.
  *
  * The sheet is mapped on [dispatcher], and followed only while the screen collects it. Runs in [scope], the view
- * model's, on the main thread; [comment] is touched there only, as its text field does.
+ * model's, on the main thread; [comment] is touched there only, as its text field does. The forwarding after [send]
+ * runs in [sendScope], the same unless the sheet's owner goes as the sheet closes (the forward destination, whose
+ * forwarding goes on in the app's scope). [onClosed] runs whenever the sheet closes, sent or dismissed.
  */
 @Suppress("LongParameterList", "TooManyFunctions") // The repositories the targets combine, and one function per event.
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -93,6 +95,8 @@ internal class ChatForwarding(
     private val actions: MessageActionRepository,
     private val scope: CoroutineScope,
     dispatcher: CoroutineDispatcher,
+    private val sendScope: CoroutineScope = scope,
+    private val onClosed: () -> Unit = {},
     private val onEffect: (ChatEffect) -> Unit,
 ) {
     /** The comment sent before the messages, formatting included; emptied whenever the sheet opens. */
@@ -180,6 +184,7 @@ internal class ChatForwarding(
         opening?.cancel()
         onSent = {}
         request.value = null
+        onClosed()
     }
 
     /** What the search field holds now; it is searched once it has not changed for [DEBOUNCE_MILLIS]. */
@@ -236,7 +241,7 @@ internal class ChatForwarding(
         val single = targets.singleOrNull()?.let { id -> sheet.value?.targets?.firstOrNull { it.chatId == id } }
         onSent()
         dismiss()
-        scope.launch {
+        sendScope.launch {
             var forwarded = 0
             var error: DomainError? = null
             for (target in targets) {

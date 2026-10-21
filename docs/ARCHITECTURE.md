@@ -151,6 +151,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   while it is laid out), so the viewer morphs from and back to exactly those corners.
 - "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
   conversation of the same chat below it, if there is one.
+- Forwarding (FR-C6): the forward sheet (`ChatForwarding` and `ForwardBottomSheet`, `feature:chat`) exists once. The
+  conversation shows it in place, for its own messages (`ChatViewModel`). Other features reach it through
+  `ForwardRoute(fromChatId, messageIds)`: a Navigation `dialog` destination (`forwardSheet`, `feature:chat`, registered
+  in `:app`'s `NavHost`), so the screen below stays composed and visible. Its own window is transparent and dims nothing;
+  the sheet keeps its `ModalBottomSheet` window, scrim and predictive back. `ForwardViewModel` reads the route
+  from its `SavedStateHandle` and forwards in the `@ApplicationScope`, as the destination leaves when the sheet closes.
+  What came of it goes to the `ForwardResults` singleton. The screen below shows those snackbars through `ForwardNotices`,
+  which `:app` passes into the media viewer as a slot; without such a screen they are dropped. From the viewer, the
+  snackbar's "Open" pushes the chat in the viewer's place. The app shell follows the screen below a dialog destination
+  (`screenEntryAsState`), so the sheet neither shows the navigation nor changes the tab.
 - Global search: on compact and medium windows a destination (`SearchRoute`) pushed above the tab; on
   expanded ones docked in the Chats tab's list pane (`SearchPane`, `feature:chats`) in place of the chat
   list, its results opening in the detail pane. `GlobalSearchState` (`feature:chats`, held by `PingogramApp`

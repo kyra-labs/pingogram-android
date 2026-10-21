@@ -47,15 +47,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Photos' viewer has it. Round icon buttons whose shape morphs while pressed, each named by its label for screen
  * readers and in a [PlainTooltip] on a long press or hover:
  *
+ * - **Forward** where TDLib allows it ([MediaActions.canForward]; never protected content): the forward sheet;
  * - **Share** and **Save** where Telegram lets the content leave it ([MediaActions.canSave]);
  * - **Delete** where TDLib allows it ([MediaActions.canDelete]); it asks first;
  * - **More**, a menu ([DropdownMenuPopup]) with "Show in chat" and, for a photo that may leave Telegram ([canCopy]),
  *   "Copy".
  *
- * There is no Forward yet: Pingogram has no forward flow (M3). The button whose action waits for the item's file (More
- * for Copy) shows the download's progress ([fileState], a determinate wavy indicator) instead of its icon, or a loading
- * indicator while the file is copied into the gallery; meanwhile Share, Save and Copy are disabled. Screen readers hear
- * what each button does and that it is under way.
+ * The button whose action waits for the item's file (More for Copy) shows the download's progress ([fileState], a
+ * determinate wavy indicator) instead of its icon, or a loading indicator while the file is copied into the gallery;
+ * meanwhile Share, Save and Copy are disabled. Screen readers hear what each button does and that it is under way.
  */
 @Composable
 internal fun ViewerToolbar(
@@ -71,6 +71,13 @@ internal fun ViewerToolbar(
         modifier = modifier,
         colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
     ) {
+        if (actions.canForward) {
+            ToolbarButton(
+                icon = UiR.drawable.ic_forward,
+                label = stringResource(R.string.media_forward),
+                onClick = { onEvent(MediaViewerEvent.Forward) },
+            )
+        }
         if (actions.canSave) {
             ToolbarButton(
                 icon = UiR.drawable.ic_share,
@@ -242,7 +249,7 @@ private fun PendingIndicator(fileState: FileState?) {
 private fun ViewerToolbarPreview() {
     PingogramPreview {
         ViewerToolbar(
-            actions = MediaActions(canSave = true, canDelete = true),
+            actions = MediaActions(canForward = true, canSave = true, canDelete = true),
             canCopy = true,
             fileState = null,
             onEvent = {},

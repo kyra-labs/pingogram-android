@@ -134,8 +134,9 @@ internal object MediaPreviewData {
     /** The photo in a chat that lets its content leave Telegram: Share and Save in the toolbar, Copy in its menu. */
     val withActions: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = true))
 
-    /** The photo the user may also delete: Share, Save and Delete in the toolbar. */
-    val allActions: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = true, canDelete = true))
+    /** The photo the user may also forward and delete: Forward, Share, Save and Delete in the toolbar. */
+    val allActions: MediaViewerUiState.Content =
+        photo.copy(actions = MediaActions(canForward = true, canSave = true, canDelete = true))
 
     /** Delete tapped on a photo the user may delete for everyone too: the confirmation with its check box. */
     val deleteConfirmation: MediaViewerUiState.Content =

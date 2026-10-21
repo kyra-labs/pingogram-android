@@ -50,7 +50,9 @@ import kotlinx.coroutines.launch
  * when the screen is started and stopped, which plays and pauses. Its [MediaViewerEffect]s show snackbars (one for a
  * failed page offers to try again), hand a file to the system's share sheet, put a photo on the clipboard, and on
  * Android 8–9 check and ask for the storage permission that saving needs ([MediaViewerEffects]). [onBack] leaves it,
- * as deleting the last item does; [onShowInChat] opens the conversation at the current item's message.
+ * as deleting the last item does; [onShowInChat] opens the conversation at the current item's message, [onForward]
+ * the forward sheet for its message. [notices] shows, in the viewer's snackbar host, snackbars of other features
+ * (what came of forwarding).
  *
  * Videos draw on Media3's [PlayerSurface] in a `TextureView`: unlike a `SurfaceView`, it scales, moves and fades with
  * the page (predictive back, swipe to close, and the container transform that opens the viewer), at a little more
@@ -62,6 +64,8 @@ internal fun MediaViewerRoute(
     onBack: () -> Unit,
     onShowInChat: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onForward: (chatId: Long, messageIds: List<Long>) -> Unit = { _, _ -> },
+    notices: @Composable (SnackbarHostState) -> Unit = {},
     viewModel: MediaViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,9 +78,9 @@ internal fun MediaViewerRoute(
         effects = viewModel.effects,
         snackbarHostState = snackbarHostState,
         onEvent = viewModel::onEvent,
-        onBack = onBack,
-        onShowInChat = onShowInChat,
+        exits = remember(onBack, onShowInChat, onForward) { ViewerExits(onBack, onShowInChat, onForward) },
     )
+    notices(snackbarHostState)
     MediaViewerScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -102,7 +106,7 @@ internal fun MediaViewerRoute(
  * - **Share**: the file goes to the system's share sheet with the activity ([shareTdlibFile]); a snackbar if it cannot.
  * - **Copy**: the photo goes on the clipboard as a `content://` URI of the app's `FileProvider` ([copy]),
  *   which apps that paste it may read; a snackbar says so below Android 13, where the system shows no confirmation.
- * - **Show in chat** and **Close** go to [onShowInChat] and [onBack].
+ * - **Show in chat**, **Forward** and **Close** go where [exits] lead.
  * - **Storage permission** (Android 8–9): whether the system wants its reason shown first
  *   ([ActivityCompat.shouldShowRequestPermissionRationale]), and the system's request, whose answer goes back.
  */
@@ -111,16 +115,14 @@ private fun MediaViewerEffects(
     effects: Flow<MediaViewerEffect>,
     snackbarHostState: SnackbarHostState,
     onEvent: (MediaViewerEvent) -> Unit,
-    onBack: () -> Unit,
-    onShowInChat: (chatId: Long, messageId: Long) -> Unit,
+    exits: ViewerExits,
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
     val currentOnEvent by rememberUpdatedState(onEvent)
-    val currentOnBack by rememberUpdatedState(onBack)
-    val currentOnShowInChat by rememberUpdatedState(onShowInChat)
+    val currentExits by rememberUpdatedState(exits)
     val permission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             currentOnEvent(MediaViewerEvent.StoragePermissionResult(granted))
@@ -128,6 +130,7 @@ private fun MediaViewerEffects(
     LaunchedEffect(effects) {
         val snackbars = Snackbars(this, snackbarHostState)
         effects.collect { effect ->
+            if (currentExits.follow(effect)) return@collect
             when (effect) {
                 is MediaViewerEffect.ShowError -> {
                     snackbars.show(
@@ -147,14 +150,6 @@ private fun MediaViewerEffects(
                     context.copy(effect, resources.getString(R.string.media_copy_label))?.let { message ->
                         snackbars.show(resources.getString(message))
                     }
-                }
-
-                is MediaViewerEffect.ShowInChat -> {
-                    currentOnShowInChat(effect.chatId, effect.messageId)
-                }
-
-                MediaViewerEffect.Close -> {
-                    currentOnBack()
                 }
 
                 MediaViewerEffect.CheckStoragePermission -> {
@@ -178,6 +173,27 @@ private fun MediaViewerEffects(
                 }
             }
         }
+    }
+}
+
+/**
+ * Where the viewer's navigation effects lead: [onBack] leaves it, [onShowInChat] opens the conversation at a message,
+ * [onForward] the forward sheet above the viewer.
+ */
+private class ViewerExits(
+    private val onBack: () -> Unit,
+    private val onShowInChat: (chatId: Long, messageId: Long) -> Unit,
+    private val onForward: (chatId: Long, messageIds: List<Long>) -> Unit,
+) {
+    /** Follows [effect] if it leads somewhere ([MediaViewerEffect.ShowInChat], `Forward`, `Close`); whether it did. */
+    fun follow(effect: MediaViewerEffect): Boolean {
+        when (effect) {
+            is MediaViewerEffect.ShowInChat -> onShowInChat(effect.chatId, effect.messageId)
+            is MediaViewerEffect.Forward -> onForward(effect.chatId, listOf(effect.messageId))
+            MediaViewerEffect.Close -> onBack()
+            else -> return false
+        }
+        return true
     }
 }
 
