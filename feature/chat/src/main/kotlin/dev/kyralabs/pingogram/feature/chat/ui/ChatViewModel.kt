@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -33,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
@@ -58,6 +60,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.secret.ChatSecretChat
+import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.ChatSendAs
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsChoice
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsSheet
@@ -165,6 +169,9 @@ import java.util.Locale
  *   [VoiceRecorder], as [voiceRecording] (kept out of [uiState], like the forward sheet, as only the composer shows
  *   it); recording stops what plays, the screen stopping locks and pauses it, and clearing the view model throws it
  *   away.
+ * - **Secret chats** ([ChatSecretChat], `REQUIREMENTS.md` FR-E1): the secret chat's state in the header and the
+ *   composer (none while it waits for the other user or after it ended), and the sheets of its top bar's actions
+ *   ([secretChatSheet], kept out of [uiState] like the forward sheet): the self-destruct timer and the encryption key.
  * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
  *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
  *   [uiState] like the forward sheet).
@@ -209,6 +216,7 @@ class ChatViewModel internal constructor(
     voiceRecorder: VoiceRecorder,
     voiceNoteRepository: VoiceNoteRepository,
     sendAsRepository: SendAsRepository,
+    secretChatRepository: SecretChatRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
@@ -236,6 +244,7 @@ class ChatViewModel internal constructor(
         voiceRecorder: VoiceRecorder,
         voiceNoteRepository: VoiceNoteRepository,
         sendAsRepository: SendAsRepository,
+        secretChatRepository: SecretChatRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
@@ -260,6 +269,7 @@ class ChatViewModel internal constructor(
         voiceRecorder,
         voiceNoteRepository,
         sendAsRepository,
+        secretChatRepository,
         autoDownloadPolicy,
         AndroidChatLog,
         messageId,
@@ -390,6 +400,19 @@ class ChatViewModel internal constructor(
 
     /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
     val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
+
+    private val secret =
+        ChatSecretChat(
+            chatId = chatId,
+            chats = chatRepository,
+            users = userRepository,
+            repository = secretChatRepository,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The self-destruct timer or encryption key sheet of a secret chat; null while none is open. */
+    val secretChatSheet: StateFlow<SecretChatSheet?> get() = secret.sheet
 
     /** The messages the composer's bars show that are not loaded. */
     private val composerTargets = ComposerTargets(chatId, messageRepository, viewModelScope, composer::onMessageGone)
@@ -528,7 +551,10 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
-    /** The basic group or supergroup of a group or channel: its member count, and the user's membership. */
+    /**
+     * The basic group or supergroup of a group or channel: its member count, and the user's membership; the secret
+     * chat of a secret chat: its state.
+     */
     private val group: Flow<ChatGroup> =
         chat
             .map { (it as? ChatLookup.Found)?.chat?.type }
@@ -541,6 +567,10 @@ class ChatViewModel internal constructor(
 
                     is ChatType.Supergroup -> {
                         groupRepository.supergroup(type.supergroupId).map { ChatGroup(supergroup = it) }
+                    }
+
+                    is ChatType.Secret -> {
+                        secret.secretChat.map { ChatGroup(secretChat = it) }
                     }
 
                     else -> {
@@ -659,6 +689,7 @@ class ChatViewModel internal constructor(
             is SelectionEvent -> selectionEvents.onEvent(event)
             is VoiceEvent -> recorder.onEvent(event)
             is SendAsEvent -> sendAs.onEvent(event)
+            is SecretChatEvent -> secret.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -820,6 +851,7 @@ class ChatViewModel internal constructor(
             HeaderSources(
                 chat = chat,
                 memberCount = group.memberCount,
+                secretChat = group.secretChat,
                 actions = chatSources.actions,
                 people = people,
                 now = now,
@@ -827,13 +859,13 @@ class ChatViewModel internal constructor(
             ).toHeader()
         val history = messages.state.history
         val user = chat.userId?.let(people.users::get)
-        val composer = composerState(chat, user, group.basicGroup, group.supergroup)
+        val composer = composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
         val canWrite = composer is ComposerUiState.Available
         val options = attachOptions(chat, user, people.myUserId)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
         return ChatUiState(
             header = header,
-            content = content(chat, messages, people, unreadAfterId, now, formatter),
+            content = mapper.content(chat, messages, people, unreadAfterId, now, formatter),
             unreadCount = chat.unreadCount,
             composer = if (canWrite) composer.withBar(overlays.bar(chat, history, people), options) else composer,
             // A message deleted meanwhile takes its sheet with it.
@@ -850,62 +882,6 @@ class ChatViewModel internal constructor(
         )
     }
 
-    @Suppress("LongParameterList") // What the items are made from, passed on to the mapper.
-    private fun content(
-        chat: Chat,
-        messages: MessageSources,
-        people: ChatPeople,
-        unreadAfterId: Long,
-        now: Instant,
-        formatter: ChatTimeFormatter,
-    ): ChatContent {
-        val history = messages.state.history
-        val load = messages.pageLoad
-        val error = load.error
-        val shown = load.shown
-        return when {
-            shown == null -> {
-                load.openError?.let(ChatContent::Error) ?: ChatContent.Loading
-            }
-
-            history.messages.isNotEmpty() -> {
-                val items =
-                    mapper.map(
-                        ItemSources(
-                            chat = chat,
-                            messages = messages.state,
-                            people = people,
-                            unreadAfterId = unreadAfterId,
-                            today = now.atZone(formatter.zone).toLocalDate(),
-                            timeFormatter = formatter,
-                        ),
-                    )
-                ChatContent.Content(
-                    items = items,
-                    reachedStart = history.reachedStart,
-                    isLoadingOlder = load.isLoading || load.isFindingMessage,
-                    olderError = error,
-                    reachedEnd = history.reachedEnd,
-                    isLoadingNewer = load.isLoadingNewer || load.isFindingNewest,
-                    newerError = load.newerError,
-                    anchor = shown.anchor,
-                )
-            }
-
-            error != null -> {
-                ChatContent.Error(error)
-            }
-
-            history.reachedStart -> {
-                ChatContent.Empty
-            }
-
-            else -> {
-                ChatContent.Loading
-            }
-        }
-    }
-
     /** The formatter for the current time zone, language and clock setting, which can change while the app runs. */
     private fun timeFormatter(): ChatTimeFormatter {
         val zone: ZoneId = clock.zone()
@@ -915,66 +891,127 @@ class ChatViewModel internal constructor(
             ?: ChatTimeFormatter(zone, locale, is24HourClock, timePatterns).also { timeFormatter = it }
     }
 
-    /** The chat, or why it is not there (yet). */
-    private sealed interface ChatLookup {
-        data object Pending : ChatLookup
-
-        data class Found(
-            val chat: Chat,
-        ) : ChatLookup
-
-        data class Failed(
-            val error: DomainError,
-        ) : ChatLookup
-    }
-
-    private class ChatSources(
-        val chat: ChatLookup,
-        val group: ChatGroup,
-        val actions: List<SenderAction>,
-        /** Null until the chat was first shown. */
-        val unreadAfterId: Long?,
-    )
-
-    /** The basic group or supergroup of a group or channel chat; neither for other chats, nor while unknown. */
-    private data class ChatGroup(
-        val basicGroup: BasicGroup? = null,
-        val supergroup: Supergroup? = null,
-    ) {
-        /** Null while unknown, and for other chats. */
-        val memberCount: Int? get() = basicGroup?.memberCount ?: supergroup?.memberCount
-    }
-
-    private class MessageSources(
-        val state: MessageState,
-        val pageLoad: WindowState,
-    )
-
-    /**
-     * The composer's mode with the bar messages fetched for it, the actions sheet, the delete confirmation, the attach
-     * preview and whether the poll form is open.
-     */
-    private class Overlays(
-        val mode: ComposerMode,
-        val targets: Map<Long, Message?>,
-        val sheet: MessageActionsSheet?,
-        val deleteDialog: DeleteMessagesDialog?,
-        val preview: PreviewDraft?,
-        val pollOpen: Boolean,
-    ) {
-        fun bar(
-            chat: Chat,
-            history: ChatHistory,
-            people: ChatPeople,
-        ): ComposerBar? = composerBar(mode, chat, history, targets, people)
-    }
-
     internal companion object {
         /** The last message read when the chat was first shown ([NO_UNREAD_DIVIDER] if nothing was unread). */
         const val KEY_UNREAD_AFTER = "chat.unreadAfterId"
 
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }
+}
+
+/** The chat, or why it is not there (yet). */
+private sealed interface ChatLookup {
+    data object Pending : ChatLookup
+
+    data class Found(
+        val chat: Chat,
+    ) : ChatLookup
+
+    data class Failed(
+        val error: DomainError,
+    ) : ChatLookup
+}
+
+/** The messages of [messages] as items mapped by this mapper, or why there are none. */
+@Suppress("LongParameterList") // What the items are made from, passed on to the mapper.
+private fun ChatItemMapper.content(
+    chat: Chat,
+    messages: MessageSources,
+    people: ChatPeople,
+    unreadAfterId: Long,
+    now: Instant,
+    formatter: ChatTimeFormatter,
+): ChatContent {
+    val history = messages.state.history
+    val load = messages.pageLoad
+    val error = load.error
+    val shown = load.shown
+    return when {
+        shown == null -> {
+            load.openError?.let(ChatContent::Error) ?: ChatContent.Loading
+        }
+
+        history.messages.isNotEmpty() -> {
+            val items =
+                map(
+                    ItemSources(
+                        chat = chat,
+                        messages = messages.state,
+                        people = people,
+                        unreadAfterId = unreadAfterId,
+                        today = now.atZone(formatter.zone).toLocalDate(),
+                        timeFormatter = formatter,
+                    ),
+                )
+            ChatContent.Content(
+                items = items,
+                reachedStart = history.reachedStart,
+                isLoadingOlder = load.isLoading || load.isFindingMessage,
+                olderError = error,
+                reachedEnd = history.reachedEnd,
+                isLoadingNewer = load.isLoadingNewer || load.isFindingNewest,
+                newerError = load.newerError,
+                anchor = shown.anchor,
+            )
+        }
+
+        error != null -> {
+            ChatContent.Error(error)
+        }
+
+        history.reachedStart -> {
+            ChatContent.Empty
+        }
+
+        else -> {
+            ChatContent.Loading
+        }
+    }
+}
+
+private class MessageSources(
+    val state: MessageState,
+    val pageLoad: WindowState,
+)
+
+/**
+ * The composer's mode with the bar messages fetched for it, the actions sheet, the delete confirmation, the attach
+ * preview and whether the poll form is open.
+ */
+private class Overlays(
+    val mode: ComposerMode,
+    val targets: Map<Long, Message?>,
+    val sheet: MessageActionsSheet?,
+    val deleteDialog: DeleteMessagesDialog?,
+    val preview: PreviewDraft?,
+    val pollOpen: Boolean,
+) {
+    fun bar(
+        chat: Chat,
+        history: ChatHistory,
+        people: ChatPeople,
+    ): ComposerBar? = composerBar(mode, chat, history, targets, people)
+}
+
+private class ChatSources(
+    val chat: ChatLookup,
+    val group: ChatGroup,
+    val actions: List<SenderAction>,
+    /** Null until the chat was first shown. */
+    val unreadAfterId: Long?,
+)
+
+/**
+ * The basic group or supergroup of a group or channel chat, the secret chat of a secret chat; none for other chats,
+ * nor while unknown.
+ */
+private data class ChatGroup(
+    val basicGroup: BasicGroup? = null,
+    val supergroup: Supergroup? = null,
+    val secretChat: SecretChat? = null,
+) {
+    /** Null while unknown, and for other chats. */
+    val memberCount: Int? get() = basicGroup?.memberCount ?: supergroup?.memberCount
 }
 
 /** The composer with [bar], and the [attachOptions] of the chat unless it edits: an edit sends no attachments. */

@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.LinkPreview
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
+import dev.kyralabs.pingogram.core.domain.model.SelfDestruct
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
@@ -80,6 +81,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
                 )
             },
         isEmojiOnly = showsLargeEmoji(content, text),
+        selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
     )
 }
 

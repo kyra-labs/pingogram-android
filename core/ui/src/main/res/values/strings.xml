@@ -53,6 +53,10 @@
     <!-- Names (UserNames.kt) and the current user's own chat. -->
     <string name="user_deleted_account">Deleted Account</string>
     <string name="chat_saved_messages">Saved Messages</string>
+    <!-- A secret chat's state, in the chat list's preview line and the conversation's subtitle (REQUIREMENTS.md FR-E1). -->
+    <string name="secret_chat_waiting">Waiting for %1$s to come online</string>
+    <string name="secret_chat_joining">Setting up encryption…</string>
+    <string name="secret_chat_ended">Secret chat ended</string>
 
     <!-- Message previews (MessagePreview.kt): one line for a message in the chat list, replies and notifications. -->
     <!-- The sender of a message by the current user, before its preview. -->

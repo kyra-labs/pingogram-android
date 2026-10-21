@@ -133,6 +133,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         @Test
         fun `secret chats take no polls`() =
             runViewModelTest {
+                secretChats.setSecretChats(ChatFixtures.secretChat())
                 val secret = showing(chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)), history())
 
                 assertTrue(AttachOption.Poll !in secret.options)
@@ -274,6 +275,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         @Test
         fun `the preview schedules where the composer does`() =
             runViewModelTest {
+                secretChats.setSecretChats(ChatFixtures.secretChat())
                 val secret = chat(type = ChatType.Secret(secretChatId = 7, userId = ADA))
                 val viewModel = showing(secret, history())
 

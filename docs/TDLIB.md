@@ -138,6 +138,15 @@ Options set via `setOption`:
 
 Other useful options: `ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
 
+### Secret chats
+
+TDLib does all of their cryptography and accepts the secret chats other users start by itself: td_api.tl has no
+function to accept one (`toggleSessionCanAcceptSecretChats` only lets a session refuse them all), so an incoming one
+arrives pending, not outbound, and turns ready once the key is agreed. `createNewSecretChat(user_id)` starts one,
+`closeSecretChat` ends it for both sides, and the self-destruct timer is `setChatMessageAutoDeleteTime`, which takes
+any number of seconds in a secret chat (other chats: whole days up to a year). `secretChat.key_hash` is 36 bytes: two
+bits per pixel, low bits first, for a 12 × 12 image of four colors, or its first 32 bytes as hexadecimal.
+
 ### Push notifications (`gms` only)
 
 `registerDevice(deviceTokenFirebaseCloudMessaging(token, encrypt = true), [])` at every login and start while logged

@@ -18,6 +18,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
@@ -30,6 +31,8 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
+import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -79,7 +82,9 @@ import javax.inject.Inject
  * app leaves the screen and comes back ([onStop], [onStart]), but not for a configuration change. While locked, the
  * window is secure (no screenshots, no screen recording of the passcode entered); "Hide content in recent apps" keeps
  * the content out of the recent apps: through [setRecentsScreenshotEnabled] on Android 13 and later, which still
- * allows screenshots, and with [WindowManager.LayoutParams.FLAG_SECURE] before, which does not.
+ * allows screenshots, and with [WindowManager.LayoutParams.FLAG_SECURE] before, which does not. Screens ask for a
+ * secure window too, through [LocalSecureWindow] (an open secret chat, `REQUIREMENTS.md` FR-E1); the window is secure
+ * while either the lock or a screen needs it, and only [SecureWindowEffect] sets or clears the flag.
  *
  * Animated stickers play through the app's one [AnimatedStickers] ([LocalAnimatedStickers]).
  *
@@ -139,9 +144,13 @@ class MainActivity : ComponentActivity() {
                 val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
                 val locked = lock == LockState.Locked
-                SecureWindowEffect(locked = locked, hideContent = hideContent)
+                val secureRequests = remember { SecureWindowRequests() }
+                SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
                 AppTheme(settings) {
-                    CompositionLocalProvider(LocalAnimatedStickers provides animatedStickers) {
+                    CompositionLocalProvider(
+                        LocalAnimatedStickers provides animatedStickers,
+                        LocalSecureWindow provides secureRequests,
+                    ) {
                         LockableApp(
                             locked = locked,
                             lockScreen = { AppLockRoute() },
@@ -171,17 +180,19 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Keeps the window secure while [locked], or, before Android 13, while [hideContent] (the only way to keep the
-     * content out of the recent apps there), and from Android 13 on keeps the content out of the recent apps with
-     * [setRecentsScreenshotEnabled] while [hideContent].
+     * Keeps the window secure while [locked], while a screen [requests] it (a secret chat), or, before Android 13,
+     * while [hideContent] (the only way to keep the content out of the recent apps there), and from Android 13 on keeps
+     * the content out of the recent apps with [setRecentsScreenshotEnabled] while [hideContent]. It reads [requests]
+     * itself, so a request recomposes only this effect.
      */
     @Composable
     private fun SecureWindowEffect(
         locked: Boolean,
         hideContent: Boolean,
+        requests: SecureWindowRequests,
     ) {
         val recentsScreenshots = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-        val secure = locked || (hideContent && !recentsScreenshots)
+        val secure = locked || requests.isRequested || (hideContent && !recentsScreenshots)
         SideEffect {
             if (secure) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)

@@ -37,6 +37,7 @@ abstract class ChatListViewModelHarness {
     protected val chats = FakeChatRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
+    protected val secretChats = FakeSecretChatRepository()
     protected val actions = FakeChatActionRepository()
     protected val connection = FakeConnectionRepository()
     protected val clock = FakeWallClock(NOW)
@@ -73,6 +74,7 @@ abstract class ChatListViewModelHarness {
         chatRepository = chats,
         userRepository = users,
         groupRepository = groups,
+        secretChatRepository = secretChats,
         chatActionRepository = actions,
         connectionRepository = connection,
         clock = clock,

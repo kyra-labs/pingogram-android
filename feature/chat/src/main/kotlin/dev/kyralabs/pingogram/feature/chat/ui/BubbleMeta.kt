@@ -19,20 +19,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * "edited", the time, and the state of an outgoing message, in `labelSmall` with tabular figures; a failed message's
- * state is its [NotSentLabel] instead. Shown where [ChatItem.Bubble.showsTime] says.
+ * A self-destruct timer ("30s" after a timer icon), "edited", the time, and the state of an outgoing message, in
+ * `labelSmall` with tabular figures; a failed message's state is its [NotSentLabel] instead. Shown where
+ * [ChatItem.Bubble.showsTime] says.
  */
 @Composable
 internal fun BubbleMeta(
@@ -95,10 +99,27 @@ private fun MetaRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val style = MaterialTheme.typography.labelSmall
+        bubble.selfDestructSeconds?.let { SelfDestructTimer(it, color, style) }
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
         Text(bubble.time, color = color, maxLines = 1, style = style.userContent)
         bubble.status?.takeIf { it != OutgoingStatus.Failed }?.let { StatusIcon(it, statusTint(it)) }
     }
+}
+
+/** The timer icon and the timer in short ("30s"), in the meta's color; screen readers hear it in the description. */
+@Composable
+private fun SelfDestructTimer(
+    seconds: Int,
+    color: Color,
+    style: TextStyle,
+) {
+    Icon(
+        painter = painterResource(UiR.drawable.ic_timer),
+        contentDescription = null,
+        modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+        tint = color,
+    )
+    Text(selfDestructShortText(LocalResources.current, seconds), color = color, maxLines = 1, style = style)
 }
 
 /** The tint of an outgoing state in a bubble: the bubble's accent once read. */

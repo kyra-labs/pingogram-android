@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
@@ -52,9 +53,9 @@ import java.util.Locale
  * A chat list (`REQUIREMENTS.md` FR-L1–L5, FR-L8, FR-L9): the Chats tab or the archive ([kind]), as [uiState]. Events
  * come in through [onEvent]; snackbars and navigation go out through [effects].
  *
- * - **State**: one `combine` of the shown list's chats, the users, supergroups and actions that rows show, the
- *   current user, the minute ([WallClock.minutes], for times and online dots that expire), the connection, the
- *   folders with their unread counts, the archive row, the selection and the delete dialog. Rows are mapped on
+ * - **State**: one `combine` of the shown list's chats, the users, supergroups, secret chats and actions that rows
+ *   show, the current user, the minute ([WallClock.minutes], for times and online dots that expire), the connection,
+ *   the folders with their unread counts, the archive row, the selection and the delete dialog. Rows are mapped on
  *   [dispatcher] by a [ChatListItemMapper], which reuses rows whose chat did not change. It runs while the screen
  *   collects, and 5 s after, so a rotation does not restart it.
  * - **Folders** (Chats tab only): the selected folder is kept in the [SavedStateHandle]. A folder that does not exist
@@ -90,6 +91,7 @@ class ChatListViewModel internal constructor(
     private val chatRepository: ChatRepository,
     userRepository: UserRepository,
     groupRepository: GroupRepository,
+    secretChatRepository: SecretChatRepository,
     chatActionRepository: ChatActionRepository,
     connectionRepository: ConnectionRepository,
     private val clock: WallClock,
@@ -104,6 +106,7 @@ class ChatListViewModel internal constructor(
         chatRepository: ChatRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
+        secretChatRepository: SecretChatRepository,
         chatActionRepository: ChatActionRepository,
         connectionRepository: ConnectionRepository,
         clock: WallClock,
@@ -115,6 +118,7 @@ class ChatListViewModel internal constructor(
         chatRepository,
         userRepository,
         groupRepository,
+        secretChatRepository,
         chatActionRepository,
         connectionRepository,
         clock,
@@ -173,13 +177,13 @@ class ChatListViewModel internal constructor(
     /** What rows show besides their chats, in one snapshot. */
     private val rowSources: Flow<RowSnapshot> =
         combine(
-            userRepository.users,
-            groupRepository.supergroups,
+            combine(userRepository.users, groupRepository.supergroups, secretChatRepository.secretChats, ::Triple),
             chatActionRepository.actionsByChat,
             userRepository.myUserId,
             clock.minutes,
-            ::RowSnapshot,
-        )
+        ) { (users, supergroups, secretChats), actions, myUserId, now ->
+            RowSnapshot(users, supergroups, secretChats, actions, myUserId, now)
+        }
 
     private val listState: Flow<ListState> =
         selectedList.flatMapLatest { list ->

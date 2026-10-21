@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
+import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.mimeTypeOfFile
 import dev.kyralabs.pingogram.core.ui.file.shareTdlibFile
@@ -51,8 +52,8 @@ import kotlinx.coroutines.launch
  * failed page offers to try again), hand a file to the system's share sheet, put a photo on the clipboard, and on
  * Android 8–9 check and ask for the storage permission that saving needs ([MediaViewerEffects]). [onBack] leaves it,
  * as deleting the last item does; [onShowInChat] opens the conversation at the current item's message, [onForward]
- * the forward sheet for its message. [notices] shows, in the viewer's snackbar host, snackbars of other features
- * (what came of forwarding).
+ * the forward sheet for its message. A secret chat's media keeps the window secure ([SecureWindow]). [notices] shows,
+ * in the viewer's snackbar host, snackbars of other features (what came of forwarding).
  *
  * Videos draw on Media3's [PlayerSurface] in a `TextureView`: unlike a `SurfaceView`, it scales, moves and fades with
  * the page (predictive back, swipe to close, and the container transform that opens the viewer), at a little more
@@ -69,6 +70,9 @@ internal fun MediaViewerRoute(
     viewModel: MediaViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSecretChat by viewModel.isSecretChat.collectAsStateWithLifecycle()
+    // No screenshots of a secret chat's media, as in its conversation.
+    SecureWindow(secure = isSecretChat)
     LifecycleStartEffect(viewModel) {
         viewModel.onEvent(MediaViewerEvent.Started)
         onStopOrDispose { viewModel.onEvent(MediaViewerEvent.Stopped) }
