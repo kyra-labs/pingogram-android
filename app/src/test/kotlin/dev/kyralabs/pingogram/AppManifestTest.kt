@@ -25,7 +25,8 @@ import org.robolectric.annotation.Config
  * of the device; ACCESS_NETWORK_STATE tells Wi-Fi, mobile data and roaming apart for automatic download and TDLib
  * (approved 2026-10-20); WorkManager's WAKE_LOCK runs notification actions as a foreground service before Android 12
  * only, so it stops at API 30; FOREGROUND_SERVICE and FOREGROUND_SERVICE_DATA_SYNC run the transfers the user started
- * in WorkManager's foreground service of type dataSync (approved 2026-10-20); WorkManager's RECEIVE_BOOT_COMPLETED is
+ * in WorkManager's foreground service of type dataSync (approved 2026-10-20), and POST_PROMOTED_NOTIFICATIONS lets
+ * Android 16 show their progress as a Live Update (approved 2026-10-21); WorkManager's RECEIVE_BOOT_COMPLETED is
  * left out, except in the foss flavor, whose "Keep connected" service needs its
  * type's FOREGROUND_SERVICE_SPECIAL_USE and RECEIVE_BOOT_COMPLETED (approved 2026-10-19; [FlavorManifest] in each
  * flavor's test sources, `KeepConnectedManifestTest` for the service and its receiver), and the gms flavor, whose
@@ -62,6 +63,7 @@ class AppManifestTest {
                 Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.FOREGROUND_SERVICE,
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
+                Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
                 Manifest.permission.ACCESS_NETWORK_STATE,
             ) + FlavorManifest.requestedPermissions,
             requested,
@@ -87,6 +89,7 @@ class AppManifestTest {
                 Manifest.permission.RECORD_AUDIO to "",
                 Manifest.permission.FOREGROUND_SERVICE to "",
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC to "",
+                Manifest.permission.POST_PROMOTED_NOTIFICATIONS to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",

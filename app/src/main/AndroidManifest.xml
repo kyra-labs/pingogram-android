@@ -38,6 +38,10 @@
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:node="replace" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Android 16 promotes the transfers' progress notification to a Live Update (status bar chip, lock screen) only
+         for apps that hold it (approved by the owner on 2026-10-21; docs/adr/0009-background-transfers.md). A normal
+         permission, granted at install; the user can still turn Live Updates off for Pingogram in Android's settings. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- Which network the device uses (Wi-Fi, mobile data, roaming) and whether it is metered, read from
          ConnectivityManager's default network callback (approved by the owner on 2026-10-20): automatic download
          follows the rules of the current network (Settings → Data and storage, docs/PERFORMANCE.md §7), and TDLib is
