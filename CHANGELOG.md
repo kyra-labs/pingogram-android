@@ -18,8 +18,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   not read.
 
 ### Changed
-- Pingogram starts and scrolls faster right after installing: it now ships a Baseline Profile, so Android compiles the
-  code used at start, in the chat list and in conversations ahead of time instead of while you use it.
+- Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so
+  Android compiles the code used at start ahead of time instead of while you use it.
 
 ## [0.3.0] - 2026-10-21
 
