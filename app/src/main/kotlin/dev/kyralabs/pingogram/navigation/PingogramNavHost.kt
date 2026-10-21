@@ -43,7 +43,10 @@ import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
+import dev.kyralabs.pingogram.feature.contacts.navigation.contactScreens
 import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
+import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
+import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterTwoStepVerification
@@ -213,8 +216,14 @@ private fun NavGraphBuilder.mainGraph(
                 )
             }
         }
-        // Until the contacts list lands, the Contacts tab sends to New chat, which lists the contacts.
-        contactsScreen(onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } })
+        // A contact's chat, Add contact and Edit contact are pushed above the Contacts tab.
+        contactsScreen(
+            onOpenChat = openChat,
+            onAddContact = { navController.navigateToNewContact() },
+            onEditContact = { userId -> navController.navigateToEditContact(userId) },
+        )
+        // Back to where they were opened from once done: the contacts list, New chat, or a profile.
+        contactScreens(onBack = { navController.popBackStack() })
         // Settings pages are pushed above the tab on every window, as the archive is.
         settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
         settingsPages(
@@ -241,6 +250,7 @@ private fun NavGraphBuilder.mainGraph(
                     launchSingleTop = true
                 }
             },
+            onAddContact = { navController.navigateToNewContact() },
         )
         // The chat messages were forwarded to goes above the conversation they came from, so back returns there.
         chatScreen(

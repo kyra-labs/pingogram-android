@@ -16,10 +16,14 @@ const val COMPACT = "w411dp-h891dp-xxhdpi"
 /** A medium window (600–839 dp), e.g. a small tablet or a foldable in portrait, with one pane and the rail. */
 const val MEDIUM = "w700dp-h891dp-xxhdpi"
 
+/** An expanded window (840 dp and wider), e.g. a tablet in landscape: the list stays one centered column. */
+const val EXPANDED = "w840dp-h891dp-xxhdpi"
+
 /**
  * How a golden shows its screen: light and dark, and the other looks the Material 3 Expressive audit asks for
  * (`docs/DESIGN_SYSTEM.md` §12): true-black surfaces, high contrast and right to left. [Medium] is the light look for a
- * test that runs in a [MEDIUM] window. Brand colors, so goldens do not depend on a wallpaper.
+ * test that runs in a [MEDIUM] window, [Expanded] for one in an [EXPANDED] window. Brand colors, so goldens do not
+ * depend on a wallpaper.
  */
 enum class ScreenshotVariant(
     val themeMode: ThemeMode,
@@ -33,6 +37,7 @@ enum class ScreenshotVariant(
     HighContrast(ThemeMode.Light, highContrast = true),
     Rtl(ThemeMode.Light, layoutDirection = LayoutDirection.Rtl),
     Medium(ThemeMode.Light),
+    Expanded(ThemeMode.Light),
     ;
 
     /** The variant's part of a golden's name, e.g. `highContrast`. */

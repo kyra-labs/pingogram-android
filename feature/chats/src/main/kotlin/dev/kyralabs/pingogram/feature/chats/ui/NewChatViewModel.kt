@@ -41,8 +41,9 @@ import javax.inject.Inject
  *   while the screen collects, and 5 s after, so a rotation does not read them again.
  * - **Rows** are mapped on [dispatcher] as search maps its own ([toSearchItem]), with the users, groups, current user
  *   and minute they show, so names and online dots follow TDLib's updates.
- * - **Actions**: a contact opens its private chat ([NewChatEffect.OpenChat]); new group, channel and contact say that
- *   a later version adds them ([NewChatEffect.NotAvailableYet]).
+ * - **Actions**: a contact opens its private chat ([NewChatEffect.OpenChat]); new contact opens Add contact
+ *   ([NewChatEffect.AddContact]); new group and channel say that a later version adds them
+ *   ([NewChatEffect.NotAvailableYet]).
  *
  * It takes the repositories the rows combine, plus the clock, time patterns, dispatcher and language that tests
  * replace, hence `LongParameterList` is suppressed.
@@ -106,9 +107,25 @@ class NewChatViewModel internal constructor(
 
     fun onEvent(event: NewChatEvent) {
         when (event) {
-            is NewChatEvent.Action -> effectChannel.trySend(NewChatEffect.NotAvailableYet)
-            is NewChatEvent.OpenChat -> effectChannel.trySend(NewChatEffect.OpenChat(event.chatId))
-            NewChatEvent.Retry -> if (uiState.value is NewChatUiState.Error) attempt.update { it + 1 }
+            is NewChatEvent.Action -> {
+                val effect =
+                    if (event.action ==
+                        NewChatAction.Contact
+                    ) {
+                        NewChatEffect.AddContact
+                    } else {
+                        NewChatEffect.NotAvailableYet
+                    }
+                effectChannel.trySend(effect)
+            }
+
+            is NewChatEvent.OpenChat -> {
+                effectChannel.trySend(NewChatEffect.OpenChat(event.chatId))
+            }
+
+            NewChatEvent.Retry -> {
+                if (uiState.value is NewChatUiState.Error) attempt.update { it + 1 }
+            }
         }
     }
 
