@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -221,7 +222,7 @@ class PrivacySecurityViewModelTest {
             val summary = viewModel().content.twoStepVerification
 
             assertEquals(
-                UiText.resource(R.string.settings_two_step_verification_pending_email, "a***@g***.com"),
+                UiText.resource(R.string.settings_two_step_verification_pending_email, "a***@g***.com".bidiIsolated()),
                 summary.status,
             )
             assertEquals("Oct 25, 2026, 9:41 AM", summary.pendingResetDate?.let(::plainSpaces))

@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -51,10 +52,11 @@ internal fun BlockedUsersRoute(
                         val result =
                             snackbarHostState.showSnackbar(
                                 message =
-                                    resources.getString(
-                                        R.string.settings_unblocked,
-                                        effect.name.resolve(resources),
-                                    ),
+                                    resources
+                                        .getString(
+                                            R.string.settings_unblocked,
+                                            effect.name.bidiIsolated().resolve(resources),
+                                        ).bidiIsolated(),
                                 actionLabel = resources.getString(R.string.settings_unblock_undo),
                                 duration = SnackbarDuration.Long,
                             )

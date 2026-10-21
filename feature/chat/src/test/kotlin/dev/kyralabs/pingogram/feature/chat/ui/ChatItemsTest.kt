@@ -138,7 +138,7 @@ class ChatItemsTest : ChatViewModelHarness() {
             assertEquals(listOf("m3", "s2", "m1", "date:2026-10-18"), viewModel.outline())
             assertEquals(listOf(GroupPosition.Single, GroupPosition.Single), viewModel.bubbles.map { it.position })
             val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
-            assertEquals(res(UiR.string.preview_joined, UiText.Plain("Ada")), service.text)
+            assertEquals(res(UiR.string.preview_joined, UiText.Plain("\u2068Ada\u2069")), service.text)
         }
 
     @Test
@@ -149,7 +149,11 @@ class ChatItemsTest : ChatViewModelHarness() {
 
             val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
             assertEquals(
-                res(UiR.string.preview_removed_member, UiText.Plain("Ada"), UiText.Plain("Grace")),
+                res(
+                    UiR.string.preview_removed_member,
+                    UiText.Plain("\u2068Ada\u2069"),
+                    UiText.Plain("\u2068Grace\u2069"),
+                ),
                 service.text,
             )
         }
@@ -426,10 +430,10 @@ class ChatItemsTest : ChatViewModelHarness() {
 
             assertEquals(
                 listOf(
-                    UiText.Plain("Grace Hopper"),
-                    UiText.Plain("Anonymous"),
-                    res(R.string.chat_forwarded_name_signed, UiText.Plain("News"), "Ed"),
-                    UiText.Plain("News"),
+                    UiText.Plain("\u2068Grace Hopper\u2069"),
+                    UiText.Plain("\u2068Anonymous\u2069"),
+                    res(R.string.chat_forwarded_name_signed, UiText.Plain("\u2068News\u2069"), "\u2068Ed\u2069"),
+                    UiText.Plain("\u2068News\u2069"),
                 ).map { res(R.string.chat_forwarded_from, it) },
                 listOf(1L, 2L, 3L, 4L).map { viewModel.bubble(it).forwardedFrom },
             )

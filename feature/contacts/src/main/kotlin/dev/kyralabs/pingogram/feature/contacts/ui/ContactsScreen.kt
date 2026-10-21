@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -101,6 +102,7 @@ private fun ContactsComingSoon(
 }
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun ContactsScreenPreview() {
     PingogramPreview { ContactsScreen(onOpenNewChat = {}) }

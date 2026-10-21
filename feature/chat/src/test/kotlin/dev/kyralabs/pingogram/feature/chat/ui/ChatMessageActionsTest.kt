@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.CHANNEL_CHAT
@@ -775,7 +776,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                     DeleteMessagesDialog(
                         persistentListOf(2),
                         DeleteScope.Choice(
-                            UiText.resource(R.string.message_delete_also_for, UiText.Plain("Ada Lovelace")),
+                            UiText.resource(
+                                R.string.message_delete_also_for,
+                                UiText.Plain("Ada Lovelace".bidiIsolated()),
+                            ),
                         ),
                     ),
                     viewModel.state.deleteDialog,

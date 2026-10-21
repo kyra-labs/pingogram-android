@@ -22,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -54,7 +55,7 @@ fun CodeScreen(
         title = stringResource(R.string.auth_code_title),
         badgeShape = MaterialShapes.Sunny,
         badgeIcon = UiR.drawable.ic_chat_filled,
-        description = codeDescription(state.type, state.phoneNumber),
+        description = codeDescription(state.type, state.phoneNumber.bidiIsolated()).bidiIsolated(),
         isError = state.error != null,
         modifier = modifier,
         primaryAction = {
@@ -169,7 +170,7 @@ private fun codeDescription(
                 R.plurals.auth_code_sent_missed_call,
                 type.length,
                 phoneNumber,
-                type.phoneNumberPrefix,
+                type.phoneNumberPrefix.bidiIsolated(),
                 type.length,
             )
         }
@@ -185,7 +186,7 @@ private fun codeDescription(
 
 @Composable
 private fun firstPartHint(start: String): String =
-    if (start.isBlank()) "" else " " + stringResource(R.string.auth_code_sent_starts_with, start)
+    if (start.isBlank()) "" else " " + stringResource(R.string.auth_code_sent_starts_with, start.bidiIsolated())
 
 @Composable
 private fun resendText(type: AuthCodeType): String =

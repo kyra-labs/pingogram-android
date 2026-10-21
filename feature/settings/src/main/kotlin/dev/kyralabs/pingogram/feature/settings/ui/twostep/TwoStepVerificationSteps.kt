@@ -46,6 +46,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -71,7 +72,7 @@ internal fun ColumnScope.CurrentPasswordStep(
     StepText(stringResource(R.string.settings_two_step_current_password_text))
     if (state.passwordHint.isNotEmpty()) {
         StepText(
-            stringResource(R.string.settings_two_step_hint_is, state.passwordHint),
+            stringResource(R.string.settings_two_step_hint_is, state.passwordHint.bidiIsolated()).bidiIsolated(),
         )
     }
     TwoStepPasswordField(
@@ -199,11 +200,12 @@ internal fun ColumnScope.CodeStep(
         onEvent(if (recovery) Event.SubmitRecoveryCode(text) else Event.SubmitEmailCode(text))
     }
     FirstField(focus, code) { onEvent(Event.InputChanged) }
-    val pattern = state.emailPattern
+    // The address isolated in the sentence, and the sentence as a whole (`bidiIsolated`, `docs/DESIGN_SYSTEM.md` §9).
+    val pattern = state.emailPattern?.bidiIsolated()
     StepText(
         when {
-            recovery -> stringResource(R.string.settings_two_step_recovery_code_text, pattern.orEmpty())
-            pattern != null -> stringResource(R.string.settings_two_step_email_code_text, pattern)
+            recovery -> stringResource(R.string.settings_two_step_recovery_code_text, pattern.orEmpty()).bidiIsolated()
+            pattern != null -> stringResource(R.string.settings_two_step_email_code_text, pattern).bidiIsolated()
             else -> stringResource(R.string.settings_two_step_email_code_text_unknown)
         },
     )

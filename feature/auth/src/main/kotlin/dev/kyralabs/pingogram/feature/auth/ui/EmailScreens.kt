@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
@@ -97,7 +98,9 @@ fun EmailCodeScreen(
         title = stringResource(R.string.auth_email_code_title),
         badgeShape = MaterialShapes.Flower,
         badgeIcon = UiR.drawable.ic_alternate_email,
-        description = stringResource(R.string.auth_email_code_description, state.emailAddressPattern),
+        description =
+            stringResource(R.string.auth_email_code_description, state.emailAddressPattern.bidiIsolated())
+                .bidiIsolated(),
         isError = state.error != null,
         modifier = modifier,
         primaryAction = {

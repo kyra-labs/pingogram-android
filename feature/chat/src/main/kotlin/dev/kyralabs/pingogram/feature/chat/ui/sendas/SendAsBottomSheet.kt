@@ -20,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -41,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -163,7 +165,7 @@ private fun SendAsRow(
             Text(stringResource(if (option.needsPremium) R.string.send_as_needs_premium else option.kind.label))
         },
     ) {
-        Text(text = name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text = name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = LocalTextStyle.current.userContent)
     }
 }
 

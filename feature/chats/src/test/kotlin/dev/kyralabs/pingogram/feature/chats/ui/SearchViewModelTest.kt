@@ -505,7 +505,7 @@ class SearchViewModelTest {
             val rows = (searching("ada").results.messages.first as SearchSection.Items).items
 
             assertEquals(UiText.Plain("Book Club"), rows[0].chatTitle)
-            assertEquals(UiText.Plain("Grace"), rows[0].sender)
+            assertEquals(UiText.Plain("\u2068Grace\u2069"), rows[0].sender)
             assertEquals(UiText.Plain("We read Ada next"), rows[0].preview)
             assertEquals("9:41 AM", rows[0].date)
             // A private chat names no sender.

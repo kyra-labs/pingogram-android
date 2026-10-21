@@ -20,14 +20,14 @@ internal fun serviceText(
 ): UiText {
     val sender = message.sender
     val byMe = message.isOutgoing || (myUserId != null && sender == MessageSender.User(myUserId))
-    val actor = Actor(byMe, name(sender) ?: someone())
+    val actor = Actor(byMe, name(sender)?.bidiIsolated() ?: someone())
     return when (action) {
         is ServiceAction.MembersAdded -> {
-            membersAddedText(action.userIds, sender, myUserId, actor) { name(MessageSender.User(it)) ?: someone() }
+            membersAddedText(action.userIds, sender, myUserId, actor) { memberName(it, name) }
         }
 
         is ServiceAction.MemberRemoved -> {
-            memberRemovedText(action.userId, sender, myUserId, actor) { name(MessageSender.User(it)) ?: someone() }
+            memberRemovedText(action.userId, sender, myUserId, actor) { memberName(it, name) }
         }
 
         is ServiceAction.Call -> {
@@ -41,6 +41,12 @@ internal fun serviceText(
 }
 
 private fun someone() = UiText.resource(R.string.preview_someone)
+
+/** The name of the member [userId] of a service message, isolated as an argument; "Someone" if not known. */
+private fun memberName(
+    userId: Long,
+    name: (MessageSender) -> UiText?,
+): UiText = name(MessageSender.User(userId))?.bidiIsolated() ?: someone()
 
 /** Events worded without whoever caused them; null for the actions that name their sender. */
 private fun eventText(action: ServiceAction): UiText? =
@@ -100,7 +106,7 @@ private class Actor(
             }
 
             is ServiceAction.TitleChanged -> {
-                did(R.string.preview_you_changed_title, R.string.preview_changed_title, action.title)
+                did(R.string.preview_you_changed_title, R.string.preview_changed_title, action.title.bidiIsolated())
             }
 
             is ServiceAction.PhotoChanged -> {
@@ -150,7 +156,7 @@ private class Actor(
     fun left(): UiText = did(R.string.preview_you_left, R.string.preview_left)
 
     private fun createdGroup(title: String): UiText =
-        did(R.string.preview_you_created_group, R.string.preview_created_group, title)
+        did(R.string.preview_you_created_group, R.string.preview_created_group, title.bidiIsolated())
 
     /** [mine] with [args] for the current user's action; [theirs] with the name, then [args], for anyone else's. */
     fun did(

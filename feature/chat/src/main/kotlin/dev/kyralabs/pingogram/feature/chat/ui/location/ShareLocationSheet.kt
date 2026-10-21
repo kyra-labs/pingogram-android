@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -329,7 +330,9 @@ private fun FoundLocation(
             text = coordinates,
             modifier = Modifier.clearAndSetSemantics {},
             textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = TABULAR_FIGURES),
+            style =
+                MaterialTheme.typography.titleMedium.numericContent
+                    .copy(fontFeatureSettings = TABULAR_FIGURES),
         )
         if (accuracy != null) {
             Text(

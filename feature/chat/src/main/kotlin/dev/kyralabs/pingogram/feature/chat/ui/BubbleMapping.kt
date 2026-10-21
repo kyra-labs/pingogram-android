@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -136,14 +137,19 @@ private fun ItemInputs.forwardedFrom(info: ForwardInfo): UiText {
             is MessageOrigin.Chat -> signed(fullNameOf(forwardOrigin), origin.authorSignature)
             is MessageOrigin.Channel -> signed(fullNameOf(forwardOrigin), origin.authorSignature)
         }
-    return UiText.resource(ChatR.string.chat_forwarded_from, name)
+    return UiText.resource(ChatR.string.chat_forwarded_from, name.bidiIsolated())
 }
 
 /** "Chat (Signature)", or the chat's name alone without a signature. */
 private fun signed(
     name: UiText,
     signature: String,
-): UiText = if (signature.isBlank()) name else UiText.resource(ChatR.string.chat_forwarded_name_signed, name, signature)
+): UiText =
+    if (signature.isBlank()) {
+        name
+    } else {
+        UiText.resource(ChatR.string.chat_forwarded_name_signed, name.bidiIsolated(), signature.bidiIsolated())
+    }
 
 /** Null when the preview has nothing to show. */
 private fun linkPreviewCard(preview: LinkPreview): LinkPreviewCard? =

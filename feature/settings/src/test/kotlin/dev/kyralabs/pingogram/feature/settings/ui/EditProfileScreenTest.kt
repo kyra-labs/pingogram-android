@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performTextReplacement
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -159,7 +160,10 @@ class EditProfileScreenTest {
     fun `an available username says so`() {
         setScreen(SettingsPreviewData.editedProfile(UsernameStatus.Checked(UsernameCheck.Available)))
 
-        composeRule.onNodeWithText(string(R.string.settings_profile_username_available, "ada_lovelace")).assertExists()
+        composeRule
+            .onNodeWithText(
+                string(R.string.settings_profile_username_available, "ada_lovelace".bidiIsolated()).bidiIsolated(),
+            ).assertExists()
     }
 
     @Test
@@ -290,7 +294,9 @@ class EditProfileScreenTest {
         val edited = SettingsPreviewData.editedProfile(UsernameStatus.Removed, username = "")
         setScreen(edited.copy(dialog = EditProfileDialog.RemoveUsername))
 
-        composeRule.onNodeWithText(string(R.string.settings_remove_username_dialog_text, "ada")).assertExists()
+        composeRule
+            .onNodeWithText(string(R.string.settings_remove_username_dialog_text, "ada".bidiIsolated()).bidiIsolated())
+            .assertExists()
     }
 
     /** This state with the text [event] typed, as the view model keeps it. */

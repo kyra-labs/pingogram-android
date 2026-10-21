@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.PingogramDarkTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -436,6 +437,7 @@ private fun pageDescription(
 private const val ZOOM_STEP = 2f
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun MediaViewerScreenPreview(
     @PreviewParameter(MediaViewerPreviewStates::class) state: MediaViewerUiState,

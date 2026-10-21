@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.tdlib.di.TdlibModule
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA
 import dev.kyralabs.pingogram.ui.ChatsScript.ADA_TITLE
@@ -230,7 +231,8 @@ class MediaViewerNavigationTest {
         composeRule.onNode(send).performClick()
 
         val open = hasText(string(ChatR.string.forward_open_chat)) and hasClickAction()
-        awaitNode(hasText(composeRule.activity.getString(ChatR.string.forward_done_to, GRACE_TITLE)))
+        val done = composeRule.activity.getString(ChatR.string.forward_done_to, GRACE_TITLE.bidiIsolated())
+        awaitNode(hasText(done.bidiIsolated()))
         assertTrue(navController.currentDestination?.hasRoute<MediaViewerRoute>() == true)
         assertEquals(GRACE, tdlib.sentOf<TdApi.ForwardMessages>().single().chatId)
         composeRule.onNode(open).performClick()

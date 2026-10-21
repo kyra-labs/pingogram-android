@@ -24,7 +24,7 @@ fun chatActionText(
 ): UiText? {
     val first = actions.firstOrNull() ?: return null
 
-    fun nameOf(action: SenderAction) = name(action.sender) ?: UiText.resource(R.string.preview_someone)
+    fun nameOf(action: SenderAction) = name(action.sender)?.bidiIsolated() ?: UiText.resource(R.string.preview_someone)
     return when {
         !isGroup -> {
             actionText(first.action)

@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
 import dev.kyralabs.pingogram.core.ui.text.draftPreviewText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
@@ -240,7 +241,7 @@ private fun RowInputs.senderPrefix(
     return when {
         !chat.isGroup || message.isChannelPost || message.content is MessageContent.Service -> null
         message.isOutgoing -> UiText.resource(R.string.preview_sender_you)
-        sender is MessageSender.User -> name(sender)
+        sender is MessageSender.User -> name(sender)?.bidiIsolated()
         else -> null
     }
 }

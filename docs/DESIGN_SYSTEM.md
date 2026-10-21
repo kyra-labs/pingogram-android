@@ -562,7 +562,14 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   punctuation at its end in a right-to-left layout and Hebrew reads right to left in a left-to-right one; its default
   `TextAlign.Start` then follows the paragraph. Content that may have no letters (phone numbers, coordinates) reads left
   to right without one (`numericContent`, `TextDirection.ContentOrLtr`). Pingogram's own strings keep the layout's
-  direction.
+  direction. A name or other text from people inside one of them ("Grace is typing…", "Forwarded from …", service
+  messages, "Alice:" before a preview, "Forwarded to …", a phone number in a sign-in step) is wrapped in Unicode
+  first-strong isolates where the string is built (`bidiIsolated`, `core:ui`), so its direction never spills into the
+  words and punctuation around it. Such a string then takes its own language's direction, not the layout's (or English
+  strings in a right-to-left layout would put the name on the wrong side): its text uses `userContent` (the
+  conversation's typing status, service messages, "Forwarded from …", chat list previews), or the whole string is
+  isolated too where its text keeps the layout's direction (snackbars, dialogs, sign-in steps, search's "No results
+  for …"). Text shown on its own is never isolated: that would hide its first letter from `userContent`.
 - Keyboard & mouse: focus order, `Tab` navigation, Enter to send (Ctrl+Enter configurable),
   hover states on large screens.
 - Reduced motion & reduced transparency respected; no flashing content > 3 Hz.

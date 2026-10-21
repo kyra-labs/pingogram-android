@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.domain.model.characterCount
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -291,7 +292,9 @@ private fun usernameMessage(
             when (status.result) {
                 UsernameCheck.Available -> {
                     FieldMessage(
-                        text = stringResource(R.string.settings_profile_username_available, username),
+                        text =
+                            stringResource(R.string.settings_profile_username_available, username.bidiIsolated())
+                                .bidiIsolated(),
                         isError = false,
                         color = MaterialTheme.colorScheme.primary,
                     )
