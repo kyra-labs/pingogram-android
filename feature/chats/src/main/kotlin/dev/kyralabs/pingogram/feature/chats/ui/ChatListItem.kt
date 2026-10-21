@@ -35,6 +35,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -229,7 +230,7 @@ internal fun ChatTitle(
             color = colors.onSurface,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
-            style = with(MaterialTheme.typography) { if (isUnread) titleMediumEmphasized else titleMedium },
+            style = with(MaterialTheme.typography) { if (isUnread) titleMediumEmphasized else titleMedium }.userContent,
         )
         when (badge) {
             TitleBadge.Verified -> {

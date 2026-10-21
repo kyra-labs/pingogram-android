@@ -61,6 +61,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -118,14 +119,14 @@ private fun ViewerTitle(item: MediaItem) {
             text = item.sender.resolve(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.userContent,
         )
         Text(
             text = item.date,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall.userContent,
         )
     }
 }
@@ -231,7 +232,7 @@ private fun ExpandableCaption(
                 .clickable(onClickLabel = label) { expanded = !expanded },
         maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_LINES,
         overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.userContent,
     )
 }
 

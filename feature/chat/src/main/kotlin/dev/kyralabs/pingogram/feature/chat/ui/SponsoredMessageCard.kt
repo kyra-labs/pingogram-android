@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -90,7 +91,7 @@ internal fun SponsoredMessageCard(
                     modifier = Modifier.fillMaxWidth(),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Text(text = card.buttonText, style = MaterialTheme.typography.labelLarge)
+                    Text(text = card.buttonText, style = MaterialTheme.typography.labelLarge.userContent)
                 }
             }
         }
@@ -155,7 +156,7 @@ private fun SponsoredContent(
                         shape = MaterialTheme.shapes.small,
                         horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     ),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
                 onTextLayout = blocks.onTextLayout,
             )
         }
@@ -191,7 +192,7 @@ private fun SponsoredHeader(
                 style = MaterialTheme.typography.labelMedium,
             )
             if (card.title.isNotBlank()) {
-                Text(text = card.title, style = MaterialTheme.typography.titleSmallEmphasized)
+                Text(text = card.title, style = MaterialTheme.typography.titleSmallEmphasized.userContent)
             }
         }
         IconButton(onClick = onInfo, shapes = IconButtonDefaults.shapes()) {

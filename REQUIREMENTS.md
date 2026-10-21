@@ -235,7 +235,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 Every screen must satisfy this list before merge:
 
 - [ ] Material 3 Expressive theme (`MaterialExpressiveTheme`), expressive `MotionScheme`, full compliance audit (`docs/DESIGN_SYSTEM.md` §12)
-- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; `GRAD` 0
+- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; `GRAD` 0 (25 with high contrast)
 - [ ] Dynamic color on Android 12+ with brand-seeded fallback; tonal palettes, not hard-coded hex
 - [ ] Edge-to-edge (`enableEdgeToEdge()`), insets via `WindowInsets` / `Scaffold` content padding
 - [ ] Predictive back (`android:enableOnBackInvokedCallback="true"`, `PredictiveBackHandler`
