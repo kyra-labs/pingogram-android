@@ -9,6 +9,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- The message composer is slimmer and looks like Google Messages': the field is a filled, rounded pill with the emoji
+  button inside, "+" in a tonal circle attaches, and sending is a small icon button with its menu (without sound, at
+  a time) beside it, so the field keeps most of the width even with large text. The bar is lower, the voice recording
+  bar matches the field, and on tablets the composer is no wider than a message can be. Text written in a
+  right-to-left language now lines up to the right as you type it.
+
 ## [0.3.0-beta.3] - 2026-10-21
 
 ### Added

@@ -19,6 +19,7 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.WavyProgressIndicatorDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -64,9 +65,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The composer's microphone in the send button's place while the field is empty (`docs/DESIGN_SYSTEM.md` §6
- * Composer): a [FilledIconButton] as tall as the text field that morphs into a wide pill while it records, its icon
- * giving way to a [LinearWavyProgressIndicator] whose waves rise and fall with the voice ([RecordingMeter.level]);
- * locked, the pill sends.
+ * Composer): a small [FilledIconButton] (`IconButtonDefaults.smallContainerSize`, in a 48 dp touch target) that
+ * morphs into a wide pill while it records, its icon giving way to a [LinearWavyProgressIndicator] whose waves rise and
+ * fall with the voice ([RecordingMeter.level]); locked, the pill sends.
  *
  * - **Hold to record**: pressing it starts recording ([VoiceEvent.Start]) with a long-press haptic, if the microphone
  *   permission is granted; else it asks for it ([VoiceEvent.PermissionNeeded]). The pill follows the finger toward
@@ -85,8 +86,8 @@ internal fun RecordButton(
     modifier: Modifier = Modifier,
 ) {
     val actions = rememberRecordActions(recording, onEvent)
-    val uniform = IconButtonDefaults.mediumContainerSize()
-    val wide = IconButtonDefaults.mediumContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)
+    val uniform = IconButtonDefaults.smallContainerSize()
+    val wide = IconButtonDefaults.smallContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)
     val width =
         animateDpAsState(
             targetValue = if (recording != null) wide.width else uniform.width,
@@ -108,6 +109,7 @@ internal fun RecordButton(
         onClick = actions::sendLocked,
         modifier =
             modifier
+                .minimumInteractiveComponentSize()
                 .animatedWidth(width, uniform.height)
                 .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send),
         // A pill while it records, the press morph only while it is the microphone or sends.
@@ -139,7 +141,7 @@ private fun RecordButtonFace(
             Icon(
                 painter = painterResource(UiR.drawable.ic_mic_filled),
                 contentDescription = null,
-                modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+                modifier = Modifier.size(IconButtonDefaults.smallIconSize),
             )
         }
 
@@ -150,7 +152,7 @@ private fun RecordButtonFace(
                     Modifier
                         .fillMaxWidth()
                         .height(MaterialTheme.sizes.waveformHeight)
-                        .padding(horizontal = MaterialTheme.spacing.medium),
+                        .padding(horizontal = MaterialTheme.spacing.small),
                 color = LocalContentColor.current,
                 trackColor = Color.Transparent,
                 stopSize = 0.dp,
@@ -164,7 +166,7 @@ private fun RecordButtonFace(
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
                 contentDescription = stringResource(R.string.voice_send),
-                modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
+                modifier = Modifier.size(IconButtonDefaults.smallIconSize),
             )
         }
     }

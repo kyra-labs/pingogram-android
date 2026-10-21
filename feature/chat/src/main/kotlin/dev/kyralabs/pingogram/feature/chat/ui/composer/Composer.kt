@@ -1,8 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
-import android.view.KeyEvent.FLAG_SOFT_KEYBOARD
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -12,7 +10,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -20,27 +17,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SplitButtonDefaults
-import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,29 +37,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEvent
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isAltPressed
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -87,6 +51,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
@@ -99,14 +64,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.persistentListOf
 import java.time.Instant
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, FR-C6, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where
  * the user can write, below the bar of the message it replies to or edits ([ComposerBarRow]), which grows in and out on
  * the motion scheme's springs; a short centred label in `onSurfaceVariant` where they cannot; nothing in a channel
  * they only read. It is a `surfaceContainer` surface below the messages' sheet, which reaches under the keyboard and
- * the system bars, edge to edge, while its content stays above them.
+ * the system bars, edge to edge, while its content stays above them; on wide windows the composer and its bar are no
+ * wider than a bubble can be (`sizes.bubbleMaxWidth`), centred.
  *
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
@@ -144,36 +109,34 @@ internal fun ChatBottomBar(
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
-                Text(
-                    text = composer.reason.resolve(),
-                    modifier =
-                        Modifier
-                            .windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
-                            .fillMaxWidth()
-                            .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.large),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                UnavailableLabel(composer.reason)
             }
 
             is ComposerUiState.Available -> {
                 ComposerPanelEffects(panelState, enabled = recording == null)
                 if (panelState.isOpen) LaunchedEffect(Unit) { onPanelEvent(EmojiPanelEvent.Opened) }
                 Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
-                    BarArea(composer.bar, onShowBarMessage, onCloseBar)
-                    Composer(
-                        composer,
-                        text,
-                        onSend,
-                        onFocusChanged,
-                        focus,
-                        onAttach,
-                        VoiceInput(recording, onVoiceEvent, drag),
-                        panelState,
-                        now,
-                        onSendAs,
-                    )
+                    // As wide as a bubble can be, centred, so the field never stretches across a wide window.
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth()
+                            .widthIn(max = MaterialTheme.sizes.bubbleMaxWidth),
+                    ) {
+                        BarArea(composer.bar, onShowBarMessage, onCloseBar)
+                        Composer(
+                            composer,
+                            text,
+                            onSend,
+                            onFocusChanged,
+                            focus,
+                            onAttach,
+                            VoiceInput(recording, onVoiceEvent, drag),
+                            panelState,
+                            now,
+                            onSendAs,
+                        )
+                    }
                     PanelArea(panelState) {
                         EmojiPanel(
                             state = panel,
@@ -195,6 +158,22 @@ internal fun ChatBottomBar(
             ComposerUiState.Hidden -> {}
         }
     }
+}
+
+/** Why the user cannot write here ([reason]), centred in `onSurfaceVariant`, above the keyboard and system bars. */
+@Composable
+private fun UnavailableLabel(reason: UiText) {
+    Text(
+        text = reason.resolve(),
+        modifier =
+            Modifier
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(BOTTOM_EDGES))
+                .fillMaxWidth()
+                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.large),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 /**
@@ -220,15 +199,15 @@ private fun BarArea(
 }
 
 /**
- * The composer: the attach button ([AttachButton]) where the chat takes attachments, a multi-line text field that grows
- * to [MAX_LINES] lines and then scrolls, and once there is something to send, the send split button ([SendButton])
- * beside it, which grows in on the motion scheme's spatial spring; while editing, a check ([SaveEditButton]) in its
- * place, also for an emptied caption, and no attach button. Formatting comes from the selection
- * menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time from [ScheduleDialog]. Sending and
- * saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the focus to the text field. While the
- * field is empty the microphone ([RecordButton]) is in the send button's place; while it records, the recording bar
- * ([RecordingBar]) takes the place of the attach button and the field. Before the attach button, the send-as avatar
- * ([LeadingButtons]) where the user can choose who they send as ([onSendAs]).
+ * The composer, a 64 dp bar at one line (`docs/DESIGN_SYSTEM.md` §7): the attach button ([AttachButton]) where the chat
+ * takes attachments, a multi-line text field that grows to six lines and then scrolls ([ComposerField]), and once there
+ * is something to send, the send split button ([SendButton]) beside it, which grows in on the motion scheme's spatial
+ * spring; while editing, a check ([SaveEditButton]) in its place, also for an emptied caption, and no attach button.
+ * Formatting comes from the selection menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time
+ * from [ScheduleDialog]. Sending and saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the
+ * focus to the text field. While the field is empty the microphone ([RecordButton]) is in the send button's place;
+ * while it records, the recording bar ([RecordingBar]) takes the place of the attach button and the field. Before the
+ * attach button, the send-as avatar ([LeadingButtons]) where the user can choose who they send as ([onSendAs]).
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
 @Composable
@@ -263,7 +242,8 @@ private fun Composer(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = spacing.medium, vertical = spacing.small),
-        horizontalArrangement = Arrangement.spacedBy(spacing.small),
+        // The buttons' 48 dp touch targets reach 4 dp past their 40 dp containers, so these gaps look twice as wide.
+        horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
         verticalAlignment = Alignment.Bottom,
     ) {
         val recording = voice.recording
@@ -364,83 +344,8 @@ internal fun RowScope.Appearing(
     ) { content() }
 }
 
-/**
- * The text field: outlined, `extraLarge` corners, `bodyLarge`, [placeholder] ("Message") while empty, [leadingIcon]
- * at its start (the conversation's emoji button). Enter on a
- * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
- * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
- * address ([onLink]). The attach preview's caption is one too.
- */
-@Composable
-internal fun ComposerField(
-    text: ComposerText,
-    onSend: () -> Unit,
-    onLink: (TextRange) -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    placeholder: String = stringResource(R.string.composer_placeholder),
-    leadingIcon: (@Composable () -> Unit)? = null,
-) {
-    val labels = rememberFormattingLabels()
-    val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
-    // onFocusChanged also reports the first state, unfocused: only changes are news.
-    val focus = remember { FocusReport() }
-    OutlinedTextField(
-        state = text.state,
-        modifier =
-            modifier
-                .onFocusChanged { state ->
-                    if (state.isFocused != focus.isFocused) {
-                        focus.isFocused = state.isFocused
-                        onFocusChanged(state.isFocused)
-                    }
-                }.onPreviewKeyEvent { event ->
-                    when {
-                        event.isSendKey() -> {
-                            onSend()
-                            true
-                        }
-
-                        else -> {
-                            formattingShortcut(event, text, onLink)
-                        }
-                    }
-                }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
-                .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
-        textStyle = MaterialTheme.typography.bodyLarge,
-        placeholder = { Text(placeholder) },
-        leadingIcon = leadingIcon,
-        inputTransformation = text.inputTransformation,
-        outputTransformation = rememberFormattingTransformation(text),
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = MAX_LINES),
-        shape = MaterialTheme.shapes.extraLarge,
-    )
-}
-
-/** Whether the text field had the focus when it last reported it; read in callbacks only, so not snapshot state. */
-private class FocusReport(
-    var isFocused: Boolean = false,
-)
-
-/**
- * Enter pressed on a hardware keyboard without a modifier. The on-screen keyboard sends its Enter as a key event too,
- * flagged as its own, and that one keeps starting a new line.
- */
-private fun KeyEvent.isSendKey(): Boolean =
-    type == KeyEventType.KeyDown &&
-        (key == Key.Enter || key == Key.NumPadEnter) &&
-        !isShiftPressed &&
-        !isCtrlPressed &&
-        !isAltPressed &&
-        !isMetaPressed &&
-        nativeKeyEvent.flags and FLAG_SOFT_KEYBOARD == 0
-
 /** The edges the bottom bar keeps clear of: the keyboard and the navigation bar below, cutouts at the sides. */
 private val BOTTOM_EDGES = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
-
-/** The lines the text field grows to before it scrolls. */
-private const val MAX_LINES = 6
 
 @PingogramPreviews
 @Composable
