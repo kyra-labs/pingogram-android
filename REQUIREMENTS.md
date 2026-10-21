@@ -211,6 +211,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Network only to Telegram data centers (via TDLib) and user-requested links; no third-party
   network calls (the `gms` flavor's push service, FR-N3, is the one exception; `foss` has none). `networkSecurityConfig` with cleartext disabled.
 - Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release.
+- Contacts sync (FR-P1, `docs/adr/0011-contacts-sync.md`, approved by the owner 2026-10-21) is opt-in and off by
+  default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
+  Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
+  the background; turning it off deletes the imported numbers from Telegram.
 
 ### 6.3 Accessibility (Google standards)
 

@@ -4,13 +4,17 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.AddContactResult
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncSettings
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.Country
 import dev.kyralabs.pingogram.core.domain.model.EditableContact
+import dev.kyralabs.pingogram.core.domain.model.PhoneContacts
 import dev.kyralabs.pingogram.core.domain.model.PhoneNumberInfo
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
@@ -214,5 +218,33 @@ class FakeTimePatterns : TimePatterns {
 
     private companion object {
         val PATTERNS = mapOf("Hm" to "HH:mm", "hm" to "h:mm a", "MMMd" to "MMM d", "yMd" to "M/d/y")
+    }
+}
+
+/** [ContactSyncRepository] for view model tests: its flows set directly, every call recorded in [calls]. */
+class FakeContactSyncRepository : ContactSyncRepository {
+    override val status = MutableStateFlow<ContactSyncStatus>(ContactSyncStatus.Off)
+    override val settings = MutableStateFlow(ContactSyncSettings())
+    override val phoneContacts = MutableStateFlow<PhoneContacts?>(null)
+    val calls = mutableListOf<String>()
+    var outcome: Outcome<Unit> = Outcome.Success(Unit)
+
+    override fun refreshPermission() {
+        calls += "refreshPermission"
+    }
+
+    override suspend fun turnOn(): Outcome<Unit> = record("turnOn")
+
+    override suspend fun turnOff(): Outcome<Unit> = record("turnOff")
+
+    override suspend fun syncIfDue(): Outcome<Unit> = record("syncIfDue")
+
+    override suspend fun syncNow(): Outcome<Unit> = record("syncNow")
+
+    override suspend fun dismissPrompt(): Outcome<Unit> = record("dismissPrompt")
+
+    private fun record(call: String): Outcome<Unit> {
+        calls += call
+        return outcome
     }
 }

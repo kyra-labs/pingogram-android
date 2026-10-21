@@ -5,17 +5,42 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * The Contacts tab (`REQUIREMENTS.md` FR-P1): what its list shows ([content]), what the search field holds ([query]),
- * and the contact the user is asked to confirm deleting ([deleteDialog]), if any.
+ * the contact the user is asked to confirm deleting ([deleteDialog]), if any, and where contacts sync is ([sync]).
  */
 @Immutable
 data class ContactsUiState(
     val content: ContactsContent = ContactsContent.Loading,
     val query: String = "",
     val deleteDialog: DeleteContactDialog? = null,
+    val sync: ContactSyncUi = ContactSyncUi.Hidden,
 )
+
+/** What the Contacts tab shows of contacts sync (`docs/adr/0011-contacts-sync.md`) above the contacts. */
+@Immutable
+sealed interface ContactSyncUi {
+    /** Off, and its offer dismissed: nothing (Settings still offers it). */
+    data object Hidden : ContactSyncUi
+
+    /** Off: a card offers to turn it on. */
+    data object Offer : ContactSyncUi
+
+    /** On, but Android no longer lets Pingogram read the contacts: a card asks again, or to turn it off. */
+    data object NeedsPermission : ContactSyncUi
+
+    /**
+     * On: a row says so, [isSyncing] while the contacts are on their way, else when they last synced ([lastSynced],
+     * null before the first time) or what the last sync failed with ([error]), with "Sync now".
+     */
+    data class On(
+        val isSyncing: Boolean,
+        val lastSynced: UiText?,
+        val error: DomainError?,
+    ) : ContactSyncUi
+}
 
 /** What the contacts list shows below "Add contact" and "Invite friends". */
 @Immutable
@@ -33,13 +58,15 @@ sealed interface ContactsContent {
 
     /**
      * Every contact, in alphabetical [sections]; [showsIndex] whether the list is long enough for the fast-scroll index
-     * of their letters.
+     * of their letters. With contacts sync on, the phone's contacts not on Telegram follow under "Invite to Telegram"
+     * ([invites]).
      */
     data class Contacts(
         val sections: ImmutableList<ContactSection>,
         val showsIndex: Boolean,
+        val invites: ImmutableList<InviteItem> = persistentListOf(),
     ) : ContactsContent {
-        override fun toString() = "Contacts(${sections.size} sections)"
+        override fun toString() = "Contacts(${sections.size} sections, ${invites.size} invites)"
     }
 
     /** The contacts that match the search field's query, in the list's order; empty when none does. */
@@ -71,8 +98,23 @@ data class ContactItem(
     val photo: ProfilePhoto?,
     val isOnline: Boolean,
     val status: UiText,
+    /** Contacts sync found them among the phone's contacts. */
+    val fromPhone: Boolean = false,
 ) {
-    override fun toString() = "ContactItem(userId=$userId, isOnline=$isOnline)"
+    override fun toString() = "ContactItem(userId=$userId, isOnline=$isOnline, fromPhone=$fromPhone)"
+}
+
+/**
+ * A contact of the phone no one uses Telegram with, under "Invite to Telegram": its [name] and [phoneNumber]
+ * (international), [key] keeping it apart from the others.
+ */
+@Immutable
+data class InviteItem(
+    val key: String,
+    val name: String,
+    val phoneNumber: String,
+) {
+    override fun toString() = "InviteItem(key=$key)"
 }
 
 /** The question before contact [userId], [name], is deleted. */
@@ -112,6 +154,17 @@ sealed interface ContactsEvent {
 
     /** "Try again" after listing the contacts failed. */
     data object Retry : ContactsEvent
+
+    /** The tab shows (again): contacts sync reads the permission again, and syncs if it is due. */
+    data object Started : ContactsEvent
+
+    /** "Not now" on the offer of contacts sync. */
+    data object DismissSyncOffer : ContactsEvent
+
+    /** "Invite" for a phone's contact not on Telegram ([InviteItem]): a message with the invitation. */
+    data class InvitePhoneContact(
+        val phoneNumber: String,
+    ) : ContactsEvent
 }
 
 /** One-off effects of [ContactsViewModel], handled by the screen once each. */
@@ -125,6 +178,16 @@ sealed interface ContactsEffect {
     data class ShareInvite(
         val link: String,
     ) : ContactsEffect
+
+    /**
+     * Opens the messaging app with an invitation to Telegram carrying [link] for [phoneNumber], else the share sheet.
+     */
+    data class InviteByMessage(
+        val phoneNumber: String,
+        val link: String,
+    ) : ContactsEffect {
+        override fun toString() = "InviteByMessage(…)"
+    }
 
     /** Contact [name] was deleted: a snackbar says so. */
     data class Deleted(

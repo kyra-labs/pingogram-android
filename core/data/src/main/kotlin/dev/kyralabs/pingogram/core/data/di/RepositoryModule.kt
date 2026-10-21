@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -47,7 +49,9 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -132,6 +136,12 @@ interface RepositoryModule {
 
     @Binds
     fun contactRepository(repository: TdlibContactRepository): ContactRepository
+
+    @Binds
+    fun contactSyncRepository(repository: TdlibContactSyncRepository): ContactSyncRepository
+
+    @Binds
+    fun deviceContactsRepository(repository: AndroidDeviceContactsRepository): DeviceContactsRepository
 
     @Binds
     fun storageRepository(repository: TdlibStorageRepository): StorageRepository

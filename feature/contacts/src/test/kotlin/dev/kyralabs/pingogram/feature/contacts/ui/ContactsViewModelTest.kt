@@ -3,12 +3,20 @@ package dev.kyralabs.pingogram.feature.contacts.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncSettings
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
+import dev.kyralabs.pingogram.core.domain.model.PhoneContact
+import dev.kyralabs.pingogram.core.domain.model.PhoneContacts
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncDialog
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncEffect
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncEvent
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.contacts.R
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +49,7 @@ import java.util.Locale
 @OptIn(ExperimentalCoroutinesApi::class)
 class ContactsViewModelTest {
     private val repository = FakeContactRepository()
+    private val sync = FakeContactSyncRepository()
     private val clock = FakeWallClock(NOW)
 
     @BeforeEach
@@ -57,6 +66,7 @@ class ContactsViewModelTest {
         ContactsViewModel(
             savedStateHandle = handle,
             contactRepository = repository,
+            contactSyncRepository = sync,
             clock = clock,
             timePatterns = FakeTimePatterns(),
             dispatcher = StandardTestDispatcher(testScheduler),
@@ -218,9 +228,20 @@ class ContactsViewModelTest {
         }
 
     @Test
-    fun `without contacts the list is empty`() =
+    fun `without contacts, and with contacts sync not offered, the list is empty`() =
         runTest {
+            sync.settings.value = ContactSyncSettings(promptDismissed = true)
+
             assertEquals(ContactsContent.Empty, viewModel().uiState.value.content)
+        }
+
+    @Test
+    fun `without contacts, the offer of contacts sync still shows`() =
+        runTest {
+            val state = viewModel().uiState.value
+
+            assertEquals(ContactSyncUi.Offer, state.sync)
+            assertTrue((state.content as ContactsContent.Contacts).sections.isEmpty())
         }
 
     // Errors
@@ -453,6 +474,186 @@ class ContactsViewModelTest {
 
             assertEquals(listOf(ContactsEffect.ShareInvite("https://t.me/invite")), effects)
         }
+
+    // Contacts sync
+
+    @Test
+    fun `the tab showing reads the permission again and syncs if due`() =
+        runTest {
+            val viewModel = viewModel()
+
+            send(viewModel, ContactsEvent.Started)
+
+            assertEquals(listOf("refreshPermission", "syncIfDue"), sync.calls)
+        }
+
+    @Test
+    fun `sync's offer shows until dismissed`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(ContactSyncUi.Offer, viewModel.uiState.value.sync)
+
+            send(viewModel, ContactsEvent.DismissSyncOffer)
+            assertEquals(listOf("dismissPrompt"), sync.calls)
+
+            sync.settings.value = ContactSyncSettings(promptDismissed = true)
+            runCurrent()
+            assertEquals(ContactSyncUi.Hidden, viewModel.uiState.value.sync)
+        }
+
+    @Test
+    fun `while on, the row says when it last synced, or that it syncs, or what failed`() =
+        runTest {
+            sync.status.value = ContactSyncStatus.On(lastSyncedAt = NOW.minusSeconds(5 * 60))
+            val viewModel = viewModel()
+            assertEquals(
+                ContactSyncUi.On(
+                    isSyncing = false,
+                    lastSynced = UiText.plural(R.plurals.contacts_sync_last_minutes, 5, 5),
+                    error = null,
+                ),
+                viewModel.uiState.value.sync,
+            )
+
+            sync.status.value = ContactSyncStatus.On(lastSyncedAt = null, isSyncing = true)
+            runCurrent()
+            assertEquals(
+                ContactSyncUi.On(isSyncing = true, lastSynced = null, error = null),
+                viewModel.uiState.value.sync,
+            )
+
+            sync.status.value = ContactSyncStatus.On(lastSyncedAt = null, error = DomainError.Network)
+            runCurrent()
+            assertEquals(DomainError.Network, (viewModel.uiState.value.sync as ContactSyncUi.On).error)
+        }
+
+    @Test
+    fun `a permission taken back shows the paused card`() =
+        runTest {
+            sync.status.value = ContactSyncStatus.NeedsPermission
+
+            assertEquals(ContactSyncUi.NeedsPermission, viewModel().uiState.value.sync)
+        }
+
+    @Test
+    fun `contacts found on the phone are marked, and the others are offered an invitation`() =
+        runTest {
+            setContacts(contact(2, "Ada"), contact(3, "Bea"))
+            sync.status.value = ContactSyncStatus.On(lastSyncedAt = NOW)
+            sync.phoneContacts.value =
+                PhoneContacts(
+                    onTelegram = persistentMapOf(2L to PhoneContact("1:+44", "Ada L", "+447911123456")),
+                    notOnTelegram = persistentListOf(PhoneContact("2:+1", "Zed", "+15550100")),
+                )
+
+            val content = viewModel().uiState.value.content as ContactsContent.Contacts
+
+            val rows = content.sections.flatMap { it.contacts }
+            assertEquals(listOf(true, false), rows.map { it.fromPhone })
+            assertEquals(listOf(InviteItem("2:+1", "Zed", "+15550100")), content.invites)
+        }
+
+    @Test
+    fun `inviting a phone's contact opens a message with Telegram's link`() =
+        runTest {
+            repository.link = "https://t.me/dl"
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, ContactsEvent.InvitePhoneContact("+15550100"))
+
+            assertEquals(listOf(ContactsEffect.InviteByMessage("+15550100", "https://t.me/dl")), effects)
+        }
+
+    @Test
+    fun `turning sync on explains first, then asks Android, then turns it on`() =
+        runTest {
+            val viewModel = viewModel()
+            val effects = syncEffectsOf(viewModel)
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.TurnOn)
+            assertEquals(ContactSyncDialog.Rationale, viewModel.contactSync.controls.value.dialog)
+            assertTrue(effects.isEmpty())
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.Continue)
+            runCurrent()
+            assertNull(viewModel.contactSync.controls.value.dialog)
+            assertEquals(listOf<ContactSyncEffect>(ContactSyncEffect.RequestPermission), effects)
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.PermissionResult(granted = true, canAskAgain = false))
+            runCurrent()
+            assertEquals(listOf("turnOn"), sync.calls)
+        }
+
+    @Test
+    fun `a refusal for good offers Android's settings instead of asking again`() =
+        runTest {
+            val viewModel = viewModel()
+            val effects = syncEffectsOf(viewModel)
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.PermissionResult(granted = false, canAskAgain = false))
+            assertTrue(viewModel.contactSync.controls.value.permanentlyDenied)
+            viewModel.contactSync.onEvent(ContactSyncEvent.Allow)
+            runCurrent()
+
+            assertEquals(listOf<ContactSyncEffect>(ContactSyncEffect.OpenAppSettings), effects)
+            assertTrue(sync.calls.isEmpty())
+        }
+
+    @Test
+    fun `a refusal that Android would ask again leaves sync off`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.PermissionResult(granted = false, canAskAgain = true))
+            runCurrent()
+
+            assertFalse(viewModel.contactSync.controls.value.permanentlyDenied)
+            assertTrue(sync.calls.isEmpty())
+        }
+
+    @Test
+    fun `turning sync off asks first, then says how to take the permission back`() =
+        runTest {
+            val viewModel = viewModel()
+            val effects = syncEffectsOf(viewModel)
+
+            viewModel.contactSync.onEvent(ContactSyncEvent.TurnOff)
+            assertEquals(ContactSyncDialog.TurnOff, viewModel.contactSync.controls.value.dialog)
+            viewModel.contactSync.onEvent(ContactSyncEvent.ConfirmTurnOff)
+            runCurrent()
+
+            assertEquals(listOf("turnOff"), sync.calls)
+            assertEquals(listOf<ContactSyncEffect>(ContactSyncEffect.TurnedOff), effects)
+        }
+
+    @Test
+    fun `sync's failures are snackbars, flood waits, network and unauthorized alike`() =
+        runTest {
+            val viewModel = viewModel()
+            val effects = syncEffectsOf(viewModel)
+
+            listOf(DomainError.FloodWait(5), DomainError.Network, DomainError.Unauthorized).forEach { error ->
+                sync.outcome = Outcome.Failure(error)
+                viewModel.contactSync.onEvent(ContactSyncEvent.SyncNow)
+                runCurrent()
+            }
+
+            assertEquals(
+                listOf(DomainError.FloodWait(5), DomainError.Network, DomainError.Unauthorized).map {
+                    ContactSyncEffect.ShowError(it)
+                },
+                effects,
+            )
+        }
+
+    private fun TestScope.syncEffectsOf(viewModel: ContactsViewModel): List<ContactSyncEffect> {
+        val effects = mutableListOf<ContactSyncEffect>()
+        backgroundScope.launch(
+            UnconfinedTestDispatcher(testScheduler),
+        ) { viewModel.contactSync.effects.toList(effects) }
+        return effects
+    }
 
     private companion object {
         /** Noon on a Wednesday, UTC. */

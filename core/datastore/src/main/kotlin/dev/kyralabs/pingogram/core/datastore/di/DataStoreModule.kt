@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
@@ -24,6 +25,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
@@ -58,6 +60,11 @@ interface DataStoreModule {
 
     @Binds
     fun autoDownloadRepository(repository: DataStoreAutoDownloadRepository): AutoDownloadRepository
+
+    @Binds
+    fun contactSyncSettingsRepository(
+        repository: DataStoreContactSyncSettingsRepository,
+    ): ContactSyncSettingsRepository
 
     companion object {
         @Provides

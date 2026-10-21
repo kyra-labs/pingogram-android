@@ -65,6 +65,9 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS,
                 Manifest.permission.ACCESS_NETWORK_STATE,
+                // Contacts sync only, opt-in (docs/adr/0011-contacts-sync.md): read when the user turns it on, opens
+                // Contacts while it is on, or taps Sync now; never in the background.
+                Manifest.permission.READ_CONTACTS,
             ) + FlavorManifest.requestedPermissions,
             requested,
         )
@@ -91,6 +94,8 @@ class AppManifestTest {
                 Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC to "",
                 Manifest.permission.POST_PROMOTED_NOTIFICATIONS to "",
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
+                // Contacts sync's only permission, on every version.
+                Manifest.permission.READ_CONTACTS to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,

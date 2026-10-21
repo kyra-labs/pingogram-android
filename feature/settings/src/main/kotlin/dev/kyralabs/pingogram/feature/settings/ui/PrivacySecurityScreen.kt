@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
@@ -16,8 +18,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncHost
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -27,8 +31,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
 
 /**
- * The Privacy and security page: hoists [PrivacySecurityViewModel], and loads the counts again whenever the page shows
- * again (back from blocked users or sessions). A row calls [onOpen] with the page it opens; [onBack] leaves the page.
+ * The Privacy and security page: hoists [PrivacySecurityViewModel] and, for "Sync contacts",
+ * [ContactSyncSettingViewModel] with its dialogs, permission request and snackbars ([ContactSyncHost]); both read
+ * again whenever the page shows again (back from blocked users, sessions or Android's settings). A row calls [onOpen]
+ * with the page it opens; [onBack] leaves the page.
  */
 @Composable
 internal fun PrivacySecurityRoute(
@@ -36,27 +42,44 @@ internal fun PrivacySecurityRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PrivacySecurityViewModel = hiltViewModel(),
+    contactSyncViewModel: ContactSyncSettingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LifecycleStartEffect(viewModel) {
+    val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
+    val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
+        contactSyncViewModel.onStarted()
         onStopOrDispose {}
     }
+    ContactSyncHost(
+        controls = controls,
+        effects = contactSyncViewModel.contactSync.effects,
+        onEvent = contactSyncViewModel.contactSync::onEvent,
+        snackbarHostState = snackbarHostState,
+    )
     PrivacySecurityScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onOpen = onOpen,
         onBack = onBack,
         modifier = modifier,
+        contactSync = contactSync,
+        onContactSyncChange = contactSyncViewModel::onCheckedChange,
+        snackbarHostState = snackbarHostState,
     )
 }
 
 /**
  * Privacy and security (`REQUIREMENTS.md` FR-S1):
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
+ * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
+ *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page.
  */
+@Suppress("LongParameterList") // The page's state and events, and contacts sync's.
 @Composable
 internal fun PrivacySecurityScreen(
     state: PrivacySecurityUiState,
@@ -64,11 +87,15 @@ internal fun PrivacySecurityScreen(
     onOpen: (PrivacySecurityPage) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    contactSync: ContactSyncStatus = ContactSyncStatus.Off,
+    onContactSyncChange: (Boolean) -> Unit = {},
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
         onBack = onBack,
         modifier = modifier,
+        snackbarHostState = snackbarHostState,
     ) {
         when (state) {
             PrivacySecurityUiState.Loading -> {
@@ -81,6 +108,7 @@ internal fun PrivacySecurityScreen(
 
             is PrivacySecurityUiState.Content -> {
                 PrivacySection(state, onOpen)
+                ContactsSection(contactSync, onContactSyncChange)
                 SecuritySection(state, onOpen)
             }
         }
@@ -123,6 +151,32 @@ private fun PrivacySettingItem(
         supportingContent = { Text(privacySummary(rules)) },
         onClick = onClick,
     )
+}
+
+/** "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused. */
+@Composable
+private fun ContactsSection(
+    status: ContactSyncStatus,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_contacts)) {
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_contact_sync),
+                summary =
+                    stringResource(
+                        when (status) {
+                            ContactSyncStatus.Off -> R.string.settings_contact_sync_off
+                            ContactSyncStatus.NeedsPermission -> R.string.settings_contact_sync_paused
+                            is ContactSyncStatus.On -> R.string.settings_contact_sync_on
+                        },
+                    ),
+                checked = status != ContactSyncStatus.Off,
+                shapes = shapes,
+                onCheckedChange = onCheckedChange,
+            )
+        }
+    }
 }
 
 @Composable
@@ -248,6 +302,20 @@ private fun PrivacySecurityScreenErrorPreview() {
             onEvent = {},
             onOpen = {},
             onBack = {},
+        )
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun PrivacySecurityScreenContactSyncOnPreview() {
+    PingogramPreview {
+        PrivacySecurityScreen(
+            state = SettingsPreviewData.privacySecurity,
+            onEvent = {},
+            onOpen = {},
+            onBack = {},
+            contactSync = ContactSyncStatus.On(lastSyncedAt = null),
         )
     }
 }
