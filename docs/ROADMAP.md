@@ -44,8 +44,9 @@ the release workflow so the owner can install and test on a phone.
 - [x] Media viewer with shared-element transition
 - [x] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
 - [ ] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated
-      (benchmarks and profile journeys are in place; generating the profile and the first numbers
-      need the owner's signed-in phone, `docs/PERFORMANCE.md` §9)
+      (profile generated and shipped 2026-10-22; first startup numbers on the owner's Galaxy S24 Ultra, Android 17,
+      before the app's own profile: cold 459 ms, warm 140 ms to the chat list; scroll numbers still to measure,
+      `docs/PERFORMANCE.md` §9)
 
 ## M3 — Full messaging, settings, notifications → `v0.3.0`
 

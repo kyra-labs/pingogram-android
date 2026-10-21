@@ -186,6 +186,16 @@ regresses by more than 10%.
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
   `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+- Each run skips the other kind of test (Macrobenchmark's rules check `androidx.benchmark.enabledRules`), and the
+  connected test task counts those skips as failures. So run only the kind each command is for:
+  `./gradlew :app:generateBaselineProfile -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+  -Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator`, and
+  `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+  -Pandroid.testInstrumentationRunnerArguments.notClass=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator`
+  (one line each). Results: `benchmark/build/outputs/connected_android_test_additional_output/`.
+- Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
+  activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
+  find the app gone.
 - Judging smoothness by hand: a sideloaded APK runs JIT-compiled at first. The APK carries the
   libraries' baseline profiles (and the app's, once generated) for `profileinstaller`, but the
   platform compiles them only in its background dexopt, when the phone is idle and charging. Before
