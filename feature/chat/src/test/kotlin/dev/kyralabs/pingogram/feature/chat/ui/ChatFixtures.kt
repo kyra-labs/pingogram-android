@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.EncryptionKeyHash
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardInfo
 import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
@@ -14,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
+import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
@@ -150,6 +153,13 @@ object ChatFixtures {
     /** Incoming messages [ids] of the private chat, neither at the start of the history nor at its end. */
     fun window(ids: LongRange) =
         history(*ids.map { message(it) }.toTypedArray(), reachedStart = false, reachedEnd = false)
+
+    /** Secret chat [id] with user [userId], ready unless [state] says otherwise, its key not shown in these tests. */
+    fun secretChat(
+        id: Int = 7,
+        userId: Long = ADA,
+        state: SecretChatState = SecretChatState.Ready,
+    ) = SecretChat(id, userId, state, isOutbound = true, keyHash = EncryptionKeyHash.Empty, layer = 144)
 
     fun user(
         id: Long,

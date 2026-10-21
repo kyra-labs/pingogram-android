@@ -5,12 +5,14 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
 
 /**
  * What screen readers say for a bubble, which they read as one (`docs/DESIGN_SYSTEM.md` §9): "{sender}, {time}:
  * {content}, {status}", the status only for outgoing messages. The content is the forward's origin, the reply, the
- * kind of media, the text (hidden spoilers read "spoiler"), the link preview's title and the reactions. Built in the
- * bubble's `semantics` block, so only when something reads the semantics tree (`docs/PERFORMANCE.md` §4).
+ * kind of media, the text (hidden spoilers read "spoiler"), the link preview's title, the reactions and a self-destruct
+ * timer. Built in the bubble's `semantics` block, so only when something reads the semantics tree
+ * (`docs/PERFORMANCE.md` §4).
  */
 internal fun bubbleDescription(
     resources: Resources,
@@ -31,6 +33,9 @@ internal fun bubbleDescription(
             bubble.linkPreview?.title,
             bubble.reactions.joinToString(", ") { reaction ->
                 resources.getString(R.string.chat_bubble_reaction, reaction.label.spoken(resources), reaction.count)
+            },
+            bubble.selfDestructSeconds?.let {
+                resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
             },
         ).filter(String::isNotBlank).joinToString(", ")
     val status = bubble.status?.let { resources.getString(it.spoken) }

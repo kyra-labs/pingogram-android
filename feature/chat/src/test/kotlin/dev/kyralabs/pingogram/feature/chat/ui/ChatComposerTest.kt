@@ -92,6 +92,7 @@ class ChatComposerTest : ChatViewModelHarness() {
         @Test
         fun `a secret chat has the composer without scheduling`() =
             runViewModelTest {
+                secretChats.setSecretChats(ChatFixtures.secretChat())
                 val secret = chat(type = ChatType.Secret(secretChatId = 7, userId = ADA))
 
                 assertEquals(ComposerUiState.Available(canSchedule = false), showing(secret, history()).composer)

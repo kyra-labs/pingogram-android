@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
@@ -88,6 +89,7 @@ import javax.inject.Inject
  *   the viewer ([MediaViewerEffect.Close]).
  * - **Forward**: offered where TDLib allows it (never for protected content, `MediaDeletion` asks), it opens the
  *   forward sheet for the current item's message ([MediaViewerEffect.Forward]).
+ * - **Secret chats**: [isSecretChat], for which the screen keeps the window secure, as the conversation does.
  * - **Show in chat** opens the conversation at the current item's message ([MediaViewerEffect.ShowInChat]).
  * - **Items** are mapped on [dispatcher] by a [MediaItemMapper]: senders' names, and dates in the zone, the language
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
@@ -252,6 +254,17 @@ class MediaViewerViewModel internal constructor(
                 deleteConfirmation = deletion.confirmation,
             )
         }
+
+    /**
+     * The media is a secret chat's (`REQUIREMENTS.md` FR-E1): the screen keeps the window secure while it shows it, as
+     * the conversation does. False until the chat is known.
+     */
+    val isSecretChat: StateFlow<Boolean> =
+        chatRepository
+            .chat(chatId)
+            .map { it?.type is ChatType.Secret }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), false)
 
     val uiState: StateFlow<MediaViewerUiState> =
         combine(listing, files, playback.state, actions, ::uiStateOf)

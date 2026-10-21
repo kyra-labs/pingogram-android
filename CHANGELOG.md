@@ -9,6 +9,18 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Secret chats: end-to-end encrypted chats that live on this phone only show a lock before their name in the chat
+  list and the conversation. While one waits for the other person to come online, the chat list and the conversation
+  say so and the composer explains why you cannot write yet; an ended one says "Secret chat ended". Their start
+  explains what a secret chat is, and Pingogram blocks screenshots and screen recordings while one is open, its
+  photos and videos in the media viewer too.
+- Self-destruct timer in secret chats: the timer button in the conversation's top bar picks how long after reading
+  new messages delete themselves on both phones, from 1 second to 1 week, and shows the timer on a badge. Messages
+  sent with a timer show it beside their time.
+- Encryption key: the key button in a secret chat shows its key as an image and as 32 pairs of characters, to compare
+  with the other person's screen, and can end the secret chat for both of you.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added

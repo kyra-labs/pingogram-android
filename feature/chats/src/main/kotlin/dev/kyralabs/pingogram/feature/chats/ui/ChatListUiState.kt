@@ -186,6 +186,14 @@ sealed interface ChatPreview {
         val text: UiText,
     ) : ChatPreview
 
+    /**
+     * A secret chat that cannot be written to: "Waiting for Ada to come online", "Secret chat ended"
+     * (`REQUIREMENTS.md` FR-E1), in place of the draft and the last message.
+     */
+    data class SecretChat(
+        val text: UiText,
+    ) : ChatPreview
+
     /** The chat has no messages, or TDLib does not know its last message yet. */
     data object None : ChatPreview
 }

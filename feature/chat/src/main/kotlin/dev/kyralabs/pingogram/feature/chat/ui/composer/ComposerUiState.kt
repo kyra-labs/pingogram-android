@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
+import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
@@ -76,17 +78,32 @@ sealed interface ComposerBar {
 
 /**
  * The composer of [chat], from the current user's [writeAccess] to it: its [user] for a private or secret chat, its
- * [basicGroup] or [supergroup] for a group or channel (null while unknown, or for other chats).
+ * [basicGroup] or [supergroup] for a group or channel (null while unknown, or for other chats). A secret chat also
+ * needs its [secretChat] ready (`REQUIREMENTS.md` FR-E1): while it waits for the other user, and once it ended, a
+ * label says why there is no composer; nothing shows while TDLib has not announced it.
  */
 internal fun composerState(
     chat: Chat,
     user: User?,
     basicGroup: BasicGroup?,
     supergroup: Supergroup?,
+    secretChat: SecretChat? = null,
 ): ComposerUiState =
-    when (chat.writeAccess(user, basicGroup, supergroup)) {
-        WriteAccess.Allowed -> ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
-        WriteAccess.ReadOnly, WriteAccess.Unknown -> ComposerUiState.Hidden
-        WriteAccess.NotMember -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
-        WriteAccess.Restricted -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+    if (chat.type is ChatType.Secret && secretChat?.state != SecretChatState.Ready) {
+        secretComposerState(secretChat?.state)
+    } else {
+        when (chat.writeAccess(user, basicGroup, supergroup)) {
+            WriteAccess.Allowed -> ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
+            WriteAccess.ReadOnly, WriteAccess.Unknown -> ComposerUiState.Hidden
+            WriteAccess.NotMember -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_not_member))
+            WriteAccess.Restricted -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_restricted))
+        }
+    }
+
+/** The label of a secret chat that is not ready: pending or ended; nothing while it is not known. */
+private fun secretComposerState(state: SecretChatState?): ComposerUiState =
+    when (state) {
+        SecretChatState.Pending -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_secret_pending))
+        SecretChatState.Closed -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_secret_closed))
+        SecretChatState.Ready, null -> ComposerUiState.Hidden
     }
