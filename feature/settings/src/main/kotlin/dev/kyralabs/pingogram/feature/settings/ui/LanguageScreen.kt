@@ -120,7 +120,6 @@ internal fun LanguageScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LanguageLoading() {
     val loading = stringResource(R.string.settings_language_loading)

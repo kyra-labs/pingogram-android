@@ -78,6 +78,8 @@ import androidx.compose.ui.unit.dp
  * @property panelEmoji the smallest cell of an emoji in the panel's grid: a 48 dp touch target.
  * @property panelSticker the smallest cell of a sticker in the panel's grid: five on a phone.
  * @property panelStickerCover the picture of a sticker set on its button in the panel's row of sets.
+ * @property leadingIconContainer the tonal circle behind a settings row's leading icon, as in Android 16's Settings:
+ *   the size of Material's leading avatar in a list item, so rows keep their heights.
  */
 @Immutable
 data class PingogramSizes(
@@ -127,6 +129,7 @@ data class PingogramSizes(
     val panelEmoji: Dp = 48.dp,
     val panelSticker: Dp = 72.dp,
     val panelStickerCover: Dp = 28.dp,
+    val leadingIconContainer: Dp = 40.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

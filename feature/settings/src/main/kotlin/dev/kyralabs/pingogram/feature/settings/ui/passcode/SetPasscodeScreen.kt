@@ -67,7 +67,6 @@ internal fun SetPasscodeRoute(
  * start to switch (and back), then for the same passcode again, which saves it. The keyboard pushes the page up for a
  * password.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SetPasscodeScreen(
     state: SetPasscodeUiState,

@@ -10,38 +10,41 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import java.text.NumberFormat
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The list of the Blocked users page: its rows, one segmented group, and loading more as its end comes near.
 
@@ -158,8 +161,9 @@ private fun LoadMoreEffect(
 }
 
 /**
- * A blocked user or chat, a row of the list's segmented group ([shapes]): its avatar, name and detail, and a button
- * that unblocks it, or progress while it does.
+ * A blocked user or chat, a row of the list's segmented group ([shapes]): its avatar, name and detail (the username, or
+ * the phone number formatted for its country), and an "Unblock" text button whose shape morphs when pressed, or
+ * progress while it unblocks. Screen readers hear the button with the name ("Unblock Ada Lovelace").
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -187,17 +191,43 @@ private fun BlockedSenderRow(
                 val unblocking = stringResource(R.string.settings_unblocking, name)
                 LoadingIndicator(Modifier.semantics { contentDescription = unblocking })
             } else {
-                IconButton(onClick = onUnblock) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_close),
-                        contentDescription = stringResource(R.string.settings_unblock, name),
-                    )
+                val unblock = stringResource(R.string.settings_unblock, name)
+                TextButton(
+                    onClick = onUnblock,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier.semantics { contentDescription = unblock },
+                ) {
+                    Text(stringResource(R.string.settings_unblock_button))
                 }
             }
         },
-        supportingContent = item.detail?.let { detail -> { Text(detail.resolve()) } },
+        supportingContent = blockedSenderDetail(item),
+        colors = settingsRowColors(),
     ) {
-        Text(name)
+        Text(text = name, style = LocalTextStyle.current.userContent)
+    }
+}
+
+/** The row's detail: the username as user content, or the phone number formatted, left to right in any layout. */
+private fun blockedSenderDetail(item: BlockedSenderItem): (@Composable () -> Unit)? {
+    val detail = item.detail
+    val phoneNumber = item.phoneNumber
+    return when {
+        detail != null -> {
+            { Text(text = detail.resolve(), style = LocalTextStyle.current.userContent) }
+        }
+
+        phoneNumber != null -> {
+            {
+                val country = LocalConfiguration.current.locales[0].country
+                val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
+                Text(text = formatted, style = LocalTextStyle.current.numericContent)
+            }
+        }
+
+        else -> {
+            null
+        }
     }
 }
 

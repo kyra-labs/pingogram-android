@@ -9,6 +9,7 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.RippleDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
@@ -52,7 +53,8 @@ fun PingogramTheme(
             animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
         )
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
-    val settings = remember(dynamicColor, contrast, amoled) { ThemeSettings(dynamicColor, contrast, amoled) }
+    val settings =
+        remember(dynamicColor, contrast, amoled, dark) { ThemeSettings(dynamicColor, contrast, amoled, dark && amoled) }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
@@ -88,15 +90,30 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
     )
 }
 
-/** What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme]. */
+/**
+ * What [PingogramTheme] was given besides its theme mode, for [PingogramDarkTheme], and whether its surfaces are true
+ * black ([amoledBlack]: dark with AMOLED black on).
+ */
 private data class ThemeSettings(
     val dynamicColor: Boolean,
     val contrast: Contrast,
     val amoled: Boolean,
+    val amoledBlack: Boolean,
 )
 
 private val LocalThemeSettings =
-    staticCompositionLocalOf { ThemeSettings(dynamicColor = true, contrast = Contrast.Standard, amoled = false) }
+    staticCompositionLocalOf {
+        ThemeSettings(dynamicColor = true, contrast = Contrast.Standard, amoled = false, amoledBlack = false)
+    }
+
+/**
+ * Whether the enclosing [PingogramTheme] shows true-black surfaces: dark, with AMOLED black on (`docs/DESIGN_SYSTEM.md`
+ * §2.1). For the few places whose roles differ then, e.g. settings pages, which turn black and move their rows onto
+ * `surfaceContainer` (§2.2).
+ */
+@Composable
+@ReadOnlyComposable
+fun isAmoledBlack(): Boolean = LocalThemeSettings.current.amoledBlack
 
 /** Whether this mode resolves to the dark theme right now. */
 @Composable

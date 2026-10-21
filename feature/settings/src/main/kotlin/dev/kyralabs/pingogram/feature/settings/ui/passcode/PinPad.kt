@@ -54,7 +54,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * With a hardware keyboard, digits, Backspace and Enter work while a key has the focus. Nothing has a fixed height,
  * so the digits never clip at large font scales.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PinPad(
     input: PasscodeInput,
@@ -163,7 +162,6 @@ private fun ButtonGroupScope.submitKey(
 }
 
 /** One row of keys: a [ButtonGroup] of equal keys `spacing.small` apart, which never overflows into a menu. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun KeyRow(content: ButtonGroupScope.() -> Unit) {
     ButtonGroup(

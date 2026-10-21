@@ -95,7 +95,6 @@ internal fun SettingsRoute(
  * "Log out" on its own, which asks for confirmation first (FR-A8). The page draws behind the floating navigation bar
  * and ends clear of it ([screenContentWindowInsets]).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsScreen(
     state: SettingsUiState,
@@ -141,7 +140,6 @@ internal fun SettingsScreen(
  * The top bar: "Settings" in a transparent [MediumFlexibleTopAppBar] on the page's color, as wide as the page below
  * it, so the title lines up with the groups on wide windows.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsTopBar(scrollBehavior: TopAppBarScrollBehavior) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -163,7 +161,6 @@ private fun SettingsTopBar(scrollBehavior: TopAppBarScrollBehavior) {
  * "Settings" in the emphasized variant of the style the bar sets: `headlineMedium` while expanded, `titleLarge`
  * collapsed (`docs/DESIGN_SYSTEM.md` §3.3). The bar composes the title once for each state.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsTitle() {
     val typography = MaterialTheme.typography

@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Changed
+- Settings look more like Android 16's: each row's icon sits in a small colored circle, one color per group; switches
+  show a check in their knob when on, and buzz lightly as they turn on and off; the theme and contrast choices are a
+  row of joined buttons that tick as you choose. Edit profile's fields sit directly on the page as rounded fields,
+  without a box around each. With AMOLED black on, settings pages are black and their rows dark grey, rather than the
+  other way round. Blocked users have an "Unblock" button instead of an X, and their phone numbers are formatted, and
+  names, usernames and devices from other languages read in their own direction. The switches of a new poll and of
+  forwarding show the same check.
 - The message composer is slimmer and looks like Google Messages': the field is a filled, rounded pill with the emoji
   button inside, "+" in a tonal circle attaches, and sending is a small icon button with its menu (without sound, at
   a time) beside it, so the field keeps most of the width even with large text. The bar is lower, the voice recording

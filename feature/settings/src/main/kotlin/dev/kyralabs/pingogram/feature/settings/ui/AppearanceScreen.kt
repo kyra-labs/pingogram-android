@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,10 +69,10 @@ internal fun AppearanceRoute(
 }
 
 /**
- * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): the theme (system, light or dark, as
- * [SegmentedButton]s) and AMOLED black, then dynamic color (where [dynamicColorAvailable]) and the contrast level. With
- * a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled. The
- * app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
+ * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): the theme (system, light or dark, as a
+ * connected button group) and AMOLED black, then dynamic color (where [dynamicColorAvailable]) and the contrast level.
+ * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
+ * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
 @Composable
 internal fun AppearanceScreen(
@@ -108,7 +107,6 @@ internal fun AppearanceScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AppearanceLoading() {
     val loading = stringResource(R.string.settings_appearance_loading)

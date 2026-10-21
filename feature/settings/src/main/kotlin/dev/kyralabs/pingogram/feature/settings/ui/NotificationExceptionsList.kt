@@ -12,9 +12,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -31,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -124,7 +127,7 @@ private fun ExceptionRow(
                 val changing = stringResource(R.string.settings_exception_changing, item.title)
                 LoadingIndicator(Modifier.semantics { contentDescription = changing })
             } else {
-                IconButton(onClick = onRemove) {
+                IconButton(onClick = onRemove, shapes = IconButtonDefaults.shapes()) {
                     Icon(
                         painter = painterResource(UiR.drawable.ic_close),
                         contentDescription = stringResource(R.string.settings_exception_remove, item.title),
@@ -133,8 +136,9 @@ private fun ExceptionRow(
             }
         },
         supportingContent = { Text(item.status.resolve()) },
+        colors = settingsRowColors(),
     ) {
-        Text(item.title)
+        Text(text = item.title, style = LocalTextStyle.current.userContent)
     }
 }
 

@@ -38,7 +38,8 @@ sealed interface BlockedUsersUiState {
  * A blocked user or chat as its row shows it.
  *
  * @property name the user's full name ("Deleted Account" for a deleted one), or the chat's title.
- * @property detail the username (`@ada`), else a user's phone number; null without either.
+ * @property detail the username (`@ada`); null without one.
+ * @property phoneNumber a user's phone number, `+` and its digits, when it has no username; the row formats it.
  * @property avatarId the user's or chat's id, which picks the avatar's placeholder.
  * @property placeholderIcon the avatar placeholder's icon in place of initials, for a deleted account; null otherwise.
  * @property isUnblocking unblocking was asked for, and TDLib has not answered yet.
@@ -52,6 +53,7 @@ data class BlockedSenderItem(
     val avatarId: Long,
     @param:DrawableRes val placeholderIcon: Int? = null,
     val isUnblocking: Boolean = false,
+    val phoneNumber: String? = null,
 ) {
     /** The row's key in the list: users and chats have ids of their own kinds. */
     val key: String

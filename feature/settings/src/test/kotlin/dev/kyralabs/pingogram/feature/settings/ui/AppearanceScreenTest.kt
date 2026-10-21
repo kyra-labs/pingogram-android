@@ -2,13 +2,16 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -46,6 +49,13 @@ class AppearanceScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<AppearanceEvent>()
+    private val performedHaptics = mutableListOf<HapticFeedbackType>()
+    private val haptics =
+        object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                performedHaptics += hapticFeedbackType
+            }
+        }
 
     private fun setScreen(
         settings: AppearanceSettings = AppearanceSettings(),
@@ -54,13 +64,15 @@ class AppearanceScreenTest {
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                AppearanceScreen(
-                    state = AppearanceUiState.Content(settings),
-                    onEvent = { events += it },
-                    onBack = {},
-                    dynamicColorAvailable = dynamicColorAvailable,
-                    systemContrast = systemContrast,
-                )
+                CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                    AppearanceScreen(
+                        state = AppearanceUiState.Content(settings),
+                        onEvent = { events += it },
+                        onBack = {},
+                        dynamicColorAvailable = dynamicColorAvailable,
+                        systemContrast = systemContrast,
+                    )
+                }
             }
         }
     }
@@ -81,15 +93,15 @@ class AppearanceScreenTest {
     )
 
     @Test
-    fun `shows the saved theme selected`() {
+    fun `shows the saved theme checked`() {
         setScreen(AppearanceSettings(themeMode = ThemeMode.Dark))
 
-        node(R.string.settings_theme_dark).assertIsSelected()
-        node(R.string.settings_theme_system).assertIsNotSelected()
+        node(R.string.settings_theme_dark).assertIsOn()
+        node(R.string.settings_theme_system).assertIsOff()
     }
 
     @Test
-    fun `the choices are segmented buttons side by side where their labels fit`() {
+    fun `the choices are a connected button group side by side where their labels fit`() {
         setScreen()
 
         val system = node(R.string.settings_theme_system).getUnclippedBoundsInRoot()
@@ -98,12 +110,21 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `choosing another theme saves it`() {
+    fun `screen readers hear the connected buttons as radio buttons`() {
+        setScreen()
+
+        node(R.string.settings_theme_light)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
+    }
+
+    @Test
+    fun `choosing another theme saves it with a segment tick`() {
         setScreen()
 
         node(R.string.settings_theme_light).performClick()
 
         assertEquals(listOf(AppearanceEvent.SetThemeMode(ThemeMode.Light)), events)
+        assertEquals(listOf(HapticFeedbackType.SegmentTick), performedHaptics)
     }
 
     @Test
@@ -113,24 +134,27 @@ class AppearanceScreenTest {
         node(R.string.settings_theme_system).performClick()
 
         assertTrue(events.isEmpty())
+        assertTrue(performedHaptics.isEmpty())
     }
 
     @Test
-    fun `the AMOLED row toggles AMOLED black`() {
+    fun `the AMOLED row toggles AMOLED black with a toggle-on haptic`() {
         setScreen()
 
         switchRow(R.string.settings_amoled).assertIsOff().performClick()
 
         assertEquals(listOf(AppearanceEvent.SetAmoled(true)), events)
+        assertEquals(listOf(HapticFeedbackType.ToggleOn), performedHaptics)
     }
 
     @Test
-    fun `the dynamic color row toggles dynamic color`() {
+    fun `the dynamic color row toggles dynamic color with a toggle-off haptic`() {
         setScreen(AppearanceSettings(dynamicColor = true))
 
         switchRow(R.string.settings_dynamic_color).assertIsOn().performClick()
 
         assertEquals(listOf(AppearanceEvent.SetDynamicColor(false)), events)
+        assertEquals(listOf(HapticFeedbackType.ToggleOff), performedHaptics)
     }
 
     @Test
@@ -154,7 +178,7 @@ class AppearanceScreenTest {
         setScreen(AppearanceSettings(contrast = Contrast.Standard), systemContrast = Contrast.Medium)
 
         node(R.string.settings_contrast_follows_system).assertExists()
-        node(R.string.settings_contrast_medium).assertIsSelected().assertIsNotEnabled()
+        node(R.string.settings_contrast_medium).assertIsOn().assertIsNotEnabled()
         node(R.string.settings_contrast_high).assertIsNotEnabled().performClick()
         assertTrue(events.isEmpty())
     }
@@ -176,7 +200,7 @@ class AppearanceScreenTest {
 
     @Test
     @Config(fontScale = FONT_SCALE_200)
-    fun `at a font scale where the segments are too narrow the choices are radio buttons that work alike`() {
+    fun `at a font scale where the buttons are too narrow the choices are radio buttons that work alike`() {
         setScreen()
 
         // One below the other rather than side by side.

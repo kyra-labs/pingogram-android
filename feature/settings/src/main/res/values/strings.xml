@@ -285,13 +285,13 @@
     </plurals>
     <!-- Spoken by screen readers for the button that unblocks someone. %1$s is their name. -->
     <string name="settings_unblock">Unblock %1$s</string>
+    <!-- The button at the end of a blocked user's or chat's row that unblocks them. -->
+    <string name="settings_unblock_button">Unblock</string>
     <!-- Spoken by screen readers for the progress indicator while someone is unblocked. %1$s is their name. -->
     <string name="settings_unblocking">Unblocking %1$s</string>
     <!-- Snackbar after unblocking someone. %1$s is their name. -->
     <string name="settings_unblocked">%1$s unblocked</string>
     <string name="settings_unblock_undo">Undo</string>
-    <!-- %1$s is a phone number such as "+447911123456". -->
-    <string name="settings_blocked_phone">⁨%1$s⁩</string>
     <!-- %1$s is a username without @. -->
     <string name="settings_blocked_username">\@%1$s</string>
 

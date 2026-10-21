@@ -103,7 +103,10 @@ internal fun DataStorageScreen(
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
         }
-        SettingsGroup(title = stringResource(R.string.settings_section_storage_usage)) {
+        SettingsGroup(
+            title = stringResource(R.string.settings_section_storage_usage),
+            iconTone = SettingsIconTone.Secondary,
+        ) {
             when (val usage = state.usage) {
                 StorageUsageState.Loading -> {
                     item { shapes ->
@@ -127,7 +130,7 @@ internal fun DataStorageScreen(
                 }
             }
         }
-        SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
+        SettingsGroup(title = stringResource(R.string.settings_section_cache), iconTone = SettingsIconTone.Tertiary) {
             item { shapes ->
                 ClearCacheItem(
                     isClearing = state.isClearingCache,

@@ -41,7 +41,6 @@ import dev.kyralabs.pingogram.feature.settings.R
  * while preparing or removing, a [ContainedLoadingIndicator] on it. The buttons wait meanwhile, and wrap below each
  * other where they do not fit side by side.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ProfilePhotoEditor(
     account: ProfileAccount?,
@@ -87,7 +86,6 @@ internal fun ProfilePhotoEditor(
 }
 
 /** "Set new photo" and, with a photo ([hasPhoto]), "Remove photo"; enabled while [idle]. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PhotoButtons(
     idle: Boolean,
