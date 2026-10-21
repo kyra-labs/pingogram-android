@@ -186,6 +186,33 @@ regresses by more than 10%.
   one starts signed out. `nonMinifiedRelease` and `benchmarkRelease` share their signature, so
   installing one over the other keeps the session. The screens are found by test tags, which
   `MainActivity` shows as resource ids (`testTagsAsResourceId`).
+- Each run skips the other kind of test (Macrobenchmark's rules check `androidx.benchmark.enabledRules`), and the
+  connected test task counts those skips as failures. So run only the kind each command is for:
+  `./gradlew :app:generateBaselineProfile -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+  -Pandroid.testInstrumentationRunnerArguments.class=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator`, and
+  `./gradlew :benchmark:connectedBenchmarkReleaseAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+  -Pandroid.testInstrumentationRunnerArguments.notClass=dev.kyralabs.pingogram.benchmark.BaselineProfileGenerator`
+  (one line each). Results: `benchmark/build/outputs/connected_android_test_additional_output/`.
+- Baseline (2026-10-22, `benchmarkRelease`, Galaxy S24 Ultra on Android 17 at 120 Hz, clocks not locked; medians of
+  10 starts, frame percentiles over 5 runs; "profile" is `BaselineProfileMode.Require` with the shipped profile, "none"
+  is `CompilationMode.None`). The phone is far faster than §1's reference device, so meeting a budget here is not
+  meeting it there; missing one here is missing it there.
+
+  | Benchmark | Profile | None | Budget (§1) |
+  |---|---|---|---|
+  | Cold start, `timeToFullDisplay` (`timeToInitialDisplay`) | 487 ms (341 ms) | 668 ms (414 ms) | ≤ 1.2 s |
+  | Warm start, `timeToFullDisplay` (`timeToInitialDisplay`) | 135 ms (88 ms) | 174 ms (107 ms) | ≤ 400 ms |
+  | Chat list scroll, `frameDurationCpuMs` P50 / P90 / P99 | 6.4 / 10.4 / 14.6 ms | 6.6 / 10.8 / 18.6 ms | P90 ≤ 8 ms |
+  | Chat list scroll, `frameOverrunMs` P90 / P99 | 4.3 / 10.7 ms | 6.7 / 13.9 ms | (> 0: late) |
+  | Conversation scroll, `frameDurationCpuMs` P50 / P90 / P99 | 5.1 / 9.1 / 15.8 ms | 4.9 / 8.7 / 12.1 ms | P90 ≤ 10 ms |
+  | Conversation scroll, `frameOverrunMs` P90 / P99 | 8.7 / 10.7 ms | 3.4 / 9.6 ms | < 1% late |
+
+  Startup has ample room. Both lists drop more than 10% of their frames at 120 Hz: the chat list misses its P90, the
+  conversation its jank rate. The profile helps startup (−27% cold) but not scrolling, whose code the JIT compiles
+  within a run.
+- Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
+  activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
+  find the app gone.
 - Judging smoothness by hand: a sideloaded APK runs JIT-compiled at first. The APK carries the
   libraries' baseline profiles (and the app's, once generated) for `profileinstaller`, but the
   platform compiles them only in its background dexopt, when the phone is idle and charging. Before

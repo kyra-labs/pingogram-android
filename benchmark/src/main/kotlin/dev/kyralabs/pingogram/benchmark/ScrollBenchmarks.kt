@@ -3,17 +3,17 @@ package dev.kyralabs.pingogram.benchmark
 import androidx.benchmark.macro.BaselineProfileMode
 import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.FrameTimingMetric
-import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.uiautomator.UiObject2
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
  * Frame times while the chat list scrolls, the scroll budget in `docs/PERFORMANCE.md` §1. Needs a signed-in app on the
- * device (§9). Each iteration starts the app cold, so it begins on the chat list whatever the last one left open.
+ * device (§9). Each iteration's setup starts the app cold ([coldStart]), so it begins on the chat list whatever the
+ * last one left open.
  *
  * `CompilationNone` is a fresh install with nothing precompiled; `BaselineProfile` is what users get from the shipped
  * Baseline Profile, so it fails until one has been generated.
@@ -34,11 +34,9 @@ class ChatListScrollBenchmark {
             packageName = TARGET_PACKAGE,
             metrics = listOf(FrameTimingMetric()),
             compilationMode = compilationMode,
-            startupMode = StartupMode.COLD,
             iterations = ITERATIONS,
             setupBlock = {
-                pressHome()
-                startActivityAndWait()
+                coldStart()
                 waitForChatList()
             },
         ) {
@@ -64,22 +62,30 @@ class ConversationScrollBenchmark {
     fun scrollBaselineProfile() = scroll(CompilationMode.Partial(BaselineProfileMode.Require))
 
     private fun scroll(compilationMode: CompilationMode) {
-        lateinit var messages: UiObject2
         rule.measureRepeated(
             packageName = TARGET_PACKAGE,
             metrics = listOf(FrameTimingMetric()),
             compilationMode = compilationMode,
-            startupMode = StartupMode.COLD,
             iterations = ITERATIONS,
             setupBlock = {
-                pressHome()
-                startActivityAndWait()
-                messages = openSavedMessages()
+                coldStart()
+                openSavedMessages()
             },
         ) {
-            scrollConversation(messages)
+            scrollConversation(messageList())
         }
     }
+}
+
+/**
+ * Starts the app cold in a setup block: kills it, then starts the launcher activity. Not `StartupMode.COLD`: with a
+ * startup mode, Macrobenchmark kills the process again after the setup block, so the measured block would find the
+ * app gone (no chat list, or a stale message list).
+ */
+private fun MacrobenchmarkScope.coldStart() {
+    killProcess()
+    pressHome()
+    startActivityAndWait()
 }
 
 private const val ITERATIONS = 5

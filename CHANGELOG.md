@@ -23,6 +23,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Sync now, never in the background. Turning it off deletes the imported numbers from Telegram and points you to
   Android's settings to take back the access.
 
+### Changed
+- Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so
+  Android compiles the code used at start ahead of time instead of while you use it.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added
