@@ -194,7 +194,7 @@ messages off for Telegram Premium subscribers (`toggleHasSponsoredMessagesEnable
 | G57 | Dark theme images are not dimmed to 0.9 in media-heavy lists (§10). | S | `chat/content/` | `ColorFilter` on the image in dark | `DESIGN_SYSTEM.md` §10 | — | Done: the conversation counts as media-heavy (§10); stickers, avatars and the media viewer undimmed |
 | G58 | Chat rows vary between 2- and 3-line heights; at 200% font the meta column truncates titles hard. | S–M | `chats/ChatListItem.kt`, `chats/ChatMeta.kt` | One preview line in folders with many chats, or time on the title line at large scales | [m3 lists][m3-lists] | — | Done: one preview line (G65) keeps every row at 72 dp (tested); from 150% font scale the time starts the preview's line and the end column keeps only the state and badges, so the title keeps most of its line. Putting the time on the title's line instead made the preview slot a `Row`, whose baselines the list item reads while measuring (rows with badges became three-line, and Compose failed placing it during measure in lazy lists) |
 | G59 | `GRAD −25` in dark is a no-op (the font's `GRAD` is 0–100); high contrast does not use the optional `GRAD +25`. | S | `ui/theme/Type.kt`, `DESIGN_SYSTEM.md` §3, `CLAUDE.md` 4b | Drop −25 from the docs; optionally +25 in high contrast | `DESIGN_SYSTEM.md` §3.1 | D11 | Done: GRAD 0, and 25 with high contrast (the app's setting or the system's on Android 14+): `pingogramTypography(fontWeightAdjustment, contrast)`, one cached typography per adjustment and grade; `GoogleSansFlexRenderingTest` checks the heavier rendering and unchanged widths |
-| G60 | Performance rules: bubbles are nested `Column`/`Box`, not one custom `Layout` per type (`PERFORMANCE.md` §4); the viewer builds page descriptions in composition (`MediaViewerScreen.kt:343-429`). | L / S | `chat/MessageBubble.kt`, `media/MediaViewerScreen.kt` | Custom `Layout` per bubble frame; strings in `semantics {}` | `PERFORMANCE.md` §4, §10 | — | Open |
+| G60 | Performance rules: bubbles are nested `Column`/`Box`, not one custom `Layout` per type (`PERFORMANCE.md` §4); the viewer builds page descriptions in composition (`MediaViewerScreen.kt:343-429`). | L / S | `chat/MessageBubble.kt`, `media/MediaViewerScreen.kt` | Custom `Layout` per bubble frame; strings in `semantics {}` | `PERFORMANCE.md` §4, §10 | — | Done: text and media bubbles are one custom `Layout` each (`BubbleLayouts.kt`); the viewer builds its page descriptions, labels and actions in `semantics {}` |
 | G61 | Auth predictive back only scales the step; it does not seek the shared-axis step transition. | S–M | `auth/AuthRoute.kt:156-214` | `SeekableTransitionState` driven by the back progress | [predictive back design][dac-predictive-back] | — | Done |
 | G62 | Material's typography (August 2026) adapts line heights to four script-height categories; nothing covers it. | S | `ui/theme/Type.kt`, `DESIGN_SYSTEM.md` §3 | Track until Compose exposes it; note in §3 | [m3 typography][m3-type] | — | Done: tracked in `DESIGN_SYSTEM.md` §3.2 until Compose exposes it |
 
@@ -521,7 +521,7 @@ tabs label-only or icon-only, is D13.
 - **Backdrop.** A blurred backdrop of the current photo, like Messages', would be optional polish
   (`RenderEffect` on API 31+, `PERFORMANCE.md` §5).
 - **Video controls.** No mute, speed or ±10 s skip.
-- **G60.** Page descriptions are built in composition.
+- **G60 (done).** Page descriptions, labels and actions are built in the `semantics {}` block.
 
 ### 5.7 Auth (`feature:auth`)
 

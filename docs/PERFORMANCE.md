@@ -94,7 +94,11 @@ regresses by more than 10%.
   reviewed in PRs that touch `feature:chat`; any unstable class in UI state is a build error
   (custom `compose_compiler_config.conf` stability file).
 - Use `Modifier.Node` for custom modifiers; avoid `composed {}`.
-- Avoid `Box`-with-many-children layouts for bubbles; one custom `Layout` per bubble type.
+- Avoid `Box`-with-many-children layouts for bubbles; one custom `Layout` per bubble type. A text bubble and a media
+  bubble are each one multi-content `Layout` (`feature:chat` `BubbleLayouts.kt`: header, content, text, link preview,
+  meta; a media bubble's media and overlay meta between its header and caption) with a measure policy remembered once
+  per bubble, which measures every piece once, without intrinsics or subcomposition (`BubbleLayoutsTest`); the meta
+  follows the text's last line from the text's cached `TextLayoutResult`.
 - Build what only screen readers need (a row's or bubble's spoken description, custom actions) inside
   the `semantics { }` block, which runs only when something reads the semantics tree, not in the
   composition of every item.

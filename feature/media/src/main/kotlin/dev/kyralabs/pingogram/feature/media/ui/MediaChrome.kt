@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
+import android.content.res.Resources
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -144,6 +145,12 @@ private fun titleHeight(): Dp {
 @Composable
 internal fun positionText(position: MediaPosition): String =
     stringResource(R.string.media_position, position.number, position.total)
+
+/** "3 of 120", in the digits of the current language, outside composition. */
+internal fun positionText(
+    resources: Resources,
+    position: MediaPosition,
+): String = resources.getString(R.string.media_position, position.number, position.total)
 
 /**
  * The bottom of the viewer's chrome, over a gradient of `mediaOverlay` rising from the bottom: the current item's
