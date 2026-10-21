@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.ui.ArchiveEntry
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListContent
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListItemModel
@@ -66,7 +67,7 @@ internal object ChatListPreviewData {
     private fun message(
         text: String,
         sender: UiText? = null,
-    ) = ChatPreview.Message(sender, UiText.Plain(text))
+    ) = ChatPreview.Message(sender?.bidiIsolated(), UiText.Plain(text))
 
     private val you = UiText.resource(R.string.preview_sender_you)
 
@@ -164,6 +165,42 @@ internal object ChatListPreviewData {
     val contentWithFolders = ChatListUiState(content = ChatListContent.Content(items), folderTabs = folders)
 
     val content = ChatListUiState(content = ChatListContent.Content(items))
+
+    /**
+     * Names in another script than the strings around them, which keep their order as the names are isolated
+     * (`bidiIsolated`, `docs/DESIGN_SYSTEM.md` §9): a Hebrew sender before an English message, a Hebrew name typing
+     * in an English string, an English sender before a Hebrew message.
+     */
+    val namesInOtherScripts =
+        ChatListUiState(
+            content =
+                ChatListContent.Content(
+                    persistentListOf(
+                        row(
+                            id = 20,
+                            title = "Book club",
+                            preview = message("See you at 9!", UiText.Plain("שרה")),
+                            time = "9:41 AM",
+                        ),
+                        row(
+                            id = 21,
+                            title = "Chess club",
+                            preview =
+                                ChatPreview.Action(
+                                    UiText.resource(R.string.named_action_typing, UiText.Plain("שרה").bidiIsolated()),
+                                ),
+                            time = "9:40 AM",
+                            unreadCount = 2,
+                        ),
+                        row(
+                            id = 22,
+                            title = "Hackers",
+                            preview = message("שלום!", UiText.Plain("Ada")),
+                            time = "9:12 AM",
+                        ),
+                    ),
+                ),
+        )
 
     val connecting = content.copy(connection = ConnectionStatus.Connecting)
 

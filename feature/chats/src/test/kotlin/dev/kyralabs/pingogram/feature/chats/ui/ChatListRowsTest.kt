@@ -91,7 +91,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             val row = rowOf(chat(id = GROUP, type = BASIC_GROUP))
 
-            assertEquals(ChatPreview.Action(res(UiR.string.named_action_typing, UiText.Plain("Alice"))), row.preview)
+            assertEquals(ChatPreview.Action(res(UiR.string.named_action_typing, isolated("Alice"))), row.preview)
         }
 
     @Test
@@ -118,7 +118,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             val viewModel = viewModel()
 
             assertEquals(
-                ChatPreview.Action(res(UiR.string.typing_two, UiText.Plain("Alice"), UiText.Plain("Bob"))),
+                ChatPreview.Action(res(UiR.string.typing_two, isolated("Alice"), isolated("Bob"))),
                 viewModel.item(GROUP).preview,
             )
             assertEquals(
@@ -140,7 +140,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             val row = rowOf(chat(id = GROUP, type = BASIC_GROUP))
 
             assertEquals(
-                ChatPreview.Action(res(UiR.string.named_action_recording_voice, UiText.Plain("Bob"))),
+                ChatPreview.Action(res(UiR.string.named_action_recording_voice, isolated("Bob"))),
                 row.preview,
             )
         }
@@ -161,7 +161,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             val viewModel = viewModel()
 
-            assertEquals(UiText.Plain("Alice"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
+            assertEquals(isolated("Alice"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
             assertEquals(
                 res(UiR.string.preview_sender_you),
                 (viewModel.item(OTHER_GROUP).preview as ChatPreview.Message).sender,
@@ -198,7 +198,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertNull((viewModel.item(20).preview as ChatPreview.Message).sender)
             assertNull((viewModel.item(21).preview as ChatPreview.Message).sender)
             assertEquals(
-                ChatPreview.Message(sender = null, text = res(UiR.string.preview_joined, UiText.Plain("Alice"))),
+                ChatPreview.Message(sender = null, text = res(UiR.string.preview_joined, isolated("Alice"))),
                 viewModel.item(22).preview,
             )
         }
@@ -216,7 +216,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             users.setUsers(user(5, firstName = "Alicia"))
             runCurrent()
 
-            assertEquals(UiText.Plain("Alicia"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
+            assertEquals(isolated("Alicia"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
         }
 
     // Special chats
@@ -494,3 +494,6 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertTrue(viewModel.items[1].isOnline)
         }
 }
+
+/** [name] as the mappers put it into a string: in first-strong isolates (`bidiIsolated`). */
+private fun isolated(name: String) = UiText.Plain("\u2068$name\u2069")

@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.editTarget
@@ -439,7 +440,7 @@ internal fun ActionContext.deleteScope(properties: List<MessageProperties>): Del
         forSelf && forAll -> {
             val option =
                 if (chat.type is ChatType.Private) {
-                    UiText.resource(R.string.message_delete_also_for, UiText.Plain(chat.title))
+                    UiText.resource(R.string.message_delete_also_for, UiText.Plain(chat.title.bidiIsolated()))
                 } else {
                     UiText.resource(R.string.message_delete_for_everyone)
                 }

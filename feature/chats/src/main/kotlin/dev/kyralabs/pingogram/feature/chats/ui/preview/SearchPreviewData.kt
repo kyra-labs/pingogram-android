@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.MatchHighlight
 import dev.kyralabs.pingogram.feature.chats.ui.MessageSection
@@ -68,7 +69,7 @@ internal object SearchPreviewData {
         photo = null,
         placeholderIcon = null,
         badge = badge,
-        sender = sender?.let(UiText::Plain),
+        sender = sender?.let { UiText.Plain(it).bidiIsolated() },
         preview = preview,
         date = date,
     )

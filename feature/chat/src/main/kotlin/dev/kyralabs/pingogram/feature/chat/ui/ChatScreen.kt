@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -521,6 +522,7 @@ private const val PAGES_STATE = "pages"
 private const val MESSAGE_LIST_TEST_TAG = "message_list"
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun ChatScreenPreview(
     @PreviewParameter(ChatPreviewStates::class) state: ChatUiState,

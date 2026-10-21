@@ -137,7 +137,8 @@ class SearchScreenTest {
 
         composeRule
             .onNodeWithContentDescription(
-                "Ada's Book Club, Grace: …next month we read the letters Ada wrote to Babbage about the engine, Mon",
+                "Ada's Book Club, \u2068Grace\u2069: …next month we read the letters Ada wrote to Babbage about the " +
+                    "engine, Mon",
             ).assertHasClickAction()
     }
 
@@ -248,7 +249,9 @@ class SearchScreenTest {
     fun `a query that found nothing says so`() {
         setScreen(SearchPreviewData.noResults)
 
-        composeRule.onNodeWithText(string(R.string.search_no_results_title, "qwxz")).assert(isHeading)
+        // The query, and the whole title, isolated (`bidiIsolated`).
+        val title = "\u2068" + string(R.string.search_no_results_title, "\u2068qwxz\u2069") + "\u2069"
+        composeRule.onNodeWithText(title).assert(isHeading)
     }
 
     private fun string(

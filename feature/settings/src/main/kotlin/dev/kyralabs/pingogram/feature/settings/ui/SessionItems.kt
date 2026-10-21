@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -179,7 +180,11 @@ internal fun TerminationDialog(
                 texts =
                     DestructiveDialogTexts(
                         title = stringResource(R.string.settings_terminate_session_dialog_title),
-                        text = stringResource(R.string.settings_terminate_session_dialog_text, dialog.title.resolve()),
+                        text =
+                            stringResource(
+                                R.string.settings_terminate_session_dialog_text,
+                                dialog.title.bidiIsolated().resolve(),
+                            ).bidiIsolated(),
                         confirm = stringResource(R.string.settings_terminate_session_dialog_confirm),
                     ),
                 onConfirm = onConfirm,

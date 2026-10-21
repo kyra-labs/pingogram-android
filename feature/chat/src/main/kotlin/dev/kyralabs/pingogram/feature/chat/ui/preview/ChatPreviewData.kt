@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
@@ -170,7 +171,7 @@ internal object ChatPreviewData {
                     placeholderIcon = null,
                     subtitle =
                         ChatSubtitle.Action(
-                            UiText.resource(UiR.string.named_action_typing, UiText.Plain("Grace")),
+                            UiText.resource(UiR.string.named_action_typing, isolated("Grace")),
                         ),
                 ),
             content =
@@ -229,9 +230,9 @@ internal object ChatPreviewData {
                         senderId = GRACE,
                         groupChat = true,
                         position = GroupPosition.First,
-                        forwardedFrom = UiText.resource(R.string.chat_forwarded_from, UiText.Plain("Material Design")),
+                        forwardedFrom = UiText.resource(R.string.chat_forwarded_from, isolated("Material Design")),
                     ),
-                    ChatItem.Service(22, UiText.resource(UiR.string.preview_joined, UiText.Plain("Linus")), today),
+                    ChatItem.Service(22, UiText.resource(UiR.string.preview_joined, isolated("Linus")), today),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
                 ),
         )
@@ -282,7 +283,7 @@ internal object ChatPreviewData {
                     ChatItem.Service(44, UiText.resource(UiR.string.preview_you_pinned), today),
                     ChatItem.Service(
                         43,
-                        UiText.resource(UiR.string.preview_added_member, UiText.Plain("Ada"), UiText.Plain("Grace")),
+                        UiText.resource(UiR.string.preview_added_member, isolated("Ada"), isolated("Grace")),
                         today,
                     ),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
@@ -297,7 +298,7 @@ internal object ChatPreviewData {
                     ),
                     ChatItem.Service(
                         41,
-                        UiText.resource(UiR.string.preview_created_group, UiText.Plain("Ada"), UiText.Plain("Compose")),
+                        UiText.resource(UiR.string.preview_created_group, isolated("Ada"), isolated("Compose")),
                         yesterday,
                     ),
                     ChatItem.DateSeparator(epochDay = 1, date = yesterday),
@@ -709,3 +710,6 @@ internal object ChatPreviewData {
         )
     }
 }
+
+/** A name as the mappers put it into a string: isolated (`bidiIsolated`). */
+private fun isolated(name: String): UiText = UiText.Plain(name).bidiIsolated()

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthNotice
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
@@ -50,7 +51,11 @@ fun PremiumRequiredScreen(
         },
     ) {
         AuthNotice(text = stringResource(R.string.auth_premium_not_offered))
-        AuthNotice(text = stringResource(R.string.auth_premium_support, state.supportEmailAddress))
+        AuthNotice(
+            text =
+                stringResource(R.string.auth_premium_support, state.supportEmailAddress.bidiIsolated())
+                    .bidiIsolated(),
+        )
     }
 }
 

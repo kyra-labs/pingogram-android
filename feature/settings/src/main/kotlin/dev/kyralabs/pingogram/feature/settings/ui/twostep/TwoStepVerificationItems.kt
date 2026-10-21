@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.settings.R
@@ -140,7 +141,12 @@ internal fun PendingEmailGroup(
                 title = stringResource(R.string.settings_two_step_enter_email_code),
                 shapes = shapes,
                 enabled = enabled,
-                supportingContent = { Text(stringResource(R.string.settings_two_step_email_code_sent_to, pattern)) },
+                supportingContent = {
+                    Text(
+                        stringResource(R.string.settings_two_step_email_code_sent_to, pattern.bidiIsolated())
+                            .bidiIsolated(),
+                    )
+                },
                 onClick = { onOpen(TwoStepVerificationFlow.ConfirmRecoveryEmail) },
             )
         }

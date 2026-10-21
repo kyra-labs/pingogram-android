@@ -198,7 +198,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
             val viewModel = showing(groupChat, history(message(1, chatId = groupChat.id)))
 
             assertEquals(
-                ChatSubtitle.Action(res(UiR.string.named_action_typing, UiText.Plain("Grace"))),
+                ChatSubtitle.Action(res(UiR.string.named_action_typing, UiText.Plain("\u2068Grace\u2069"))),
                 viewModel.subtitle,
             )
         }

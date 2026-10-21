@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
@@ -199,7 +201,8 @@ private fun TwoStepVerificationItem(
         icon = R.drawable.ic_password,
         supportingContent = {
             Column {
-                Text(summary.status.resolve())
+                // The pending recovery email in it is isolated (`bidiIsolated`): it takes its language's direction.
+                Text(text = summary.status.resolve(), style = LocalTextStyle.current.userContent)
                 summary.pendingResetDate?.let { date ->
                     Text(
                         text = stringResource(R.string.settings_two_step_verification_pending_reset, date),

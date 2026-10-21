@@ -66,6 +66,7 @@ import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.FADE_THROUGH_INITIAL_SCALE
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -619,6 +620,7 @@ private const val CHAT_LIST_TEST_TAG = "chat_list"
 private const val SAVED_MESSAGES_TEST_TAG = "saved_messages"
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun ChatListScreenPreview(
     @PreviewParameter(ChatListPreviewStates::class) state: ChatListUiState,

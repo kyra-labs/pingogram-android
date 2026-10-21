@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
@@ -185,7 +186,8 @@ private fun ChatSubtitleLine(subtitle: ChatSubtitle) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TypingDots(color = primary, style = MaterialTheme.typography.bodySmall)
-                SubtitleText(text, primary)
+                // A name in the string, isolated: the string takes its language's direction, not the layout's.
+                SubtitleText(text, primary, MaterialTheme.typography.bodySmall.userContent)
             }
         }
     }
@@ -195,12 +197,13 @@ private fun ChatSubtitleLine(subtitle: ChatSubtitle) {
 private fun SubtitleText(
     text: String,
     color: Color,
+    style: TextStyle = MaterialTheme.typography.bodySmall,
 ) {
     Text(
         text = text,
         color = color,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodySmall,
+        style = style,
     )
 }

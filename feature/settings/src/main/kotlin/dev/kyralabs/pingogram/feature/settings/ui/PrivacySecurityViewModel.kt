@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
@@ -173,7 +174,8 @@ class PrivacySecurityViewModel
         )
 
         private fun TwoStepVerificationState.summary(): TwoStepVerificationSummary {
-            val pattern = pendingRecoveryEmailPattern
+            // Isolated in the sentence (`bidiIsolated`, `docs/DESIGN_SYSTEM.md` §9).
+            val pattern = pendingRecoveryEmailPattern?.bidiIsolated()
             val status =
                 when {
                     !hasPassword -> UiText.resource(R.string.settings_two_step_verification_off)

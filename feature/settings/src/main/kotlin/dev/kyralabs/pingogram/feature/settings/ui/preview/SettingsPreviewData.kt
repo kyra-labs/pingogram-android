@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.AccountUiModel
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsUiState
@@ -215,7 +216,7 @@ internal object SettingsPreviewData {
             device = SessionDevice.Phone,
             title = UiText.Plain("Google Pixel 8"),
             app = parts("Pingogram 0.3.0", "Android 15"),
-            activity = UiText.resource(R.string.settings_session_parts, "Berlin, Germany", online()),
+            activity = UiText.resource(R.string.settings_session_parts, "Berlin, Germany".bidiIsolated(), online()),
         )
 
     val sessions =
@@ -370,10 +371,11 @@ internal object SettingsPreviewData {
                 ),
         )
 
+    /** "[first] · [second]" as the view model joins them: each isolated (`bidiIsolated`). */
     private fun parts(
         first: String,
         second: String,
-    ) = UiText.resource(R.string.settings_session_parts, first, second)
+    ) = UiText.resource(R.string.settings_session_parts, first.bidiIsolated(), second.bidiIsolated())
 
     /** The defaults of a new account: everything notifies, channels' pinned messages too, groups muted by the user. */
     val notifications =

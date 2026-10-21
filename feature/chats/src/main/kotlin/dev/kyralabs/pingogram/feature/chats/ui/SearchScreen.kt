@@ -73,6 +73,8 @@ import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -369,7 +371,7 @@ private fun SearchBody(
             val (title, body) =
                 when {
                     content.query.isNotEmpty() -> {
-                        stringResource(R.string.search_no_results_title, content.query) to
+                        stringResource(R.string.search_no_results_title, content.query.bidiIsolated()).bidiIsolated() to
                             stringResource(R.string.search_no_results_body)
                     }
 
@@ -405,6 +407,7 @@ private fun SearchBody(
 }
 
 @PingogramPreviews
+@PingogramVariantPreviews
 @Composable
 private fun SearchScreenPreview(
     @PreviewParameter(SearchPreviewStates::class) state: SearchUiState,

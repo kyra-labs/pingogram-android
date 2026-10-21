@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
@@ -132,7 +133,7 @@ internal fun forwardNotice(
         is ChatEffect.Forwarded -> {
             val title = effect.chatTitle
             if (title != null) {
-                resources.getString(R.string.forward_done_to, title.resolve(resources))
+                resources.getString(R.string.forward_done_to, title.resolve(resources).bidiIsolated()).bidiIsolated()
             } else {
                 resources.getQuantityString(R.plurals.forward_done, effect.count, effect.count)
             }

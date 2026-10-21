@@ -426,7 +426,8 @@ internal fun BubbleHeader(
             color = colors.secondaryContent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.labelMedium,
+            // "Forwarded from" and an isolated name: the language's direction, not the layout's.
+            style = MaterialTheme.typography.labelMedium.userContent,
         )
     }
     bubble.reply?.let { reply ->

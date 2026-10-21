@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
@@ -205,6 +206,7 @@ internal data class PhoneNumberVisualTransformation(
 
 // Also two panes on a phone in landscape (`docs/DESIGN_SYSTEM.md` §7).
 @PingogramPreviews
+@PingogramVariantPreviews
 @Preview(name = "Landscape", device = LANDSCAPE_PHONE)
 @Composable
 private fun PhoneNumberScreenPreview() {

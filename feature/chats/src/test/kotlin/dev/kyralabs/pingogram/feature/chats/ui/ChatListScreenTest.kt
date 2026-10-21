@@ -426,7 +426,10 @@ class ChatListScreenTest {
     fun `checking the box deletes the chat for the other user too`() {
         setScreen(ChatListPreviewData.deletePrivateChatDialog)
 
-        composeRule.onNodeWithText(string(R.string.chat_list_delete_for_user, "Grace Hopper")).performClick()
+        composeRule
+            .onNodeWithText(
+                "\u2068" + string(R.string.chat_list_delete_for_user, "\u2068Grace Hopper\u2069") + "\u2069",
+            ).performClick()
         composeRule.onNodeWithText(string(R.string.chat_list_delete_confirm)).performClick()
 
         assertEquals(listOf(ChatListEvent.ConfirmDelete(forEveryone = true)), events)

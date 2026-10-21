@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
@@ -98,7 +99,8 @@ fun PasswordRecoveryCodeScreen(
             if (state.emailAddressPattern.isBlank()) {
                 stringResource(R.string.auth_recovery_description_unknown)
             } else {
-                stringResource(R.string.auth_recovery_description, state.emailAddressPattern)
+                stringResource(R.string.auth_recovery_description, state.emailAddressPattern.bidiIsolated())
+                    .bidiIsolated()
             },
         modifier = modifier,
         primaryAction = {

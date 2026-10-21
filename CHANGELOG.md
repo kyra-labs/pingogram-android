@@ -49,6 +49,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   bar matches the field, and on tablets the composer is no wider than a message can be. Text written in a
   right-to-left language now lines up to the right as you type it.
 
+### Fixed
+- Names in Hebrew or Arabic no longer jumble the sentences around them, and English names no longer do in a
+  right-to-left language: "… is typing", "Forwarded from …", group events such as "… joined the group", the sender
+  before a chat's last message, "Forwarded to …" and the delete dialogs keep their words in order. Phone numbers and
+  email addresses in the sign-in steps stay left to right. Settings too: "… unblocked" in Blocked users, the devices
+  and places in Active sessions, the recovery email and password hint of 2-step verification, and usernames in Edit
+  profile.
+- The reply bar above the composer, chat names in the forward and "Send messages as" sheets and file names before
+  sending now read in their own direction, like messages; a location's coordinates read left to right before you send
+  it.
+
 ## [0.3.0-beta.3] - 2026-10-21
 
 ### Added

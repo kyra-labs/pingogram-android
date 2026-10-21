@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -156,7 +157,10 @@ class BlockedUsersScreenTest {
         }
 
         composeRule.onNodeWithContentDescription(string(R.string.settings_unblock, "Grace Hopper")).performClick()
-        composeRule.onNodeWithText(string(R.string.settings_unblocked, "Grace Hopper")).assertExists()
+        // The name isolated, and the snackbar's text as a whole (`bidiIsolated`).
+        composeRule
+            .onNodeWithText(string(R.string.settings_unblocked, "Grace Hopper".bidiIsolated()).bidiIsolated())
+            .assertExists()
         composeRule.onNodeWithText(string(R.string.settings_unblock_undo)).performClick()
         composeRule.waitForIdle()
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -87,12 +88,23 @@ class ActiveSessionsScreenTest {
 
         composeRule
             .onNodeWithText(
-                string(R.string.settings_terminate_session_dialog_text, "MacBook Pro"),
+                string(R.string.settings_terminate_session_dialog_text, "MacBook Pro".bidiIsolated()).bidiIsolated(),
             ).assertExists()
         dialogButton(R.string.settings_terminate_session_dialog_confirm).performClick()
         dialogButton(R.string.settings_dialog_dismiss).performClick()
 
         assertEquals(listOf(ActiveSessionsEvent.ConfirmTermination, ActiveSessionsEvent.DismissTermination), events)
+    }
+
+    @Test
+    fun `a Hebrew device name stays isolated in the confirmation`() {
+        setScreen(SettingsPreviewData.sessions.copy(dialog = TerminateDialog.Session(3, UiText.Plain("הטלפון של שרה"))))
+
+        // First-strong isolates around the name and around the sentence: the name keeps its right-to-left order
+        // without pulling "will be logged out" before it.
+        composeRule
+            .onNodeWithText("\u2068\u2068הטלפון של שרה\u2069 will be logged out of your Telegram account.\u2069")
+            .assertExists()
     }
 
     @Test
