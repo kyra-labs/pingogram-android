@@ -131,6 +131,11 @@ light or dark theme.</sub>
   anonymously where Telegram allows it. Files you send or download keep going in the background.
 - **Notifications:** per chat, with replies and mark as read from the notification, settings and
   exceptions per kind of chat, and an optional "Keep connected" mode for the GitHub builds.
+- **Contacts:** your Telegram contacts in alphabetical sections with a letter index, search, adding
+  by phone number or username, editing, deleting and invitations to Telegram. Optional contacts
+  sync (off by default) finds who of your phone's contacts uses Telegram: only while it is on are
+  their names and numbers read and sent to Telegram, when you turn it on, open Contacts or tap
+  Sync now, never in the background; turning it off deletes them from Telegram.
 - **Search** across your chats, contacts, public chats and channels, and messages.
 - **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
   active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
@@ -144,7 +149,7 @@ light or dark theme.</sub>
 ### Not yet
 
 - Recording video messages; sharing into a chat from other apps
-- Contacts, user and group profiles, creating groups and channels, starting secret chats
+- User and group profiles, creating groups and channels, starting secret chats
 - Voice and video calls
 
 The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster

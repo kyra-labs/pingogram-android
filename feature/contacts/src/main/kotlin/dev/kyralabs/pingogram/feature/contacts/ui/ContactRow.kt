@@ -98,6 +98,7 @@ internal fun ContactRow(
             shapes = listItemShapes(rounded = menuOpen),
             colors = colors,
             contentPadding = insetContentPadding(insets),
+            trailingContent = if (item.fromPhone) ({ FromPhoneIcon() }) else null,
             content = { RowText(item.name, MaterialTheme.typography.titleMedium.userContent) },
         )
         ContactMenu(
@@ -126,7 +127,8 @@ private fun Modifier.rowSemantics(
     onDelete: () -> Unit,
 ): Modifier =
     semantics {
-        contentDescription = "${item.name}, ${item.status.resolve(resources)}"
+        val fromPhone = if (item.fromPhone) ", ${resources.getString(R.string.contacts_from_phone)}" else ""
+        contentDescription = "${item.name}, ${item.status.resolve(resources)}$fromPhone"
         customActions =
             listOf(
                 CustomAccessibilityAction(resources.getString(R.string.contacts_edit)) {
@@ -139,6 +141,17 @@ private fun Modifier.rowSemantics(
                 },
             )
     }
+
+/** Contacts sync found the contact among the phone's contacts: the contacts icon, which the row's description says. */
+@Composable
+private fun FromPhoneIcon() {
+    Icon(
+        painter = painterResource(UiR.drawable.ic_contacts),
+        contentDescription = null,
+        modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
 
 /** One line of a row, in [style], which screen readers hear with the row. */
 @Composable
@@ -221,26 +234,6 @@ internal fun ContactsActionRow(
         colors = listItemColors(selected = false),
         contentPadding = insetContentPadding(insets),
         content = { Text(label) },
-    )
-}
-
-/**
- * How far a row's container sits in from its place in the list, as the chat list's: [MaterialTheme.spacing]'s small
- * step from the sides of the sheet, and half of Material's gap between segmented list items from the rows around.
- */
-@Composable
-private fun rowInsets(): PaddingValues =
-    PaddingValues(horizontal = MaterialTheme.spacing.small, vertical = ListItemDefaults.SegmentedGap / 2)
-
-/** The list item's content padding less [insets], so a row's content stays where the list item puts it. */
-private fun insetContentPadding(insets: PaddingValues): PaddingValues {
-    val padding = ListItemDefaults.ContentPadding
-    val direction = LayoutDirection.Ltr
-    return PaddingValues(
-        start = padding.calculateStartPadding(direction) - insets.calculateStartPadding(direction),
-        top = padding.calculateTopPadding() - insets.calculateTopPadding(),
-        end = padding.calculateEndPadding(direction) - insets.calculateEndPadding(direction),
-        bottom = padding.calculateBottomPadding() - insets.calculateBottomPadding(),
     )
 }
 

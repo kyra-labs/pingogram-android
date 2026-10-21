@@ -139,6 +139,12 @@
     <string name="settings_privacy_security_loading">Loading privacy and security settings</string>
     <string name="settings_section_privacy">Privacy</string>
     <string name="settings_section_security">Security</string>
+    <string name="settings_section_contacts">Contacts</string>
+    <!-- Contacts sync (docs/adr/0011-contacts-sync.md): the summaries say honestly what it sends. -->
+    <string name="settings_contact_sync">Sync contacts</string>
+    <string name="settings_contact_sync_off">Send your phone\'s contacts to Telegram to find who uses it. Off</string>
+    <string name="settings_contact_sync_on">On. Your phone\'s names and numbers go to Telegram when you open Contacts and when you sync</string>
+    <string name="settings_contact_sync_paused">Paused: Pingogram can no longer read your contacts. Allow it on the Contacts tab or in Android\'s settings</string>
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>

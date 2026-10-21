@@ -20,9 +20,11 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncEvent
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.feature.contacts.ui.preview.ContactsPreviewData
@@ -59,6 +61,7 @@ class ContactsScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<ContactsEvent>()
+    private val syncEvents = mutableListOf<ContactSyncEvent>()
     private var added = 0
     private val edited = mutableListOf<Long>()
     private lateinit var listState: LazyListState
@@ -190,6 +193,41 @@ class ContactsScreenTest {
         assertEquals(listOf<ContactsEvent>(ContactsEvent.Retry), events)
     }
 
+    @Test
+    fun `the offer of contacts sync turns it on, or goes with Not now`() {
+        setScreen(ContactsPreviewData.syncOffer)
+
+        composeRule.onNodeWithText(string(R.string.contacts_sync_turn_on)).performClick()
+        composeRule.onNodeWithText(string(R.string.contacts_sync_not_now)).performClick()
+
+        assertEquals(listOf<ContactSyncEvent>(ContactSyncEvent.TurnOn), syncEvents)
+        assertEquals(listOf<ContactsEvent>(ContactsEvent.DismissSyncOffer), events)
+    }
+
+    @Test
+    fun `while sync is on, Sync now syncs and a phone's contact can be invited`() {
+        setScreen(ContactsPreviewData.syncOn)
+
+        composeRule.onNodeWithText(string(R.string.contacts_sync_now)).performClick()
+        composeRule
+            .onNodeWithContentDescription(string(R.string.contacts_invite_person, "Lin Example"))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(listOf<ContactSyncEvent>(ContactSyncEvent.SyncNow), syncEvents)
+        assertEquals(listOf<ContactsEvent>(ContactsEvent.InvitePhoneContact("+15550100")), events)
+    }
+
+    @Test
+    fun `a paused sync asks to allow again, or to turn off`() {
+        setScreen(ContactsPreviewData.syncPaused)
+
+        composeRule.onNodeWithText(string(R.string.contacts_sync_allow)).performClick()
+        composeRule.onNodeWithText(string(R.string.contacts_sync_turn_off)).performClick()
+
+        assertEquals(listOf(ContactSyncEvent.Allow, ContactSyncEvent.TurnOff), syncEvents)
+    }
+
     private fun setScreen(state: ContactsUiState) {
         composeRule.setContent {
             listState = rememberLazyListState()
@@ -199,6 +237,7 @@ class ContactsScreenTest {
                     onEvent = { events += it },
                     onAddContact = { added++ },
                     onEditContact = { edited += it },
+                    onSyncEvent = { syncEvents += it },
                     listState = listState,
                 )
             }
@@ -211,6 +250,11 @@ class ContactsScreenTest {
     private fun string(
         @StringRes id: Int,
     ): String = RuntimeEnvironment.getApplication().getString(id)
+
+    private fun string(
+        @StringRes id: Int,
+        argument: String,
+    ): String = RuntimeEnvironment.getApplication().getString(id, argument)
 
     private companion object {
         const val SECTIONS = 26
