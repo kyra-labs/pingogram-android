@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
@@ -96,8 +97,10 @@ import kotlinx.collections.immutable.ImmutableSet
  *   voice messages ([recording], the view model's, kept apart from [state]); one sent scrolls to the newest message
  *   too. Its emoji button opens the emoji and sticker panel ([emojiPanel], from its own view model, which gets
  *   [onEmojiPanelEvent]) in the keyboard's place; a sticker tapped there is sent and scrolls to the newest message.
- * - **Message actions**: a long press on a bubble opens its actions sheet ([MessageActionsBottomSheet]), deleting asks
- *   first ([DeleteMessagesAlert]); tapping a bubble's reaction chip toggles the user's reaction.
+ * - **Message actions**: a long press on a bubble lifts it with its actions in a floating menu over the blurred
+ *   conversation ([MessageActionsMenu], [lift]); screen readers and short windows get them in a sheet
+ *   ([MessageActionsBottomSheet]). Deleting asks first ([DeleteMessagesAlert]); tapping a bubble's reaction chip
+ *   toggles the user's reaction; swiping a bubble toward the end replies to it ([swipeToReply]).
  * - **Attach menu**: the composer's attach button opens it, with what [attach] gives; picked photos, videos and
  *   files show in their preview, a new poll in its form ([AttachSheets]). Sending them now scrolls to the newest
  *   message, as sending a text does. Bubbles being sent show their uploads ([ChatUiState.uploads]).
@@ -128,6 +131,7 @@ internal fun ChatScreen(
     reportComment: TextFieldState = remember { TextFieldState() },
     emojiPanel: EmojiPanelUiState = EmojiPanelUiState(),
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit = {},
+    lift: MessageLiftState = rememberMessageLiftState(),
 ) {
     val content = state.content
     val selection = state.selection
@@ -138,45 +142,42 @@ internal fun ChatScreen(
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = scrollingToSent(content, scrollToNewest)
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            ChatTopBar(
-                header = state.header,
-                onBack = onBack,
-                selectedCount = selection?.messageIds?.size,
-                onClearSelection = clearSelection,
-            )
-        },
-        bottomBar = {
-            ChatScreenBottomBar(
-                state = state,
-                recording = recording,
-                composerText = composerText,
-                composerFocus = composerFocus,
-                selectionBack = { selectionBack.value },
-                onEvent = onEvent,
-                onSent = scrollToSent,
-                emojiPanel = emojiPanel,
-                onEmojiPanelEvent = onEmojiPanelEvent,
-            ) { attachMenuOpen = true }
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            JumpToBottomButton(
-                visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
-                unreadCount = state.unreadCount,
-                motionScheme = MaterialTheme.motionScheme,
-                onClick = scrollToNewest,
-            )
-        },
-    ) { innerPadding ->
-        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            ChatBody(state, onEvent, listState, jumpState, contentPadding)
-        }
+    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift)
+    val lifted = liftedBubble(state, lift)
+    Box(modifier) {
+        ChatScaffold(
+            state = state,
+            onEvent = onEvent,
+            onBack = onBack,
+            listState = listState,
+            snackbarHostState = snackbarHostState,
+            bubbleResources = bubbleResources,
+            bottomBar = {
+                ChatScreenBottomBar(
+                    state = state,
+                    recording = recording,
+                    composerText = composerText,
+                    composerFocus = composerFocus,
+                    selectionBack = { selectionBack.value },
+                    onEvent = onEvent,
+                    onSent = scrollToSent,
+                    emojiPanel = emojiPanel,
+                    onEmojiPanelEvent = onEmojiPanelEvent,
+                ) { attachMenuOpen = true }
+            },
+            jumpButton = {
+                JumpToBottomButton(
+                    visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
+                    unreadCount = state.unreadCount,
+                    motionScheme = MaterialTheme.motionScheme,
+                    onClick = scrollToNewest,
+                )
+            },
+            modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
+        )
+        if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
     }
-    ChatSheets(state, onEvent, reportComment)
+    ChatSheets(state, onEvent, reportComment, actionsInSheet = lifted == null)
     AttachSheets(
         state = state,
         inputs = attach,
@@ -185,6 +186,45 @@ internal fun ChatScreen(
         onEvent = onEvent,
         onSent = scrollToSent,
     )
+}
+
+/**
+ * The screen's [Scaffold]: the top bar (with the selection's count), the [bottomBar], the [jumpButton] and the
+ * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu.
+ */
+@Suppress("LongParameterList") // The state, back, its list and snackbars, what the bubbles share, and the two slots.
+@Composable
+private fun ChatScaffold(
+    state: ChatUiState,
+    onEvent: (ChatEvent) -> Unit,
+    onBack: (() -> Unit)?,
+    listState: LazyListState,
+    snackbarHostState: SnackbarHostState,
+    bubbleResources: BubbleResources,
+    bottomBar: @Composable () -> Unit,
+    jumpButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val selection = state.selection
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            ChatTopBar(
+                header = state.header,
+                onBack = onBack,
+                selectedCount = selection?.messageIds?.size,
+                onClearSelection = { onEvent(SelectionEvent.Clear) },
+            )
+        },
+        bottomBar = bottomBar,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = jumpButton,
+    ) { innerPadding ->
+        ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
+            ChatBody(state, onEvent, listState, bubbleResources, contentPadding)
+        }
+    }
 }
 
 /**
@@ -237,35 +277,13 @@ private fun ChatScreenBottomBar(
     }
 }
 
-/**
- * What shows over the conversation: a message's actions, the report of messages with its [reportComment], "About this
- * ad" of a sponsored message, and the confirmation before messages are deleted.
- */
-@Composable
-private fun ChatSheets(
-    state: ChatUiState,
-    onEvent: (ChatEvent) -> Unit,
-    reportComment: TextFieldState,
-) {
-    state.messageActions?.let { MessageActionsBottomSheet(it, onEvent) }
-    state.report?.let { ReportMessagesSheet(it, reportComment, onEvent) }
-    state.sponsoredSheet?.let { SponsoredMessageSheet(it, onEvent) }
-    state.deleteDialog?.let { dialog ->
-        DeleteMessagesAlert(
-            dialog = dialog,
-            onConfirm = { onEvent(ChatEvent.ConfirmDelete(it)) },
-            onDismiss = { onEvent(ChatEvent.DismissDelete) },
-        )
-    }
-}
-
 /** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
 @Composable
 private fun BoxScope.ChatBody(
     state: ChatUiState,
     onEvent: (ChatEvent) -> Unit,
     listState: LazyListState,
-    jumpState: MessageJumpState,
+    bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
 ) {
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
@@ -287,7 +305,7 @@ private fun BoxScope.ChatBody(
         }
 
         is ChatContent.Content -> {
-            MessageList(state, content, listState, jumpState, contentPadding, onEvent)
+            MessageList(state, content, listState, bubbleResources, contentPadding, onEvent)
             FloatingDatePill(
                 items = content.items,
                 listState = listState,
@@ -307,14 +325,14 @@ private fun MessageList(
     state: ChatUiState,
     content: ChatContent.Content,
     listState: LazyListState,
-    jumpState: MessageJumpState,
+    bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
     val selectedIds = state.selection?.messageIds
-    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads)
+    val jumpState = bubbleResources.jump
     val motionScheme = MaterialTheme.motionScheme
     val spacing = MaterialTheme.spacing
     val layoutDirection = LocalLayoutDirection.current

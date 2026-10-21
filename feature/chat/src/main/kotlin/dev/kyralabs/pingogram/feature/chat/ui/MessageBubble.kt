@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerBasedShape
-import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +30,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -103,8 +103,14 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   ([messageShortcuts]) and the reaction badges as custom actions, and the actions sheet as its long click and a
  *   custom action. All of it is built in the `semantics` block, only when something reads the semantics tree, not in
  *   every bubble's composition.
- * - **Long press** anywhere on the row, also on media and links, opens the message's actions sheet
- *   ([ChatEvent.ShowMessageActions]) with a long-press haptic; whatever was pressed inside does not take it as a tap.
+ * - **Long press** anywhere on the row, also on media and links, opens the message's actions
+ *   ([ChatEvent.ShowMessageActions]) with a long-press haptic, lifting the message for its floating menu
+ *   ([MessageLiftState]) where that suits; whatever was pressed inside does not take it as a tap. Screen readers' long
+ *   click opens the actions sheet.
+ * - **Swipe to reply** ([swipeToReply]): where the user can reply ([canBeRepliedTo]) and outside selection mode, the
+ *   bubble follows a horizontal swipe toward the end in the layout phase, revealing a reply icon drawn behind it;
+ *   released past `sizes.swipeReplyDistance`, it replies ([ChatEvent.Reply]) with a `TextHandleMove` haptic at the
+ *   threshold, then springs back.
  * - **Selection mode** ([selection], `docs/DESIGN_SYSTEM.md` §2.2, §6): a check at the row's start, filled in
  *   `primary` once [RowSelection.isSelected], when the bubble takes `secondaryContainer`; a tap or a long press
  *   anywhere on the row selects or deselects it ([SelectionEvent.Toggle]) with a toggle haptic, and nothing inside
@@ -135,22 +141,29 @@ internal fun MessageBubbleRow(
     val strings = LocalResources.current
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
-    val showActions = rememberActionsOpener(bubble.id, onEvent)
+    val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
+    val swipe =
+        if (selection == null && bubble.canBeRepliedTo(resources.shortcuts)) {
+            rememberSwipeToReply(bubble.id, onEvent, resources.swipe)
+        } else {
+            null
+        }
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
-                .then(if (selection != null) Modifier.onSelectionTap(toggle) else Modifier.onLongPress(showActions))
+                .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
                 .clearAndSetSemantics {
                     contentDescription = bubbleDescription(strings, bubble)
                     if (selection != null) {
                         selectionSemantics(strings, isSelected, toggle)
                     } else {
                         onLongClick(label = strings.getString(R.string.message_actions)) {
-                            showActions()
+                            showActions(null)
                             true
                         }
                         customActions =
@@ -168,23 +181,51 @@ internal fun MessageBubbleRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (selection != null) SelectionCheck(isSelected)
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
-            MessageBubble(
-                bubble = bubble,
-                fileState = fileState,
-                playback = playback,
-                resources = resources,
-                onEvent = onEvent,
-                uploads = uploads,
-                isSelected = isSelected,
-                modifier = Modifier.alignBy { it.bubbleBottom() },
-            )
-        }
+        BubbleRowContent(
+            bubble = bubble,
+            fileState = fileState,
+            playback = playback,
+            resources = resources,
+            onEvent = onEvent,
+            uploads = uploads,
+            isSelected = isSelected,
+            modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
+        )
+    }
+}
+
+/**
+ * The bubble of a row, at the end for outgoing messages and at the start for incoming ones, beside the sender's avatar
+ * in group chats; the list's rows and the message lifted for its floating menu ([MessageActionsMenu]) both show it.
+ */
+@Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
+@Composable
+internal fun BubbleRowContent(
+    bubble: ChatItem.Bubble,
+    fileState: FileState?,
+    playback: Playback,
+    resources: BubbleResources,
+    onEvent: (ChatEvent) -> Unit,
+    uploads: ImmutableMap<Long, MessageUpload>,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
+        MessageBubble(
+            bubble = bubble,
+            fileState = fileState,
+            playback = playback,
+            resources = resources,
+            onEvent = onEvent,
+            uploads = uploads,
+            isSelected = isSelected,
+            modifier = Modifier.alignBy { it.bubbleBottom() },
+        )
     }
 }
 
@@ -374,21 +415,6 @@ private fun MediaBubble(
         }
     }
 }
-
-/**
- * The corners media shows in a bubble of this shape: the bubble's own, except square at the top below a header
- * ([hasHeader]) and at the bottom above a caption, link preview or reactions ([hasFooter]).
- */
-private fun CornerBasedShape.mediaCorners(
-    hasHeader: Boolean,
-    hasFooter: Boolean,
-): CornerBasedShape =
-    copy(
-        topStart = if (hasHeader) ZeroCornerSize else topStart,
-        topEnd = if (hasHeader) ZeroCornerSize else topEnd,
-        bottomEnd = if (hasFooter) ZeroCornerSize else bottomEnd,
-        bottomStart = if (hasFooter) ZeroCornerSize else bottomStart,
-    )
 
 /**
  * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;
