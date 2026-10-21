@@ -60,7 +60,7 @@ the release workflow so the owner can install and test on a phone.
       (all but direct share: sharing into a chat from other apps needs a chat picker and a prefilled composer,
       `docs/ARCHITECTURE.md` Notifications)
 - [x] WorkManager background downloads/uploads with foreground service (`dataSync`)
-- [x] `gms` flavor with FCM `registerDevice` (optional, off by default in GitHub releases)
+- [x] `gms` flavor with FCM `registerDevice` (in every GitHub release next to `foss` from 0.3.0, `LICENSE-EXCEPTION.md`)
 - [x] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
 - [ ] Material 3 Expressive alignment: the Must and Should items of
       `docs/audit/m3-expressive-gap-analysis.md` (decided 2026-10-19), density first (G63–G69)

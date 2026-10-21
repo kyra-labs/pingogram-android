@@ -46,8 +46,9 @@
 | `pingogram-X.Y.Z-arm64-v8a.apk` | 64-bit ARM (most phones since 2017) |
 | `pingogram-X.Y.Z-armeabi-v7a.apk` | 32-bit ARM (old devices) |
 | `pingogram-X.Y.Z-x86_64.apk` | emulators / Chromebooks |
+| `pingogram-X.Y.Z-<abi>-gms.apk` | the same four for the `gms` flavor (push notifications through Firebase) |
 | `SHA256SUMS.txt` | checksums for all of the above |
-| `pingogram-X.Y.Z.aab` | Play bundle (workflow artifact only, not attached to the release) |
+| `pingogram-X.Y.Z-fossRelease.aab`, `-gmsRelease.aab` | Play bundles (workflow artifact only, not attached to the release) |
 | `mapping.txt` | R8 mapping (workflow artifact, 90 days) |
 
 The per-ABI APKs come from ABI splits configured in `AndroidApplicationConventionPlugin`. AGP cannot
@@ -57,8 +58,12 @@ the bundle in two separate invocations. Native code for other ABIs (32-bit x86, 
 AndroidX libraries ship, is left out of every APK and the bundle, so devices with those ABIs are refused
 at install instead of crashing when TDLib loads.
 
-Default flavor for GitHub releases is `foss`. A `gms` build is produced only if the owner
-enables it in the workflow input.
+Every release builds both flavors: `foss` first, then `gms`, for which the workflow writes `google-services.json` from
+the secret `GOOGLE_SERVICES_JSON_BASE64` (`docs/OWNER_SETUP.md` §8b), so `foss` never sees Firebase's configuration.
+Without the secret the release fails before anything is published. `foss` stays the default download (the plain file
+names); `gms` APKs carry a `-gms` suffix. Both share the application id and the signing key, so one replaces the other
+on a phone with its data kept. Distributing `gms` is allowed by `LICENSE-EXCEPTION.md`
+(`docs/adr/0010-gpl-additional-permission-for-play-services.md`).
 
 ## Channel uploads
 
@@ -68,7 +73,8 @@ posted, so forks build as before.
 
 - **Debug** (`ci.yml`): after `check` and the debug build of every push to `main`, the arm64-v8a debug APK, with the
   commit and a link to the run, whose artifact has every ABI. Pull requests never post.
-- **Release** (`release.yml`): after the GitHub Release of a tag, the per-ABI release APKs and `SHA256SUMS.txt`, with
+- **Release** (`release.yml`): after the GitHub Release of a tag, the per-ABI `foss` APKs, the arm64-v8a `gms` APK and
+  `SHA256SUMS.txt`, with
   the version, whether it is a pre-release, the link to the GitHub Release and the changelog section (the caption is cut
   at Telegram's 1024 characters).
 - A bot may send files of at most 50 MB: larger files (the universal APK, ~62 MB; debug APKs once they pass 50 MB) are

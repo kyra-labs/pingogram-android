@@ -153,9 +153,10 @@ of it.
    **FCM credentials** (Google retired the old "server key" in 2024; if the form still asks for a key, tell Claude Code
    what it shows). This key goes to Telegram **only**: never into the repository, the app, CI secrets or a chat. Delete
    the downloaded copy afterwards, or keep it in your password manager.
-5. **CI (only for gms releases).** `base64 -w0 app/src/gms/google-services.json` (macOS: `base64 -i … | tr -d '\n'`)
-   and add the output as the repository secret `GOOGLE_SERVICES_JSON_BASE64`. The release workflow writes the file
-   only when you run it by hand with "Also build the gms (FCM) flavor", after the `foss` build.
+5. **CI.** `base64 -w0 app/src/gms/google-services.json` (macOS: `base64 -i … | tr -d '\n'`; Windows PowerShell:
+   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\app\src\gms\google-services.json")) | Set-Clipboard`)
+   and add the output as the repository secret `GOOGLE_SERVICES_JSON_BASE64`. Every release builds the `gms` flavor
+   after the `foss` one and writes the file only for it; without the secret the release fails before publishing.
 6. **Test** on a phone with Play services, logged in to your account on the **production** DC (the test DC sends no
    pushes): install a `gms` build (`./gradlew :app:installGmsDebug`), log in, swipe the app away from Recents, and
    have someone send you a message. A notification should appear within seconds. If none does, check the
@@ -163,11 +164,8 @@ of it.
 
 ## 9. Decisions only you can make (tell Claude Code when ready)
 
-- Final license (GPL-3.0 vs Apache-2.0) — before the first public release.
 - Brand seed color and app icon artwork (a designer or an image you provide).
 - Whether to subset the Google Sans Flex font (smaller APK) or ship the full file (all scripts).
-- Whether to ship a `gms` (FCM push) build in addition to `foss` (§8b), and, as it bundles Google's proprietary Play
-  services libraries, whether the GPL-3.0 license needs an additional permission for it (or Apache-2.0).
 - Translations platform (Crowdin / Weblate) and F-Droid submission.
 - Play Store account (one-time $25) if you want Play distribution.
 

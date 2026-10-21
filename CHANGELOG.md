@@ -9,7 +9,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Releases now include a second set of APKs with "-gms" in their names, for phones with Google Play services: they get
+  notifications through Google's push service even when Pingogram is closed, without "Keep connected". The plain APKs
+  stay free of Google services. Both are the same app, so installing one replaces the other and keeps your data.
+
 ### Changed
+- License: Pingogram stays GPL-3.0-or-later, with an additional permission to combine it with Google's Play services
+  and Firebase libraries, which the "-gms" builds need (`LICENSE-EXCEPTION.md`).
 - Settings on tablets and other wide windows shows its pages beside the list of settings, as the chats do: the page
   you pick opens beside them, the pages it leads to open in its place, and back returns through them. Phones keep
   opening each page full screen.
