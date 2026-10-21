@@ -14,8 +14,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   last seen, and a letter index along the edge of long lists to jump to a letter. Search filters the list as you type.
   Tap a contact to open your chat; long-press to edit or delete them. Add contacts by phone number or by username;
   if a number is not on Telegram yet, you can send its owner an invitation to Telegram through any app. "Invite
-  friends" shares the same invitation. New chat's "New contact" opens Add contact too. Your phone's own contacts are
-  not read.
+  friends" shares the same invitation. New chat's "New contact" opens Add contact too.
 - Secret chats: end-to-end encrypted chats that live on this phone only show a lock before their name in the chat
   list and the conversation. While one waits for the other person to come online, the chat list and the conversation
   say so and the composer explains why you cannot write yet; an ended one says "Secret chat ended". Their start
@@ -26,6 +25,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   sent with a timer show it beside their time.
 - Encryption key: the key button in a secret chat shows its key as an image and as 32 pairs of characters, to compare
   with the other person's screen, and can end the secret chat for both of you.
+- Contacts sync, off unless you turn it on (on the Contacts tab or in Settings → Privacy and security): Pingogram
+  explains first that the names and phone numbers of your phone's contacts go to Telegram, which finds who of them
+  uses Telegram, then Android asks for access to your contacts. While it's on, the people it found are marked on the
+  Contacts tab, and the rest are listed under "Invite to Telegram", each with an Invite button that opens your
+  messaging app. Your contacts are read only when you turn it on, open Contacts (at most every few hours) or tap
+  Sync now, never in the background. Turning it off deletes the imported numbers from Telegram and points you to
+  Android's settings to take back the access.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so

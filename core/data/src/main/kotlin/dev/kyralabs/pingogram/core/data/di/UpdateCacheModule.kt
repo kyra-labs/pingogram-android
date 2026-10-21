@@ -8,6 +8,7 @@ import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
@@ -21,8 +22,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 /**
  * The set of every [TdlibUpdateCache], which `PingogramApplication` injects so each cache exists, and is subscribed to
  * TDLib's updates, before TDLib starts. Every new caching repository joins it here.
+ *
+ * One binding per caching repository, so it has as many functions as there are caches (`TooManyFunctions`): splitting
+ * it would scatter the one list of caches.
  */
-@Suppress("TooManyFunctions") // One binding per cache: every caching repository must join the set here.
+@Suppress("TooManyFunctions")
 @Module
 @InstallIn(SingletonComponent::class)
 interface UpdateCacheModule {
@@ -68,6 +72,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun notificationCache(repository: TdlibNotificationRepository): TdlibUpdateCache
+
+    /** Not a cache, but it clears contacts sync's settings at logout, which it sees only from the updates. */
+    @Binds
+    @IntoSet
+    fun contactSyncCache(repository: TdlibContactSyncRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds

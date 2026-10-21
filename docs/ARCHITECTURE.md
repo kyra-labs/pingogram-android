@@ -109,8 +109,22 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   share sheet from the route, without permissions. `feature:contacts` draws the tab (`ContactsViewModel`: alphabetical
   sections by the language's `Collator`, a fast-scroll index for long lists, the query and the delete question in saved
   state), Add contact (`NewContactRoute`, `NewContactViewModel`) and Edit contact (`EditContactRoute(userId)`,
-  `EditContactViewModel`), which `navigateToEditContact(userId)` opens from anywhere, e.g. a profile. The phone's own
-  contacts are not read (contact sync comes later).
+  `EditContactViewModel`), which `navigateToEditContact(userId)` opens from anywhere, e.g. a profile.
+- **Contacts sync** (FR-P1, `docs/adr/0011-contacts-sync.md`, opt-in, off by default, `READ_CONTACTS` its only use):
+  `core:domain`'s `ContactSyncRepository` (`TdlibContactSyncRepository`, `core:data`) over `DeviceContactsRepository`
+  (`AndroidDeviceContactsRepository`: one `ContactsContract` query of names and numbers on the IO dispatcher, numbers
+  made E.164 by the provider or `PhoneNumberUtils`, nothing kept) and `ContactSyncSettingsRepository`
+  (`DataStoreContactSyncSettingsRepository`: on or off, the last sync's time, the dismissed offer). A sync sends every
+  name and number with `changeImportedContacts`, which TDLib diffs against what it imported last (only changes reach
+  Telegram) and answers with a user id per contact (0: not on Telegram); the answer stays in memory. It syncs when the
+  user turns it on, on "Sync now", and when the Contacts tab starts while it is on, at most once per process and not
+  within 6 h of the last sync (otherwise the phone's numbers are matched with the Telegram contacts on the device,
+  sending nothing). No background job, no observer. Turning off sends `clearImportedContacts` (Telegram deletes the
+  imported numbers; contacts stay) and clears the settings; a logout (`LoggingOut`/`Closed`, it is a
+  `TdlibUpdateCache` for that) clears them too. A permission taken back pauses it (`NeedsPermission`) until granted
+  again. `core:ui`'s `ContactSyncController` (held by `ContactsViewModel` and `feature:settings`'
+  `ContactSyncSettingViewModel`) and `ContactSyncHost` share the rationale sheet, the permission request (Activity
+  Result API), the turn-off question and the snackbars between the Contacts tab and Settings → Privacy and security.
 - **2-step verification** (FR-S1): `TwoStepVerificationRepository` (`core:domain`, `TdlibTwoStepVerificationRepository`
   in `core:data`, no cache: TDLib has no updates for it) reads the state with `getPasswordState`, checks the current
   password with `getRecoveryEmailAddress` and sets, changes, removes and recovers the password and its recovery email.

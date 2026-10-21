@@ -57,6 +57,11 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- Contacts sync, opt-in and off by default (REQUIREMENTS.md FR-P1, approved by the owner on 2026-10-21,
+         docs/adr/0011-contacts-sync.md): its only use. Asked at run time after the Contacts tab or Settings explains
+         that the names and phone numbers of the phone's contacts go to Telegram, which finds who uses it. Read only
+         when the user turns sync on, opens Contacts while it is on, or taps Sync now; never in the background. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Sending the device's location from the attach menu (REQUIREMENTS.md FR-C5, approved by the owner on 2026-10-20),
          in the foreground only, while its sheet is open: there is no background location permission and no live
          location. The sheet explains why before Android asks; both are asked together, so Android 12 and later let the

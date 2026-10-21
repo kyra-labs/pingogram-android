@@ -81,4 +81,36 @@
     <!-- %1$s is the contact's first name. -->
     <string name="contacts_share_phone_number_summary">%1$s can see your number</string>
     <string name="contacts_delete_contact">Delete contact</string>
+
+    <!-- Contacts sync on the Contacts tab (ContactSyncItems). It sends the phone's names and numbers to Telegram. -->
+    <string name="contacts_sync_offer_title">Find your phone\'s contacts on Telegram</string>
+    <string name="contacts_sync_offer_body">Turn on contacts sync to see who of the people in your phone uses Telegram.</string>
+    <string name="contacts_sync_not_now">Not now</string>
+    <string name="contacts_sync_turn_on">Turn on</string>
+    <string name="contacts_sync_paused_title">Contacts sync is paused</string>
+    <string name="contacts_sync_paused_body">Pingogram can no longer read your phone\'s contacts. Allow it again to keep syncing, or turn sync off.</string>
+    <string name="contacts_sync_turn_off">Turn off</string>
+    <string name="contacts_sync_allow">Allow</string>
+    <string name="contacts_sync_open_settings">Open settings</string>
+    <string name="contacts_sync_on_title">Synced with your phone\'s contacts</string>
+    <string name="contacts_sync_syncing">Syncing…</string>
+    <!-- %1$s says what went wrong. -->
+    <string name="contacts_sync_failed">Couldn\'t sync. %1$s</string>
+    <string name="contacts_sync_never">Not synced yet</string>
+    <string name="contacts_sync_now">Sync now</string>
+    <string name="contacts_sync_last_just_now">Last synced just now</string>
+    <plurals name="contacts_sync_last_minutes">
+        <item quantity="one">Last synced %d minute ago</item>
+        <item quantity="other">Last synced %d minutes ago</item>
+    </plurals>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="contacts_sync_last_today">Last synced today at %1$s</string>
+    <!-- %1$s is a date, "Mar 17". -->
+    <string name="contacts_sync_last_date">Last synced %1$s</string>
+    <!-- After a contact's status, for screen readers: contacts sync found them among the phone's contacts. -->
+    <string name="contacts_from_phone">in your phone\'s contacts</string>
+    <!-- The section of the phone's contacts no one uses Telegram with. -->
+    <string name="contacts_invite_section">Invite to Telegram</string>
+    <!-- For screen readers; %1$s is the contact's name. -->
+    <string name="contacts_invite_person">Invite %1$s to Telegram</string>
 </resources>

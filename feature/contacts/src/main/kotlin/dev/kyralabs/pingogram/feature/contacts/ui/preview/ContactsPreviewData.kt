@@ -4,9 +4,11 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.contacts.R
 import dev.kyralabs.pingogram.feature.contacts.ui.ContactItem
+import dev.kyralabs.pingogram.feature.contacts.ui.ContactSyncUi
 import dev.kyralabs.pingogram.feature.contacts.ui.ContactsContent
 import dev.kyralabs.pingogram.feature.contacts.ui.ContactsUiState
 import dev.kyralabs.pingogram.feature.contacts.ui.DeleteContactDialog
+import dev.kyralabs.pingogram.feature.contacts.ui.InviteItem
 import dev.kyralabs.pingogram.feature.contacts.ui.contactSections
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -76,5 +78,41 @@ internal object ContactsPreviewData {
 
     val deleting = content.copy(deleteDialog = DeleteContactDialog(4, "Grace Hopper"))
 
+    /** Contacts sync off: its offer above the contacts. */
+    val syncOffer = content.copy(sync = ContactSyncUi.Offer)
+
+    /** Contacts sync on, but Android no longer lets Pingogram read the contacts. */
+    val syncPaused = content.copy(sync = ContactSyncUi.NeedsPermission)
+
+    /** Contacts sync on: its row, the contacts it found marked, and the phone's contacts to invite. */
+    val syncOn =
+        ContactsUiState(
+            ContactsContent.Contacts(
+                sections =
+                    contactSections(
+                        contacts.take(SYNCED_CONTACTS).mapIndexed {
+                            index,
+                            item,
+                            ->
+                            item.copy(fromPhone = index % 2 == 0)
+                        },
+                        Locale.US,
+                    ),
+                showsIndex = false,
+                invites =
+                    persistentListOf(
+                        InviteItem("31:+15550100", "Lin Example", "+15550100"),
+                        InviteItem("32:+447700900123", "Noor Sample", "+447700900123"),
+                    ),
+            ),
+            sync =
+                ContactSyncUi.On(
+                    isSyncing = false,
+                    lastSynced = UiText.plural(R.plurals.contacts_sync_last_minutes, 5, 5),
+                    error = null,
+                ),
+        )
+
     private const val FIRST_LONG_ID = 100L
+    private const val SYNCED_CONTACTS = 3
 }

@@ -15,6 +15,9 @@ internal class ContactsPreviewStates : PreviewParameterProvider<ContactsUiState>
             "No contacts" to ContactsPreviewData.empty,
             "Error" to ContactsPreviewData.error,
             "Deleting" to ContactsPreviewData.deleting,
+            "Sync offered" to ContactsPreviewData.syncOffer,
+            "Sync paused" to ContactsPreviewData.syncPaused,
+            "Sync on" to ContactsPreviewData.syncOn,
         )
 
     override val values: Sequence<ContactsUiState> = states.asSequence().map { it.second }

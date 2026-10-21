@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,8 @@ import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.component.withTop
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncControls
+import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncEvent
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -70,6 +73,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - one `LazyColumn`: "Add contact" ([onAddContact]) and "Invite friends" ([ContactsEvent.Invite]), then the contacts
  *   in alphabetical sections under sticky letter headers ([ContactRow]: a tap opens the chat, a long press offers Edit,
  *   [onEditContact], and Delete); while searching, the contacts that match instead, without sections;
+ * - contacts sync ([ContactSyncItem]) below the actions: its offer or its paused state as a card, or its status row
+ *   with "Sync now" ([onSyncEvent], [syncControls]); the contacts it found on the phone marked as such, and the phone's
+ *   contacts not on Telegram last, under "Invite to Telegram" ([InviteRow]);
  * - the fast-scroll index of the letters along the end edge for a long list ([FastScrollIndex]).
  *
  * While the contacts load, the sheet shows the delayed loading indicator; without contacts, an empty state with
@@ -85,10 +91,16 @@ internal fun ContactsScreen(
     onAddContact: () -> Unit,
     onEditContact: (userId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    syncControls: ContactSyncControls = ContactSyncControls(),
+    onSyncEvent: (ContactSyncEvent) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
 ) {
     ScrollToTopOnReselect(ContactsRoute, listState)
+    val callbacks =
+        remember(onEvent, onAddContact, onEditContact, onSyncEvent) {
+            ContactsCallbacks(onEvent, onAddContact, onEditContact, onSyncEvent)
+        }
     Scaffold(
         modifier = modifier,
         // The top bar's container; the content sits on a sheet below it (ContentSheet).
@@ -98,7 +110,7 @@ internal fun ContactsScreen(
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            ContactsBody(state, onEvent, onAddContact, onEditContact, listState, contentPadding)
+            ContactsBody(state, syncControls, callbacks, listState, contentPadding)
         }
     }
     state.deleteDialog?.let { dialog ->
@@ -136,16 +148,15 @@ private fun ContactsTopBar() {
  * What the sheet shows for [state]: the loading indicator, the empty state, the error, or the search field above the
  * list. Its own composable, so the frames in which the `Scaffold` measures its content anew stop here.
  */
-@Suppress("LongParameterList") // What the sheet shows, what it does, and where it scrolls and pads.
 @Composable
 private fun ContactsBody(
     state: ContactsUiState,
-    onEvent: (ContactsEvent) -> Unit,
-    onAddContact: () -> Unit,
-    onEditContact: (userId: Long) -> Unit,
+    syncControls: ContactSyncControls,
+    callbacks: ContactsCallbacks,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
+    val onEvent = callbacks.onEvent
     val padded = Modifier.padding(contentPadding)
     when (val content = state.content) {
         ContactsContent.Loading -> {
@@ -153,7 +164,7 @@ private fun ContactsBody(
         }
 
         ContactsContent.Empty -> {
-            NoContacts(onAddContact, padded)
+            NoContacts(callbacks.onAddContact, padded)
         }
 
         is ContactsContent.Error -> {
@@ -174,7 +185,7 @@ private fun ContactsBody(
                             .widthIn(max = MaterialTheme.sizes.contentMaxWidth),
                 )
                 Box(Modifier.weight(1f)) {
-                    ContactsList(content, onEvent, onAddContact, onEditContact, listState, contentPadding)
+                    ContactsList(state, syncControls, callbacks, listState, contentPadding)
                 }
             }
         }
@@ -187,16 +198,18 @@ private fun ContactsBody(
  * their section scrolls. Rows run no effects (`docs/PERFORMANCE.md` §4). With [ContactsContent.Contacts.showsIndex],
  * the [FastScrollIndex] lies over the list's end edge.
  */
-@Suppress("LongParameterList") // What the list shows, what it does, and where it scrolls and pads.
 @Composable
 private fun ContactsList(
-    content: ContactsContent,
-    onEvent: (ContactsEvent) -> Unit,
-    onAddContact: () -> Unit,
-    onEditContact: (userId: Long) -> Unit,
+    state: ContactsUiState,
+    syncControls: ContactSyncControls,
+    callbacks: ContactsCallbacks,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
+    val content = state.content
+    val onEvent = callbacks.onEvent
+    val onEditContact = callbacks.onEditContact
+    val showsSync = state.sync != ContactSyncUi.Hidden
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
     val motionScheme = MaterialTheme.motionScheme
     val listPadding = remember(contentPadding) { contentPadding.withTop(0.dp) }
@@ -208,28 +221,14 @@ private fun ContactsList(
     ) {
         when (content) {
             is ContactsContent.Contacts -> {
-                item(key = ADD_ROW, contentType = ACTION_ROW) {
-                    ContactsActionRow(
-                        icon = UiR.drawable.ic_add,
-                        label = stringResource(R.string.contacts_add),
-                        onClick = onAddContact,
-                        modifier = Modifier.row(this, maxWidth, motionScheme),
-                    )
-                }
-                item(key = INVITE_ROW, contentType = ACTION_ROW) {
-                    ContactsActionRow(
-                        icon = UiR.drawable.ic_share,
-                        label = stringResource(R.string.contacts_invite),
-                        onClick = { onEvent(ContactsEvent.Invite) },
-                        modifier = Modifier.row(this, maxWidth, motionScheme),
-                    )
-                }
+                actionItems(state.sync, syncControls, callbacks, maxWidth, motionScheme)
                 content.sections.forEach { section ->
                     stickyHeader(key = "$HEADER:${section.letter}", contentType = HEADER) {
                         SectionHeader(section.letter, Modifier.widthIn(max = maxWidth).fillMaxWidth())
                     }
                     contactItems(section.contacts, onEvent, onEditContact, maxWidth, motionScheme)
                 }
+                inviteItems(content.invites, onEvent, maxWidth, motionScheme)
             }
 
             is ContactsContent.Results -> {
@@ -249,85 +248,25 @@ private fun ContactsList(
     }
     if (content is ContactsContent.Contacts && content.showsIndex) {
         val letters = remember(content.sections) { content.sections.map { it.letter }.toImmutableList() }
-        val headers = remember(content.sections) { headerIndices(content.sections) }
+        val leading = ACTION_ROWS + if (showsSync) 1 else 0
+        val headers = remember(content.sections, leading) { headerIndices(content.sections, leading) }
         Box(Modifier.fillMaxSize().padding(listPadding), contentAlignment = Alignment.CenterEnd) {
             FastScrollIndex(letters = letters, headerIndices = headers, listState = listState)
         }
     }
 }
 
-/** The rows of [contacts], keyed by user id. */
-private fun LazyListScope.contactItems(
-    contacts: ImmutableList<ContactItem>,
-    onEvent: (ContactsEvent) -> Unit,
-    onEditContact: (userId: Long) -> Unit,
-    maxWidth: Dp,
-    motionScheme: MotionScheme,
-) {
-    items(contacts, key = { it.userId }, contentType = { CONTACT_ROW }) { contact ->
-        ContactRow(
-            item = contact,
-            onClick = { onEvent(ContactsEvent.OpenChat(contact.userId)) },
-            onEdit = { onEditContact(contact.userId) },
-            onDelete = { onEvent(ContactsEvent.Delete(contact.userId)) },
-            modifier = Modifier.row(this, maxWidth, motionScheme),
-        )
-    }
-}
-
-/** The list index of each section's header: after the two action rows, each section's header and its contacts. */
-private fun headerIndices(sections: ImmutableList<ContactSection>): ImmutableList<Int> =
-    sections
-        .runningFold(ACTION_ROWS) { index, section -> index + 1 + section.contacts.size }
-        .dropLast(1)
-        .toImmutableList()
-
-/** A letter's header: `titleSmallEmphasized` in `primary` on the sheet's `surface`, so rows scroll under it. */
-@Composable
-private fun SectionHeader(
-    letter: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = letter,
-        modifier =
-            modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small)
-                .semantics { heading() },
-        color = MaterialTheme.colorScheme.primary,
-        style = MaterialTheme.typography.titleSmallEmphasized,
-    )
-}
-
-/** A row of [scope] at most [maxWidth] wide, animating as the list changes on the [motionScheme]'s springs. */
-private fun Modifier.row(
-    scope: LazyItemScope,
-    maxWidth: Dp,
-    motionScheme: MotionScheme,
-): Modifier =
-    with(scope) {
-        this@row
-            .widthIn(max = maxWidth)
-            .fillMaxWidth()
-            .animateItem(
-                fadeInSpec = motionScheme.defaultEffectsSpec(),
-                placementSpec = motionScheme.defaultSpatialSpec(),
-                fadeOutSpec = motionScheme.fastEffectsSpec(),
-            )
-    }
+/** What the tab's parts call, remembered once, so the list's composables skip when only their state stays. */
+@Stable
+internal class ContactsCallbacks(
+    val onEvent: (ContactsEvent) -> Unit,
+    val onAddContact: () -> Unit,
+    val onEditContact: (userId: Long) -> Unit,
+    val onSyncEvent: (ContactSyncEvent) -> Unit,
+)
 
 /** The test tag of the contacts list, for UI and recomposition tests. */
 internal const val CONTACTS_LIST_TEST_TAG = "contacts:list"
-
-// Keys and content types of the list's entries; a contact's key is its user id.
-private const val ACTION_ROW = "action"
-private const val ADD_ROW = "action:add"
-private const val INVITE_ROW = "action:invite"
-private const val ACTION_ROWS = 2
-private const val HEADER = "header"
-private const val NO_RESULTS = "noResults"
-private const val CONTACT_ROW = "contact"
 
 @PingogramPreviews
 @Composable

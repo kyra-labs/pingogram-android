@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.settings.R
@@ -41,6 +42,24 @@ class PrivacySecurityScreenScreenshotTest {
     fun passwordResetPendingLight() = capture("passwordResetPendingLight", ThemeMode.Light, withPendingReset)
 
     @Test
+    fun contactSyncOnLight() =
+        capture(
+            "contactSyncOnLight",
+            ThemeMode.Light,
+            SettingsPreviewData.privacySecurity,
+            ContactSyncStatus.On(lastSyncedAt = null),
+        )
+
+    @Test
+    fun contactSyncPausedDark() =
+        capture(
+            "contactSyncPausedDark",
+            ThemeMode.Dark,
+            SettingsPreviewData.privacySecurity,
+            ContactSyncStatus.NeedsPermission,
+        )
+
+    @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, PrivacySecurityUiState.Loading)
 
     @Test
@@ -65,7 +84,8 @@ class PrivacySecurityScreenScreenshotTest {
         name: String,
         themeMode: ThemeMode,
         state: PrivacySecurityUiState,
+        contactSync: ContactSyncStatus = ContactSyncStatus.Off,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        PrivacySecurityScreen(state = state, onEvent = {}, onOpen = {}, onBack = {})
+        PrivacySecurityScreen(state = state, onEvent = {}, onOpen = {}, onBack = {}, contactSync = contactSync)
     }
 }

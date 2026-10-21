@@ -68,6 +68,33 @@ internal class ContactStatusFormatter(
         }
     }
 
+    /** "Last synced …" for contacts sync, last done at [syncedAt], as of [now]. */
+    fun lastSynced(
+        syncedAt: Instant,
+        now: Instant,
+    ): UiText {
+        val seconds = (now.epochSecond - syncedAt.epochSecond).coerceAtLeast(0)
+        val dateTime = syncedAt.atZone(zone)
+        return when {
+            seconds < SECONDS_PER_MINUTE -> {
+                UiText.resource(R.string.contacts_sync_last_just_now)
+            }
+
+            seconds < SECONDS_PER_HOUR -> {
+                val minutes = (seconds / SECONDS_PER_MINUTE).toInt()
+                UiText.plural(R.plurals.contacts_sync_last_minutes, minutes, minutes)
+            }
+
+            !dateTime.toLocalDate().isBefore(now.atZone(zone).toLocalDate()) -> {
+                UiText.resource(R.string.contacts_sync_last_today, time.format(dateTime))
+            }
+
+            else -> {
+                UiText.resource(R.string.contacts_sync_last_date, dayAndMonth.format(dateTime))
+            }
+        }
+    }
+
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(
         zone: ZoneId,

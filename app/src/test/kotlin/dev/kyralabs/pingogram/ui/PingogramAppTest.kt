@@ -129,7 +129,7 @@ class PingogramAppTest {
             on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
             // TDLib's answer once a chat list is loaded completely: the chat list is empty.
             on(TdApi.LoadChats::class, TdResult.Failure(TdError(404, "Not Found")))
-            // No contacts: the Contacts tab shows its empty state.
+            // No contacts: the Contacts tab shows its actions and the offer of contacts sync.
             on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
         }
 
@@ -167,7 +167,7 @@ class PingogramAppTest {
         assertTrue(navController.currentDestination?.hasRoute<ContactsRoute>() == true)
         tab(R.string.nav_contacts).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
-        awaitText(ContactsR.string.contacts_empty_title)
+        awaitText(ContactsR.string.contacts_sync_offer_title)
         text(ChatsR.string.chat_list_empty_title).assertDoesNotExist()
     }
 
@@ -297,14 +297,18 @@ class PingogramAppTest {
     fun `back from search returns to the tab and its navigation bar`() {
         setApp()
         tab(R.string.nav_contacts).performClick()
-        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        // The navigation's search button; the Contacts tab's own search field is named "Search" by Material too.
+        val searchButton =
+            hasContentDescription(string(R.string.nav_search)) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        composeRule.onNode(searchButton).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(string(ChatsR.string.search_back)).performClick()
         composeRule.waitForIdle()
 
         tab(R.string.nav_contacts).assertIsSelected()
-        awaitText(ContactsR.string.contacts_empty_title)
+        awaitText(ContactsR.string.contacts_sync_offer_title)
     }
 
     // The archive (FR-L9)
