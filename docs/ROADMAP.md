@@ -43,10 +43,9 @@ the release workflow so the owner can install and test on a phone.
       (view)/service messages, reactions display, link previews
 - [x] Media viewer with shared-element transition
 - [x] Mark-as-read (`viewMessages`) and `openChat/closeChat` lifecycle
-- [ ] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated
-      (profile generated and shipped 2026-10-22; first startup numbers on the owner's Galaxy S24 Ultra, Android 17,
-      before the app's own profile: cold 459 ms, warm 140 ms to the chat list; scroll numbers still to measure,
-      `docs/PERFORMANCE.md` §9)
+- [x] Macrobenchmark baseline for startup + chat-list scroll; Baseline Profile generated (2026-10-22, the owner's
+      Galaxy S24 Ultra, `docs/PERFORMANCE.md` §9 "Baseline"). Startup is well within budget; chat list and
+      conversation scrolling are not yet (frame P90 10.4 ms and 9.1 ms, over 10% of frames late), tracked below
 
 ## M3 — Full messaging, settings, notifications → `v0.3.0`
 
@@ -87,7 +86,9 @@ the release workflow so the owner can install and test on a phone.
 
 - [ ] Stories viewer (read-only), translations, in-chat search, chat export, Glance widget,
       app shortcuts, tablet list-detail polish, accessibility audit on every screen
-- [ ] Performance budget verified (`REQUIREMENTS.md` §6.1); APK size budget
+- [ ] Performance budget verified (`REQUIREMENTS.md` §6.1); APK size budget. Scrolling misses its budget in the first
+      baseline (`docs/PERFORMANCE.md` §9): the chat list's frame P90 10.4 ms against 8 ms, the conversation's late
+      frames over 1%
 - [ ] Localization: at least 5 languages via Crowdin/Weblate (owner decision)
 - [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes
 - [ ] 7-day dogfood with ≥ 10 testers, crash-free ≥ 99.5%
