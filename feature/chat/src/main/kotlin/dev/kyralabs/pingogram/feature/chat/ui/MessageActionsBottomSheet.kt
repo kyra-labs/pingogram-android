@@ -69,7 +69,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   then closes the menu with the chosen reaction, and leaving the picker (its back button, dragging it down, the back
  *   gesture) returns to the menu ([ChatEvent.CollapseReactions]).
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageActionsBottomSheet(
     sheet: MessageActionsSheet,
@@ -145,7 +145,6 @@ private fun ActionsContent(
  * The quick reactions ([ReactionToggleButton]s), scrolling sideways when they do not fit, and at the end, where the
  * sheet has a picker, a medium icon button in the reactions' container color that opens it, always in view.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun QuickReactions(
     sheet: MessageActionsSheet,
@@ -181,7 +180,6 @@ private fun QuickReactions(
 }
 
 /** The button that opens the reactions picker: a medium filled icon button whose shape morphs while pressed. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun MoreReactionsButton(onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
@@ -204,7 +202,6 @@ internal fun MoreReactionsButton(onClick: () -> Unit) {
 }
 
 /** One action: its icon and label in a clickable list item on the sheet's color; reporting and deleting in `error`. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ActionItem(
     action: MessageAction,

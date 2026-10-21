@@ -349,7 +349,6 @@ private fun FoundLocation(
 }
 
 /** While a better location is still likely: the wavy indicator and "Improving accuracy…". */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RefiningNote(visible: Boolean) {
     val motion = MaterialTheme.motionScheme

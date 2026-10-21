@@ -56,7 +56,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * Picked ([selected]), the row takes the list item's selected colors and shape (`large`) and its avatar morphs into a
  * check.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ForwardTargetRow(
     target: ForwardTarget,
@@ -151,7 +150,6 @@ internal fun ForwardOptions(
 }
 
 /** Send: a default-size button whose shape morphs when pressed; screen readers hear to how many chats. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SendButton(
     count: Int,

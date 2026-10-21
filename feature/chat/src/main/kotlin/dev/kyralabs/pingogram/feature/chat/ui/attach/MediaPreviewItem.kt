@@ -43,7 +43,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * loading indicator while it is prepared, and its remove button at the top end. Screen readers hear "Photo 2 of 3",
  * or "Video 1 of 2, 0:12".
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun MediaPreviewItem(
     item: PreviewItem,

@@ -56,7 +56,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * font scale. Only what TDLib offers the user shows: reactions that need Telegram Premium are not offered to users
  * without it.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ReactionPickerContent(
     sheet: MessageActionsSheet,
@@ -156,7 +155,6 @@ private fun LazyGridScope.sectionHeader(
  * as the badges on the bubble do. The chips are [reactionTile][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
  * wide, wider with the font scale, so a count never clips.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MessageReactionsCarousel(
     sheet: MessageActionsSheet,
