@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,57 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.constrain
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
-import kotlin.math.max
 import dev.kyralabs.pingogram.core.ui.R as UiR
-
-/**
- * [content] with [meta] at its bottom end: after the last line of [content] when there is room for it there
- * ([lastLineWidth] of the content, or its whole width when that returns null), otherwise on a line of its own. One
- * layout rather than nested rows (`docs/PERFORMANCE.md` §4).
- */
-@Composable
-internal fun TrailingMeta(
-    meta: @Composable () -> Unit,
-    lastLineWidth: (LayoutDirection) -> Int?,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    val gap = MaterialTheme.spacing.small
-    Layout(
-        contents = listOf(content, meta),
-        modifier = modifier,
-    ) { (contentMeasurables, metaMeasurables), constraints ->
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val contentPlaceable = contentMeasurables.firstOrNull()?.measure(loose)
-        val metaPlaceable = metaMeasurables.first().measure(loose)
-        val contentWidth = contentPlaceable?.width ?: 0
-        val contentHeight = contentPlaceable?.height ?: 0
-        val lineWidth = if (contentPlaceable == null) 0 else lastLineWidth(layoutDirection) ?: contentWidth
-        val inlineWidth = if (lineWidth > 0) lineWidth + gap.roundToPx() + metaPlaceable.width else metaPlaceable.width
-        val inline = inlineWidth <= constraints.maxWidth
-        val width = max(contentWidth, if (inline) inlineWidth else metaPlaceable.width)
-        val height = if (inline) max(contentHeight, metaPlaceable.height) else contentHeight + metaPlaceable.height
-        val size = constraints.constrain(IntSize(width, height))
-        layout(size.width, size.height) {
-            contentPlaceable?.placeRelative(0, 0)
-            metaPlaceable.placeRelative(size.width - metaPlaceable.width, size.height - metaPlaceable.height)
-        }
-    }
-}
 
 /**
  * "edited", the time, and the state of an outgoing message, in `labelSmall` with tabular figures; a failed message's

@@ -1,5 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -36,7 +38,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -224,9 +225,11 @@ private fun ViewerContent(
 ) {
     when (state) {
         MediaViewerUiState.Loading -> {
-            val description = stringResource(R.string.media_loading)
+            val resources = LocalResources.current
             Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                DelayedLoadingIndicator(Modifier.semantics { contentDescription = description })
+                DelayedLoadingIndicator(
+                    Modifier.semantics { contentDescription = resources.getString(R.string.media_loading) },
+                )
             }
         }
 
@@ -343,41 +346,40 @@ private class PageInfo(
 )
 
 /**
- * What screen readers get of a page: what it shows, whether it is [zoomed] in, a click that shows or hides the chrome
- * (or shows a spoiler) through [onTap], and its custom [actions].
+ * What screen readers get of a page: what it shows ([pageDescription]), whether it is [zoomed] in, a click that shows
+ * or hides the chrome (or shows a spoiler) through [onTap], and its custom [actions]. Every string is built in the
+ * `semantics` block, only when something reads the semantics tree (`docs/PERFORMANCE.md` §4).
  */
 @Composable
 private fun Modifier.pageSemantics(
     page: PageInfo,
     chromeVisible: Boolean,
     zoomed: Boolean,
-    actions: List<CustomAccessibilityAction>,
+    actions: (Resources) -> List<CustomAccessibilityAction>,
     onTap: () -> Unit,
 ): Modifier {
-    val description = pageDescription(page.item, page.position)
-    val clickLabel =
-        stringResource(
+    val resources = LocalResources.current
+    return semantics {
+        contentDescription = pageDescription(resources, page.item, page.position)
+        if (zoomed) stateDescription = resources.getString(R.string.media_zoomed_in)
+        val clickLabel =
             when {
                 page.item.isHidden -> R.string.media_show_spoiler
                 chromeVisible -> R.string.media_hide_controls
                 else -> R.string.media_show_controls
-            },
-        )
-    val zoomedLabel = stringResource(R.string.media_zoomed_in)
-    return semantics {
-        contentDescription = description
-        if (zoomed) stateDescription = zoomedLabel
-        onClick(label = clickLabel) {
+            }
+        onClick(label = resources.getString(clickLabel)) {
             onTap()
             true
         }
-        customActions = actions
+        customActions = actions(resources)
     }
 }
 
 /**
- * The custom actions of a page for screen readers: turn to the older and newer page ([turn], in [scope]), and zoom the
- * photo in and out with [zoom], on the motion scheme's default spatial spring; out only while [zoomed] in.
+ * The custom actions of a page for screen readers, built from the resources when the semantics are read: turn to the
+ * older and newer page ([turn], in [scope]), and zoom the photo in and out with [zoom], on the motion scheme's default
+ * spatial spring; out only while [zoomed] in.
  */
 @Composable
 private fun pageActions(
@@ -386,52 +388,47 @@ private fun pageActions(
     zoomed: Boolean,
     scope: CoroutineScope,
     turn: suspend (page: Int) -> Unit,
-): List<CustomAccessibilityAction> {
-    val older = stringResource(R.string.media_show_older)
-    val newer = stringResource(R.string.media_show_newer)
-    val zoomIn = stringResource(R.string.media_zoom_in)
-    val zoomOut = stringResource(R.string.media_zoom_out)
+): (Resources) -> List<CustomAccessibilityAction> {
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
-
-    fun action(
-        label: String,
-        perform: () -> Unit,
-    ) = CustomAccessibilityAction(label) {
-        perform()
-        true
+    return { resources ->
+        fun action(
+            @StringRes label: Int,
+            perform: () -> Unit,
+        ) = CustomAccessibilityAction(resources.getString(label)) {
+            perform()
+            true
+        }
+        listOfNotNull(
+            action(R.string.media_show_older) { scope.launch { turn(page.index - 1) } }.takeIf { page.index > 0 },
+            action(R.string.media_show_newer) { scope.launch { turn(page.index + 1) } }
+                .takeIf { page.index < page.count - 1 },
+            zoom?.let { action(R.string.media_zoom_in) { it.step(ZOOM_STEP, spec, scope) } },
+            zoom?.takeIf { zoomed }?.let { action(R.string.media_zoom_out) { it.step(1 / ZOOM_STEP, spec, scope) } },
+        )
     }
-    return listOfNotNull(
-        action(older) { scope.launch { turn(page.index - 1) } }.takeIf { page.index > 0 },
-        action(newer) { scope.launch { turn(page.index + 1) } }.takeIf { page.index < page.count - 1 },
-        zoom?.let { action(zoomIn) { it.step(ZOOM_STEP, spec, scope) } },
-        zoom?.takeIf { zoomed }?.let { action(zoomOut) { it.step(1 / ZOOM_STEP, spec, scope) } },
-    )
 }
 
 /** "Photo, 3 of 120, Ada Lovelace, Oct 18, 9:41 AM, caption": what the page shows, for screen readers. */
-@Composable
 private fun pageDescription(
+    resources: Resources,
     item: MediaItem,
     position: MediaPosition?,
 ): String {
     val kind =
-        stringResource(
-            when (item.media) {
-                is ViewerMedia.Image -> UiR.string.preview_photo
-                is ViewerMedia.Clip -> UiR.string.preview_video
-                is ViewerMedia.Gif -> UiR.string.preview_gif
-            },
-        )
+        when (item.media) {
+            is ViewerMedia.Image -> UiR.string.preview_photo
+            is ViewerMedia.Clip -> UiR.string.preview_video
+            is ViewerMedia.Gif -> UiR.string.preview_gif
+        }
     val parts =
         listOfNotNull(
-            kind,
-            stringResource(R.string.media_spoiler).takeIf { item.isHidden },
-            position?.let { positionText(it) },
-            item.sender.resolve(),
+            resources.getString(kind),
+            resources.getString(R.string.media_spoiler).takeIf { item.isHidden },
+            position?.let { positionText(resources, it) },
+            item.sender.resolve(resources),
             item.date,
             item.caption.text.takeIf { it.isNotEmpty() && !item.isHidden },
         )
-    val resources = LocalResources.current
     return parts.reduce { joined, part -> resources.getString(R.string.media_description_part, joined, part) }
 }
 

@@ -1,48 +1,35 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CornerBasedShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -66,9 +53,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
-import kotlin.math.ceil
 import kotlin.math.max
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A message in the conversation (`REQUIREMENTS.md` FR-C2, FR-C4, `docs/DESIGN_SYSTEM.md` §2.2, §4, §9): its bubble at
@@ -79,8 +64,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   width. From top to bottom: the sender's name (first of a group in group chats), "Forwarded from …", the reply
  *   quote ([ReplyQuoteBlock], a tonal card), the content ([MessageContentBody]), the text with its formatting and the
  *   link preview (a tonal card too), with the time and state of the message at the bottom end, after the last line
- *   when it fits ([TrailingMeta]), inside the padding (`spacing.medium` at the sides, `spacing.small` at the top and
- *   bottom) that keeps it clear of the round corners.
+ *   when it fits, inside the padding (`spacing.medium` at the sides, `spacing.small` at the top and bottom) that keeps
+ *   it clear of the round corners. A text bubble and a media bubble are one custom layout each
+ *   ([rememberTextBubbleMeasurePolicy], [rememberMediaBubbleMeasurePolicy]), measured in one pass.
  * - **Time**: the time and the state show on the last bubble of a group and on a message alone
  *   ([ChatItem.Bubble.showsTime], decided by the ViewModel), as Google Messages shows them; tapping a bubble of the
  *   group where nothing inside takes the tap shows its own, and tapping again hides it ([ChatEvent.ToggleTime]).
@@ -330,7 +316,8 @@ private fun MessageBubble(
 }
 
 /**
- * Padded content and text in a bubble of [shape], padded so the text and the time keep clear of the round corners.
+ * Padded content and text in a bubble of [shape], padded so the text and the time keep clear of the round corners: one
+ * layout ([rememberTextBubbleMeasurePolicy]) for the header, the content, the text, the link preview and the meta.
  */
 @Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
@@ -345,24 +332,28 @@ private fun PaddedBubble(
     uploads: ImmutableMap<Long, MessageUpload>,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .background(style.colors.container, shape)
-                .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-    ) {
-        BubbleHeader(bubble, style.colors, onEvent)
-        MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
-        BubbleBody(bubble, style, resources, onEvent)
-    }
+    val textLayout = remember { TextLayoutHolder() }
+    Layout(
+        contents =
+            listOf(
+                {
+                    BubbleHeader(bubble, style.colors, onEvent)
+                    MessageContentBody(bubble, fileState, playback, style.colors, onEvent, uploads = uploads)
+                },
+                { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
+                { bubble.linkPreview?.let { LinkPreviewBlock(it, style.colors) } },
+                { if (bubble.showsTime) BubbleMeta(bubble, style.colors) },
+            ),
+        modifier = modifier.background(style.colors.container, shape),
+        measurePolicy = rememberTextBubbleMeasurePolicy(textLayout),
+    )
 }
 
 /**
- * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape]: the name, forward and reply
- * above it with the usual padding; below it the caption and link preview with the meta; without either, the meta (where
- * it shows) on a pill over the media's bottom end. The media's own corners ([mediaCorners]) are where the media
- * viewer's container transform starts and ends.
+ * Edge-to-edge media in a bubble as wide as the media and clipped to the bubble's [shape], one layout
+ * ([rememberMediaBubbleMeasurePolicy]): the name, forward and reply above it with the usual padding; below it the
+ * caption and link preview with the meta; without either, the meta (where it shows) on a pill over the media's bottom
+ * end. The media's own corners ([mediaCorners]) are where the media viewer's container transform starts and ends.
  */
 @Suppress("LongParameterList") // The bubble, its look, and what it passes on to its content.
 @Composable
@@ -376,44 +367,38 @@ private fun MediaBubble(
     modifier: Modifier = Modifier,
 ) {
     val colors = style.colors
-    val spacing = MaterialTheme.spacing
     val hasHeader = bubble.showsSenderName || bubble.forwardedFrom != null || bubble.reply != null
     val captionless = bubble.text.text.isEmpty() && bubble.linkPreview == null
     val mediaShape = remember(shape, hasHeader, captionless) { shape.mediaCorners(hasHeader, hasFooter = !captionless) }
-    Column(
-        modifier
-            .width(edgeToEdgeWidth(bubble.content, isAlbum = bubble.album != null))
-            .clip(shape)
-            .background(colors.container),
-    ) {
-        if (hasHeader) {
-            Column(
-                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
-                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-            ) { BubbleHeader(bubble, colors, onEvent) }
-        }
-        Box {
-            MessageContentBody(
-                bubble = bubble,
-                fileState = null,
-                playback = Playback.Stopped,
-                colors = colors,
-                onEvent = onEvent,
-                mediaShape = mediaShape,
-                uploads = uploads,
-                mediaDownloads = resources.mediaDownloads,
-            )
-            if (captionless && bubble.showsTime) {
-                OverlayMeta(bubble, Modifier.align(Alignment.BottomEnd).padding(spacing.small))
-            }
-        }
-        if (!captionless) {
-            Column(
-                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
-                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-            ) { BubbleBody(bubble, style, resources, onEvent) }
-        }
-    }
+    val textLayout = remember { TextLayoutHolder() }
+    Layout(
+        contents =
+            listOf(
+                { BubbleHeader(bubble, colors, onEvent) },
+                {
+                    MessageContentBody(
+                        bubble = bubble,
+                        fileState = null,
+                        playback = Playback.Stopped,
+                        colors = colors,
+                        onEvent = onEvent,
+                        mediaShape = mediaShape,
+                        uploads = uploads,
+                        mediaDownloads = resources.mediaDownloads,
+                    )
+                },
+                { if (captionless && bubble.showsTime) OverlayMeta(bubble) },
+                { if (bubble.text.text.isNotEmpty()) BubbleText(bubble, style, resources, onEvent, textLayout) },
+                { bubble.linkPreview?.let { LinkPreviewBlock(it, colors) } },
+                { if (!captionless && bubble.showsTime) BubbleMeta(bubble, colors) },
+            ),
+        modifier =
+            modifier
+                .width(edgeToEdgeWidth(bubble.content, isAlbum = bubble.album != null))
+                .clip(shape)
+                .background(colors.container),
+        measurePolicy = rememberMediaBubbleMeasurePolicy(textLayout),
+    )
 }
 
 /**
@@ -452,36 +437,9 @@ internal fun BubbleHeader(
 }
 
 /**
- * The text and the link preview, whichever there are, with the meta after the text's last line when there is room;
- * otherwise the meta alone, at the bubble's end. Without the meta ([ChatItem.Bubble.showsTime]), just the text and the
- * link preview.
- */
-@Composable
-private fun ColumnScope.BubbleBody(
-    bubble: ChatItem.Bubble,
-    style: BubbleStyle,
-    resources: BubbleResources,
-    onEvent: (ChatEvent) -> Unit,
-) {
-    val colors = style.colors
-    val hasText = bubble.text.text.isNotEmpty()
-    val linkPreview = bubble.linkPreview
-    if (hasText && linkPreview == null && bubble.showsTime) {
-        val layout = remember { TextLayoutHolder() }
-        TrailingMeta(meta = { BubbleMeta(bubble, colors) }, lastLineWidth = layout::lastLineWidth) {
-            BubbleText(bubble, style, resources, onEvent) { layout.result = it }
-        }
-    } else {
-        if (hasText) BubbleText(bubble, style, resources, onEvent)
-        linkPreview?.let { LinkPreviewBlock(it, colors) }
-        if (bubble.showsTime) BubbleMeta(bubble, colors, Modifier.align(Alignment.End))
-    }
-}
-
-/**
  * The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
- * draw phase.
+ * draw phase. Its layout is kept in [textLayout], for the bubble's layout to put the meta after its last line.
  */
 @Composable
 private fun BubbleText(
@@ -489,19 +447,18 @@ private fun BubbleText(
     style: BubbleStyle,
     resources: BubbleResources,
     onEvent: (ChatEvent) -> Unit,
-    onTextLayout: (TextLayoutResult) -> Unit = {},
+    textLayout: TextLayoutHolder,
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
     val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick)
     if (text.hasTextBlocks()) {
         val blocks = remember { TextBlocksLayout() }
-        val currentOnTextLayout by rememberUpdatedState(onTextLayout)
         val onLayout =
-            remember(blocks) {
+            remember(blocks, textLayout) {
                 { result: TextLayoutResult ->
                     blocks.onTextLayout(result)
-                    currentOnTextLayout(result)
+                    textLayout.result = result
                 }
             }
         Text(
@@ -523,31 +480,8 @@ private fun BubbleText(
             text = text,
             color = style.colors.content,
             style = MaterialTheme.typography.bodyLarge.userContent,
-            onTextLayout = onTextLayout,
+            onTextLayout = { textLayout.result = it },
         )
-    }
-}
-
-/** The text's latest layout, read by [TrailingMeta] right after the text was measured. Not composition state. */
-private class TextLayoutHolder {
-    var result: TextLayoutResult? = null
-
-    /**
-     * How wide the last line is, so the meta can follow it; the text's full width when the line runs against the
-     * layout's direction (right-to-left text in a left-to-right layout), as the meta would cover its end then.
-     */
-    fun lastLineWidth(layoutDirection: LayoutDirection): Int? {
-        val layout = result?.takeIf { it.lineCount > 0 } ?: return null
-        val last = layout.lineCount - 1
-        val lineDirection = layout.getParagraphDirection(layout.getLineStart(last))
-        val againstLayout = (lineDirection == ResolvedTextDirection.Rtl) != (layoutDirection == LayoutDirection.Rtl)
-        return if (againstLayout) {
-            layout.size.width
-        } else {
-            ceil(
-                layout.getLineRight(last) - layout.getLineLeft(last),
-            ).toInt()
-        }
     }
 }
 
