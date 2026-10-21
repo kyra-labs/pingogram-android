@@ -84,13 +84,6 @@ internal fun MuteOptionsContent(
             .padding(bottom = MaterialTheme.spacing.large),
     ) {
         ListItem(
-            headlineContent = {
-                Text(
-                    text = item.title,
-                    modifier = Modifier.semantics { heading() },
-                    style = MaterialTheme.typography.titleMedium.userContent,
-                )
-            },
             leadingContent = {
                 Avatar(
                     photo = item.photo,
@@ -101,7 +94,13 @@ internal fun MuteOptionsContent(
             },
             supportingContent = { Text(item.status.resolve()) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
+        ) {
+            Text(
+                text = item.title,
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleMedium.userContent,
+            )
+        }
         for (hours in MUTE_HOURS) {
             MuteOption(
                 label = pluralStringResource(R.plurals.settings_mute_for_hours, hours, hours),
