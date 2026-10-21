@@ -13,6 +13,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -28,6 +29,8 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -62,8 +65,9 @@ internal fun AccountCard(
         supportingContent = { AccountDetails(account) },
         verticalAlignment = Alignment.CenterVertically,
         contentPadding = PaddingValues(MaterialTheme.spacing.large),
+        colors = settingsRowColors(),
     ) {
-        Text(text = account.name, style = MaterialTheme.typography.titleLarge)
+        Text(text = account.name, style = MaterialTheme.typography.titleLarge.userContent)
     }
 }
 
@@ -94,7 +98,7 @@ private fun AccountAvatar(account: AccountUiModel) {
                     .align(Alignment.BottomEnd)
                     .size(sizes.avatarBadge)
                     .background(colors.surfaceContainerHighest, CircleShape)
-                    .border(sizes.avatarRing, ListItemDefaults.segmentedColors().containerColor, CircleShape)
+                    .border(sizes.avatarRing, settingsRowContainerColor(), CircleShape)
                     .padding((sizes.avatarBadge - sizes.badgeIcon) / 2),
             tint = colors.onSurfaceVariant,
         )
@@ -105,15 +109,17 @@ private fun AccountAvatar(account: AccountUiModel) {
  * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and the
  * "Premium" label below them for Telegram Premium subscribers.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AccountDetails(account: AccountUiModel) {
     Column {
         if (account.phoneNumber.isNotEmpty()) {
-            Text(text = account.phoneNumber, style = MaterialTheme.typography.bodyLarge)
+            Text(text = account.phoneNumber, style = MaterialTheme.typography.bodyLarge.numericContent)
         }
         account.username?.let { username ->
-            Text(stringResource(R.string.settings_account_username, username))
+            Text(
+                text = stringResource(R.string.settings_account_username, username),
+                style = LocalTextStyle.current.userContent,
+            )
         }
         if (account.isPremium) PremiumLabel(Modifier.padding(top = MaterialTheme.spacing.small))
     }
@@ -123,7 +129,6 @@ private fun AccountDetails(account: AccountUiModel) {
  * "Premium", a status of the account: a full pill in `tertiaryContainer` with `labelMediumEmphasized` text. Not a chip:
  * it does nothing when tapped, and Pingogram sells nothing (`REQUIREMENTS.md` §1.2).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PremiumLabel(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
@@ -140,7 +145,6 @@ private fun PremiumLabel(modifier: Modifier = Modifier) {
 }
 
 /** The tonal chevron at the end of the card, whose shape morphs when pressed; see [AccountCard] for its semantics. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChevronButton(onClick: () -> Unit) {
     FilledTonalIconButton(

@@ -149,7 +149,6 @@ internal fun fieldErrorText(error: TwoStepVerificationFieldError?): String? =
  * second to the next on the effects spring and read while drawing. The indicator is hidden from screen readers; they
  * hear the text as a polite live region, under a minute in 15-second steps rather than every second.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun FloodWaitNote(
     seconds: Long,

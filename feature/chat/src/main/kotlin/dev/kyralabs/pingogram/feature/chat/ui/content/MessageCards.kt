@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
-import android.telephony.PhoneNumberUtils
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.ExpiredMedia
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
@@ -187,19 +187,6 @@ internal fun MessageExpired(
         fontStyle = FontStyle.Italic,
         style = MaterialTheme.typography.bodyMedium,
     )
-}
-
-/**
- * The phone number of a contact, which Telegram sends as digits, formatted for [country] with its international
- * prefix; as Telegram sent it if it cannot be formatted.
- */
-private fun formatPhoneNumber(
-    number: String,
-    country: String,
-): String {
-    if (number.isBlank()) return number
-    val international = if (number.startsWith("+")) number else "+$number"
-    return PhoneNumberUtils.formatNumber(international, country) ?: international
 }
 
 /**

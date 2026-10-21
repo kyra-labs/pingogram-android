@@ -13,6 +13,7 @@ import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 
@@ -43,7 +45,7 @@ internal fun SessionRow(
     shapes: ListItemShapes,
     onClick: (() -> Unit)? = null,
     overline: String? = null,
-    colors: ListItemColors = ListItemDefaults.segmentedColors(),
+    colors: ListItemColors = settingsRowColors(),
 ) {
     val busy = stringResource(R.string.settings_session_busy)
     val leading: @Composable () -> Unit = { SettingsItemIcon(session.device.iconRes()) }
@@ -52,7 +54,7 @@ internal fun SessionRow(
     val overlineContent: (@Composable () -> Unit)? = overline?.let { { Text(it) } }
     val supporting: @Composable () -> Unit = {
         Column {
-            Text(session.app.resolve())
+            Text(text = session.app.resolve(), style = LocalTextStyle.current.userContent)
             Text(session.activity.resolve())
             if (session.isPasswordPending) {
                 Text(
@@ -73,7 +75,7 @@ internal fun SessionRow(
             supportingContent = supporting,
             colors = colors,
         ) {
-            Text(session.title.resolve())
+            Text(text = session.title.resolve(), style = LocalTextStyle.current.userContent)
         }
     } else {
         SegmentedListItem(
@@ -84,7 +86,7 @@ internal fun SessionRow(
             supportingContent = supporting,
             colors = colors,
         ) {
-            Text(session.title.resolve())
+            Text(text = session.title.resolve(), style = LocalTextStyle.current.userContent)
         }
     }
 }
@@ -123,19 +125,14 @@ internal fun NewLogin(
         ) {
             TextButton(
                 onClick = onTerminate,
+                shapes = ButtonDefaults.shapes(),
                 enabled = !isBusy,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
-                Text(
-                    text = stringResource(R.string.settings_session_not_me),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
+                Text(stringResource(R.string.settings_session_not_me))
             }
-            FilledTonalButton(onClick = onConfirm, enabled = !isBusy) {
-                Text(
-                    text = stringResource(R.string.settings_session_confirm),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
+            FilledTonalButton(onClick = onConfirm, shapes = ButtonDefaults.shapes(), enabled = !isBusy) {
+                Text(stringResource(R.string.settings_session_confirm))
             }
         }
     }
@@ -164,6 +161,7 @@ internal fun TerminateAllItem(
         onClick = onClick,
         enabled = !isTerminating,
         colors = destructiveItemColors(),
+        iconTone = SettingsIconTone.Error,
     )
 }
 

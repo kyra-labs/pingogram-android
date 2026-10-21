@@ -186,6 +186,7 @@ private fun LibraryRow(
         onClick = onClick,
         shapes = shapes,
         modifier = modifier,
+        colors = settingsRowColors(),
         supportingContent = {
             Text(
                 if (item.version != null) {

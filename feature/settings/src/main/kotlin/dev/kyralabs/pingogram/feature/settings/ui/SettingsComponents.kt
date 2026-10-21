@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.topOnly
 import dev.kyralabs.pingogram.core.ui.component.withTop
+import dev.kyralabs.pingogram.core.ui.theme.isAmoledBlack
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -56,13 +57,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The color of a settings page, behind its groups and its top bar (`docs/DESIGN_SYSTEM.md` §2.2). Its rows sit on
- * `surface`, the segmented list item's container color: lighter than the page in light themes and darker in dark ones
- * (true black with AMOLED black), as in Google's own Material 3 Expressive menus. One step above the floating
- * navigation bar's `surfaceContainer`, so the bar stands apart from the page it floats over.
+ * `surface`, the segmented list item's container color: lighter than the page in light themes and darker in dark ones,
+ * as in Google's own Material 3 Expressive menus. One step above the floating navigation bar's `surfaceContainer`, so
+ * the bar stands apart from the page it floats over. With AMOLED black the page is true black (`surface`) and its rows
+ * move to `surfaceContainer` ([settingsRowColors], owner decision D22).
  */
 @Composable
 @ReadOnlyComposable
-internal fun settingsPageColor(): Color = MaterialTheme.colorScheme.surfaceContainerHigh
+internal fun settingsPageColor(): Color =
+    if (isAmoledBlack()) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
 
 /**
  * A settings page pushed above the Settings tab: a small top app bar with back, [title] (`titleLargeEmphasized`) and

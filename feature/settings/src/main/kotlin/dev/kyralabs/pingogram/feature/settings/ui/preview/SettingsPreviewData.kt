@@ -183,7 +183,8 @@ internal object SettingsPreviewData {
                     BlockedSenderItem(
                         sender = MessageSender.User(8),
                         name = UiText.Plain("Alan Turing"),
-                        detail = UiText.resource(R.string.settings_blocked_phone, "+447700900123"),
+                        detail = null,
+                        phoneNumber = "+447700900123",
                         photo = null,
                         avatarId = 8,
                         isUnblocking = true,

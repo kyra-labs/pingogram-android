@@ -2,7 +2,12 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -91,11 +96,21 @@ class BlockedUsersScreenTest {
     }
 
     @Test
-    fun `rows show usernames and phone numbers`() {
+    fun `the row's button is an Unblock text button named after the row`() {
+        setScreen()
+
+        composeRule
+            .onNodeWithContentDescription(string(R.string.settings_unblock, "Grace Hopper"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(hasText(string(R.string.settings_unblock_button)))
+    }
+
+    @Test
+    fun `rows show usernames and phone numbers formatted for their country`() {
         setScreen()
 
         composeRule.onNodeWithText("@grace").assertExists()
-        composeRule.onNodeWithText("+447700900123", substring = true).assertExists()
+        composeRule.onNodeWithText("+44 7700 900123").assertExists()
         composeRule.onNodeWithText("4 blocked users and chats").assertExists()
     }
 

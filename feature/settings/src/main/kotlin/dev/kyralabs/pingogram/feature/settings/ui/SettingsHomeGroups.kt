@@ -9,12 +9,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The groups of rows that open the other settings pages: General (Appearance, Notifications, Data and storage,
- * Language), Privacy and security, About.
+ * Language), Privacy and security, About, their icons in circles of one container role per group: `primary`,
+ * `tertiary`, `secondary` (`docs/DESIGN_SYSTEM.md` §2.2).
  */
 @Composable
 internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
     GeneralGroup(onOpenPage)
-    SettingsGroup {
+    SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
         item { shapes ->
             PageItem(
                 title = stringResource(R.string.settings_privacy_security),
@@ -25,7 +26,7 @@ internal fun PageGroups(onOpenPage: (SettingsPage) -> Unit) {
             )
         }
     }
-    SettingsGroup {
+    SettingsGroup(iconTone = SettingsIconTone.Secondary) {
         item { shapes ->
             PageItem(
                 title = stringResource(R.string.settings_about),

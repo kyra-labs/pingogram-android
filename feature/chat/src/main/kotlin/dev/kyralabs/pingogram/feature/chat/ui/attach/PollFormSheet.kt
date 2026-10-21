@@ -28,7 +28,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
@@ -53,6 +52,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -328,7 +329,10 @@ private fun SectionHeader(
     }
 }
 
-/** A setting as a list item with a [Switch], the whole row toggling it, on the sheet's color. */
+/**
+ * A setting as a list item with a switch ([CheckSwitch]), the whole row toggling it with a toggle haptic, on the
+ * sheet's color.
+ */
 @Composable
 private fun SwitchRow(
     title: String,
@@ -337,16 +341,20 @@ private fun SwitchRow(
     enabled: Boolean = true,
     note: String? = null,
 ) {
+    val haptics = LocalHapticFeedback.current
     ListItem(
         modifier =
             Modifier.toggleable(
                 value = checked,
                 enabled = enabled,
                 role = Role.Switch,
-                onValueChange = onCheckedChange,
+                onValueChange = {
+                    haptics.performToggle(it)
+                    onCheckedChange(it)
+                },
             ),
         enabled = enabled,
-        trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
+        trailingContent = { CheckSwitch(checked = checked, enabled = enabled) },
         supportingContent = note?.let { { Text(it) } },
         colors =
             ListItemDefaults.colors(containerColor = Color.Transparent, disabledContainerColor = Color.Transparent),

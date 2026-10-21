@@ -273,7 +273,6 @@ private fun StepText(text: String) {
  * [TextButton] at the start and [primary] as a default [Button] at the end, both with the press morph; they wrap onto
  * two lines when they do not fit side by side.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StepActions(
     state: TwoStepVerificationFlowUiState,

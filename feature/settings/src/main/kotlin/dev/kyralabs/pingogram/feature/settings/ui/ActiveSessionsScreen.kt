@@ -147,6 +147,7 @@ private fun Sessions(
         SettingsGroup(
             title = stringResource(R.string.settings_section_new_logins),
             footer = stringResource(R.string.settings_new_logins_note),
+            iconTone = SettingsIconTone.Tertiary,
         ) {
             sessions.unconfirmed.forEach { session ->
                 item(key = session.id) { shapes ->
@@ -162,7 +163,11 @@ private fun Sessions(
         }
     }
     if (sessions.others.isNotEmpty()) {
-        SettingsGroup(title = stringResource(R.string.settings_section_other_sessions), footer = ttl) {
+        SettingsGroup(
+            title = stringResource(R.string.settings_section_other_sessions),
+            footer = ttl,
+            iconTone = SettingsIconTone.Secondary,
+        ) {
             sessions.others.forEach { session ->
                 item(key = session.id) { shapes ->
                     SessionRow(

@@ -318,12 +318,8 @@ private fun userItem(
     return BlockedSenderItem(
         sender = sender,
         name = user?.fullName() ?: UiText.resource(UiR.string.user_deleted_account),
-        detail =
-            when {
-                username != null -> UiText.resource(R.string.settings_blocked_username, username)
-                phone != null -> UiText.resource(R.string.settings_blocked_phone, "+$phone")
-                else -> null
-            },
+        detail = username?.let { UiText.resource(R.string.settings_blocked_username, it) },
+        phoneNumber = if (username == null) phone?.let { "+$it" } else null,
         photo = user?.profilePhoto,
         avatarId = sender.userId,
         placeholderIcon = if (user == null || user.isDeleted) UiR.drawable.ic_person_filled else null,

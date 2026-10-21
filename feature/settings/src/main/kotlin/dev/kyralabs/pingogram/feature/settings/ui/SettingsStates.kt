@@ -37,7 +37,6 @@ import dev.kyralabs.pingogram.feature.settings.R
  * Something loading: a [DelayedLoadingIndicator], which shows only if loading takes a moment (`docs/DESIGN_SYSTEM.md`
  * §5), and that screen readers announce as [description].
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SettingsLoading(
     description: String,
@@ -76,11 +75,8 @@ internal fun SettingsError(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
-        FilledTonalButton(onClick = onRetry) {
-            Text(
-                text = stringResource(R.string.settings_retry),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
+        FilledTonalButton(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.settings_retry))
         }
     }
 }
@@ -110,14 +106,15 @@ internal fun DestructiveDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
-                Text(text = texts.confirm, style = MaterialTheme.typography.labelLargeEmphasized)
+                Text(texts.confirm)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = dismiss, style = MaterialTheme.typography.labelLargeEmphasized)
+            TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
+                Text(dismiss)
             }
         },
         icon = icon?.let { { Icon(painter = painterResource(it), contentDescription = null) } },

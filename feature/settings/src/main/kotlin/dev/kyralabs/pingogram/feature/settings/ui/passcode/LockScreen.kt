@@ -94,7 +94,6 @@ fun AppLockRoute(
  * its bottom start, which asks to log out first ([DestructiveDialog]), and, where biometric unlock is on, a fingerprint
  * button ([FilledTonalIconButton]) at its bottom end. Nothing of the app shows behind it.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun LockScreen(
     state: LockUiState,
@@ -150,7 +149,6 @@ internal fun LockScreen(
 }
 
 /** "Forgot passcode?", or "Logging out" while it logs out. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ForgotButton(
     isLoggingOut: Boolean,
@@ -165,7 +163,6 @@ private fun ForgotButton(
 }
 
 /** Shows the system's biometric prompt again: the fingerprint on a tonal icon button with the Expressive shapes. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BiometricButton(onClick: () -> Unit) {
     FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {

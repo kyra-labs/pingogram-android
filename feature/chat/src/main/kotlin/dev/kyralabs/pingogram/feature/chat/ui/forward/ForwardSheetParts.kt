@@ -19,12 +19,12 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -35,6 +35,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -161,16 +163,24 @@ private fun SendButton(
     }
 }
 
-/** A forward option as a list item with a [Switch], the whole row toggling it, on the sheet's color. */
+/**
+ * A forward option as a list item with a switch ([CheckSwitch]), the whole row toggling it with a toggle haptic, on the
+ * sheet's color.
+ */
 @Composable
 private fun SwitchRow(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val haptics = LocalHapticFeedback.current
     ListItem(
-        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
-        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        modifier =
+            Modifier.toggleable(value = checked, role = Role.Switch) {
+                haptics.performToggle(it)
+                onCheckedChange(it)
+            },
+        trailingContent = { CheckSwitch(checked = checked) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     ) {
         Text(title)
