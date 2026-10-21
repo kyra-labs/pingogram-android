@@ -335,8 +335,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   a text, fails the build. `:app`'s `GeneratedOpenSourceLicensesRepository` reads it with the
   platform's `org.json` behind `core:domain`'s `OpenSourceLicensesRepository`; `feature:settings`
   draws the screens (`docs/adr/0002-open-source-licenses.md`).
-- Product flavors: `foss` (no Google services) and `gms` (FCM push). Default assembled flavor
-  for GitHub releases: `foss`. `gms` alone depends on Firebase Cloud Messaging (`gmsImplementation`); `foss` variants
+- Product flavors: `foss` (no Google services) and `gms` (FCM push). GitHub releases ship both, `foss` as the default
+  download (`docs/RELEASE.md`). `gms` alone depends on Firebase Cloud Messaging (`gmsImplementation`); `foss` variants
   fail `check<Variant>GoogleFree` (run by `check` and by their builds) if any Firebase or Play services module reaches
   their runtime classpath. `pingogram.android.gms` applies the Google Services plugin only when the owner's
   git-ignored `app/src/gms/google-services.json` exists; without it, packaging a `gms` variant fails before anything

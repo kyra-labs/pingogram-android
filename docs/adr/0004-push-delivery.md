@@ -135,9 +135,9 @@ distributor picker in Settings, the connector dependency and testing against sev
   Pushes need the production DC; the test DC (debug toggle) gets none.
 - **Licensing**: Play services and a few Firebase libraries are proprietary (POM license "Android Software Development
   Kit License"), listed in `gms`' open-source licenses screen as `LicenseRef-Android-SDK` with the text the SDK manager
-  ships (`config/licenses/texts/`); `foss`' list is unchanged. Shipping proprietary libraries in a GPL-3.0 app is a
-  question for the owner as copyright holder (an additional permission for the `gms` flavor, or Apache-2.0, which
-  `REQUIREMENTS.md` §2 already considers) before a `gms` build is distributed.
+  ships (`config/licenses/texts/`); `foss`' list is unchanged. The owner added an additional permission under GPL-3.0
+  section 7 for these libraries on 2026-10-21 (`LICENSE-EXCEPTION.md`,
+  `docs/adr/0010-gpl-additional-permission-for-play-services.md`), so `gms` builds can be distributed.
 - **Network**: the `gms` flavor talks to Google (FCM, Firebase Installations) once logged in, an exception to
   `REQUIREMENTS.md` §6.2 that FR-N3 asks for; `foss` talks to Telegram only, enforced by the build.
 - **Size and startup**: `gms` APKs grow by Firebase Messaging and Play services' client libraries: 0.8 MB in a debug

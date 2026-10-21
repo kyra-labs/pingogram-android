@@ -196,6 +196,8 @@ must be signed off (DCO). Report security issues as described in [SECURITY.md](S
 
 ## License
 
-GPL-3.0-or-later — see [LICENSE](LICENSE). TDLib is licensed under the Boost Software License 1.0.
+GPL-3.0-or-later — see [LICENSE](LICENSE), with an additional permission to combine Pingogram with Google's Play
+services and Firebase libraries, which the `gms` build uses for push notifications
+([LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md)). TDLib is licensed under the Boost Software License 1.0.
 Google Sans Flex is used under the SIL Open Font License 1.1.
 "Telegram" is a trademark of Telegram FZ-LLC; Pingogram is an independent project.

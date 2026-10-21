@@ -37,7 +37,7 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 | Repository | `pingogram-android` |
 | `applicationId` | `dev.kyralabs.pingogram` (debug builds: `dev.kyralabs.pingogram.debug`) |
 | Kotlin package root | `dev.kyralabs.pingogram` |
-| License | **GPL-3.0-or-later** (owner may switch to Apache-2.0 before first release; TDLib is Boost 1.0 so either is allowed) |
+| License | **GPL-3.0-or-later** with an additional permission (GPL §7) to combine Pingogram with Google's Play services and Firebase libraries for the `gms` flavor (`LICENSE-EXCEPTION.md`, owner decision 2026-10-21, `docs/adr/0010-gpl-additional-permission-for-play-services.md`); TDLib is Boost 1.0 |
 | Trademark | Must not use "Telegram" in name, icon, package or store title. "Pingogram — Telegram client" is acceptable as a *description*. |
 | Telegram API | Each build uses the owner's `api_id`/`api_hash` from https://my.telegram.org. Never committed. |
 | API Terms | https://core.telegram.org/api/terms and https://core.telegram.org/api/obtaining_api_id — binding. |
@@ -255,7 +255,8 @@ Every screen must satisfy this list before merge:
 
 - Semantic versioning `MAJOR.MINOR.PATCH`; tag `vX.Y.Z` triggers the release workflow.
 - Release artifacts: `pingogram-X.Y.Z-arm64-v8a.apk`, `-armeabi-v7a.apk`, `-x86_64.apk`,
-  `-universal.apk`, `SHA256SUMS.txt`, and an `.aab` attached as a workflow artifact.
+  `-universal.apk` (`foss`), the same four with a `-gms` suffix (`gms`, push through Firebase), `SHA256SUMS.txt`,
+  and the `.aab` bundles of both flavors attached as a workflow artifact.
 - Signed with the owner's release keystore (GitHub secret); debug builds use a committed
   debug keystore so anyone can build.
 - Changelog section auto-extracted from `CHANGELOG.md` into the GitHub Release body.
