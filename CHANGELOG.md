@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+- Pingogram starts and scrolls faster right after installing: it now ships a Baseline Profile, so Android compiles the
+  code used at start, in the chat list and in conversations ahead of time instead of while you use it.
+
 ## [0.3.0] - 2026-10-21
 
 ### Added
