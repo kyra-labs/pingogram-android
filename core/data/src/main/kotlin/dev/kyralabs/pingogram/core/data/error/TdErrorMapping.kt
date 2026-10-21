@@ -104,6 +104,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "USERNAME_INVALID" to DomainError.UsernameInvalid,
         "USERNAME_PURCHASE_AVAILABLE" to DomainError.UsernameForSale,
         "ABOUT_TOO_LONG" to DomainError.BioTooLong,
+        // Contacts: contacts.addContact without a first name, contacts.resolveUsername for a username no one has.
+        "CONTACT_NAME_EMPTY" to DomainError.FirstNameInvalid,
+        "USERNAME_NOT_OCCUPIED" to DomainError.NotFound,
         "PHOTO_CROP_SIZE_SMALL" to DomainError.PhotoInvalid,
         "PHOTO_INVALID_DIMENSIONS" to DomainError.PhotoInvalid,
         "PHOTO_EXT_INVALID" to DomainError.PhotoInvalid,

@@ -34,9 +34,10 @@ sealed interface NewChatUiState {
 }
 
 /**
- * What the New chat screen offers above the contacts, each with its Material Symbol and label. Their screens come with
- * groups, channels and contacts (`docs/ROADMAP.md` M4); until then they say so. The symbols are the closest of those
- * bundled ("chat", "notifications", "contacts") until "group_add", "campaign" and "person_add" are.
+ * What the New chat screen offers above the contacts, each with its Material Symbol and label. New contact opens Add
+ * contact (`feature:contacts`); new groups and channels come with their screens (`docs/ROADMAP.md` M4), and until then
+ * say so. The symbols are the closest of those bundled ("chat", "notifications", "contacts") until "group_add",
+ * "campaign" and "person_add" are.
  */
 enum class NewChatAction(
     @param:DrawableRes val icon: Int,
@@ -69,6 +70,9 @@ sealed interface NewChatEffect {
     data class OpenChat(
         val chatId: Long,
     ) : NewChatEffect
+
+    /** "New contact": opens Add contact. */
+    data object AddContact : NewChatEffect
 
     /** An action whose screen a later version adds: a snackbar says so. */
     data object NotAvailableYet : NewChatEffect

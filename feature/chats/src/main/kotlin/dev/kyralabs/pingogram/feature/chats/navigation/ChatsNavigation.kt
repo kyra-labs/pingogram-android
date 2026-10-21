@@ -50,15 +50,18 @@ fun NavGraphBuilder.archiveScreen(
 
 /**
  * Adds the New chat screen, [NewChatDestination], to the graph, which the Chats tab's "New chat" button grows into (a
- * container transform, through the app's shared transition scope); [onBack] leaves it, and a contact calls
- * [onOpenChat] with the id of its private chat.
+ * container transform, through the app's shared transition scope); [onBack] leaves it, a contact calls [onOpenChat]
+ * with the id of its private chat, and New contact calls [onAddContact].
  */
 fun NavGraphBuilder.newChatScreen(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onAddContact: () -> Unit,
 ) {
     composable<NewChatDestination> {
-        ProvideNavAnimatedVisibilityScope(this) { NewChatRoute(onBack = onBack, onOpenChat = onOpenChat) }
+        ProvideNavAnimatedVisibilityScope(this) {
+            NewChatRoute(onBack = onBack, onOpenChat = onOpenChat, onAddContact = onAddContact)
+        }
     }
 }
 

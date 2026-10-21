@@ -13,9 +13,25 @@ data object MainGraph
 @Serializable
 data object ChatsRoute
 
-/** The contacts list, `:feature:contacts`. */
+/** The contacts list (`REQUIREMENTS.md` FR-P1), `:feature:contacts`. */
 @Serializable
 data object ContactsRoute
+
+/**
+ * Adding a contact by phone number or username (`REQUIREMENTS.md` FR-P1), `:feature:contacts`, pushed above the
+ * Contacts tab or the New chat screen.
+ */
+@Serializable
+data object NewContactRoute
+
+/**
+ * Adding Telegram user [userId] to the contacts, or editing or deleting them as one (`REQUIREMENTS.md` FR-P1),
+ * `:feature:contacts`, pushed above the screen it is opened from: the contacts list, or the user's profile.
+ */
+@Serializable
+data class EditContactRoute(
+    val userId: Long,
+)
 
 /** Settings, `:feature:settings`. */
 @Serializable

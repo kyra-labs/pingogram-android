@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -45,6 +46,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
@@ -127,6 +129,9 @@ interface RepositoryModule {
 
     @Binds
     fun searchRepository(repository: TdlibSearchRepository): SearchRepository
+
+    @Binds
+    fun contactRepository(repository: TdlibContactRepository): ContactRepository
 
     @Binds
     fun storageRepository(repository: TdlibStorageRepository): StorageRepository

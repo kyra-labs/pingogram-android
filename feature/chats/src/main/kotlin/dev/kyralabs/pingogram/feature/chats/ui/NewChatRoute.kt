@@ -16,13 +16,14 @@ import kotlinx.coroutines.launch
 
 /**
  * The New chat screen, pushed above the Chats tab: hoists its [NewChatViewModel]. A contact calls [onOpenChat] with its
- * private chat; [onBack] leaves. New group, New channel and New contact show a snackbar until their screens exist
- * (`docs/ROADMAP.md` M4), the newest replacing the one shown.
+ * private chat, New contact [onAddContact]; [onBack] leaves. New group and New channel show a snackbar until their
+ * screens exist (`docs/ROADMAP.md` M4), the newest replacing the one shown.
  */
 @Composable
 internal fun NewChatRoute(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onAddContact: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NewChatViewModel = hiltViewModel(),
 ) {
@@ -30,12 +31,17 @@ internal fun NewChatRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
+    val currentOnAddContact by rememberUpdatedState(onAddContact)
     LaunchedEffect(viewModel) {
         var snackbar: Job? = null
         viewModel.effects.collect { effect ->
             when (effect) {
                 is NewChatEffect.OpenChat -> {
                     currentOnOpenChat(effect.chatId)
+                }
+
+                NewChatEffect.AddContact -> {
+                    currentOnAddContact()
                 }
 
                 NewChatEffect.NotAvailableYet -> {
