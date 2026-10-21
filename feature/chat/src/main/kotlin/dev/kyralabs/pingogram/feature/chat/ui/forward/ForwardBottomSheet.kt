@@ -191,7 +191,6 @@ private fun ForwardHeader(sheet: ForwardSheet) {
 }
 
 /** The search bar's input field on its container, with a clear button while there is text. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchField(query: TextFieldState) {
     val spacing = MaterialTheme.spacing

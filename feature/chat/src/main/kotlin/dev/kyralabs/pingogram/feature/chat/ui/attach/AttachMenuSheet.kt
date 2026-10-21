@@ -81,7 +81,6 @@ internal fun AttachMenuSheet(
 }
 
 /** The [options] as a [ButtonGroup], centred; the ones that do not fit go into its overflow menu. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun AttachOptions(
     options: ImmutableList<AttachOption>,
@@ -133,7 +132,6 @@ internal fun AttachOptions(
  * One option: a filled tonal icon button of the medium size, as wide as its label at least, which it fills as the
  * group widens it, and the label below in `labelLarge`. Screen readers hear the button by the label, once.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AttachTile(
     option: AttachOption,

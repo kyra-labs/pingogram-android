@@ -62,7 +62,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * label for screen readers and in a [PlainTooltip] on a long press or hover. Icons do not grow with the font scale, so
  * the four fit the narrowest phones.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MessageSelectionToolbar(
     actions: ImmutableList<MessageAction>,
@@ -105,7 +105,6 @@ internal fun MessageSelectionToolbar(
  * the bar's height following on its default spatial spring; it shrinks with a predictive back gesture ([backProgress],
  * 0 to 1) that leaves selection mode. The toolbar changes its actions in place.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SelectionBottomBar(
     actions: ImmutableList<MessageAction>?,

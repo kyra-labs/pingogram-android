@@ -114,7 +114,6 @@ private fun SendAsContent(
 }
 
 /** "Send messages as", a heading in `titleLargeEmphasized`. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SendAsTitle() {
     Text(

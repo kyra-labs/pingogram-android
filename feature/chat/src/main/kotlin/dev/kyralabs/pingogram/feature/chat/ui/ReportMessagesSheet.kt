@@ -101,7 +101,6 @@ internal fun ReportMessagesSheet(
 }
 
 /** The step's title, a heading in `titleLargeEmphasized`. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReportTitle(text: String) {
     Text(
@@ -134,7 +133,6 @@ private fun OptionsStep(
 }
 
 /** The comment and "Send report", enabled once there is a comment unless it is optional, and not while reporting. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ColumnScope.CommentStep(
     step: ReportStep.Comment,
@@ -178,7 +176,6 @@ private fun ColumnScope.CommentStep(
 }
 
 /** The report on its way. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReportProgress() {
     val spacing = MaterialTheme.spacing

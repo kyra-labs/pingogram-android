@@ -128,7 +128,6 @@ internal fun PollFormSheet(
 }
 
 /** The form itself, in a lazy column bounded by the sheet. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ColumnScope.PollForm(
     sheet: PollSheet,
@@ -268,7 +267,6 @@ private fun LazyListScope.settingItems(
  * Option [number]: in quiz mode a radio button that marks it as the correct answer, its text field ("Option 1"), with
  * a note in `error` when it repeats an option above it, and its remove button while more than two are left.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun OptionRow(
     editor: PollEditor,
