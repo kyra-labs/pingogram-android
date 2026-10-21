@@ -55,10 +55,8 @@ the release workflow so the owner can install and test on a phone.
 - [x] Message actions, reactions picker, forward sheet, delete, pin, select
 - [x] Settings: account, privacy & security (incl. passcode/biometric, sessions), notifications,
       data & storage, appearance, language, about + OSS licenses
-- [ ] Notifications via TDLib notification groups, channels, MessagingStyle, shortcuts/direct
-      share, reply/mark-read actions, Android 13 permission flow
-      (all but direct share: sharing into a chat from other apps needs a chat picker and a prefilled composer,
-      `docs/ARCHITECTURE.md` Notifications)
+- [x] Notifications via TDLib notification groups, channels, MessagingStyle, conversation shortcuts,
+      reply/mark-read actions, Android 13 permission flow (direct share moved to M4 by the owner, 2026-10-21)
 - [x] WorkManager background downloads/uploads with foreground service (`dataSync`)
 - [x] `gms` flavor with FCM `registerDevice` (in every GitHub release next to `foss` from 0.3.0, `LICENSE-EXCEPTION.md`)
 - [x] Sponsored messages in channels (`REQUIREMENTS.md` §2; audit G01)
@@ -72,6 +70,8 @@ the release workflow so the owner can install and test on a phone.
 - [ ] Forum topics, comments threads, pinned messages bar
 - [ ] Secret chats: create/accept, TTL, lock indicators
 - [ ] Deep links (`tg://`, `t.me`) via `getInternalLinkType`
+- [ ] Direct share: share text, links and files from other apps into a chat (a share target with a chat picker and a
+      prefilled composer; the conversation shortcuts as Direct Share targets), moved from M3 (owner, 2026-10-21)
 
 ## M5 — Calls → `v0.5.0`
 

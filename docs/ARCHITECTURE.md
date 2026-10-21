@@ -267,7 +267,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   of "Keep connected", which only that flavor creates, with its service.
 - Android 11+: a long-lived conversation shortcut per chat (`ConversationShortcuts`), linked by `setShortcutId` and
   `LocusId`, so notifications show in the conversation section. No share target yet (sharing into a chat needs a chat
-  picker and a prefilled composer); no bubbles yet (they need a resizable chat activity of their own).
+  picker and a prefilled composer; M4, `docs/ROADMAP.md`); no bubbles yet (they need a resizable chat activity of their own).
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go

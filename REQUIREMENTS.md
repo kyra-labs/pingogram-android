@@ -72,7 +72,9 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 - **Coil 3** for images (with TDLib file paths), **Media3/ExoPlayer** for audio/video,
   **CameraX** for in-app camera (later milestone).
 - **AndroidX**: `core-splashscreen`, `activity-compose`, `lifecycle`, `work` (background
-  downloads), `biometric` (passcode lock), `security-crypto`/Keystore for DB key.
+  downloads), the platform's `BiometricPrompt` for the passcode lock (Android 10+, not `androidx.biometric`:
+  `docs/adr/0005-passcode-lock.md`, accepted by the owner 2026-10-21), the Android Keystore for the DB key (not the
+  deprecated `security-crypto`).
 - **Tooling**: Gradle version catalog, convention plugins in `build-logic/`, ktlint, detekt,
   Android Lint (fatal on error), Roborazzi screenshot tests, Turbine, MockK, JUnit 5.
 
@@ -162,7 +164,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-N1 Must: Push via TDLib's long-polling in a foreground-less model (TDLib keeps a
   connection); on Android 13+ request `POST_NOTIFICATIONS` with rationale.
 - FR-N2 Must: Notification channels: Private chats, Groups, Channels, Calls, Other. Conversation
-  style (`MessagingStyle`), shortcuts for top chats (direct share), reply/mark-read actions,
+  style (`MessagingStyle`), shortcuts for top chats (direct share: [M4], owner 2026-10-21), reply/mark-read actions,
   bubbles opt-in, grouped per chat, respect mute/exceptions from TDLib.
 - FR-N3 Should: FCM push support (TDLib `registerDevice` with `deviceTokenFirebaseCloudMessaging`)
   behind a build flag so F-Droid builds stay Google-free.
