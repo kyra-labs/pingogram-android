@@ -6,7 +6,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
@@ -61,6 +65,23 @@ class ChatRecompositionTest {
         val others = counter.recomposedOwn.filterNot { JUMP_BUTTON in it || it.startsWith(SCREEN_LAMBDA) }
         assertEquals(emptyList<String>(), others)
         assertTrue(counter.recomposedOwn.toString(), counter.recomposedOwn.size < SCROLL_FRAMES / RARE)
+    }
+
+    @Test
+    fun `swiping a bubble to reply recomposes none of the bubbles`() {
+        setScreen(messages(MESSAGES).copy(shortcuts = MessageShortcuts(canReply = true)))
+        val bubble = composeRule.onNode(hasContentDescription("Message $MESSAGES", substring = true))
+
+        bubble.performTouchInput { down(centerLeft + Offset(SWIPE_START.toPx(), 0f)) }
+        frame()
+        repeat(SWIPE_FRAMES) {
+            bubble.performTouchInput { moveBy(Offset(SWIPE_STEP.toPx(), 0f)) }
+            frame()
+        }
+        bubble.performTouchInput { up() }
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
     }
 
     @Test
@@ -213,6 +234,11 @@ class ChatRecompositionTest {
         const val SCROLL_STEP = 25f
 
         const val SETTLE_FRAMES = 60
+
+        /** A swipe to reply past its distance: where it starts on the bubble, its steps, one per frame. */
+        val SWIPE_START = 24.dp
+        val SWIPE_STEP = 8.dp
+        const val SWIPE_FRAMES = 20
 
         /** At most one recomposition in this many frames counts as rare, nothing like one in every frame. */
         const val RARE = 10

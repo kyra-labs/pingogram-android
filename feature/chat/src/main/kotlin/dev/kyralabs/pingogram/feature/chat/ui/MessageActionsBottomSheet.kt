@@ -64,24 +64,37 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - It scrolls where the window is too short for it.
  * - Dragging it down, tapping the scrim and the back gesture dismiss it ([ChatEvent.DismissMessageActions]); the back
  *   gesture is Material's predictive back, which shrinks the sheet as it goes, also from the picker.
+ * - It is how screen readers that explore by touch, and windows too short for the floating menu, get the actions
+ *   ([MessageLiftState]). Over the floating menu ([MessageActionsMenu]) it holds the reactions picker alone: [onClose]
+ *   then closes the menu with the chosen reaction, and leaving the picker (its back button, dragging it down, the back
+ *   gesture) returns to the menu ([ChatEvent.CollapseReactions]).
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun MessageActionsBottomSheet(
     sheet: MessageActionsSheet,
     onEvent: (ChatEvent) -> Unit,
+    onClose: ((ChatEvent) -> Unit)? = null,
 ) {
     val sheetState =
         rememberBottomSheetState(SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val scope = rememberCoroutineScope()
     val currentOnEvent by rememberUpdatedState(onEvent)
-    val choose: (ChatEvent) -> Unit =
+    val currentOnClose by rememberUpdatedState(onClose)
+    val hideThen: ((ChatEvent) -> Unit) -> (ChatEvent) -> Unit =
         remember(sheetState, scope) {
-            { event -> scope.launch { sheetState.hide() }.invokeOnCompletion { currentOnEvent(event) } }
+            { then -> { event -> scope.launch { sheetState.hide() }.invokeOnCompletion { then(event) } } }
         }
+    // Over the floating menu, a reaction closes the menu too, and leaving the picker returns to the menu.
+    val choose: (ChatEvent) -> Unit =
+        remember(hideThen) { hideThen { event -> (currentOnClose ?: currentOnEvent)(event) } }
+    val collapse: () -> Unit =
+        remember(hideThen) { { hideThen { event -> currentOnEvent(event) }(ChatEvent.CollapseReactions) } }
     val motion = MaterialTheme.motionScheme
     ModalBottomSheet(
-        onDismissRequest = { currentOnEvent(ChatEvent.DismissMessageActions) },
+        onDismissRequest = {
+            currentOnEvent(if (currentOnClose != null) ChatEvent.CollapseReactions else ChatEvent.DismissMessageActions)
+        },
         sheetState = sheetState,
     ) {
         AnimatedContent(
@@ -98,7 +111,7 @@ internal fun MessageActionsBottomSheet(
                     sheet = sheet,
                     picker = picker,
                     choose = choose,
-                    onBack = { currentOnEvent(ChatEvent.CollapseReactions) },
+                    onBack = if (onClose != null) collapse else ({ currentOnEvent(ChatEvent.CollapseReactions) }),
                 )
             } else {
                 ActionsContent(sheet, choose, onExpand = { currentOnEvent(ChatEvent.ExpandReactions) })
@@ -170,7 +183,7 @@ private fun QuickReactions(
 /** The button that opens the reactions picker: a medium filled icon button whose shape morphs while pressed. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MoreReactionsButton(onClick: () -> Unit) {
+internal fun MoreReactionsButton(onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     FilledIconButton(
         onClick = onClick,
@@ -252,7 +265,7 @@ internal val MessageAction.icon: Int
         }
 
 /** The event of choosing [this] for message [messageId]. */
-private fun MessageAction.eventFor(messageId: Long): ChatEvent =
+internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
     when (this) {
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)

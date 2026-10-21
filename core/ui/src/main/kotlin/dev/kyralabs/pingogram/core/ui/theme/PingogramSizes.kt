@@ -45,6 +45,11 @@ import androidx.compose.ui.unit.dp
  *   off from the bubble it overlaps.
  * @property reactionTile the width of a reaction with its count in the reactions picker's carousel of a message's
  *   reactions, at 100% font scale.
+ * @property swipeReplyDistance how far a bubble is swiped toward the end to reply to it: released past it, the reply
+ *   starts.
+ * @property messageMenuBlur the blur radius of the conversation behind a message lifted for its actions (API 31+).
+ * @property messageMenuMinWindowHeight the shortest window that lifts a long-pressed message with its menu beside it;
+ *   shorter ones (phones in landscape) show its actions in a bottom sheet. Material's lower bound of medium heights.
  * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll.
  * @property mediaMaxHeight the tallest a photo or a video gets in a message.
  * @property mediaMinSize the shortest side of a photo or a video in a message: panoramas and tall screenshots are
@@ -103,6 +108,9 @@ data class PingogramSizes(
     val reactionBadge: Dp = 28.dp,
     val reactionBadgeRing: Dp = 2.dp,
     val reactionTile: Dp = 64.dp,
+    val swipeReplyDistance: Dp = 64.dp,
+    val messageMenuBlur: Dp = 16.dp,
+    val messageMenuMinWindowHeight: Dp = 480.dp,
     val mediaMaxWidth: Dp = 280.dp,
     val mediaMaxHeight: Dp = 360.dp,
     val mediaMinSize: Dp = 120.dp,

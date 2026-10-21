@@ -314,6 +314,8 @@
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
     <string name="message_actions">Message actions</string>
+    <!-- The dimmed background behind a long-pressed message and its menu, for screen readers: tapping it closes them. -->
+    <string name="message_actions_close">Close message actions</string>
     <!-- Sends a message that failed to send again. -->
     <string name="message_action_resend">Send again</string>
     <string name="message_action_reply">Reply</string>

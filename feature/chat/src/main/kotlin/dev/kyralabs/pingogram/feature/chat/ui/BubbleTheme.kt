@@ -75,7 +75,8 @@ internal fun rememberBubbleTheme(): BubbleTheme {
 /**
  * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), the
  * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction badge ([reactions]), and the
- * actions screen readers get on every bubble ([shortcuts]), and how photos download ([mediaDownloads]).
+ * actions screen readers get on every bubble ([shortcuts]), how photos download ([mediaDownloads]), the message a long
+ * press lifts for its floating menu ([lift]) and the look of the swipe to reply ([swipe]).
  */
 @Suppress("LongParameterList") // One holder for what every bubble shares, so the bubbles take a single parameter.
 @Stable
@@ -87,24 +88,28 @@ internal class BubbleResources(
     val reactions: ReactionToggleState,
     val shortcuts: MessageShortcuts,
     val mediaDownloads: MediaDownloads,
+    val lift: MessageLiftState,
+    val swipe: SwipeReplyStyle,
 )
 
 /**
- * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state, the [shortcuts] and
- * the [mediaDownloads] stay.
+ * What every bubble of the list shares ([BubbleResources]), kept while the theme, the jump state, the [shortcuts],
+ * the [mediaDownloads] and the [lift] stay.
  */
 @Composable
 internal fun rememberBubbleResources(
     jump: MessageJumpState,
     shortcuts: MessageShortcuts,
     mediaDownloads: MediaDownloads = MediaDownloads(),
+    lift: MessageLiftState = remember { MessageLiftState() },
 ): BubbleResources {
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
     val reactions = rememberReactionToggleState()
-    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads) {
-        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads)
+    val swipe = rememberSwipeReplyStyle()
+    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads, lift, swipe) {
+        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads, lift, swipe)
     }
 }
 

@@ -13,6 +13,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Releases now include a second set of APKs with "-gms" in their names, for phones with Google Play services: they get
   notifications through Google's push service even when Pingogram is closed, without "Keep connected". The plain APKs
   stay free of Google services. Both are the same app, so installing one replaces the other and keeps your data.
+- Swipe to reply: swipe a message toward the other side of the screen (to the right, or to the left in right-to-left
+  languages) and let go once the reply icon pops to start a reply to it, with a short vibration as you pass the point.
+  A short swipe just springs back. Messages still being sent, or chats you cannot write in, do not reply.
+- Copy part of a message: long-press a message, then long-press its text in the lifted message to select words, and
+  copy them from the menu that appears.
 - Forward from the media viewer: the toolbar starts with Forward wherever Telegram lets the photo, video or GIF be
   forwarded (never for protected content). It opens the same forward sheet as the conversation, over the viewer, and
   after forwarding to one chat the snackbar there offers to open it.
@@ -27,6 +32,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   opening each page full screen.
 - Settings pages have the large title of Settings itself, which shrinks into the top bar as you scroll, and line up
   with their content on wide windows; on tablets and unfolded phones their content keeps a wider margin from the edges.
+- Long-pressing a message now lifts it out of the conversation, which blurs behind it (on Android 12 and later), with
+  its quick reactions above it and its actions in a menu right below it, as in Google Messages; if the message is too
+  close to an edge, everything slides into view. Tap outside or go back to close it. With TalkBack, and in windows too
+  short for the menu (phones in landscape), the actions still open in the sheet from the bottom.
 - Settings look more like Android 16's: each row's icon sits in a small colored circle, one color per group; switches
   show a check in their knob when on, and buzz lightly as they turn on and off; the theme and contrast choices are a
   row of joined buttons that tick as you choose. Edit profile's fields sit directly on the page as rounded fields,

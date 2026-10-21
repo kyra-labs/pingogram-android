@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -264,3 +266,18 @@ internal const val MAX_REACTION_BADGES = 3
 
 private const val LINK_TITLE_MAX_LINES = 2
 private const val LINK_DESCRIPTION_MAX_LINES = 3
+
+/**
+ * The corners media shows in a bubble of this shape: the bubble's own, except square at the top below a header
+ * ([hasHeader]) and at the bottom above a caption, link preview or reactions ([hasFooter]).
+ */
+internal fun CornerBasedShape.mediaCorners(
+    hasHeader: Boolean,
+    hasFooter: Boolean,
+): CornerBasedShape =
+    copy(
+        topStart = if (hasHeader) ZeroCornerSize else topStart,
+        topEnd = if (hasHeader) ZeroCornerSize else topEnd,
+        bottomEnd = if (hasFooter) ZeroCornerSize else bottomEnd,
+        bottomStart = if (hasFooter) ZeroCornerSize else bottomStart,
+    )
