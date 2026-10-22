@@ -40,6 +40,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
 
+### Changed
+- The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
+  scrolling, and flinging back, has less to do in each frame.
+
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
