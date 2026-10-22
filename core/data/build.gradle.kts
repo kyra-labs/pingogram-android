@@ -10,6 +10,8 @@ dependencies {
     // LocationManagerCompat and ContextCompat (AndroidDeviceLocationRepository, AndroidSharedStorageRepository,
     // AndroidNetworkRepository's Data Saver receiver).
     implementation(libs.androidx.core)
+    // Whether an activity is visible, for TDLib's "online" option (TdlibNetworkTypeReporter).
+    implementation(libs.androidx.lifecycle.process)
 
     testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
