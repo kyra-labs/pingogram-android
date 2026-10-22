@@ -67,7 +67,7 @@ the release workflow so the owner can install and test on a phone.
 
 ## M4 — Contacts, profiles, groups, channels, secret chats → `v0.4.0`
 
-- [ ] Contacts list, add/edit/invite; user profile; shared media tabs; the conversation title opens the profile
+- [x] Contacts list, add/edit/invite; user profile; shared media tabs; the conversation title opens the profile
       (audit G23's rest)
 - [ ] Group/channel info, members, admins, permissions, invite links, create/leave/delete
 - [ ] Forum topics, comments threads, pinned messages bar
