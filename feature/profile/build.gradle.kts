@@ -1,3 +1,18 @@
 plugins {
     alias(libs.plugins.pingogram.android.feature)
 }
+
+dependencies {
+    // The window size class and the supporting pane layout: the shared media beside the profile on expanded windows.
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+
+    // ProfileViewModel is tested through the real TDLib repositories on FakeTdlibClient (docs/TESTING.md).
+    testImplementation(projects.core.data)
+    testImplementation(projects.core.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+}

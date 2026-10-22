@@ -32,6 +32,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   messaging app. Your contacts are read only when you turn it on, open Contacts (at most every few hours) or tap
   Sync now, never in the background. Turning it off deletes the imported numbers from Telegram and points you to
   Android's settings to take back the access.
+- Profiles: tap the name at the top of a chat with someone, a sender's photo or name in a group, or a mention in a
+  message to see their profile, with their photos, bio, username, phone number (if they share it) and birthday. From
+  there you can message them, mute them, start a secret chat (after a short explanation of what that is), add them to
+  your contacts or edit their contact, block or report them, and copy or share their username. Below, their shared
+  media: photos and videos, files, links, voice messages, music and GIFs from your chat, each opening where it
+  belongs. On tablets the shared media sit beside the profile.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so

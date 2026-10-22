@@ -23,6 +23,12 @@ import androidx.compose.ui.unit.dp
  *   §7: between Material's 40 dp list avatar and [avatarMedium], so photos stay recognizable in a dense list).
  * @property avatarMedium an `Avatar` on the account's card at the top of Settings.
  * @property avatarLarge an `Avatar` heading a screen on its own: the profile photo in Edit profile.
+ * @property avatarProfile the `Avatar` heading a user's profile, under its large flexible top bar, as large as Google
+ *   Contacts' contact photo.
+ * @property profilePhotoItem the side of a photo in the profile's carousel of profile photos (square, as Telegram
+ *   keeps them).
+ * @property sharedMediaCell the smallest cell of a photo or video in the grid of a profile's shared media: three
+ *   across a phone, more on wider panes.
  * @property avatarExtraSmall an `Avatar` beside the last of a group of messages in a group chat, next to its bubble.
  * @property avatarRing the width of a ring around an `Avatar`, and of the gap that sets it off from the avatar, e.g.
  *   the ring in `primary` around the account's avatar on its card in Settings.
@@ -97,6 +103,9 @@ data class PingogramSizes(
     val avatarRow: Dp = 48.dp,
     val avatarMedium: Dp = 56.dp,
     val avatarLarge: Dp = 96.dp,
+    val avatarProfile: Dp = 120.dp,
+    val profilePhotoItem: Dp = 120.dp,
+    val sharedMediaCell: Dp = 112.dp,
     val avatarExtraSmall: Dp = 32.dp,
     val avatarRing: Dp = 2.dp,
     val avatarBadge: Dp = 24.dp,

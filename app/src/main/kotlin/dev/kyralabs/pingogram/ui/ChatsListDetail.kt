@@ -76,7 +76,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Back**: predictive, through the navigator ([BACK_BEHAVIOR]): it closes the conversation, back to the list alone
  *   or to [NoChatSelected] beside it. Selection mode in the list handles back first, and never changes the chat shown.
  * - **Media**: a photo, video or GIF tapped in the conversation opens through [onOpenMedia], which pushes the media
- *   viewer full screen above the whole layout, whichever pane it was tapped in.
+ *   viewer full screen above the whole layout, whichever pane it was tapped in; a profile opens through
+ *   [onOpenProfile], pushed above the whole layout too.
  * - **Containers**: with two panes, each is its own rounded container on the window's `surfaceContainer`
  *   ([paneContainer], `core:ui`), and a drag handle between them resizes the list ([PaneDragHandle]) between
  *   Material's fixed widths and an even split. The width is saved with the scaffold, so it survives rotation and
@@ -101,6 +102,7 @@ internal fun ChatsListDetail(
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenProfile: (userId: Long) -> Unit = {},
 ) {
     val navigator =
         rememberListDetailPaneScaffoldNavigator<Long>(
@@ -145,12 +147,10 @@ internal fun ChatsListDetail(
                         onOpenMedia = onOpenMedia,
                         // The chat messages were forwarded to replaces this one, or is pushed with one pane.
                         onOpenChat = opener::openChat,
-                        // Beside the list there is nothing to go back to; a pane sliding out keeps its button.
+                        onOpenProfile = onOpenProfile,
                         onBack =
-                            if (listVisible && shownChatId != null) {
-                                null
-                            } else {
-                                { scope.launch { navigator.navigateBack(BACK_BEHAVIOR) } }
+                            backUnless(listVisible && shownChatId != null) {
+                                scope.launch { navigator.navigateBack(BACK_BEHAVIOR) }
                             },
                     )
                 } else {
@@ -164,6 +164,15 @@ internal fun ChatsListDetail(
         paneExpansionState = paneExpansionState,
     )
 }
+
+/**
+ * The detail pane's back button: [back], except [besideList], where there is nothing to go back to; a pane sliding out
+ * keeps its button.
+ */
+private fun backUnless(
+    besideList: Boolean,
+    back: () -> Unit,
+): (() -> Unit)? = if (besideList) null else back
 
 /**
  * The list pane's content: the chat [list], or docked search ([SearchPane]) while [search] is docked, crossfading on

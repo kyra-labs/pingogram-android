@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.LinkPreview
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SelfDestruct
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.User
@@ -58,6 +59,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         status = status(newest),
         showsTime = !position.joinsNext || timeShown,
         canResend = (album.ifEmpty { listOf(message) }).any { it.canResend },
+        senderUserId = (message.sender as? MessageSender.User)?.userId?.takeIf { showsSender },
         forwardedFrom = message.forwardInfo?.let(::forwardedFrom),
         reply = reply?.let { toQuote(it) },
         content = content,

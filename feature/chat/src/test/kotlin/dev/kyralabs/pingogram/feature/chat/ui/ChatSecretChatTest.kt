@@ -83,9 +83,15 @@ class ChatSecretChatTest : ChatViewModelHarness() {
                     viewModel.state.header?.secret,
                 )
                 assertEquals(
-                    ChatSubtitle.Status(res(ChatR.string.chat_subtitle_last_seen_long_ago)),
+                    ChatSubtitle.Status(res(UiR.string.user_status_last_seen_long_ago)),
                     viewModel.subtitle,
                 )
+            }
+
+        @Test
+        fun `the title of a secret chat opens the other user's profile`() =
+            runViewModelTest {
+                assertEquals(ADA, secret().state.header?.profileUserId)
             }
 
         @Test

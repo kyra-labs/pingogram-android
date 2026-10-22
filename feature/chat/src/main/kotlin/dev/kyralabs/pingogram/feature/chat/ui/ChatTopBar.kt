@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -49,12 +51,13 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The conversation's small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6): back, then the chat's avatar and a two-line
  * title, its name in `titleMediumEmphasized` over the subtitle in `bodySmall`: `onSurfaceVariant`, or `primary` with
  * pulsing [TypingDots] while someone is typing or doing something else in the chat. No actions in other chats yet
- * (calls come in M5, search in the chat in M6, and Material allows two at most), and the title does not open the
- * profile yet (M4, which brings its route). A secret chat (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock
- * before its name, and two actions ([SecretChatActions]): its self-destruct timer, with the timer on a badge, and its
- * encryption key, both through [onSecretChatEvent]. It sits on the screen's `surfaceContainer`, above the sheet the
- * messages scroll in. Without [onBack] there is no back button: in the detail pane beside the chat list, which has
- * nothing to go back to.
+ * (calls come in M5, search in the chat in M6, and Material allows two at most). In a private or secret chat the
+ * title opens the other user's profile through [onOpenProfile] (`REQUIREMENTS.md` FR-P2), its state layer over the
+ * title; groups and channels keep it inert until chat info comes. A secret chat (`REQUIREMENTS.md` FR-E1,
+ * [ChatHeader.secret]) has a lock before its name, and two actions ([SecretChatActions]): its self-destruct timer,
+ * with the timer on a badge, and its encryption key, both through [onSecretChatEvent]. It sits on the screen's
+ * `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in the detail
+ * pane beside the chat list, which has nothing to go back to.
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
@@ -70,6 +73,7 @@ internal fun ChatTopBar(
     modifier: Modifier = Modifier,
     selectedCount: Int? = null,
     onClearSelection: () -> Unit = {},
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
     onSecretChatEvent: (SecretChatEvent) -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
@@ -84,7 +88,7 @@ internal fun ChatTopBar(
                 contentKey = { it != null },
                 label = "chatTitle",
             ) { count ->
-                if (count != null) SelectionTitle(count) else header?.let { ChatTitle(it) }
+                if (count != null) SelectionTitle(count) else header?.let { ChatTitle(it, onOpenProfile) }
             }
         },
         modifier = modifier,
@@ -149,20 +153,33 @@ private fun SelectionTitle(count: Int) {
 }
 
 /**
- * The avatar beside the name and the subtitle; one heading for screen readers. While someone is doing something in the
- * chat, the heading is a polite live region, so screen readers announce it ("Grace is typing…") when it starts or
- * changes; the status is not, as "last seen" changes every minute.
+ * The avatar beside the name and the subtitle; one heading for screen readers, a button that opens the profile where
+ * there is one ([onOpenProfile]). While someone is doing something in the chat, the heading is a polite live region,
+ * so screen readers announce it ("Grace is typing…") when it starts or changes; the status is not, as "last seen"
+ * changes every minute.
  */
 @Composable
-private fun ChatTitle(header: ChatHeader) {
+private fun ChatTitle(
+    header: ChatHeader,
+    onOpenProfile: ((userId: Long) -> Unit)?,
+) {
     val title = header.title.resolve()
     val isAction = header.subtitle is ChatSubtitle.Action
+    val userId = header.profileUserId
+    val openLabel = stringResource(R.string.chat_open_profile)
     Row(
         modifier =
-            Modifier.semantics(mergeDescendants = true) {
-                heading()
-                if (isAction) liveRegion = LiveRegionMode.Polite
-            },
+            Modifier
+                .then(
+                    if (userId != null && onOpenProfile != null) {
+                        Modifier.clickable(onClickLabel = openLabel, role = Role.Button) { onOpenProfile(userId) }
+                    } else {
+                        Modifier
+                    },
+                ).semantics(mergeDescendants = true) {
+                    heading()
+                    if (isAction) liveRegion = LiveRegionMode.Polite
+                },
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {

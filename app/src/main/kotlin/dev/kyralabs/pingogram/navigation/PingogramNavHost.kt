@@ -43,9 +43,6 @@ import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
-import dev.kyralabs.pingogram.feature.contacts.navigation.contactScreens
-import dev.kyralabs.pingogram.feature.contacts.navigation.contactsScreen
-import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
@@ -79,7 +76,8 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * Chats tab's list pane).
  *
  * The media viewer's Forward opens the forward sheet, a dialog destination of `feature:chat`, above it, and the viewer
- * shows what came of it ([mediaViewer]).
+ * shows what came of it ([mediaViewer]). A user's profile ([profile]) is pushed above the conversation whose title, a
+ * sender's avatar or name, or a mention opened it.
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -213,17 +211,11 @@ private fun NavGraphBuilder.mainGraph(
                     },
                     onOpenMedia = openMedia,
                     onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
+                    onOpenProfile = navController::navigateToProfile,
                 )
             }
         }
-        // A contact's chat, Add contact and Edit contact are pushed above the Contacts tab.
-        contactsScreen(
-            onOpenChat = openChat,
-            onAddContact = { navController.navigateToNewContact() },
-            onEditContact = { userId -> navController.navigateToEditContact(userId) },
-        )
-        // Back to where they were opened from once done: the contacts list, New chat, or a profile.
-        contactScreens(onBack = { navController.popBackStack() })
+        contacts(navController, openChat)
         // Settings pages are pushed above the tab on every window, as the archive is.
         settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
         settingsPages(
@@ -257,7 +249,9 @@ private fun NavGraphBuilder.mainGraph(
             onBack = { navController.popBackStack() },
             onOpenMedia = openMedia,
             onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
+            onOpenProfile = navController::navigateToProfile,
         )
+        profile(navController)
         mediaViewer(navController)
     }
 }

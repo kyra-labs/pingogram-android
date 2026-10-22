@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -539,12 +540,19 @@ class FakeSharedStorageRepository : SharedStorageRepository {
 }
 
 /**
- * Chat search: [searchChats] records each query and emits what [onSearchChats] gives for it (nothing by default); the
- * rest of global search is not used by the conversation.
+ * Chat search: [searchChats] records each query and emits what [onSearchChats] gives for it (nothing by default), and
+ * [publicChat] looks up a tapped mention's username with [onPublicChat]; the rest of global search is not used by the
+ * conversation.
  */
 class FakeSearchRepository : SearchRepository {
     /** Every query searched, in order. */
     val chatQueries = mutableListOf<String>()
+
+    /** Every username looked up for a tapped mention ([publicChat]), in order. */
+    val usernames = mutableListOf<String>()
+
+    /** Who has a username: nobody by default. */
+    var onPublicChat: (String) -> Outcome<UsernameOwner> = { Outcome.Failure(DomainError.NotFound) }
 
     var onSearchChats: (String) -> Flow<Outcome<ImmutableList<Chat>>> = { flowOf(Outcome.Success(persistentListOf())) }
 
@@ -558,6 +566,11 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun contacts(): Outcome<ImmutableList<Chat>> = unused()
 
     override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> = unused()
+
+    override suspend fun publicChat(username: String): Outcome<UsernameOwner> {
+        usernames += username
+        return onPublicChat(username)
+    }
 
     override suspend fun searchMessages(
         query: String,

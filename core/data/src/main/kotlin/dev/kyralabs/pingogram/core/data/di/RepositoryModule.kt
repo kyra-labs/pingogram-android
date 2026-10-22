@@ -33,11 +33,13 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSendAsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
@@ -68,12 +70,14 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 
@@ -153,6 +157,12 @@ interface RepositoryModule {
 
     @Binds
     fun blockListRepository(repository: TdlibBlockListRepository): BlockListRepository
+
+    @Binds
+    fun userProfileRepository(repository: TdlibUserProfileRepository): UserProfileRepository
+
+    @Binds
+    fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository
 
     @Binds
     fun sessionRepository(repository: TdlibSessionRepository): SessionRepository

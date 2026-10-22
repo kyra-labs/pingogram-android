@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -50,6 +52,9 @@ class FakeSearchRepository : SearchRepository {
     override suspend fun searchPublicChats(query: String) = record("public:$query") { onSearchPublicChats(query) }
 
     override suspend fun contacts() = record("allContacts") { onContacts() }
+
+    override suspend fun publicChat(username: String): Outcome<UsernameOwner> =
+        record("username:$username") { Outcome.Failure(DomainError.NotFound) }
 
     override suspend fun searchMessages(
         query: String,

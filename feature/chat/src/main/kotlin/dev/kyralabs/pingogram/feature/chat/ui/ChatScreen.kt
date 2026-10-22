@@ -117,7 +117,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
- * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows.
+ * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows. [onOpenProfile],
+ * where the app has profiles, is what the title of a private chat opens; tapped mentions, senders' avatars and names
+ * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]).
  */
 @Composable
 internal fun ChatScreen(
@@ -136,6 +138,7 @@ internal fun ChatScreen(
     emojiPanel: EmojiPanelUiState = EmojiPanelUiState(),
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit = {},
     lift: MessageLiftState = rememberMessageLiftState(),
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -146,7 +149,10 @@ internal fun ChatScreen(
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
     var attachMenuOpen by rememberSaveable { mutableStateOf(false) }
     val scrollToSent = scrollingToSent(content, scrollToNewest)
-    val bubbleResources = rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift)
+    val bubbleResources =
+        rememberBubbleResources(jumpState, state.shortcuts, state.mediaDownloads, lift) { target ->
+            onEvent(ChatEvent.OpenMention(target))
+        }
     val lifted = liftedBubble(state, lift)
     Box(modifier) {
         ChatScaffold(
@@ -156,6 +162,7 @@ internal fun ChatScreen(
             listState = listState,
             snackbarHostState = snackbarHostState,
             bubbleResources = bubbleResources,
+            onOpenProfile = onOpenProfile,
             bottomBar = {
                 ChatScreenBottomBar(
                     state = state,
@@ -205,6 +212,7 @@ private fun ChatScaffold(
     listState: LazyListState,
     snackbarHostState: SnackbarHostState,
     bubbleResources: BubbleResources,
+    onOpenProfile: ((userId: Long) -> Unit)?,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -218,6 +226,7 @@ private fun ChatScaffold(
                 onBack = onBack,
                 selectedCount = selection?.messageIds?.size,
                 onClearSelection = { onEvent(SelectionEvent.Clear) },
+                onOpenProfile = onOpenProfile,
                 onSecretChatEvent = onEvent,
             )
         },

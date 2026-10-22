@@ -47,7 +47,7 @@ internal object SecretChatPreviewData {
 
     val ready =
         ChatUiState(
-            header = header(SecretChatState.Ready, UiText.resource(R.string.chat_subtitle_online), timer = TIMER),
+            header = header(SecretChatState.Ready, UiText.resource(UiR.string.user_status_online), timer = TIMER),
             composer = ComposerUiState.Available(canSchedule = false),
             content =
                 ChatPreviewData.content(

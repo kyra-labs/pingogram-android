@@ -208,3 +208,14 @@ data class ForwardRoute(
     val fromChatId: Long,
     val messageIds: List<Long>,
 )
+
+/**
+ * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
+ * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
+ * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a
+ * mention), with the shared axis on X.
+ */
+@Serializable
+data class ProfileRoute(
+    val userId: Long,
+)

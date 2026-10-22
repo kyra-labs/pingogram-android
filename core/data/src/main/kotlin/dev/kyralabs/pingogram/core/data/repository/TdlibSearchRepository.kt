@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -36,6 +37,7 @@ import javax.inject.Singleton
  *   contact. All contacts: `getContacts`, their chats asked for all at once, then sorted by name in the user's
  *   language.
  * - **Public chats**: `searchPublicChats`; TDLib leaves out the user's chats and contacts.
+ * - **A username**: `searchPublicChat`, for a mention tapped in a message ([publicChat]).
  * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset,
  *   with `searchMessagesFilterPhotoAndVideo` or `searchMessagesFilterUrl` for photos and videos or links, which TDLib
  *   also searches without a query.
@@ -46,6 +48,7 @@ import javax.inject.Singleton
  * Every query is trimmed. TDLib answers 400 for what it cannot search (a username prefix too short to resolve, top
  * chats while their ranking is off); that finds nothing instead of failing.
  */
+@Suppress("TooManyFunctions") // One function per search of the interface, each a TDLib request or two.
 @Singleton
 class TdlibSearchRepository
     @Inject
@@ -115,6 +118,32 @@ class TdlibSearchRepository
             val text = query.trim()
             if (text.isEmpty()) return Outcome.Success(persistentListOf())
             return chatRepository.chatsFound(client.request(TdApi.SearchPublicChats(text, null)).orNothing(::noChats))
+        }
+
+        /**
+         * `searchPublicChat`, which TDLib answers from memory for a username it resolved before. TDLib announces the
+         * chat before it answers; its type says whose it is. A username nobody has is a 400 (`USERNAME_NOT_OCCUPIED`,
+         * or `USERNAME_INVALID` for one that cannot be a username): [DomainError.NotFound].
+         */
+        override suspend fun publicChat(username: String): Outcome<UsernameOwner> {
+            val name = username.trim().removePrefix("@")
+            if (name.isEmpty()) return Outcome.Failure(DomainError.NotFound)
+            return when (val found = client.request(TdApi.SearchPublicChat(name))) {
+                is Outcome.Success -> {
+                    val chat = found.value
+                    when (val type = chat.type) {
+                        is TdApi.ChatTypePrivate -> Outcome.Success(UsernameOwner.User(type.userId, chat.id))
+                        else -> Outcome.Success(UsernameOwner.Chat(chat.id))
+                    }
+                }
+
+                is Outcome.Failure -> {
+                    val error = found.error
+                    val isUnknown =
+                        (error as? DomainError.Unknown)?.code == BAD_REQUEST || error == DomainError.UsernameInvalid
+                    if (isUnknown) Outcome.Failure(DomainError.NotFound) else found
+                }
+            }
         }
 
         override suspend fun searchMessages(
