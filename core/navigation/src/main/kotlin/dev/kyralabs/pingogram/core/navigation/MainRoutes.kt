@@ -52,7 +52,7 @@ data object EditProfileRoute
 data object AppearanceRoute
 
 /**
- * The color theme (`REQUIREMENTS.md` FR-S2, `docs/adr/0015-color-themes.md`): the wallpaper's colors or one of the
+ * The color theme (`REQUIREMENTS.md` FR-S2, `docs/adr/0016-color-themes.md`): the wallpaper's colors or one of the
  * generated themes, `:feature:settings`, pushed above Appearance.
  */
 @Serializable

@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # The color themes (tools/theme, docs/adr/0015-color-themes.md) are generated into Kotlin and resources and
+      # The color themes (tools/theme, docs/adr/0016-color-themes.md) are generated into Kotlin and resources and
       # committed: generating them again must change nothing, or someone edited the output by hand.
       - name: Set up Node.js
         uses: actions/setup-node@v4

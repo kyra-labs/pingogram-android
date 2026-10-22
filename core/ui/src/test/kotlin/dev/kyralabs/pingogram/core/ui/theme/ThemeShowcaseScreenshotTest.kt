@@ -43,7 +43,7 @@ class ThemeShowcaseScreenshotTest {
         capture(ThemeMode.Light) { ColorRolesShowcase() }
     }
 
-    // A few of the generated color themes (docs/adr/0015-color-themes.md).
+    // A few of the generated color themes (docs/adr/0016-color-themes.md).
     @Test
     fun colorRolesTealLight() = capture(ThemeMode.Light, palette = ThemePalette.Teal) { ColorRolesShowcase() }
 

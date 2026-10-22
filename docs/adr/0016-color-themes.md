@@ -1,4 +1,4 @@
-# 0015 — Color themes: generated Material 3 schemes, picked like Pixel's Wallpaper & style
+# 0016 — Color themes: generated Material 3 schemes, picked like Pixel's Wallpaper & style
 
 Status: accepted (owner request, 2026-10-22; `REQUIREMENTS.md` FR-S2, `docs/DESIGN_SYSTEM.md` §2.1, §6)
 

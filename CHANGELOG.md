@@ -14,6 +14,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
+
+## [0.4.0] - 2026-10-22
+
+### Added
 - Very wide windows (1600 dp and more, e.g. a desktop or an external display): a profile or a group's or channel's
   info opens beside the conversation, as a third pane, instead of covering the chats. Drag the handle between them to
   make it narrower or wider; back closes it first.
@@ -650,7 +654,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3
 [0.3.0-beta.2]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.1...v0.3.0-beta.2

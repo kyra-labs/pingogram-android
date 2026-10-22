@@ -26,7 +26,7 @@ const mcu = await import('@material/material-color-utilities');
 const { Hct, TonalPalette, argbFromHex } = mcu;
 
 // The color themes of Settings → Appearance → Theme (docs/DESIGN_SYSTEM.md §2.1,
-// docs/adr/0015-color-themes.md). Order and names match core:domain's ThemePalette, whose `when` over this table
+// docs/adr/0016-color-themes.md). Order and names match core:domain's ThemePalette, whose `when` over this table
 // stops compiling if one is missing. Pingogram keeps the brand scheme the owner chose (SchemeVibrant, 2026-10-19); the
 // curated ones use SchemeTonalSpot, Material Theme Builder's default and Android's default style for wallpaper colors,
 // seeded with the Material Design 500 colors; Monochrome uses SchemeMonochrome.

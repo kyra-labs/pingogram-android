@@ -102,7 +102,7 @@ internal class WallpaperSchemes(
 
 /**
  * Settings → Appearance → Theme (`REQUIREMENTS.md` FR-S2, `docs/DESIGN_SYSTEM.md` §6 "Color themes",
- * `docs/adr/0015-color-themes.md`), as Pixel's Wallpaper & style: a live preview of the theme in use ([ThemePreview])
+ * `docs/adr/0016-color-themes.md`), as Pixel's Wallpaper & style: a live preview of the theme in use ([ThemePreview])
  * on top; then "Wallpaper colors" where [wallpaperSchemes] exist (Android 12+); then the generated themes, Pingogram's
  * first, as chips ([ThemeChip]) in a grid that wraps to the page's width, each in the light or dark scheme the app
  * shows now. Picking one calls [onSelect]; the app's theme, this page included, cross-fades to it at once. The chips

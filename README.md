@@ -28,9 +28,9 @@ official client library, [TDLib](https://github.com/tdlib/td), and complies with
 [Telegram API Terms of Service](https://core.telegram.org/api/terms).
 
 > [!NOTE]
-> Pingogram is an **early beta** (0.3.0). Everyday messaging works, with notifications,
-> voice messages and stickers; contacts, profiles, group management, secret chats and calls are
-> not there yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
+> Pingogram is an **early beta** (0.4.0). Everyday messaging works, with notifications,
+> voice messages and stickers, contacts, profiles, groups and channels, forum topics and secret
+> chats; calls are not there yet. See [what works today](#what-works-today) and [what is missing](#not-yet).
 
 ## Screenshots
 
@@ -136,6 +136,14 @@ light or dark theme.</sub>
   sync (off by default) finds who of your phone's contacts uses Telegram: only while it is on are
   their names and numbers read and sent to Telegram, when you turn it on, open Contacts or tap
   Sync now, never in the background; turning it off deletes them from Telegram.
+- **Profiles, groups and channels:** user profiles with their shared media; group and channel info
+  with members, admins and their rights, permissions and slow mode, invite links, photo, name and
+  description, leaving and deleting, as far as your rights allow; creating groups and channels.
+- **Inside chats:** secret chats (end-to-end encrypted, on this phone only, with a self-destruct
+  timer and the encryption key to compare), forum topics, comment threads under channel posts and
+  a pinned messages bar.
+- **Sharing into Pingogram:** text, links, photos, videos and files shared from other apps go to the
+  chats you pick, or straight to one from Android's share sheet.
 - **Search** across your chats, contacts, public chats and channels, and messages.
 - **Telegram links:** `tg://`, `t.me`, `telegram.me` and `telegram.dog` links from other apps
   and in messages open in Pingogram (usernames, phone numbers, message links, invite links,
@@ -163,8 +171,7 @@ link a code holds is opened through TDLib. There are no analytics, ads or tracke
 
 ### Not yet
 
-- Recording video messages; sharing into a chat from other apps
-- User and group profiles, creating groups and channels, starting secret chats
+- Recording video messages; creating and editing forum topics
 - Voice and video calls
 
 The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster

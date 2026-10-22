@@ -14,7 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Theme page (`docs/adr/0015-color-themes.md`): a generated theme chosen, in its own colors as the app shows it
+ * The Theme page (`docs/adr/0016-color-themes.md`): a generated theme chosen, in its own colors as the app shows it
  * then, light and dark; the wallpaper's colors chosen (a stand-in wallpaper); before Android 12, without them; on an
  * expanded window; and AMOLED black, high contrast and right to left (`docs/DESIGN_SYSTEM.md` §12).
  */

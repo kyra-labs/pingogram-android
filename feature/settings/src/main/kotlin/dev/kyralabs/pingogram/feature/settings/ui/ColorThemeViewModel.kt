@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** A color theme the Theme page offers (`docs/adr/0015-color-themes.md`). */
+/** A color theme the Theme page offers (`docs/adr/0016-color-themes.md`). */
 @Immutable
 sealed interface ColorThemeOption {
     /** Material You from the wallpaper (Android 12+). */
@@ -57,7 +57,7 @@ sealed interface ColorThemeEffect {
 }
 
 /**
- * The Theme page (`REQUIREMENTS.md` FR-S2, `docs/adr/0015-color-themes.md`): the saved settings, and saving the theme
+ * The Theme page (`REQUIREMENTS.md` FR-S2, `docs/adr/0016-color-themes.md`): the saved settings, and saving the theme
  * the user picks. A generated theme turns dynamic color off with it, in one write ([AppearanceRepository.setPalette]);
  * the wallpaper's colors turn it back on and keep the last theme for where they have no colors (a medium or high
  * contrast before Android 14). The page shows what is saved, which the app's theme follows too, so a pick shows on the

@@ -15,7 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The chat list with folders in a few of the generated color themes (`docs/adr/0015-color-themes.md`): every role it
+ * The chat list with folders in a few of the generated color themes (`docs/adr/0016-color-themes.md`): every role it
  * uses (tabs, badges, avatars, the sheet and its bar) in another palette than the brand's.
  */
 @RunWith(RobolectricTestRunner::class)
