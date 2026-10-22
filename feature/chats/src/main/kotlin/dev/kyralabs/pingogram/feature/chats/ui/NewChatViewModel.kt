@@ -41,9 +41,9 @@ import javax.inject.Inject
  *   while the screen collects, and 5 s after, so a rotation does not read them again.
  * - **Rows** are mapped on [dispatcher] as search maps its own ([toSearchItem]), with the users, groups, current user
  *   and minute they show, so names and online dots follow TDLib's updates.
- * - **Actions**: a contact opens its private chat ([NewChatEffect.OpenChat]); new contact opens Add contact
- *   ([NewChatEffect.AddContact]); new group and channel say that a later version adds them
- *   ([NewChatEffect.NotAvailableYet]).
+ * - **Actions**: a contact opens its private chat ([NewChatEffect.OpenChat]); new group and new channel open their
+ *   flows ([NewChatEffect.NewGroup], [NewChatEffect.NewChannel]); new contact opens Add contact
+ *   ([NewChatEffect.AddContact]).
  *
  * It takes the repositories the rows combine, plus the clock, time patterns, dispatcher and language that tests
  * replace, hence `LongParameterList` is suppressed.
@@ -109,12 +109,10 @@ class NewChatViewModel internal constructor(
         when (event) {
             is NewChatEvent.Action -> {
                 val effect =
-                    if (event.action ==
-                        NewChatAction.Contact
-                    ) {
-                        NewChatEffect.AddContact
-                    } else {
-                        NewChatEffect.NotAvailableYet
+                    when (event.action) {
+                        NewChatAction.Group -> NewChatEffect.NewGroup
+                        NewChatAction.Channel -> NewChatEffect.NewChannel
+                        NewChatAction.Contact -> NewChatEffect.AddContact
                     }
                 effectChannel.trySend(effect)
             }

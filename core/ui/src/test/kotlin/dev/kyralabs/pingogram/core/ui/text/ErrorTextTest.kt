@@ -69,6 +69,10 @@ class ErrorTextTest {
                 DomainError.UsernameForSale,
                 DomainError.BioTooLong,
                 DomainError.PhotoInvalid,
+                DomainError.TitleInvalid,
+                DomainError.TooManyChats,
+                DomainError.TooManyPublicLinks,
+                DomainError.AccountRestricted,
             )
 
         val texts = errors.map { errorMessage(resources, it, showDetails = false) }

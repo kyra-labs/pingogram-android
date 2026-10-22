@@ -80,5 +80,9 @@ private fun DomainError.messageRes(): Int =
         DomainError.UsernameForSale -> R.string.error_username_for_sale
         DomainError.BioTooLong -> R.string.error_bio_too_long
         DomainError.PhotoInvalid -> R.string.error_photo_invalid
+        DomainError.TitleInvalid -> R.string.error_title_invalid
+        DomainError.TooManyChats -> R.string.error_too_many_chats
+        DomainError.TooManyPublicLinks -> R.string.error_too_many_public_links
+        DomainError.AccountRestricted -> R.string.error_account_restricted
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

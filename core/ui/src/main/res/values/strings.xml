@@ -30,6 +30,10 @@
     <string name="error_username_for_sale">This username is for sale on Fragment.</string>
     <string name="error_bio_too_long">Your bio is too long.</string>
     <string name="error_photo_invalid">This image can\'t be used as a profile photo. Try another one.</string>
+    <string name="error_title_invalid">Enter a name.</string>
+    <string name="error_too_many_chats">You\'re in too many groups and channels. Leave one to create a new one.</string>
+    <string name="error_too_many_public_links">You have too many public links. Make one of your groups or channels private first.</string>
+    <string name="error_account_restricted">Telegram has limited your account, so you can\'t create groups or channels for now.</string>
     <!-- A picked photo, video, file or contact could not be read. -->
     <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
     <string name="error_file_too_large">This file is too large to send.</string>

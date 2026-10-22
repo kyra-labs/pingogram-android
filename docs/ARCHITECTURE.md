@@ -125,6 +125,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   again. `core:ui`'s `ContactSyncController` (held by `ContactsViewModel` and `feature:settings`'
   `ContactSyncSettingViewModel`) and `ContactSyncHost` share the rationale sheet, the permission request (Activity
   Result API), the turn-off question and the snackbars between the Contacts tab and Settings → Privacy and security.
+- **Creating groups and channels** (FR-P4): `ChatCreationRepository` (`core:domain`, `TdlibChatCreationRepository` in
+  `core:data`, no cache: TDLib announces the new chat with `updateNewChat` before it answers) creates groups with
+  `createNewBasicGroupChat`, or `createNewSupergroupChat` when no one or more people than a basic group holds (200,
+  `ChatCreationLimits`) are added, then `addChatMembers`, as Telegram's apps do; channels with `createNewSupergroupChat`
+  (`is_channel`), made public with `checkChatUsername` + `setSupergroupUsername`, a private one's link from
+  `supergroupFullInfo.invite_link` or `replacePrimaryChatInviteLink`. `failed_to_add_members` (privacy) comes back as
+  the people not added. A picked photo is prepared like an attachment (`AttachmentPreparer`, `uploads/`) and set with
+  `setChatPhoto` in the app's scope once the chat exists, its copy deleted when TDLib answered. `feature:chats` runs
+  each flow as a nested graph pushed above New chat (`NewGroupRoute`: members, details; `NewChannelRoute`: details,
+  which creates the channel, type, subscribers), whose steps share one view model held by the graph's entry
+  (`NewGroupViewModel`, `NewChannelViewModel`, with `MemberPicker` for the contacts), with effects per step; typed text,
+  picks, the photo's copy and a created channel survive process death in its saved state. Once the channel exists, back
+  opens it. The new chat's `ChatRoute` takes the place of New chat and the flow, so back returns to the chat list.
 - **2-step verification** (FR-S1): `TwoStepVerificationRepository` (`core:domain`, `TdlibTwoStepVerificationRepository`
   in `core:data`, no cache: TDLib has no updates for it) reads the state with `getPasswordState`, checks the current
   password with `getRecoveryEmailAddress` and sets, changes, removes and recovers the password and its recovery email.

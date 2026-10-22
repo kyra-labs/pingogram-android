@@ -172,7 +172,7 @@ private fun TdApi.File.uploadProgress(): Float? {
     }
 }
 
-private fun TdApi.CheckChatUsernameResult.toUsernameCheck(): UsernameCheck =
+internal fun TdApi.CheckChatUsernameResult.toUsernameCheck(): UsernameCheck =
     when (this) {
         is TdApi.CheckChatUsernameResultOk -> UsernameCheck.Available
 

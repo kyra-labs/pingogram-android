@@ -1,17 +1,37 @@
 package dev.kyralabs.pingogram.feature.chats.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.navigation.NewChannelDetailsRoute
+import dev.kyralabs.pingogram.core.navigation.NewChannelMembersRoute
+import dev.kyralabs.pingogram.core.navigation.NewChannelRoute
+import dev.kyralabs.pingogram.core.navigation.NewChannelTypeRoute
+import dev.kyralabs.pingogram.core.navigation.NewGroupDetailsRoute
+import dev.kyralabs.pingogram.core.navigation.NewGroupMembersRoute
+import dev.kyralabs.pingogram.core.navigation.NewGroupRoute
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chats.ui.ArchivedChatsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.NewChatRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelDetailsStep
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelMembersStep
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelTypeStep
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelViewModel
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
+import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
@@ -51,18 +71,103 @@ fun NavGraphBuilder.archiveScreen(
 /**
  * Adds the New chat screen, [NewChatDestination], to the graph, which the Chats tab's "New chat" button grows into (a
  * container transform, through the app's shared transition scope); [onBack] leaves it, a contact calls [onOpenChat]
- * with the id of its private chat, and New contact calls [onAddContact].
+ * with the id of its private chat, New group [onNewGroup] ([newGroupScreens]), New channel [onNewChannel]
+ * ([newChannelScreens]) and New contact [onAddContact].
  */
 fun NavGraphBuilder.newChatScreen(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onNewGroup: () -> Unit,
+    onNewChannel: () -> Unit,
     onAddContact: () -> Unit,
 ) {
     composable<NewChatDestination> {
         ProvideNavAnimatedVisibilityScope(this) {
-            NewChatRoute(onBack = onBack, onOpenChat = onOpenChat, onAddContact = onAddContact)
+            NewChatRoute(
+                onBack = onBack,
+                onOpenChat = onOpenChat,
+                onNewGroup = onNewGroup,
+                onNewChannel = onNewChannel,
+                onAddContact = onAddContact,
+            )
         }
     }
+}
+
+/**
+ * Adds creating a group (`REQUIREMENTS.md` FR-P4), the nested graph [NewGroupRoute], to the graph: picking the people
+ * ([NewGroupMembersRoute]), then the group's details ([NewGroupDetailsRoute]), pushed on [navController] one above
+ * the other and sharing one [NewGroupViewModel], held by the graph's entry. Back from the people leaves the flow; the
+ * new group calls [onOpenChat], which is to take the flow's place.
+ */
+fun NavGraphBuilder.newGroupScreens(
+    navController: NavController,
+    onOpenChat: (chatId: Long) -> Unit,
+) {
+    navigation<NewGroupRoute>(startDestination = NewGroupMembersRoute) {
+        composable<NewGroupMembersRoute> { entry ->
+            NewGroupMembersStep(
+                viewModel = flowViewModel<NewGroupViewModel, NewGroupRoute>(navController, entry),
+                onBack = { navController.popBackStack<NewGroupRoute>(inclusive = true) },
+                onNext = { navController.navigate(NewGroupDetailsRoute) { launchSingleTop = true } },
+            )
+        }
+        composable<NewGroupDetailsRoute> { entry ->
+            NewGroupDetailsStep(
+                viewModel = flowViewModel<NewGroupViewModel, NewGroupRoute>(navController, entry),
+                onBack = { navController.popBackStack() },
+                onOpenChat = onOpenChat,
+            )
+        }
+    }
+}
+
+/**
+ * Adds creating a channel (`REQUIREMENTS.md` FR-P4), the nested graph [NewChannelRoute], to the graph: the channel's
+ * details ([NewChannelDetailsRoute]), which create it, then its type ([NewChannelTypeRoute]) and its first subscribers
+ * ([NewChannelMembersRoute]), pushed on [navController] one above the other and sharing one [NewChannelViewModel],
+ * held by the graph's entry. Back from the details leaves the flow; once the channel exists, back and the last step
+ * call [onOpenChat], which is to take the flow's place.
+ */
+fun NavGraphBuilder.newChannelScreens(
+    navController: NavController,
+    onOpenChat: (chatId: Long) -> Unit,
+) {
+    navigation<NewChannelRoute>(startDestination = NewChannelDetailsRoute) {
+        composable<NewChannelDetailsRoute> { entry ->
+            NewChannelDetailsStep(
+                viewModel = flowViewModel<NewChannelViewModel, NewChannelRoute>(navController, entry),
+                onBack = { navController.popBackStack<NewChannelRoute>(inclusive = true) },
+                onNext = { navController.navigate(NewChannelTypeRoute) { launchSingleTop = true } },
+            )
+        }
+        composable<NewChannelTypeRoute> { entry ->
+            NewChannelTypeStep(
+                viewModel = flowViewModel<NewChannelViewModel, NewChannelRoute>(navController, entry),
+                onNext = { navController.navigate(NewChannelMembersRoute) { launchSingleTop = true } },
+                onOpenChat = onOpenChat,
+            )
+        }
+        composable<NewChannelMembersRoute> { entry ->
+            NewChannelMembersStep(
+                viewModel = flowViewModel<NewChannelViewModel, NewChannelRoute>(navController, entry),
+                onOpenChat = onOpenChat,
+            )
+        }
+    }
+}
+
+/**
+ * The view model [VM] of the flow whose nested graph [G] holds [entry], kept by the graph's entry, so every step of the
+ * flow shares it and it is cleared when the flow leaves the back stack.
+ */
+@Composable
+private inline fun <reified VM : ViewModel, reified G : Any> flowViewModel(
+    navController: NavController,
+    entry: NavBackStackEntry,
+): VM {
+    val graphEntry = remember(entry) { navController.getBackStackEntry<G>() }
+    return hiltViewModel<VM>(graphEntry)
 }
 
 /**
