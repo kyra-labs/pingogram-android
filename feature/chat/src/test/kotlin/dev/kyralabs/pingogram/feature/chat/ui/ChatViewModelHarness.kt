@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,8 @@ abstract class ChatViewModelHarness {
     protected val forumTopics = FakeForumTopicRepository()
     protected val threads = FakeMessageThreadRepository()
     protected val shareInbox = ShareInbox()
+    protected val bots = FakeBotInfoRepository()
+    protected val botStarts = BotStartInbox()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -118,6 +121,8 @@ abstract class ChatViewModelHarness {
                 chatJoinRepository = joins,
                 threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
                 shareInbox = shareInbox,
+                botInfoRepository = bots,
+                botStartInbox = botStarts,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

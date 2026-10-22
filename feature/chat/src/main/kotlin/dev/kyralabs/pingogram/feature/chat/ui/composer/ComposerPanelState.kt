@@ -36,8 +36,12 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -121,6 +125,37 @@ internal fun PanelButton(
         } else {
             Icon(painterResource(UiR.drawable.ic_mood), stringResource(R.string.panel_open))
         }
+    }
+}
+
+/**
+ * The emoji and sticker panel ([EmojiPanel], showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its
+ * emoji go into [text] at the cursor, its stickers to [onSendSticker] (shown only with [showStickers]), and what it
+ * loads goes to [onPanelEvent].
+ */
+@Suppress("LongParameterList") // The panel's state and place, the text it types into, and where its events go.
+@Composable
+internal fun ComposerEmojiPanel(
+    panelState: ComposerPanelState,
+    panel: EmojiPanelUiState,
+    text: ComposerText,
+    onPanelEvent: (EmojiPanelEvent) -> Unit,
+    onSendSticker: (Sticker) -> Unit,
+    showStickers: Boolean,
+) {
+    PanelArea(panelState) {
+        EmojiPanel(
+            state = panel,
+            onEmoji = { emoji ->
+                text.insert(emoji)
+                onPanelEvent(EmojiPanelEvent.EmojiPicked(emoji))
+            },
+            onBackspace = text::deleteBackward,
+            onSticker = onSendSticker,
+            onEvent = onPanelEvent,
+            modifier = Modifier.fillMaxSize(),
+            showStickers = showStickers,
+        )
     }
 }
 

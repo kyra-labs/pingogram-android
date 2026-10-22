@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -52,6 +53,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntroArea
+import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.composer.BotInput
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
@@ -119,6 +123,10 @@ import kotlinx.collections.immutable.ImmutableSet
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
  *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ * - **Bots** (`REQUIREMENTS.md` FR-C5): the composer's bot button opens their commands or menu
+ *   ([BotEvent.OpenMenu]), the commands that a command being typed starts show above the composer
+ *   ([commandSuggestions], the view model's, kept apart from [state]), and a bot's empty chat shows what it does
+ *   ([BotIntroArea]) with "Start" in the composer's place.
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -147,6 +155,7 @@ internal fun ChatScreen(
     lift: MessageLiftState = rememberMessageLiftState(),
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    commandSuggestions: CommandSuggestions? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -182,6 +191,7 @@ internal fun ChatScreen(
                     onSent = scrollToSent,
                     emojiPanel = emojiPanel,
                     onEmojiPanelEvent = onEmojiPanelEvent,
+                    commandSuggestions = commandSuggestions,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             jumpButton = {
@@ -197,14 +207,7 @@ internal fun ChatScreen(
         if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
     }
     ChatSheets(state, onEvent, reportComment, actionsInSheet = lifted == null)
-    AttachSheets(
-        state = state,
-        inputs = attach,
-        menuOpen = attachMenuOpen,
-        onCloseMenu = { attachMenuOpen = false },
-        onEvent = onEvent,
-        onSent = scrollToSent,
-    )
+    AttachSheets(state, attach, attachMenuOpen, onCloseMenu = { attachMenuOpen = false }, onEvent, scrollToSent)
 }
 
 /**
@@ -258,7 +261,8 @@ private fun ChatScaffold(
  * The bottom of the screen: the composer ([ChatBottomBar]), or in selection mode the selection toolbar in its place
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
- * [onAttach] gets the option the composer's gallery button picks at once, or null for its "+", the attach menu.
+ * [onAttach] gets the option the composer's gallery button picks at once, or null for its "+", the attach menu. A
+ * command sent from the [commandSuggestions] reports through [onSent] too.
  */
 @Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
 @Composable
@@ -272,8 +276,22 @@ private fun ChatScreenBottomBar(
     onSent: (SendOptions) -> Unit,
     emojiPanel: EmojiPanelUiState,
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit,
+    commandSuggestions: CommandSuggestions?,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
+    val bots =
+        remember(commandSuggestions, onEvent, onSent) {
+            BotInput(
+                suggestions = commandSuggestions,
+                onSendCommand = { command ->
+                    onEvent(BotEvent.SendCommand(command))
+                    onSent(SendOptions())
+                },
+                onInsertCommand = { onEvent(BotEvent.InsertCommand(it)) },
+                onMenu = { onEvent(BotEvent.OpenMenu) },
+                onStart = { onEvent(BotEvent.Start) },
+            )
+        }
     SelectionBottomBar(
         actions = state.selection?.actions,
         backProgress = selectionBack,
@@ -303,6 +321,7 @@ private fun ChatScreenBottomBar(
                 onSent(SendOptions())
             },
             onJoin = { onEvent(ChatEvent.JoinChat) },
+            bots = bots,
         )
     }
 }
@@ -324,10 +343,13 @@ private fun BoxScope.ChatBody(
 
         ChatContent.Empty -> {
             val header = state.header
+            val botIntro = state.botIntro
             if (header?.secret != null) {
                 Box(bodyModifier.padding(MaterialTheme.spacing.medium), contentAlignment = Alignment.Center) {
                     SecretChatIntro(header.title)
                 }
+            } else if (botIntro != null) {
+                BotIntroArea(botIntro, bodyModifier)
             } else {
                 ChatEmpty(bodyModifier)
             }

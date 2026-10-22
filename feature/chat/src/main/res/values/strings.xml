@@ -146,6 +146,21 @@
     <!-- A sender only Telegram Premium users can choose. Informational only, never an offer. -->
     <string name="send_as_needs_premium">Needs Telegram Premium</string>
 
+    <!-- Bots (REQUIREMENTS.md FR-C5): commands, the menu button, Start and the empty chat. -->
+    <string name="bot_commands_button">Bot commands</string>
+    <string name="bot_mini_app_button">%1$s, Mini App</string>
+    <string name="bot_mini_apps_unsupported">Pingogram can\'t open Mini Apps yet</string>
+    <string name="bot_commands_title">Commands</string>
+    <string name="bot_commands_search">Search commands</string>
+    <string name="bot_commands_none_found">No commands found</string>
+    <string name="bot_command_insert">Insert %1$s</string>
+    <plurals name="bot_command_suggestions">
+        <item quantity="one">%d command</item>
+        <item quantity="other">%d commands</item>
+    </plurals>
+    <string name="bot_start">Start</string>
+    <string name="bot_intro_title">What can this bot do?</string>
+
     <!-- The emoji and sticker panel, which takes the keyboard's place below the composer -->
     <!-- The button at the start of the text field that opens the panel, for screen readers. -->
     <string name="panel_open">Emoji and stickers</string>

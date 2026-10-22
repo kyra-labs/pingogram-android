@@ -69,8 +69,9 @@ import java.util.Locale
  * the chat like this one), which finds the location the conversation then sends; so does the emoji and sticker panel
  * ([EmojiPanelViewModel]), whose stickers the conversation sends. The forward sheet
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
- * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), and a secret chat's timer and
- * key ([SecretChatBottomSheet]). While a secret chat is open, the window is secure ([SecureWindow]): no screenshots.
+ * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), a secret chat's timer and
+ * key ([SecretChatBottomSheet]), and the bots' commands (`BotCommandsBottomSheet`). While a secret chat is open, the
+ * window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
@@ -99,6 +100,7 @@ internal fun ConversationRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
     val emojiPanel by panelViewModel.uiState.collectAsStateWithLifecycle()
+    val commandSuggestions by viewModel.commandSuggestions.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
@@ -148,6 +150,7 @@ internal fun ConversationRoute(
         onEmojiPanelEvent = panelViewModel::onEvent,
         onOpenProfile = onOpenProfile,
         onOpenChatInfo = onOpenChatInfo,
+        commandSuggestions = commandSuggestions,
     )
     ChatSheets(viewModel)
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
@@ -212,6 +215,7 @@ internal fun ChatEffects(
 
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
+                    ChatEffect.MiniAppsUnsupported,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -328,6 +332,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.JoinRequestSent -> R.string.composer_join_request_sent
         ChatEffect.JoinRefused -> R.string.composer_join_refused
         ChatEffect.PinnedHidden -> R.string.pinned_hidden
+        ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable

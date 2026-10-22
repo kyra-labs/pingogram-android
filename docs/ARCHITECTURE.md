@@ -175,6 +175,23 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Bots** (FR-C5): `core:domain`'s `BotInfoRepository` (`TdlibBotInfoRepository`, `core:data`, no cache: TDLib keeps
+  the full info and reports its changes) gives a conversation its `ChatBots`: `getChat` says what the chat is; a
+  private chat whose user is a bot (`getUser`) follows `getUserFullInfo` and `updateUserFullInfo` (`bot_info`: the
+  commands, the description, its photo or animation, the menu button), a basic group or a supergroup its full info and
+  `updateBasicGroupFullInfo` / `updateSupergroupFullInfo` (`bot_commands`, bot by bot); channels, secret chats and
+  chats with people ask for nothing more. `sendStartMessage` is `sendBotStartMessage`. `feature:chat`'s
+  `ChatBotCommands` (a part of `ChatViewModel`, `bot/`) maps them: the composer's bot button
+  (`ComposerUiState.Available.bot`: the menu button where the bot has one, which opens a Mini App and only says that
+  Pingogram can't yet, else "/" for the commands), the commands sheet (`botCommandsSheet`) and the suggestions while a
+  command is typed (`commandSuggestions`, from the composer's text through `snapshotFlow`), both kept out of
+  `ChatUiState`; a group's commands are addressed to their bot ("/start@bot"). A command goes out as a text message
+  through the thread's `MessageRepository`, taking the composer's reply along; inserting puts it into the field.
+  In a private chat with a bot that has no messages, or that a start link opened, "Start" takes the composer's place
+  (`ComposerUiState.BotStart`) and the bot's intro the empty state's (`ChatUiState.botIntro`); a tap sends
+  `sendBotStartMessage` with the link's parameter, which `:app`'s `LinkViewModel` hands over through `feature:chat`'s
+  `BotStartInbox` (a singleton, in memory, like `ShareInbox`; the conversation takes it, also when already open, and
+  keeps it in its saved state until sent). Inline bots, reply keyboards and Mini Apps come later.
 - **Forum topics** (FR-C9): a message's `topic` (`MessageTopic`, `core:domain`: a forum topic or a message thread) comes
   from td_api.tl `message.topic_id`; `SendOptions.topic` sends into one (`sendMessage.topic_id`, every kind of message).
   `MessageRepository` keeps a history per `HistoryKey` (a chat, or one of its topics): a topic's pages come from
@@ -259,7 +276,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   no cache) is the one entry point: `getInternalLinkType`, then the lookup the kind needs (`searchPublicChat`,
   `searchUserByPhoneNumber`, `searchUserByToken`, `getMessageLinkInfo`, Saved Messages through `getMe`), into a
   `LinkTarget` (a chat at a message with an optional draft, a profile, a chat's info, a page of the app, an invitation,
-  a QR login, a chat's boosts, the user's QR code; a message to share, which opens the share sheet (Direct share,
+  a QR login, a chat's boosts, the user's QR code; a bot to start with a parameter (`t.me/bot?start=…`, its chat
+  with "Start" ready, never started by itself); a message to share, which opens the share sheet (Direct share,
   below); not found; a login code; unsupported).
   `:app`'s `LinkViewModel` (a `LinkDispatcher`, scoped to the activity, one link at a time) turns it into a
   `LinkEffect`: a screen, which `PingogramApp` opens (`openLinkTarget`, `LinkNavigation.kt`), or a notice in the shell's

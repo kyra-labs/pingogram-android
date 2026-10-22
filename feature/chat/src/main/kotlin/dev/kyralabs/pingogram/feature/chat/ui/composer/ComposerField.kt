@@ -59,7 +59,8 @@ import dev.kyralabs.pingogram.feature.chat.R
  * (the conversation's attach, emoji and gallery buttons), each a 48 dp touch target 4 dp inside the pill. Enter on a
  * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
- * address ([onLink]). The attach preview's caption and the forward sheet's comment are one too.
+ * address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command suggestions'
+ * arrows, Enter and Tab). The attach preview's caption and the forward sheet's comment are one too.
  */
 @Composable
 internal fun ComposerField(
@@ -72,6 +73,7 @@ internal fun ComposerField(
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     leadingIcons: (@Composable RowScope.() -> Unit)? = null,
     trailingIcons: (@Composable RowScope.() -> Unit)? = null,
+    onKeyEvent: (KeyEvent) -> Boolean = { false },
 ) {
     val labels = rememberFormattingLabels()
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
@@ -100,16 +102,17 @@ internal fun ComposerField(
                             onFocusChanged(state.isFocused)
                         }
                     }.onPreviewKeyEvent { event ->
-                        when {
-                            event.isSendKey() -> {
-                                onSend()
-                                true
-                            }
+                        onKeyEvent(event) ||
+                            when {
+                                event.isSendKey() -> {
+                                    onSend()
+                                    true
+                                }
 
-                            else -> {
-                                formattingShortcut(event, text, onLink)
+                                else -> {
+                                    formattingShortcut(event, text, onLink)
+                                }
                             }
-                        }
                     }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                     .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
             textStyle = textStyle,

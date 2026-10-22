@@ -24,6 +24,8 @@ import javax.inject.Singleton
  *   the text ([prefillDraft]).
  * - **Phone numbers** (`searchUserByPhoneNumber`, not only local) and **contact tokens** (`searchUserByToken`) as a
  *   username of a person.
+ * - **Bot start links** (`t.me/bot?start=…`, `searchPublicChat`): the bot's chat with the start parameter, which its
+ *   "Start" sends once the user taps it; a link's `autostart` is not honoured, nothing starts by itself.
  * - **Messages** (`getMessageLinkInfo`): the chat at the message; the chat alone when the message is gone but the chat
  *   is there. A message in a topic or a thread opens in the chat itself, as `ChatRoute` has no topic yet.
  * - **Boosts** (`getChatBoostLinkInfo`): the chat whose boosts the link shows.
@@ -69,6 +71,17 @@ class TdlibLinkRepository
 
                 is TdApi.InternalLinkTypeChatBoost -> {
                     boostedChat(type.url)
+                }
+
+                is TdApi.InternalLinkTypeBotStart -> {
+                    // td_api.tl: the user must be a bot, whose username opens its private chat, of its user's id.
+                    publicChat(type.botUsername, draftText = null, openProfile = false).map { target ->
+                        if (target is LinkTarget.Chat && target.chatId > 0) {
+                            LinkTarget.BotStart(target.chatId, target.chatId, type.startParameter)
+                        } else {
+                            LinkTarget.NotFound(LinkSubject.Username)
+                        }
+                    }
                 }
 
                 else -> {
