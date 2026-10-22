@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -45,6 +47,9 @@ import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The parts of the Theme page (docs/DESIGN_SYSTEM.md §6, "Color themes"): the chips and the live preview.
@@ -184,7 +189,7 @@ private fun PreviewChatRow() {
             verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
         ) {
             Text(
-                stringResource(R.string.settings_color_theme_sample_time),
+                sampleTime(),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.primary,
             )
@@ -192,6 +197,17 @@ private fun PreviewChatRow() {
         }
     }
 }
+
+/** The preview's time, 9:41, as the user's language writes times ("9:41 AM", "9.41", "09:41"). */
+@Composable
+private fun sampleTime(): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(locale) {
+        DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(SampleTime)
+    }
+}
+
+private val SampleTime = LocalTime.of(9, 41)
 
 /** One bubble of [ThemePreview]: outgoing on `primaryContainer` at the end, incoming on `surfaceContainerHigh`. */
 @Composable

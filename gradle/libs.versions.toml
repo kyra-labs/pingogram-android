@@ -204,6 +204,7 @@ pingogram-android-gms = { id = "pingogram.android.gms" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-licenses = { id = "pingogram.android.licenses" }
+pingogram-android-locales = { id = "pingogram.android.locales" }
 pingogram-android-lint = { id = "pingogram.android.lint" }
 pingogram-android-roborazzi = { id = "pingogram.android.roborazzi" }
 pingogram-android-test = { id = "pingogram.android.test" }

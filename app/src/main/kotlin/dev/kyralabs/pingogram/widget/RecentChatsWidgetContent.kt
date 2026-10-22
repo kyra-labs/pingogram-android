@@ -40,6 +40,7 @@ import androidx.glance.text.TextStyle
 import dev.kyralabs.pingogram.MainActivity
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -211,17 +212,17 @@ private fun Notice(text: String) {
 private fun rowDescription(
     context: Context,
     chat: WidgetChat,
-): String {
-    val parts =
-        listOfNotNull(
+): String =
+    spokenList(
+        context.resources,
+        listOf(
             chat.title,
             chat.unreadCount.takeIf { it > 0 }?.let {
                 context.resources.getQuantityString(R.plurals.widget_unread_messages, it, it)
             },
-            chat.preview.ifBlank { null },
-        )
-    return parts.joinToString(", ")
-}
+            chat.preview,
+        ),
+    )
 
 /** The count as the chat list shows it: "999+" past [MAX_BADGE_COUNT]. */
 private fun badgeCount(count: Int): String = if (count > MAX_BADGE_COUNT) "$MAX_BADGE_COUNT+" else count.toString()

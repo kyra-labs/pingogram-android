@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The languages Pingogram ships (REQUIREMENTS.md FR-S1, §6.4), in the order Settings → Language lists them: Android
-     13 and later show them in the app's language settings (android:localeConfig), Pingogram's Language page reads
-     them on every version (PlatformAppLanguageRepository), and the build packages only their resources, the
-     libraries' included (localeFilters, app/build.gradle.kts), so no screen mixes in another language. Add a language
-     here together with its translations (res/values-<tag>/strings.xml in every module). -->
-<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
-    <locale android:name="en" />
-</locale-config>
