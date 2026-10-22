@@ -20,6 +20,9 @@ const val COMPACT = "w411dp-h891dp-xxhdpi"
 /** An expanded window, e.g. a tablet or an unfolded foldable. */
 const val EXPANDED = "w840dp-h891dp-xxhdpi"
 
+/** A compact phone as tall as [ChatPreviewData.mediaPhotos] needs to show its photo and its album together. */
+const val COMPACT_TALL = "w411dp-h1100dp-xxhdpi"
+
 /**
  * Declares [ComponentActivity] to Robolectric so a compose rule can launch it, without the platform action bar,
  * which whole-screen captures would show.

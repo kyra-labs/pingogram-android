@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 
 /**
  * The bottom of the window that the app's floating navigation bar covers on the top-level screens, as insets
@@ -33,7 +36,21 @@ fun screenContentWindowInsets(): WindowInsets =
  * the margin below it, and the same margin again above it, so the end of a list rests clear of the toolbar.
  */
 @Composable
-fun floatingToolbarInsets(): WindowInsets =
+fun floatingToolbarInsets(): WindowInsets = floatingInsets(FloatingToolbarDefaults.ContainerSize)
+
+/**
+ * The bottom the floating navigation bar takes (`docs/DESIGN_SYSTEM.md` §6.1), as [floatingToolbarInsets] for its
+ * `sizes.floatingNavigationBar`-tall pill, lower than Material's floating toolbar, as Google Photos' is.
+ */
+@Composable
+fun floatingNavigationBarInsets(): WindowInsets = floatingInsets(MaterialTheme.sizes.floatingNavigationBar)
+
+/**
+ * The system navigation bar, something [height] tall at `FloatingToolbarDefaults.ScreenOffset` above it, and as much
+ * above.
+ */
+@Composable
+private fun floatingInsets(height: Dp): WindowInsets =
     WindowInsets.navigationBars.add(
-        WindowInsets(bottom = FloatingToolbarDefaults.ContainerSize + FloatingToolbarDefaults.ScreenOffset * 2),
+        WindowInsets(bottom = height + FloatingToolbarDefaults.ScreenOffset * 2),
     )

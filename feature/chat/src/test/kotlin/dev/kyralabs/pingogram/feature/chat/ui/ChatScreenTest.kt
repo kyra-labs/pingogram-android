@@ -88,6 +88,7 @@ class ChatScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `the list reports the messages it shows, every item of an album`() {
         setScreen(ChatPreviewData.mediaPhotos)
 

@@ -67,6 +67,7 @@ class SelectionScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `a tap on a photo selects it instead of opening it`() {
         setScreen(ChatPreviewData.mediaPhotos.copy(selection = SelectionPreviewData.selecting.selection))
 

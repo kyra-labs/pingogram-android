@@ -70,7 +70,9 @@ internal fun NewChatScreen(
             modifier.containerTransform(
                 NewChatTransformKey,
                 shape = FullBleedShape,
-                counterpartShape = MaterialTheme.shapes.largeIncreased,
+                counterpartShape = MaterialTheme.shapes.large,
+                // Laid out once and scaled as it grows: measuring the list anew in every frame made it stutter.
+                fixedLayout = true,
             ),
         // The top bar's container; the list sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,

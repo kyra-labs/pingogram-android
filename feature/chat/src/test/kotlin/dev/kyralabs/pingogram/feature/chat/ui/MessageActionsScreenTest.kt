@@ -73,6 +73,7 @@ class MessageActionsScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `a long press on a photo opens its actions instead of the viewer`() {
         setScreen(ChatPreviewData.mediaPhotos)
 
@@ -86,6 +87,7 @@ class MessageActionsScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `a tap on a photo still opens it`() {
         setScreen(ChatPreviewData.mediaPhotos)
 

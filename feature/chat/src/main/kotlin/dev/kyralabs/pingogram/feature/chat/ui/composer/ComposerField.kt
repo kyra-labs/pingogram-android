@@ -5,7 +5,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
@@ -26,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -50,9 +53,10 @@ import dev.kyralabs.pingogram.feature.chat.R
 /**
  * The text field: a filled tonal pill like Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer), a [BasicTextField]
  * with Material's text field decoration ([TextFieldDefaults.decorator], [TextFieldDefaults.tonalColors] on
- * `surfaceContainerHighest`, a step above the bar) at `sizes.composerField` (48 dp) for one line, `extraLarge` corners,
- * which make one line a full pill; `bodyLarge`, its direction taken from what is typed ([userContent]),
- * [placeholder] ("Message") while empty, [leadingIcon] at its start (the conversation's emoji button). Enter on a
+ * [containerColor], by default `surfaceContainerHighest`, a step above a sheet) at `sizes.composerField` (56 dp) for
+ * one line, `extraLarge` corners, which make one line a full pill; `bodyLarge`, its direction taken from what is typed
+ * ([userContent]), [placeholder] ("Message") while empty, [leadingIcons] at its start and [trailingIcons] at its end
+ * (the conversation's attach, emoji and gallery buttons), each a 48 dp touch target 4 dp inside the pill. Enter on a
  * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
  * address ([onLink]). The attach preview's caption and the forward sheet's comment are one too.
@@ -65,19 +69,18 @@ internal fun ComposerField(
     onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(R.string.composer_placeholder),
-    leadingIcon: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    leadingIcons: (@Composable RowScope.() -> Unit)? = null,
+    trailingIcons: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val labels = rememberFormattingLabels()
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
     // onFocusChanged also reports the first state, unfocused: only changes are news.
     val focus = remember { FocusReport() }
-    // tonalColors() fills the field with surfaceContainer, the composer bar's own color: one step up, as the recording
-    // bar, so the pill shows.
-    val container = MaterialTheme.colorScheme.surfaceContainerHighest
     val colors =
         TextFieldDefaults.tonalColors().copy(
-            focusedContainerColor = container,
-            unfocusedContainerColor = container,
+            focusedContainerColor = containerColor,
+            unfocusedContainerColor = containerColor,
         )
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -123,7 +126,7 @@ internal fun ComposerField(
                     interactionSource = interactionSource,
                     colors = colors,
                     placeholder = placeholder,
-                    leadingIcon = leadingIcon,
+                    icons = PillIcons(leadingIcons, trailingIcons),
                     focused = focused,
                 ),
         )
@@ -132,10 +135,10 @@ internal fun ComposerField(
 
 /**
  * The text field's decoration: Material's filled text field in [colors] on an `extraLarge` (pill) container, without a
- * label, so its vertical padding is `spacing.medium` instead of the 16 dp that make `TextField` 56 dp tall. The
- * [leadingIcon] (in the colors' leading icon color while [focused] or not) sits at the start of the pill, outside
- * Material's icon slot, which centres it on the field: it stays at the bottom, level with the last line, as the field
- * grows, as do the buttons beside the field.
+ * label: `spacing.extraSmall` around everything and `spacing.medium` above and below the text, 56 dp at one line as
+ * `TextField`. The [icons] (in the colors' leading icon color while [focused] or not) sit at the pill's start and end,
+ * outside Material's icon slots, which centre them on the field: they stay at the bottom, level with the last line, as
+ * the field grows, as does the button beside the field.
  */
 @Suppress("LongParameterList") // The decorator's own inputs: the field's state, its transformation and its slots.
 @Composable
@@ -145,7 +148,7 @@ private fun pillDecorator(
     interactionSource: MutableInteractionSource,
     colors: TextFieldColors,
     placeholder: String,
-    leadingIcon: (@Composable () -> Unit)?,
+    icons: PillIcons,
     focused: Boolean,
 ): TextFieldDecorator {
     val leadingIconColor = if (focused) colors.focusedLeadingIconColor else colors.unfocusedLeadingIconColor
@@ -162,10 +165,11 @@ private fun pillDecorator(
             colors = colors,
             contentPadding =
                 TextFieldDefaults.contentPaddingWithoutLabel(
-                    // After the icon's 48 dp touch target, as far from it as Material's icon slot keeps the text.
-                    start = if (leadingIcon != null) spacing.extraSmall else spacing.large,
+                    // Beside an icon's 48 dp touch target, as far from it as Material's icon slot keeps the text;
+                    // else 16 dp from the pill's side, with the padding around everything.
+                    start = if (icons.leading != null) spacing.extraSmall else spacing.medium,
                     top = spacing.medium,
-                    end = spacing.large,
+                    end = if (icons.trailing != null) spacing.extraSmall else spacing.medium,
                     bottom = spacing.medium,
                 ),
             // Drawn below, behind the icon too.
@@ -181,15 +185,24 @@ private fun pillDecorator(
                 colors = colors,
                 shape = shape,
             )
-            Row(verticalAlignment = Alignment.Bottom) {
-                if (leadingIcon != null) {
-                    CompositionLocalProvider(LocalContentColor provides leadingIconColor, content = leadingIcon)
+            Row(Modifier.padding(spacing.extraSmall), verticalAlignment = Alignment.Bottom) {
+                icons.leading?.let { leading ->
+                    CompositionLocalProvider(LocalContentColor provides leadingIconColor) { leading() }
                 }
                 Box(Modifier.weight(1f)) { material.Decoration(innerTextField) }
+                icons.trailing?.let { trailing ->
+                    CompositionLocalProvider(LocalContentColor provides leadingIconColor) { trailing() }
+                }
             }
         }
     }
 }
+
+/** The buttons at the start and the end of the pill. */
+private class PillIcons(
+    val leading: (@Composable RowScope.() -> Unit)?,
+    val trailing: (@Composable RowScope.() -> Unit)?,
+)
 
 /** Whether the text field had the focus when it last reported it; read in callbacks only, so not snapshot state. */
 private class FocusReport(

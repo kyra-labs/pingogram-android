@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -61,13 +62,15 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.composer.composerActionShapes
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The composer's microphone in the send button's place while the field is empty (`docs/DESIGN_SYSTEM.md` §6
- * Composer): a small [FilledIconButton] (`IconButtonDefaults.smallContainerSize`, in a 48 dp touch target) that
- * morphs into a wide pill while it records, its icon giving way to a [LinearWavyProgressIndicator] whose waves rise and
- * fall with the voice ([RecordingMeter.level]); locked, the pill sends.
+ * Composer): the composer's 56 dp round button (`IconButtonDefaults.mediumContainerSize`) in `tertiaryContainer` as
+ * Google Messages' microphone, which morphs into a wide `primary` pill while it records, its icon giving way to a
+ * [LinearWavyProgressIndicator] whose waves rise and fall with the voice ([RecordingMeter.level]); locked, the pill
+ * sends. Its colors cross-fade on the motion scheme's effects spring.
  *
  * - **Hold to record**: pressing it starts recording ([VoiceEvent.Start]) with a long-press haptic, if the microphone
  *   permission is granted; else it asks for it ([VoiceEvent.PermissionNeeded]). The pill follows the finger toward
@@ -86,15 +89,15 @@ internal fun RecordButton(
     modifier: Modifier = Modifier,
 ) {
     val actions = rememberRecordActions(recording, onEvent)
-    val uniform = IconButtonDefaults.smallContainerSize()
-    val wide = IconButtonDefaults.smallContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)
+    val uniform = IconButtonDefaults.mediumContainerSize()
+    val wide = IconButtonDefaults.mediumContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide)
     val width =
         animateDpAsState(
             targetValue = if (recording != null) wide.width else uniform.width,
             animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
             label = "recordButtonWidth",
         )
-    val shapes = IconButtonDefaults.shapes()
+    val shapes = composerActionShapes()
     val sizes = MaterialTheme.sizes
     val input =
         RecordInput(
@@ -105,6 +108,19 @@ internal fun RecordButton(
             actionLabel = stringResource(R.string.voice_record_action),
         )
     val face = recording?.let { if (it.isLocked) ButtonFace.Send else ButtonFace.Level } ?: ButtonFace.Mic
+    val colorScheme = MaterialTheme.colorScheme
+    val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
+    val mic = face == ButtonFace.Mic
+    val container by animateColorAsState(
+        targetValue = if (mic) colorScheme.tertiaryContainer else colorScheme.primary,
+        animationSpec = effects,
+        label = "recordButtonContainer",
+    )
+    val content by animateColorAsState(
+        targetValue = if (mic) colorScheme.onTertiaryContainer else colorScheme.onPrimary,
+        animationSpec = effects,
+        label = "recordButtonContent",
+    )
     FilledIconButton(
         onClick = actions::sendLocked,
         modifier =
@@ -114,6 +130,7 @@ internal fun RecordButton(
                 .recordInput(input, drag, actions, isLocked = face == ButtonFace.Send),
         // A pill while it records, the press morph only while it is the microphone or sends.
         shapes = if (face == ButtonFace.Level) IconButtonShapes(shapes.shape, shapes.shape) else shapes,
+        colors = IconButtonDefaults.filledIconButtonColors(containerColor = container, contentColor = content),
     ) {
         Crossfade(
             targetState = face,
@@ -141,7 +158,7 @@ private fun RecordButtonFace(
             Icon(
                 painter = painterResource(UiR.drawable.ic_mic_filled),
                 contentDescription = null,
-                modifier = Modifier.size(IconButtonDefaults.smallIconSize),
+                modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
             )
         }
 
@@ -166,7 +183,7 @@ private fun RecordButtonFace(
             Icon(
                 painter = painterResource(UiR.drawable.ic_send_filled),
                 contentDescription = stringResource(R.string.voice_send),
-                modifier = Modifier.size(IconButtonDefaults.smallIconSize),
+                modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
             )
         }
     }

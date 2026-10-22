@@ -141,6 +141,8 @@ private fun ContactsTopBar() {
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
             ),
+        // A dense list's bar (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's.
+        expandedHeight = MaterialTheme.sizes.denseTopAppBar,
     )
 }
 

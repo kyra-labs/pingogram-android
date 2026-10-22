@@ -56,7 +56,8 @@ import androidx.compose.ui.unit.dp
  * @property messageMenuBlur the blur radius of the conversation behind a message lifted for its actions (API 31+).
  * @property messageMenuMinWindowHeight the shortest window that lifts a long-pressed message with its menu beside it;
  *   shorter ones (phones in landscape) show its actions in a bottom sheet. Material's lower bound of medium heights.
- * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll.
+ * @property mediaMaxWidth the widest a photo, a video or an album gets in a message, and the width of a poll: on a
+ *   phone more than [bubbleMaxWidthFraction] leaves, so media fill a bubble as wide as text may make it.
  * @property mediaMaxHeight the tallest a photo or a video gets in a message.
  * @property mediaMinSize the shortest side of a photo or a video in a message: panoramas and tall screenshots are
  *   cropped to it rather than shown as slivers.
@@ -73,14 +74,18 @@ import androidx.compose.ui.unit.dp
  * @property waveformBarWidth the width of one bar of a voice message's waveform.
  * @property waveformBarGap the gap between two bars of a voice message's waveform.
  * @property attachmentPreview the square of a picked photo or video in the preview before it is sent.
- * @property fabMedium the height of a medium floating action button, extended or not (Material 3 Expressive's medium
- *   FAB, which material3 has no public token for): the room a list leaves at its end, so its last row can scroll clear
- *   of one.
+ * @property fabSmall the height of a small extended floating action button and of the FAB it collapses to (Material 3
+ *   Expressive's, 56 dp, as Gmail's Compose; material3 has no public token for it): the room a list leaves at its end,
+ *   so its last row can scroll clear of one.
+ * @property floatingNavigationBar the height of the floating navigation bar's pill and of the search button beside it,
+ *   as Google Photos' (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
+ * @property denseTopAppBar the height of the small top app bar over the dense lists of the Chats and Contacts tabs and
+ *   the archive (`docs/DESIGN_SYSTEM.md` §7, Density): Material's compact top app bar, 8 dp lower than its default.
  * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
  * @property passcodeDot the diameter of a dot that stands for an entered digit of a passcode.
  * @property composerField the height of the conversation composer's text field at one line, a filled tonal pill like
- *   Google Messages' (`docs/DESIGN_SYSTEM.md` §6, §7: Material's text field without the room of its label, which
- *   `TextField` keeps at 56 dp), and of the recording bar in its place.
+ *   Google Messages' (`docs/DESIGN_SYSTEM.md` §6), as tall as the round send button beside it, and of the recording
+ *   bar in its place.
  * @property recordingDot the dot that shows a voice message is being recorded, as loud as the microphone.
  * @property recordingCancelDistance how far the finger slides toward the start, holding the microphone, to cancel.
  * @property recordingLockDistance how far it slides up to lock the recording, which then goes on hands-free.
@@ -124,7 +129,7 @@ data class PingogramSizes(
     val swipeReplyDistance: Dp = 64.dp,
     val messageMenuBlur: Dp = 16.dp,
     val messageMenuMinWindowHeight: Dp = 480.dp,
-    val mediaMaxWidth: Dp = 280.dp,
+    val mediaMaxWidth: Dp = 320.dp,
     val mediaMaxHeight: Dp = 360.dp,
     val mediaMinSize: Dp = 120.dp,
     val mediaAlbumGap: Dp = 2.dp,
@@ -139,10 +144,12 @@ data class PingogramSizes(
     val waveformBarWidth: Dp = 3.dp,
     val waveformBarGap: Dp = 2.dp,
     val attachmentPreview: Dp = 120.dp,
-    val fabMedium: Dp = 80.dp,
+    val fabSmall: Dp = 56.dp,
+    val floatingNavigationBar: Dp = 56.dp,
+    val denseTopAppBar: Dp = 56.dp,
     val pinPadMaxWidth: Dp = 360.dp,
     val passcodeDot: Dp = 14.dp,
-    val composerField: Dp = 48.dp,
+    val composerField: Dp = 56.dp,
     val recordingDot: Dp = 10.dp,
     val recordingCancelDistance: Dp = 112.dp,
     val recordingLockDistance: Dp = 72.dp,

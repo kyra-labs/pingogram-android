@@ -341,10 +341,10 @@ class PingogramAppTest {
         repeat(TRANSFORM_FRAMES) { composeRule.mainClock.advanceTimeByFrame() }
         composeRule.waitForIdle()
 
-        // Early in the container transform the screen is still about the button's size, where the button was.
+        // Early in the container transform New chat grows over the chat list, which is still there below it.
         val back = composeRule.onNodeWithContentDescription(string(ChatsR.string.new_chat_back))
-        val growing = back.fetchSemanticsNode().boundsInRoot
-        assertTrue("$growing in $buttonBounds", growing.top > buttonBounds.top - buttonBounds.height)
+        back.assertExists()
+        text(ChatsR.string.chat_list_empty_title).assertExists()
         composeRule.mainClock.autoAdvance = true
         awaitText(ChatsR.string.new_chat_no_contacts)
         assertTrue(navController.currentDestination?.hasRoute<NewChatRoute>() == true)
