@@ -22,9 +22,12 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -40,15 +43,19 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import kotlin.math.roundToInt
 
 /**
  * The text field: a filled tonal pill like Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer), a [BasicTextField]
@@ -60,7 +67,8 @@ import dev.kyralabs.pingogram.feature.chat.R
  * hardware keyboard sends ([onSend]) and Shift+Enter starts a new line; the on-screen keyboard's Enter always starts
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
  * address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command suggestions'
- * arrows, Enter and Tab). The attach preview's caption and the forward sheet's comment are one too.
+ * arrows, Enter and Tab). [hint] shows after the text in the placeholder's color, an inline bot's placeholder after
+ * "@gif " ([InlineHint]). The attach preview's caption and the forward sheet's comment are one too.
  */
 @Composable
 internal fun ComposerField(
@@ -74,8 +82,10 @@ internal fun ComposerField(
     leadingIcons: (@Composable RowScope.() -> Unit)? = null,
     trailingIcons: (@Composable RowScope.() -> Unit)? = null,
     onKeyEvent: (KeyEvent) -> Boolean = { false },
+    hint: String? = null,
 ) {
     val labels = rememberFormattingLabels()
+    val textLayout = remember { TextLayoutHolder() }
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
     // onFocusChanged also reports the first state, unfocused: only changes are news.
     val focus = remember { FocusReport() }
@@ -101,19 +111,8 @@ internal fun ComposerField(
                             focus.isFocused = state.isFocused
                             onFocusChanged(state.isFocused)
                         }
-                    }.onPreviewKeyEvent { event ->
-                        onKeyEvent(event) ||
-                            when {
-                                event.isSendKey() -> {
-                                    onSend()
-                                    true
-                                }
-
-                                else -> {
-                                    formattingShortcut(event, text, onLink)
-                                }
-                            }
-                    }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
+                    }.onPreviewKeyEvent { event -> onKeyEvent(event) || fieldKey(event, text, onSend, onLink) }
+                    .appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                     .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
@@ -122,6 +121,7 @@ internal fun ComposerField(
             lineLimits = LINE_LIMITS,
             interactionSource = interactionSource,
             cursorBrush = SolidColor(colors.cursorColor),
+            onTextLayout = { getResult -> textLayout.result = getResult() },
             decorator =
                 pillDecorator(
                     text = text,
@@ -131,6 +131,7 @@ internal fun ComposerField(
                     placeholder = placeholder,
                     icons = PillIcons(leadingIcons, trailingIcons),
                     focused = focused,
+                    hint = hint?.let { InlineHintText(it, textLayout) },
                 ),
         )
     }
@@ -153,6 +154,7 @@ private fun pillDecorator(
     placeholder: String,
     icons: PillIcons,
     focused: Boolean,
+    hint: InlineHintText?,
 ): TextFieldDecorator {
     val leadingIconColor = if (focused) colors.focusedLeadingIconColor else colors.unfocusedLeadingIconColor
     val shape = MaterialTheme.shapes.extraLarge
@@ -192,13 +194,59 @@ private fun pillDecorator(
                 icons.leading?.let { leading ->
                     CompositionLocalProvider(LocalContentColor provides leadingIconColor) { leading() }
                 }
-                Box(Modifier.weight(1f)) { material.Decoration(innerTextField) }
+                Box(Modifier.weight(1f)) {
+                    material.Decoration {
+                        Box {
+                            innerTextField()
+                            hint?.let { InlineHint(it) }
+                        }
+                    }
+                }
                 icons.trailing?.let { trailing ->
                     CompositionLocalProvider(LocalContentColor provides leadingIconColor) { trailing() }
                 }
             }
         }
     }
+}
+
+/** The text field's latest text layout, for what is drawn after its text ([InlineHint]). */
+@Stable
+private class TextLayoutHolder {
+    var result by mutableStateOf<TextLayoutResult?>(null)
+}
+
+/** A hint ([text]) drawn after the text of the field whose layout [layout] holds. */
+private class InlineHintText(
+    val text: String,
+    val layout: TextLayoutHolder,
+)
+
+/**
+ * [hint]'s text in the placeholder's style (`bodyLarge`, `onSurfaceVariant`) right after the field's text, on its last
+ * line, ending in "…" where it does not fit; placed in the layout phase from the text's layout, so typing moves it
+ * without composing it again. Beside text that runs left to right it follows on the right, whatever the layout's
+ * direction, as the text does.
+ */
+@Composable
+private fun InlineHint(hint: InlineHintText) {
+    Text(
+        text = hint.text,
+        modifier =
+            Modifier.layout { measurable, constraints ->
+                val text = hint.layout.result
+                val end = text?.layoutInput?.text?.length ?: 0
+                val x = text?.getHorizontalPosition(end, usePrimaryDirection = true)?.roundToInt() ?: 0
+                val top = text?.let { it.getLineTop(it.lineCount - 1).roundToInt() } ?: 0
+                val width = (constraints.maxWidth - x).coerceAtLeast(0)
+                val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = width, minHeight = 0))
+                layout(0, 0) { placeable.place(x, top) }
+            },
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.bodyLarge.userContent,
+    )
 }
 
 /** The buttons at the start and the end of the pill. */
@@ -224,6 +272,18 @@ private fun KeyEvent.isSendKey(): Boolean =
         !isAltPressed &&
         !isMetaPressed &&
         nativeKeyEvent.flags and FLAG_SOFT_KEYBOARD == 0
+
+/** What the field does with [event] itself: Enter sends ([onSend]), Ctrl shortcuts format [text]; true if handled. */
+private fun fieldKey(
+    event: KeyEvent,
+    text: ComposerText,
+    onSend: () -> Unit,
+    onLink: (TextRange) -> Unit,
+): Boolean {
+    if (!event.isSendKey()) return formattingShortcut(event, text, onLink)
+    onSend()
+    return true
+}
 
 /** The lines the text field grows to before it scrolls. */
 private const val MAX_LINES = 6

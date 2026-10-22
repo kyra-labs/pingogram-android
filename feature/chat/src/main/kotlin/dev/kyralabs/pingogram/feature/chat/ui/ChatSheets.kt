@@ -7,14 +7,15 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotCommandsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialogHost
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineChatsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 
 /**
  * The sheets [viewModel] shows over the conversation: forwarding, send-as, a secret chat's timer and key, the pinned
- * messages, the bots' commands, and what follows a tap on a bot's button (its alert or question, the chat
- * picker of an inline query).
+ * messages, the bots' commands, what follows a tap on a bot's button (its alert or question, the chat picker of an
+ * inline query), and whether to share the location with an inline bot.
  */
 @Composable
 internal fun ChatSheets(viewModel: ChatViewModel) {
@@ -32,4 +33,6 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     switchInlineSheet?.let { SwitchInlineChatsSheet(it, viewModel::onEvent) }
     val botCommandsSheet by viewModel.botCommandsSheet.collectAsStateWithLifecycle()
     botCommandsSheet?.let { BotCommandsBottomSheet(it, viewModel::onEvent) }
+    val inlineLocationSheet by viewModel.inlineLocationSheet.collectAsStateWithLifecycle()
+    inlineLocationSheet?.let { InlineLocationBottomSheet(it, viewModel::onEvent) }
 }

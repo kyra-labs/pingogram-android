@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
@@ -129,6 +130,9 @@ internal class ChatThread(
 
     fun voiceNotes(voiceNotes: VoiceNoteRepository): VoiceNoteRepository =
         topic?.let { TopicVoiceNoteRepository(voiceNotes, it) } ?: voiceNotes
+
+    fun inlineBots(inlineBots: InlineBotRepository): InlineBotRepository =
+        topic?.let { TopicInlineBotRepository(inlineBots, it) } ?: inlineBots
 
     fun chats(chats: ChatRepository): ChatRepository = topic?.let { TopicChatRepository(chats, it) } ?: chats
 

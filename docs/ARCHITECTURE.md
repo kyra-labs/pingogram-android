@@ -191,7 +191,28 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ComposerUiState.BotStart`) and the bot's intro the empty state's (`ChatUiState.botIntro`); a tap sends
   `sendBotStartMessage` with the link's parameter, which `:app`'s `LinkViewModel` hands over through `feature:chat`'s
   `BotStartInbox` (a singleton, in memory, like `ShareInbox`; the conversation takes it, also when already open, and
-  keeps it in its saved state until sent). Inline bots, reply keyboards and Mini Apps come later.
+  keeps it in its saved state until sent). Reply keyboards and Mini Apps come later.
+- **Inline bots** (FR-C5, "@gif cats"): `core:domain`'s `InlineBotRepository` (`TdlibInlineBotRepository`, `core:data`,
+  no cache: TDLib keeps the users it resolved and recent answers) finds the bot a typed username names
+  (`searchPublicChat`, then `getUser`'s `userTypeBot.is_inline`, `inline_query_placeholder`, `need_location`; a username
+  nobody has is no bot), pages its results (`getInlineQueryResults`, each page with its own `inline_query_id`, into
+  `InlineResult`s of every td_api.tl kind and the results' `InlineResultsButton`) and sends one
+  (`sendInlineQueryResultMessage`, the bot named, the composer's reply, silent and scheduled options, the topic's or
+  thread's `topic_id` through `ChatThread.inlineBots`). `feature:chat`'s `ChatInlineBots` (a part of `ChatViewModel`,
+  `inline/`, given its repositories as one `InlineBotRepositories`) follows the field through `snapshotFlow`: only text
+  that starts with "@username " (`inlineQuery`), not while editing, looks a bot up (once per username per
+  conversation, never another bot ahead of time); queries wait 400 ms after the last change and the latest wins
+  (`flatMapLatest` cancels the older one, whose late answer TDLib drops); results stay while a newer query is on its
+  way; the list asks for the next page near its end (`InlineBotEvent.LoadMore`); a flood wait counts down before "Try
+  again", which nothing presses by itself. Its state (`inlineResults`) is kept out of `ChatUiState`, as the "/"
+  suggestions are, and drawn above the composer (`InlineResultsArea`), the placeholder after "@gif " in the field
+  (`ComposerField`'s `hint`, placed from the text's layout). A bot that asks for the location gets a question first
+  (`inlineLocationSheet`, `InlineLocationBottomSheet`, which asks Android's location permission itself where needed),
+  whose answer `InlineLocationConsent` (a singleton, in memory) keeps per bot for the process: Pingogram asks again
+  after a restart. With consent, `DeviceLocationRepository` finds the location once per conversation (10 s at most) and
+  it goes with that bot's queries only; without consent or Android's permission nothing is located or sent. The
+  results' "Start" button hands its parameter to the bot's chat through `BotStartInbox` and opens it, where "Start"
+  waits for the user; a Mini App's button and a game result only say Pingogram can't open them yet.
 - **Forum topics** (FR-C9): a message's `topic` (`MessageTopic`, `core:domain`: a forum topic or a message thread) comes
   from td_api.tl `message.topic_id`; `SendOptions.topic` sends into one (`sendMessage.topic_id`, every kind of message).
   `MessageRepository` keeps a history per `HistoryKey` (a chat, or one of its topics): a topic's pages come from

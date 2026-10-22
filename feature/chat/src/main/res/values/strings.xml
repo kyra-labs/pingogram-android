@@ -159,6 +159,21 @@
         <item quantity="other">%d commands</item>
     </plurals>
     <string name="bot_start">Start</string>
+    <!-- Inline bots ("@gif cats"): results above the composer. -->
+    <string name="inline_result_send">Send</string>
+    <string name="inline_result_article">Article</string>
+    <string name="inline_result_venue">Place</string>
+    <string name="inline_results_empty">No results</string>
+    <string name="inline_results_failed">Results didn\'t load</string>
+    <string name="inline_results_retry">Try again</string>
+    <plurals name="inline_results_title">
+        <item quantity="one">%1$s, %2$d result</item>
+        <item quantity="other">%1$s, %2$d results</item>
+    </plurals>
+    <string name="inline_games_unsupported">Pingogram can\'t play games yet</string>
+    <string name="inline_location_title">Share your location with %1$s?</string>
+    <string name="inline_location_body">%1$s asks where you are to show results nearby. Your location goes to this bot with what you type to it, and to no one else. Pingogram asks again after it restarts.</string>
+    <string name="inline_location_share">Share location</string>
     <string name="bot_intro_title">What can this bot do?</string>
 
     <!-- The emoji and sticker panel, which takes the keyboard's place below the composer -->

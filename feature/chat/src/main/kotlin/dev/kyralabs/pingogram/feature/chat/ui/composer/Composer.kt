@@ -64,6 +64,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartButton
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsState
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsArea
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
@@ -98,7 +101,8 @@ import java.time.Instant
  * Where the chat's bots offer commands or a menu ([bots]), their button starts the pill ([BotMenuButton]) and the
  * attach "+" moves to its end, in the gallery's place; while a command is typed, the commands it starts show above
  * the composer ([CommandSuggestionsArea]); in an empty bot chat, or one a start link opened, "Start" takes the
- * composer's place ([BotStartButton]).
+ * composer's place ([BotStartButton]). While the field holds an inline query to an inline bot ([inline], "@gif cats"),
+ * its results show there instead ([InlineResultsArea]), and the bot's placeholder after "@gif " in the field.
  */
 @Composable
 internal fun ChatBottomBar(
@@ -122,11 +126,13 @@ internal fun ChatBottomBar(
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
     bots: BotInput = BotInput(),
+    inline: InlineBotInput = InlineBotInput(),
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
     val drag = remember { RecordDrag() }
     val suggestionsState = remember { CommandSuggestionsState() }
+    val inlineState = remember { InlineResultsState() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
@@ -153,6 +159,7 @@ internal fun ChatBottomBar(
                             .widthIn(max = MaterialTheme.sizes.bubbleMaxWidth),
                     ) {
                         CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
+                        InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
                         BarArea(composer.bar, onShowBarMessage, onCloseBar)
                         Composer(
                             composer,
@@ -166,7 +173,9 @@ internal fun ChatBottomBar(
                             now,
                             onSendAs,
                             bots.onMenu,
-                            onFieldKey = suggestionsState.keysFor(bots),
+                            // The commands' keys first, then the inline results'; the two never show together.
+                            onFieldKey = { suggestionsState.keysFor(bots)(it) || inlineState.keysFor(inline)(it) },
+                            fieldHint = inline.state?.takeIf { it.showsPlaceholder }?.placeholder,
                         )
                     }
                     // Not while editing: a sticker would be a new message.
@@ -248,6 +257,7 @@ private fun Composer(
     onSendAs: () -> Unit = {},
     onBotMenu: () -> Unit = {},
     onFieldKey: (KeyEvent) -> Boolean = { false },
+    fieldHint: String? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val edit = composer.bar as? ComposerBar.Edit
@@ -289,6 +299,7 @@ private fun Composer(
                 modifier = Modifier.weight(1f),
                 onBotMenu = onBotMenu,
                 onFieldKey = onFieldKey,
+                hint = fieldHint,
             )
         }
         ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
@@ -366,6 +377,7 @@ private fun ComposerPill(
     modifier: Modifier = Modifier,
     onBotMenu: () -> Unit = {},
     onFieldKey: (KeyEvent) -> Boolean = { false },
+    hint: String? = null,
 ) {
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
@@ -399,6 +411,7 @@ private fun ComposerPill(
             }
         },
         onKeyEvent = onFieldKey,
+        hint = hint,
     )
 }
 

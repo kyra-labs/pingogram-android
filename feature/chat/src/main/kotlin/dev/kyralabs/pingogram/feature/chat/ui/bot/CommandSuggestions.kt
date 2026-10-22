@@ -234,7 +234,7 @@ internal class CommandSuggestionsState {
 }
 
 /** Enter on a hardware keyboard without a modifier; the on-screen keyboard's Enter is flagged as its own. */
-private fun KeyEvent.isHardwareEnter(): Boolean =
+internal fun KeyEvent.isHardwareEnter(): Boolean =
     (key == Key.Enter || key == Key.NumPadEnter) &&
         !isShiftPressed &&
         !isCtrlPressed &&

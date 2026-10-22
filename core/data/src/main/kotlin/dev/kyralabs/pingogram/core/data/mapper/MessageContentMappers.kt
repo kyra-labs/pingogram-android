@@ -166,9 +166,9 @@ private fun TdApi.LinkPreviewType.photo(): Photo? =
         else -> null
     }
 
-private fun TdApi.VoiceNote.toVoiceNote() = VoiceNote(duration, Waveform(waveform), voice.toFileRef())
+internal fun TdApi.VoiceNote.toVoiceNote() = VoiceNote(duration, Waveform(waveform), voice.toFileRef())
 
-private fun TdApi.Audio.toAudio() =
+internal fun TdApi.Audio.toAudio() =
     Audio(
         duration = duration,
         title = title,
@@ -179,7 +179,7 @@ private fun TdApi.Audio.toAudio() =
         file = audio.toFileRef(),
     )
 
-private fun TdApi.Document.toDocument() =
+internal fun TdApi.Document.toDocument() =
     Document(
         fileName = fileName,
         mimeType = mimeType,
@@ -188,8 +188,8 @@ private fun TdApi.Document.toDocument() =
         file = document.toFileRef(),
     )
 
-private fun TdApi.Location.toLocation() = Location(latitude, longitude)
+internal fun TdApi.Location.toLocation() = Location(latitude, longitude)
 
-private fun TdApi.Venue.toVenue() = Venue(location.toLocation(), title, address)
+internal fun TdApi.Venue.toVenue() = Venue(location.toLocation(), title, address)
 
-private fun TdApi.Contact.toContact() = Contact(phoneNumber, firstName, lastName, userId)
+internal fun TdApi.Contact.toContact() = Contact(phoneNumber, firstName, lastName, userId)
