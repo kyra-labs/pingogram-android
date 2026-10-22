@@ -591,6 +591,9 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   and `logo_pingogram` (mark and wordmark). In the UI the mark and logo are one-color and tinted
   with theme roles (Welcome: `onPrimaryContainer` on its `primaryContainer` shape; About: `primary`),
   so they follow dynamic color.
+- App shortcuts (the launcher icon's long press): adaptive icons, a Material Symbol (edit, search, bookmark) at 30 dp
+  on the 108 dp layer in the brand's light `onPrimaryContainer` on `primaryContainer`, with a monochrome layer for
+  themed icons. Launchers draw them outside the app, so they cannot follow its theme.
 - Avatars: circles, photos and placeholders alike; `MaterialShapes` only for states (the selection check, calls).
 - Images: inside bubbles they take the bubble's shape (§4); `extraLarge` in media viewer thumbnails.
 
