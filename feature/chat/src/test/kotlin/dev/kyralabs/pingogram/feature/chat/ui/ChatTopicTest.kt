@@ -138,7 +138,8 @@ class ChatTopicTest : ChatViewModelHarness() {
             val viewModel = inTopic()
 
             send(viewModel, ChatEvent.MessagesVisible(setOf(2L)))
-            assertEquals(listOf<Any>(1L, 0, 2), viewModel.state.pinnedBar?.let { listOf(it.messageId, it.position, it.count) })
+            val bar = viewModel.state.pinnedBar
+            assertEquals(listOf<Any>(1L, 0, 2), bar?.let { listOf(it.messageId, it.position, it.count) })
 
             send(viewModel, ChatEvent.MessagesVisible(setOf(3L)))
             send(viewModel, PinnedEvent.ShowCurrent)

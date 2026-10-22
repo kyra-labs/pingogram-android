@@ -107,7 +107,8 @@ class ChatThreadTest : ChatViewModelHarness() {
             send(viewModel, ChatEvent.MessagesVisible(setOf(THREAD + 2)))
             assertEquals(THREAD + 1, viewModel.state.pinnedBar?.messageId)
             send(viewModel, ChatEvent.MessagesVisible(setOf(THREAD + 3)))
-            assertEquals(listOf<Any>(THREAD + 3, 1), viewModel.state.pinnedBar?.let { listOf(it.messageId, it.position) })
+            val bar = viewModel.state.pinnedBar
+            assertEquals(listOf<Any>(THREAD + 3, 1), bar?.let { listOf(it.messageId, it.position) })
         }
 
     @Test

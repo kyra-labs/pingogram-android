@@ -38,9 +38,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
  * Every pinned message of the chat (`REQUIREMENTS.md` FR-C9), a [ModalBottomSheet] opened from the bar's list button:
  * "Pinned messages" in `titleLargeEmphasized`, then the messages oldest first, as the conversation shows them, as list
  * items inset like the chat list's rows (`docs/DESIGN_SYSTEM.md` §4), the sender over two lines of the message; the one
- * the bar shows takes the list item's selected container (`secondaryContainer`, `large`), and the list opens at it. A tap shows that message in the conversation
- * ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down, the scrim and back close it
- * ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
+ * the bar shows takes the list item's selected container (`secondaryContainer`, `large`), and the list opens at it. A
+ * tap shows that message in the conversation ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down, the
+ * scrim and back close it ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

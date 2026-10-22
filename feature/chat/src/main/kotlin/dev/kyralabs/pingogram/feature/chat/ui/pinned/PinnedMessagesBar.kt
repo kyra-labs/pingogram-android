@@ -68,15 +68,16 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The pinned messages bar at the top of the conversation's sheet (`REQUIREMENTS.md` FR-C9, `docs/DESIGN_SYSTEM.md` §6):
  * a tonal strip (`surfaceContainerHigh`, `large` corners) with "Pinned message" (and "2 of 5" where there are several,
- * counted from the oldest, so the newest is "5 of 5") in `labelMedium` `primary` over one line of the message, its sender in `onSurface` before the preview in
- * `onSurfaceVariant`, `bodyMedium`.
+ * counted from the oldest, so the newest is "5 of 5") in `labelMedium` `primary` over one line of the message, its
+ * sender in `onSurface` before the preview in `onSurfaceVariant`, `bodyMedium`.
  *
  * - **Segments** along its start, one per pinned message in the list's order, the oldest at the top and the newest at
  *   the bottom (at most [MAX_SEGMENTS] at a time, the window following the shown one), the shown one in `primary`, the
  *   others in `outlineVariant`; the highlight moves on the motion scheme's
  *   default spatial spring, read in the draw phase.
  * - **Cycling**: a tap shows the message in the list and moves on to the next older one ([PinnedEvent.ShowCurrent]);
- *   the text slides with it, an older message coming from above as it is above in the list, on the default spatial spring, fading on the effects springs.
+ *   the text slides with it, an older message coming from above as it is above in the list, on the default spatial
+ *   spring, fading on the effects springs.
  * - **Buttons**: the list of every pinned message where there are several ([PinnedEvent.OpenList]), and close
  *   ([PinnedEvent.Close]): unpin (`ic_keep_off`) for those who may, hide (`ic_close`) for the others.
  * - **Screen readers** hear one item, "Pinned message 2 of 5, Alice: …", whose action shows the message, with the two
