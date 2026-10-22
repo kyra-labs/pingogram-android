@@ -13,6 +13,7 @@
   <a href="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml"><img src="https://github.com/kyra-labs/pingogram-android/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/kyra-labs/pingogram-android/releases"><img src="https://img.shields.io/github/v/release/kyra-labs/pingogram-android?include_prereleases&label=download" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="License: GPL v3"></a>
+  <a href="https://hosted.weblate.org/engage/pingogram/"><img src="https://hosted.weblate.org/widget/pingogram/svg-badge.svg" alt="Translation status"></a>
 </p>
 
 Pingogram is an open-source, third-party Telegram client for Android, written from scratch in
@@ -177,6 +178,11 @@ link a code holds is opened through TDLib. There are no analytics, ads or tracke
 The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster
 start-up and smoother scrolling than the official app on the same device
 ([performance budgets](docs/PERFORMANCE.md)).
+
+## Translations
+
+Pingogram is translated on [Hosted Weblate](https://hosted.weblate.org/engage/pingogram/). A language ships once 80% of
+the app is translated; [docs/TRANSLATING.md](docs/TRANSLATING.md) explains how to help and how strings are written.
 
 ## Download
 
