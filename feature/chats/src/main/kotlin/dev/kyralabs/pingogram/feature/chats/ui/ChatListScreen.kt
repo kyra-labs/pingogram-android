@@ -64,6 +64,7 @@ import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
+import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
@@ -115,7 +116,7 @@ internal fun ChatListScreen(
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    listState: LazyListState = rememberLazyListState(),
+    listState: LazyListState = rememberScrollingListState(),
     onBack: () -> Unit = {},
     openChatId: Long? = null,
     header: @Composable () -> Unit = {},

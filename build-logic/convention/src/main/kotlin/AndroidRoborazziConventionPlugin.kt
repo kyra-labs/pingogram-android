@@ -35,9 +35,23 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
                 outputDir.set(layout.projectDirectory.dir("src/test/snapshots"))
             }
 
+            // `-Ppingogram.jfr=<directory>` records every test JVM with Java Flight Recorder, sampling every
+            // millisecond with deep stacks (`docs/PERFORMANCE.md` §9), for profiling frames on the JVM.
+            val flightRecordings = providers.gradleProperty("pingogram.jfr").orNull
+            // `-Ppingogram.scrollCost` runs the scroll cost measurements (`*ScrollCostTest`), which skip otherwise.
+            val scrollCost = providers.gradleProperty("pingogram.scrollCost").isPresent
             extensions.getByType<CommonExtension>().testOptions.unitTests.apply {
                 isIncludeAndroidResources = true
                 all {
+                    if (scrollCost) it.systemProperty("pingogram.scrollCost", "true")
+                    if (flightRecordings != null) {
+                        it.jvmArgs(
+                            "-XX:FlightRecorderOptions:stackdepth=2048",
+                            "-XX:StartFlightRecording:filename=$flightRecordings,settings=profile," +
+                                "jdk.ExecutionSample#period=1ms",
+                        )
+                        it.outputs.upToDateWhen { false }
+                    }
                     // Roborazzi renders with Robolectric's native graphics (real Skia, fonts and shapes).
                     it.systemProperty("robolectric.graphicsMode", "NATIVE")
                     // Robolectric's Android 16 runtime sets FileDescriptor internals through jdk.internal.access.

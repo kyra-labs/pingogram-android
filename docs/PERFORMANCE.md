@@ -76,7 +76,14 @@ regresses by more than 10%.
 - Kotlin 2.x with strong skipping; all UI models are `@Immutable` data classes using
   `ImmutableList`/`ImmutableMap`; no `List<T>` in UI state.
 - `LazyColumn`: stable `key`, `contentType` per message kind, `reverseLayout` for chat,
-  `rememberLazyListState` saved in `SavedStateHandle`, `LazyListPrefetchStrategy` default.
+  `rememberLazyListState` saved in `SavedStateHandle`, `LazyListPrefetchStrategy` default. The chat list and the
+  conversation take `core:ui`'s `rememberScrollingListState`, a list state with a cache window
+  (`LazyLayoutCacheWindow`, half a viewport ahead and one behind): rows near the viewport compose and measure ahead in
+  the frames' idle time instead of one at a time in the frame that shows them, and rows prefetched there stay composed
+  for a screen behind, so a fling back does not compose them again. On the JVM (`*ScrollCostTest`, §9) it took the
+  P90 of a scroll frame's CPU time 2–7% and its P99 2–9% lower in the chat list, and 11–12% and 15–21% lower in the
+  conversation, for 5–9% more at the median, where it prefetches; Robolectric runs that prefetch inside the frames,
+  so a phone, where it runs between them, gains more.
 - Per-item rules: no `LaunchedEffect`/`collectAsState` inside items; derive everything in the
   ViewModel. Timestamps formatted once in the mapper (recompute on minute tick through a single
   shared `StateFlow<Instant>` consumed by the ViewModel, not by composables).
@@ -232,9 +239,18 @@ regresses by more than 10%.
   (scrolling, a new message); copy the pattern for other screens. `feature:chat`'s copy of the counter
   starts before the screen first composes and leaves out calls that skip (they enter their restart group
   too), so it counts exactly the composables that run again. To see
-  where a frame's time goes without a device, record the test JVM with JFR
-  (`jcmd <pid> JFR.start settings=…`, 1 ms method sampling, `JFR.configure stackdepth=2048` first: Compose
-  stacks are deep): only relative costs carry over to a phone, and Robolectric does not draw.
+  where a frame's time goes without a device, record the test JVM with JFR: `-Ppingogram.jfr=<directory>` starts a
+  recording in every unit test JVM (1 ms method sampling, stack depth 2048, as Compose stacks are deep;
+  `AndroidRoborazziConventionPlugin`), read with `jfr print --events jdk.ExecutionSample`. Only relative costs carry
+  over to a phone, and Robolectric neither draws nor runs Compose's prefetch between frames.
+- Scroll cost on the JVM: `ChatListScrollCostTest` (`feature:chats`) and `ChatScrollCostTest` (`feature:chat`) scroll
+  the list by 40 px a frame and print the main thread's CPU time per frame (the scroll, which measures and composes
+  what comes into view, and the frame), as P50 / P90 / P99, with the screen's own list state and Compose's default.
+  They skip unless asked for: `./gradlew :feature:chats:testDebugUnitTest -Ppingogram.scrollCost --tests
+  '*ScrollCostTest*own*' --rerun`, one test per run (the JIT carries over), on a quiet machine, comparing runs of the
+  same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
+  P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
+  the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
