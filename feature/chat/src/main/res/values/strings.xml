@@ -46,6 +46,8 @@
     <string name="chat_not_found_title">Chat not found</string>
     <string name="chat_not_found_body">This chat doesn\'t exist, or you no longer have access to it.</string>
     <string name="chat_retry">Try again</string>
+    <!-- The sender before a message's preview in a list: the pinned messages bar, a forum's topics. %1$s is the name. -->
+    <string name="preview_sender_label">%1$s:</string>
     <!-- Above the oldest loaded message when older ones could not be loaded. -->
     <string name="chat_older_error">Older messages couldn\'t be loaded</string>
     <!-- Below the newest loaded message when newer ones could not be loaded. -->

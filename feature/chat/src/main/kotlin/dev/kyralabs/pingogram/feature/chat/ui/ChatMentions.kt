@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
@@ -41,15 +42,20 @@ internal class ChatMentions(
     }
 }
 
-/** Opens the profile or the chat a tap named ([ChatEffect.OpenProfile], [ChatEffect.OpenChat]); no snackbar. */
+/**
+ * Opens the profile, the chat or the thread a tap named ([ChatEffect.OpenProfile], [ChatEffect.OpenChat],
+ * [ChatEffect.OpenThread]); no snackbar.
+ */
 internal fun openNamed(
     effect: ChatEffect,
     onOpenProfile: (userId: Long) -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
 ): String {
     when (effect) {
         is ChatEffect.OpenProfile -> onOpenProfile(effect.userId)
         is ChatEffect.OpenChat -> onOpenChat(effect.chatId)
+        is ChatEffect.OpenThread -> onOpenThread(effect.chatId, effect.topic)
         else -> Unit
     }
     return ""

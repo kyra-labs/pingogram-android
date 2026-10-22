@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.text.UiText
 
 /** One-off effects of [ChatViewModel], handled by the screen once each (`docs/ARCHITECTURE.md`, ViewModels). */
@@ -66,6 +67,18 @@ sealed interface ChatEffect {
 
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
+
+    /** The pinned messages bar was hidden on this device: a snackbar says it returns with a newer pinned message. */
+    data object PinnedHidden : ChatEffect
+
+    /**
+     * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
+     * the channel's discussion group for a post's comments.
+     */
+    data class OpenThread(
+        val chatId: Long,
+        val topic: MessageTopic,
+    ) : ChatEffect
 
     /**
      * Messages were forwarded to [count] chats: a snackbar says so, naming the chat if there was one ([chatTitle]),

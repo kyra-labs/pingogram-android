@@ -181,7 +181,8 @@ class TdlibAttachmentRepository internal constructor(
 
 /**
  * Sends [attachments] to chat [chatId]: `sendMessage` for a group of one and `sendMessageAlbum` for the others
- * ([albumGroups]), one after the other in their order, with [options] and the caption on [captionIndex]'s attachment;
+ * ([albumGroups]), one after the other in their order, with [options] (into their topic, if any) and the caption on
+ * [captionIndex]'s attachment;
  * only the first group replies to [replyToMessageId]. The first group TDLib refuses ends the send with its error. The
  * copies are left as they are: those sent are TDLib's now (`UploadCleaner`), the others still the caller's.
  */
@@ -205,7 +206,8 @@ internal suspend fun TdlibClient.sendAttachments(
             if (contents.size == 1) {
                 sendMessage(chatId, contents[0], options, replyTo)
             } else {
-                request(TdApi.SendMessageAlbum(chatId, null, replyTo, options.toTdOptions(), contents.toTypedArray()))
+                val all = contents.toTypedArray()
+                request(TdApi.SendMessageAlbum(chatId, options.tdTopic(), replyTo, options.toTdOptions(), all))
             }
         if (result is Outcome.Failure) return AttachmentSend(sent, result)
         sent += group.size
@@ -219,10 +221,11 @@ internal class AttachmentSend(
     val failure: Outcome.Failure?,
 )
 
-/** `sendMessage` of [content] to [chatId] with [options], replying as [replyTo] says. */
+/** `sendMessage` of [content] to [chatId] as [options] say (into their topic, if any), replying as [replyTo] says. */
 internal suspend fun TdlibClient.sendMessage(
     chatId: Long,
     content: TdApi.InputMessageContent,
     options: SendOptions,
     replyTo: TdApi.InputMessageReplyTo?,
-): Outcome<Unit> = request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content)).map {}
+): Outcome<Unit> =
+    request(TdApi.SendMessage(chatId, options.tdTopic(), replyTo, options.toTdOptions(), null, content)).map {}

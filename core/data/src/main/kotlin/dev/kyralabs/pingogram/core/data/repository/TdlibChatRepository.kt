@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -209,16 +210,22 @@ class TdlibChatRepository
 
         /**
          * `viewMessages` from the chat's history without `force_read`: TDLib reads them because the chat is open,
-         * as the official apps do while the conversation shows.
+         * as the official apps do while the conversation shows; from a forum topic's or a message thread's history in
+         * their conversations, which reads them there.
          */
         override suspend fun viewMessages(
             chatId: Long,
             messageIds: List<Long>,
-        ): Outcome<Unit> =
-            client
-                .request(
-                    TdApi.ViewMessages(chatId, messageIds.toLongArray(), TdApi.MessageSourceChatHistory(), false),
-                ).map {}
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val source =
+                when (topic) {
+                    null -> TdApi.MessageSourceChatHistory()
+                    is MessageTopic.Forum -> TdApi.MessageSourceForumTopicHistory()
+                    is MessageTopic.Thread -> TdApi.MessageSourceMessageThreadHistory()
+                }
+            return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
+        }
     }
 
 /**

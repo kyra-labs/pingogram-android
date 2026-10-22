@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import kotlinx.coroutines.flow.Flow
 
@@ -17,6 +18,9 @@ import kotlinx.coroutines.flow.Flow
  * at a time, and calls of the same load while it runs share its outcome. A failure (`DomainError.FloodWait`,
  * `DomainError.Network`, `DomainError.NotFound`, …) leaves the history as it was. TDLib's local messages come first,
  * the server's only when it has none (`docs/PERFORMANCE.md` §3).
+ *
+ * A history is that of a whole chat, or of one of its forum topics or message threads ([MessageTopic], FR-C9), each
+ * with a history of its own: the functions take the chat and, where it applies, the topic.
  */
 interface MessageRepository {
     /**
@@ -24,20 +28,29 @@ interface MessageRepository {
      * for a chat not loaded recently the first snapshot is empty without having reached the start, and [loadNewest]
      * or [loadAround] loads it, so the caller sees every failure.
      */
-    fun history(chatId: Long): Flow<ChatHistory>
+    fun history(
+        chatId: Long,
+        topic: MessageTopic? = null,
+    ): Flow<ChatHistory>
 
     /**
      * Loads the messages before the oldest one in [history] (the newest messages if none is loaded). A page can be
      * short even when there are older messages; the start is reached only when the server has none.
      */
-    suspend fun loadOlder(chatId: Long): Outcome<Unit>
+    suspend fun loadOlder(
+        chatId: Long,
+        topic: MessageTopic? = null,
+    ): Outcome<Unit>
 
     /**
      * Loads the messages after the newest one in [history] when it does not reach the chat's newest message
      * ([ChatHistory.reachedEnd]); nothing otherwise. A page can be short; the end is reached with the chat's newest
      * message.
      */
-    suspend fun loadNewer(chatId: Long): Outcome<Unit>
+    suspend fun loadNewer(
+        chatId: Long,
+        topic: MessageTopic? = null,
+    ): Outcome<Unit>
 
     /**
      * Makes [history] show message [messageId] of chat [chatId] with messages on both sides: nothing to load when it is
@@ -49,6 +62,7 @@ interface MessageRepository {
     suspend fun loadAround(
         chatId: Long,
         messageId: Long,
+        topic: MessageTopic? = null,
     ): Outcome<Unit>
 
     /**
@@ -56,7 +70,10 @@ interface MessageRepository {
      * with messages, or none at all at the start); otherwise the newest page replaces the loaded messages. For a chat
      * opened without unread messages, and for the jump to the newest message.
      */
-    suspend fun loadNewest(chatId: Long): Outcome<Unit>
+    suspend fun loadNewest(
+        chatId: Long,
+        topic: MessageTopic? = null,
+    ): Outcome<Unit>
 
     /**
      * The message that message [messageId] of chat [chatId] replies to, for its reply quote when the replied message

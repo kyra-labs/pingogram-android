@@ -160,7 +160,11 @@ class MediaViewerNavigationTest {
         )
         awaitNode(hasContentDescription("Photo, 1 of 1, Ada Lovelace", substring = true))
         assertNoNavigation()
-        assertEquals(1, tdlib.sentOf<TdApi.SearchChatMessages>().size)
+        // The viewer's one search for media; the conversation's pinned messages bar searches for the pins.
+        assertEquals(
+            1,
+            tdlib.sentOf<TdApi.SearchChatMessages>().count { it.filter !is TdApi.SearchMessagesFilterPinned },
+        )
 
         composeRule.onNode(hasContentDescription(string(MediaR.string.media_back))).performClick()
         composeRule.waitForIdle()

@@ -61,7 +61,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 chatId = chatId,
                 savedStateHandle = SavedStateHandle(),
                 chatRepository = chats,
-                messageRepository = messages,
+                messages = messages,
                 messageActionRepository = messageActions,
                 sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
@@ -80,6 +80,13 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 sendAsRepository = FakeSendAsRepository(),
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,
+                threadRepositories =
+                    ThreadRepositories(
+                        FakePinnedMessageRepository(),
+                        FakeHiddenPinsRepository(),
+                        FakeForumTopicRepository(),
+                        FakeMessageThreadRepository(),
+                    ),
                 shareInbox = ShareInbox(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

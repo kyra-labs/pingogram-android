@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SharedFile
@@ -267,6 +268,7 @@ class FakeChatRepository : ChatRepository {
     override suspend fun viewMessages(
         chatId: Long,
         messageIds: List<Long>,
+        topic: MessageTopic?,
     ): Outcome<Unit> = unused()
 }
 

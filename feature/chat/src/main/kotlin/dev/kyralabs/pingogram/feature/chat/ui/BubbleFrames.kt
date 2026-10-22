@@ -70,7 +70,8 @@ internal fun WithReactionBadges(
 
 /**
  * [frame] of [bubble] with what goes around it: its reaction badges on its corner ([WithReactionBadges], overlapping it
- * by [overlap]) and, for a message that failed to send, its "Not sent" label below ([WithFooter]). Where the group
+ * by [overlap]) and, below it ([WithFooter]), the "Not sent" label of a message that failed to send, or the link to its
+ * thread ([ThreadButton]: "12 comments", "3 replies"). Where the group
  * shows its time on its last bubble only, a tap that nothing inside takes (links, media, quotes and badges keep
  * theirs) shows or hides this one's ([ChatEvent.ToggleTime]).
  */
@@ -105,15 +106,29 @@ internal fun BubbleStack(
         }
     }
     val stackModifier = if (bubble.position.joinsNext) modifier.onTap(bubble.id, onEvent) else modifier
-    if (bubble.status == OutgoingStatus.Failed) {
-        WithFooter(
-            isOutgoing = bubble.isOutgoing,
-            modifier = stackModifier,
-            bubble = { withBadges(Modifier) },
-            footer = { NotSentLabel(bubble.canResend, onRetry = { onEvent(ChatEvent.Resend(bubble.id)) }) },
-        )
-    } else {
-        withBadges(stackModifier)
+    val thread = bubble.thread
+    when {
+        bubble.status == OutgoingStatus.Failed -> {
+            WithFooter(
+                isOutgoing = bubble.isOutgoing,
+                modifier = stackModifier,
+                bubble = { withBadges(Modifier) },
+                footer = { NotSentLabel(bubble.canResend, onRetry = { onEvent(ChatEvent.Resend(bubble.id)) }) },
+            )
+        }
+
+        thread != null -> {
+            WithFooter(
+                isOutgoing = bubble.isOutgoing,
+                modifier = stackModifier,
+                bubble = { withBadges(Modifier) },
+                footer = { ThreadButton(thread, onOpen = { onEvent(ChatEvent.OpenThread(thread.messageId)) }) },
+            )
+        }
+
+        else -> {
+            withBadges(stackModifier)
+        }
     }
 }
 

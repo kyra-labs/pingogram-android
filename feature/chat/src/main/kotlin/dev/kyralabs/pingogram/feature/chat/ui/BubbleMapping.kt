@@ -84,6 +84,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
             },
         isEmojiOnly = showsLargeEmoji(content, text),
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
+        thread = newest.threadLink(kind),
     )
 }
 

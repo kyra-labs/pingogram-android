@@ -70,7 +70,7 @@ the release workflow so the owner can install and test on a phone.
 - [x] Contacts list, add/edit/invite; user profile; shared media tabs; the conversation title opens the profile
       (audit G23's rest)
 - [x] Group/channel info, members, admins, permissions, invite links, create/leave/delete
-- [ ] Forum topics, comments threads, pinned messages bar
+- [x] Forum topics, comments threads, pinned messages bar
 - [x] Secret chats: create/accept, TTL, lock indicators (accepting is TDLib's own, `docs/TDLIB.md`)
 - [x] Deep links (`tg://`, `t.me`) via `getInternalLinkType` (scope and what is left out: `docs/adr/0013-deep-links.md`)
 - [x] Direct share: share text, links and files from other apps into a chat (a share target with a chat picker and a

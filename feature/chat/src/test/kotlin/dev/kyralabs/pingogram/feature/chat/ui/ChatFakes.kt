@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -78,6 +79,9 @@ class FakeChatRepository : ChatRepository {
     /** The message ids of every [viewMessages] call, in order. */
     val viewed = mutableListOf<List<Long>>()
 
+    /** The topic of every [viewMessages] call, in order. */
+    val viewedIn = mutableListOf<MessageTopic?>()
+
     var onViewMessages: suspend (List<Long>) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** Every [getChat] call. */
@@ -123,7 +127,9 @@ class FakeChatRepository : ChatRepository {
     override suspend fun viewMessages(
         chatId: Long,
         messageIds: List<Long>,
+        topic: MessageTopic?,
     ): Outcome<Unit> {
+        viewedIn += topic
         viewed += messageIds
         return onViewMessages(messageIds)
     }
@@ -191,6 +197,12 @@ class FakeMessageRepository : MessageRepository {
 
     /** Every load but [loadOlder], in order: `newer`, `newest` and `around:<message id>`. */
     val loads = mutableListOf<String>()
+
+    /**
+     * The topic of every history observed and every load, in order: a history of one chat, whatever its topic, is the
+     * same here.
+     */
+    val topics = mutableListOf<MessageTopic?>()
 
     var onLoadOlder: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
@@ -271,14 +283,28 @@ class FakeMessageRepository : MessageRepository {
         setHistory(chatId, history.copy(windowId = windowId))
     }
 
-    override fun history(chatId: Long): Flow<ChatHistory> = histories.map { it[chatId] ?: EMPTY }.distinctUntilChanged()
+    override fun history(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Flow<ChatHistory> {
+        topics += topic
+        return histories.map { it[chatId] ?: EMPTY }.distinctUntilChanged()
+    }
 
-    override suspend fun loadOlder(chatId: Long): Outcome<Unit> {
+    override suspend fun loadOlder(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Outcome<Unit> {
+        topics += topic
         loadRequests += chatId
         return onLoadOlder(chatId)
     }
 
-    override suspend fun loadNewer(chatId: Long): Outcome<Unit> {
+    override suspend fun loadNewer(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Outcome<Unit> {
+        topics += topic
         loads += "newer"
         return onLoadNewer(chatId)
     }
@@ -286,12 +312,18 @@ class FakeMessageRepository : MessageRepository {
     override suspend fun loadAround(
         chatId: Long,
         messageId: Long,
+        topic: MessageTopic?,
     ): Outcome<Unit> {
+        topics += topic
         loads += "around:$messageId"
         return onLoadAround(chatId, messageId)
     }
 
-    override suspend fun loadNewest(chatId: Long): Outcome<Unit> {
+    override suspend fun loadNewest(
+        chatId: Long,
+        topic: MessageTopic?,
+    ): Outcome<Unit> {
+        topics += topic
         loads += "newest"
         return onLoadNewest(chatId)
     }
