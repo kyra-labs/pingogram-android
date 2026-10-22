@@ -109,8 +109,8 @@ private fun FolderButtonGroup(
                 .fadingEdges(scroll.state)
                 .horizontalScroll(scroll.state)
                 .selectableGroup()
-                // A 56 dp row: the buttons' 48 dp touch targets, so 8 dp above and below their 40 dp containers.
-                .padding(horizontal = margin, vertical = MaterialTheme.spacing.extraSmall),
+                // A 48 dp row: the buttons' touch targets, 4 dp above and below their 40 dp containers.
+                .padding(horizontal = margin),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         verticalAlignment = Alignment.CenterVertically,
     ) {

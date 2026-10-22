@@ -100,6 +100,8 @@ internal fun MediaViewerScreen(
         val content = state as? MediaViewerUiState.Content
         val chrome = rememberSaveable(saver = ChromeState.Saver) { ChromeState() }
         val dismiss = rememberDismissState()
+        // Every way out closes the viewer once, however quickly the next one follows (DismissState.dismiss).
+        val leave = remember(dismiss, onBack) { { dismiss.dismiss(onBack) } }
         PredictiveBackDismiss(dismiss, onBack)
         ImmersiveSystemBars(hidden = content != null && !chrome.visible)
         val zoom = remember { ZoomState() }
@@ -110,7 +112,7 @@ internal fun MediaViewerScreen(
             Scaffold(
                 topBar = {
                     Chrome(visible = chrome.visible || content == null, dismiss, height) {
-                        ViewerTopBar(content?.current, content?.let { it.count?.positionOf(it.currentIndex) }, onBack)
+                        ViewerTopBar(content?.current, content?.let { it.count?.positionOf(it.currentIndex) }, leave)
                     }
                 },
                 bottomBar = {
@@ -206,7 +208,7 @@ private fun DismissibleContent(
                 .draggable(
                     state = dismiss.draggableState,
                     orientation = Orientation.Vertical,
-                    enabled = !zoomed,
+                    enabled = !zoomed && !dismiss.isDismissed,
                     onDragStarted = { dismiss.onDragStarted() },
                     onDragStopped = { velocity -> dismiss.onDragStopped(velocity, height, settle, scope, onBack) },
                 ),

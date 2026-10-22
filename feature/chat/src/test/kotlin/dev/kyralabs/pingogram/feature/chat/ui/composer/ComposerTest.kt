@@ -10,6 +10,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -17,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.withKeyDown
 import androidx.compose.ui.text.TextRange
@@ -138,7 +140,7 @@ class ComposerTest {
         setComposer()
         field().performTextInput("Shh")
 
-        composeRule.onNodeWithContentDescription(string(R.string.composer_send_options)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
         clickText(R.string.composer_send_silently)
 
         assertEquals(listOf(SendOptions(silent = true)), sent)
@@ -149,7 +151,7 @@ class ComposerTest {
         setComposer()
         field().performTextInput("Later")
 
-        composeRule.onNodeWithContentDescription(string(R.string.composer_send_options)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
         clickText(R.string.composer_schedule)
         clickText(R.string.composer_schedule_next)
         clickText(R.string.composer_schedule_confirm)
@@ -162,7 +164,7 @@ class ComposerTest {
     fun `a time that has passed meanwhile asks for another`() {
         setComposer()
         field().performTextInput("Later")
-        composeRule.onNodeWithContentDescription(string(R.string.composer_send_options)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
         clickText(R.string.composer_schedule)
         clickText(R.string.composer_schedule_next)
 
@@ -178,7 +180,7 @@ class ComposerTest {
         setComposer(composer = ComposerUiState.Available(canSchedule = false))
         field().performTextInput("Hi")
 
-        composeRule.onNodeWithContentDescription(string(R.string.composer_send_options)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.composer_send)).performTouchInput { longClick() }
 
         composeRule.onNodeWithText(string(R.string.composer_send_silently)).assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.composer_schedule)).assertDoesNotExist()

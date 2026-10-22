@@ -63,7 +63,9 @@ regresses by more than 10%.
 - Storage: schedule `optimizeStorage` weekly via WorkManager (TTL 30 days, keep pinned) and
   expose "Clear cache" with `getStorageStatisticsFast`.
 - Online state: `setOption("online", true)` only while a visible Activity exists; false on
-  `onStop`.
+  `onStop` (`TdlibNetworkTypeReporter`, from `ProcessLifecycleOwner`). TDLib reconnects at once only while online:
+  offline it backs off for longer and longer, so a process Android froze in the background came back "Connecting…".
+  Coming back while TDLib is not connected also sends the network again (`setNetworkType`), so it reconnects at once.
 - Updates fan-out: repositories collect `updates` on `Dispatchers.Default`, apply to in-memory
   maps, and emit **immutable snapshots** (persistent collections: `kotlinx.collections.immutable`).
 - Never keep more than the visible chat's messages in memory; evict other chats' message

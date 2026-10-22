@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -123,6 +126,10 @@ internal fun ChatListScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val folderSwitch = remember { FolderSwitch() }
     val newChatButton = rememberNewChatButtonState()
+    val insets = contentWindowInsets(state.kind, selectionMode = selection != null)
+    // The room the "New chat" button takes above the bottom: the button and the 16 dp below it; none in the archive.
+    val newChatButtonSpace =
+        if (state.kind == ChatListKind.Chats) MaterialTheme.sizes.fabSmall + MaterialTheme.spacing.large else 0.dp
     ScrollToTopOnReselect(ChatsRoute, listState, enabled = state.kind == ChatListKind.Chats)
     Box(modifier) {
         Scaffold(
@@ -133,19 +140,27 @@ internal fun ChatListScreen(
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack) },
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            floatingActionButton = {
-                if (state.kind == ChatListKind.Chats) {
-                    NewChatButton(
-                        state = newChatButton,
-                        visible = selection == null,
-                        onClick = { onEvent(ChatListEvent.NewChat) },
-                    )
-                }
+            snackbarHost = {
+                // Above the "New chat" button, which floats over the Scaffold rather than in its button slot.
+                SnackbarHost(snackbarHostState, Modifier.padding(bottom = newChatButtonSpace))
             },
-            contentWindowInsets = contentWindowInsets(state.kind, selectionMode = selection != null),
+            contentWindowInsets = insets,
         ) { innerPadding ->
             ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header)
+        }
+        if (state.kind == ChatListKind.Chats) {
+            // Over the Scaffold: in its button slot, every frame of the button's width animation (collapsing while
+            // the list scrolls) measured the whole Scaffold again.
+            NewChatButton(
+                state = newChatButton,
+                visible = selection == null,
+                onClick = { onEvent(ChatListEvent.NewChat) },
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .windowInsetsPadding(insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.End))
+                        .padding(MaterialTheme.spacing.large),
+            )
         }
         SelectionToolbarHost(
             selection = selection,

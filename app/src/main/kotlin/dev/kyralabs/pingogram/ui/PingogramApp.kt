@@ -41,7 +41,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
-import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
+import dev.kyralabs.pingogram.core.ui.component.floatingNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
@@ -161,7 +161,7 @@ fun PingogramApp(
                 Box(Modifier.fillMaxSize()) {
                     CompositionLocalProvider(
                         LocalNavigationBarInsets provides
-                            if (floatingBarSpace) floatingToolbarInsets() else WindowInsets(0, 0, 0, 0),
+                            if (floatingBarSpace) floatingNavigationBarInsets() else WindowInsets(0, 0, 0, 0),
                         LocalNavigationBarVisibility provides navigationBarVisibility,
                         LocalTabReselection provides tabReselection,
                     ) {

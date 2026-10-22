@@ -133,7 +133,7 @@ internal fun MemberPickerScreen(
                         end = contentPadding.calculateEndPadding(direction),
                         // Clear of the floating action button.
                         bottom =
-                            contentPadding.calculateBottomPadding() + MaterialTheme.sizes.fabMedium +
+                            contentPadding.calculateBottomPadding() + MaterialTheme.sizes.fabSmall +
                                 MaterialTheme.spacing.large,
                     ),
                 modifier = Modifier.weight(1f),

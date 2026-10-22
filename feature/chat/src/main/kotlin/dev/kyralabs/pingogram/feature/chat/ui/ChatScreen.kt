@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachInputs
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
@@ -181,7 +182,7 @@ internal fun ChatScreen(
                     onSent = scrollToSent,
                     emojiPanel = emojiPanel,
                     onEmojiPanelEvent = onEmojiPanelEvent,
-                ) { attachMenuOpen = true }
+                ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             jumpButton = {
                 JumpToBottomButton(
@@ -257,6 +258,7 @@ private fun ChatScaffold(
  * The bottom of the screen: the composer ([ChatBottomBar]), or in selection mode the selection toolbar in its place
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
+ * [onAttach] gets the option the composer's gallery button picks at once, or null for its "+", the attach menu.
  */
 @Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
 @Composable
@@ -270,7 +272,7 @@ private fun ChatScreenBottomBar(
     onSent: (SendOptions) -> Unit,
     emojiPanel: EmojiPanelUiState,
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit,
-    onAttach: () -> Unit,
+    onAttach: (option: AttachOption?) -> Unit,
 ) {
     SelectionBottomBar(
         actions = state.selection?.actions,
@@ -289,7 +291,8 @@ private fun ChatScreenBottomBar(
             focus = composerFocus,
             onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
             onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
-            onAttach = onAttach,
+            onAttach = { onAttach(null) },
+            onGallery = { onAttach(AttachOption.Gallery) },
             recording = recording,
             onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
             onSendAs = { onEvent(SendAsEvent.Open) },

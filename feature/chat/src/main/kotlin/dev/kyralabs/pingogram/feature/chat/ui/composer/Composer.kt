@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -55,9 +56,11 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordButton
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordDrag
 import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordingBar
@@ -69,17 +72,18 @@ import java.time.Instant
  * The bottom of the conversation (`REQUIREMENTS.md` FR-C5, FR-C6, `docs/DESIGN_SYSTEM.md` §6): the [Composer] where
  * the user can write, below the bar of the message it replies to or edits ([ComposerBarRow]), which grows in and out on
  * the motion scheme's springs; a short centred label in `onSurfaceVariant` where they cannot; nothing in a channel
- * they only read. It is a `surfaceContainer` surface below the messages' sheet, which reaches under the keyboard and
- * the system bars, edge to edge, while its content stays above them; on wide windows the composer and its bar are no
- * wider than a bubble can be (`sizes.bubbleMaxWidth`), centred.
+ * they only read. It is a `surface` below the messages' sheet, of the sheet's color as in Google Messages, which
+ * reaches under the keyboard and the system bars, edge to edge, while its content stays above them; on wide windows
+ * the composer and its bar are no wider than a bubble can be (`sizes.bubbleMaxWidth`), centred.
  *
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
  * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
- * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach]. The microphone in
+ * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach], and the gallery
+ * button at the field's end, while it is empty, the system photo picker through [onGallery]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
  * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
- * picker through [onSendAs]. The smiley at the start of the field opens the emoji and sticker panel ([EmojiPanel],
+ * picker through [onSendAs]. The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel],
  * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
  * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent].
  */
@@ -95,6 +99,7 @@ internal fun ChatBottomBar(
     onShowBarMessage: (messageId: Long) -> Unit = {},
     onCloseBar: () -> Unit = {},
     onAttach: () -> Unit = {},
+    onGallery: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
     onVoiceEvent: (VoiceEvent) -> Unit = {},
     onSendAs: () -> Unit = {},
@@ -106,7 +111,7 @@ internal fun ChatBottomBar(
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
     val drag = remember { RecordDrag() }
-    Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainer) {
+    Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
                 UnavailableLabel(composer.reason)
@@ -130,7 +135,7 @@ internal fun ChatBottomBar(
                             onSend,
                             onFocusChanged,
                             focus,
-                            onAttach,
+                            AttachInput(onAttach, onGallery),
                             VoiceInput(recording, onVoiceEvent, drag),
                             panelState,
                             now,
@@ -199,17 +204,20 @@ private fun BarArea(
 }
 
 /**
- * The composer, a 64 dp bar at one line (`docs/DESIGN_SYSTEM.md` §7): the attach button ([AttachButton]) where the chat
- * takes attachments, a multi-line text field that grows to six lines and then scrolls ([ComposerField]), and once there
- * is something to send, the send split button ([SendButton]) beside it, which grows in on the motion scheme's spatial
- * spring; while editing, a check ([SaveEditButton]) in its place, also for an emptied caption, and no attach button.
- * Formatting comes from the selection menu ([formattingItems]) and Ctrl shortcuts, a link from [LinkDialog], a time
- * from [ScheduleDialog]. Sending and saving confirm with a haptic (`HapticFeedbackType.Confirm`). [focus] moves the
- * focus to the text field. While the field is empty the microphone ([RecordButton]) is in the send button's place;
- * while it records, the recording bar ([RecordingBar]) takes the place of the attach button and the field. Before the
- * attach button, the send-as avatar ([LeadingButtons]) where the user can choose who they send as ([onSendAs]).
+ * The composer, as Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer): a 56 dp pill ([ComposerField], a
+ * multi-line text field that grows to six lines and then scrolls) 8 dp from the window's sides, beside a 56 dp round
+ * button, the two bottom-aligned. In the pill, the attach "+" ([AttachButton]) at the start where the chat takes
+ * attachments, and the emoji button ([PanelButton]) and, while the field is empty, the gallery ([GalleryButton]) at the
+ * end. The round button is the microphone ([RecordButton]) while the field is empty and, once there is something to
+ * send, the send button ([SendButton], a long press for its other ways to send), growing in on the motion scheme's
+ * spatial spring; while editing, a check ([SaveEditButton]) in its place, also for an emptied caption, and no attach or
+ * gallery button. Formatting comes from the selection menu ([formattingItems]) and Ctrl shortcuts, a link from
+ * [LinkDialog], a time from [ScheduleDialog]. Sending and saving confirm with a haptic (`HapticFeedbackType.Confirm`).
+ * [focus] moves the focus to the text field. While it records, the recording bar ([RecordingBar]) takes the place of
+ * the pill. Before the pill, the send-as avatar ([SendAsButton]) where the user can choose who they send as
+ * ([onSendAs]).
  */
-@Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach button.
+@Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach buttons.
 @Composable
 private fun Composer(
     composer: ComposerUiState.Available,
@@ -217,7 +225,7 @@ private fun Composer(
     onSend: (SendOptions) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     focus: ComposerFocusState,
-    onAttach: () -> Unit,
+    attach: AttachInput,
     voice: VoiceInput,
     panel: ComposerPanelState,
     now: () -> Instant = Instant::now,
@@ -241,23 +249,26 @@ private fun Composer(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = spacing.medium, vertical = spacing.small),
-        // The buttons' 48 dp touch targets reach 4 dp past their 40 dp containers, so these gaps look twice as wide.
-        horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+                .padding(spacing.small),
+        horizontalArrangement = Arrangement.spacedBy(spacing.small),
         verticalAlignment = Alignment.Bottom,
     ) {
         val recording = voice.recording
         if (recording != null) {
             RecordingBar(recording, voice.drag, voice.onEvent, Modifier.weight(1f))
         } else {
-            LeadingButtons(composer, onAttach, onSendAs)
-            ComposerField(
+            composer.sendAs?.let { SendAsButton(it, onSendAs) }
+            ComposerPill(
+                composer = composer,
                 text = text,
                 onSend = { send(SendOptions()) },
                 onLink = { linking = it },
                 onFocusChanged = onFocusChanged,
-                modifier = Modifier.weight(1f).focusRequester(focusRequester),
-                leadingIcon = { PanelButton(panel, focusRequester) },
+                attach = attach,
+                panel = panel,
+                focusRequester = focusRequester,
+                canSend = canSend,
+                modifier = Modifier.weight(1f),
             )
         }
         ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
@@ -310,6 +321,52 @@ private fun RowScope.ComposerAction(
         Appearing(visible = !canSend || recording != null) { RecordButton(recording, voice.drag, voice.onEvent) }
     }
 }
+
+/**
+ * The composer's pill ([ComposerField] on `surfaceContainer`, one step above the bar's `surface`, as the top bar): the
+ * attach "+" at its start where the chat takes attachments; the emoji button at its end, and the gallery while the
+ * field is empty ([canSend] false) where the chat takes photos and the composer does not edit.
+ */
+@Suppress("LongParameterList") // The field's state, where its text and focus go, and its buttons.
+@Composable
+private fun ComposerPill(
+    composer: ComposerUiState.Available,
+    text: ComposerText,
+    onSend: () -> Unit,
+    onLink: (TextRange) -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
+    attach: AttachInput,
+    panel: ComposerPanelState,
+    focusRequester: FocusRequester,
+    canSend: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val gallery = composer.bar !is ComposerBar.Edit && AttachOption.Gallery in composer.attachOptions
+    ComposerField(
+        text = text,
+        onSend = onSend,
+        onLink = onLink,
+        onFocusChanged = onFocusChanged,
+        modifier = modifier.focusRequester(focusRequester),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        leadingIcons =
+            if (composer.attachOptions.isNotEmpty()) {
+                { AttachButton(attach.onAttach) }
+            } else {
+                null
+            },
+        trailingIcons = {
+            PanelButton(panel, focusRequester)
+            if (gallery) Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
+        },
+    )
+}
+
+/** What the attach buttons open: the attach menu ([onAttach]) and the system photo picker ([onGallery]). */
+private data class AttachInput(
+    val onAttach: () -> Unit,
+    val onGallery: () -> Unit,
+)
 
 /**
  * The voice recording in progress ([recording], null while none), where what the user does with it goes, and where the

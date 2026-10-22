@@ -19,12 +19,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.decode.DataSource
 import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
+import dev.kyralabs.pingogram.core.ui.image.largestImageKey
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
@@ -36,7 +38,9 @@ import kotlinx.coroutines.launch
  * sizes; the viewer's full sizes are decoded at their own size, so zooming shows their pixels), cropped to fill its
  * box: the page fits the box to the media, so nothing is cut off there, and while the box moves between the bubble and
  * the page (the container transform) the photo uncrops as it grows. The fetcher downloads it at visible priority if it
- * is not on the device. With [fadeIn], it fades in on the motion scheme's default effects
+ * is not on the device. Until it is decoded at that size, the largest copy of the file already in memory shows in its
+ * place ([largestImageKey]): the bubble's photo, decoded at the bubble's size, so a photo the conversation showed is
+ * there at once and only sharpens. With [fadeIn], it fades in on the motion scheme's default effects
  * spring once loaded from disk (Coil's own crossfade is a tween); it shows at once from Coil's memory cache, and
  * without [fadeIn]. Decorative: the page describes it.
  */
@@ -55,6 +59,8 @@ internal fun ViewerImage(
                 .Builder(context)
                 .data(TdlibFileImage(fileId))
                 .size(widthPx.coerceAtLeast(1), heightPx.coerceAtLeast(1))
+                // What the conversation's bubble decoded, at its own size, shows until this size is decoded.
+                .placeholderMemoryCacheKey(SingletonImageLoader.get(context).memoryCache?.largestImageKey(fileId))
                 .build()
         }
     val alpha = remember(fileId) { Animatable(if (fadeIn) 0f else 1f) }

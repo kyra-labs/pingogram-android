@@ -47,7 +47,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The composer's text field while a voice message records (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6
- * Composer): a tonal pill (`surfaceContainerHighest`, `extraLarge`) as tall as the field it replaces, with a dot in
+ * Composer): a tonal pill (`surfaceContainer`, `extraLarge`) as tall as the field it replaces, with a dot in
  * `error` that swells with the voice and the length (`bodyLarge`, tabular figures).
  *
  * - **Held**: "Slide to cancel" toward the start, fading as the finger slides there ([drag]), and a lock that grows as
@@ -69,7 +69,8 @@ internal fun RecordingBar(
     Surface(
         modifier = modifier.heightIn(min = MaterialTheme.sizes.composerField),
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        // The text field's pill in its place.
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         val motionScheme = MaterialTheme.motionScheme
         AnimatedContent(

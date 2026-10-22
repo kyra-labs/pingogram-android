@@ -390,7 +390,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `Downloaded(path)`).
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
   `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
-  `minithumbnail` bytes).
+  `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
+  (`largestImageKey`, as its placeholder), so the picture the conversation showed is there at once, sharp as it gets.
 - Animated stickers (TGS = gzipped Lottie JSON, `docs/adr/0008-lottie-for-animated-stickers.md`): `core:ui`'s
   `AnimatedStickers` (one per process, `:app`'s `AnimatedStickersModule`, handed down as `LocalAnimatedStickers`; none
   in previews, where stickers show their thumbnail) downloads the file through `FileRepository`, decodes it with Lottie
