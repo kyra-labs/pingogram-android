@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
@@ -57,6 +58,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.bot.ChatBotCommands
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bot.withBots
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialog
+import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotButtons
+import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
+import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -192,6 +197,9 @@ import java.util.Locale
  * - **Secret chats** ([ChatSecretChat], `REQUIREMENTS.md` FR-E1): the secret chat's state in the header and the
  *   composer (none while it waits for the other user or after it ended), and the sheets of its top bar's actions
  *   ([secretChatSheet], kept out of [uiState] like the forward sheet): the self-destruct timer and the encryption key.
+ * - **Bots' buttons** ([ChatBotButtons]): what a tap on a button under a bot's message does (callbacks, links,
+ *   logins, inline queries, copying, profiles), the progress of the buttons that wait in their bubbles, and the
+ *   alerts, questions and chat picker that follow ([botButtonDialog], [switchInlineSheet], kept out of [uiState]).
  * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
  *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
  *   [uiState] like the forward sheet).
@@ -219,13 +227,16 @@ import java.util.Locale
  *   being sent fails while the screen is shown ([SendFailures]).
  *
  * It takes one repository per kind of data the screen combines or changes, plus the player, clock, dispatcher,
- * language, time patterns and log that tests replace, hence `LongParameterList` is suppressed. The conversation
- * destination and the detail pane of the Chats tab create it with their [chatId] (and the destination with its route's
+ * language, time patterns and log that tests replace, hence `LongParameterList` is suppressed. Each part of the
+ * conversation is a class of its own (the list above); what is left here wires them into one state and one event
+ * handler, which grows by a few lines with each part, hence `LargeClass` is suppressed. The conversation destination
+ * and the detail pane of the Chats tab create it with their [chatId] (and the destination with its route's
  * [initialMessageId]) through [Factory].
  */
 @Suppress(
     "LongParameterList",
-    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands); this wires them.
+    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands, ChatBotButtons…);
+    // what is left here wires them into one state and one event handler.
     "LargeClass",
 )
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -257,6 +268,7 @@ class ChatViewModel internal constructor(
     chatJoinRepository: ChatJoinRepository,
     threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
+    botButtonRepository: BotButtonRepository,
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
     private val log: ChatLog,
@@ -291,6 +303,7 @@ class ChatViewModel internal constructor(
         chatJoinRepository: ChatJoinRepository,
         threadRepositories: ThreadRepositories,
         shareInbox: ShareInbox,
+        botButtonRepository: BotButtonRepository,
         botInfoRepository: BotInfoRepository,
         botStartInbox: BotStartInbox,
         @Assisted("messageId") messageId: Long? = null,
@@ -322,6 +335,7 @@ class ChatViewModel internal constructor(
         chatJoinRepository,
         threadRepositories,
         shareInbox,
+        botButtonRepository,
         botInfoRepository,
         botStartInbox,
         AndroidChatLog,
@@ -490,6 +504,37 @@ class ChatViewModel internal constructor(
 
     /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
     val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
+
+    private val botButtons =
+        ChatBotButtons(
+            chatId = chatId,
+            repository = botButtonRepository,
+            users = userRepository,
+            chats = chatRepository,
+            search = searchRepository,
+            groups = groupRepository,
+            composer = composer,
+            shareInbox = shareInbox,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            canWrite = { uiState.value.composer is ComposerUiState.Available },
+            scope = viewModelScope,
+            dispatcher = dispatcher,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The alert or question after a bot's button was tapped; null while none shows. Kept out of [uiState]. */
+    val botButtonDialog: StateFlow<BotButtonDialog?> get() = botButtons.dialog
+
+    /** The password a bot's button asks for, for its field; never kept in the saved state. */
+    val botButtonPassword: TextFieldState get() = botButtons.password
+
+    /** The chat picker of a bot's switch-inline button; null while it is closed. Kept out of [uiState]. */
+    val switchInlineSheet: StateFlow<SwitchInlineSheet?> get() = botButtons.chatPicker
 
     private val secret =
         ChatSecretChat(
@@ -747,6 +792,7 @@ class ChatViewModel internal constructor(
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
+            .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -804,6 +850,7 @@ class ChatViewModel internal constructor(
             is BotEvent -> bots.onEvent(event)
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
+            is BotButtonEvent -> botButtons.onEvent(event)
             else -> onMessageEvent(event)
         }
     }

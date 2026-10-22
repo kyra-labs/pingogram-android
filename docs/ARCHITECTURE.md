@@ -223,6 +223,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   bar, the thread's unread count and read state as they were when it opened, and a composer for anyone where the group
   does not ask to join first (`supergroup.join_to_send_messages`). A thread that cannot be fetched shows its error, and
   "Try again" asks again.
+- **Bot buttons** (inline keyboards): a message's `replyMarkup` (`core:domain`'s `ReplyMarkup`: an inline keyboard, a
+  bot's reply keyboard, removing it, forcing a reply, every kind of button of td_api.tl modelled) is mapped with the
+  message (`ReplyMarkupMappers`, `core:data`) and replaced by every `updateMessageEdited`, which carries the bot's new
+  markup (`HistoryCache`), so buttons change in place. `BotButtonRepository` (`TdlibBotButtonRepository`, no cache)
+  sends what a tap asks: `getCallbackQueryAnswer` (a bot that does not answer, TDLib's 502 or no answer within 30 s,
+  is `CallbackAnswer.NoAnswer`, not an error), `getLoginUrlInfo` and `getLoginUrl`, and `shareUsersWithBot` /
+  `shareChatWithBot` for the reply keyboard to come. `feature:chat` shows the inline keyboard under its bubble
+  (`ChatItem.Bubble.keyboard`, `BotKeyboardButtons`, a part of the bubble's footer layout beside the comments link, no
+  subcomposition), and `ChatBotButtons` (a part of `ChatViewModel`) handles taps: the buttons waiting for Telegram
+  (`ChatUiState` items copied only for those bubbles, `withPendingButtons`), the alerts and questions
+  (`botButtonDialog`, the password in a `TextFieldState` never saved) and the chat picker of an inline query
+  (`switchInlineSheet`, the forward sheet's `ChatTargets` filtered by the chat kinds the bot allows), kept out of
+  `ChatUiState`. A query for another chat reaches its composer through `ShareInbox.deliver`, as a direct share does.
+  Mini Apps, games and payments say that Pingogram does not offer them yet. The reply keyboard, forced replies and
+  removing the keyboard are modelled only; their UI comes later.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

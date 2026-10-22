@@ -246,7 +246,7 @@ internal class ChatForwarding(
     private fun sheetOf(request: ForwardRequest): Flow<ForwardSheet> {
         // Only chats where the user can send messages; into a secret chat only what can be copied there.
         val found =
-            chatTargets.targets { chat, access ->
+            chatTargets.targets { chat, access, _ ->
                 access == WriteAccess.Allowed && (chat.type !is ChatType.Secret || request.canCopyToSecretChat)
             }
         return combine(found, choice) { found, choice ->

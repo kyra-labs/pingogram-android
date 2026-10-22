@@ -114,7 +114,7 @@ class ShareViewModel internal constructor(
         if (content == null) {
             MutableStateFlow(null)
         } else {
-            val targets = chatTargets.targets { _, access -> access == WriteAccess.Allowed }
+            val targets = chatTargets.targets { _, access, _ -> access == WriteAccess.Allowed }
             combine(targets, selected) { found, selected ->
                 ShareSheet(
                     text = ShareSummary.of(content.text.text),

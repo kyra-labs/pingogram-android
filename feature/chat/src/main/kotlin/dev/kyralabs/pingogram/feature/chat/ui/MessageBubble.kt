@@ -48,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
+import dev.kyralabs.pingogram.feature.chat.ui.bots.botButtonActions
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
@@ -218,8 +219,9 @@ internal fun BubbleRowContent(
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
- * [contentActions], [messageShortcuts], a toggle per reaction but the paid one, all reactions where the bubble shows
- * "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
+ * [contentActions], [messageShortcuts], the buttons a bot attached ([botButtonActions]), a toggle per reaction but the
+ * paid one, all reactions where the bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling
+ * the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -241,6 +243,10 @@ private fun bubbleActions(
     val fixed =
         listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble), threadAction(bubble)) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
+    val buttons =
+        bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
+            action(label, event)
+        }
     val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =
         bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
@@ -254,7 +260,7 @@ private fun bubbleActions(
         } else {
             emptyList()
         }
-    return fixed.map { action(resources.getString(it.label), it.event) } + reactions + allReactions + select +
+    return fixed.map { action(resources.getString(it.label), it.event) } + buttons + reactions + allReactions + select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 

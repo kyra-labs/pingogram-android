@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.data.mapper.toInteractionInfo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -402,9 +403,10 @@ private fun TdApi.Update.toHistoryChange(): HistoryChange? =
             }
         }
 
-        // The new content, if any, comes in its own updateMessageContent.
+        // The new content, if any, comes in its own updateMessageContent; the bot's buttons change with the edit.
         is TdApi.UpdateMessageEdited -> {
-            HistoryChange.Edit(messageId) { it.copy(editDate = editDate.toLong()) }
+            val markup = replyMarkup?.toReplyMarkup()
+            HistoryChange.Edit(messageId) { it.copy(editDate = editDate.toLong(), replyMarkup = markup) }
         }
 
         is TdApi.UpdateMessageIsPinned -> {

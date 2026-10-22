@@ -90,6 +90,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                         FakeMessageThreadRepository(),
                     ),
                 shareInbox = ShareInbox(),
+                botButtonRepository = FakeBotButtonRepository(),
                 botInfoRepository = FakeBotInfoRepository(),
                 botStartInbox = BotStartInbox(),
             )

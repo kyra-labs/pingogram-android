@@ -462,4 +462,37 @@
     <string name="chat_call">Call</string>
     <!-- What tapping a call's service message does, for screen readers. -->
     <string name="chat_call_back">Call back</string>
+
+    <!-- Bots' buttons under messages (docs/DESIGN_SYSTEM.md §6 "Bot buttons"). %1$s is the button's text. -->
+    <string name="bot_button_link_action">%1$s, opens a link</string>
+    <string name="bot_button_inline_action">%1$s, starts an inline query</string>
+    <plurals name="bot_buttons_count">
+        <item quantity="one">%d button</item>
+        <item quantity="other">%d buttons</item>
+    </plurals>
+    <string name="bot_unsupported_mini_app">Pingogram can\'t open Mini Apps yet</string>
+    <string name="bot_unsupported_game">Pingogram can\'t open games yet</string>
+    <string name="bot_unsupported_payment">Pingogram can\'t make payments yet</string>
+    <string name="bot_unsupported_inline_link">Pingogram can\'t open this button yet</string>
+    <string name="bot_alert_ok">OK</string>
+    <string name="bot_link_title">Open this link?</string>
+    <string name="bot_link_open">Open</string>
+    <string name="bot_dialog_cancel">Cancel</string>
+    <!-- %1$s is the site's domain, e.g. "example.org". -->
+    <string name="bot_login_title">Open %1$s?</string>
+    <!-- %1$s is the bot ("@examplebot"), %2$s the site's domain. -->
+    <string name="bot_login_text">%1$s can log you in to %2$s with your Telegram account: your name, username and photo.</string>
+    <!-- %1$s is the user's own name. -->
+    <string name="bot_login_as">Log in as %1$s</string>
+    <!-- %1$s is the bot ("@examplebot"). -->
+    <string name="bot_login_write">Allow %1$s to send me messages</string>
+    <string name="bot_password_title">Enter your password</string>
+    <!-- %1$s is the bot ("@examplebot"). -->
+    <string name="bot_password_text">%1$s asks for your 2-step verification password to confirm this action.</string>
+    <string name="bot_password_label">Password</string>
+    <string name="bot_password_confirm">Confirm</string>
+    <string name="bot_chats_title">Choose a chat</string>
+    <!-- %1$s is the inline query that goes into the chat's composer, e.g. "@gif cats". -->
+    <string name="bot_chats_query">%1$s goes into the chat you pick. Nothing is sent until you send it.</string>
+    <string name="bot_chats_none">No chats where this bot can be used</string>
 </resources>

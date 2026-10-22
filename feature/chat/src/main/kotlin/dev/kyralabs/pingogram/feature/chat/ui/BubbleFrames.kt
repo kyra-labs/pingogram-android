@@ -24,6 +24,8 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardButtons
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import kotlin.math.max
 
@@ -70,8 +72,9 @@ internal fun WithReactionBadges(
 
 /**
  * [frame] of [bubble] with what goes around it: its reaction badges on its corner ([WithReactionBadges], overlapping it
- * by [overlap]) and, below it ([WithFooter]), the "Not sent" label of a message that failed to send, or the link to its
- * thread ([ThreadButton]: "12 comments", "3 replies"). Where the group
+ * by [overlap]) and, below it ([WithFooter]), the "Not sent" label of a message that failed to send, or the buttons a
+ * bot attached to it ([BotKeyboardButtons]) and the link to its thread ([ThreadButton]: "12 comments", "3 replies").
+ * Where the group
  * shows its time on its last bubble only, a tap that nothing inside takes (links, media, quotes and badges keep
  * theirs) shows or hides this one's ([ChatEvent.ToggleTime]).
  */
@@ -107,6 +110,7 @@ internal fun BubbleStack(
     }
     val stackModifier = if (bubble.position.joinsNext) modifier.onTap(bubble.id, onEvent) else modifier
     val thread = bubble.thread
+    val keyboard = bubble.keyboard
     when {
         bubble.status == OutgoingStatus.Failed -> {
             WithFooter(
@@ -117,18 +121,40 @@ internal fun BubbleStack(
             )
         }
 
-        thread != null -> {
+        thread != null || keyboard != null -> {
             WithFooter(
                 isOutgoing = bubble.isOutgoing,
                 modifier = stackModifier,
                 bubble = { withBadges(Modifier) },
-                footer = { ThreadButton(thread, onOpen = { onEvent(ChatEvent.OpenThread(thread.messageId)) }) },
+                footer = { KeyboardAndThread(bubble.isOutgoing, keyboard, thread, onEvent) },
             )
         }
 
         else -> {
             withBadges(stackModifier)
         }
+    }
+}
+
+/**
+ * Below a bubble: the bot's [keyboard], as wide as a bubble can be, then the link to the [thread], on the bubble's
+ * side, `spacing.small` apart, so their touch targets do not overlap; either may be missing.
+ */
+@Composable
+private fun KeyboardAndThread(
+    isOutgoing: Boolean,
+    keyboard: BotKeyboard?,
+    thread: ThreadLink?,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start,
+    ) {
+        if (keyboard != null) {
+            BotKeyboardButtons(keyboard, onPress = { onEvent(BotButtonEvent.Press(keyboard.messageId, it)) })
+        }
+        if (thread != null) ThreadButton(thread, onOpen = { onEvent(ChatEvent.OpenThread(thread.messageId)) })
     }
 }
 

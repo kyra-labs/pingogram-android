@@ -10,9 +10,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
 /**
  * What screen readers say for a bubble, which they read as one (`docs/DESIGN_SYSTEM.md` §9): "{sender}, {time}:
  * {content}, {status}", the status only for outgoing messages. The content is the forward's origin, the reply, the
- * kind of media, the text (hidden spoilers read "spoiler"), the link preview's title, the reactions and a self-destruct
- * timer. Built in the bubble's `semantics` block, so only when something reads the semantics tree
- * (`docs/PERFORMANCE.md` §4).
+ * kind of media, the text (hidden spoilers read "spoiler"), the link preview's title, the reactions, a self-destruct
+ * timer and how many buttons a bot attached. Built in the bubble's `semantics` block, so only when something reads the
+ * semantics tree (`docs/PERFORMANCE.md` §4).
  */
 internal fun bubbleDescription(
     resources: Resources,
@@ -38,6 +38,10 @@ internal fun bubbleDescription(
                 resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
             },
             bubble.thread?.let { threadLinkText(resources, it) },
+            bubble.keyboard?.let { keyboard ->
+                val count = keyboard.rows.sumOf { it.size }
+                resources.getQuantityString(R.plurals.bot_buttons_count, count, count)
+            },
         ).filter(String::isNotBlank).joinToString(", ")
     val status = bubble.status?.let { resources.getString(it.spoken) }
     return if (status != null) {
