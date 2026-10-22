@@ -17,7 +17,7 @@ regresses by more than 10%.
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
-| APK size (arm64-v8a) | ≤ 35 MB; universal ≤ 60 MB | CI assert on release |
+| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`) | CI assert on release |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
