@@ -1,0 +1,162 @@
+name: Build NTgCalls
+
+# Builds the call engine NTgCalls (https://github.com/pytgcalls/ntgcalls, LGPL-3.0) for Android at the pinned commit,
+# packages it as an AAR and publishes it as a pre-release tagged ntgcalls-<short-sha>. The app's `fetchNtgcalls`
+# Gradle task (pingogram.ntgcalls, applied by :feature:calls) downloads that asset and checks it against
+# ntgcallsAarSha256 in gradle/libs.versions.toml. See docs/adr/0015-call-media-engine.md.
+# Run manually (Actions → Build NTgCalls → Run workflow) after changing NTGCALLS_COMMIT.
+#
+# NTgCalls builds itself: `setup.py build_lib --target=android` downloads the toolchain and the prebuilt static
+# libraries its version.properties pins (NDK r28b, Chromium's clang and libc++, WebRTC from pytgcalls/webrtc-build,
+# Boost, FFmpeg, OpenH264; their build scripts are public) and builds libntgcalls per ABI; its Gradle project in
+# targets/android then links the JNI layer it generates and packages the AAR. The only change made here: 32-bit x86,
+# which Pingogram does not ship (docs/RELEASE.md), is left out of both.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ntgcalls_commit:
+        description: "pytgcalls/ntgcalls commit SHA or tag (leave empty to use NTGCALLS_COMMIT below)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  # NTgCalls 3.0.5. Keep in sync with gradle/libs.versions.toml → ntgcalls.
+  NTGCALLS_COMMIT: "e8ab467185017827625f664d024824947b5c5d5f"
+  ABIS: "arm64-v8a armeabi-v7a x86_64"
+
+jobs:
+  build:
+    name: build-aar
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Free disk space
+        # The prebuilt dependencies and four build trees need about 30 GB; the runner has less free by default.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Resolve commit
+        id: commit
+        run: |
+          C="${{ inputs.ntgcalls_commit }}"
+          [[ -z "$C" ]] && C="${NTGCALLS_COMMIT}"
+          echo "commit=$C" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pytgcalls/ntgcalls
+        uses: actions/checkout@v7
+        with:
+          repository: pytgcalls/ntgcalls
+          ref: ${{ steps.commit.outputs.commit }}
+          path: ntgcalls
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Record resolved SHA
+        id: sha
+        working-directory: ntgcalls
+        run: |
+          FULL=$(git rev-parse HEAD)
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          echo "short=${FULL:0:10}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Leave out 32-bit x86
+        working-directory: ntgcalls
+        run: |
+          set -euo pipefail
+          sed -i "s/'armeabi-v7a', 'x86', 'x86_64'/'armeabi-v7a', 'x86_64'/" setup.py
+          sed -i "s/abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'/abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'/" \
+            targets/android/app/build.gradle
+          # Fail loudly if upstream changed these lines and the edits no longer apply.
+          grep -q "'android': \['arm64-v8a', 'armeabi-v7a', 'x86_64'\]" setup.py
+          grep -q "abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'$" targets/android/app/build.gradle
+
+      - name: Build libntgcalls (per ABI)
+        working-directory: ntgcalls
+        run: |
+          python -m pip install setuptools
+          python setup.py build_lib --target=android
+
+      - name: Assemble the AAR
+        working-directory: ntgcalls/targets/android
+        run: |
+          # The JNI layer's CMake build asks for the CMake version setup.py installed into build_tools/.
+          export PATH="$(realpath "$(ls -d ../../build_tools/cmake_*/bin | head -n 1)"):$PATH"
+          cmake --version
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Package
+        id: collect
+        env:
+          SHORT: ${{ steps.sha.outputs.short }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp ntgcalls/targets/android/app/build/outputs/aar/app-release.aar "dist/ntgcalls-${SHORT}.aar"
+          ( cd ntgcalls && git archive --format=tar.gz --prefix="ntgcalls-${SHORT}/" HEAD ) > "dist/ntgcalls-${SHORT}-sources.tar.gz"
+          ( cd dist && sha256sum *.aar *.tar.gz > SHA256SUMS.txt )
+          echo "aar=dist/ntgcalls-${SHORT}.aar" >> "$GITHUB_OUTPUT"
+          unzip -l "dist/ntgcalls-${SHORT}.aar"
+          ls -la dist
+
+      - name: Verify ABIs and 16 KB page alignment (64-bit ABIs)
+        run: |
+          set -euo pipefail
+          mkdir -p check && ( cd check && unzip -oq "../${{ steps.collect.outputs.aar }}" )
+          ABIS_FOUND=$(ls check/jni | sort | tr '\n' ' ')
+          echo "ABIs in the AAR: $ABIS_FOUND"
+          [[ "$ABIS_FOUND" == "arm64-v8a armeabi-v7a x86_64 " ]] || { echo "::error::unexpected ABIs: $ABIS_FOUND"; exit 1; }
+          READELF=$(find ntgcalls/deps -path '*bin/llvm-readelf' | head -n 1)
+          FAIL=0
+          for so in $(find check -name '*.so'); do
+            ALIGN=$("$READELF" -lW "$so" | awk '/LOAD/ {print $NF}' | sort -u | tr '\n' ' ')
+            echo "$so ($(stat -c %s "$so") bytes) → LOAD align: $ALIGN"
+            case "$so" in
+              */arm64-v8a/*|*/x86_64/*)
+                if [[ "$ALIGN" != *0x4000* ]]; then echo "::error::$so is not 16 KB aligned"; FAIL=1; fi ;;
+            esac
+          done
+          exit $FAIL
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ntgcalls-${{ steps.sha.outputs.short }}
+          path: dist/*
+          retention-days: 90
+
+      - name: Publish as ntgcalls-* pre-release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ntgcalls-${{ steps.sha.outputs.short }}
+          name: NTgCalls ${{ steps.sha.outputs.short }} (Android AAR)
+          prerelease: true
+          body: |
+            Prebuilt NTgCalls for Android, the call engine of Pingogram (docs/adr/0015-call-media-engine.md).
+            - pytgcalls/ntgcalls commit: `${{ steps.sha.outputs.full }}`
+            - ABIs: ${{ env.ABIS }} (64-bit libraries 16 KB page aligned)
+            - License: GNU Lesser General Public License v3.0 (https://github.com/pytgcalls/ntgcalls); the statically
+              linked components and their licenses are in the AAR's META-INF/ntgcalls/THIRD_PARTY_NOTICES.md
+            - The corresponding source is attached (ntgcalls-*-sources.tar.gz); the prebuilt libraries it links are
+              pinned in its version.properties, built by the scripts of the pytgcalls/* repositories.
+
+            Consumed by `feature/calls` via the `fetchNtgcalls` Gradle task.
+          files: |
+            dist/*.aar
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt

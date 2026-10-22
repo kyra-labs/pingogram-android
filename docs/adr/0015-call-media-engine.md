@@ -1,7 +1,8 @@
 # 0015 — The media engine for calls
 
-Status: proposed, awaiting the owner. The brief named tgcalls, which cannot be built for Android today (below). Work on
-calls stops at this ADR until the owner picks an option; nothing of M5 depends on an engine yet.
+Status: accepted (owner, 2026-10-22: "no need to care about the budget, use what is the best"): NTgCalls as
+published, video included, built from a pinned commit in CI (option 2 below); the APK budget is raised for it. The
+brief named tgcalls, which cannot be built for Android today (below).
 
 ## Context
 
@@ -79,9 +80,9 @@ An independent C++ engine for Telegram's 1:1 and group calls (it powers PyTgCall
   does not expose. Not viable.
 - **libtgvoip**: unmaintained, versions official apps no longer offer. Not viable.
 
-## Options for the owner
+## Options (as proposed to the owner)
 
-1. **NTgCalls, voice-only, built from source in our CI** (recommended): `.github/workflows/calls.yml` checks out
+1. **NTgCalls, voice-only, built from source in our CI** (proposed first): `.github/workflows/ntgcalls.yml` checks out
    NTgCalls at a pinned commit, builds `libntgcalls.so` for `arm64-v8a`, `armeabi-v7a` and `x86_64` with NDK r28+ and
    video turned off, verifies 16 KB alignment, and attaches `ntgcalls-<sha>.aar` + `SHA256SUMS.txt` to a pre-release
    `ntgcalls-<short-sha>`; a `pingogram.calls` convention plugin fetches and verifies it like `pingogram.tdlib`, pinned
@@ -102,13 +103,30 @@ Video calls and group calls (the ROADMAP's second M5 item) get their own ADR onc
 
 ## Decision
 
-Pending. Proposed: option 1.
+**NTgCalls, as its upstream builds it for Android (video included), from a pinned commit in our CI** (option 2,
+built the way option 1 describes):
+
+- `.github/workflows/ntgcalls.yml` (manual) checks out `pytgcalls/ntgcalls` at `NTGCALLS_COMMIT` (3.0.5,
+  `e8ab467`), builds it with its own tooling (`setup.py build_lib --target=android`, then its Gradle project's
+  `assembleRelease`) for `arm64-v8a`, `armeabi-v7a` and `x86_64` (32-bit x86 left out, as everywhere in Pingogram),
+  checks the ABIs and the 16 KB alignment of the 64-bit libraries, and publishes `ntgcalls-<short-sha>.aar`, the
+  corresponding source (`git archive` of the commit) and `SHA256SUMS.txt` as the pre-release `ntgcalls-<short-sha>`.
+- The `pingogram.ntgcalls` convention plugin, applied by `:feature:calls` only, installs that AAR into
+  `feature/calls/libs/maven` (git-ignored; `settings.gradle.kts` takes the group `io.github.pytgcalls` from there
+  only) and verifies it against `ntgcallsAarSha256` in `libs.versions.toml`, exactly like TDLib (`PrebuiltAar`,
+  shared with `pingogram.tdlib`); `pingogram.ntgcalls.aar` replaces it with a self-built AAR and `fetchNtgcalls`
+  downloads it on demand.
+- The JNI layer is NTgCalls' own (`io.github.pytgcalls.NTgCalls`, generated from its C++ API), not one of ours:
+  it is a thin, mechanical binding of the engine's API, and a second one would duplicate it. Pingogram's code
+  reaches it only through a Kotlin `CallEngine` interface in `:feature:calls`, which tests replace.
+- Video stays in the library, so 1:1 video calls need no second build (their scope: a separate ADR).
+- Budget: `docs/PERFORMANCE.md` §1 raises the `arm64-v8a` APK to ≤ 50 MB and the universal APK to ≤ 125 MB.
 
 ## Consequences
 
-- No call code is written before the decision: the call buttons, the in-call screen and notifications are worthless
-  without an engine that speaks to Telegram's apps, and `docs/DESIGN_SYSTEM.md` §6 forbids buttons that do nothing.
-- Whatever the engine, the rest of M5 is the same and engine-independent behind a `CallEngine` interface: the TDLib
+- Per-ABI APKs grow by the engine's library (`arm64-v8a` about +21.5 MB, uncompressed like TDLib's), within the
+  raised budget. `arm64-v8a` stays under the 50 MB a bot may post to the owner's channel (`docs/RELEASE.md`).
+- The rest of M5 is engine-independent behind the `CallEngine` interface: the TDLib
   signaling repository (`core:data`), Android Telecom as a self-managed `ConnectionService` (or `androidx.core.telecom`,
   a separate ADR), the `CallStyle` notifications in the existing "Calls" channel, the in-call screen in `:feature:calls`,
   call history from `messageCall` service messages, and the permissions the owner approved for calls.

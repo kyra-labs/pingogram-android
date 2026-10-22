@@ -70,6 +70,12 @@ material3 = "1.5.0-beta01"
 # media3-datasource-* network module; media3-ui-compose draws the videos (PlayerSurface), and never media3-ui
 # (View-based; the controls are Compose).
 media3 = "1.11.1"
+# pytgcalls/ntgcalls commit (NTgCalls 3.0.5), the call engine (docs/adr/0015-call-media-engine.md); keep in sync with
+# .github/workflows/ntgcalls.yml → NTGCALLS_COMMIT
+ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f"
+# SHA-256 of ntgcalls-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release, verified by
+# build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
+ntgcallsAarSha256 = "unpinned"
 robolectric = "4.17"
 roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
@@ -198,4 +204,5 @@ pingogram-android-test = { id = "pingogram.android.test" }
 pingogram-detekt = { id = "pingogram.detekt" }
 pingogram-jvm-library = { id = "pingogram.jvm.library" }
 pingogram-ktlint = { id = "pingogram.ktlint" }
+pingogram-ntgcalls = { id = "pingogram.ntgcalls" }
 pingogram-tdlib = { id = "pingogram.tdlib" }
