@@ -86,7 +86,7 @@ internal object ChatPreviewData {
                     title = UiText.Plain("Ada Lovelace"),
                     photo = null,
                     placeholderIcon = null,
-                    subtitle = ChatSubtitle.Status(UiText.resource(R.string.chat_subtitle_online)),
+                    subtitle = ChatSubtitle.Status(UiText.resource(UiR.string.user_status_online)),
                 ),
             content =
                 content(

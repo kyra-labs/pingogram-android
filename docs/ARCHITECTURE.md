@@ -191,6 +191,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   conversation (pushed or in the detail pane) and the media viewer, keyed by message id. Each bubble
   publishes its media's clip shape in `SharedMediaShapes` (`LocalSharedMediaShapes`, from a `Modifier.Node`
   while it is laid out), so the viewer morphs from and back to exactly those corners.
+- Profiles (`ProfileRoute(userId)`, `feature:profile`): pushed above the screen that opens them, with the shared axis
+  on X, on every window: from the title of a private or secret chat, a sender's avatar or name in a group, and a
+  mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops
+  back to the conversation below it when that is the user's chat, and pushes the chat otherwise; its shared media open
+  the media viewer or the chat at a message. "Add to contacts" / "Edit contact" call `profileScreen`'s `onEditContact`,
+  which `:app` points at `feature:contacts`' `navigateToEditContact(userId)` (without it the rows are left out). A
+  profile as a third pane beside the conversation on extra-large windows (§7 of the design system) is not built.
 - "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
   conversation of the same chat below it, if there is one.
 - Forwarding (FR-C6): the forward sheet (`ChatForwarding` and `ForwardBottomSheet`, `feature:chat`) exists once. The
@@ -207,6 +214,28 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   expanded ones docked in the Chats tab's list pane (`SearchPane`, `feature:chats`) in place of the chat
   list, its results opening in the detail pane. `GlobalSearchState` (`feature:chats`, held by `PingogramApp`
   and saved) says whether search is docked and carries the two sides' shapes for the container transform.
+
+## Profiles
+
+- `feature:profile` shows other users' profiles (FR-P2; the user's own account is edited in Settings, through
+  `ProfileRepository`). `ProfileViewModel` reads the user from `UserRepository` (`getUser` while TDLib has not announced
+  them) and their full info from `core:domain`'s `UserProfileRepository` (`TdlibUserProfileRepository`, `core:data`, no
+  cache: `getUserFullInfo`, then every `updateUserFullInfo` while collected): bio, birthday, block state, a bot's
+  description. It makes the private chat on the device (`ChatRepository.privateChat`), which "Message" opens, the mute
+  toggle mutes (`setMuted`), reporting reports (`MessageActionRepository.report` without messages, `reportChat`) and the
+  shared media search. Blocking goes through `BlockListRepository`, secret chats through
+  `SecretChatRepository.createSecretChat` (`createNewSecretChat`, Secret chats above), profile photos through
+  `UserProfileRepository.profilePhotos` (`getUserProfilePhotos`, paged), and a mention's `@username` through
+  `SearchRepository.publicChat` (`searchPublicChat`), which the conversation uses too.
+- Shared media: `core:domain`'s `SharedMediaRepository` (`TdlibSharedMediaRepository`, no cache) pages a chat's
+  messages of one `SharedMediaKind` (`searchChatMessages` with the kind's filter, by `next_from_message_id`);
+  `ProfileSharedMedia` keeps each tab's pages and the tab shown (in the `SavedStateHandle`), and `SharedMediaMapper`
+  turns messages into the grid's cells and the rows of files, songs, voice messages and links. The media viewer's own
+  pages stay `ChatMediaRepository`'s.
+- Compact and medium windows show one `LazyVerticalGrid` (header items, then the shared media); expanded ones a
+  `SupportingPaneScaffold` (`material3-adaptive`) with the shared media as the supporting pane.
+- "Online" and "last seen" are worded once, by `core:ui`'s `UserStatusFormatter`, for the conversation's top bar and
+  the profile.
 
 ## Threading
 

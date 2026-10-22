@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.core.ui.time.UserStatusFormatter
 import dev.kyralabs.pingogram.feature.chat.R
 import java.time.Instant
 import java.time.LocalDate
@@ -15,8 +17,7 @@ import java.util.Locale
  * patterns ([TimePatterns]):
  * - a message's time: "9:41 AM", or "09:41" on the 24-hour clock ([is24HourClock]);
  * - a date separator: "Today", "Yesterday", "Monday, March 17" this year, "March 17, 2024" before;
- * - "last seen" of a user: "just now", "5 minutes ago", "today at 9:41 AM", "yesterday at 9:41 AM", "Mar 17", or
- *   "3/17/2024" before this year.
+ * - "online" or "last seen" of a user, as `core:ui`'s [UserStatusFormatter] says it, which the profile shares.
  *
  * Built in the ViewModel, so formatters are created once per zone, locale and clock setting. Times in the future (a
  * clock behind Telegram's) count as now. A platform pattern java.time cannot read falls back to java.time's own
@@ -33,8 +34,7 @@ internal class ChatTimeFormatter(
     private val weekdayAndDate =
         patterns.formatter("MMMMEEEEd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL) }
     private val fullDate = patterns.formatter("yMMMMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
-    private val dayAndMonth = patterns.formatter("MMMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
-    private val shortDate = patterns.formatter("yMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT) }
+    private val userStatus = UserStatusFormatter(zone, locale, is24HourClock, patterns)
 
     /** The time of day of [epochSeconds] (Unix time). */
     fun time(epochSeconds: Long): String = time.format(Instant.ofEpochSecond(epochSeconds).atZone(zone))
@@ -54,42 +54,11 @@ internal class ChatTimeFormatter(
             else -> UiText.Plain(fullDate.format(day))
         }
 
-    /** "last seen …" for a user last online at [epochSeconds] (Unix time), as of [now]. */
-    fun lastSeen(
-        epochSeconds: Long,
+    /** "online" or when the user with [status] was last online, as of [now] ([UserStatusFormatter]). */
+    fun userStatus(
+        status: UserStatus,
         now: Instant,
-    ): UiText {
-        val seconds = (now.epochSecond - epochSeconds).coerceAtLeast(0)
-        val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone)
-        val day = dateTime.toLocalDate()
-        val today = now.atZone(zone).toLocalDate()
-        return when {
-            seconds < SECONDS_PER_MINUTE -> {
-                UiText.resource(R.string.chat_subtitle_last_seen_just_now)
-            }
-
-            seconds < SECONDS_PER_HOUR -> {
-                val minutes = (seconds / SECONDS_PER_MINUTE).toInt()
-                UiText.plural(R.plurals.chat_subtitle_last_seen_minutes, minutes, minutes)
-            }
-
-            !day.isBefore(today) -> {
-                UiText.resource(R.string.chat_subtitle_last_seen_today, time.format(dateTime))
-            }
-
-            day == today.minusDays(1) -> {
-                UiText.resource(R.string.chat_subtitle_last_seen_yesterday, time.format(dateTime))
-            }
-
-            day.year == today.year -> {
-                UiText.resource(R.string.chat_subtitle_last_seen_date, dayAndMonth.format(dateTime))
-            }
-
-            else -> {
-                UiText.resource(R.string.chat_subtitle_last_seen_date, shortDate.format(dateTime))
-            }
-        }
-    }
+    ): UiText = userStatus.status(status, now)
 
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(
@@ -108,9 +77,4 @@ internal class ChatTimeFormatter(
         } catch (_: IllegalArgumentException) {
             fallback().withLocale(locale)
         }
-
-    private companion object {
-        const val SECONDS_PER_MINUTE = 60L
-        const val SECONDS_PER_HOUR = 3_600L
-    }
 }

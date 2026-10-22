@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
  * `DomainError.Network` (no answer in time) and `DomainError.FloodWait`, and others as TDLib reports them; a query
  * Telegram finds too short to search is no failure, it finds nothing.
  */
+@Suppress("TooManyFunctions") // One function per kind of search, and the recently found chats' four.
 interface SearchRepository {
     /**
      * The chats whose title or username matches [query]: the local matches first, as soon as TDLib found them on the
@@ -42,6 +44,13 @@ interface SearchRepository {
      * contacts: the "Global search" of the official apps.
      */
     suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>>
+
+    /**
+     * Who has the public [username] (without `@`, as a mention in a message names them): a user or bot with their
+     * private chat, or a group or channel. `DomainError.NotFound` when nobody has it. One request per tap of the
+     * user's.
+     */
+    suspend fun publicChat(username: String): Outcome<UsernameOwner>
 
     /**
      * A page of the messages in all chats (secret chats aside, which only the device could search) that match [query]

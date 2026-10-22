@@ -36,6 +36,16 @@ sealed interface ChatEffect {
         val at: Long,
     ) : ChatEffect
 
+    /** Open the profile of user [userId] (`REQUIREMENTS.md` FR-P2). */
+    data class OpenProfile(
+        val userId: Long,
+    ) : ChatEffect
+
+    /** Open chat [chatId], a group or channel a mention named. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,

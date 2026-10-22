@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -201,7 +202,7 @@ internal fun BubbleRowContent(
         horizontalArrangement = if (bubble.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
-        if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar)
+        if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar, bubble.senderUserId, onEvent)
         MessageBubble(
             bubble = bubble,
             fileState = fileState,
@@ -238,8 +239,8 @@ private fun bubbleActions(
         true
     }
     val fixed =
-        listOfNotNull(uploadAction(uploads), replyAction(bubble)) + contentActions(bubble, fileState, isPlaying) +
-            messageShortcuts(bubble, shortcuts)
+        listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble)) +
+            contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
     val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =
         bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
@@ -403,7 +404,7 @@ private fun MediaBubble(
 
 /**
  * The sender's name (first of a group in group chats), "Forwarded from …" and the reply quote, whichever there are;
- * the quote shows its message when tapped, if it opens one.
+ * the name opens the sender's profile and the quote shows its message when tapped, if it opens one.
  */
 @Composable
 internal fun BubbleHeader(
@@ -412,8 +413,21 @@ internal fun BubbleHeader(
     onEvent: (ChatEvent) -> Unit,
 ) {
     if (bubble.showsSenderName) {
+        val userId = bubble.senderUserId
         Text(
             text = bubble.sender.resolve(),
+            // Its touch target reaches past the line, without moving what is around it; the bubble's own semantics
+            // offer the profile to screen readers.
+            modifier =
+                if (userId != null) {
+                    Modifier.touchTarget(
+                        Modifier.clickable(interactionSource = null, indication = null) {
+                            onEvent(ChatEvent.OpenProfile(userId))
+                        },
+                    )
+                } else {
+                    Modifier
+                },
             color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -452,7 +466,7 @@ private fun BubbleText(
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
-    val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick)
+    val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
     if (text.hasTextBlocks()) {
         val blocks = remember { TextBlocksLayout() }
         val onLayout =

@@ -58,6 +58,26 @@
     <string name="secret_chat_joining">Setting up encryption…</string>
     <string name="secret_chat_ended">Secret chat ended</string>
 
+    <!-- Under a user's name (UserStatusFormatter.kt): what Telegram tells about when they were last online, in the
+         conversation's top bar and the profile. -->
+    <string name="user_status_online">online</string>
+    <string name="user_status_last_seen_just_now">last seen just now</string>
+    <plurals name="user_status_last_seen_minutes">
+        <item quantity="one">last seen %d minute ago</item>
+        <item quantity="other">last seen %d minutes ago</item>
+    </plurals>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="user_status_last_seen_today">last seen today at %1$s</string>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="user_status_last_seen_yesterday">last seen yesterday at %1$s</string>
+    <!-- %1$s is a date, "Mar 17" or "3/17/2024". -->
+    <string name="user_status_last_seen_date">last seen %1$s</string>
+    <!-- The user's privacy settings hide when they were last online; Telegram tells roughly. -->
+    <string name="user_status_last_seen_recently">last seen recently</string>
+    <string name="user_status_last_seen_week">last seen within a week</string>
+    <string name="user_status_last_seen_month">last seen within a month</string>
+    <string name="user_status_last_seen_long_ago">last seen a long time ago</string>
+
     <!-- Message previews (MessagePreview.kt): one line for a message in the chat list, replies and notifications. -->
     <!-- The sender of a message by the current user, before its preview. -->
     <string name="preview_sender_you">You</string>

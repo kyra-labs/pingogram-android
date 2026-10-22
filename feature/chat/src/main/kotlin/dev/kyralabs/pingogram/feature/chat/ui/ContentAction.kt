@@ -85,6 +85,10 @@ internal fun uploadAction(uploads: Map<Long, *>): ContentAction? =
         ContentAction(R.string.attach_cancel_upload, ChatEvent.CancelUpload(it))
     }
 
+/** Opening the sender's profile, for an incoming message of a user in a group chat; null otherwise. */
+internal fun profileAction(bubble: ChatItem.Bubble): ContentAction? =
+    bubble.senderUserId?.let { ContentAction(R.string.chat_open_profile, ChatEvent.OpenProfile(it)) }
+
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
     bubble.reply?.messageId?.let { ContentAction(R.string.chat_reply_open, ChatEvent.OpenReply(it)) }

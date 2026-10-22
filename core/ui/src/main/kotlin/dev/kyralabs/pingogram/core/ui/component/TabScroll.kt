@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.chats.ui
+package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
@@ -26,10 +26,11 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import kotlin.math.roundToInt
 
 /**
- * The horizontal scroll of the folder tabs ([FolderTabs]): its [state], and where each button sits in the group
+ * The horizontal scroll of a row of tabs made of a connected button group (`docs/DESIGN_SYSTEM.md` §6: the chat
+ * list's folder tabs, the profile's shared media tabs): its [state], and where each button sits in the group
  * ([buttonBounds]), written in the layout phase and read by the scroll, never by composition.
  */
-internal class TabScroll(
+class TabScroll(
     val state: ScrollState,
     val buttonBounds: Array<Rect?>,
 )
@@ -40,7 +41,7 @@ internal class TabScroll(
  * (`docs/DESIGN_SYSTEM.md` §5). Nothing moves if it is in view already.
  */
 @Composable
-internal fun rememberTabScroll(
+fun rememberTabScroll(
     tabCount: Int,
     selectedIndex: Int,
     margin: Dp,
@@ -91,7 +92,7 @@ private fun ScrollState.valueShowing(
  * draw phase from [scrollState]. The row draws in an offscreen layer, which the fade masks.
  */
 @Composable
-internal fun Modifier.fadingEdges(scrollState: ScrollState): Modifier {
+fun Modifier.fadingEdges(scrollState: ScrollState): Modifier {
     val width = with(LocalDensity.current) { MaterialTheme.spacing.extraLarge.toPx() }
     // Only the mask's alpha counts: any opaque color of the scheme does.
     val opaque = MaterialTheme.colorScheme.surfaceContainer

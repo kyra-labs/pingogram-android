@@ -170,6 +170,41 @@ class FormattedTextAnnotationsTest {
     }
 
     @Test
+    fun `with a mention listener, mentions and mention names open who they name`() {
+        val listener = LinkInteractionListener {}
+        val text = "@ada and Grace"
+        val annotated =
+            FormattedText(
+                text,
+                listOf(
+                    entity(text, "@ada", TextEntityType.Mention),
+                    entity(text, "Grace", TextEntityType.MentionName(userId = 7)),
+                ).toImmutableList(),
+            ).toAnnotatedString(styles, onMentionClick = listener)
+
+        val links = annotated.links()
+        assertEquals(listOf("@ada", "Grace"), links.map { it.first })
+        assertEquals(
+            listOf(MentionTarget.Username("ada"), MentionTarget.User(7)),
+            links.map { mentionTarget(it.second) },
+        )
+        assertTrue(links.all { (it.second as LinkAnnotation.Clickable).linkInteractionListener === listener })
+        assertEquals(
+            SpanStyle(color = Color.Magenta),
+            links
+                .first()
+                .second.styles
+                ?.style,
+        )
+    }
+
+    @Test
+    fun `other links name nobody`() {
+        assertEquals(null, mentionTarget(LinkAnnotation.Url("https://example.org")))
+        assertEquals(null, mentionTarget(LinkAnnotation.Clickable(SPOILER_TAG) {}))
+    }
+
+    @Test
     fun `custom emoji, dates, bank cards and unknown entities show the text as it is`() {
         val annotated =
             annotate(

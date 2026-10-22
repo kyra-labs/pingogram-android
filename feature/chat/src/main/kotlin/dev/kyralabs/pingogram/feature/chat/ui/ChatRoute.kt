@@ -69,6 +69,8 @@ import java.util.Locale
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), and a secret chat's timer and
  * key ([SecretChatBottomSheet]). While a secret chat is open, the window is secure ([SecureWindow]): no screenshots.
+ * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
+ * [onOpenProfile]; without it the title opens nothing.
  */
 @Composable
 internal fun ChatRoute(
@@ -78,6 +80,7 @@ internal fun ChatRoute(
     modifier: Modifier = Modifier,
     onOpenChat: (chatId: Long) -> Unit = {},
     messageId: Long? = null,
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
     locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
@@ -95,6 +98,7 @@ internal fun ChatRoute(
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
+    val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
     val attach =
         rememberAttachInputs(
@@ -110,6 +114,7 @@ internal fun ChatRoute(
         snackbarHostState = snackbarHostState,
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
         onOpenChat = { currentOnOpenChat(it) },
+        onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onLaunchCamera = { path ->
@@ -132,13 +137,9 @@ internal fun ChatRoute(
         reportComment = viewModel.reportComment,
         emojiPanel = emojiPanel,
         onEmojiPanelEvent = panelViewModel::onEvent,
+        onOpenProfile = onOpenProfile,
     )
-    val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
-    forwardSheet?.let { ForwardBottomSheet(it, viewModel.forwardComment, viewModel::onEvent) }
-    val sendAsSheet by viewModel.sendAsSheet.collectAsStateWithLifecycle()
-    sendAsSheet?.let { SendAsBottomSheet(it, viewModel::onEvent) }
-    val secretChatSheet by viewModel.secretChatSheet.collectAsStateWithLifecycle()
-    secretChatSheet?.let { SecretChatBottomSheet(it, viewModel::onEvent) }
+    ChatSheets(viewModel)
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
     SecureWindow(secure = state.header?.secret != null)
 }
@@ -150,7 +151,8 @@ internal fun ChatRoute(
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
- * [onOpenMedia]; the camera app opens through [onLaunchCamera], or a snackbar
+ * [onOpenMedia], a profile to [onOpenProfile] and a chat a mention named to [onOpenChat]; the camera app opens through
+ * [onLaunchCamera], or a snackbar
  * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
  * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
@@ -170,6 +172,7 @@ internal fun ChatEffects(
     snackbarHostState: SnackbarHostState,
     onOpenMedia: (messageId: Long) -> Unit,
     onOpenChat: (chatId: Long) -> Unit = {},
+    onOpenProfile: (userId: Long) -> Unit = {},
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -216,6 +219,10 @@ internal fun ChatEffects(
                     is ChatEffect.CopyText -> {
                         context.copyText(effect.text)
                         copiedNotice(resources)
+                    }
+
+                    is ChatEffect.OpenProfile, is ChatEffect.OpenChat -> {
+                        openNamed(effect, onOpenProfile, onOpenChat)
                     }
 
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera -> {

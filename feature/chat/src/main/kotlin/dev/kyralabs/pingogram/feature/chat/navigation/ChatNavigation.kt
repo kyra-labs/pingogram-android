@@ -17,12 +17,14 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
  * Adds the conversation of a chat, [ChatDestination], to the graph, opened at its message if the route names one;
  * [onBack] leaves it, and [onOpenMedia] opens a tapped photo, video or GIF of the chat in the media viewer, which it
  * grows into (the destination provides its animated visibility scope for that container transform). [onOpenChat]
- * opens the chat messages were forwarded to, from the snackbar after forwarding.
+ * opens the chat messages were forwarded to, from the snackbar after forwarding, and a group or channel a mention
+ * names; [onOpenProfile] a user's profile, from the title of a private chat, a sender's avatar or name, or a mention.
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     onOpenChat: (chatId: Long) -> Unit = {},
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
 ) {
     composable<ChatDestination> { entry ->
         val route = entry.toRoute<ChatDestination>()
@@ -33,6 +35,7 @@ fun NavGraphBuilder.chatScreen(
                 onBack = onBack,
                 onOpenMedia = onOpenMedia,
                 onOpenChat = onOpenChat,
+                onOpenProfile = onOpenProfile,
             )
         }
     }
@@ -43,7 +46,7 @@ fun NavGraphBuilder.chatScreen(
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
  * i.e. when the pane shows alone, opened at [messageId] if not null (a message found by search). [onOpenMedia] opens a
  * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
- * were forwarded to.
+ * were forwarded to; [onOpenProfile] a user's profile, pushed above the whole layout.
  *
  * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
  * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own
@@ -61,6 +64,7 @@ fun ChatPane(
     modifier: Modifier = Modifier,
     onOpenChat: (chatId: Long) -> Unit = {},
     messageId: Long? = null,
+    onOpenProfile: ((userId: Long) -> Unit)? = null,
 ) {
     key(chatId, messageId) {
         CompositionLocalProvider(LocalViewModelStoreOwner provides rememberViewModelStoreOwner()) {
@@ -71,6 +75,7 @@ fun ChatPane(
                 onOpenMedia = onOpenMedia,
                 modifier = modifier,
                 onOpenChat = onOpenChat,
+                onOpenProfile = onOpenProfile,
             )
         }
     }

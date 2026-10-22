@@ -181,6 +181,9 @@ import java.util.Locale
  * - **Starting**: the view model is created in the frame that first composes the screen; what it starts (loading the
  *   messages it opens at, following the composer's text and drafts, reporting viewed messages) runs once that frame is
  *   done, so the frame does not wait for it.
+ * - **Profiles** (`REQUIREMENTS.md` FR-P2): the title of a private chat and a sender's avatar or name open the user's
+ *   profile ([ChatEvent.OpenProfile]); a tapped mention opens the profile it names, or for an `@username` the profile
+ *   or the group or channel Telegram says has it ([ChatEvent.OpenMention], [ChatMentions]).
  * - **Effects** ([effects]): errors, opening a photo, video or GIF in the media viewer ([ChatEvent.OpenMedia]),
  *   opening a downloaded document in another app ([ChatEvent.OpenFile]), a location in a maps app, a scheduled
  *   message's time, a copied text, the composer's focus when a reply or an edit starts, and a haptic when a message
@@ -317,6 +320,8 @@ class ChatViewModel internal constructor(
     private val autoDownloads = ChatAutoDownloads(fileRepository, files, autoDownloadPolicy.rules, viewModelScope)
 
     private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
+
+    private val mentions = ChatMentions(searchRepository, viewModelScope) { effectChannel.trySend(it) }
 
     private val sponsored =
         ChatSponsoredMessages(
@@ -679,6 +684,8 @@ class ChatViewModel internal constructor(
             is ChatEvent.CancelDownload -> autoDownloads.cancelDownload(event.fileId)
             is ChatEvent.OpenFile -> uiState.value.fileToOpen(event)?.let(effectChannel::trySend)
             is ChatEvent.OpenLocation -> uiState.value.locationOf(event.messageId)?.let(effectChannel::trySend)
+            is ChatEvent.OpenProfile -> effectChannel.trySend(ChatEffect.OpenProfile(event.userId))
+            is ChatEvent.OpenMention -> mentions.open(event.target)
             is ChatEvent.PlayPause -> playback.playPause(event.messageId)
             is ChatEvent.Seek -> playback.seek(event.messageId, event.fraction)
             is ChatEvent.Send -> composer.send(event.options)

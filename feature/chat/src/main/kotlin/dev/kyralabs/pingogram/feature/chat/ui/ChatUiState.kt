@@ -96,6 +96,8 @@ data class MessagePlayback(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
+ * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat; null
+ *   for groups, channels and Saved Messages, whose title opens nothing.
  * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
  *   chats.
  */
@@ -106,6 +108,7 @@ data class ChatHeader(
     val photo: ProfilePhoto?,
     @param:DrawableRes val placeholderIcon: Int?,
     val subtitle: ChatSubtitle?,
+    val profileUserId: Long? = null,
     val secret: SecretChatHeader? = null,
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
@@ -242,6 +245,8 @@ sealed interface ChatItem {
      *   older pages bring in more of the album.
      * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
      *   link preview, reply or forward: shown large, without a bubble.
+     * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
+     *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
      *   it was sent), shown with the time; null if it does not. TDLib gives no update as the time runs down once it is
      *   read, so the bubble shows the timer itself, not a countdown.
@@ -271,6 +276,7 @@ sealed interface ChatItem {
         val isEmojiOnly: Boolean = false,
         val showsTime: Boolean = true,
         val canResend: Boolean = false,
+        val senderUserId: Long? = null,
         val selfDestructSeconds: Int? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id

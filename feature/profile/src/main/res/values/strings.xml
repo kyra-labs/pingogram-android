@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spoken by screen readers for the back button of a profile. -->
+    <string name="profile_back">Back</string>
+    <!-- Spoken by screen readers for the progress indicator while a profile loads. -->
+    <string name="profile_loading">Loading profile</string>
+    <string name="profile_error_title">Can\'t show this profile</string>
+    <string name="profile_not_found_body">Telegram doesn\'t know this account, or it is no longer available to you.</string>
+    <string name="profile_retry">Try again</string>
+    <!-- Spoken by screen readers for the profile's avatar. %1$s is the person's name. -->
+    <string name="profile_photo_description">Profile photo of %1$s</string>
+
+    <!-- Under the name -->
+    <string name="profile_status_bot">bot</string>
+    <string name="profile_status_support">Telegram support</string>
+    <!-- Labels after the name: a status, never an offer. -->
+    <string name="profile_badge_premium">Premium</string>
+    <string name="profile_badge_scam">Scam</string>
+    <string name="profile_badge_fake">Fake</string>
+    <!-- Spoken by screen readers for the verified badge after the name. -->
+    <string name="profile_badge_verified">Verified</string>
+
+    <!-- Actions under the header -->
+    <string name="profile_action_message">Message</string>
+    <!-- On one's own profile: the chat with oneself. -->
+    <string name="profile_action_saved_messages">Saved Messages</string>
+    <string name="profile_action_mute">Mute</string>
+    <string name="profile_action_unmute">Unmute</string>
+    <string name="profile_action_secret_chat">Secret chat</string>
+
+    <!-- Profile photos -->
+    <string name="profile_section_photos">Photos</string>
+    <!-- Spoken by screen readers for one photo of the carousel. %1$d is its position, %2$d how many there are. -->
+    <string name="profile_photo_position">Profile photo %1$d of %2$d</string>
+
+    <!-- Information rows; each label goes under its value. -->
+    <string name="profile_section_info">Info</string>
+    <string name="profile_bio">Bio</string>
+    <!-- Under a bot's description. -->
+    <string name="profile_bot_about">About</string>
+    <string name="profile_username">Username</string>
+    <!-- %1$s is the username, without @. -->
+    <string name="profile_username_value">\@%1$s</string>
+    <string name="profile_phone">Mobile</string>
+    <string name="profile_birthday">Birthday</string>
+    <!-- Spoken by screen readers for the button after a username. -->
+    <string name="profile_share_username">Share link</string>
+    <!-- Spoken by screen readers for the button after the phone number. -->
+    <string name="profile_copy_phone">Copy phone number</string>
+    <!-- What tapping the rows does, spoken by screen readers ("double-tap to copy"). -->
+    <string name="profile_copy">Copy</string>
+    <!-- The label of what Pingogram puts on the clipboard, which Android may show. -->
+    <string name="profile_copy_label">Copied from Pingogram</string>
+    <!-- Snackbars before Android 13, which confirms copies itself. -->
+    <string name="profile_username_copied">Username copied</string>
+    <string name="profile_phone_copied">Phone number copied</string>
+    <string name="profile_bio_copied">Copied</string>
+    <string name="profile_no_dialer">No app on this device can make calls</string>
+    <!-- The title of the system's share sheet for a username's link. -->
+    <string name="profile_share_title">Share link</string>
+
+    <!-- More actions -->
+    <string name="profile_section_more">More</string>
+    <string name="profile_add_contact">Add to contacts</string>
+    <string name="profile_edit_contact">Edit contact</string>
+    <string name="profile_block">Block user</string>
+    <string name="profile_unblock">Unblock user</string>
+    <string name="profile_report">Report</string>
+
+    <!-- Block confirmation. %1$s is the person's name. -->
+    <string name="profile_block_title">Block %1$s?</string>
+    <string name="profile_block_text">They won\'t be able to send you messages or call you, and won\'t see when you were last online or your profile photo changes.</string>
+    <string name="profile_block_confirm">Block</string>
+    <string name="profile_dialog_dismiss">Cancel</string>
+    <!-- Snackbars after blocking. %1$s is the person's name. -->
+    <string name="profile_blocked">%1$s blocked</string>
+    <string name="profile_unblocked">%1$s unblocked</string>
+
+    <!-- Secret chat confirmation -->
+    <string name="profile_secret_chat_title">Start a secret chat?</string>
+    <string name="profile_secret_chat_text">Secret chats are end-to-end encrypted and exist only on this device and the other person\'s. They aren\'t in your Telegram account, so you won\'t see them on your other devices, and logging out of Pingogram deletes them.</string>
+    <string name="profile_secret_chat_confirm">Start</string>
+
+    <!-- Report sheet -->
+    <string name="profile_report_title">Report</string>
+    <string name="profile_report_comment_title">Tell Telegram more</string>
+    <string name="profile_report_comment_body">Telegram\'s moderators read what you write.</string>
+    <string name="profile_report_comment_label">Comment</string>
+    <string name="profile_report_comment_label_optional">Comment (optional)</string>
+    <string name="profile_report_send">Send report</string>
+    <string name="profile_reported">Thanks, Telegram\'s moderators will look into it</string>
+    <!-- Telegram wants messages to go with a report: they are reported from the chat. -->
+    <string name="profile_report_needs_messages">To report this account, select their messages in your chat and report them</string>
+
+    <!-- Shared media -->
+    <string name="profile_section_media">Shared media</string>
+    <string name="profile_media_photos">Photos and videos</string>
+    <string name="profile_media_files">Files</string>
+    <string name="profile_media_links">Links</string>
+    <string name="profile_media_voice">Voice</string>
+    <string name="profile_media_music">Music</string>
+    <string name="profile_media_gifs">GIFs</string>
+    <!-- Spoken by screen readers while a tab's media loads. -->
+    <string name="profile_media_loading">Loading shared media</string>
+    <string name="profile_media_empty_photos">No photos or videos</string>
+    <string name="profile_media_empty_files">No files</string>
+    <string name="profile_media_empty_links">No links</string>
+    <string name="profile_media_empty_voice">No voice messages</string>
+    <string name="profile_media_empty_music">No music</string>
+    <string name="profile_media_empty_gifs">No GIFs</string>
+    <string name="profile_media_empty_body">What you share in your chat with them shows here.</string>
+    <string name="profile_media_error">Couldn\'t load shared media</string>
+    <!-- Spoken by screen readers for an item of the grid. %1$s is the date it was sent. -->
+    <string name="profile_media_photo">Photo, %1$s</string>
+    <!-- %1$s is the date, %2$s the length ("0:42"). -->
+    <string name="profile_media_video">Video, %2$s, %1$s</string>
+    <string name="profile_media_gif">GIF, %1$s</string>
+    <!-- Voice message row: %1$s is the length ("0:42"). -->
+    <string name="profile_media_voice_title">Voice message, %1$s</string>
+    <!-- Under a row: %1$s is a size or length, %2$s the date it was sent. -->
+    <string name="profile_media_detail">%1$s · %2$s</string>
+    <!-- A song without a title or performer. -->
+    <string name="profile_media_unknown_audio">Audio</string>
+</resources>

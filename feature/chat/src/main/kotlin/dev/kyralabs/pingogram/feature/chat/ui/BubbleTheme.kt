@@ -4,11 +4,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkInteractionListener
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.FormattedTextStyles
+import dev.kyralabs.pingogram.core.ui.text.MentionTarget
+import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
@@ -73,7 +77,8 @@ internal fun rememberBubbleTheme(): BubbleTheme {
 }
 
 /**
- * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link does ([onLinkClick]), the
+ * What every bubble of the list shares: the [theme], the [texts] cache, what tapping a link or a mention does
+ * ([onLinkClick], [onMentionClick]), the
  * message highlighted after a jump to it ([jump]), the crossfade of a tapped reaction badge ([reactions]), and the
  * actions screen readers get on every bubble ([shortcuts]), how photos download ([mediaDownloads]), the message a long
  * press lifts for its floating menu ([lift]) and the look of the swipe to reply ([swipe]).
@@ -84,6 +89,7 @@ internal class BubbleResources(
     val theme: BubbleTheme,
     val texts: AnnotatedTextCache,
     val onLinkClick: LinkInteractionListener,
+    val onMentionClick: LinkInteractionListener,
     val jump: MessageJumpState,
     val reactions: ReactionToggleState,
     val shortcuts: MessageShortcuts,
@@ -102,15 +108,49 @@ internal fun rememberBubbleResources(
     shortcuts: MessageShortcuts,
     mediaDownloads: MediaDownloads = MediaDownloads(),
     lift: MessageLiftState = remember { MessageLiftState() },
+    onMention: (MentionTarget) -> Unit = {},
 ): BubbleResources {
     val theme = rememberBubbleTheme()
     val texts = remember { AnnotatedTextCache() }
     val onLinkClick = rememberLinkOpener()
+    val onMentionClick = rememberMentionOpener(onMention)
     val reactions = rememberReactionToggleState()
     val swipe = rememberSwipeReplyStyle()
-    return remember(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads, lift, swipe) {
-        BubbleResources(theme, texts, onLinkClick, jump, reactions, shortcuts, mediaDownloads, lift, swipe)
+    return remember(
+        theme,
+        texts,
+        onLinkClick,
+        onMentionClick,
+        jump,
+        reactions,
+        shortcuts,
+        mediaDownloads,
+        lift,
+        swipe,
+    ) {
+        BubbleResources(
+            theme,
+            texts,
+            onLinkClick,
+            onMentionClick,
+            jump,
+            reactions,
+            shortcuts,
+            mediaDownloads,
+            lift,
+            swipe,
+        )
     }
+}
+
+/**
+ * What tapping a mention in a bubble does: [onMention] with who it names ([mentionTarget]). One listener for the
+ * screen's lifetime, as the cached texts keep it, which calls the latest [onMention].
+ */
+@Composable
+private fun rememberMentionOpener(onMention: (MentionTarget) -> Unit): LinkInteractionListener {
+    val currentOnMention by rememberUpdatedState(onMention)
+    return remember { LinkInteractionListener { link -> mentionTarget(link)?.let { currentOnMention(it) } } }
 }
 
 /**
@@ -140,12 +180,14 @@ internal class AnnotatedTextCache {
         styles: FormattedTextStyles,
         onSpoilerClick: LinkInteractionListener,
         onLinkClick: LinkInteractionListener,
+        onMentionClick: LinkInteractionListener? = null,
     ): AnnotatedString {
         val text = bubble.text
         val revealed = bubble.spoilersRevealed
         val cached = entries[bubble.id]
         if (cached != null && cached.matches(text, styles, revealed)) return cached.annotated
-        val annotated = text.toAnnotatedString(styles, revealed, onSpoilerClick, onLinkClick, drawsBlocks = true)
+        val annotated =
+            text.toAnnotatedString(styles, revealed, onSpoilerClick, onLinkClick, drawsBlocks = true, onMentionClick)
         entries[bubble.id] = Entry(text, styles, revealed, annotated)
         return annotated
     }

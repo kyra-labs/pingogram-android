@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -398,6 +399,53 @@ class TdlibSearchRepositoryTest {
             client.on(TdApi.GetTopChats::class, failure(400, "Top chat computation is disabled"))
 
             assertEquals(emptyList<Long>(), repository().topPeople().ids())
+        }
+
+    // A username
+
+    @Test
+    fun `a username of a user is theirs, with their private chat`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, TdResult.Success(chat(id = 42, type = TdApi.ChatTypePrivate(42))))
+
+            assertEquals(Outcome.Success(UsernameOwner.User(userId = 42, chatId = 42)), repository().publicChat("@ada"))
+            assertEquals("ada", client.sentOf<TdApi.SearchPublicChat>().single().username)
+        }
+
+    @Test
+    fun `a username of a group or channel is the chat's`() =
+        runTest {
+            client.on(
+                TdApi.SearchPublicChat::class,
+                TdResult.Success(chat(id = -100, type = TdApi.ChatTypeSupergroup(5, true))),
+            )
+
+            assertEquals(Outcome.Success(UsernameOwner.Chat(-100)), repository().publicChat("news"))
+        }
+
+    @Test
+    fun `a username nobody has is not found`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, failure(400, "USERNAME_NOT_OCCUPIED"))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat("nobody"))
+
+            client.on(TdApi.SearchPublicChat::class, failure(400, "USERNAME_INVALID"))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat("x"))
+        }
+
+    @Test
+    fun `a blank username is not found, without asking TDLib`() =
+        runTest {
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat(" @"))
+            assertTrue(client.sent.isEmpty())
+        }
+
+    @Test
+    fun `a username lookup keeps other errors`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, failure(429, "Too Many Requests: retry after 5"))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository().publicChat("ada"))
         }
 
     private companion object {

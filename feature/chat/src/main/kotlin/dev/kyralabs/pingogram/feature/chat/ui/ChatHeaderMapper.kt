@@ -7,7 +7,6 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.User
-import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -23,7 +22,8 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
  * The top bar of the conversation (`REQUIREMENTS.md` FR-C8): the chat's name and avatar, and as subtitle, by
  * precedence, what people are doing in it, then its status ([status]). Saved Messages has neither. A secret chat
  * (FR-E1) has its lock and self-destruct timer, and while it waits for the other user or after it ended, its state
- * ("Waiting for Ada to come online", "Secret chat ended") in place of the status.
+ * ("Waiting for Ada to come online", "Secret chat ended") in place of the status. The title of a private or secret
+ * chat opens the other user's profile.
  */
 internal fun HeaderSources.toHeader(): ChatHeader {
     val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
@@ -53,6 +53,7 @@ internal fun HeaderSources.toHeader(): ChatHeader {
                 action != null -> ChatSubtitle.Action(action)
                 else -> (secretState() ?: status())?.let(ChatSubtitle::Status)
             },
+        profileUserId = chat.userId.takeUnless { isSavedMessages },
         secret = secretHeader(),
     )
 }
@@ -106,42 +107,7 @@ private fun HeaderSources.userStatus(user: User): UiText? =
     when {
         user.isDeleted -> null
         user.type == UserType.Bot -> UiText.resource(ChatR.string.chat_subtitle_bot)
-        else -> lastSeen(user.status)
-    }
-
-/**
- * "online" until the status expires; then, and for offline users, when they were last online; the bucket for a time
- * the user's privacy settings hide.
- */
-private fun HeaderSources.lastSeen(status: UserStatus): UiText =
-    when (status) {
-        is UserStatus.Online -> {
-            if (status.expiresAtEpochSeconds > now.epochSecond) {
-                UiText.resource(ChatR.string.chat_subtitle_online)
-            } else {
-                timeFormatter.lastSeen(status.expiresAtEpochSeconds, now)
-            }
-        }
-
-        is UserStatus.Offline -> {
-            timeFormatter.lastSeen(status.wasOnlineAtEpochSeconds, now)
-        }
-
-        UserStatus.Recently -> {
-            UiText.resource(ChatR.string.chat_subtitle_last_seen_recently)
-        }
-
-        UserStatus.LastWeek -> {
-            UiText.resource(ChatR.string.chat_subtitle_last_seen_week)
-        }
-
-        UserStatus.LastMonth -> {
-            UiText.resource(ChatR.string.chat_subtitle_last_seen_month)
-        }
-
-        UserStatus.Empty -> {
-            UiText.resource(ChatR.string.chat_subtitle_last_seen_long_ago)
-        }
+        else -> timeFormatter.userStatus(user.status, now)
     }
 
 private fun HeaderSources.members(isChannel: Boolean): UiText {

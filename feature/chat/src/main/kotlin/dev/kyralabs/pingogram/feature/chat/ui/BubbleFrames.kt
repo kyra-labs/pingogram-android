@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -204,10 +205,16 @@ internal fun BareBubble(
 
 /**
  * The column of senders' avatars in a group chat: [avatar] beside the last bubble of a group (its bottom, not its
- * reaction badges'), else its space, and the gap to the bubble.
+ * reaction badges'), else its space, and the gap to the bubble. Tapping the avatar of user [userId] opens their
+ * profile ([ChatEvent.OpenProfile]), on a 48 dp touch target that moves nothing; screen readers get it as the bubble's
+ * custom action.
  */
 @Composable
-internal fun RowScope.SenderAvatarColumn(avatar: SenderAvatar?) {
+internal fun RowScope.SenderAvatarColumn(
+    avatar: SenderAvatar?,
+    userId: Long? = null,
+    onEvent: (ChatEvent) -> Unit = {},
+) {
     val size = MaterialTheme.sizes.avatarExtraSmall
     if (avatar != null) {
         Avatar(
@@ -215,7 +222,20 @@ internal fun RowScope.SenderAvatarColumn(avatar: SenderAvatar?) {
             name = avatar.name.resolve(),
             id = avatar.id,
             size = size,
-            modifier = Modifier.alignBy { it.measuredHeight },
+            modifier =
+                Modifier
+                    .alignBy { it.measuredHeight }
+                    .then(
+                        if (userId != null) {
+                            Modifier.touchTarget(
+                                Modifier.clickable(interactionSource = null, indication = null) {
+                                    onEvent(ChatEvent.OpenProfile(userId))
+                                },
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
             placeholderIcon = avatar.placeholderIcon,
         )
     } else {

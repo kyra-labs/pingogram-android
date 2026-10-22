@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
@@ -95,6 +96,16 @@ sealed interface ChatEvent {
     /** The location or venue of message [messageId] was tapped, to show it in a maps app. */
     data class OpenLocation(
         val messageId: Long,
+    ) : ChatEvent
+
+    /** The profile of user [userId] was asked for: the chat's title, a sender's avatar or name. */
+    data class OpenProfile(
+        val userId: Long,
+    ) : ChatEvent
+
+    /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
+    data class OpenMention(
+        val target: MentionTarget,
     ) : ChatEvent
 
     /**
