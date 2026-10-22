@@ -7,6 +7,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
+import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -93,6 +96,13 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 botButtonRepository = FakeBotButtonRepository(),
                 botInfoRepository = FakeBotInfoRepository(),
                 botStartInbox = BotStartInbox(),
+                inlineBotRepositories =
+                    InlineBotRepositories(
+                        FakeInlineBotRepository(),
+                        FakeDeviceLocationRepository(),
+                        InlineLocationConsent(),
+                        BotStartInbox(),
+                    ),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

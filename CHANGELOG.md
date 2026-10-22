@@ -26,6 +26,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   that start a bot (`t.me/bot?start=…`) open its chat with "Start" ready; nothing is sent until you tap it.
 - A bot's menu button appears at the start of the field. Bots whose menu opens a Mini App say that Pingogram can't
   open Mini Apps yet.
+- Inline bots: type a bot's username and a space at the start of the message field, such as "@gif cats", and its
+  results show above the field: GIFs, photos, stickers and videos in a grid, articles, places, songs and the like in
+  a list, more loading as you scroll. Tap one to send it (replying, if you are), or hold it to send it without sound
+  or schedule it; on a keyboard, the arrow keys pick one and Enter sends it. The bot's hint shows in the field until
+  you type. Bots that ask where you are ask you first, once per bot until Pingogram restarts; "Not now" searches
+  without your location. Games from inline bots can't be played yet.
 - App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's

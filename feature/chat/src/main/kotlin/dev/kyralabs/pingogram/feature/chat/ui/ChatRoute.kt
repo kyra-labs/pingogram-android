@@ -100,7 +100,6 @@ internal fun ConversationRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
     val emojiPanel by panelViewModel.uiState.collectAsStateWithLifecycle()
-    val commandSuggestions by viewModel.commandSuggestions.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
@@ -150,7 +149,8 @@ internal fun ConversationRoute(
         onEmojiPanelEvent = panelViewModel::onEvent,
         onOpenProfile = onOpenProfile,
         onOpenChatInfo = onOpenChatInfo,
-        commandSuggestions = commandSuggestions,
+        commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+        inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
     )
     ChatSheets(viewModel)
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
@@ -215,7 +215,7 @@ internal fun ChatEffects(
 
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
-                    ChatEffect.MiniAppsUnsupported,
+                    ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -333,6 +333,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.JoinRefused -> R.string.composer_join_refused
         ChatEffect.PinnedHidden -> R.string.pinned_hidden
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
+        ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable

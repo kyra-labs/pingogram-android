@@ -13,6 +13,9 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
+import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +70,9 @@ abstract class ChatViewModelHarness {
     protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
     protected val botStarts = BotStartInbox()
+    protected val inlineBots = FakeInlineBotRepository()
+    internal val deviceLocation = FakeDeviceLocationRepository()
+    protected val locationConsent = InlineLocationConsent()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -125,6 +131,7 @@ abstract class ChatViewModelHarness {
                 botButtonRepository = botButtons,
                 botInfoRepository = bots,
                 botStartInbox = botStarts,
+                inlineBotRepositories = InlineBotRepositories(inlineBots, deviceLocation, locationConsent, botStarts),
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

@@ -32,6 +32,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibInlineBotRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibInviteLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
@@ -81,6 +82,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -236,6 +238,9 @@ interface RepositoryModule {
 
     @Binds
     fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository
+
+    @Binds
+    fun inlineBotRepository(repository: TdlibInlineBotRepository): InlineBotRepository
 
     @Binds
     fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository
