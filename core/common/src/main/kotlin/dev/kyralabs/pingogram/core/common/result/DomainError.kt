@@ -123,4 +123,27 @@ sealed interface DomainError {
      * `IMAGE_PROCESS_FAILED` …, or an image the app could not read).
      */
     data object PhotoInvalid : DomainError
+
+    // Creating groups and channels (REQUIREMENTS.md FR-P4).
+
+    /** The title of a new group or channel is empty, or Telegram does not accept it (`CHAT_TITLE_EMPTY`). */
+    data object TitleInvalid : DomainError
+
+    /**
+     * The user is in as many groups and channels as Telegram allows (`CHANNELS_TOO_MUCH`): they have to leave one
+     * before they can create or join another.
+     */
+    data object TooManyChats : DomainError
+
+    /**
+     * The user already has as many public groups and channels as Telegram allows (`CHANNELS_ADMIN_PUBLIC_TOO_MUCH`):
+     * one of them has to become private before another can have a username.
+     */
+    data object TooManyPublicLinks : DomainError
+
+    /**
+     * Telegram limited the account (`USER_RESTRICTED`, e.g. after reports of spam), so it cannot create groups or
+     * channels for now.
+     */
+    data object AccountRestricted : DomainError
 }

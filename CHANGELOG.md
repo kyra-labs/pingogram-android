@@ -38,6 +38,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   your contacts or edit their contact, block or report them, and copy or share their username. Below, their shared
   media: photos and videos, files, links, voice messages, music and GIFs from your chat, each opening where it
   belongs. On tablets the shared media sit beside the profile.
+- New groups and channels: New chat's "New group" lets you pick people from your contacts (search them, tap to pick,
+  tap a chip to undo), then name the group, give it a photo and choose whether its messages delete themselves after a
+  day, a week or a month. "New channel" asks for a name, a description and a photo, then whether the channel is
+  private, with an invite link to copy or share, or public, with a t.me link checked as you type, and finally lets you
+  add subscribers from your contacts or skip that. If someone's privacy settings keep Telegram from adding them,
+  Pingogram tells you who and offers to share the invite link instead. The new chat opens once it is ready.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so

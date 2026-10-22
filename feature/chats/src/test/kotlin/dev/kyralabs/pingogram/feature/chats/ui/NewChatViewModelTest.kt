@@ -232,7 +232,7 @@ class NewChatViewModelTest {
         }
 
     @Test
-    fun `new group and channel say they come later`() =
+    fun `new group and new channel open their flows`() =
         runTest {
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
@@ -240,7 +240,7 @@ class NewChatViewModelTest {
             send(viewModel, NewChatEvent.Action(NewChatAction.Group))
             send(viewModel, NewChatEvent.Action(NewChatAction.Channel))
 
-            assertEquals(listOf(NewChatEffect.NotAvailableYet, NewChatEffect.NotAvailableYet), effects)
+            assertEquals(listOf(NewChatEffect.NewGroup, NewChatEffect.NewChannel), effects)
         }
 
     @Test

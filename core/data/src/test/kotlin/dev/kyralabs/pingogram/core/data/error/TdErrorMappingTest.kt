@@ -106,6 +106,12 @@ class TdErrorMappingTest {
                 Arguments.of(400, "PHOTO_EXT_INVALID", DomainError.PhotoInvalid),
                 Arguments.of(400, "PHOTO_INVALID", DomainError.PhotoInvalid),
                 Arguments.of(400, "IMAGE_PROCESS_FAILED", DomainError.PhotoInvalid),
+                // Creating groups and channels.
+                Arguments.of(400, "CHAT_TITLE_EMPTY", DomainError.TitleInvalid),
+                Arguments.of(400, "Title must be non-empty", DomainError.TitleInvalid),
+                Arguments.of(400, "CHANNELS_TOO_MUCH", DomainError.TooManyChats),
+                Arguments.of(400, "CHANNELS_ADMIN_PUBLIC_TOO_MUCH", DomainError.TooManyPublicLinks),
+                Arguments.of(403, "USER_RESTRICTED", DomainError.AccountRestricted),
             )
 
         /** Sending photos, videos, files and polls. */

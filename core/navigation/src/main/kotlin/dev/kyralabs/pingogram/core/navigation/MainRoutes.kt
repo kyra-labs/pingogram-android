@@ -177,6 +177,43 @@ data object ArchiveRoute
 data object NewChatRoute
 
 /**
+ * Creating a group (`REQUIREMENTS.md` FR-P4), `:feature:chats`: a nested graph pushed above the New chat screen, whose
+ * steps share one view model, [NewGroupMembersRoute] first, then [NewGroupDetailsRoute]. The new group's conversation
+ * takes the place of the New chat screen and the flow.
+ */
+@Serializable
+data object NewGroupRoute
+
+/** The first step of [NewGroupRoute]: picking the people to add from the contacts. */
+@Serializable
+data object NewGroupMembersRoute
+
+/** The last step of [NewGroupRoute]: the group's name, photo and auto-delete time, and creating it. */
+@Serializable
+data object NewGroupDetailsRoute
+
+/**
+ * Creating a channel (`REQUIREMENTS.md` FR-P4), `:feature:chats`: a nested graph pushed above the New chat screen,
+ * whose steps share one view model: [NewChannelDetailsRoute], which creates the channel, then [NewChannelTypeRoute] and
+ * [NewChannelMembersRoute] in its place. The new channel's conversation takes the place of the New chat screen and the
+ * flow.
+ */
+@Serializable
+data object NewChannelRoute
+
+/** The first step of [NewChannelRoute]: the channel's name, description and photo, and creating it. */
+@Serializable
+data object NewChannelDetailsRoute
+
+/** The second step of [NewChannelRoute]: public with a username, or private with an invite link. */
+@Serializable
+data object NewChannelTypeRoute
+
+/** The last step of [NewChannelRoute]: adding subscribers from the contacts, which may be skipped. */
+@Serializable
+data object NewChannelMembersRoute
+
+/**
  * The conversation of chat [chatId] (`REQUIREMENTS.md` FR-C1–C8), `:feature:chat`, pushed above the Chats tab from a
  * row of the chat list, the archive or search. With [messageId] (a message found by search) it opens at that message,
  * highlighted; without, at the newest messages or the first unread one.

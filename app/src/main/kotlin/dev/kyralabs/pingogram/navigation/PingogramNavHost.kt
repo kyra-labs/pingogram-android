@@ -41,7 +41,6 @@ import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
-import dev.kyralabs.pingogram.feature.chats.navigation.newChatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
@@ -233,17 +232,7 @@ private fun NavGraphBuilder.mainGraph(
             onOpenMessage = openMessage,
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
-        // A contact's chat takes the New chat screen's place, as in Google Messages: back returns to the chat list.
-        newChatScreen(
-            onBack = { navController.popBackStack() },
-            onOpenChat = { chatId ->
-                navController.navigate(ChatRoute(chatId)) {
-                    popUpTo<NewChatRoute> { inclusive = true }
-                    launchSingleTop = true
-                }
-            },
-            onAddContact = { navController.navigateToNewContact() },
-        )
+        newChatScreens(navController)
         // The chat messages were forwarded to goes above the conversation they came from, so back returns there.
         chatScreen(
             onBack = { navController.popBackStack() },

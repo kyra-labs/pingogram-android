@@ -120,6 +120,11 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHAT_SEND_VIDEOS_FORBIDDEN" to DomainError.SendingNotAllowed,
         "CHAT_SEND_DOCS_FORBIDDEN" to DomainError.SendingNotAllowed,
         "CHAT_SEND_POLL_FORBIDDEN" to DomainError.SendingNotAllowed,
+        // Creating groups and channels: messages.createChat, channels.createChannel, channels.updateUsername.
+        "CHAT_TITLE_EMPTY" to DomainError.TitleInvalid,
+        "CHANNELS_TOO_MUCH" to DomainError.TooManyChats,
+        "CHANNELS_ADMIN_PUBLIC_TOO_MUCH" to DomainError.TooManyPublicLinks,
+        "USER_RESTRICTED" to DomainError.AccountRestricted,
     )
 
 /**
@@ -144,6 +149,9 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Polls can't be sent to the private chat" to DomainError.SendingNotAllowed,
         "Non-anonymous polls can't be sent to channel chats" to DomainError.SendingNotAllowed,
         "Message can't be sent to a secret chat" to DomainError.SendingNotAllowed,
+        // createNewBasicGroupChat and createNewSupergroupChat with a title that is empty once cleaned
+        // (ChatManager::create_new_chat, create_new_channel).
+        "Title must be non-empty" to DomainError.TitleInvalid,
     )
 
 /**
