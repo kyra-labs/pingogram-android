@@ -67,15 +67,17 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The pinned messages bar at the top of the conversation's sheet (`REQUIREMENTS.md` FR-C9, `docs/DESIGN_SYSTEM.md` §6):
- * a tonal strip (`surfaceContainerHigh`, `large` corners) with "Pinned message" (and "2 of 5" where there are several)
- * in `labelMedium` `primary` over one line of the message, its sender in `onSurface` before the preview in
- * `onSurfaceVariant`, `bodyMedium`.
+ * a tonal strip (`surfaceContainerHigh`, `large` corners) with "Pinned message" (and "2 of 5" where there are several,
+ * counted from the oldest, so the newest is "5 of 5") in `labelMedium` `primary` over one line of the message, its
+ * sender in `onSurface` before the preview in `onSurfaceVariant`, `bodyMedium`.
  *
- * - **Segments** along its start, one per pinned message (at most [MAX_SEGMENTS] at a time, the window following the
- *   shown one), the shown one in `primary`, the others in `outlineVariant`; the highlight moves on the motion scheme's
+ * - **Segments** along its start, one per pinned message in the list's order, the oldest at the top and the newest at
+ *   the bottom (at most [MAX_SEGMENTS] at a time, the window following the shown one), the shown one in `primary`, the
+ *   others in `outlineVariant`; the highlight moves on the motion scheme's
  *   default spatial spring, read in the draw phase.
  * - **Cycling**: a tap shows the message in the list and moves on to the next older one ([PinnedEvent.ShowCurrent]);
- *   the text slides up or down with it, on the default spatial spring, fading on the effects springs.
+ *   the text slides with it, an older message coming from above as it is above in the list, on the default spatial
+ *   spring, fading on the effects springs.
  * - **Buttons**: the list of every pinned message where there are several ([PinnedEvent.OpenList]), and close
  *   ([PinnedEvent.Close]): unpin (`ic_keep_off`) for those who may, hide (`ic_close`) for the others.
  * - **Screen readers** hear one item, "Pinned message 2 of 5, Alice: …", whose action shows the message, with the two
@@ -95,7 +97,7 @@ internal fun PinnedMessagesBar(
     val showLabel = stringResource(R.string.pinned_show)
     val listLabel = stringResource(R.string.pinned_list)
     val closeLabel = stringResource(if (bar.canUnpin) R.string.pinned_unpin else R.string.pinned_hide)
-    val position = animateFloatAsState(bar.index.toFloat(), MaterialTheme.motionScheme.defaultSpatialSpec())
+    val position = animateFloatAsState(bar.position.toFloat(), MaterialTheme.motionScheme.defaultSpatialSpec())
     Row(
         modifier =
             modifier
@@ -173,11 +175,11 @@ private fun PinnedText(
 ) {
     val motion = MaterialTheme.motionScheme
     AnimatedContent(
-        targetState = Shown(bar.messageId, bar.index, label, preview),
+        targetState = Shown(bar.messageId, bar.position, label, preview),
         modifier = modifier,
         transitionSpec = {
             // To an older message the text comes from above, as the older message is above in the list.
-            val direction = if (targetState.index > initialState.index) -1 else 1
+            val direction = if (targetState.position < initialState.position) -1 else 1
             (
                 slideInVertically(motion.defaultSpatialSpec()) { direction * it / 2 } +
                     fadeIn(motion.defaultEffectsSpec())
@@ -211,16 +213,16 @@ private fun PinnedText(
 /** What the bar's text shows of a pinned message. */
 private data class Shown(
     val messageId: Long,
-    val index: Int,
+    val position: Int,
     val label: String,
     val preview: AnnotatedString,
 )
 
-/** "Pinned message", or "Pinned message 2 of 5" where there are several. */
+/** "Pinned message", or "Pinned message 2 of 5" where there are several, counted from the oldest. */
 @Composable
 private fun pinnedLabel(bar: PinnedBar): String =
     if (bar.count > 1) {
-        stringResource(R.string.pinned_message_of, bar.index + 1, bar.count)
+        stringResource(R.string.pinned_message_of, bar.position + 1, bar.count)
     } else {
         stringResource(R.string.pinned_message)
     }
@@ -243,8 +245,8 @@ private fun Modifier.pinnedSegments(
         val gapPx = if (visible > 1) gap.toPx() else 0f
         val segment = (size.height - gapPx * (visible - 1)) / visible
         val shown = position.value
-        // The window of segments follows the shown message, keeping it inside.
-        val first = (shown - (visible - 1)).coerceAtLeast(0f).coerceAtMost((count - visible).toFloat())
+        // The window of segments ends at the newest at first, and follows the shown message up, keeping it inside.
+        val first = shown.coerceAtMost((count - visible).toFloat()).coerceAtLeast(0f)
         val radius = CornerRadius(width.toPx() / 2)
         val x = if (layoutDirection == LayoutDirection.Rtl) size.width - width.toPx() else 0f
         for (i in 0 until visible) {
