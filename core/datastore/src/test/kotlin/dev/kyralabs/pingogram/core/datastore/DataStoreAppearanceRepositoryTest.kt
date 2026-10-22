@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -107,12 +108,40 @@ class DataStoreAppearanceRepositoryTest {
         }
 
     @Test
+    fun `a color theme survives the app process and turns the wallpaper's colors off with it`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = repository(dataStore(firstProcess))
+            assertEquals(Outcome.Success(Unit), first.setPalette(ThemePalette.Teal))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val restarted = repository().appearance.first()
+
+            assertEquals(AppearanceSettings(dynamicColor = false, palette = ThemePalette.Teal), restarted)
+        }
+
+    @Test
+    fun `turning the wallpaper's colors back on keeps the color theme`() =
+        runTest {
+            val repository = repository()
+            repository.setPalette(ThemePalette.Monochrome)
+
+            repository.setDynamicColor(true)
+
+            assertEquals(
+                AppearanceSettings(dynamicColor = true, palette = ThemePalette.Monochrome),
+                repository.appearance.first(),
+            )
+        }
+
+    @Test
     fun `a value saved by another version that this one does not know reads as the default`() =
         runTest {
             val dataStore = dataStore()
             dataStore.edit {
                 it[stringPreferencesKey("appearance.theme_mode")] = "Sepia"
                 it[stringPreferencesKey("appearance.contrast")] = "Extreme"
+                it[stringPreferencesKey("appearance.palette")] = "Chartreuse"
             }
 
             assertEquals(AppearanceSettings(), repository(dataStore).appearance.first())

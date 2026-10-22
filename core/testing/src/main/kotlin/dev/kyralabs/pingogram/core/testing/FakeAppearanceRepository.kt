@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,6 +39,8 @@ class FakeAppearanceRepository(
     override suspend fun setThemeMode(themeMode: ThemeMode) = change { it.copy(themeMode = themeMode) }
 
     override suspend fun setDynamicColor(enabled: Boolean) = change { it.copy(dynamicColor = enabled) }
+
+    override suspend fun setPalette(palette: ThemePalette) = change { it.copy(palette = palette, dynamicColor = false) }
 
     override suspend fun setContrast(contrast: Contrast) = change { it.copy(contrast = contrast) }
 

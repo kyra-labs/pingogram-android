@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import org.junit.rules.ExternalResource
@@ -45,7 +46,8 @@ class ComponentActivityRegistration : ExternalResource() {
 }
 
 /**
- * Shows [content] in [PingogramTheme] with brand colors in [themeMode], with true-black surfaces if [amoled], and
+ * Shows [content] in [PingogramTheme] with the colors of [palette] (the brand's by default) in [themeMode], with
+ * true-black surfaces if [amoled], and
  * captures the whole screen, dialogs included, as the golden `src/test/snapshots/<test class>.<name>.png`: once loading
  * has taken [LoadingIndicatorDelay], so a page that is still loading shows its delayed indicator.
  */
@@ -55,9 +57,18 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
     name: String,
     themeMode: ThemeMode,
     amoled: Boolean = false,
+    palette: ThemePalette = ThemePalette.Pingogram,
     content: @Composable () -> Unit,
 ) {
-    setContent { PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, content = content) }
+    setContent {
+        PingogramTheme(
+            themeMode = themeMode,
+            dynamicColor = false,
+            palette = palette,
+            amoled = amoled,
+            content = content,
+        )
+    }
     waitForIdle()
     mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
     waitForIdle()
@@ -91,6 +102,7 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
     testClass: Class<*>,
     name: String,
     variant: ScreenshotVariant,
+    palette: ThemePalette = ThemePalette.Pingogram,
     content: @Composable () -> Unit,
 ) {
     setContent {
@@ -99,7 +111,12 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
             // before the theme reads it.
             shadowOf(LocalContext.current.getSystemService(UiModeManager::class.java)).setContrast(1f)
         }
-        PingogramTheme(themeMode = variant.themeMode, dynamicColor = false, amoled = variant.amoled) {
+        PingogramTheme(
+            themeMode = variant.themeMode,
+            dynamicColor = false,
+            palette = palette,
+            amoled = variant.amoled,
+        ) {
             CompositionLocalProvider(LocalLayoutDirection provides variant.layoutDirection, content = content)
         }
     }

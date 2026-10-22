@@ -36,10 +36,6 @@ sealed interface AppearanceEvent {
         val themeMode: ThemeMode,
     ) : AppearanceEvent
 
-    data class SetDynamicColor(
-        val enabled: Boolean,
-    ) : AppearanceEvent
-
     data class SetAmoled(
         val enabled: Boolean,
     ) : AppearanceEvent
@@ -81,7 +77,6 @@ class AppearanceViewModel
                 val saved =
                     when (event) {
                         is AppearanceEvent.SetThemeMode -> appearanceRepository.setThemeMode(event.themeMode)
-                        is AppearanceEvent.SetDynamicColor -> appearanceRepository.setDynamicColor(event.enabled)
                         is AppearanceEvent.SetAmoled -> appearanceRepository.setAmoled(event.enabled)
                         is AppearanceEvent.SetContrast -> appearanceRepository.setContrast(event.contrast)
                     }

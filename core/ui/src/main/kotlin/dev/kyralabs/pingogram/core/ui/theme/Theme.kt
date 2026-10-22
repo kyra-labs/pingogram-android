@@ -15,6 +15,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 
 /**
  * Root theme of every Pingogram screen (`docs/DESIGN_SYSTEM.md` §1): Material 3 Expressive with the
@@ -32,7 +33,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
  * Compose scales every animation, springs included, by the system animator duration scale, and a scale of 0 makes them
  * finish immediately; shape morphs and container transforms also step aside then (`isReducedMotion`).
  *
- * @param dynamicColor Material You colors on Android 12+; brand colors otherwise or when false.
+ * @param dynamicColor Material You colors on Android 12+; the colors of [palette] otherwise or when false.
+ * @param palette the color theme used without the wallpaper's colors (`docs/DESIGN_SYSTEM.md` §2.1).
  * @param contrast used where the system has no contrast setting (before Android 14); from Android 14 the system's
  *   contrast level replaces it ([systemContrastOrNull]), for the colors and the typography alike.
  * @param amoled true-black surfaces in dark theme.
@@ -41,6 +43,7 @@ import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 fun PingogramTheme(
     themeMode: ThemeMode = ThemeMode.System,
     dynamicColor: Boolean = true,
+    palette: ThemePalette = ThemePalette.Pingogram,
     contrast: Contrast = Contrast.Standard,
     amoled: Boolean = false,
     content: @Composable () -> Unit,
@@ -49,12 +52,14 @@ fun PingogramTheme(
     val effectiveContrast = systemContrastOrNull() ?: contrast
     val colorScheme =
         animateColorScheme(
-            target = rememberPingogramColorScheme(dark, dynamicColor, effectiveContrast, amoled),
+            target = rememberPingogramColorScheme(dark, dynamicColor, palette, effectiveContrast, amoled),
             animationSpec = ExpressiveMotionScheme.defaultEffectsSpec(),
         )
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
     val settings =
-        remember(dynamicColor, contrast, amoled, dark) { ThemeSettings(dynamicColor, contrast, amoled, dark && amoled) }
+        remember(dynamicColor, palette, contrast, amoled, dark) {
+            ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled)
+        }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
@@ -74,7 +79,7 @@ fun PingogramTheme(
 }
 
 /**
- * [content] in the dark theme of the enclosing [PingogramTheme], with its dynamic color, contrast and AMOLED settings,
+ * [content] in the dark theme of the enclosing [PingogramTheme], with its colors, contrast and AMOLED settings,
  * whatever the theme mode: for immersive media, such as the media viewer, which shows photos and videos on black in
  * light theme too, as Google Photos does, so its chrome and components are legible on the `scrim` behind them.
  */
@@ -84,6 +89,7 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
     PingogramTheme(
         themeMode = ThemeMode.Dark,
         dynamicColor = settings.dynamicColor,
+        palette = settings.palette,
         contrast = settings.contrast,
         amoled = settings.amoled,
         content = content,
@@ -96,6 +102,7 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
  */
 private data class ThemeSettings(
     val dynamicColor: Boolean,
+    val palette: ThemePalette,
     val contrast: Contrast,
     val amoled: Boolean,
     val amoledBlack: Boolean,
@@ -103,7 +110,13 @@ private data class ThemeSettings(
 
 private val LocalThemeSettings =
     staticCompositionLocalOf {
-        ThemeSettings(dynamicColor = true, contrast = Contrast.Standard, amoled = false, amoledBlack = false)
+        ThemeSettings(
+            dynamicColor = true,
+            palette = ThemePalette.Pingogram,
+            contrast = Contrast.Standard,
+            amoled = false,
+            amoledBlack = false,
+        )
     }
 
 /**

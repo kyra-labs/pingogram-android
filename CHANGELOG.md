@@ -9,6 +9,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
+  more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
+  Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
+  with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
+
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the

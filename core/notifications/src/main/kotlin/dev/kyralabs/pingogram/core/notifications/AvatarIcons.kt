@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.ui.component.avatarInitials
@@ -77,9 +78,12 @@ internal class AvatarIcons
             id: Long,
             name: String,
         ): IconCompat {
-            val dynamicColor = appearanceRepository.appearance.first().dynamicColor
-            val key = "initials:$id:$dynamicColor:$name"
-            return cache.get(key) ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor) })
+            val appearance = appearanceRepository.appearance.first()
+            val dynamicColor = appearance.dynamicColor
+            val palette = appearance.palette
+            val key = "initials:$id:$dynamicColor:$palette:$name"
+            return cache.get(key)
+                ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor, palette) })
         }
 
         /** Where file [fileId] is once downloaded, downloading it if needed; null if it does not arrive in time. */
@@ -139,8 +143,9 @@ internal class AvatarIcons
             id: Long,
             name: String,
             dynamicColor: Boolean,
+            palette: ThemePalette,
         ): Bitmap {
-            val colors = standaloneColorScheme(context, dynamicColor).avatarPlaceholderColors(id)
+            val colors = standaloneColorScheme(context, dynamicColor, palette).avatarPlaceholderColors(id)
             val output = createBitmap(size, size)
             val canvas = Canvas(output)
             val center = size / 2f
