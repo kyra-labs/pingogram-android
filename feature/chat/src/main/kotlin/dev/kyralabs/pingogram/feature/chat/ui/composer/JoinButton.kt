@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
+import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 
@@ -44,5 +46,13 @@ internal fun JoinButton(
         Button(onClick = onJoin, enabled = !join.isJoining, shapes = ButtonDefaults.shapes()) {
             Text(stringResource(label), style = MaterialTheme.typography.labelLargeEmphasized)
         }
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun ComposerJoinPreview() {
+    PingogramPreview {
+        ChatBottomBar(ComposerUiState.Join(isChannel = true, requestsToJoin = false), ComposerText(), {}, {})
     }
 }

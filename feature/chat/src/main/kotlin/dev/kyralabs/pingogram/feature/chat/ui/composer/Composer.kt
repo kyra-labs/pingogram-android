@@ -428,14 +428,6 @@ private fun ComposerFormattedPreview() {
 
 @PingogramPreviews
 @Composable
-private fun ComposerJoinPreview() {
-    PingogramPreview {
-        ChatBottomBar(ComposerUiState.Join(isChannel = true, requestsToJoin = false), ComposerText(), {}, {})
-    }
-}
-
-@PingogramPreviews
-@Composable
 private fun ComposerUnavailablePreview() {
     PingogramPreview {
         ChatBottomBar(
