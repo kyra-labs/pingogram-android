@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.feedback
 
+import android.text.format.DateFormat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -46,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -62,7 +64,6 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -311,15 +312,19 @@ private fun Actions(onEvent: (FeedbackEvent) -> Unit) {
     }
 }
 
-/** [millis] as the user's language writes a date and time, in the device's time zone. */
+/**
+ * [millis] as the user's language writes a date and time ("Oct 22, 2026, 12:00 PM"), in the device's time zone and
+ * 12- or 24-hour clock. The pattern is Android's (`DateFormat.getBestDateTimePattern`), as the conversation's times
+ * are, not the JDK's, whose locale data differs between versions.
+ */
 @Composable
 private fun rememberDateTime(millis: Long): String {
     val locale = LocalConfiguration.current.locales[0]
-    return remember(millis, locale) {
-        DateTimeFormatter
-            .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-            .withLocale(locale)
-            .format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    return remember(millis, locale, is24Hour) {
+        val pattern = DateFormat.getBestDateTimePattern(locale, if (is24Hour) "yMMMdHm" else "yMMMdhm")
+        val time = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault())
+        DateTimeFormatter.ofPattern(pattern, locale).format(time)
     }
 }
 
