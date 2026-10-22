@@ -15,6 +15,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 
+### Fixed
+- The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
+  the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
+  oldest. The bar now also follows the chat as you scroll: it shows the pinned message just above what is on screen,
+  so the newest one at the bottom of the chat and older ones as you scroll up. Tapping it still jumps to that message
+  and moves on to the next older one, in forum topics and comment threads too.
+
 ## [0.4.0] - 2026-10-22
 
 ### Added

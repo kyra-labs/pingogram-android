@@ -132,6 +132,22 @@ class ChatTopicTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `the topic's pinned bar follows the topic's messages on screen and cycles through its pins`() =
+        runViewModelTest {
+            pinnedMessages.setPinned(FORUM_CHAT, message(1, chatId = FORUM_CHAT), message(3, chatId = FORUM_CHAT))
+            val viewModel = inTopic()
+
+            send(viewModel, ChatEvent.MessagesVisible(setOf(2L)))
+            val bar = viewModel.state.pinnedBar
+            assertEquals(listOf<Any>(1L, 0, 2), bar?.let { listOf(it.messageId, it.position, it.count) })
+
+            send(viewModel, ChatEvent.MessagesVisible(setOf(3L)))
+            send(viewModel, PinnedEvent.ShowCurrent)
+            assertEquals(AnchorTarget.Message(3), viewModel.anchor.target)
+            assertEquals(1L, viewModel.state.pinnedBar?.messageId)
+        }
+
+    @Test
     fun `a closed topic takes messages from administrators only`() =
         runViewModelTest {
             assertEquals(

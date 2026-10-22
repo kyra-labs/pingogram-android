@@ -10,13 +10,13 @@ import kotlinx.collections.immutable.persistentListOf
 
 /**
  * Pinned messages for previews and screenshot tests: one in a private chat, which the user may unpin, and five in a
- * group, the second of them shown, which the user may only hide.
+ * group, the second newest of them shown ("4 of 5"), which the user may only hide.
  */
 internal object PinnedPreviewData {
     val one =
         PinnedBar(
             messageId = 30,
-            index = 0,
+            position = 0,
             count = 1,
             sender = UiText.Plain("Ada Lovelace").bidiIsolated(),
             preview = UiText.Plain("The meetup moved to Thursday, 7 PM, same place."),
@@ -26,7 +26,7 @@ internal object PinnedPreviewData {
     val many =
         PinnedBar(
             messageId = 21,
-            index = 1,
+            position = 3,
             count = 5,
             sender = UiText.Plain("Grace Hopper").bidiIsolated(),
             preview = UiText.Plain("Read the rules before posting, and keep it friendly"),
@@ -37,11 +37,11 @@ internal object PinnedPreviewData {
         PinnedSheet(
             rows =
                 persistentListOf(
-                    row(30, "Ada Lovelace", "The meetup moved to Thursday, 7 PM, same place."),
-                    row(21, "Grace Hopper", "Read the rules before posting, and keep it friendly"),
-                    row(14, null, "Welcome to Compose Developers!"),
-                    row(9, "Alan Turing", "Slides from the last talk"),
                     row(3, "Grace Hopper", "Ask your questions in the threads, not here"),
+                    row(9, "Alan Turing", "Slides from the last talk"),
+                    row(14, null, "Welcome to Compose Developers!"),
+                    row(21, "Grace Hopper", "Read the rules before posting, and keep it friendly"),
+                    row(30, "Ada Lovelace", "The meetup moved to Thursday, 7 PM, same place."),
                 ),
             shownId = 21,
         )

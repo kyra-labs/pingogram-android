@@ -95,6 +95,23 @@ class ChatThreadTest : ChatViewModelHarness() {
     }
 
     @Test
+    fun `a thread's pinned bar follows its replies on screen`() =
+        runViewModelTest {
+            pinnedMessages.setPinned(
+                DISCUSSION,
+                message(THREAD + 1, chatId = DISCUSSION),
+                message(THREAD + 3, chatId = DISCUSSION),
+            )
+            val viewModel = inThread()
+
+            send(viewModel, ChatEvent.MessagesVisible(setOf(THREAD + 2)))
+            assertEquals(THREAD + 1, viewModel.state.pinnedBar?.messageId)
+            send(viewModel, ChatEvent.MessagesVisible(setOf(THREAD + 3)))
+            val bar = viewModel.state.pinnedBar
+            assertEquals(listOf<Any>(THREAD + 3, 1), bar?.let { listOf(it.messageId, it.position) })
+        }
+
+    @Test
     fun `a channel post links to its comments, even before the first`() =
         runViewModelTest {
             assertEquals(ThreadLink(POST, 12, isComments = true), inChannel(count = 12).bubble(POST).thread)

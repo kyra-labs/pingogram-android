@@ -853,11 +853,13 @@ class ChatViewModel internal constructor(
     }
 
     /**
-     * The messages the list shows go to TDLib as viewed; the newest of them is kept in the [SavedStateHandle], which
-     * the conversation opens around after process death ([ChatWindow]).
+     * The messages the list shows go to TDLib as viewed and move the pinned messages bar (`ChatPinnedMessages`); the
+     * newest of them is kept in the [SavedStateHandle], which the conversation opens around after process death
+     * ([ChatWindow]).
      */
     private fun onMessagesVisible(messageIds: Set<Long>) {
         views.setVisible(messageIds)
+        pinned.setVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
         val messages =
             history.replayCache

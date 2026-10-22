@@ -21,4 +21,10 @@ sealed interface PinnedEvent : ChatEvent {
 
     /** The sheet was dismissed. */
     data object DismissList : PinnedEvent
+
+    /**
+     * The user started dragging the list: the bar follows the messages on screen again, after a tap or the sheet chose
+     * its message.
+     */
+    data object ListDragged : PinnedEvent
 }
