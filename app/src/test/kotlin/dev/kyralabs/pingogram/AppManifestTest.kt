@@ -3,7 +3,9 @@ package dev.kyralabs.pingogram
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import android.content.res.XmlResourceParser
 import android.graphics.drawable.AdaptiveIconDrawable
+import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -13,6 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.xmlpull.v1.XmlPullParser
 
 /**
  * The merged manifest requests exactly the platform permissions the owner approved (CLAUDE.md). Without
@@ -38,6 +41,8 @@ import org.robolectric.annotation.Config
  * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  * Telegram links (`tg:`, `t.me`, `telegram.me`, `telegram.dog`) open in the single-task main activity through browsable
  * view filters that are not App Links verified (docs/adr/0013-deep-links.md): Telegram owns those domains.
+ * Shares from other apps (text, links, photos, videos, any files; one or several) reach it through send filters, and
+ * its share target makes the conversation shortcuts Direct Share targets; neither needs a permission (FR-N2).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -235,9 +240,80 @@ class AppManifestTest {
         assertEquals(listOf("", "false"), views.map { it.androidAttribute("autoVerify") }.sorted())
     }
 
+    @Test
+    fun `shares of text, media and any files open in the main activity, with a share target for the shortcuts`() {
+        val activity =
+            mergedManifest()
+                .elements("activity")
+                .single { it.androidAttribute("name") == "dev.kyralabs.pingogram.MainActivity" }
+        val sends =
+            activity.elements("intent-filter").mapNotNull { filter ->
+                val action =
+                    filter
+                        .elements("action")
+                        .map { it.androidAttribute("name") }
+                        .singleOrNull {
+                            it == "android.intent.action.SEND" ||
+                                it == "android.intent.action.SEND_MULTIPLE"
+                        }
+                        ?: return@mapNotNull null
+                Triple(
+                    action,
+                    filter.elements("category").map { it.androidAttribute("name") }.toSet(),
+                    filter.elements("data").map { it.androidAttribute("mimeType") }.toSet(),
+                )
+            }
+        val default = setOf("android.intent.category.DEFAULT")
+
+        assertEquals(
+            setOf(
+                Triple("android.intent.action.SEND", default, setOf("text/plain", "image/*", "video/*", "*/*")),
+                Triple("android.intent.action.SEND_MULTIPLE", default, setOf("image/*", "video/*", "*/*")),
+            ),
+            sends.toSet(),
+        )
+        val shortcuts = activity.elements("meta-data").single { it.androidAttribute("name") == "android.app.shortcuts" }
+        assertEquals("@xml/shortcuts", shortcuts.androidAttribute("resource"))
+        val shareTarget =
+            RuntimeEnvironment
+                .getApplication()
+                .resources
+                .getXml(R.xml.shortcuts)
+                .shareTargets()
+                .single()
+        assertEquals("dev.kyralabs.pingogram.MainActivity", shareTarget.first)
+        assertEquals(setOf(NotificationIntents.SHARE_TARGET_CATEGORY), shareTarget.second)
+    }
+
     private companion object {
         /** What the test libraries (androidx.test's activity scenarios) add to the unit tests' manifest only. */
         val TEST_ONLY_PERMISSIONS = setOf("android.permission.REORDER_TASKS")
         const val GET_META_DATA = PackageManager.GET_META_DATA
     }
 }
+
+/** The share targets of a shortcuts resource: each one's target class and its categories. */
+private fun XmlResourceParser.shareTargets(): List<Pair<String, Set<String>>> {
+    val targets = mutableListOf<Pair<String, Set<String>>>()
+    var targetClass: String? = null
+    val categories = mutableSetOf<String>()
+    while (next() != XmlPullParser.END_DOCUMENT) {
+        when {
+            eventType == XmlPullParser.START_TAG && name == "share-target" -> {
+                targetClass = getAttributeValue(ANDROID, "targetClass")
+                categories.clear()
+            }
+
+            eventType == XmlPullParser.START_TAG && name == "category" -> {
+                getAttributeValue(ANDROID, "name")?.let(categories::add)
+            }
+
+            eventType == XmlPullParser.END_TAG && name == "share-target" -> {
+                targets += targetClass.orEmpty() to categories.toSet()
+            }
+        }
+    }
+    return targets
+}
+
+private const val ANDROID = "http://schemas.android.com/apk/res/android"

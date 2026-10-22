@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -79,6 +80,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 sendAsRepository = FakeSendAsRepository(),
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,
+                shareInbox = ShareInbox(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

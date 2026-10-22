@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,6 +56,7 @@ abstract class ChatViewModelHarness {
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     protected val autoDownloads = FakeAutoDownloadPolicy()
+    protected val shareInbox = ShareInbox()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -103,6 +105,7 @@ abstract class ChatViewModelHarness {
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
+                shareInbox = shareInbox,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

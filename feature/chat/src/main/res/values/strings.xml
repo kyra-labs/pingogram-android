@@ -403,4 +403,36 @@
         <item quantity="one">Not forwarded to %1$d chat. %2$s</item>
         <item quantity="other">Not forwarded to %1$d chats. %2$s</item>
     </plurals>
+
+    <!-- The share sheet: the chats what another app shared (or a t.me/share link) can go to -->
+    <string name="share_title">Send to</string>
+    <!-- Below the title, what is shared: %d photos and videos, or %d files. -->
+    <plurals name="share_media">
+        <item quantity="one">%d photo or video</item>
+        <item quantity="other">%d photos and videos</item>
+    </plurals>
+    <plurals name="share_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <!-- Screen readers: the shared text shown below the title, %1$s. -->
+    <string name="share_text_description">Shared text: %1$s</string>
+    <!-- When the user can send messages in none of their chats. -->
+    <string name="share_no_chats">No chats to send to</string>
+    <!-- With one chat picked: opens it with the shared text or files in its composer, where the user sends them. -->
+    <string name="share_open_chat">Open chat</string>
+    <!-- Below the button with one chat picked. -->
+    <string name="share_open_chat_hint">You can check it and add to it before you send it</string>
+    <!-- The field for a message sent before the shared one to several chats. -->
+    <string name="share_comment">Add a comment</string>
+    <string name="share_send">Send</string>
+    <!-- Snackbars after sending to several chats: to %d chats; or, when some refused, %1$d of %2$d and %3$s why. -->
+    <plurals name="share_done">
+        <item quantity="one">Sent to %d chat</item>
+        <item quantity="other">Sent to %d chats</item>
+    </plurals>
+    <plurals name="share_failed_some">
+        <item quantity="one">Not sent to %1$d of %2$d chats. %3$s</item>
+        <item quantity="other">Not sent to %1$d of %2$d chats. %3$s</item>
+    </plurals>
 </resources>

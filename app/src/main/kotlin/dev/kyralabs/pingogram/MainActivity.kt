@@ -38,12 +38,15 @@ import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
 import dev.kyralabs.pingogram.language.contextInLanguage
 import dev.kyralabs.pingogram.language.inAppLanguageOf
 import dev.kyralabs.pingogram.link.LinkViewModel
 import dev.kyralabs.pingogram.link.linkOf
+import dev.kyralabs.pingogram.share.isOwnContent
+import dev.kyralabs.pingogram.share.shareOf
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
 import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
@@ -87,6 +90,11 @@ import javax.inject.Inject
  * opens in Pingogram's own task and window, through [onNewIntent] when it runs, rather than in a second copy of the app
  * above the other app. Reopened from the recent apps, its launching intent is not handled again.
  *
+ * What another app shares with Pingogram (`ACTION_SEND`, `ACTION_SEND_MULTIPLE`; `REQUIREMENTS.md` FR-N2) arrives the
+ * same way ([shareOf]) and opens once logged in and unlocked, as a link: the share sheet to pick chats, or, from a
+ * Direct Share target, that chat with the share in its composer ([shares]). Its files are read later with the grant
+ * they came with, which lasts while this activity's task does.
+ *
  * The passcode lock (`REQUIREMENTS.md` FR-S1, [MainActivityViewModel.lock]) shows its lock screen instead of the app
  * ([LockableApp]); a chat a notification asked for opens only once it is unlocked. The activity tells the lock when the
  * app leaves the screen and comes back ([onStop], [onStart]), but not for a configuration change. While locked, the
@@ -107,6 +115,10 @@ class MainActivity : ComponentActivity() {
 
     /** Opens Telegram links, from intents and tapped in the app; the activity's, so a lookup survives rotation. */
     private val links: LinkViewModel by viewModels()
+
+    /** Hands what another app shared to the share sheet or a chat's composer. */
+    @Inject
+    lateinit var shares: ShareInbox
 
     /** Plays animated stickers in the conversation and the sticker panel ([LocalAnimatedStickers]). */
     @Inject
@@ -156,6 +168,7 @@ class MainActivity : ComponentActivity() {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
                 val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
+                val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
                 val locked = lock == LockState.Locked
                 val secureRequests = remember { SecureWindowRequests() }
@@ -179,6 +192,9 @@ class MainActivity : ComponentActivity() {
                                 links = links,
                                 linkToOpen = linkToOpen,
                                 onLinkOpened = viewModel::onLinkOpened,
+                                shares = shares,
+                                shareToOpen = shareToOpen,
+                                onShareOpened = viewModel::onShareOpened,
                             )
                         }
                     }
@@ -244,12 +260,13 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, or the Telegram link it
-     * views.
+     * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, the Telegram link it
+     * views, or what it shares.
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
         linkOf(intent)?.let(viewModel::openLink)
+        shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
     }
 
     /** [PingogramTheme] for [settings], with system bar icons that contrast with the theme it resolves to. */

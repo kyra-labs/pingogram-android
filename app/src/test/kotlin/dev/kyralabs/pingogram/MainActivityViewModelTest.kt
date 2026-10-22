@@ -3,8 +3,10 @@ package dev.kyralabs.pingogram
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.PasscodeSettings
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
+import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.tdlib.AuthState
@@ -13,6 +15,8 @@ import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.share.IncomingShare
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -250,6 +254,22 @@ class MainActivityViewModelTest {
 
             viewModel.onChatOpened()
             assertEquals(null, viewModel.chatToOpen.value)
+        }
+
+    @Test
+    fun `a share waits until it is opened, and a newer one replaces it`() =
+        runTest {
+            val viewModel = viewModel()
+            val first = IncomingShare(SharedContent(FormattedText("Hi", persistentListOf())))
+            val second = IncomingShare(SharedContent(FormattedText("Look", persistentListOf())), chatId = 100)
+            assertEquals(null, viewModel.shareToOpen.value)
+
+            viewModel.openShare(first)
+            viewModel.openShare(second)
+            assertEquals(second, viewModel.shareToOpen.value)
+
+            viewModel.onShareOpened()
+            assertEquals(null, viewModel.shareToOpen.value)
         }
 
     @Test

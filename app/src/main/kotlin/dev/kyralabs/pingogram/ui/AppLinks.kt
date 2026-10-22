@@ -26,18 +26,24 @@ import androidx.navigation.NavHostController
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
+import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.feature.chat.navigation.ShareNotices
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.link.LinkDispatcher
 import dev.kyralabs.pingogram.link.LinkEffect
 import dev.kyralabs.pingogram.link.LinkNotice
 import dev.kyralabs.pingogram.link.LinkUriHandler
 import dev.kyralabs.pingogram.link.openInBrowser
 import dev.kyralabs.pingogram.navigation.OpenLinkEffect
+import dev.kyralabs.pingogram.navigation.OpenShareEffect
 import dev.kyralabs.pingogram.navigation.isInMainGraph
 import dev.kyralabs.pingogram.navigation.openLinkTarget
+import dev.kyralabs.pingogram.navigation.openShare
+import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -68,10 +74,10 @@ internal fun rememberLinkUriHandler(
 
 /**
  * Carries out what comes of opening links ([LinkDispatcher.effects], `docs/adr/0013-deep-links.md`): the screen of a
- * target ([openLinkTarget]; search through [onOpenSearch]), or a snackbar in [snackbars] saying why the link does not
- * open, with "Open in browser" for a web link Pingogram does not open. While a link is looked up for longer than
- * [LoadingIndicatorDelay], a snackbar says so, with "Cancel"; it goes as soon as the link resolves. Nothing opens
- * outside the signed-in app.
+ * target ([openLinkTarget]; search through [onOpenSearch], a message to share through [onShare]), or a snackbar in
+ * [snackbars] saying why the link does not open, with "Open in browser" for a web link Pingogram does not open. While
+ * a link is looked up for longer than [LoadingIndicatorDelay], a snackbar says so, with "Cancel"; it goes as soon as
+ * the link resolves. Nothing opens outside the signed-in app.
  */
 @Composable
 internal fun LinkEffects(
@@ -79,18 +85,25 @@ internal fun LinkEffects(
     navController: NavHostController,
     snackbars: SnackbarHostState,
     onOpenSearch: () -> Unit,
+    onShare: (SharedContent) -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val showDetails = isDebuggable()
     val currentOnOpenSearch by rememberUpdatedState(onOpenSearch)
+    val currentOnShare by rememberUpdatedState(onShare)
     LaunchedEffect(links, navController, snackbars) {
         links.effects.collect { effect ->
             when (effect) {
                 is LinkEffect.Open -> {
                     val opened =
                         navController.currentDestination.isInMainGraph() &&
-                            navController.openLinkTarget(effect.target, effect.fromOutside, currentOnOpenSearch)
+                            navController.openLinkTarget(
+                                target = effect.target,
+                                fromOutside = effect.fromOutside,
+                                onOpenSearch = currentOnOpenSearch,
+                                onShare = currentOnShare,
+                            )
                     if (!opened) launch { snackbars.showSnackbar(resources.getString(R.string.link_not_yet)) }
                 }
 
@@ -166,11 +179,15 @@ internal fun noticeText(
     }
 
 /**
- * Telegram links in the shell (`docs/adr/0013-deep-links.md`), through [links]: [linkToOpen], the link another app
- * opened Pingogram with, goes to [links] once the account is logged in ([OpenLinkEffect]) and is reported to
- * [onLinkOpened]; what comes of every link ([LinkEffects], search through [onOpenSearch]) opens a screen or shows a
- * snackbar, at the bottom of the window above the floating navigation bar's place and the keyboard.
+ * Telegram links and shares in the shell (`docs/adr/0013-deep-links.md`, `REQUIREMENTS.md` FR-N2), through [links] and
+ * [shares]: [linkToOpen], the link another app opened Pingogram with, goes to [links] once the account is logged in
+ * ([OpenLinkEffect]) and is reported to [onLinkOpened]; what comes of every link ([LinkEffects], search through
+ * [onOpenSearch]) opens a screen or shows a snackbar. [shareToOpen], what another app shared, opens the share sheet or
+ * a Direct Share target's chat once logged in ([OpenShareEffect], [openShare]), and is reported to [onShareOpened];
+ * a `t.me/share` link opens the share sheet too. Snackbars, those of shares sent to several chats included
+ * ([ShareNotices]), show at the bottom of the window above the floating navigation bar's place and the keyboard.
  */
+@Suppress("LongParameterList") // What the shell opens (links, shares), when, and what it reports.
 @Composable
 internal fun BoxScope.LinkHandling(
     links: LinkDispatcher?,
@@ -179,12 +196,29 @@ internal fun BoxScope.LinkHandling(
     onOpenSearch: () -> Unit,
     linkToOpen: String? = null,
     onLinkOpened: () -> Unit = {},
+    shares: ShareInbox? = null,
+    shareToOpen: IncomingShare? = null,
+    onShareOpened: () -> Unit = {},
 ) {
     val snackbars = remember { SnackbarHostState() }
+    val share =
+        remember(shares, navController) {
+            { content: SharedContent ->
+                shares?.let { navController.openShare(content, chatId = null, inbox = it, fromOutside = false) }
+                Unit
+            }
+        }
     if (links != null) {
         val openFromOutside = { link: String -> links.open(link, fromOutside = true) }
         OpenLinkEffect(navController, uiState, linkToOpen, onOpen = openFromOutside, onHandled = onLinkOpened)
-        LinkEffects(links, navController, snackbars, onOpenSearch)
+        LinkEffects(links, navController, snackbars, onOpenSearch, onShare = share)
+    }
+    if (shares != null) {
+        val openFromOutside = { incoming: IncomingShare ->
+            navController.openShare(incoming.content, incoming.chatId, shares, fromOutside = true)
+        }
+        OpenShareEffect(navController, uiState, shareToOpen, onOpen = openFromOutside, onHandled = onShareOpened)
+        ShareNotices(snackbars)
     }
     SnackbarHost(
         hostState = snackbars,

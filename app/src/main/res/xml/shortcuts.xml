@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Direct share (REQUIREMENTS.md FR-N2): conversation shortcuts in this category (core:notifications
+     NotificationIntents.SHARE_TARGET_CATEGORY) are share targets of MainActivity for what its share filters take, so
+     the system's share sheet lists those chats; a share to one names its shortcut (EXTRA_SHORTCUT_ID). Pingogram
+     publishes no static shortcuts. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <share-target android:targetClass="dev.kyralabs.pingogram.MainActivity">
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="image/*" />
+        <data android:mimeType="video/*" />
+        <data android:mimeType="*/*" />
+        <category android:name="dev.kyralabs.pingogram.category.SHARE_TARGET" />
+    </share-target>
+</shortcuts>

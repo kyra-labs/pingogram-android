@@ -75,7 +75,8 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  * Chats tab's list pane).
  *
  * The media viewer's Forward opens the forward sheet, a dialog destination of `feature:chat`, above it, and the viewer
- * shows what came of it ([mediaViewer]). A user's profile ([profile]) is pushed above the conversation whose title, a
+ * shows what came of it ([mediaViewer]). What another app shares opens the share sheet, another, above any screen
+ * ([share]). A user's profile ([profile]) is pushed above the conversation whose title, a
  * sender's avatar or name, or a mention opened it.
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
@@ -245,6 +246,7 @@ private fun NavGraphBuilder.mainGraph(
         profile(navController)
         chatInfo(navController)
         mediaViewer(navController)
+        share(navController)
     }
 }
 

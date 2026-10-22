@@ -44,11 +44,11 @@ dangerous to act on (a login code someone else asked for).
     topic or thread opens in the chat itself for now, as `ChatRoute` has no topic yet), `SavedMessages`,
     `MyProfilePage` and `Settings` → Edit profile (`SettingsSectionEditProfile` too), `Settings` → Settings, or its page
     for appearance, data and storage, devices (active sessions), language, notifications, privacy and security,
-    `ContactsPage` → Contacts, `NewPrivateChat` / `NewGroupChat` / `NewChannelChat` → New chat, `Search` → search.
+    `ContactsPage` → Contacts, `NewPrivateChat` / `NewGroupChat` / `NewChannelChat` → New chat, `Search` → search,
+    `MessageDraft` → the share sheet with the text, to pick its chat (`docs/adr/0014-direct-share.md`).
   - Resolved, screens added later (until then "Pingogram can't open this link yet"): `ChatInvite` (the join sheet, which
     asks before joining), `QrCodeAuthentication` (a confirmation that shows the device before
-    `confirmQrCodeAuthentication`; the target keeps the link, which TDLib's type does not), `ChatBoost` (read only),
-    `MessageDraft` (direct share's chat picker with the text in the composer).
+    `confirmQrCodeAuthentication`; the target keeps the link, which TDLib's type does not), `ChatBoost` (read only).
   - Not opened ("Pingogram can't open this kind of link yet", and "Open in browser" for `https` links, which targets a
     browser through a `CATEGORY_APP_BROWSER` selector, or a chooser without Pingogram, so it never comes back here):
     `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, `StickerSet`, bots
@@ -72,8 +72,8 @@ dangerous to act on (a login code someone else asked for).
 
 ## Consequences
 
-- `ChatInviteRoute`, the QR login confirmation, boosts and direct share add their screens by returning true from
-  `LinkTarget.hasScreen()` and a branch in `openLinkTarget`; `LinkRepository` already gives them their targets.
+- `ChatInviteRoute`, the QR login confirmation and boosts add their screens (as direct share did, ADR 0014) by
+  returning true from `LinkTarget.hasScreen()` and a branch in `openLinkTarget`; `LinkRepository` already gives them their targets.
 - A chat's info opens `ChatInfoRoute(chatId)` (group and channel info, #129).
 - `@username` mentions keep their own path (`ChatMentions`, the profile's mentions: `searchPublicChat`), as they need
   no `getInternalLinkType`; `t.me` and `tg:` links in the same texts go through `LinkRepository`.
