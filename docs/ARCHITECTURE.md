@@ -270,6 +270,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `LocalUriHandler` (`LinkUriHandler`, provided by `MainActivity`), which every feature already opens links with, so messages, bios, descriptions
   and sponsored messages need no hook of their own. Other links keep going to the system's handler. Mentions
   (`@username`) keep their own `searchPublicChat` path.
+- App shortcuts (M6): the launcher icon's long press offers New chat, Search and Saved Messages, static shortcuts of
+  `:app`'s `res/xml/shortcuts.xml`. Each is a Telegram link (`tg://new`, `tg://chats/search`,
+  `tg://settings/saved-messages`) to `MainActivity`, which opens it as any other link (Deep links, above): kept through
+  the login and the passcode lock, resolved by `LinkRepository`, opened by `openLinkTarget` (search docked on expanded
+  windows). Their intents name the build's own package through the generated string `shortcut_target_package`
+  (`app/build.gradle.kts`), as debug builds add ".debug". They count toward Android's shortcut limit with the
+  conversation shortcuts, whose oldest `pushDynamicShortcut` drops.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).

@@ -4,4 +4,8 @@
          own UI takes its colors from the theme; only the icon and the splash screen use these. -->
     <color name="ic_launcher_background">#FFFFFFFF</color>
     <color name="ic_launcher_mark">#FF2156C4</color>
+    <!-- The app shortcuts' icons (res/xml/shortcuts.xml): the brand's light primaryContainer / onPrimaryContainer
+         (core/ui Color.kt), as Material's tonal icon buttons. Launchers draw them outside the app's theme. -->
+    <color name="shortcut_background">#FFDAE1FF</color>
+    <color name="shortcut_foreground">#FF003FA4</color>
 </resources>
