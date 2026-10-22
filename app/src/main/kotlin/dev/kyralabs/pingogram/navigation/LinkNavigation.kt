@@ -59,7 +59,8 @@ internal fun OpenLinkEffect(
  *   back on the Chats tab. On others it is pushed above the screen the link was tapped on, or, from another app
  *   ([fromOutside]), above the chat list, as from a notification, so back returns to the chat list. A link to the chat
  *   already open shows nothing new; one to a message of it opens the conversation at the message in its place, as
- *   "Show in chat" does.
+ *   "Show in chat" does. A **bot's start link** opens the bot's chat the same way, which `LinkViewModel` handed the
+ *   start parameter to: its "Start" sends it once tapped, also in the conversation already open.
  * - A **user's profile** is pushed, and so is a group's or channel's **info** (`ChatInfoRoute`).
  * - **Contacts** and **Settings** switch tabs, a page of Settings is pushed above its tab; **Edit profile** and **New
  *   chat** are pushed; **search** opens with [onOpenSearch], docked or full screen as the window wants.
@@ -79,6 +80,7 @@ internal fun NavHostController.openLinkTarget(
 ): Boolean {
     when (target) {
         is LinkTarget.Chat -> openLinkedChat(target, fromOutside, besideList)
+        is LinkTarget.BotStart -> openLinkedChat(LinkTarget.Chat(target.chatId), fromOutside, besideList)
         is LinkTarget.ChatInfo -> navigateToChatInfo(target.chatId)
         is LinkTarget.UserProfile -> navigateToProfile(target.userId)
         LinkTarget.EditProfile -> navigate(EditProfileRoute) { launchSingleTop = true }

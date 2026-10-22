@@ -10,6 +10,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Bot commands: in chats with bots, a "/" button at the start of the message field lists the bots' commands with
+  what each does (in groups, which bot it belongs to, with search when there are many). Tap one to send it, or the
+  arrow beside it to put it into the field and add something after it. Typing "/" suggests the matching commands
+  above the field; on a keyboard, the arrow keys pick one, Enter sends it and Tab puts it into the field. The
+  attachment button moves to the end of the field in these chats.
+- Bots you have not used yet show what they can do, with their picture, and a "Start" button that starts them. Links
+  that start a bot (`t.me/bot?start=…`) open its chat with "Start" ready; nothing is sent until you tap it.
+- A bot's menu button appears at the start of the field. Bots whose menu opens a Mini App say that Pingogram can't
+  open Mini Apps yet.
 - App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
 - Voice calls: Pingogram rings with your ringtone when someone calls, on the lock screen too, where you slide to answer
   or decline, or decline and write a message instead. During a call you can mute, switch between the phone, the speaker

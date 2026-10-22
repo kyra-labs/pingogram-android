@@ -32,7 +32,7 @@ import kotlinx.collections.immutable.toImmutableList
  * Its owner, the conversation's view model, keeps it across rotations; it only touches the main thread, as the text
  * field does.
  */
-@Suppress("TooManyFunctions") // One per edit of the text: formatting, links, replacing, the emoji panel's keys.
+@Suppress("TooManyFunctions") // One per edit of the text: formatting, links, replacing, emoji, commands.
 @Stable
 class ComposerText(
     initial: FormattedText = FormattedText.Empty,
@@ -79,6 +79,12 @@ class ComposerText(
         val selection = state.selection
         replace(selection.min, selection.max, text)
     }
+
+    /**
+     * Puts [text] at the start of the field, the cursor after it: a bot command inserted before what the field holds,
+     * for the user to write its arguments. Formatting after it moves along.
+     */
+    fun prepend(text: String) = replace(0, 0, text)
 
     /**
      * Deletes the selection, or else the character before the cursor, as the keyboard's backspace does: a whole emoji

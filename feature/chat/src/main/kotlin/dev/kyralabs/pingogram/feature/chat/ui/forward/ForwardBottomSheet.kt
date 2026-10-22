@@ -205,9 +205,15 @@ private fun ForwardHeader(sheet: ForwardSheet) {
     }
 }
 
-/** The search bar's input field on its container, with a clear button while there is text; also the share sheet's. */
+/**
+ * The search bar's input field on its container, with a clear button while there is text; also the share sheet's and,
+ * with its own [placeholder], the bot commands sheet's.
+ */
 @Composable
-internal fun ChatSearchField(query: TextFieldState) {
+internal fun ChatSearchField(
+    query: TextFieldState,
+    placeholder: String = stringResource(R.string.forward_search),
+) {
     val spacing = MaterialTheme.spacing
     val hasText = query.text.isNotEmpty()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -221,7 +227,7 @@ internal fun ChatSearchField(query: TextFieldState) {
             searchBarState = rememberSearchBarState(),
             onSearch = { keyboard?.hide() },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.forward_search)) },
+            placeholder = { Text(placeholder) },
             leadingIcon = { Icon(painterResource(UiR.drawable.ic_search), contentDescription = null) },
             trailingIcon =
                 if (hasText) {

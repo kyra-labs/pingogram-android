@@ -11,9 +11,11 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.user
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -31,7 +33,8 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LinkViewModelTest {
     private val client = FakeTdlibClient()
-    private val viewModel = LinkViewModel(TdlibLinkRepository(client))
+    private val botStarts = BotStartInbox()
+    private val viewModel = LinkViewModel(TdlibLinkRepository(client), botStarts)
 
     @BeforeEach
     fun setUp() {
@@ -70,6 +73,28 @@ class LinkViewModelTest {
 
                 assertEquals(LinkEffect.Open(LinkTarget.UserProfile(USER), fromOutside = false), awaitItem())
             }
+        }
+
+    @Test
+    fun `a bot's start link opens its chat and hands the parameter to it, sending nothing`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeBotStart("helper_bot", "ref42", true))
+            client.on(
+                TdApi.SearchPublicChat::class,
+                TdResult.Success(chat(id = USER, type = TdApi.ChatTypePrivate(USER))),
+            )
+            client.on(TdApi.GetUser::class, TdResult.Success(user(id = USER, type = TdApi.UserTypeBot())))
+
+            viewModel.effects.test {
+                viewModel.open(LINK)
+
+                assertEquals(
+                    LinkEffect.Open(LinkTarget.BotStart(USER, USER, "ref42"), fromOutside = false),
+                    awaitItem(),
+                )
+            }
+            assertEquals("ref42", botStarts.deliveredTo(USER).first())
+            assertTrue(client.sentOf<TdApi.SendBotStartMessage>().isEmpty())
         }
 
     @Test

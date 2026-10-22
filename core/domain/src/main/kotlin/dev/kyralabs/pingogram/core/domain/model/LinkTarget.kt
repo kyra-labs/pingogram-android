@@ -23,6 +23,19 @@ sealed interface LinkTarget {
         override fun toString() = "Chat(chatId=$chatId, messageId=$messageId, hasDraft=${draftText != null})"
     }
 
+    /**
+     * Starting bot [botUserId] in its private chat [chatId] with [parameter] (`t.me/bot?start=…`): the conversation
+     * opens with "Start" in the composer's place, which sends the parameter to the bot (`sendBotStartMessage`) only
+     * once the user taps it; a link that asks to start at once (`autostart`) waits for the tap too.
+     */
+    data class BotStart(
+        val chatId: Long,
+        val botUserId: Long,
+        val parameter: String,
+    ) : LinkTarget {
+        override fun toString() = "BotStart(chatId=$chatId, botUserId=$botUserId, …)"
+    }
+
     /** The info page of group or channel [chatId] (`t.me/username?profile`). */
     data class ChatInfo(
         val chatId: Long,
