@@ -71,10 +71,10 @@ internal fun ChatListScreenTopBar(
 
 /**
  * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
- * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (64 dp) with
- * `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the screen (§7). The connection pill
- * ([ConnectionPill]) sits below the bar. The title, the pill and the tabs keep the window margin ([windowMargin]): on
- * medium and wider windows they line up with the rows' content.
+ * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (56 dp,
+ * `sizes.denseTopAppBar`) with `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the
+ * screen (§7). The connection pill ([ConnectionPill]) sits below the bar. The title, the pill and the tabs keep the
+ * window margin ([windowMargin]): on medium and wider windows they line up with the rows' content.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
@@ -109,6 +109,8 @@ internal fun ChatListTopBar(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,
                     ),
+                // A dense list's bar (§7): 56 dp rather than Material's 64 dp.
+                expandedHeight = MaterialTheme.sizes.denseTopAppBar,
                 scrollBehavior = scrollBehavior,
             )
             // In line with the title and with the tabs.
@@ -163,6 +165,7 @@ internal fun ArchiveTopBar(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
             ),
+        expandedHeight = MaterialTheme.sizes.denseTopAppBar,
         scrollBehavior = scrollBehavior,
     )
 }

@@ -80,7 +80,13 @@ internal fun Modifier.searchTransform(
     shape: CornerBasedShape,
 ): Modifier {
     SideEffect { state.searchShape = shape }
-    return containerTransform(GlobalSearchTransformKey, shape = shape, counterpartShape = state.buttonShape)
+    // A whole screen: laid out once and scaled as it grows, not measured anew in every frame.
+    return containerTransform(
+        GlobalSearchTransformKey,
+        shape = shape,
+        counterpartShape = state.buttonShape,
+        fixedLayout = true,
+    )
 }
 
 /**

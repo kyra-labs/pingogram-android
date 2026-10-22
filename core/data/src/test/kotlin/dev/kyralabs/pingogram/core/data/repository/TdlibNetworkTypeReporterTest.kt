@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.tdlib.AuthState
+import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,13 +20,21 @@ class TdlibNetworkTypeReporterTest {
     private val client =
         FakeTdlibClient(authState = AuthState.WaitTdlibParameters).apply {
             on(TdApi.SetNetworkType::class, TdResult.Success(TdApi.Ok()))
+            on(TdApi.SetOption::class, TdResult.Success(TdApi.Ok()))
         }
     private val network = MutableStateFlow(network(handle = 1, NetworkType.WiFi))
+    private val foreground = MutableStateFlow(false)
 
     private fun TestScope.started() {
-        TdlibNetworkTypeReporter(client, network, backgroundScope).start()
+        TdlibNetworkTypeReporter(client, network, foreground, backgroundScope).start()
         runCurrent()
     }
+
+    private fun sentOnline() =
+        client.sentOf<TdApi.SetOption>().map {
+            assertEquals("online", it.name)
+            (it.value as TdApi.OptionValueBoolean).value
+        }
 
     private fun sentTypes() = client.sentOf<TdApi.SetNetworkType>().map { it.type.constructor }
 
@@ -95,6 +104,50 @@ class TdlibNetworkTypeReporterTest {
             runCurrent()
 
             assertEquals(listOf(TdApi.NetworkTypeWiFi.CONSTRUCTOR, TdApi.NetworkTypeWiFi.CONSTRUCTOR), sentTypes())
+        }
+
+    @Test
+    fun `tells TDLib whether the app is in use, once it has its parameters`() =
+        runTest {
+            foreground.value = true
+            started()
+            assertEquals(emptyList<Boolean>(), sentOnline())
+
+            client.authState.value = AuthState.Ready
+            runCurrent()
+            foreground.value = false
+            runCurrent()
+            foreground.value = true
+            runCurrent()
+
+            assertEquals(listOf(true, false, true), sentOnline())
+        }
+
+    @Test
+    fun `coming back while TDLib is not connected sends the network again, so it reconnects at once`() =
+        runTest {
+            client.authState.value = AuthState.Ready
+            client.connectionState.value = ConnectionState.Connecting
+            started()
+
+            foreground.value = true
+            runCurrent()
+
+            assertEquals(listOf(TdApi.NetworkTypeWiFi.CONSTRUCTOR, TdApi.NetworkTypeWiFi.CONSTRUCTOR), sentTypes())
+        }
+
+    @Test
+    fun `coming back while connected sends no network`() =
+        runTest {
+            client.authState.value = AuthState.Ready
+            client.connectionState.value = ConnectionState.Ready
+            started()
+
+            foreground.value = true
+            runCurrent()
+
+            assertEquals(listOf(TdApi.NetworkTypeWiFi.CONSTRUCTOR), sentTypes())
+            assertEquals(listOf(false, true), sentOnline())
         }
 
     private fun network(

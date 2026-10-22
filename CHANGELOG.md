@@ -105,8 +105,22 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   first, and to write into it; where the group lets anyone comment, you can without joining.
 
 ### Changed
+- A more compact look, closer to Google's own apps: the navigation bar at the bottom and the search button beside it
+  are as tall as Google Photos', the "New chat" button is as large as Gmail's Compose, and the top bars and folder tabs
+  of the chat list, the archive and Contacts are lower, so more chats fit on the screen.
+- The message bar is now like Google Messages': a rounded field with "+" at its start and the emoji and gallery
+  buttons at its end, beside one round button that records voice messages or sends. Hold the send button to send
+  without sound or to schedule the message.
+- Photos, videos and albums in a conversation are wider on phones, so their captions take fewer lines.
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so
   Android compiles the code used at start ahead of time instead of while you use it.
+
+### Fixed
+- Coming back to Pingogram after a while in another app no longer leaves it "Connecting…" until it is closed from the
+  recent apps: it now tells Telegram's library when it is in use, which then reconnects at once.
+- Swiping a photo down to close it sometimes closed the chat too; it now closes only the photo.
+- A photo opened from a chat shows the picture the chat already loaded at once, instead of loading it again.
+- The "New chat" button no longer stutters as it grows into New chat or shrinks while the list scrolls.
 
 ## [0.3.0] - 2026-10-21
 

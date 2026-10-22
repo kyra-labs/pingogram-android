@@ -3,11 +3,14 @@ package dev.kyralabs.pingogram.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -17,6 +20,7 @@ import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -36,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
@@ -118,13 +122,15 @@ private fun Modifier.placedWhile(placed: () -> Boolean): Modifier =
 
 /**
  * The navigation bar of compact windows in the floating style of Google's Material 3 Expressive apps (Google Photos,
- * 2026; `docs/DESIGN_SYSTEM.md` §6): a pill that floats over the content and holds the [TopLevelDestination]s as tabs,
- * with the search button detached at its end.
+ * 2026; `docs/DESIGN_SYSTEM.md` §6.1): a pill that floats over the content and holds the [TopLevelDestination]s as
+ * tabs, with the search button detached at its end.
  *
- * Material has no floating navigation bar component. A [HorizontalFloatingToolbar] with standard colors provides the
- * container, its elevation and the adjacent button; the tabs are built from tokens. The selected tab shows its filled
- * icon and label on a `secondaryContainer` pill, the others only their label. Where the labels do not fit (narrow
- * phones, large font scales), the other tabs show their outlined icon instead, named for screen readers by the label.
+ * Material has no floating navigation bar component. The pill takes the floating toolbar's standard colors, shape and
+ * elevation; Material's [HorizontalFloatingToolbar] itself is at least 64 dp tall, so the pill is a [Surface] of
+ * `sizes.floatingNavigationBar` (56 dp), as tall as the search button beside it, as Google Photos' is. The tabs are
+ * built from tokens: the selected tab shows its filled icon and label on a `secondaryContainer` pill, the others only
+ * their label. Where the labels do not fit (narrow phones, large font scales), the other tabs show their outlined icon
+ * instead, named for screen readers by the label.
  *
  * The search button ([onSearch]) grows into search and back ([SearchButtonSlot], through [search]'s container
  * transform), and is away while search is [searchOpen].
@@ -141,40 +147,53 @@ internal fun PingogramNavigationBar(
     BoxWithConstraints(modifier.padding(horizontal = FloatingToolbarDefaults.ScreenOffset)) {
         val showLabels = labelsFit(maxWidth)
         val colors = FloatingToolbarDefaults.standardFloatingToolbarColors()
-        val padding = FloatingToolbarDefaults.ContentPadding
-        // The toolbar does not fix its height; the tabs fill the inside of its standard container.
-        val tabHeight =
-            FloatingToolbarDefaults.ContainerSize - padding.calculateTopPadding() - padding.calculateBottomPadding()
-        HorizontalFloatingToolbar(
-            expanded = true,
-            floatingActionButton = {
-                SearchButtonSlot(shown = !searchOpen, search = search, shape = CircleShape) { transform ->
-                    // A circle in the toolbar's own colors, as in Google's floating navigation bars.
-                    FloatingToolbarDefaults.StandardFloatingActionButton(
-                        onClick = onSearch,
-                        modifier = transform,
-                        shape = CircleShape,
-                        containerColor = colors.toolbarContainerColor,
-                        contentColor = colors.toolbarContentColor,
-                    ) {
-                        Icon(
-                            painter = painterResource(UiR.drawable.ic_search),
-                            contentDescription = stringResource(R.string.nav_search),
+        val spacing = MaterialTheme.spacing
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(spacing.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = FloatingToolbarDefaults.ContainerShape,
+                color = colors.toolbarContainerColor,
+                contentColor = colors.toolbarContentColor,
+                shadowElevation = FloatingToolbarDefaults.ContainerExpandedElevationWithFab,
+            ) {
+                Row(
+                    Modifier
+                        .height(MaterialTheme.sizes.floatingNavigationBar)
+                        .padding(spacing.small)
+                        .selectableGroup(),
+                ) {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val isSelected = destination == selected
+                        NavigationTab(
+                            destination = destination,
+                            selected = isSelected,
+                            showLabel = showLabels || isSelected,
+                            onClick = { onSelect(destination) },
+                            modifier = Modifier.fillMaxHeight(),
                         )
                     }
                 }
-            },
-            colors = colors,
-        ) {
-            Row(Modifier.selectableGroup()) {
-                TopLevelDestination.entries.forEach { destination ->
-                    val isSelected = destination == selected
-                    NavigationTab(
-                        destination = destination,
-                        selected = isSelected,
-                        showLabel = showLabels || isSelected,
-                        onClick = { onSelect(destination) },
-                        modifier = Modifier.height(tabHeight),
+            }
+            // As tall as the pill: the floating toolbar's button fills what it is given.
+            SearchButtonSlot(
+                shown = !searchOpen,
+                search = search,
+                shape = CircleShape,
+                modifier = Modifier.size(MaterialTheme.sizes.floatingNavigationBar),
+            ) { transform ->
+                // A circle in the toolbar's own colors, as in Google's floating navigation bars.
+                FloatingToolbarDefaults.StandardFloatingActionButton(
+                    onClick = onSearch,
+                    modifier = transform,
+                    shape = CircleShape,
+                    containerColor = colors.toolbarContainerColor,
+                    contentColor = colors.toolbarContentColor,
+                ) {
+                    Icon(
+                        painter = painterResource(UiR.drawable.ic_search),
+                        contentDescription = stringResource(R.string.nav_search),
                     )
                 }
             }
@@ -282,9 +301,9 @@ private fun labelsFit(maxWidth: Dp): Boolean {
     val typography = MaterialTheme.typography
     val spacing = MaterialTheme.spacing
     val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
+    val barHeight = MaterialTheme.sizes.floatingNavigationBar
     val labels = TopLevelDestination.entries.map { stringResource(it.label) }
-    return remember(textMeasurer, typography, spacing, density, layoutDirection, labels, maxWidth) {
+    return remember(textMeasurer, typography, spacing, density, barHeight, labels, maxWidth) {
         with(density) {
             fun width(
                 label: String,
@@ -297,11 +316,9 @@ private fun labelsFit(maxWidth: Dp): Boolean {
             val emphasisGrowth = labels.maxOf { width(it, emphasized = true) - width(it, emphasized = false) }.toDp()
             val tabPadding = spacing.medium * 2 * (labels.size - 1) + spacing.large * 2
             val icon = ICON_SIZE + spacing.small
-            val toolbarPadding =
-                FloatingToolbarDefaults.ContentPadding.calculateLeftPadding(layoutDirection) +
-                    FloatingToolbarDefaults.ContentPadding.calculateRightPadding(layoutDirection)
-            // The search button is about as large as the toolbar is high, a small gap away.
-            val searchButton = FloatingToolbarDefaults.ContainerSize + spacing.small
+            val toolbarPadding = spacing.small * 2
+            // The search button is as large as the pill is high, a small gap away.
+            val searchButton = barHeight + spacing.small
             labelsWidth + emphasisGrowth + tabPadding + icon + toolbarPadding + searchButton <= maxWidth
         }
     }

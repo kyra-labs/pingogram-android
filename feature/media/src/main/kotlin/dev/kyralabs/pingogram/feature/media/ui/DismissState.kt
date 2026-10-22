@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -50,6 +51,21 @@ internal class DismissState {
     var leftAtScale by mutableFloatStateOf(1f)
         private set
 
+    /**
+     * Whether the viewer is on its way out: a swipe, a completed back gesture or the back button closed it. The screen
+     * stays composed while its exit plays, and nothing closes it a second time meanwhile, which would also leave the
+     * screen below it (the conversation).
+     */
+    var isDismissed by mutableStateOf(false)
+        private set
+
+    /** Closes the viewer with [onDismiss], once: nothing after the first. */
+    fun dismiss(onDismiss: () -> Unit) {
+        if (isDismissed) return
+        isDismissed = true
+        onDismiss()
+    }
+
     /** Drives [dragOffset] from a vertical `draggable`. */
     val draggableState = DraggableState { delta -> dragOffset += delta }
 
@@ -80,7 +96,7 @@ internal class DismissState {
         val farEnough = abs(dragOffset) > height * DISMISS_HEIGHT_FRACTION
         val flung = abs(velocity) > height * FLING_HEIGHTS_PER_SECOND && sign(velocity) == sign(dragOffset)
         if (farEnough || flung) {
-            onDismiss()
+            dismiss(onDismiss)
         } else {
             settling =
                 scope.launch {
@@ -164,11 +180,11 @@ internal fun PredictiveBackDismiss(
     val scope = rememberCoroutineScope()
     val settle = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
     val currentOnBack by rememberUpdatedState(onBack)
-    PredictiveBackHandler(enabled = enabled) { events ->
+    PredictiveBackHandler(enabled = enabled && !state.isDismissed) { events ->
         try {
             events.collect { event -> state.followBack(event.progress) }
             state.leaveAtBackScale()
-            currentOnBack()
+            state.dismiss(currentOnBack)
         } catch (cancelled: CancellationException) {
             // A cancelled gesture, after which this coroutine can no longer animate.
             scope.launch {

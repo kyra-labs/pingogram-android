@@ -24,10 +24,14 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.platform.InspectorInfo
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.util.lerp
 
 /**
@@ -159,6 +163,12 @@ fun Modifier.sharedMediaViewerBounds(
  * Each side simply comes and goes with its screen, sharing nothing, without the scopes (previews, tests, a screen
  * outside the `NavHost`), when not [enabled], with reduced motion ([isReducedMotion]), and whenever the other side
  * shows no content of [key]. [key] must be equal on both sides and on no other content, e.g. a data object.
+ *
+ * With [fixedLayout], this side is laid out at the size it ends at (from the transform's lookahead) and revealed by
+ * the moving bounds from their top start, so its layout is measured once and every frame of the transform only clips
+ * it; without, it is measured anew at every frame's bounds. A whole screen (New chat, search, a profile) keeps its
+ * layout, as measuring its lists, bars and text anew in every frame made the transform stutter; small content (a
+ * button, a photo) is measured anew.
  */
 @Composable
 fun Modifier.containerTransform(
@@ -166,7 +176,9 @@ fun Modifier.containerTransform(
     shape: CornerBasedShape,
     counterpartShape: CornerBasedShape,
     enabled: Boolean = true,
-): Modifier = containerTransformOf(key, shape, remember(counterpartShape) { { counterpartShape } }, enabled)
+    fixedLayout: Boolean = false,
+): Modifier =
+    containerTransformOf(key, shape, remember(counterpartShape) { { counterpartShape } }, enabled, fixedLayout)
 
 /**
  * [containerTransform] with the other side's corners read while the bounds move, in the draw phase ([counterpart]).
@@ -178,6 +190,7 @@ private fun Modifier.containerTransformOf(
     shape: CornerBasedShape,
     counterpart: () -> CornerBasedShape,
     enabled: Boolean,
+    fixedLayout: Boolean = false,
 ): Modifier {
     val transitionScope = LocalSharedTransitionScope.current
     val visibilityScope = LocalNavAnimatedVisibilityScope.current
@@ -193,18 +206,40 @@ private fun Modifier.containerTransformOf(
     val clip = remember(shape, counterpart, shown) { MorphingClip(counterpart, shape) { shown.value } }
     val boundsSpec = motionScheme.defaultSpatialSpec<Rect>()
     val boundsTransform = remember(boundsSpec) { BoundsTransform { _, _ -> boundsSpec } }
-    return with(transitionScope) {
-        this@containerTransformOf.sharedBounds(
-            sharedContentState = rememberSharedContentState(key),
-            animatedVisibilityScope = visibilityScope,
-            enter = fadeIn(motionScheme.defaultEffectsSpec()),
-            exit = fadeOut(motionScheme.defaultEffectsSpec()),
-            boundsTransform = boundsTransform,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = clip,
-        )
-    }
+    val target = remember { TargetConstraints() }
+    val shared =
+        with(transitionScope) {
+            this@containerTransformOf.sharedBounds(
+                sharedContentState = rememberSharedContentState(key),
+                animatedVisibilityScope = visibilityScope,
+                enter = fadeIn(motionScheme.defaultEffectsSpec()),
+                exit = fadeOut(motionScheme.defaultEffectsSpec()),
+                boundsTransform = boundsTransform,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = clip,
+            )
+        }
+    return if (fixedLayout) shared.measuredAtTarget(target) else shared
 }
+
+/** The constraints content gets in the lookahead pass: those it ends the transform with. Read in the layout phase. */
+private class TargetConstraints {
+    var value: Constraints? = null
+}
+
+/**
+ * Measures the content with the constraints of the lookahead pass ([target]) whatever the moving bounds give it, and
+ * places it at their top start: as the constraints stay the same in every frame, Compose keeps its measurement, and
+ * only this layout runs again.
+ */
+private fun Modifier.measuredAtTarget(target: TargetConstraints): Modifier =
+    layout { measurable, constraints ->
+        if (isLookingAhead) target.value = constraints
+        val placeable = measurable.measure(target.value ?: constraints)
+        layout(constraints.constrainWidth(placeable.width), constraints.constrainHeight(placeable.height)) {
+            placeable.place(0, 0)
+        }
+    }
 
 /** Square corners, as full-bleed media has them in the media viewer: a [CornerBasedShape] the transform can morph. */
 val FullBleedShape: CornerBasedShape = RoundedCornerShape(ZeroCornerSize)

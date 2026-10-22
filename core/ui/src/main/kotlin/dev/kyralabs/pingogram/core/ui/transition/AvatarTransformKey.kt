@@ -37,7 +37,10 @@ data class AvatarTransformKey private constructor(
 fun Modifier.avatarTransform(key: AvatarTransformKey?): Modifier =
     if (key == null) this else containerTransform(key, shape = CircleShape, counterpartShape = FullBleedShape)
 
-/** The page's side of the container transform of [key] ([avatarTransform]): a full-window page with square corners. */
+/**
+ * The page's side of the container transform of [key] ([avatarTransform]): a full-window page with square corners,
+ * laid out once at its size and revealed as it grows (`containerTransform`'s `fixedLayout`).
+ */
 @Composable
 fun Modifier.avatarTransformTarget(key: AvatarTransformKey): Modifier =
-    containerTransform(key, shape = FullBleedShape, counterpartShape = CircleShape)
+    containerTransform(key, shape = FullBleedShape, counterpartShape = CircleShape, fixedLayout = true)

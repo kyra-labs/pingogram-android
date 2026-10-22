@@ -4,7 +4,7 @@ import androidx.compose.animation.EnterExitState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumExtendedFloatingActionButton
+import androidx.compose.material3.SmallExtendedFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
@@ -44,8 +44,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Chats tab's primary action (`REQUIREMENTS.md` FR-L7, `docs/DESIGN_SYSTEM.md` §6): one
- * [MediumExtendedFloatingActionButton] "New chat" in `primaryContainer`, which collapses to the medium FAB while the
- * list scrolls towards its end and expands again as it scrolls back ([state]). It shows and hides ([visible]) with
+ * [SmallExtendedFloatingActionButton] "New chat" in `primaryContainer`, 56 dp tall with its label in `labelLarge`, as
+ * Gmail's Compose, which collapses to the 56 dp FAB while the list scrolls towards its end and expands again as it
+ * scrolls back ([state]). It shows and hides ([visible]) with
  * Material's FAB animation, scaling from its bottom end (`animateFloatingActionButton`), and grows into the New chat
  * screen it opens ([onClick]): a container transform from its corners to the screen's square ones
  * ([NewChatTransformKey]), and back. Screen readers hear "New chat" whether or not the label shows.
@@ -55,7 +56,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * the chat list plays, e.g. how a predictive back gesture from a conversation seeks it.
  *
  * Only this composable reads whether it is expanded, so scrolling recomposes it, once, when it collapses or expands,
- * and nothing else (`docs/PERFORMANCE.md` §4).
+ * and nothing else (`docs/PERFORMANCE.md` §4). It floats over the chat list's `Scaffold` rather than in its button
+ * slot: there, every frame of its width animation measured the whole `Scaffold` again.
  */
 @Composable
 internal fun NewChatButton(
@@ -65,9 +67,15 @@ internal fun NewChatButton(
     modifier: Modifier = Modifier,
 ) {
     val label = stringResource(R.string.new_chat)
-    val shape = MaterialTheme.shapes.largeIncreased
-    MediumExtendedFloatingActionButton(
-        text = { Text(text = label, modifier = Modifier.clearAndSetSemantics {}) },
+    val shape = MaterialTheme.shapes.large
+    SmallExtendedFloatingActionButton(
+        text = {
+            Text(
+                text = label,
+                modifier = Modifier.clearAndSetSemantics {},
+                style = MaterialTheme.typography.labelLarge,
+            )
+        },
         icon = { Icon(painter = painterResource(UiR.drawable.ic_edit), contentDescription = null) },
         onClick = {
             state.transforming = true
@@ -178,7 +186,7 @@ private fun NewChatButtonCollapsedPreview() {
 
 /**
  * [padding] with room at the bottom for the Chats tab's "New chat" button, so the list's end rests clear of it: the
- * button, the Scaffold's 16 dp below it, the same above. Kept in selection mode, where the button hides, so the list
+ * button, the 16 dp below it, the same above. Kept in selection mode, where the button hides, so the list
  * does not move; none in the archive ([kind]).
  */
 @Composable
@@ -190,7 +198,7 @@ internal fun rememberClearOfNewChatButton(
         if (kind ==
             ChatListKind.Chats
         ) {
-            MaterialTheme.sizes.fabMedium + MaterialTheme.spacing.large * 2
+            MaterialTheme.sizes.fabSmall + MaterialTheme.spacing.large * 2
         } else {
             0.dp
         }

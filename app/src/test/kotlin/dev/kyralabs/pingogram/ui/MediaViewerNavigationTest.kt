@@ -293,6 +293,22 @@ class MediaViewerNavigationTest {
     }
 
     @Test
+    fun `a second swipe while the viewer leaves keeps the conversation`() {
+        setApp()
+        openAdaAndTapPhoto()
+        awaitNode(photoPage)
+        composeRule.mainClock.autoAdvance = false
+
+        // The viewer stays on screen while its exit plays; the second swipe lands on it.
+        composeRule.onRoot().performTouchInput { swipeDown(startY = centerY, endY = bottom) }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onRoot().performTouchInput { swipeDown(startY = centerY, endY = bottom) }
+        composeRule.mainClock.autoAdvance = true
+
+        awaitConversation()
+    }
+
+    @Test
     fun `a zoomed photo closes too, fading`() {
         setApp()
         openAdaAndTapPhoto()

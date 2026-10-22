@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
@@ -119,9 +120,11 @@ private fun LevelSegment(status: ChatBoostStatus) {
                 Text(level, Modifier.weight(1f), style = MaterialTheme.typography.titleMediumEmphasized)
                 Text(boosts, style = MaterialTheme.typography.titleMedium)
             }
+            // A level, not work under way: the wave stands still, so the page draws no frames while it shows.
             LinearWavyProgressIndicator(
                 progress = { status.levelProgress },
                 modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
+                waveSpeed = 0.dp,
             )
             Text(
                 text = next,

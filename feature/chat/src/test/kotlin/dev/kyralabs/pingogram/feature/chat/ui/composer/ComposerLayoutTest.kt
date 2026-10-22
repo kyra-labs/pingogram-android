@@ -4,14 +4,21 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -33,9 +40,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The composer's size (`docs/DESIGN_SYSTEM.md` §6 Composer, §7 Density): a 64 dp bar with a 48 dp field at one line,
- * small buttons with 48 dp touch targets, the emoji button at the bottom of a growing field, a field that keeps most of
- * the width at 200% font, a width capped like the bubbles' on wide windows, and the field and buttons named for screen
+ * The composer's size, as Google Messages' (`docs/DESIGN_SYSTEM.md` §6 Composer): a 72 dp bar with a 56 dp pill at one
+ * line beside a 56 dp round button, buttons with 48 dp touch targets, the emoji button at the bottom of a growing
+ * field, the gallery button while the field is empty, the send menu on a long press, a field that keeps most of the
+ * width at 200% font, a width capped like the bubbles' on wide windows, and the field and buttons named for screen
  * readers.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -47,6 +55,8 @@ class ComposerLayoutTest {
     @get:Rule(order = 1)
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+    private var sent = 0
+
     private fun setComposer(text: String = "") {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -57,7 +67,7 @@ class ComposerLayoutTest {
                             attachOptions = persistentListOf(AttachOption.Gallery),
                         ),
                     text = ComposerText(FormattedText(text, persistentListOf())),
-                    onSend = {},
+                    onSend = { sent++ },
                     onFocusChanged = {},
                     modifier = Modifier.testTag(BAR),
                 )
@@ -89,10 +99,12 @@ class ComposerLayoutTest {
     }
 
     @Test
-    fun `at one line the composer is a 64 dp bar around a 48 dp field`() {
+    fun `at one line the composer is a 72 dp bar around a 56 dp pill and a 56 dp button`() {
         setComposer()
 
         assertEquals(PingogramSizes().composerField.value, field().height().value, TOLERANCE)
+        assertEquals(ACTION_SIZE.value, button(R.string.voice_record).height().value, TOLERANCE)
+        assertEquals(ACTION_SIZE.value, button(R.string.voice_record).width().value, TOLERANCE)
         assertEquals(BAR_HEIGHT.value, bar().height().value, TOLERANCE)
     }
 
@@ -100,10 +112,52 @@ class ComposerLayoutTest {
     fun `with text, the bar keeps its height and the send button takes the microphone's place`() {
         setComposer("Hello")
 
-        button(R.string.composer_send).assertTouchTarget()
-        button(R.string.composer_send_options).assertTouchTarget()
+        assertEquals(ACTION_SIZE.value, button(R.string.composer_send).height().value, TOLERANCE)
+        button(R.string.voice_record).assertDoesNotExist()
         assertEquals(BAR_HEIGHT.value, bar().height().value, TOLERANCE)
     }
+
+    @Test
+    fun `the gallery button shows only while the field is empty`() {
+        setComposer()
+        button(R.string.composer_gallery).assertTouchTarget()
+
+        composeRule.onNode(hasSetTextAction()).performTextInput("Hi")
+
+        button(R.string.composer_gallery).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tap on send sends, a long press opens its other ways to send instead`() {
+        setComposer("Hello")
+
+        button(R.string.composer_send).performClick()
+        assertEquals(1, sent)
+
+        button(R.string.composer_send).performTouchInput { longClick() }
+
+        assertEquals(1, sent)
+        composeRule.onNodeWithText(string(R.string.composer_send_silently)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.composer_schedule)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `screen readers reach the other ways to send as custom actions`() {
+        setComposer("Hello")
+
+        val actions =
+            button(R.string.composer_send)
+                .fetchSemanticsNode()
+                .config
+                .getOrNull(SemanticsActions.CustomActions)
+                .orEmpty()
+                .map { it.label }
+        assertEquals(listOf(string(R.string.composer_send_silently), string(R.string.composer_schedule)), actions)
+    }
+
+    private fun string(
+        @StringRes id: Int,
+    ) = RuntimeEnvironment.getApplication().getString(id)
 
     @Test
     fun `as the field grows the emoji button stays at its bottom, level with the last line`() {
@@ -161,7 +215,8 @@ class ComposerLayoutTest {
 
     private companion object {
         const val BAR = "composer"
-        val BAR_HEIGHT = 64.dp
+        val BAR_HEIGHT = 72.dp
+        val ACTION_SIZE = 56.dp
         val TOUCH_TARGET = 48.dp
         const val TOLERANCE = 0.5f
         const val PIXEL_TOLERANCE = 1.5f
