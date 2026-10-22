@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -146,7 +147,7 @@ internal fun ChatScreen(
     onEvent: (ChatEvent) -> Unit,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    listState: LazyListState = rememberLazyListState(),
+    listState: LazyListState = rememberScrollingListState(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     jumpState: MessageJumpState = rememberMessageJumpState(),
     composerText: ComposerText = remember { ComposerText() },
