@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
@@ -35,11 +36,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
 
 /**
  * Every pinned message of the chat (`REQUIREMENTS.md` FR-C9), a [ModalBottomSheet] opened from the bar's list button:
- * "Pinned messages" in `titleLargeEmphasized`, then the messages newest first as list items inset like the chat
- * list's rows (`docs/DESIGN_SYSTEM.md` §4), the sender over two lines of the message; the one the bar shows takes the
- * list item's selected container (`secondaryContainer`, `large`). A tap shows that message in the conversation
- * ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down, the scrim and back close it
- * ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
+ * "Pinned messages" in `titleLargeEmphasized`, then the messages oldest first, as the conversation shows them, as list
+ * items inset like the chat list's rows (`docs/DESIGN_SYSTEM.md` §4), the sender over two lines of the message; the one
+ * the bar shows takes the list item's selected container (`secondaryContainer`, `large`), and the list opens at it. A
+ * tap shows that message in the conversation ([PinnedEvent.ShowFromList]) and closes the sheet; dragging it down, the
+ * scrim and back close it ([PinnedEvent.DismissList]). The list scrolls where the window is too short.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,9 @@ private fun PinnedSheetContent(
                     .padding(horizontal = spacing.large, vertical = spacing.small)
                     .semantics { heading() },
         )
-        LazyColumn(Modifier.selectableGroup()) {
+        val shownIndex = sheet.rows.indexOfFirst { it.messageId == sheet.shownId }.coerceAtLeast(0)
+        val listState = rememberLazyListState(initialFirstVisibleItemIndex = shownIndex)
+        LazyColumn(Modifier.selectableGroup(), state = listState) {
             items(sheet.rows, key = { it.messageId }, contentType = { CONTENT_TYPE_PINNED }) { row ->
                 PinnedMessageRow(
                     row = row,

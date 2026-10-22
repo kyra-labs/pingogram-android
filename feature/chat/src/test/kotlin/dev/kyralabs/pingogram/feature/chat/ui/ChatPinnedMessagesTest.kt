@@ -27,8 +27,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * The pinned messages bar of [ChatViewModel] (`REQUIREMENTS.md` FR-C9): what it shows, cycling through the pins as its
- * taps show each in the list, unpinning or hiding, and the sheet of every pinned message.
+ * The pinned messages bar of [ChatViewModel] (`REQUIREMENTS.md` FR-C9): what it shows, following the messages on screen
+ * and cycling through the pins as its taps show each in the list, unpinning or hiding, and the sheet of every pinned
+ * message.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatPinnedMessagesTest : ChatViewModelHarness() {
@@ -46,6 +47,11 @@ class ChatPinnedMessagesTest : ChatViewModelHarness() {
 
     private val ChatViewModel.bar get() = state.pinnedBar
 
+    private fun TestScope.visible(
+        viewModel: ChatViewModel,
+        vararg messageIds: Long,
+    ) = send(viewModel, ChatEvent.MessagesVisible(messageIds.toSet()))
+
     @Test
     fun `shows no bar without pinned messages`() =
         runViewModelTest {
@@ -53,28 +59,71 @@ class ChatPinnedMessagesTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `shows the newest pinned message with its sender, and that the user may unpin it`() =
+    fun `shows the newest pinned message, the last of them, with its sender, and that the user may unpin it`() =
         runViewModelTest {
             val bar = checkNotNull(pinning(2, 4).bar)
 
-            assertEquals(listOf<Any>(4L, 0, 2), listOf(bar.messageId, bar.index, bar.count))
+            assertEquals(listOf<Any>(4L, 1, 2), listOf(bar.messageId, bar.position, bar.count))
             assertEquals(UiText.Plain("Ada Lovelace").bidiIsolated(), bar.sender)
             assertEquals(UiText.Plain("Message 4"), bar.preview)
             assertTrue(bar.canUnpin)
         }
 
     @Test
-    fun `a tap shows the message in the list and moves on to the next older one, then back to the newest`() =
+    fun `the bar shows the pinned message closest above the messages on screen as the list scrolls`() =
+        runViewModelTest {
+            val viewModel = pinning(1, 2, 4)
+
+            visible(viewModel, 4, 5)
+            assertEquals(listOf<Any>(4L, 2), viewModel.bar?.let { listOf(it.messageId, it.position) })
+            visible(viewModel, 3)
+            assertEquals(listOf<Any>(2L, 1), viewModel.bar?.let { listOf(it.messageId, it.position) })
+            visible(viewModel, 1, 2)
+            assertEquals(2L, viewModel.bar?.messageId)
+            visible(viewModel, 1)
+            assertEquals(listOf<Any>(1L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
+            visible(viewModel, 5)
+            assertEquals(4L, viewModel.bar?.messageId)
+        }
+
+    @Test
+    fun `above every pinned message the bar shows the oldest`() =
         runViewModelTest {
             val viewModel = pinning(2, 4)
 
+            visible(viewModel, 1)
+
+            assertEquals(listOf<Any>(2L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
+        }
+
+    @Test
+    fun `a tap shows the message in the list and moves on to the next older one, then back to the newest`() =
+        runViewModelTest {
+            val viewModel = pinning(2, 4)
+            visible(viewModel, 5)
+
             send(viewModel, PinnedEvent.ShowCurrent)
             assertEquals(AnchorTarget.Message(4), viewModel.anchor.target)
-            assertEquals(2L, viewModel.bar?.messageId)
-            assertEquals(1, viewModel.bar?.index)
+            visible(viewModel, 3, 4)
+            assertEquals(listOf<Any>(2L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
 
             send(viewModel, PinnedEvent.ShowCurrent)
             assertEquals(AnchorTarget.Message(2), viewModel.anchor.target)
+            visible(viewModel, 1, 2)
+            assertEquals(listOf<Any>(4L, 1), viewModel.bar?.let { listOf(it.messageId, it.position) })
+        }
+
+    @Test
+    fun `after a tap the bar follows the screen again once the user scrolls`() =
+        runViewModelTest {
+            val viewModel = pinning(2, 4)
+            visible(viewModel, 5)
+            send(viewModel, PinnedEvent.ShowCurrent)
+            visible(viewModel, 4, 5)
+            assertEquals(2L, viewModel.bar?.messageId)
+
+            send(viewModel, PinnedEvent.ListDragged)
+
             assertEquals(4L, viewModel.bar?.messageId)
         }
 
@@ -87,7 +136,7 @@ class ChatPinnedMessagesTest : ChatViewModelHarness() {
             pinnedMessages.setPinned(PRIVATE_CHAT, messagesOfAda[3])
             runCurrent()
 
-            assertEquals(listOf<Any>(4L, 0, 1), viewModel.bar?.let { listOf(it.messageId, it.index, it.count) })
+            assertEquals(listOf<Any>(4L, 0, 1), viewModel.bar?.let { listOf(it.messageId, it.position, it.count) })
         }
 
     @Test
@@ -150,20 +199,20 @@ class ChatPinnedMessagesTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `the sheet lists every pinned message, and a tapped one shows in the list and in the bar`() =
+    fun `the sheet lists every pinned message oldest first, and a tapped one shows in the list and in the bar`() =
         runViewModelTest {
             val viewModel = pinning(1, 2, 4)
             assertNull(viewModel.pinnedSheet.value)
 
             send(viewModel, PinnedEvent.OpenList)
             val sheet = checkNotNull(viewModel.pinnedSheet.value)
-            assertEquals(listOf(4L, 2L, 1L), sheet.rows.map { it.messageId })
+            assertEquals(listOf(1L, 2L, 4L), sheet.rows.map { it.messageId })
             assertEquals(4L, sheet.shownId)
 
             send(viewModel, PinnedEvent.ShowFromList(1))
             assertNull(viewModel.pinnedSheet.value)
             assertEquals(AnchorTarget.Message(1), viewModel.anchor.target)
-            assertEquals(listOf<Any>(1L, 2), viewModel.bar?.let { listOf(it.messageId, it.index) })
+            assertEquals(listOf<Any>(1L, 0), viewModel.bar?.let { listOf(it.messageId, it.position) })
         }
 
     @Test
