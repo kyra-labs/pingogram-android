@@ -53,6 +53,20 @@ object SpdxLicenses {
                 name = "Boost Software License 1.0",
                 url = "https://www.boost.org/LICENSE_1_0.txt",
             ),
+            // The call engine, NTgCalls (config/licenses/extra.json, docs/adr/0015-call-media-engine.md).
+            SpdxLicense(
+                id = "LGPL-3.0-only",
+                name = "GNU Lesser General Public License v3.0",
+                url = "https://www.gnu.org/licenses/lgpl-3.0.html",
+                names = listOf("GNU Lesser General Public License v3.0", "LGPL-3.0"),
+            ),
+            // The third-party code inside the call engine's library, each under its own license, as NTgCalls lists
+            // it (its THIRD_PARTY_NOTICES.md at the pinned commit): not one SPDX license, hence the LicenseRef- form.
+            SpdxLicense(
+                id = "LicenseRef-NTgCalls-Notices",
+                name = "NTgCalls third-party notices",
+                url = "https://github.com/pytgcalls/ntgcalls/blob/master/THIRD_PARTY_NOTICES.md",
+            ),
             // Google Sans Flex (config/licenses/extra.json).
             SpdxLicense(
                 id = "OFL-1.1",

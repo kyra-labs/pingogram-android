@@ -8,7 +8,7 @@
 ├────────────────────────────────────────────────────────────────┤
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
-│   · scanner (the QR code scanner, CameraX)                     │
+│   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
@@ -660,6 +660,33 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
+
+## Calls
+
+`REQUIREMENTS.md` FR-V1, `docs/adr/0015-call-media-engine.md` (the engine), `docs/adr/0018-calls-and-telecom.md` (Android).
+
+- **Signaling**: `core:domain`'s `CallRepository` (`TdlibCallRepository`, `core:data`, a `TdlibUpdateCache`: TDLib
+  announces every call with `updateCall` only) keeps the session's calls and passes the other side's engine data
+  (`updateNewCallSignalingData`) on; it starts (`createCall`), answers (`acceptCall`), ends (`discardCall`) calls and
+  sends the engine's data (`sendCallSignalingData`). TDLib does the Diffie-Hellman exchange and gives the key, the
+  emojis and the servers in `callStateReady` (`CallConnection`).
+- **Engine**: `:feature:calls`' `CallEngine` (`NtgCallsEngine`: NTgCalls, the AAR `pingogram.ntgcalls` installs) takes
+  TDLib's key (`skipExchange`), the servers and the other side's library versions, and opens the microphone and the
+  speaker through Oboe. Its blocking Java API runs on one thread of its own; its library loads with the first call.
+- **`CallManager`** (`:feature:calls`, started by `PingogramApplication` through `Calls` before TDLib) is the call's state
+  machine: one call at a time (another incoming one is declined), `ActiveCall` as its state, the engine started once
+  TDLib says ready (with the data the other side sent before kept per call), Telecom (`CallSystem`:
+  `TelecomCallSystem` on Jetpack's `core-telecom`, `AudioManagerCall` without Telecom) for routes, hold, mute and
+  answering from headsets, the foreground service (`CallService`: `phoneCall`, `microphone` once talking, the proximity
+  wake lock at the earpiece) and the ringback and busy tones (`ToneGenerator`). Its parts are interfaces bound in
+  `CallsModule`, so its tests run on the JVM.
+- **Notifications**: `CallNotifications` posts `core:notifications`' `CallNotificationBuilder` (call style) as the call
+  changes, with the service's id; "Decline" and "Hang up" go to `CallActionReceiver`, "Answer" and the full-screen
+  intent to `CallActivity`. `NotificationRenderer` skips TDLib's call notification groups.
+- **Call screen**: `CallActivity` (its own task, over the lock screen, not exported) with `CallViewModel` (the call,
+  the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
+  buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
+  features as a callback (features do not depend on each other).
 
 ## Home screen widget
 

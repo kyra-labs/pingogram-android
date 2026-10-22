@@ -127,6 +127,7 @@ dependencies {
     implementation(projects.core.ui)
 
     implementation(projects.feature.auth)
+    implementation(projects.feature.calls)
     implementation(projects.feature.chat)
     implementation(projects.feature.chats)
     implementation(projects.feature.contacts)

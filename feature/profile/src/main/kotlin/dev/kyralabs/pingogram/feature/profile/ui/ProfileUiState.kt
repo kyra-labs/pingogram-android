@@ -100,6 +100,8 @@ data class ProfileInfo(
  * @property isBlocked the user is blocked; null where blocking does not apply (oneself) or the full info is not known.
  * @property isChangingBlock blocking or unblocking was asked for, and TDLib has not answered yet.
  * @property canReport the account can be reported; not one's own.
+ * @property callUserId the user "Call" calls (`REQUIREMENTS.md` FR-V1): a person, not oneself, whose privacy settings
+ *   allow it; null otherwise.
  */
 @Immutable
 data class ProfileActions(
@@ -112,6 +114,7 @@ data class ProfileActions(
     val isBlocked: Boolean? = null,
     val isChangingBlock: Boolean = false,
     val canReport: Boolean = false,
+    val callUserId: Long? = null,
 )
 
 /** What the contact row does. */

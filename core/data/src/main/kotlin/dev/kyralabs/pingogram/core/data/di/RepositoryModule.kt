@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotButtonRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
@@ -64,6 +65,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
+import dev.kyralabs.pingogram.core.domain.repository.CallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -244,6 +246,9 @@ interface RepositoryModule {
 
     @Binds
     fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository
+
+    @Binds
+    fun callRepository(repository: TdlibCallRepository): CallRepository
 
     @Binds
     fun profileRepository(repository: TdlibProfileRepository): ProfileRepository

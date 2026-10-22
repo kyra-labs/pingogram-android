@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0018-calls-and-telecom.md). The permissions they need are declared, with
+     their reasons, in :app's manifest, the one place that lists them (AppManifestTest). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- The call screen: its own task (it never shows the chats), over the lock screen while a call rings or goes
+             on (setShowWhenLocked), out of the recent apps. Opened by the app, the call's notifications and Telecom
+             only, so not exported. -->
+        <activity
+            android:name=".ui.CallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="dev.kyralabs.pingogram.calls" />
+
+        <!-- Keeps the app running during a call: phoneCall while it rings, microphone too once the user talks. -->
+        <service
+            android:name=".service.CallService"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall|microphone" />
+
+        <!-- "Decline" and "Hang up" of the call's notification. -->
+        <receiver
+            android:name=".service.CallActionReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

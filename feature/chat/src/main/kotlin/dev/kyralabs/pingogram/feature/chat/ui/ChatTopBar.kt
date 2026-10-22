@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -52,8 +53,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The conversation's small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6): back, then the chat's avatar and a two-line
  * title, its name in `titleMediumEmphasized` over the subtitle in `bodySmall`: `onSurfaceVariant`, or `primary` with
- * pulsing [TypingDots] while someone is typing or doing something else in the chat. No actions in other chats yet
- * (calls come in M5, search in the chat in M6, and Material allows two at most). In a private or secret chat the
+ * pulsing [TypingDots] while someone is typing or doing something else in the chat. A private chat with a person has a
+ * call button ([ChatHeader.callUserId], through [LocalCallStarter]; search in the chat comes in M6, and Material allows
+ * two actions at most). In a private or secret chat the
  * title opens the other user's profile through [onOpenProfile] (`REQUIREMENTS.md` FR-P2), its state layer over the
  * title; in a group or channel it opens the chat's info page through [onOpenChatInfo] (FR-P3). A secret chat
  * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and two actions ([SecretChatActions]): its
@@ -121,7 +123,13 @@ internal fun ChatTopBar(
         },
         actions = {
             val secret = header?.secret
-            if (secret != null && selectedCount == null) SecretChatActions(secret, onSecretChatEvent)
+            val callUserId = header?.callUserId
+            val calls = LocalCallStarter.current
+            when {
+                selectedCount != null -> Unit
+                secret != null -> SecretChatActions(secret, onSecretChatEvent)
+                callUserId != null && calls != null -> CallAction { calls.call(callUserId) }
+            }
         },
         expandedHeight = titleHeight(),
         colors =
@@ -284,6 +292,17 @@ private fun SecretChatActions(
         Icon(
             painter = painterResource(UiR.drawable.ic_key),
             contentDescription = stringResource(R.string.secret_key_button),
+        )
+    }
+}
+
+/** Calls the other side of a private chat (`REQUIREMENTS.md` FR-V1), a filled tonal icon button as the others. */
+@Composable
+private fun CallAction(onCall: () -> Unit) {
+    FilledTonalIconButton(onClick = onCall, shapes = IconButtonDefaults.shapes()) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_call_filled),
+            contentDescription = stringResource(R.string.chat_call),
         )
     }
 }

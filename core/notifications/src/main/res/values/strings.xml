@@ -8,7 +8,11 @@
     <string name="notification_channel_channels">Channels</string>
     <string name="notification_channel_channels_description">New posts in channels</string>
     <string name="notification_channel_calls">Calls</string>
-    <string name="notification_channel_calls_description">Incoming calls</string>
+    <string name="notification_channel_calls_description">Incoming calls, with your ringtone</string>
+    <string name="notification_channel_ongoing_calls">Ongoing calls</string>
+    <string name="notification_channel_ongoing_calls_description">The call you are in</string>
+    <!-- The incoming call notification's text, under the caller's name. -->
+    <string name="call_notification_incoming">Incoming voice call</string>
     <string name="notification_channel_other">Other</string>
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
     <string name="notification_channel_transfers">Transfers</string>

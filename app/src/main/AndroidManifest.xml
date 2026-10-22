@@ -29,10 +29,11 @@
          reschedules work after a reboot, which its short-lived work does not need: it is left out. The foss flavor's
          manifest declares RECEIVE_BOOT_COMPLETED for its "Keep connected" service (src/foss/AndroidManifest.xml).
          Media3 ExoPlayer (feature:chat) declares ACCESS_NETWORK_STATE and WAKE_LOCK too; it plays only files TDLib
-         downloaded and sets no wake mode. -->
+         downloaded and sets no wake mode. Calls hold WAKE_LOCK on every version (approved by the owner for calls on
+         2026-10-22): the proximity wake lock turns the screen off while the phone is at the ear during a call, and
+         only then (feature:calls CallService). -->
     <uses-permission
         android:name="android.permission.WAKE_LOCK"
-        android:maxSdkVersion="30"
         tools:node="replace" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
@@ -95,6 +96,27 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0018-calls-and-telecom.md), approved by the owner for calls only on
+         2026-10-22. RECORD_AUDIO above is asked for again before the first call or answer, after the call screen says
+         why. MANAGE_OWN_CALLS: Pingogram is a self-managed calling app in Android's Telecom, so the system UI,
+         Bluetooth headsets, cars and watches know its calls, and a phone call puts one on hold. The call's foreground
+         service runs as phoneCall while a call rings or goes on, and as microphone too once the user talks
+         (FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE). USE_FULL_SCREEN_INTENT shows an incoming call
+         over the lock screen; Android 14+ lets the user take it back, and the call then rings as a heads-up
+         notification. BLUETOOTH_CONNECT (Android 12+, asked with the microphone) names Bluetooth headsets the call can
+         move to. MODIFY_AUDIO_SETTINGS sets the call's audio mode and route where the device has no Telecom. Telecom's
+         Jetpack library declares BLUETOOTH_CONNECT, MANAGE_OWN_CALLS and MODIFY_AUDIO_SETTINGS too. -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Self-managed calls need the system's Telecom; devices without it still install Pingogram and call without it. -->
+    <uses-feature
+        android:name="android.software.telecom"
         android:required="false" />
 
     <!-- enableOnBackInvokedCallback: predictive back (REQUIREMENTS.md §7). localeConfig: the languages Android 13 and
@@ -172,6 +194,11 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- The call screen (feature:calls) on the app's window theme, without the launch theme's splash screen. -->
+        <activity
+            android:name="dev.kyralabs.pingogram.feature.calls.ui.CallActivity"
+            android:theme="@style/Theme.Pingogram"
+            tools:node="merge" />
         <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md). Exported for the system's
              widget updates; it takes nothing else. -->
         <receiver
