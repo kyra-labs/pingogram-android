@@ -19,6 +19,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   that start a bot (`t.me/bot?start=…`) open its chat with "Start" ready; nothing is sent until you tap it.
 - A bot's menu button appears at the start of the field. Bots whose menu opens a Mini App say that Pingogram can't
   open Mini Apps yet.
+- App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work

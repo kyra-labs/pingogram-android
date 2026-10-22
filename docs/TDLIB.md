@@ -29,7 +29,7 @@ per pinned commit in CI and reuse the AAR everywhere.
    attaches it to a GitHub Release tagged `tdlib-<short-sha>` marked pre-release, so the app
    build can download it deterministically.
 5. The build fetches that AAR by itself (`pingogram.tdlib` convention plugin, applied by
-   `core/tdlib/build.gradle.kts`; logic in `build-logic/.../TdlibAar.kt`):
+   `core/tdlib/build.gradle.kts`; logic in `build-logic/.../PrebuiltAar.kt`, shared with the call engine's AAR, `docs/adr/0015-call-media-engine.md`):
    - The expected SHA-256 is pinned in `gradle/libs.versions.toml` as `tdlibAarSha256` (copy it
      from `SHA256SUMS.txt` of the release). Until a release exists it is `"unpinned"` (version
      catalogs allow no empty value), and the build fails with instructions.

@@ -1,3 +1,5 @@
+import com.android.build.api.variant.ResValue
+
 plugins {
     alias(libs.plugins.pingogram.android.application)
     alias(libs.plugins.pingogram.android.compose)
@@ -14,6 +16,11 @@ android {
 
     defaultConfig {
         applicationId = "dev.kyralabs.pingogram"
+    }
+
+    // shortcut_target_package below.
+    buildFeatures {
+        resValues = true
     }
 
     // Only the languages Pingogram ships (docs/PERFORMANCE.md §8): those of res/xml/locales_config.xml, which Android
@@ -68,6 +75,17 @@ android {
         create("gms") {
             dimension = "distribution"
         }
+    }
+}
+
+// The package the app shortcuts' intents name (res/xml/shortcuts.xml), which a resource cannot read from the build:
+// each variant's application id, ".debug" included.
+androidComponents {
+    onVariants { variant ->
+        variant.resValues.put(
+            variant.makeResValueKey("string", "shortcut_target_package"),
+            variant.applicationId.map { ResValue(it, "The application id, for res/xml/shortcuts.xml") },
+        )
     }
 }
 

@@ -115,5 +115,9 @@ gradlePlugin {
             id = libs.plugins.pingogram.tdlib.pluginId
             implementationClass = "TdlibConventionPlugin"
         }
+        register("ntgcalls") {
+            id = libs.plugins.pingogram.ntgcalls.pluginId
+            implementationClass = "NtgcallsConventionPlugin"
+        }
     }
 }

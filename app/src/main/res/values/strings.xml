@@ -9,6 +9,15 @@
     <!-- The search button next to the navigation bar and at the top of the rail -->
     <string name="nav_search">Search</string>
 
+    <!-- App shortcuts (res/xml/shortcuts.xml), shown when the launcher icon is long-pressed: the short label at most
+         about 10 characters, the long one where the launcher has room -->
+    <string name="shortcut_new_chat">New chat</string>
+    <string name="shortcut_new_chat_long">Start a new chat</string>
+    <string name="shortcut_search">Search</string>
+    <string name="shortcut_search_long">Search chats and messages</string>
+    <string name="shortcut_saved_messages">Saved</string>
+    <string name="shortcut_saved_messages_long">Saved Messages</string>
+
     <!-- The conversation pane beside the chat list on large screens, while no chat is open -->
     <string name="chats_no_chat_selected_title">Select a chat to start reading</string>
     <string name="chats_no_chat_selected_body">Its messages show here, beside your chats.</string>

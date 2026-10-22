@@ -12,7 +12,8 @@ import java.io.IOException
 import java.net.URI
 import java.security.MessageDigest
 
-class TdlibAarTest {
+class PrebuiltAarTest {
+    private val tdlib = PrebuiltAar.TDLIB
     private val commit = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
     private val aarBytes = "a TDLib AAR".toByteArray()
     private val pin = MessageDigest.getInstance("SHA-256").digest(aarBytes).joinToString("") { "%02x".format(it) }
@@ -25,21 +26,21 @@ class TdlibAarTest {
             pinnedSha256: String = pin,
             overrideAar: File? = null,
             installedSha256: String? = null,
-        ) = TdlibAar.plan(commit, pinnedSha256, overrideAar) { installedSha256 }
+        ) = tdlib.plan(commit, pinnedSha256, overrideAar) { installedSha256 }
 
         @Test
         fun `a missing AAR is downloaded`() {
-            assertTrue(plan(installedSha256 = null) is TdlibAar.Plan.Download)
+            assertTrue(plan(installedSha256 = null) is PrebuiltAar.Plan.Download)
         }
 
         @Test
         fun `an AAR that does not match the pin is downloaded again`() {
-            assertTrue(plan(installedSha256 = "0".repeat(64)) is TdlibAar.Plan.Download)
+            assertTrue(plan(installedSha256 = "0".repeat(64)) is PrebuiltAar.Plan.Download)
         }
 
         @Test
         fun `an AAR that matches the pin is up to date, whatever the case of the hex digits`() {
-            assertEquals(TdlibAar.Plan.UpToDate, plan(pinnedSha256 = pin.uppercase(), installedSha256 = pin))
+            assertEquals(PrebuiltAar.Plan.UpToDate, plan(pinnedSha256 = pin.uppercase(), installedSha256 = pin))
         }
 
         @Test
@@ -48,9 +49,9 @@ class TdlibAarTest {
         ) {
             val override = dir.resolve("tdlib.aar").apply { writeBytes(aarBytes) }
 
-            val plan = TdlibAar.plan(commit, TdlibAar.UNPINNED, override) { error("must not hash the installed AAR") }
+            val plan = tdlib.plan(commit, PrebuiltAar.UNPINNED, override) { error("must not hash the installed AAR") }
 
-            assertEquals(TdlibAar.Plan.UseOverride(override), plan)
+            assertEquals(PrebuiltAar.Plan.UseOverride(override), plan)
         }
 
         @Test
@@ -59,19 +60,19 @@ class TdlibAarTest {
         ) {
             val message = failure { plan(overrideAar = dir.resolve("missing.aar")) }
 
-            assertTrue(TdlibAar.OVERRIDE_PROPERTY in message && "missing.aar" in message, message)
+            assertTrue(tdlib.overrideProperty in message && "missing.aar" in message, message)
         }
 
         @Test
         fun `an unpinned checksum fails with where to find it and how to build without it`() {
-            val message = failure { plan(pinnedSha256 = TdlibAar.UNPINNED) }
+            val message = failure { plan(pinnedSha256 = PrebuiltAar.UNPINNED) }
 
             assertTrue(
                 listOf(
-                    TdlibAar.SHA256_CATALOG_KEY,
+                    tdlib.sha256CatalogKey,
                     "https://github.com/kyra-labs/pingogram-android/releases/tag/tdlib-a94b83d67a",
                     "SHA256SUMS.txt",
-                    TdlibAar.OVERRIDE_PROPERTY,
+                    tdlib.overrideProperty,
                     "docs/TDLIB.md",
                 ).all { it in message },
                 message,
@@ -99,7 +100,40 @@ class TdlibAarTest {
             URI(
                 "https://github.com/kyra-labs/pingogram-android/releases/download/tdlib-a94b83d67a/tdlib-a94b83d67a.aar",
             ),
-            TdlibAar.downloadUrl(commit),
+            tdlib.downloadUrl(commit),
+        )
+    }
+
+    @Test
+    fun `the call engine comes from its own release, into its own repository`() {
+        val ntgcalls = PrebuiltAar.NTGCALLS
+        val engineCommit = "e8ab467185017827625f664d024824947b5c5d5f"
+
+        assertEquals(
+            URI(
+                "https://github.com/kyra-labs/pingogram-android/releases/download/ntgcalls-e8ab467185/" +
+                    "ntgcalls-e8ab467185.aar",
+            ),
+            ntgcalls.downloadUrl(engineCommit),
+        )
+        assertEquals("feature/calls/libs/maven", ntgcalls.repository)
+    }
+
+    @Test
+    fun `an unpinned call engine names its own catalog key, workflow and property`() {
+        val message =
+            failure { PrebuiltAar.NTGCALLS.plan("e8ab467185", PrebuiltAar.UNPINNED, overrideAar = null) { null } }
+
+        assertTrue(
+            listOf("NTgCalls", "ntgcallsAarSha256", "Build NTgCalls", "pingogram.ntgcalls.aar").all { it in message },
+            message,
+        )
+    }
+
+    @Test
+    fun `each AAR is found by its name`() {
+        assertTrue(
+            PrebuiltAar.named("tdlib") === PrebuiltAar.TDLIB && PrebuiltAar.named("ntgcalls") === PrebuiltAar.NTGCALLS,
         )
     }
 
@@ -118,7 +152,7 @@ class TdlibAarTest {
                 downloads += uri
                 destination.writeBytes(aarBytes)
             },
-        ) = TdlibAar.ensure(repository, commit, pinnedSha256, overrideAar, offline, log = {}, download = download)
+        ) = tdlib.ensure(repository, commit, pinnedSha256, overrideAar, offline, log = {}, download = download)
 
         private fun installedAar(version: String) =
             repository.resolve("org/drinkless/tdlib/$version/tdlib-$version.aar")
@@ -173,7 +207,7 @@ class TdlibAarTest {
             val message = failure { ensure(download = { _, _ -> throw IOException("HTTP 404 Not Found") }) }
 
             assertTrue(
-                listOf("HTTP 404", "tdlib-a94b83d67a", TdlibAar.OVERRIDE_PROPERTY).all { it in message },
+                listOf("HTTP 404", "tdlib-a94b83d67a", tdlib.overrideProperty).all { it in message },
                 message,
             )
         }
@@ -191,7 +225,7 @@ class TdlibAarTest {
         ) {
             val override = dir.resolve("self-built.aar").apply { writeText("self-built") }
 
-            val version = ensure(pinnedSha256 = TdlibAar.UNPINNED, overrideAar = override)
+            val version = ensure(pinnedSha256 = PrebuiltAar.UNPINNED, overrideAar = override)
 
             assertTrue(
                 version == "$commit-local" &&
