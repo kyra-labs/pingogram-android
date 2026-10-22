@@ -64,6 +64,7 @@ abstract class ChatViewModelHarness {
     protected val forumTopics = FakeForumTopicRepository()
     protected val threads = FakeMessageThreadRepository()
     protected val shareInbox = ShareInbox()
+    protected val botButtons = FakeBotButtonRepository()
     protected val bots = FakeBotInfoRepository()
     protected val botStarts = BotStartInbox()
 
@@ -121,6 +122,7 @@ abstract class ChatViewModelHarness {
                 chatJoinRepository = joins,
                 threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
                 shareInbox = shareInbox,
+                botButtonRepository = botButtons,
                 botInfoRepository = bots,
                 botStartInbox = botStarts,
                 log = { logged += it },

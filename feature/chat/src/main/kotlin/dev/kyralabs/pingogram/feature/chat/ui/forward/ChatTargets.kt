@@ -79,9 +79,9 @@ internal class ChatTargets(
 
     /**
      * The targets as the query and the chats change: those [canReceive] lets through, given the user's [WriteAccess]
-     * to each ([writeAccess]).
+     * to each ([writeAccess]) and the other user of a private or secret chat (null for other chats, or while unknown).
      */
-    fun targets(canReceive: (chat: Chat, access: WriteAccess) -> Boolean): Flow<TargetList> {
+    fun targets(canReceive: (chat: Chat, access: WriteAccess, user: User?) -> Boolean): Flow<TargetList> {
         val found =
             query
                 .map { it.trim() }
@@ -158,12 +158,12 @@ internal class ChatTargets(
         /** [chats] that [canReceive] lets through, as targets, in their order and each once. */
         fun targetsOf(
             chats: List<Chat>,
-            canReceive: (Chat, WriteAccess) -> Boolean,
+            canReceive: (Chat, WriteAccess, User?) -> Boolean,
         ): ImmutableList<ForwardTarget> {
             if (chats.isEmpty()) return persistentListOf()
             return chats
                 .distinctBy { it.id }
-                .filter { canReceive(it, accessTo(it)) }
+                .filter { canReceive(it, accessTo(it), it.userId?.let(users::get)) }
                 .map(::targetOf)
                 .toImmutableList()
         }
