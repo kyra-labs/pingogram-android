@@ -39,6 +39,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Four emojis show when the call is end-to-end encrypted: if the other person sees the same ones, nobody is listening
   in. Calls work with your headset's buttons, your car and your watch, and a phone call puts a Pingogram call on hold.
   Pingogram asks for the microphone before your first call, and on Android 12 and later for your Bluetooth headsets.
+- Someone who calls you with video reaches you as a voice call: Pingogram has no video calls yet, and the call screen
+  says you're talking with audio only.
 - Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
   "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve

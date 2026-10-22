@@ -37,6 +37,8 @@ sealed interface CallUiState {
         val isOnHold: Boolean = false,
         val route: AudioRoute? = null,
         val routes: ImmutableList<AudioRoute> = persistentListOf(),
+        /** The other person wants video, which Pingogram does not have yet: the call is audio only. */
+        val videoOffered: Boolean = false,
     ) : CallUiState {
         /** The incoming call rings: answer or decline. */
         val isIncomingRinging: Boolean get() = !isOutgoing && stage == CallStage.Ringing

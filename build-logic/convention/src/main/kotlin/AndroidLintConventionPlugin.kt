@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.configure
 
 /**
  * Android Lint for app, library and plain JVM modules: fatal rules from `REQUIREMENTS.md` §7 (`MissingTranslation`
- * informational since translations ship at 80%, `docs/adr/0019-translations-on-weblate.md`), and
+ * informational since translations ship at 80%, `docs/adr/0020-translations-on-weblate.md`), and
  * every other warning fails the build too (CLAUDE.md: no new lint warnings). No baseline.
  */
 class AndroidLintConventionPlugin : Plugin<Project> {

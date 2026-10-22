@@ -37,6 +37,8 @@
     <string name="call_hold">Hold</string>
     <string name="call_speaker">Speaker</string>
     <string name="call_audio">Audio</string>
+    <!-- Under the name when the other person calls with video or turns it on (docs/adr/0019-video-and-group-calls-scope.md). -->
+    <string name="call_audio_only">Video calls aren\'t supported yet: you\'re talking with audio only</string>
     <!-- The incoming call's chip: declines the call and opens the chat with the caller. -->
     <string name="call_message">Message</string>
     <!-- The answer slider, for screen readers, which answer and decline through its actions. -->

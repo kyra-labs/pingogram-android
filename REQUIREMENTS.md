@@ -176,7 +176,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 
 - FR-V1 Should: Voice calls via TDLib + libtgvoip/tgcalls (`createCall`, `acceptCall`) with
   CallKit-style full-screen notification, speaker/mute, encryption emoji.
-- FR-V2 Later: Video calls, group calls / live streams.
+- FR-V2 Should [M5.1]: 1:1 video calls, then group voice chats and watching live streams (`docs/adr/0019-video-and-group-calls-scope.md`); group video later.
 
 ### 5.8 Secret chats [M4]
 
@@ -262,7 +262,7 @@ Every screen must satisfy this list before merge:
 - [ ] Per-app language, large-screen keyboard/mouse support, state restoration (rotation, process death)
 - [ ] Accessibility (§6.3), haptics via `HapticFeedbackType`, no custom vibration patterns > 50 ms
 - [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `ExtraTranslation` fatal (`MissingTranslation`
-      informational: a language ships at 80% translated, `docs/adr/0019-translations-on-weblate.md`)
+      informational: a language ships at 80% translated, `docs/adr/0020-translations-on-weblate.md`)
 - [ ] Performance budgets in `docs/PERFORMANCE.md` met for the screen
 - [ ] Android 16 Live Updates (`ProgressStyle` notification) for long uploads/downloads where available
 

@@ -1,7 +1,7 @@
 # Translating Pingogram
 
 Pingogram is translated on [Hosted Weblate](https://hosted.weblate.org/engage/pingogram/) (owner decision 2026-10-22,
-`docs/adr/0019-translations-on-weblate.md`). Translators work in Weblate's web editor; Weblate sends the translations to
+`docs/adr/0020-translations-on-weblate.md`). Translators work in Weblate's web editor; Weblate sends the translations to
 this repository as pull requests. Nobody edits `res/values-<language>/strings.xml` by hand, and nothing is
 machine-translated into the repository.
 

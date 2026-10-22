@@ -69,7 +69,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
 - **Language** (FR-S1, §6.4): the languages Pingogram ships are English and every language its translations cover at
-  80% (`docs/TRANSLATING.md`, `docs/adr/0019-translations-on-weblate.md`). `build-logic`'s `pingogram.android.locales`
+  80% (`docs/TRANSLATING.md`, `docs/adr/0020-translations-on-weblate.md`). `build-logic`'s `pingogram.android.locales`
   works them out from all modules' `strings.xml` and generates `:app`'s `xml/locales_config.xml` from them, which
   Android 13+ lists in its app language settings (`android:localeConfig`) and Settings → Language lists on every
   version, and the build packages resources for them only (`androidResources.localeFilters`, so libraries add no other

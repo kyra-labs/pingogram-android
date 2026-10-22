@@ -156,6 +156,19 @@ class CallViewModelTest {
         }
 
     @Test
+    fun `says a video call is audio only`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            repository.update(Call(3, 42, isOutgoing = false, isVideo = true, state = CallState.Pending(true, true)))
+            runCurrent()
+
+            val viewModel = viewModel(manager, CallActivity.ACTION_SHOW)
+            runCurrent()
+
+            assertTrue((viewModel.uiState.value as CallUiState.InCall).videoOffered)
+        }
+
+    @Test
     fun `declining from the permission step declines the call`() =
         runTest(dispatcher) {
             microphone = false
