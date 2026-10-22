@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SelfDestruct
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -27,7 +28,13 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
 internal fun ItemInputs.toItem(): ChatItem {
     val content = message.content
     return if (content is MessageContent.Service) {
-        ChatItem.Service(message.id, messagePreviewText(message, myUserId, ::shortNameOf), date)
+        ChatItem.Service(
+            message.id,
+            messagePreviewText(message, myUserId, ::shortNameOf),
+            date,
+            // A private chat's id is its user's (td_api.tl `chatTypePrivate`).
+            callUserId = message.chatId.takeIf { content.action is ServiceAction.Call && kind == ChatKind.Private },
+        )
     } else {
         toBubble(content)
     }

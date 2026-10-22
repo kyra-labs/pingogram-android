@@ -104,6 +104,8 @@ data class MessagePlayback(
  * @property opensChatInfo the title opens the chat's info page: basic groups, supergroups and channels.
  * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
  *   chats.
+ * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
+ *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
  */
 @Immutable
 data class ChatHeader(
@@ -115,6 +117,7 @@ data class ChatHeader(
     val profileUserId: Long? = null,
     val secret: SecretChatHeader? = null,
     val opensChatInfo: Boolean = false,
+    val callUserId: Long? = null,
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }
@@ -300,6 +303,8 @@ sealed interface ChatItem {
         val id: Long,
         val text: UiText,
         override val date: UiText,
+        /** The other user of a call that ended, in a private chat: tapping it calls back (`REQUIREMENTS.md` FR-V1). */
+        val callUserId: Long? = null,
     ) : ChatItem {
         override val key: Any get() = id
 

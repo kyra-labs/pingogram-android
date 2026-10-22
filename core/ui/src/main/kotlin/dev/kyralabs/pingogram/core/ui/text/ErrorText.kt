@@ -91,5 +91,7 @@ private fun DomainError.messageRes(): Int =
         DomainError.InviteLinkInvalid -> R.string.error_invite_link_invalid
         DomainError.ChatFull -> R.string.error_chat_full
         DomainError.QrLoginExpired -> R.string.error_qr_login_expired
+        DomainError.CallPrivacyRestricted -> R.string.error_call_privacy_restricted
+        DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

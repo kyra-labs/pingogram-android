@@ -38,7 +38,11 @@ import org.xmlpull.v1.XmlPullParser
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional. CAMERA is the
  * in-app QR code scanner's only (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md), and no camera is
- * required to install.
+ * required to install. Calls (approved 2026-10-22 for calls only, docs/adr/0017-calls-and-telecom.md): MANAGE_OWN_CALLS
+ * (self-managed Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL and FOREGROUND_SERVICE_MICROPHONE,
+ * USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT (Bluetooth headsets' names),
+ * MODIFY_AUDIO_SETTINGS (the audio mode without Telecom) and WAKE_LOCK on every version (the proximity wake lock); the
+ * call screen and the call service are private, Telecom optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  * Telegram links (`tg:`, `t.me`, `telegram.me`, `telegram.dog`) open in the single-task main activity through browsable
@@ -79,6 +83,14 @@ class AppManifestTest {
                 Manifest.permission.READ_CONTACTS,
                 // The in-app QR code scanner only (docs/adr/0012-camerax-and-zxing-qr-scanner.md).
                 Manifest.permission.CAMERA,
+                // Calls only (docs/adr/0017-calls-and-telecom.md).
+                Manifest.permission.MANAGE_OWN_CALLS,
+                Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL,
+                Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
+                Manifest.permission.USE_FULL_SCREEN_INTENT,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                Manifest.permission.WAKE_LOCK,
             ) + FlavorManifest.requestedPermissions,
             requested,
         )
@@ -109,7 +121,15 @@ class AppManifestTest {
                 Manifest.permission.READ_CONTACTS to "",
                 // The QR code scanner's only permission, on every version.
                 Manifest.permission.CAMERA to "",
-                Manifest.permission.WAKE_LOCK to "30",
+                // Calls only, on every version (docs/adr/0017-calls-and-telecom.md).
+                Manifest.permission.MANAGE_OWN_CALLS to "",
+                Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL to "",
+                Manifest.permission.FOREGROUND_SERVICE_MICROPHONE to "",
+                Manifest.permission.USE_FULL_SCREEN_INTENT to "",
+                Manifest.permission.BLUETOOTH_CONNECT to "",
+                Manifest.permission.MODIFY_AUDIO_SETTINGS to "",
+                // WorkManager's, kept on every version for the call's proximity wake lock.
+                Manifest.permission.WAKE_LOCK to "",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,
             declared,
@@ -306,6 +326,31 @@ class AppManifestTest {
                 .single()
         assertEquals("dev.kyralabs.pingogram.MainActivity", shareTarget.first)
         assertEquals(setOf(NotificationIntents.SHARE_TARGET_CATEGORY), shareTarget.second)
+    }
+
+    @Test
+    fun `the call screen, service and actions are private, the service of type phoneCall and microphone`() {
+        val manifest = mergedManifest()
+
+        fun component(
+            kind: String,
+            suffix: String,
+        ) = manifest.elements(kind).single { it.androidAttribute("name").endsWith(suffix) }
+        val activity = component("activity", ".CallActivity")
+        val service = component("service", ".CallService")
+        val receiver = component("receiver", ".CallActionReceiver")
+        val telecom =
+            manifest.elements("uses-feature").single { it.androidAttribute("name") == "android.software.telecom" }
+
+        assertEquals(
+            listOf("false", "false", "false"),
+            listOf(activity, service, receiver).map {
+                it.androidAttribute("exported")
+            },
+        )
+        assertEquals("phoneCall|microphone", service.androidAttribute("foregroundServiceType"))
+        assertEquals("@style/Theme.Pingogram", activity.androidAttribute("theme"))
+        assertEquals("false", telecom.androidAttribute("required"))
     }
 
     private companion object {

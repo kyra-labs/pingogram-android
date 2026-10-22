@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import dev.kyralabs.pingogram.feature.calls.Calls
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -48,6 +49,10 @@ class PingogramApplication :
     @Inject
     lateinit var transfersController: TransfersController
 
+    /** Rings for incoming calls and runs the user's call, in every process (FR-V1). */
+    @Inject
+    lateinit var calls: Calls
+
     /** Tells TDLib about every new network the device uses, so it reconnects at once (docs/PERFORMANCE.md §3). */
     @Inject
     lateinit var networkTypeReporter: TdlibNetworkTypeReporter
@@ -73,6 +78,8 @@ class PingogramApplication :
         transfersController.start()
         // Sends TDLib the network type once it has its parameters, and again at every new network.
         networkTypeReporter.start()
+        // Follows TDLib's calls, which it announces only once: an incoming call rings from the first update on.
+        calls.start()
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()

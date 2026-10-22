@@ -56,8 +56,23 @@ internal fun HeaderSources.toHeader(): ChatHeader {
         profileUserId = chat.userId.takeUnless { isSavedMessages },
         secret = secretHeader(),
         opensChatInfo = chat.hasInfoPage,
+        callUserId = callUserId().takeUnless { isSavedMessages },
     )
 }
+
+/**
+ * The other user of a private chat with a person, not a bot, a deleted account or Telegram's service notifications;
+ * their privacy settings decide once called.
+ */
+private fun HeaderSources.callUserId(): Long? =
+    chat.userId.takeIf {
+        val user = user
+        chat.type is ChatType.Private &&
+            user != null &&
+            user.type == UserType.Regular &&
+            !user.isDeleted &&
+            !user.isSupport
+    }
 
 /**
  * The lock, state and timer of a secret chat; null for other chats. One TDLib has not announced counts as pending:

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
@@ -49,7 +50,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The profile's actions as pills under the header, as Google Contacts' expressive contact page has them
  * (`docs/DESIGN_SYSTEM.md` §6 "Profile actions"): "Message" (Saved Messages on one's own profile) as a filled `Button`,
- * the primary action, then the mute toggle and "Secret chat" as `FilledTonalButton`s, each its icon over its label,
+ * the primary action, then "Call" (where the user can be called, through [LocalCallStarter]), the mute toggle and
+ * "Secret chat" as `FilledTonalButton`s, each its icon over its label,
  * sharing the row's width, all with `ButtonDefaults.shapes()`' press morph. The mute toggle gives a `ToggleOn` or
  * `ToggleOff` haptic. Pills that do not apply are left out; the row is empty for a deleted account.
  */
@@ -61,7 +63,10 @@ internal fun ProfileActionsRow(
 ) {
     val haptics = LocalHapticFeedback.current
     val isMuted = actions.isMuted
-    if (!actions.canMessage && isMuted == null && !actions.canStartSecretChat) return
+    val calls = LocalCallStarter.current
+    val callUserId = actions.callUserId.takeIf { calls != null }
+    val hasChatPills = actions.canMessage || isMuted != null || actions.canStartSecretChat
+    if (!hasChatPills && callUserId == null) return
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -75,6 +80,14 @@ internal fun ProfileActionsRow(
                     ),
                 onClick = { onEvent(ProfileEvent.SendMessage) },
                 primary = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (calls != null && callUserId != null) {
+            ActionPill(
+                icon = UiR.drawable.ic_call_filled,
+                label = stringResource(R.string.profile_action_call),
+                onClick = { calls.call(callUserId) },
                 modifier = Modifier.weight(1f),
             )
         }

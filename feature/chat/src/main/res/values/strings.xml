@@ -443,4 +443,8 @@
         <item quantity="one">Not sent to %1$d of %2$d chats. %3$s</item>
         <item quantity="other">Not sent to %1$d of %2$d chats. %3$s</item>
     </plurals>
+    <!-- The conversation's call button (REQUIREMENTS.md FR-V1). -->
+    <string name="chat_call">Call</string>
+    <!-- What tapping a call's service message does, for screen readers. -->
+    <string name="chat_call_back">Call back</string>
 </resources>

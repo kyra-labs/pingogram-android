@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.core.notifications
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
@@ -17,7 +19,8 @@ import javax.inject.Singleton
  * and a renamed id loses what the user chose.
  *
  * Messages and calls pop up ([NotificationManagerCompat.IMPORTANCE_HIGH]); channel posts and everything else only
- * sound. The progress of transfers ([Transfers]) is silent and shows no badge.
+ * sound. Incoming calls ring with the phone's ringtone ([ringtone]); the progress of transfers ([Transfers]) and the
+ * ongoing call ([OngoingCalls]) are silent and show no badge.
  */
 enum class PingogramChannel(
     val id: String,
@@ -25,6 +28,8 @@ enum class PingogramChannel(
     @param:StringRes val description: Int,
     val importance: Int,
     val showBadge: Boolean = true,
+    /** Rings with the default ringtone, as a phone call does, rather than the notification sound. */
+    val ringtone: Boolean = false,
 ) {
     PrivateChats(
         "private_chats",
@@ -44,11 +49,26 @@ enum class PingogramChannel(
         R.string.notification_channel_channels_description,
         NotificationManagerCompat.IMPORTANCE_DEFAULT,
     ),
+
+    /**
+     * Incoming calls, with the ringtone (`docs/adr/0017-calls-and-telecom.md`). A new id: a channel's sound cannot be
+     * changed once created, and "calls" (until 0.4.0) had the notification sound; [NotificationChannels] deletes it.
+     */
     Calls(
-        "calls",
+        "incoming_calls",
         R.string.notification_channel_calls,
         R.string.notification_channel_calls_description,
         NotificationManagerCompat.IMPORTANCE_HIGH,
+        ringtone = true,
+    ),
+
+    /** The call the user is in (its foreground service's notification): no sound, no badge. */
+    OngoingCalls(
+        "ongoing_calls",
+        R.string.notification_channel_ongoing_calls,
+        R.string.notification_channel_ongoing_calls_description,
+        NotificationManagerCompat.IMPORTANCE_DEFAULT,
+        showBadge = false,
     ),
     Other(
         "other",
@@ -117,8 +137,32 @@ class NotificationChannels
                         .setName(context.getString(channel.title))
                         .setDescription(context.getString(channel.description))
                         .setShowBadge(channel.showBadge)
-                        .build()
+                        .apply {
+                            if (channel.ringtone) {
+                                setSound(
+                                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+                                    RINGTONE_ATTRIBUTES,
+                                )
+                                setVibrationEnabled(true)
+                            } else if (channel == PingogramChannel.OngoingCalls) {
+                                setSound(null, null)
+                            }
+                        }.build()
                 }
-            NotificationManagerCompat.from(context).createNotificationChannelsCompat(channels)
+            val manager = NotificationManagerCompat.from(context)
+            manager.createNotificationChannelsCompat(channels)
+            OBSOLETE_CHANNELS.forEach(manager::deleteNotificationChannel)
+        }
+
+        private companion object {
+            /** Earlier versions' channels: "calls" rang with the notification sound ([PingogramChannel.Calls]). */
+            val OBSOLETE_CHANNELS = listOf("calls")
+
+            val RINGTONE_ATTRIBUTES: AudioAttributes =
+                AudioAttributes
+                    .Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
         }
     }
