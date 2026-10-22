@@ -11,6 +11,8 @@ google-services.json
 
 # TDLib binaries (downloaded by Gradle)
 core/tdlib/libs/
+# The call engine AAR, downloaded by pingogram.ntgcalls (docs/adr/0015-call-media-engine.md).
+feature/calls/libs/
 *.aar
 !gradle/wrapper/*
 

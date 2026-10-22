@@ -117,6 +117,10 @@ nothing is posted.
    instructions while it is still `"unpinned"`.
 4. Re-run only when you bump `TDLIB_COMMIT` (then update `tdlibAarSha256` too).
 
+The call engine (NTgCalls, `docs/adr/0015-call-media-engine.md`) works the same way: **Actions → Build NTgCalls →
+Run workflow** publishes `ntgcalls-<sha>`, whose SHA-256 goes into `ntgcallsAarSha256`. Re-run it only when you bump
+`NTGCALLS_COMMIT` in `.github/workflows/ntgcalls.yml` (and `ntgcalls` in the catalog).
+
 ## 7. Test on your phone
 
 - Enable developer options + USB debugging, or just sideload the debug APK from the CI

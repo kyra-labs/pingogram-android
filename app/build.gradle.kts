@@ -144,7 +144,6 @@ dependencies {
     testImplementation(projects.core.testing)
     // The language repository's tests keep the app's settings in a DataStore of their own.
     testImplementation(libs.androidx.datastore.preferences)
-    testImplementation(libs.androidx.glance.appwidget.testing)
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
