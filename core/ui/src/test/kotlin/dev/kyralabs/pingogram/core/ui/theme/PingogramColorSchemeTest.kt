@@ -6,6 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -104,6 +105,38 @@ class PingogramColorSchemeTest {
         assertSame(brandColorScheme(dark = false, Contrast.Standard), select(dark = false, amoled = true))
     }
 
+    @ParameterizedTest
+    @EnumSource(ThemePalette::class)
+    fun `without dynamic color uses the color theme's scheme`(palette: ThemePalette) {
+        assertSame(themeColorScheme(palette, dark = false, Contrast.Standard), select(palette = palette))
+        assertSame(
+            themeColorScheme(palette, dark = true, Contrast.High),
+            select(dark = true, Contrast.High, palette = palette),
+        )
+    }
+
+    @Test
+    fun `dynamic colors without contrast levels give way to the color theme, not the brand`() {
+        val scheme =
+            select(
+                contrast = Contrast.Medium,
+                dynamicScheme = dynamicLight,
+                dynamicSchemeFollowsContrast = false,
+                palette = ThemePalette.Teal,
+            )
+
+        assertSame(themeColorScheme(ThemePalette.Teal, dark = false, Contrast.Medium), scheme)
+    }
+
+    @ParameterizedTest
+    @EnumSource(ThemePalette::class)
+    fun `AMOLED black works with every color theme`(palette: ThemePalette) {
+        val scheme = select(dark = true, amoled = true, palette = palette)
+
+        assertEquals(Color.Black, scheme.surface)
+        assertEquals(themeColorScheme(palette, dark = true, Contrast.Standard).onSurface, scheme.onSurface)
+    }
+
     @Test
     fun `maps the system contrast level like Material Components`() {
         assertEquals(Contrast.Standard, contrastFromSystemLevel(-1f))
@@ -118,7 +151,8 @@ class PingogramColorSchemeTest {
         amoled: Boolean = false,
         dynamicScheme: ColorScheme? = null,
         dynamicSchemeFollowsContrast: Boolean = false,
-    ): ColorScheme = pingogramColorScheme(dark, contrast, amoled, dynamicScheme, dynamicSchemeFollowsContrast)
+        palette: ThemePalette = ThemePalette.Pingogram,
+    ): ColorScheme = pingogramColorScheme(dark, palette, contrast, amoled, dynamicScheme, dynamicSchemeFollowsContrast)
 
     private fun contrastRatio(
         first: Color,

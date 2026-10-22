@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +18,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of the theme tokens with the brand schemes. AMOLED and high contrast only change colors,
+ * Goldens of the theme tokens with the brand schemes, and the color roles of a few generated color themes. AMOLED and high contrast only change colors,
  * so only the color sheet is captured for them.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -42,6 +43,17 @@ class ThemeShowcaseScreenshotTest {
         capture(ThemeMode.Light) { ColorRolesShowcase() }
     }
 
+    // A few of the generated color themes (docs/adr/0015-color-themes.md).
+    @Test
+    fun colorRolesTealLight() = capture(ThemeMode.Light, palette = ThemePalette.Teal) { ColorRolesShowcase() }
+
+    @Test
+    fun colorRolesPinkDark() = capture(ThemeMode.Dark, palette = ThemePalette.Pink) { ColorRolesShowcase() }
+
+    @Test
+    fun colorRolesMonochromeLight() =
+        capture(ThemeMode.Light, palette = ThemePalette.Monochrome) { ColorRolesShowcase() }
+
     @Test
     fun typeScaleLight() = capture(ThemeMode.Light) { TypeScaleShowcase() }
 
@@ -62,9 +74,10 @@ class ThemeShowcaseScreenshotTest {
     private fun capture(
         themeMode: ThemeMode,
         amoled: Boolean = false,
+        palette: ThemePalette = ThemePalette.Pingogram,
         content: @Composable () -> Unit,
     ) = captureRoboImage {
-        PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled) {
+        PingogramTheme(themeMode = themeMode, dynamicColor = false, palette = palette, amoled = amoled) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background, content = content)
         }
     }

@@ -289,6 +289,7 @@ class MainActivity : ComponentActivity() {
         PingogramTheme(
             themeMode = settings.themeMode,
             dynamicColor = settings.dynamicColor,
+            palette = settings.palette,
             contrast = settings.contrast,
             amoled = settings.amoled,
             content = content,

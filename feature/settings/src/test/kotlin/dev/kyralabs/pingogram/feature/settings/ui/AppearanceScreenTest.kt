@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import org.junit.Assert.assertEquals
@@ -49,6 +50,7 @@ class AppearanceScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val events = mutableListOf<AppearanceEvent>()
+    private var themeOpened = 0
     private val performedHaptics = mutableListOf<HapticFeedbackType>()
     private val haptics =
         object : HapticFeedback {
@@ -69,6 +71,7 @@ class AppearanceScreenTest {
                         state = AppearanceUiState.Content(settings),
                         onEvent = { events += it },
                         onBack = {},
+                        onOpenColorTheme = { themeOpened++ },
                         dynamicColorAvailable = dynamicColorAvailable,
                         systemContrast = systemContrast,
                     )
@@ -76,6 +79,10 @@ class AppearanceScreenTest {
             }
         }
     }
+
+    private fun fallbackNote(
+        @StringRes theme: Int,
+    ) = RuntimeEnvironment.getApplication().getString(R.string.settings_contrast_fallback_theme, string(theme))
 
     private fun string(
         @StringRes id: Int,
@@ -148,20 +155,30 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `the dynamic color row toggles dynamic color with a toggle-off haptic`() {
-        setScreen(AppearanceSettings(dynamicColor = true))
+    fun `the Theme row names the theme and opens the Theme page`() {
+        setScreen(AppearanceSettings(dynamicColor = false, palette = ThemePalette.Teal))
 
-        switchRow(R.string.settings_dynamic_color).assertIsOn().performClick()
+        node(R.string.settings_color_theme_teal).assertExists()
+        node(R.string.settings_color_theme).performClick()
 
-        assertEquals(listOf(AppearanceEvent.SetDynamicColor(false)), events)
-        assertEquals(listOf(HapticFeedbackType.ToggleOff), performedHaptics)
+        assertEquals(1, themeOpened)
+        assertTrue(events.isEmpty())
     }
 
     @Test
-    fun `dynamic color is not offered below Android 12`() {
-        setScreen(dynamicColorAvailable = false)
+    fun `with dynamic color the Theme row names the wallpaper's colors`() {
+        setScreen(AppearanceSettings(dynamicColor = true, palette = ThemePalette.Teal))
 
-        node(R.string.settings_dynamic_color).assertDoesNotExist()
+        node(R.string.settings_color_theme_wallpaper).assertExists()
+        node(R.string.settings_color_theme_teal).assertDoesNotExist()
+    }
+
+    @Test
+    fun `below Android 12 the Theme row names the generated theme, as there are no wallpaper colors`() {
+        setScreen(AppearanceSettings(dynamicColor = true), dynamicColorAvailable = false)
+
+        node(R.string.settings_color_theme_pingogram).assertExists()
+        node(R.string.settings_color_theme_wallpaper).assertDoesNotExist()
     }
 
     @Test
@@ -184,17 +201,17 @@ class AppearanceScreenTest {
     }
 
     @Test
-    fun `medium contrast with dynamic color says it uses the brand colors`() {
-        setScreen(AppearanceSettings(dynamicColor = true, contrast = Contrast.Medium))
+    fun `medium contrast with dynamic color names the theme it uses instead`() {
+        setScreen(AppearanceSettings(dynamicColor = true, palette = ThemePalette.Teal, contrast = Contrast.Medium))
 
-        node(R.string.settings_contrast_brand_colors).assertExists()
+        composeRule.onNodeWithText(fallbackNote(R.string.settings_color_theme_teal)).assertExists()
     }
 
     @Test
     fun `standard contrast needs no note`() {
         setScreen(AppearanceSettings(contrast = Contrast.Standard))
 
-        node(R.string.settings_contrast_brand_colors).assertDoesNotExist()
+        composeRule.onNodeWithText(fallbackNote(R.string.settings_color_theme_pingogram)).assertDoesNotExist()
         node(R.string.settings_contrast_follows_system).assertDoesNotExist()
     }
 

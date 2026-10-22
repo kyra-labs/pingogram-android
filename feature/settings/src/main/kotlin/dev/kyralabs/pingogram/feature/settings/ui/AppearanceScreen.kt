@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +29,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.systemContrastOrNull
 import dev.kyralabs.pingogram.feature.settings.R
@@ -34,11 +37,12 @@ import kotlinx.coroutines.launch
 
 /**
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
- * the page what this device supports: dynamic color from Android 12, and from Android 14 the system's contrast level,
- * which the theme follows instead of the app's. [onBack] leaves the page.
+ * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
+ * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page; [onBack] leaves.
  */
 @Composable
 internal fun AppearanceRoute(
+    onOpenColorTheme: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -60,6 +64,7 @@ internal fun AppearanceRoute(
     AppearanceScreen(
         state = state,
         onEvent = viewModel::onEvent,
+        onOpenColorTheme = onOpenColorTheme,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -69,8 +74,10 @@ internal fun AppearanceRoute(
 }
 
 /**
- * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): the theme (system, light or dark, as a
- * connected button group) and AMOLED black, then dynamic color (where [dynamicColorAvailable]) and the contrast level.
+ * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): light or dark (system, light or dark, as a
+ * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
+ * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
+ * the contrast level.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -80,6 +87,7 @@ internal fun AppearanceScreen(
     onEvent: (AppearanceEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenColorTheme: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -99,6 +107,7 @@ internal fun AppearanceScreen(
                 AppearanceSettingsContent(
                     state.settings,
                     onEvent,
+                    onOpenColorTheme,
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -119,10 +128,11 @@ private fun AppearanceLoading() {
 private fun AppearanceSettingsContent(
     settings: AppearanceSettings,
     onEvent: (AppearanceEvent) -> Unit,
+    onOpenColorTheme: () -> Unit,
     dynamicColorAvailable: Boolean,
     systemContrast: Contrast?,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_section_theme)) {
+    SettingsGroup(title = stringResource(R.string.settings_section_light_dark)) {
         item { shapes ->
             SettingsSegment(shapes) {
                 ChoiceRow(
@@ -145,24 +155,16 @@ private fun AppearanceSettingsContent(
         }
     }
     SettingsGroup(title = stringResource(R.string.settings_section_colors)) {
-        if (dynamicColorAvailable) {
-            item { shapes ->
-                SwitchItem(
-                    title = stringResource(R.string.settings_dynamic_color),
-                    summary = stringResource(R.string.settings_dynamic_color_summary),
-                    checked = settings.dynamicColor,
-                    shapes = shapes,
-                    onCheckedChange = { onEvent(AppearanceEvent.SetDynamicColor(it)) },
-                )
-            }
-        }
+        item { shapes -> ColorThemeItem(settings, dynamicColorAvailable, shapes, onOpenColorTheme) }
         item { shapes ->
             ContrastItem(
                 contrast = systemContrast ?: settings.contrast,
                 followsSystem = systemContrast != null,
                 // Before Android 14 the wallpaper's colors have no contrast levels (rememberPingogramColorScheme).
-                usesBrandColors =
-                    dynamicColorAvailable && settings.dynamicColor && settings.contrast != Contrast.Standard,
+                fallbackTheme =
+                    ColorThemeOption.Palette(settings.palette).takeIf {
+                        dynamicColorAvailable && settings.dynamicColor && settings.contrast != Contrast.Standard
+                    },
                 shapes = shapes,
                 onSelect = { onEvent(AppearanceEvent.SetContrast(it)) },
             )
@@ -176,6 +178,34 @@ private fun AppearanceScreenPreview() {
     PingogramPreview {
         AppearanceScreen(state = AppearanceUiState.Content(AppearanceSettings()), onEvent = {}, onBack = {})
     }
+}
+
+/**
+ * The row that opens the Theme page, one row of its group ([shapes]): "Theme" over the theme's name, with its chip
+ * ([ThemeChip], `sizes.leadingIconContainer`) at its end, in the scheme the app shows now.
+ */
+@Composable
+private fun ColorThemeItem(
+    settings: AppearanceSettings,
+    dynamicColorAvailable: Boolean,
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+) {
+    val theme = settings.colorTheme(wallpaperAvailable = dynamicColorAvailable)
+    SettingsRow(
+        title = stringResource(R.string.settings_color_theme),
+        shapes = shapes,
+        supportingContent = { Text(theme.name()) },
+        trailingContent = {
+            ThemeChip(
+                scheme = MaterialTheme.colorScheme,
+                name = theme.name(),
+                selected = false,
+                size = MaterialTheme.sizes.leadingIconContainer,
+            )
+        },
+        onClick = onClick,
+    )
 }
 
 @PingogramPreviews

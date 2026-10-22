@@ -86,7 +86,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   resolves to. The splash screen waits for the settings as for TDLib's first login step (at most
   300 ms, `docs/PERFORMANCE.md` §2), and nothing is composed before they are known, so the app never
   draws in a theme the user did not choose. A change made in Appearance reaches the theme through the
-  same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1).
+  same flow and cross-fades its colors (`docs/DESIGN_SYSTEM.md` §1). The colors are the wallpaper's or a color theme's
+  (`AppearanceSettings.palette`, `core:domain`'s `ThemePalette`, `docs/adr/0015-color-themes.md`), whose schemes
+  `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
+  (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
+  saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those

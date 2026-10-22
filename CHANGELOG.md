@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
+  more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
+  Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
+  with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 - Very wide windows (1600 dp and more, e.g. a desktop or an external display): a profile or a group's or channel's
   info opens beside the conversation, as a third pane, instead of covering the chats. Drag the handle between them to
   make it narrower or wider; back closes it first.
