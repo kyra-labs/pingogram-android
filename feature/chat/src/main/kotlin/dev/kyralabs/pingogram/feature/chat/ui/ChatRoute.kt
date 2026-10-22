@@ -21,8 +21,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.location.rememberLocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
@@ -52,8 +53,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * The conversation of chat [chatId], pushed above the Chats tab or in its detail pane, opened at [messageId] when
- * search found it there (the view model then anchors the list there instead of the unread divider): hoists its
+ * The conversation of chat [chatId] (of its forum topic or message thread [topic], if not null; [ChatRoute] decides
+ * what a chat opens to), pushed above the Chats tab or in its detail pane, opened at [messageId] when search found it
+ * there (the view model then anchors the list there instead of the unread divider): hoists its
  * [ChatViewModel], and
  * tells it when the screen is started and stopped, which opens and closes the chat in TDLib (`docs/PERFORMANCE.md`
  * §3). The effect follows the screen's lifecycle rather than the view model's: the screen stops when another screen
@@ -71,36 +73,40 @@ import java.util.Locale
  * key ([SecretChatBottomSheet]). While a secret chat is open, the window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
- * title opens nothing.
+ * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
+ * navigates with.
  */
+@Suppress("LongParameterList") // The chat and where in it, what it opens elsewhere, and its view models.
 @Composable
-internal fun ChatRoute(
+internal fun ConversationRoute(
     chatId: Long,
     onBack: (() -> Unit)?,
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     onOpenChat: (chatId: Long) -> Unit = {},
     messageId: Long? = null,
+    topic: MessageTopic? = null,
+    onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
-        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
+        hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
+            it.create(chatId, messageId, topic)
+        },
     locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
     panelViewModel: EmojiPanelViewModel = hiltViewModel(key = "emoji-panel-$chatId"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
     val emojiPanel by panelViewModel.uiState.collectAsStateWithLifecycle()
-    LifecycleStartEffect(viewModel) {
-        viewModel.onEvent(ChatEvent.Started)
-        onStopOrDispose { viewModel.onEvent(ChatEvent.Stopped) }
-    }
+    ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
     val composerFocus = rememberComposerFocusState()
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
+    val currentOnOpenThread by rememberUpdatedState(onOpenThread)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
     val attach =
         rememberAttachInputs(
@@ -117,6 +123,7 @@ internal fun ChatRoute(
         onOpenMedia = { currentOnOpenMedia(chatId, it) },
         onOpenChat = { currentOnOpenChat(it) },
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
+        onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onLaunchCamera = { path ->
@@ -154,8 +161,8 @@ internal fun ChatRoute(
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
- * [onOpenMedia], a profile to [onOpenProfile] and a chat a mention named to [onOpenChat]; the camera app opens through
- * [onLaunchCamera], or a snackbar
+ * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat] and a message's thread to
+ * [onOpenThread]; the camera app opens through [onLaunchCamera], or a snackbar
  * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
  * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
@@ -176,6 +183,7 @@ internal fun ChatEffects(
     onOpenMedia: (messageId: Long) -> Unit,
     onOpenChat: (chatId: Long) -> Unit = {},
     onOpenProfile: (userId: Long) -> Unit = {},
+    onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -205,6 +213,7 @@ internal fun ChatEffects(
                     ChatEffect.PlaybackFailed,
                     ChatEffect.MessageUnavailable,
                     ChatEffect.ActionUnavailable,
+                    ChatEffect.PinnedHidden,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -224,8 +233,8 @@ internal fun ChatEffects(
                         copiedNotice(resources)
                     }
 
-                    is ChatEffect.OpenProfile, is ChatEffect.OpenChat -> {
-                        openNamed(effect, onOpenProfile, onOpenChat)
+                    is ChatEffect.OpenProfile, is ChatEffect.OpenChat, is ChatEffect.OpenThread -> {
+                        openNamed(effect, onOpenProfile, onOpenChat, onOpenThread)
                     }
 
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera -> {
@@ -318,6 +327,7 @@ private fun ChatEffect.noticeText(): Int =
     when (this) {
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
         ChatEffect.ActionUnavailable -> R.string.message_action_unavailable
+        ChatEffect.PinnedHidden -> R.string.pinned_hidden
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable

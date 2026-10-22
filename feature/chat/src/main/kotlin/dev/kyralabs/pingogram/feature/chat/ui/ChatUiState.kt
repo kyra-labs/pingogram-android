@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -44,6 +45,7 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property report the sheet that reports messages; null while it is closed.
  * @property mediaDownloads whether the photos in the bubbles download by themselves on the current network, and the
  *   ones the user asked to download meanwhile.
+ * @property pinnedBar the pinned messages bar over the messages (`REQUIREMENTS.md` FR-C9); null while there is none.
  */
 @Immutable
 data class ChatUiState(
@@ -63,6 +65,7 @@ data class ChatUiState(
     val selection: MessageSelection? = null,
     val report: ReportSheet? = null,
     val mediaDownloads: MediaDownloads = MediaDownloads(),
+    val pinnedBar: PinnedBar? = null,
 )
 
 /**
@@ -252,6 +255,8 @@ sealed interface ChatItem {
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
      *   it was sent), shown with the time; null if it does not. TDLib gives no update as the time runs down once it is
      *   read, so the bubble shows the timer itself, not a countdown.
+     * @property thread the link to the message's thread under the bubble (`REQUIREMENTS.md` FR-C9): a channel post's
+     *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
      */
     data class Bubble(
         val id: Long,
@@ -280,6 +285,7 @@ sealed interface ChatItem {
         val canResend: Boolean = false,
         val senderUserId: Long? = null,
         val selfDestructSeconds: Int? = null,
+        val thread: ThreadLink? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -399,6 +405,17 @@ data class ReplyQuote(
 ) {
     override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, …)"
 }
+
+/**
+ * The button under a bubble that opens the thread of message [messageId]: "12 comments" ([isComments], a channel post;
+ * "Leave a comment" while [count] is 0) or "3 replies".
+ */
+@Immutable
+data class ThreadLink(
+    val messageId: Long,
+    val count: Int,
+    val isComments: Boolean,
+)
 
 /** The preview of a link in a message's text; each text may be empty. */
 @Immutable

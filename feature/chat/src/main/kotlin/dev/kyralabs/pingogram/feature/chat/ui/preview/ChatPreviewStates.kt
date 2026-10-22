@@ -10,7 +10,11 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
             sequenceOf(
                 privateChat,
                 groupChat,
+                PinnedPreviewData.privateWithPin,
+                PinnedPreviewData.groupWithPins,
                 channel,
+                ThreadPreviewData.channelWithComments,
+                ThreadPreviewData.comments,
                 SponsoredPreviewData.channel,
                 serviceMessages,
                 formattedText,

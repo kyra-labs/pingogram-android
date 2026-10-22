@@ -37,6 +37,7 @@ internal fun bubbleDescription(
             bubble.selfDestructSeconds?.let {
                 resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
             },
+            bubble.thread?.let { threadLinkText(resources, it) },
         ).filter(String::isNotBlank).joinToString(", ")
     val status = bubble.status?.let { resources.getString(it.spoken) }
     return if (status != null) {

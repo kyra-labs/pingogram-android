@@ -40,6 +40,8 @@ data class Message(
     /** Null if the message does not self-destruct once opened. */
     val selfDestruct: SelfDestruct?,
     val content: MessageContent,
+    /** The forum topic or message thread the message is in; null for neither. */
+    val topic: MessageTopic? = null,
 )
 
 /** Who sent a message: a user, or a chat (a channel, or a group's anonymous admins). */

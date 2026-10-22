@@ -4,10 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 
-/** The sheets [viewModel] shows over the conversation: forwarding, send-as, and a secret chat's timer and key. */
+/**
+ * The sheets [viewModel] shows over the conversation: forwarding, send-as, a secret chat's timer and key, and the
+ * pinned messages.
+ */
 @Composable
 internal fun ChatSheets(viewModel: ChatViewModel) {
     val forwardSheet by viewModel.forwardSheet.collectAsStateWithLifecycle()
@@ -16,4 +20,6 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     sendAsSheet?.let { SendAsBottomSheet(it, viewModel::onEvent) }
     val secretChatSheet by viewModel.secretChatSheet.collectAsStateWithLifecycle()
     secretChatSheet?.let { SecretChatBottomSheet(it, viewModel::onEvent) }
+    val pinnedSheet by viewModel.pinnedSheet.collectAsStateWithLifecycle()
+    pinnedSheet?.let { PinnedMessagesSheet(it, viewModel::onEvent) }
 }

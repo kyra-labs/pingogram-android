@@ -158,6 +158,47 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecureWindow` (requests counted in `SecureWindowRequests`, `LocalSecureWindow`), which `ChatRoute` does for a secret
   chat and `MediaViewerRoute` for its media; `MainActivity` keeps `FLAG_SECURE` while the lock or any screen needs it, in
   its one `SecureWindowEffect`, so neither clears the flag the other set.
+- **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
+  no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
+  (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then
+  follows `updateMessageIsPinned` (a new pin fetched with `getMessage`), `updateDeleteMessages`, `updateMessageContent`
+  and `updateMessageEdited`. `HiddenPinsRepository` (`DataStoreHiddenPinsRepository`, the settings file) keeps, per chat,
+  the newest pin when a member who may not unpin hid the bar, which returns with a newer pin. `feature:chat`'s
+  `ChatPinnedMessages` (a part of `ChatViewModel`, given both through `ThreadRepositories`) maps the bar
+  (`ChatUiState.pinnedBar`), cycles through the pins as taps show each in the list (`ChatWindow.showMessage`, the jump of
+  a reply quote), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
+  hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Forum topics** (FR-C9): a message's `topic` (`MessageTopic`, `core:domain`: a forum topic or a message thread) comes
+  from td_api.tl `message.topic_id`; `SendOptions.topic` sends into one (`sendMessage.topic_id`, every kind of message).
+  `MessageRepository` keeps a history per `HistoryKey` (a chat, or one of its topics): a topic's pages come from
+  `getForumTopicHistory` (a thread's from `getMessageThreadHistory`), its newest message from `getForumTopic`, and a new
+  message joins the windows of the topics it is in (`HistoryKey.holds`; General also takes messages without a topic).
+  `ForumTopicRepository` (`TdlibForumTopicRepository`, `core:data`: an `UpdateStore` of the forums someone observes,
+  dropped with their last observer, so no `TdlibUpdateCache`) pages `getForumTopics`, follows `updateForumTopicInfo`,
+  `updateForumTopic` and new messages, and fetches a topic again (`getForumTopic`) where no update says all (its unread
+  count). `feature:chat`: `ChatRoute` decides what a chat opens to (`ChatOpeningViewModel`: a supergroup's `isForum` from
+  `GroupRepository`), drawing the conversation's first frame meanwhile: the conversation (`ConversationRoute`), a
+  forum's topic list (`ForumTopicsRoute`, `ForumTopicsViewModel`), or for a message found in a forum the conversation of
+  its topic. `ChatRoute(chatId, topicId)` of `core:navigation` is a topic's conversation: `ChatViewModel` with a
+  `MessageTopic`, whose `ChatThread` scopes the repositories to it (`TopicMessageRepository`, `TopicAttachmentRepository`,
+  `TopicVoiceNoteRepository`, `TopicChatRepository` for `viewMessages` from the topic's history), reads the chat as the
+  topic (unread count, read state; no draft, which topics keep apart and the composer does not sync yet), and puts the
+  topic's name in the header and a closed topic's label in the composer. A topic tapped in the list is pushed above it
+  (`chatScreen`'s `onOpenThread`); in the Chats tab's detail pane it takes the pane's place (`ChatPane`'s saved stack of
+  topics and threads, shared axis X, back returning to the list). Creating, editing and closing topics come later.
+- **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
+  others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
+  `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a
+  discussion group, "3 replies" once there are some). `MessageThreadRepository` (`core:domain`,
+  `TdlibMessageThreadRepository` in `core:data`, no cache) asks `getMessageThread`: the thread's chat (the discussion
+  group), its id, the messages that start it (its head: the post as the group has it) and its read state. Tapping the
+  link (`ChatEvent.OpenThread`, `ChatThread.open`) opens `ChatRoute(chatId, threadId = …)` of the discussion group,
+  pushed or in the detail pane like a topic. Its conversation is `ChatViewModel` with `MessageTopic.Thread`: the replies
+  from `getMessageThreadHistory`, with the head as their oldest messages once the history reaches the start (without
+  its link), everything sent into the thread (`sendMessage.topic_id`), the chat's name over "12 comments" in the top
+  bar, the thread's unread count and read state as they were when it opened, and a composer for anyone where the group
+  does not ask to join first (`supergroup.join_to_send_messages`). A thread that cannot be fetched shows its error, and
+  "Try again" asks again.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

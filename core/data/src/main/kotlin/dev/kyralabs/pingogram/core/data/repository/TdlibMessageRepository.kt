@@ -7,10 +7,12 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
+import dev.kyralabs.pingogram.core.data.mapper.toTdMessageTopic
 import dev.kyralabs.pingogram.core.data.repository.HistoryPage.Kind
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -32,8 +34,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [MessageRepository] on TDLib's chat history. Each chat someone observes, or loaded recently, has a window of loaded
- * messages ([HistoryCache]) that TDLib's updates keep current; [history] counts its collectors, so observed windows are
+ * [MessageRepository] on TDLib's chat history. Each history someone observes, or loaded recently (a chat's, or one of
+ * its forum topics' or message threads', [HistoryKey]), has a window of loaded messages ([HistoryCache]) that TDLib's
+ * updates keep current; [history] counts its collectors, so observed windows are
  * never evicted, and [trimMemory] drops the others.
  *
  * Loads ask TDLib for a page ([HistoryPages]) as `docs/PERFORMANCE.md` §3 says: first only what TDLib has locally,
@@ -65,51 +68,67 @@ class TdlibMessageRepository
 
         private val pages = HistoryPages(client)
 
-        override fun history(chatId: Long): Flow<ChatHistory> =
+        override fun history(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Flow<ChatHistory> =
             flow {
-                store.update { cache -> cache.observing(chatId) }
+                val key = HistoryKey(chatId, topic)
+                store.update { cache -> cache.observing(key) }
                 try {
-                    emitAll(store.state.mapNotNull { cache -> cache.windows[chatId]?.history }.distinctUntilChanged())
+                    emitAll(store.state.mapNotNull { cache -> cache.windows[key]?.history }.distinctUntilChanged())
                 } finally {
-                    store.update { cache -> cache.releasing(chatId) }
+                    store.update { cache -> cache.releasing(key) }
                 }
             }
 
-        override suspend fun loadOlder(chatId: Long): Outcome<Unit> =
-            loads.load(LoadKey(chatId, LoadKind.Older)) { window ->
+        override suspend fun loadOlder(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val key = HistoryKey(chatId, topic)
+            return loads.load(LoadKey(key, LoadKind.Older)) { window ->
                 val oldestId = window.messages.lastOrNull()?.id
                 when {
                     window.reachedStart -> Outcome.Success(null)
-                    oldestId == null -> pages.newest(chatId)
-                    else -> pages.older(chatId, oldestId)
+                    oldestId == null -> pages.newest(key)
+                    else -> pages.older(key, oldestId)
                 }
             }
+        }
 
-        override suspend fun loadNewer(chatId: Long): Outcome<Unit> =
-            loads.load(LoadKey(chatId, LoadKind.Newer)) { window ->
+        override suspend fun loadNewer(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val key = HistoryKey(chatId, topic)
+            return loads.load(LoadKey(key, LoadKind.Newer)) { window ->
                 val newestId = window.messages.firstOrNull()?.id
-                if (window.reachedEnd || newestId == null) Outcome.Success(null) else pages.newer(chatId, newestId)
+                if (window.reachedEnd || newestId == null) Outcome.Success(null) else pages.newer(key, newestId)
             }
+        }
 
         override suspend fun loadAround(
             chatId: Long,
             messageId: Long,
-        ): Outcome<Unit> =
-            loads.load(LoadKey(chatId, LoadKind.Around, messageId)) { window ->
-                if (window.messages.indexOfId(messageId) >=
-                    0
-                ) {
-                    Outcome.Success(null)
-                } else {
-                    pages.around(chatId, messageId)
-                }
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val key = HistoryKey(chatId, topic)
+            return loads.load(LoadKey(key, LoadKind.Around, messageId)) { window ->
+                if (window.messages.indexOfId(messageId) >= 0) Outcome.Success(null) else pages.around(key, messageId)
             }
+        }
 
-        override suspend fun loadNewest(chatId: Long): Outcome<Unit> =
-            loads.load(LoadKey(chatId, LoadKind.Newest)) { window ->
+        override suspend fun loadNewest(
+            chatId: Long,
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val key = HistoryKey(chatId, topic)
+            return loads.load(LoadKey(key, LoadKind.Newest)) { window ->
                 val reachesNewest = window.reachedEnd && (window.messages.isNotEmpty() || window.reachedStart)
-                if (reachesNewest) Outcome.Success(null) else pages.newest(chatId)
+                if (reachesNewest) Outcome.Success(null) else pages.newest(key)
             }
+        }
 
         /**
          * The replied message from the chat's window, loaded or kept there, else `getRepliedMessage`, whose answer the
@@ -120,8 +139,9 @@ class TdlibMessageRepository
             chatId: Long,
             messageId: Long,
         ): Outcome<Message> {
-            store.state.value.windows[chatId]
-                ?.repliedTo(messageId)
+            store.state.value
+                .windowsOf(chatId)
+                .firstNotNullOfOrNull { it.repliedTo(messageId) }
                 ?.let { return Outcome.Success(it) }
             val replied = client.request(TdApi.GetRepliedMessage(chatId, messageId)).map { it.toMessage() }
             replied.onSuccess { message -> store.update { cache -> cache.keepingReplied(chatId, message) } }
@@ -133,8 +153,9 @@ class TdlibMessageRepository
             chatId: Long,
             messageId: Long,
         ): Outcome<Message> {
-            store.state.value.windows[chatId]
-                ?.message(messageId)
+            store.state.value
+                .windowsOf(chatId)
+                .firstNotNullOfOrNull { it.message(messageId) }
                 ?.let { return Outcome.Success(it) }
             return client.request(TdApi.GetMessage(chatId, messageId)).map { it.toMessage() }
         }
@@ -143,9 +164,9 @@ class TdlibMessageRepository
 
         /**
          * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview and
-         * [options]' notification and scheduling, replying to [replyToMessageId] of the chat itself without a quote.
-         * TDLib puts the message into the chat as being sent (`updateNewMessage`) before it answers, so the window
-         * shows it at once (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or
+         * [options]' notification, scheduling and topic, replying to [replyToMessageId] of the chat itself without a
+         * quote. TDLib puts the message into the chat as being sent (`updateNewMessage`) before it answers, so the
+         * window shows it at once (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or
          * `updateMessageSendFailed` replace it. The answer itself is not applied: the update has it.
          */
         override suspend fun sendText(
@@ -157,7 +178,7 @@ class TdlibMessageRepository
             val content = TdApi.InputMessageText(text.toTdFormattedText(), null, true)
             val replyTo = replyToMessageId?.let(::replyToMessage)
             return client
-                .request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content))
+                .request(TdApi.SendMessage(chatId, options.tdTopic(), replyTo, options.toTdOptions(), null, content))
                 .map {}
         }
 
@@ -192,6 +213,9 @@ class TdlibMessageRepository
  * no checklist task, no poll option).
  */
 internal fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
+
+/** The forum topic or message thread the message goes into (td_api.tl `sendMessage.topic_id`); null for the chat. */
+internal fun SendOptions.tdTopic(): TdApi.MessageTopic? = topic?.toTdMessageTopic()
 
 /**
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
@@ -56,6 +57,10 @@ abstract class ChatViewModelHarness {
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     protected val autoDownloads = FakeAutoDownloadPolicy()
+    protected val pinnedMessages = FakePinnedMessageRepository()
+    protected val hiddenPins = FakeHiddenPinsRepository()
+    protected val forumTopics = FakeForumTopicRepository()
+    protected val threads = FakeMessageThreadRepository()
     protected val shareInbox = ShareInbox()
 
     /** Every message logged, in order. */
@@ -74,18 +79,22 @@ abstract class ChatViewModelHarness {
         Dispatchers.resetMain()
     }
 
-    /** A view model of [chatId], opened at [messageId] if not null, whose state is collected, as by the screen. */
+    /**
+     * A view model of [chatId] (of its forum topic or message thread [topic], if not null), opened at [messageId] if
+     * not null, whose state is collected, as by the screen.
+     */
     protected fun TestScope.viewModel(
         chatId: Long = ChatFixtures.PRIVATE_CHAT,
         handle: SavedStateHandle = savedState,
         messageId: Long? = null,
+        topic: MessageTopic? = null,
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
                 chatId = chatId,
                 savedStateHandle = handle,
                 chatRepository = chats,
-                messageRepository = messages,
+                messages = messages,
                 messageActionRepository = messageActions,
                 sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
@@ -105,10 +114,12 @@ abstract class ChatViewModelHarness {
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
+                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
                 shareInbox = shareInbox,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },
+                topic = topic,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

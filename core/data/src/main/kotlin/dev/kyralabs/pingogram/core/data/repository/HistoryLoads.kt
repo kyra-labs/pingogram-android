@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.repository.HistoryPage.Kind
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Runs the loads of [TdlibMessageRepository] on the windows of [store]: one load of a chat at a time ([chatLocks]),
+ * Runs the loads of [TdlibMessageRepository] on the windows of [store]: one load of a history at a time ([chatLocks]),
  * each owning the window's [HistoryWindow.loadId] until it ends, so the changes that arrive meanwhile are applied again
  * to its page; and every caller that asks for a load while it runs or waits shares it ([loads]). Loads run in [scope],
  * the application's, so a caller that leaves does not cancel one for the others waiting for it, and it still ends up in
@@ -31,14 +32,14 @@ internal class HistoryLoads(
     /** The loads running or waiting, which concurrent calls of the same load share. */
     private val loads = ConcurrentHashMap<LoadKey, Deferred<Outcome<Unit>>>()
 
-    /** One load of a chat at a time. */
-    private val chatLocks = ConcurrentHashMap<Long, Mutex>()
+    /** One load of a history at a time. */
+    private val chatLocks = ConcurrentHashMap<HistoryKey, Mutex>()
 
     /** Tells loads apart, across evictions and TDLib restarts. */
     private val loadIds = AtomicLong()
 
     /**
-     * Runs load [key] once for every caller that asks while it runs or waits, after the other loads of its chat,
+     * Runs load [key] once for every caller that asks while it runs or waits, after the other loads of its history,
      * merging the page [fetch] answers for the window: null when there is nothing to load. Nothing if the window is
      * evicted at once (while three other chats are observed).
      */
@@ -51,7 +52,7 @@ internal class HistoryLoads(
                 // Lazy, so it cannot finish, and remove itself, before it is in the map.
                 scope.async(start = CoroutineStart.LAZY) {
                     try {
-                        chatLocks.computeIfAbsent(key.chatId) { Mutex() }.withLock { loadPage(key.chatId, fetch) }
+                        chatLocks.computeIfAbsent(key.history) { Mutex() }.withLock { loadPage(key.history, fetch) }
                     } finally {
                         loads.remove(key)
                     }
@@ -62,21 +63,21 @@ internal class HistoryLoads(
     }
 
     private suspend fun loadPage(
-        chatId: Long,
+        history: HistoryKey,
         fetch: suspend (HistoryWindow) -> Outcome<HistoryPage?>,
     ): Outcome<Unit> {
         val loadId = loadIds.incrementAndGet()
-        store.update { cache -> cache.startingLoad(chatId, loadId) }
+        store.update { cache -> cache.startingLoad(history, loadId) }
         val window =
-            store.state.value.windows[chatId]
+            store.state.value.windows[history]
                 ?.takeIf { it.loadId == loadId }
         val page = if (window == null) Outcome.Success(null) else fetch(window)
-        store.update { cache -> cache.finishingLoad(chatId, loadId, page.getOrNull()) }
+        store.update { cache -> cache.finishingLoad(history, loadId, page.getOrNull()) }
         return page.map {}
     }
 }
 
-/** What a load does, which with the chat (and the message of [LoadKind.Around]) tells loads to share apart. */
+/** What a load does, which with the history (and the message of [LoadKind.Around]) tells loads to share apart. */
 internal enum class LoadKind {
     Older,
     Newer,
@@ -85,15 +86,17 @@ internal enum class LoadKind {
 }
 
 internal data class LoadKey(
-    val chatId: Long,
+    val history: HistoryKey,
     val kind: LoadKind,
     val messageId: Long = 0,
 )
 
 /**
- * The pages of a chat's history as TDLib answers them (`getChatHistory`), as `docs/PERFORMANCE.md` §3 says: first
- * only what TDLib has locally, then, when that is not enough, from the server. Whether a page reaches the chat's newest
- * message comes from the chat's last message (`getChat`, which TDLib answers from memory).
+ * The pages of a history as TDLib answers them, as `docs/PERFORMANCE.md` §3 says: a chat's (`getChatHistory`) first
+ * only what TDLib has locally, then, when that is not enough, from the server; a forum topic's
+ * (`getForumTopicHistory`) and a message thread's (`getMessageThreadHistory`), which TDLib cannot answer locally only,
+ * as TDLib answers them. Whether a page reaches the newest message comes from the last message of the chat (`getChat`,
+ * which TDLib answers from memory), of the topic (`getForumTopic`) or of the thread (`getMessageThread`).
  */
 internal class HistoryPages(
     private val client: TdlibClient,
@@ -102,8 +105,8 @@ internal class HistoryPages(
      * The newest messages, replacing the window: those TDLib has locally, else the server's, where none means that the
      * chat has none.
      */
-    suspend fun newest(chatId: Long): Outcome<HistoryPage> =
-        localFirst(chatId, fromMessageId = 0, offset = 0, accept = { it.isNotEmpty() })
+    suspend fun newest(key: HistoryKey): Outcome<HistoryPage> =
+        localFirst(key, fromMessageId = 0, offset = 0, accept = { it.isNotEmpty() })
             .map { (messages, local) ->
                 val reachedStart = !local && messages.isEmpty()
                 HistoryPage(messages, Kind.Replacing, reachedStart = reachedStart, reachedEnd = true)
@@ -114,11 +117,11 @@ internal class HistoryPages(
      * messages than asked although there are more; only none from the server means that there are none.
      */
     suspend fun older(
-        chatId: Long,
+        key: HistoryKey,
         fromMessageId: Long,
     ): Outcome<HistoryPage> =
         // Offset 0: from fromMessageId itself on, which is loaded already.
-        localFirst(chatId, fromMessageId, offset = 0, accept = { page -> page.any { it.id < fromMessageId } })
+        localFirst(key, fromMessageId, offset = 0, accept = { page -> page.any { it.id < fromMessageId } })
             .map { (messages, local) ->
                 val older = messages.filter { it.id < fromMessageId }
                 HistoryPage(older, Kind.Older, reachedStart = !local && older.isEmpty())
@@ -129,12 +132,12 @@ internal class HistoryPages(
      * newest message when they include the chat's last one, or when the server has none.
      */
     suspend fun newer(
-        chatId: Long,
+        key: HistoryKey,
         fromMessageId: Long,
     ): Outcome<HistoryPage> {
-        val lastMessageId = lastMessageId(chatId)
+        val lastMessageId = lastMessageId(key)
         return localFirst(
-            chatId,
+            key,
             fromMessageId,
             offset = -PAGE_SIZE,
             accept = { page -> page.any { it.id > fromMessageId } },
@@ -151,14 +154,14 @@ internal class HistoryPages(
      * last one; the start only when the server has no messages there at all (an empty chat).
      */
     suspend fun around(
-        chatId: Long,
+        key: HistoryKey,
         messageId: Long,
     ): Outcome<HistoryPage> {
-        val lastMessageId = lastMessageId(chatId)
+        val lastMessageId = lastMessageId(key)
         val spans = { page: List<Message> ->
             page.any { it.id == messageId } || (page.any { it.id < messageId } && page.any { it.id > messageId })
         }
-        return localFirst(chatId, messageId, offset = -AROUND_NEWER, accept = spans)
+        return localFirst(key, messageId, offset = -AROUND_NEWER, accept = spans)
             .map { (messages, local) ->
                 val empty = !local && messages.isEmpty()
                 val reachedEnd = empty || messages.reaches(lastMessageId)
@@ -167,41 +170,79 @@ internal class HistoryPages(
     }
 
     /**
-     * `getChatHistory` from [fromMessageId] with [offset], first only what TDLib has locally, then, unless [accept]
-     * takes that, from the server; with whether the answer is the local one.
+     * The history from [fromMessageId] with [offset]: a chat's first only what TDLib has locally, then, unless [accept]
+     * takes that, from the server; a topic's as TDLib answers; with whether the answer is the local one.
      */
     private suspend fun localFirst(
-        chatId: Long,
+        key: HistoryKey,
         fromMessageId: Long,
         offset: Int,
         accept: (List<Message>) -> Boolean,
     ): Outcome<Pair<List<Message>, Boolean>> {
-        val local = fetch(chatId, fromMessageId, offset, onlyLocal = true)
-        if (local !is Outcome.Success || accept(local.value)) return local.map { it to true }
-        return fetch(chatId, fromMessageId, offset, onlyLocal = false).map { it to false }
+        // A topic's history comes as TDLib has it, local or not.
+        val local = if (key.topic == null) fetch(key, fromMessageId, offset, onlyLocal = true) else null
+        return if (local != null && (local !is Outcome.Success || accept(local.value))) {
+            local.map { it to true }
+        } else {
+            fetch(key, fromMessageId, offset, onlyLocal = false).map { it to false }
+        }
     }
 
     /**
-     * Up to a page of messages from [fromMessageId] (0: the newest) on, -[offset] of them newer than it. td_api.tl
-     * allows null entries in the list.
+     * Up to a page of messages from [fromMessageId] (0: the newest) on, -[offset] of them newer than it, those the
+     * history holds ([HistoryKey.holds]). td_api.tl allows null entries in the list.
      */
     private suspend fun fetch(
-        chatId: Long,
+        key: HistoryKey,
         fromMessageId: Long,
         offset: Int,
         onlyLocal: Boolean,
-    ): Outcome<List<Message>> =
-        client.request(TdApi.GetChatHistory(chatId, fromMessageId, offset, PAGE_SIZE, onlyLocal)).map { messages ->
-            messages.messages.filterNotNull().map { it.toMessage() }
+    ): Outcome<List<Message>> {
+        val request =
+            when (val topic = key.topic) {
+                null -> {
+                    TdApi.GetChatHistory(key.chatId, fromMessageId, offset, PAGE_SIZE, onlyLocal)
+                }
+
+                is MessageTopic.Forum -> {
+                    TdApi.GetForumTopicHistory(key.chatId, topic.topicId, fromMessageId, offset, PAGE_SIZE)
+                }
+
+                is MessageTopic.Thread -> {
+                    TdApi.GetMessageThreadHistory(key.chatId, topic.threadId, fromMessageId, offset, PAGE_SIZE)
+                }
+            }
+        return client.request(request).map { messages ->
+            messages.messages
+                .filterNotNull()
+                .map { it.toMessage() }
+                .filter(key::holds)
         }
+    }
 
     /**
-     * The id of the chat's last message, from TDLib's memory; 0 when it has none, and [UNKNOWN_LAST_MESSAGE] when the
-     * chat cannot be fetched, which no page reaches: a newer page from the server then tells.
+     * The id of the last message of the history, from TDLib's memory where it has it: the chat's, the topic's or the
+     * thread's last reply; 0 when it has none, and [UNKNOWN_LAST_MESSAGE] when it cannot be fetched, which no page
+     * reaches: a newer page from the server then tells.
      */
-    private suspend fun lastMessageId(chatId: Long): Long {
-        val chat = client.request(TdApi.GetChat(chatId)).getOrNull() ?: return UNKNOWN_LAST_MESSAGE
-        return chat.lastMessage?.id ?: 0
+    private suspend fun lastMessageId(key: HistoryKey): Long {
+        val lastId =
+            when (val topic = key.topic) {
+                null -> {
+                    client.request(TdApi.GetChat(key.chatId)).map { it.lastMessage?.id ?: 0 }
+                }
+
+                is MessageTopic.Forum -> {
+                    client.request(TdApi.GetForumTopic(key.chatId, topic.topicId)).map { it.lastMessage?.id ?: 0 }
+                }
+
+                is MessageTopic.Thread -> {
+                    client
+                        .request(TdApi.GetMessageThread(key.chatId, topic.threadId))
+                        .map { it.replyInfo?.lastMessageId ?: 0 }
+                }
+            }
+        return lastId.getOrNull() ?: UNKNOWN_LAST_MESSAGE
     }
 }
 

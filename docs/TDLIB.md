@@ -189,7 +189,8 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 `updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`, `updateHavePendingNotifications`,
 `updateUnreadMessageCount`, `updateUnreadChatCount`, `updateScopeNotificationSettings`,
 `updateDefaultReactionType`, `updateAvailableMessageEffects`, `updateStickerSet`,
-`updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`.
+`updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`, `updateMessageIsPinned` (pinned
+messages), `updateForumTopicInfo`, `updateForumTopic` (forum topics, while a forum is observed).
 
 Unknown updates are ignored but counted in debug logs.
 

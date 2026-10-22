@@ -55,6 +55,11 @@ sealed interface ChatEvent {
     /** "Try again" after finding the chat or loading messages failed. */
     data object Retry : ChatEvent
 
+    /** A bubble's "12 comments" or "3 replies" was tapped: open the thread of message [messageId] of this chat. */
+    data class OpenThread(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** A hidden spoiler in message [messageId] was tapped: every spoiler of its text shows. */
     data class RevealSpoilers(
         val messageId: Long,

@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
@@ -59,6 +60,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.secret.ChatSecretChat
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatSheet
@@ -67,6 +69,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsChoice
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.share.ChatShares
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.thread.ChatThread
+import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
+import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
+import dev.kyralabs.pingogram.feature.chat.ui.thread.header
+import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -181,6 +188,11 @@ import java.util.Locale
  * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
  *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
  *   [uiState] like the forward sheet).
+ * - **Forum topics** ([ChatThread], `REQUIREMENTS.md` FR-C9): with a [topic], the conversation is that topic's: its
+ *   history, what is sent goes into it, its name in the header, its unread state, and its pins.
+ * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
+ *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
+ *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -207,7 +219,7 @@ class ChatViewModel internal constructor(
     private val chatId: Long,
     private val savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository,
-    private val messageRepository: MessageRepository,
+    messages: MessageRepository,
     messageActionRepository: MessageActionRepository,
     sponsoredMessageRepository: SponsoredMessageRepository,
     attachmentRepository: AttachmentRepository,
@@ -227,17 +239,19 @@ class ChatViewModel internal constructor(
     sendAsRepository: SendAsRepository,
     secretChatRepository: SecretChatRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
+    threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
+    topic: MessageTopic? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
         @Assisted("chatId") chatId: Long,
         savedStateHandle: SavedStateHandle,
         chatRepository: ChatRepository,
-        messageRepository: MessageRepository,
+        messages: MessageRepository,
         messageActionRepository: MessageActionRepository,
         sponsoredMessageRepository: SponsoredMessageRepository,
         attachmentRepository: AttachmentRepository,
@@ -256,13 +270,15 @@ class ChatViewModel internal constructor(
         sendAsRepository: SendAsRepository,
         secretChatRepository: SecretChatRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
+        threadRepositories: ThreadRepositories,
         shareInbox: ShareInbox,
         @Assisted("messageId") messageId: Long? = null,
+        @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
         chatId,
         savedStateHandle,
         chatRepository,
-        messageRepository,
+        messages,
         messageActionRepository,
         sponsoredMessageRepository,
         attachmentRepository,
@@ -282,22 +298,35 @@ class ChatViewModel internal constructor(
         sendAsRepository,
         secretChatRepository,
         autoDownloadPolicy,
+        threadRepositories,
         shareInbox,
         AndroidChatLog,
         messageId,
+        topic = topic,
     )
 
-    /** Creates the view model of chat `chatId`'s conversation, opened at message `messageId` if not null. */
+    /**
+     * Creates the view model of chat `chatId`'s conversation, opened at message `messageId` if not null, of its forum
+     * topic or message thread `topic` if not null.
+     */
     @AssistedFactory
     interface Factory {
         fun create(
             @Assisted("chatId") chatId: Long,
             @Assisted("messageId") messageId: Long?,
+            @Assisted("topic") topic: MessageTopic?,
         ): ChatViewModel
     }
 
     /** Each retry of finding the chat starts it again. */
     private val chatAttempts = MutableStateFlow(0)
+
+    /** Whether the conversation shows the whole chat, a forum topic or a message thread, and what that changes. */
+    private val thread =
+        ChatThread(chatId, topic, threadRepositories, chatAttempts, viewModelScope) { effectChannel.trySend(it) }
+
+    /** The history and the texts sent: the topic's, in a topic's conversation. */
+    private val messageRepository: MessageRepository = thread.messages(messages)
 
     /** The replied messages fetched for messages whose replied message is not loaded, by replying message id. */
     private val replies = MutableStateFlow<PersistentMap<Long, ReplyState>>(persistentMapOf())
@@ -331,7 +360,7 @@ class ChatViewModel internal constructor(
 
     private val autoDownloads = ChatAutoDownloads(fileRepository, files, autoDownloadPolicy.rules, viewModelScope)
 
-    private val views = MessageViews(chatId, chatRepository, viewModelScope, log)
+    private val views = MessageViews(chatId, thread.chats(chatRepository), viewModelScope, log)
 
     private val mentions = ChatMentions(searchRepository, viewModelScope) { effectChannel.trySend(it) }
 
@@ -363,12 +392,7 @@ class ChatViewModel internal constructor(
             actions = messageActionRepository,
             savedState = savedStateHandle,
             scope = viewModelScope,
-            drafts =
-                chatRepository
-                    .chat(chatId)
-                    .filterNotNull()
-                    .map { it.draft }
-                    .distinctUntilChanged(),
+            drafts = thread.drafts(chatRepository.chat(chatId)),
             messageOf = { id ->
                 history.replayCache
                     .firstOrNull()
@@ -382,7 +406,7 @@ class ChatViewModel internal constructor(
     private val attachments =
         ChatAttachments(
             chatId = chatId,
-            repository = attachmentRepository,
+            repository = thread.attachments(attachmentRepository),
             savedState = savedStateHandle,
             scope = viewModelScope,
             replies = composer,
@@ -393,7 +417,7 @@ class ChatViewModel internal constructor(
         ChatRecorder(
             chatId = chatId,
             recorder = voiceRecorder,
-            repository = voiceNoteRepository,
+            repository = thread.voiceNotes(voiceNoteRepository),
             scope = viewModelScope,
             replies = composer,
             clock = recordingClock,
@@ -544,7 +568,8 @@ class ChatViewModel internal constructor(
                         }
                     }
                 }
-            }.distinctUntilChanged()
+            }.combine(thread.state, ::inThread)
+            .distinctUntilChanged()
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
     private val history: SharedFlow<ChatHistory> =
@@ -618,6 +643,7 @@ class ChatViewModel internal constructor(
             group,
             chatActionRepository.actions(chatId),
             savedStateHandle.getStateFlow<Long?>(KEY_UNREAD_AFTER, null),
+            thread.state,
             ::ChatSources,
         )
 
@@ -631,6 +657,17 @@ class ChatViewModel internal constructor(
 
     private val people: Flow<ChatPeople> =
         combine(userRepository.users, userRepository.myUserId, referencedChats, ::ChatPeople)
+
+    private val pinned =
+        thread.pinnedMessages(
+            actions = messageActionRepository,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            people = people,
+            onShow = window::showMessage,
+        )
+
+    /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
+    val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
 
     /**
      * What shows over the conversation: the composer's mode, with the message its bar shows fetched when it is not
@@ -660,6 +697,7 @@ class ChatViewModel internal constructor(
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
             .combine(sendAs.button) { state, sendAs -> state.withSendAs(sendAs) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
+            .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -691,6 +729,7 @@ class ChatViewModel internal constructor(
             ChatEvent.ShowNewest -> window.showNewest()
             is ChatEvent.MessagesVisible -> onMessagesVisible(event.messageIds)
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
+            is ChatEvent.OpenThread -> thread.open(event.messageId)
             ChatEvent.Retry -> retry()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.ToggleTime -> shownTimes.update { it.toggling(event.messageId) }
@@ -712,6 +751,7 @@ class ChatViewModel internal constructor(
             is VoiceEvent -> recorder.onEvent(event)
             is SendAsEvent -> sendAs.onEvent(event)
             is SecretChatEvent -> secret.onEvent(event)
+            is PinnedEvent -> pinned.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -880,9 +920,12 @@ class ChatViewModel internal constructor(
                 now = now,
                 timeFormatter = formatter,
             ).toHeader()
+                .let { chatSources.thread.header(it, chat) }
         val history = messages.state.history
         val user = chat.userId?.let(people.users::get)
-        val composer = composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
+        val composer =
+            composerState(chat, user, group.basicGroup, group.supergroup, group.secretChat)
+                .let { chatSources.thread.composer(it, group.supergroup) }
         val canWrite = composer is ComposerUiState.Available
         val options = attachOptions(chat, user, people.myUserId)
         val canSchedule = (composer as? ComposerUiState.Available)?.canSchedule == true
@@ -1022,7 +1065,23 @@ private class ChatSources(
     val actions: List<SenderAction>,
     /** Null until the chat was first shown. */
     val unreadAfterId: Long?,
+    val thread: ThreadState,
 )
+
+/**
+ * The chat as the conversation of [thread] shows it ([ThreadState.inThread]): pending while a forum topic is on its
+ * way, not found when the topic cannot be found.
+ */
+private fun inThread(
+    lookup: ChatLookup,
+    thread: ThreadState,
+): ChatLookup =
+    when {
+        lookup !is ChatLookup.Found -> lookup
+        thread == ThreadState.Missing -> ChatLookup.Failed(DomainError.NotFound)
+        thread is ThreadState.Failed -> ChatLookup.Failed(thread.error)
+        else -> ChatLookup.Found(thread.inThread(lookup.chat))
+    }
 
 /**
  * The basic group or supergroup of a group or channel chat, the secret chat of a secret chat; none for other chats,
