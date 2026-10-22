@@ -17,7 +17,8 @@ import java.util.Locale
  * patterns ([TimePatterns]):
  * - a message's time: "9:41 AM", or "09:41" on the 24-hour clock ([is24HourClock]);
  * - a date separator: "Today", "Yesterday", "Monday, March 17" this year, "March 17, 2024" before;
- * - "online" or "last seen" of a user, as `core:ui`'s [UserStatusFormatter] says it, which the profile shares.
+ * - "online" or "last seen" of a user, as `core:ui`'s [UserStatusFormatter] says it, which the profile shares;
+ * - the time of a forum topic's last message in the topic list: "9:41 AM" today, "Mar 17" this year, "3/17/24" before.
  *
  * Built in the ViewModel, so formatters are created once per zone, locale and clock setting. Times in the future (a
  * clock behind Telegram's) count as now. A platform pattern java.time cannot read falls back to java.time's own
@@ -34,6 +35,8 @@ internal class ChatTimeFormatter(
     private val weekdayAndDate =
         patterns.formatter("MMMMEEEEd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL) }
     private val fullDate = patterns.formatter("yMMMMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
+    private val dayAndMonth = patterns.formatter("MMMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    private val shortDate = patterns.formatter("yMd") { DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT) }
     private val userStatus = UserStatusFormatter(zone, locale, is24HourClock, patterns)
 
     /** The time of day of [epochSeconds] (Unix time). */
@@ -59,6 +62,23 @@ internal class ChatTimeFormatter(
         status: UserStatus,
         now: Instant,
     ): UiText = userStatus.status(status, now)
+
+    /**
+     * When [epochSeconds] (Unix time) was, as of [now], in a list (a forum's topics): the time today, the day and month
+     * this year, else the date.
+     */
+    fun listTime(
+        epochSeconds: Long,
+        now: Instant,
+    ): String {
+        val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+        val today = now.atZone(zone).toLocalDate()
+        return when {
+            !dateTime.toLocalDate().isBefore(today) -> time.format(dateTime)
+            dateTime.year == today.year -> dayAndMonth.format(dateTime)
+            else -> shortDate.format(dateTime)
+        }
+    }
 
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(

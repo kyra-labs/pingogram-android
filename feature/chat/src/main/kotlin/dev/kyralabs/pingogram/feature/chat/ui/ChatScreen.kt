@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -63,6 +64,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -113,6 +115,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   leaves with the keyboard. Back (predictive, the toolbar following the gesture) and the close button leave it.
  * - **Report** of messages: its sheet ([ReportMessagesSheet]) with the reasons Telegram asks for, and the comment
  *   ([reportComment]).
+ * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
+ *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
+ *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -240,7 +245,10 @@ private fun ChatScaffold(
         floatingActionButton = jumpButton,
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            ChatBody(state, onEvent, listState, bubbleResources, contentPadding)
+            Column(Modifier.fillMaxSize()) {
+                PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
+                Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
+            }
         }
     }
 }

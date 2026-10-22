@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -31,8 +32,10 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibInviteLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -66,6 +69,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -73,10 +77,12 @@ import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
+import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -135,6 +141,15 @@ interface RepositoryModule {
 
     @Binds
     fun sponsoredMessageRepository(repository: TdlibSponsoredMessageRepository): SponsoredMessageRepository
+
+    @Binds
+    fun pinnedMessageRepository(repository: TdlibPinnedMessageRepository): PinnedMessageRepository
+
+    @Binds
+    fun forumTopicRepository(repository: TdlibForumTopicRepository): ForumTopicRepository
+
+    @Binds
+    fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository
 
     @Binds
     fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository

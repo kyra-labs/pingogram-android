@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatPermissions
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.EncryptionKeyHash
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForumTopic
+import dev.kyralabs.pingogram.core.domain.model.ForumTopicIcon
 import dev.kyralabs.pingogram.core.domain.model.ForwardInfo
 import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
 import dev.kyralabs.pingogram.core.domain.model.Message
@@ -20,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -44,6 +47,7 @@ object ChatFixtures {
     const val BASIC_GROUP_ID = 8L
     const val CHANNEL_CHAT = -1_000_000_000_200L
     const val SUPERGROUP_ID = 200L
+    const val FORUM_CHAT = -1_000_000_000_300L
 
     /** 2026-10-18T09:41:30Z, a Sunday. */
     val NOW: Instant = Instant.parse("2026-10-18T09:41:30Z")
@@ -82,6 +86,43 @@ object ChatFixtures {
     )
 
     val groupChat = chat(id = GROUP_CHAT, type = ChatType.BasicGroup(BASIC_GROUP_ID), title = "Group")
+
+    /** A forum: a supergroup with topics, of [SUPERGROUP_ID]. */
+    val forumChat =
+        chat(
+            id = FORUM_CHAT,
+            type = ChatType.Supergroup(SUPERGROUP_ID, isChannel = false),
+            title = "Compose Developers",
+        )
+
+    /** Topic [id] of [forumChat], its last message [lastMessage] if not null. */
+    @Suppress("LongParameterList") // Every field a test sets, all with defaults.
+    fun forumTopic(
+        id: Int,
+        name: String = "Topic $id",
+        isClosed: Boolean = false,
+        isPinned: Boolean = false,
+        isGeneral: Boolean = false,
+        unreadCount: Int = 0,
+        lastMessage: Message? = null,
+        lastReadInboxMessageId: Long = 0,
+        color: TopicColor = TopicColor.Blue,
+    ) = ForumTopic(
+        chatId = FORUM_CHAT,
+        id = id,
+        name = name,
+        icon = ForumTopicIcon(color, customEmojiId = 0),
+        isGeneral = isGeneral,
+        isClosed = isClosed,
+        isHidden = false,
+        isPinned = isPinned,
+        lastMessage = lastMessage,
+        order = 0,
+        unreadCount = unreadCount,
+        unreadMentionCount = 0,
+        lastReadInboxMessageId = lastReadInboxMessageId,
+        lastReadOutboxMessageId = 0,
+    )
 
     val channelChat =
         chat(id = CHANNEL_CHAT, type = ChatType.Supergroup(SUPERGROUP_ID, isChannel = true), title = "Channel")
@@ -201,13 +242,14 @@ object ChatFixtures {
         memberCount: Int,
         isChannel: Boolean = true,
         status: ChatMemberStatus = ChatMemberStatus.Member,
+        isForum: Boolean = false,
     ) = Supergroup(
         id = SUPERGROUP_ID,
         usernames = persistentListOf(),
         memberCount = memberCount,
         status = status,
         isChannel = isChannel,
-        isForum = false,
+        isForum = isForum,
         isVerified = false,
         isScam = false,
         isFake = false,

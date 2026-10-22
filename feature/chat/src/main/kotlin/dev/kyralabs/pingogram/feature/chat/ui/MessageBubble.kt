@@ -217,9 +217,9 @@ internal fun BubbleRowContent(
 }
 
 /**
- * The screen reader's custom actions of [bubble], sending their events: [replyAction], [contentActions],
- * [messageShortcuts], a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
- * selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
+ * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
+ * [contentActions], [messageShortcuts], a toggle per reaction but the paid one, all reactions where the bubble shows
+ * "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -239,7 +239,7 @@ private fun bubbleActions(
         true
     }
     val fixed =
-        listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble)) +
+        listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble), threadAction(bubble)) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
     val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =

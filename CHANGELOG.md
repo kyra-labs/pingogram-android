@@ -71,6 +71,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   you are signed out opens once you've logged in, and one opened while the app is locked after you unlock it. On
   Android 12 and later, Settings → About → "Open Telegram links" lets Pingogram open `t.me` links instead of the
   browser.
+- Pinned messages bar: a chat with pinned messages shows the pinned one at the top of the conversation, with "2 of 5"
+  where there are several. Tap it to jump to the message; each tap then moves on to the next older pin. The list button
+  shows them all, and the close button unpins the message if you may, or hides the bar until something new is pinned.
+- Forum topics: groups with topics open their list of topics, General first, then pinned ones and the most recent,
+  each with its icon, its last message, the time and its unread messages and mentions; closed topics show a lock.
+  Opening a topic shows its messages, and what you send goes there; closed topics say that only admins can write.
+  On tablets the topic opens in place of the list beside the chats, and Back returns to the topics.
+- Comments: channel posts show "12 comments" (or "Leave a comment") under them where the channel has a discussion
+  group, and group messages show "3 replies" once someone replied in their thread. Tap it to read the thread, the post
+  first, and to write into it; where the group lets anyone comment, you can without joining.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so
