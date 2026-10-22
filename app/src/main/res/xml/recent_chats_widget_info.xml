@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md). Never updated on a timer
+     (updatePeriodMillis 0): RecentChatsWidgetUpdater redraws it when the chats change. 3 × 3 cells by default, resizable
+     from 2 × 2 (the target cells are Android 12's; earlier launchers use the minimum size); the initial layout is Glance's own loading layout. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:description="@string/widget_recent_chats_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="180dp"
+    android:minHeight="180dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="3"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    tools:targetApi="s" />

@@ -105,6 +105,9 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.core.splashscreen)
+    // The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md).
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
     // HiltWorkerFactory for WorkManager's configuration (PingogramApplication); WorkManager itself comes with
     // core:notifications.
     implementation(libs.androidx.hilt.work)
