@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Bot buttons: the buttons bots put under their messages now show, in rows under the message, and change when the
+  bot updates them. A button can answer with a short notice or an alert, open a link (Pingogram asks first when the
+  button's text hides where a web link goes), log you in to a site with your Telegram account after you agree (and
+  only lets the bot message you if you allow it), ask for your 2-step verification password, put an inline query
+  ("@bot …") into this chat's message field or into a chat you pick, copy a text, or open a profile. A button
+  waiting for its bot shows a small progress indicator. Mini Apps, games and payments are not supported yet, and
+  Pingogram says so.
 - Bot commands: in chats with bots, a "/" button at the start of the message field lists the bots' commands with
   what each does (in groups, which bot it belongs to, with search when there are many). Tap one to send it, or the
   arrow beside it to put it into the field and add something after it. Typing "/" suggests the matching commands

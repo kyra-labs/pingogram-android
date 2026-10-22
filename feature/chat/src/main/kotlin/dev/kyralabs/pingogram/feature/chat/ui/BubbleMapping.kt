@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
+import dev.kyralabs.pingogram.feature.chat.ui.bots.botKeyboard
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -85,6 +86,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         isEmojiOnly = showsLargeEmoji(content, text),
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
+        keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
     )
 }
 

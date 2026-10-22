@@ -134,7 +134,10 @@ sealed interface ChatEffect {
         override fun toString() = "OpenLocation(…)"
     }
 
-    /** Open [url], a sponsored message's link, with the platform's handler; a snackbar if no app on the device can. */
+    /**
+     * Open [url], a sponsored message's link or a bot's button's, with the app's link handler (Telegram links open in
+     * Pingogram, others in the platform's handler); a snackbar if no app on the device can.
+     */
     data class OpenUrl(
         val url: String,
     ) : ChatEffect {
