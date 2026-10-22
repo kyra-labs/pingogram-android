@@ -3,7 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui.create
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
@@ -21,14 +21,14 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * The photo picked for a new chat ([state]), a part of the flow's view model running in its [scope]: a picked image
- * is copied by [repository] ([ChatCreationRepository.preparePhoto]), its path kept in the [savedStateHandle] under
+ * is copied by [repository] ([PickedPhotoRepository.preparePhoto]), its path kept in the [savedStateHandle] under
  * [key], so it survives process death. Another pick or [remove] deletes the copy before; [release] deletes it when
  * the flow ends without a chat having taken it ([markUsed]).
  */
 internal class NewChatPhoto(
     private val scope: CoroutineScope,
     private val savedStateHandle: SavedStateHandle,
-    private val repository: ChatCreationRepository,
+    private val repository: PickedPhotoRepository,
     private val key: String,
 ) {
     private val mutableState =

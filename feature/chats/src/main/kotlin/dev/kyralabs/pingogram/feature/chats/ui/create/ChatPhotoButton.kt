@@ -115,7 +115,7 @@ private fun PhotoContent(photo: ChatPhoto) {
     when (photo) {
         ChatPhoto.None -> {
             Icon(
-                painter = painterResource(R.drawable.ic_add_a_photo),
+                painter = painterResource(UiR.drawable.ic_add_a_photo),
                 contentDescription = null,
                 modifier = Modifier.size(MaterialTheme.sizes.avatarLarge / PHOTO_ICON_FRACTION),
             )

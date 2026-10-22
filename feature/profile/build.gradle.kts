@@ -3,6 +3,8 @@ plugins {
 }
 
 dependencies {
+    // The system photo picker for a group's or channel's photo (Activity Result API; no permission).
+    implementation(libs.androidx.activity.compose)
     // The window size class and the supporting pane layout: the shared media beside the profile on expanded windows.
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.layout)

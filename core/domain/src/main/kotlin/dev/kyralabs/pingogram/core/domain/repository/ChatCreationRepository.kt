@@ -16,22 +16,13 @@ import kotlinx.collections.immutable.ImmutableList
  */
 interface ChatCreationRepository {
     /**
-     * Copies the image at [uri] (the photo picker's content URI, as a string) into the app's cache as an upright JPEG
-     * without metadata, for a new chat's photo: its path. `DomainError.PhotoInvalid` for what cannot be read as an
-     * image. The copy stays until [discardPhoto] or a creation uses it.
-     */
-    suspend fun preparePhoto(uri: String): Outcome<String>
-
-    /** Deletes [path], a copy [preparePhoto] made that no chat will use. */
-    fun discardPhoto(path: String)
-
-    /**
      * Creates a group named [title] with the users [userIds] (the user's picks, at most
      * `ChatCreationLimits.MEMBERS_TO_ADD_MAX`), whose messages are deleted after [autoDelete]: a basic group, or a
      * supergroup when no one or more people than a basic group holds are added
      * (`ChatCreationLimits.BASIC_GROUP_SIZE_MAX`).
-     * With [photoPath] (from [preparePhoto]) the group gets that photo once created; uploading it carries on after
-     * this returns, and the copy is deleted then. A failure keeps the copy, for another attempt or [discardPhoto].
+     * With [photoPath] (from `PickedPhotoRepository.preparePhoto`) the group gets that photo once created; uploading
+     * it carries on after this returns, and the copy is deleted then. A failure keeps the copy, for another attempt or
+     * `PickedPhotoRepository.discardPhoto`.
      */
     suspend fun createGroup(
         title: String,

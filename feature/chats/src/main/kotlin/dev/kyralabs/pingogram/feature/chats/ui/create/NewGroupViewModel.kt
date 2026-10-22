@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.CreatedGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageAutoDelete
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -52,6 +53,7 @@ import javax.inject.Inject
 class NewGroupViewModel internal constructor(
     private val savedStateHandle: SavedStateHandle,
     private val repository: ChatCreationRepository,
+    photoRepository: PickedPhotoRepository,
     private val userRepository: UserRepository,
     contactRepository: ContactRepository,
     clock: WallClock,
@@ -62,11 +64,21 @@ class NewGroupViewModel internal constructor(
     constructor(
         savedStateHandle: SavedStateHandle,
         repository: ChatCreationRepository,
+        photoRepository: PickedPhotoRepository,
         userRepository: UserRepository,
         contactRepository: ContactRepository,
         clock: WallClock,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
-    ) : this(savedStateHandle, repository, userRepository, contactRepository, clock, dispatcher, Locale::getDefault)
+    ) : this(
+        savedStateHandle,
+        repository,
+        photoRepository,
+        userRepository,
+        contactRepository,
+        clock,
+        dispatcher,
+        Locale::getDefault,
+    )
 
     private val memberEffectChannel = Channel<CreateChatEffect>(Channel.BUFFERED)
     private val detailsEffectChannel = Channel<CreateChatEffect>(Channel.BUFFERED)
@@ -92,7 +104,7 @@ class NewGroupViewModel internal constructor(
     /** The first step: the contacts, the search and the picks. */
     val members: StateFlow<MemberPickerUiState> = picker.state
 
-    private val photo = NewChatPhoto(viewModelScope, savedStateHandle, repository, KEY_PHOTO)
+    private val photo = NewChatPhoto(viewModelScope, savedStateHandle, photoRepository, KEY_PHOTO)
 
     private val form =
         MutableStateFlow(

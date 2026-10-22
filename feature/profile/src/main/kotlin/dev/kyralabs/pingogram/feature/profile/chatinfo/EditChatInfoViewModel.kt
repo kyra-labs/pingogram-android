@@ -10,10 +10,13 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.GroupInfo
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
+import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.navigation.EditChatInfoRoute
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -22,13 +25,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** What the page that edits a group's or channel's title and description shows (`REQUIREMENTS.md` FR-P3). */
+/** What the page that edits a group's or channel's photo, title and description shows (`REQUIREMENTS.md` FR-P3). */
 @Immutable
 sealed interface EditChatInfoUiState {
     data object Loading : EditChatInfoUiState
@@ -38,6 +42,10 @@ sealed interface EditChatInfoUiState {
     ) : EditChatInfoUiState
 
     /**
+     * @property avatarId whose placeholder colors the photo has without a picture: the chat's id.
+     * @property photo the chat's photo as TDLib has it now; null for none.
+     * @property photoTask what is being done with the photo, apart from saving the texts.
+     * @property confirmingPhotoRemoval the question whether to remove the photo shows.
      * @property titleError why Telegram refused the title; null while it did not.
      * @property descriptionError why Telegram refused the description; null while it did not.
      * @property isSaving the changes were sent, and TDLib has not answered yet.
@@ -46,6 +54,10 @@ sealed interface EditChatInfoUiState {
         val kind: GroupKind,
         val title: String,
         val description: String,
+        val avatarId: Long = 0,
+        val photo: ProfilePhoto? = null,
+        val photoTask: PhotoTask = PhotoTask.None,
+        val confirmingPhotoRemoval: Boolean = false,
         val titleError: DomainError? = null,
         val descriptionError: DomainError? = null,
         val isSaving: Boolean = false,
@@ -72,6 +84,20 @@ sealed interface EditChatInfoEvent {
     }
 
     data object Save : EditChatInfoEvent
+
+    /** The photo picker gave the image at [uri] (a content URI, as a string). */
+    data class PhotoPicked(
+        val uri: String,
+    ) : EditChatInfoEvent {
+        override fun toString() = "PhotoPicked(…)"
+    }
+
+    /** "Remove photo": asks first. */
+    data object RemovePhoto : EditChatInfoEvent
+
+    data object ConfirmPhotoRemoval : EditChatInfoEvent
+
+    data object DismissPhotoRemoval : EditChatInfoEvent
 }
 
 sealed interface EditChatInfoEffect {
@@ -84,11 +110,20 @@ sealed interface EditChatInfoEffect {
 }
 
 /**
- * Editing the title and description of group or channel [chatId] (`REQUIREMENTS.md` FR-P3): both start as TDLib has
- * them, what the user typed is kept in the [SavedStateHandle], and saving sends only what changed, the title first
- * ([GroupAdministrationRepository.setTitle], then `setDescription`), stopping at the first refusal. A title or
- * description Telegram refuses shows under its field; other errors are snackbars.
+ * Editing the photo, title and description of group or channel [chatId] (`REQUIREMENTS.md` FR-P3), which the page's
+ * row on the info page offers where the user may change the chat's info:
+ *
+ * - **Title and description** start as TDLib has them, what the user typed is kept in the [SavedStateHandle], and
+ *   saving sends only what changed, the title first ([GroupAdministrationRepository.setTitle], then
+ *   `setDescription`), stopping at the first refusal. A title or description Telegram refuses shows under its field;
+ *   other errors are snackbars.
+ * - **Photo**, apart from saving: a picked image is prepared by [photoRepository] (an upright JPEG without metadata),
+ *   uploaded with its progress ([GroupAdministrationRepository.setPhoto]) and the copy discarded once TDLib answered;
+ *   removing asks first (kept in the [SavedStateHandle]). The photo shown follows the chat ([ChatRepository.chat]),
+ *   so it changes as soon as TDLib reports the new one, here and on the info page. Leaving meanwhile stops waiting,
+ *   TDLib carries on.
  */
+@Suppress("LongParameterList", "TooManyFunctions") // The route, four repositories; one handler per event.
 @HiltViewModel
 class EditChatInfoViewModel internal constructor(
     private val chatId: Long,
@@ -96,6 +131,7 @@ class EditChatInfoViewModel internal constructor(
     private val chatRepository: ChatRepository,
     private val groupInfoRepository: GroupInfoRepository,
     private val administrationRepository: GroupAdministrationRepository,
+    private val photoRepository: PickedPhotoRepository,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -103,12 +139,14 @@ class EditChatInfoViewModel internal constructor(
         chatRepository: ChatRepository,
         groupInfoRepository: GroupInfoRepository,
         administrationRepository: GroupAdministrationRepository,
+        photoRepository: PickedPhotoRepository,
     ) : this(
         savedStateHandle.toRoute<EditChatInfoRoute>().chatId,
         savedStateHandle,
         chatRepository,
         groupInfoRepository,
         administrationRepository,
+        photoRepository,
     )
 
     private val mutableUiState = MutableStateFlow<EditChatInfoUiState>(EditChatInfoUiState.Loading)
@@ -140,6 +178,22 @@ class EditChatInfoViewModel internal constructor(
 
             EditChatInfoEvent.Save -> {
                 save()
+            }
+
+            is EditChatInfoEvent.PhotoPicked -> {
+                setPhoto(event.uri)
+            }
+
+            EditChatInfoEvent.RemovePhoto -> {
+                askPhotoRemoval(true)
+            }
+
+            EditChatInfoEvent.DismissPhotoRemoval -> {
+                askPhotoRemoval(false)
+            }
+
+            EditChatInfoEvent.ConfirmPhotoRemoval -> {
+                removePhoto()
             }
         }
     }
@@ -177,7 +231,61 @@ class EditChatInfoViewModel internal constructor(
                 kind = info.kind,
                 title = savedStateHandle.get<String>(KEY_TITLE) ?: title,
                 description = savedStateHandle.get<String>(KEY_DESCRIPTION) ?: description,
+                avatarId = chatId,
+                photo = chat.value.photo,
+                confirmingPhotoRemoval = savedStateHandle.get<Boolean>(KEY_REMOVING_PHOTO) == true,
             )
+        viewModelScope.launch {
+            chatRepository.chat(chatId).filterNotNull().collect { changed ->
+                updateContent { it.copy(photo = changed.photo) }
+            }
+        }
+    }
+
+    private fun setPhoto(uri: String) {
+        val content = mutableUiState.value as? EditChatInfoUiState.Content ?: return
+        if (content.photoTask != PhotoTask.None) return
+        updateContent { it.copy(photoTask = PhotoTask.Preparing) }
+        viewModelScope.launch {
+            val path =
+                when (val prepared = photoRepository.preparePhoto(uri)) {
+                    is Outcome.Success -> prepared.value
+                    is Outcome.Failure -> return@launch finishPhotoTask(prepared)
+                }
+            updateContent { it.copy(photoTask = PhotoTask.Uploading(progress = null)) }
+            val outcome =
+                administrationRepository.setPhoto(chatId, path) { progress ->
+                    updateContent { it.copy(photoTask = PhotoTask.Uploading(progress)) }
+                }
+            // Not when cancelled: TDLib may still be reading it.
+            photoRepository.discardPhoto(path)
+            finishPhotoTask(outcome)
+        }
+    }
+
+    private fun askPhotoRemoval(ask: Boolean) {
+        val content = mutableUiState.value as? EditChatInfoUiState.Content ?: return
+        if (ask && (content.photo == null || content.photoTask != PhotoTask.None)) return
+        savedStateHandle[KEY_REMOVING_PHOTO] = ask
+        updateContent { it.copy(confirmingPhotoRemoval = ask) }
+    }
+
+    private fun removePhoto() {
+        val content = mutableUiState.value as? EditChatInfoUiState.Content ?: return
+        askPhotoRemoval(false)
+        if (content.photoTask != PhotoTask.None) return
+        updateContent { it.copy(photoTask = PhotoTask.Removing) }
+        viewModelScope.launch { finishPhotoTask(administrationRepository.removePhoto(chatId)) }
+    }
+
+    private fun finishPhotoTask(outcome: Outcome<Unit>) {
+        updateContent { it.copy(photoTask = PhotoTask.None) }
+        val error = (outcome as? Outcome.Failure)?.error ?: return
+        if (error != DomainError.Silent) effectChannel.trySend(EditChatInfoEffect.ShowError(error))
+    }
+
+    private inline fun updateContent(change: (EditChatInfoUiState.Content) -> EditChatInfoUiState.Content) {
+        mutableUiState.update { state -> (state as? EditChatInfoUiState.Content)?.let(change) ?: state }
     }
 
     private inline fun edit(change: (EditChatInfoUiState.Content) -> EditChatInfoUiState.Content) {
@@ -232,6 +340,7 @@ class EditChatInfoViewModel internal constructor(
     private companion object {
         const val KEY_TITLE = "editChatInfo.title"
         const val KEY_DESCRIPTION = "editChatInfo.description"
+        const val KEY_REMOVING_PHOTO = "editChatInfo.removingPhoto"
     }
 }
 

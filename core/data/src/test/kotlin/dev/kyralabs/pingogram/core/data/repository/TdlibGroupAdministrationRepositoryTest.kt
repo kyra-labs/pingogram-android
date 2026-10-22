@@ -9,15 +9,21 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.ProfileFixtures
+import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** [TdlibGroupAdministrationRepository] on a [FakeTdlibClient]: what each change sends, and what is refused first. */
+/**
+ * [TdlibGroupAdministrationRepository] on a [FakeTdlibClient]: what each change sends, the photo's upload, and what is
+ * refused first.
+ */
 class TdlibGroupAdministrationRepositoryTest {
     private val client = FakeTdlibClient()
     private val repository = TdlibGroupAdministrationRepository(client)
@@ -102,6 +108,39 @@ class TdlibGroupAdministrationRepositoryTest {
             val sent = client.sentOf<TdApi.DeleteChatHistory>().single()
             assertFalse(sent.removeFromChatList)
             assertFalse(sent.revoke)
+        }
+
+    @Test
+    fun `a photo is uploaded from its copy as the chat's, reporting its progress`() =
+        runTest {
+            val path = "/data/cache/uploads/1/photo.jpg"
+            client.on(TdApi.SetChatPhoto::class) {
+                // Another file's progress does not count.
+                client.emit(TdApiFixtures.updateFile(ProfileFixtures.uploadingFile(localPath = "/elsewhere.jpg")))
+                client.emit(
+                    TdApiFixtures.updateFile(ProfileFixtures.uploadingFile(localPath = path, uploadedSize = 500)),
+                )
+                TdResult.Success(TdApi.Ok())
+            }
+            val progress = mutableListOf<Float>()
+
+            assertEquals(Outcome.Success(Unit), repository.setPhoto(CHAT, path) { progress += it })
+
+            assertEquals(listOf(0.5f), progress)
+            val sent = client.sentOf<TdApi.SetChatPhoto>().single()
+            assertEquals(CHAT, sent.chatId)
+            val photo = sent.photo as TdApi.InputChatPhotoStatic
+            assertEquals(path, (photo.photo as TdApi.InputFileLocal).path)
+        }
+
+    @Test
+    fun `removing the photo sends none, and a refusal fails as such`() =
+        runTest {
+            client.on(TdApi.SetChatPhoto::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
+
+            assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository.removePhoto(CHAT))
+
+            assertNull(client.sentOf<TdApi.SetChatPhoto>().single().photo)
         }
 
     private companion object {

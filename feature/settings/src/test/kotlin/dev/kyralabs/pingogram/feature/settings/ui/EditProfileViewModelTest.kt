@@ -2,16 +2,18 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
-import dev.kyralabs.pingogram.feature.settings.ui.photo.ProfilePhotoFiles
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,7 +40,8 @@ import org.junit.jupiter.api.Test
 class EditProfileViewModelTest {
     private val client = FakeTdlibClient()
     private val savedState = SavedStateHandle()
-    private val photoFiles = FakeProfilePhotoFiles()
+    private val photoFiles = FakePickedPhotoRepository()
+    private val copy = "/data/cache/uploads/1/photo.jpg"
     private val ok = TdResult.Success(TdApi.Ok())
 
     private val me =
@@ -49,6 +52,7 @@ class EditProfileViewModelTest {
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
+        photoFiles.onPreparePhoto = { Outcome.Success(copy) }
         client.on(TdApi.GetMe::class) { TdResult.Success(me) }
         client.on(TdApi.GetUserFullInfo::class, TdResult.Success(ProfileFixtures.userFullInfo(bio = "Analyst")))
         client.on(TdApi.CheckChatUsername::class, TdResult.Success(TdApi.CheckChatUsernameResultOk()))
@@ -540,7 +544,7 @@ class EditProfileViewModelTest {
             client.on(TdApi.SetProfilePhoto::class) {
                 client.emit(
                     TdApiFixtures.updateFile(
-                        ProfileFixtures.uploadingFile(localPath = photoFiles.path, size = 1_000, uploadedSize = 500),
+                        ProfileFixtures.uploadingFile(localPath = copy, size = 1_000, uploadedSize = 500),
                     ),
                 )
                 answer.await()
@@ -552,14 +556,14 @@ class EditProfileViewModelTest {
             assertEquals(listOf("content://media/picker/1"), photoFiles.prepared)
             assertEquals(PhotoTask.Uploading(progress = 0.5f), viewModel.content.photoTask)
             val photo = client.sentOf<TdApi.SetProfilePhoto>().single().photo as TdApi.InputChatPhotoStatic
-            assertEquals(photoFiles.path, (photo.photo as TdApi.InputFileLocal).path)
-            assertTrue(photoFiles.deleted.isEmpty())
+            assertEquals(copy, (photo.photo as TdApi.InputFileLocal).path)
+            assertTrue(photoFiles.discarded.isEmpty())
 
             answer.complete(ok)
             runCurrent()
 
             assertEquals(PhotoTask.None, viewModel.content.photoTask)
-            assertEquals(listOf(photoFiles.path), photoFiles.deleted)
+            assertEquals(listOf(copy), photoFiles.discarded)
         }
 
     @Test
@@ -580,7 +584,7 @@ class EditProfileViewModelTest {
     @Test
     fun `an image that cannot be read says so`() =
         runTest {
-            photoFiles.readable = false
+            photoFiles.onPreparePhoto = { Outcome.Failure(DomainError.PhotoInvalid) }
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
 
@@ -601,7 +605,7 @@ class EditProfileViewModelTest {
             send(viewModel, EditProfileEvent.PhotoPicked("content://media/picker/1"))
 
             assertEquals(listOf(EditProfileEffect.ShowError(DomainError.PhotoInvalid)), effects)
-            assertEquals(listOf(photoFiles.path), photoFiles.deleted)
+            assertEquals(listOf(copy), photoFiles.discarded)
             assertEquals(PhotoTask.None, viewModel.content.photoTask)
         }
 
@@ -636,21 +640,4 @@ class EditProfileViewModelTest {
 
             assertNull(viewModel.content.dialog)
         }
-}
-
-/** [ProfilePhotoFiles] that records what it is asked; [readable] false fails every image. */
-private class FakeProfilePhotoFiles : ProfilePhotoFiles {
-    val path = "/data/cache/profile_photos/copy.jpg"
-    var readable = true
-    val prepared = mutableListOf<String>()
-    val deleted = mutableListOf<String>()
-
-    override suspend fun prepare(uri: String): String? {
-        prepared += uri
-        return path.takeIf { readable }
-    }
-
-    override suspend fun delete(path: String) {
-        deleted += path
-    }
 }

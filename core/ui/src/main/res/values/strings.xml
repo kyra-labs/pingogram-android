@@ -234,6 +234,15 @@
     <string name="contact_sync_cancel">Cancel</string>
     <string name="contact_sync_turned_off">Contacts sync is off. You can also take back access to your contacts in Android\'s settings.</string>
     <string name="contact_sync_settings">Settings</string>
+    <!-- The photo editor of Edit profile and of a group's or channel's info: opens the system photo picker. -->
+    <string name="photo_editor_set">Set new photo</string>
+    <string name="photo_editor_remove">Remove photo</string>
+    <!-- Spoken by screen readers for the progress while the picked image is prepared and before its upload reports progress. -->
+    <string name="photo_editor_preparing">Preparing photo</string>
+    <!-- Spoken by screen readers for the upload progress around the photo. -->
+    <string name="photo_editor_uploading">Uploading photo</string>
+    <!-- Spoken by screen readers for the progress while the photo is removed. -->
+    <string name="photo_editor_removing">Removing photo</string>
     <!-- The drag handle between the conversation and the profile or group info beside it, on very wide windows -->
     <string name="pane_extra_drag_handle">Resize the side pane</string>
     <string name="pane_extra_width_narrow">Narrow</string>

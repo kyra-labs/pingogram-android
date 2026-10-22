@@ -62,7 +62,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   if you own it, delete it for everyone; each asks first. Below: the first members with their role (owner, admin or
   their tag) and the group's shared media. "See all members" lists every member, with search and, for admins, the
   admins, restricted and removed users.
-- Group administration, as far as your admin rights allow: edit the name and description; choose what members may
+- Group administration, as far as your admin rights allow: change or remove the group's or channel's photo (picked
+  with Android's photo picker, without any permission, its upload's progress around it) and edit the name and
+  description; choose what members may
   do and set slow mode; promote members to admins and choose their rights, restrict, remove or let back removed
   users, one person at a time; and manage invite links: create links with a name, an expiry, a member limit or admin
   approval, edit, revoke and delete them.

@@ -131,7 +131,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatCreationLimits`) are added, then `addChatMembers`, as Telegram's apps do; channels with `createNewSupergroupChat`
   (`is_channel`), made public with `checkChatUsername` + `setSupergroupUsername`, a private one's link from
   `supergroupFullInfo.invite_link` or `replacePrimaryChatInviteLink`. `failed_to_add_members` (privacy) comes back as
-  the people not added. A picked photo is prepared like an attachment (`AttachmentPreparer`, `uploads/`) and set with
+  the people not added. A picked photo is prepared by `PickedPhotoRepository` (Files and media) and set with
   `setChatPhoto` in the app's scope once the chat exists, its copy deleted when TDLib answered. `feature:chats` runs
   each flow as a nested graph pushed above New chat (`NewGroupRoute`: members, details; `NewChannelRoute`: details,
   which creates the channel, type, subscribers), whose steps share one view model held by the graph's entry
@@ -300,7 +300,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     page; a basic group's members all come with its full info (`searchChatMembers` filters them), and it
     restricts and bans nobody; `member` is `getChatMember`.
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
-    `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
+    `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
+    to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
     restricting, banning, lifting), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
@@ -314,7 +315,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatMembersRoute(chatId, filter)`, `ChatMembersViewModel`: the filters the user's rights allow, paging, a search
   after a pause, the actions each member's role and the user's rights allow), a member's rights
   (`MemberRightsRoute(chatId, userId, restrict)`: promoting only with rights the user has, restricting only within the
-  chat's defaults), the name and description (`EditChatInfoRoute`), the permissions and slow mode
+  chat's defaults), the photo, name and description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
+  saving the texts, following `ChatRepository.chat` for the new one), the permissions and slow mode
   (`ChatPermissionsRoute`), and the invite links (`InviteLinksRoute`, `EditInviteLinkRoute(chatId, link?)`). What a
   view model types or chooses is kept in its `SavedStateHandle`. A page that changed members or links leaves a flag in
   the saved state of the page below (`popBackStackAfterGroupChange`), which reads its list again. Once the user left
@@ -393,6 +395,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Picked photos (Edit profile, a new group or channel, a group's or channel's info): `core:domain`'s
+  `PickedPhotoRepository` (`AndroidPickedPhotoRepository`, `core:data`) is the one place that prepares them, as picked
+  photos are prepared for sending (`AttachmentPreparer`: copied into `uploads/`, decoded and written anew as an
+  upright JPEG without metadata), at most `PickedPhotoLimits.MAX_SIDE_PX` (1280 px) on the longer side; anything
+  Android cannot decode as a still image is refused (`DomainError.PhotoInvalid`). The caller discards the copy once
+  TDLib answered; one left behind goes with the upload cache's cleaning. `core:ui`'s `PhotoEditor` (with `PhotoTask`)
+  draws the photo with its buttons and progress for Edit profile and the chat info's edit page; uploads with progress
+  share `uploadPhoto` (`core:data`, the file's `updateFile`s).
 - Files leave the app only on the user's request and only through `:app`'s `FileProvider`
   (`${applicationId}.files`, `res/xml/file_paths.xml`), which serves TDLib's files directories and
   never its database; `core:ui`'s `TdlibFiles.kt` builds the URIs and the share and view intents.

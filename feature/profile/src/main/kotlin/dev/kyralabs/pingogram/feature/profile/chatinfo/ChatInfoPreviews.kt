@@ -126,18 +126,15 @@ private fun ChatPermissionsScreenLoadingPreview() {
 @Composable
 private fun EditChatInfoScreenPreview() {
     PingogramPreview {
-        EditChatInfoScreen(
-            EditChatInfoUiState.Content(
-                kind = ChatInfoPreviewData.group.kind,
-                title = "Rust Berlin",
-                description =
-                    ChatInfoPreviewData.group.description
-                        ?.text
-                        .orEmpty(),
-            ),
-            onEvent = {},
-            onBack = {},
-        )
+        EditChatInfoScreen(ChatInfoPreviewData.editInfo, onEvent = {}, onBack = {})
+    }
+}
+
+@PingogramPreviews
+@Composable
+private fun EditChatInfoScreenUploadingPreview() {
+    PingogramPreview {
+        EditChatInfoScreen(ChatInfoPreviewData.editInfoUploading, onEvent = {}, onBack = {})
     }
 }
 

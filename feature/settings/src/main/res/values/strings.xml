@@ -402,15 +402,6 @@
     <string name="settings_edit_profile_saving">Saving</string>
     <!-- Spoken by screen readers for the profile photo. -->
     <string name="settings_profile_photo">Your profile photo</string>
-    <!-- Opens the system photo picker. -->
-    <string name="settings_profile_photo_set">Set new photo</string>
-    <string name="settings_profile_photo_remove">Remove photo</string>
-    <!-- Spoken by screen readers for the progress while the picked image is prepared and before its upload reports progress. -->
-    <string name="settings_profile_photo_preparing">Preparing photo</string>
-    <!-- Spoken by screen readers for the upload progress around the photo. -->
-    <string name="settings_profile_photo_uploading">Uploading photo</string>
-    <!-- Spoken by screen readers for the progress while the photo is removed. -->
-    <string name="settings_profile_photo_removing">Removing photo</string>
     <string name="settings_remove_photo_dialog_title">Remove profile photo?</string>
     <string name="settings_remove_photo_dialog_text">Your current profile photo will be deleted. If you had an earlier one, it becomes your profile photo again.</string>
     <string name="settings_remove_photo_dialog_confirm">Remove</string>
