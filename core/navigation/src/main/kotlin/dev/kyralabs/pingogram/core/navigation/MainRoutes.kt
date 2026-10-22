@@ -256,3 +256,59 @@ data class ForwardRoute(
 data class ProfileRoute(
     val userId: Long,
 )
+
+/**
+ * The info page of group or channel [chatId] (`REQUIREMENTS.md` FR-P3, FR-P4), `:feature:profile`: photo, title,
+ * description and link, mute, the members, the shared media, administration for those whose rights allow it, and
+ * leaving, deleting or clearing the history. Pushed above the conversation from its title, with the shared axis on X.
+ */
+@Serializable
+data class ChatInfoRoute(
+    val chatId: Long,
+)
+
+/**
+ * The members of group or channel [chatId], pushed above its info page: [filter] is the name of a `MemberFilter` of
+ * `:core:domain` (every member, administrators, restricted or removed users), which this module does not depend on.
+ */
+@Serializable
+data class ChatMembersRoute(
+    val chatId: Long,
+    val filter: String,
+)
+
+/**
+ * What member [userId] of group or channel [chatId] may do, pushed above the members: their administrator rights, or
+ * their restrictions ([restrict]).
+ */
+@Serializable
+data class MemberRightsRoute(
+    val chatId: Long,
+    val userId: Long,
+    val restrict: Boolean,
+)
+
+/** Editing the title and description of group or channel [chatId], pushed above its info page. */
+@Serializable
+data class EditChatInfoRoute(
+    val chatId: Long,
+)
+
+/** What members of group [chatId] may do by default, and its slow mode, pushed above its info page. */
+@Serializable
+data class ChatPermissionsRoute(
+    val chatId: Long,
+)
+
+/** The invite links of group or channel [chatId], pushed above its info page. */
+@Serializable
+data class InviteLinksRoute(
+    val chatId: Long,
+)
+
+/** Creating an invite link of group or channel [chatId], or editing [link], pushed above its invite links. */
+@Serializable
+data class EditInviteLinkRoute(
+    val chatId: Long,
+    val link: String? = null,
+)

@@ -84,5 +84,9 @@ private fun DomainError.messageRes(): Int =
         DomainError.TooManyChats -> R.string.error_too_many_chats
         DomainError.TooManyPublicLinks -> R.string.error_too_many_public_links
         DomainError.AccountRestricted -> R.string.error_account_restricted
+        DomainError.AdminRightsRequired -> R.string.error_admin_rights_required
+        DomainError.DescriptionTooLong -> R.string.error_description_too_long
+        DomainError.NotMutualContact -> R.string.error_not_mutual_contact
+        DomainError.TooManyAdmins -> R.string.error_too_many_admins
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

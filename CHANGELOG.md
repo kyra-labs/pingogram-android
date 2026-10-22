@@ -44,6 +44,16 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   private, with an invite link to copy or share, or public, with a t.me link checked as you type, and finally lets you
   add subscribers from your contacts or skip that. If someone's privacy settings keep Telegram from adding them,
   Pingogram tells you who and offers to share the invite link instead. The new chat opens once it is ready.
+- Group and channel info: tap the name at the top of a group or channel to see its photo, name, whether it is public
+  or private and how many members or subscribers it has, its description with links, and its public link or, for
+  admins, its invite link, to copy, share or show as a QR code. Mute or leave it from there, clear its history, and,
+  if you own it, delete it for everyone; each asks first. Below: the first members with their role (owner, admin or
+  their tag) and the group's shared media. "See all members" lists every member, with search and, for admins, the
+  admins, restricted and removed users.
+- Group administration, as far as your admin rights allow: edit the name and description; choose what members may
+  do and set slow mode; promote members to admins and choose their rights, restrict, remove or let back removed
+  users, one person at a time; and manage invite links: create links with a name, an expiry, a member limit or admin
+  approval, edit, revoke and delete them.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so

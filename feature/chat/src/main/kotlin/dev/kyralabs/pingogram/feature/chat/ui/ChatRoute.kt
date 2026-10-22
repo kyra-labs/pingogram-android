@@ -70,7 +70,8 @@ import java.util.Locale
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), and a secret chat's timer and
  * key ([SecretChatBottomSheet]). While a secret chat is open, the window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
- * [onOpenProfile]; without it the title opens nothing.
+ * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
+ * title opens nothing.
  */
 @Composable
 internal fun ChatRoute(
@@ -81,6 +82,7 @@ internal fun ChatRoute(
     onOpenChat: (chatId: Long) -> Unit = {},
     messageId: Long? = null,
     onOpenProfile: ((userId: Long) -> Unit)? = null,
+    onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId") { it.create(chatId, messageId) },
     locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
@@ -138,6 +140,7 @@ internal fun ChatRoute(
         emojiPanel = emojiPanel,
         onEmojiPanelEvent = panelViewModel::onEvent,
         onOpenProfile = onOpenProfile,
+        onOpenChatInfo = onOpenChatInfo,
     )
     ChatSheets(viewModel)
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).

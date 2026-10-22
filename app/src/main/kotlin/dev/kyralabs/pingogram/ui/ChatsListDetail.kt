@@ -77,7 +77,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   or to [NoChatSelected] beside it. Selection mode in the list handles back first, and never changes the chat shown.
  * - **Media**: a photo, video or GIF tapped in the conversation opens through [onOpenMedia], which pushes the media
  *   viewer full screen above the whole layout, whichever pane it was tapped in; a profile opens through
- *   [onOpenProfile], pushed above the whole layout too.
+ *   [onOpenProfile] and a group's or channel's info page through [onOpenChatInfo], pushed above the whole layout too.
  * - **Containers**: with two panes, each is its own rounded container on the window's `surfaceContainer`
  *   ([paneContainer], `core:ui`), and a drag handle between them resizes the list ([PaneDragHandle]) between
  *   Material's fixed widths and an even split. The width is saved with the scaffold, so it survives rotation and
@@ -103,6 +103,7 @@ internal fun ChatsListDetail(
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenProfile: (userId: Long) -> Unit = {},
+    onOpenChatInfo: (chatId: Long) -> Unit = {},
 ) {
     val navigator =
         rememberListDetailPaneScaffoldNavigator<Long>(
@@ -148,6 +149,7 @@ internal fun ChatsListDetail(
                         // The chat messages were forwarded to replaces this one, or is pushed with one pane.
                         onOpenChat = opener::openChat,
                         onOpenProfile = onOpenProfile,
+                        onOpenChatInfo = onOpenChatInfo,
                         onBack =
                             backUnless(listVisible && shownChatId != null) {
                                 scope.launch { navigator.navigateBack(BACK_BEHAVIOR) }

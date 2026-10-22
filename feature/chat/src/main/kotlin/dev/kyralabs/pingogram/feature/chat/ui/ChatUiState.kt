@@ -97,7 +97,8 @@ data class MessagePlayback(
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
  * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat; null
- *   for groups, channels and Saved Messages, whose title opens nothing.
+ *   for groups, channels and Saved Messages.
+ * @property opensChatInfo the title opens the chat's info page: basic groups, supergroups and channels.
  * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
  *   chats.
  */
@@ -110,6 +111,7 @@ data class ChatHeader(
     val subtitle: ChatSubtitle?,
     val profileUserId: Long? = null,
     val secret: SecretChatHeader? = null,
+    val opensChatInfo: Boolean = false,
 ) {
     override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }

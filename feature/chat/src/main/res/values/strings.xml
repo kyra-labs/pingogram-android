@@ -4,6 +4,8 @@
     <string name="chat_back">Back</string>
     <!-- What tapping the title of a private chat does, spoken by screen readers ("double-tap to open profile"). -->
     <string name="chat_open_profile">Open profile</string>
+    <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
+    <string name="chat_open_info">Open info</string>
     <string name="chat_subtitle_bot">bot</string>
     <plurals name="chat_subtitle_members">
         <item quantity="one">%,d member</item>

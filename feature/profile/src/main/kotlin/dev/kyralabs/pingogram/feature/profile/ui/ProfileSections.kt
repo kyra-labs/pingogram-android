@@ -105,7 +105,7 @@ internal fun ProfileActionsRow(
 
 /** One action: [icon] over [label], filled for the [primary] action, tonal otherwise. */
 @Composable
-private fun ActionPill(
+internal fun ActionPill(
     @DrawableRes icon: Int,
     label: String,
     onClick: () -> Unit,

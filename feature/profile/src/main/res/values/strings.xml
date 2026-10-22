@@ -121,4 +121,235 @@
     <string name="profile_media_detail">%1$s · %2$s</string>
     <!-- A song without a title or performer. -->
     <string name="profile_media_unknown_audio">Audio</string>
+
+    <!-- Group and channel info (REQUIREMENTS.md FR-P3, FR-P4) -->
+    <!-- Spoken by screen readers for the progress indicator while a page loads. -->
+    <string name="chat_info_loading">Loading</string>
+    <string name="chat_info_error_title">Can\'t show this chat</string>
+    <string name="chat_info_not_found_body">Telegram doesn\'t know this group or channel, or it is no longer available to you.</string>
+    <string name="chat_info_page_error">Couldn\'t load this page</string>
+    <!-- Under the title: the kind of chat, then how many are in it ("Public group · 1,024 members"). -->
+    <string name="chat_info_public_group">Public group</string>
+    <string name="chat_info_private_group">Private group</string>
+    <string name="chat_info_public_channel">Public channel</string>
+    <string name="chat_info_private_channel">Private channel</string>
+    <!-- %1$s is the kind of chat, %2$s how many members or subscribers. -->
+    <string name="chat_info_status">%1$s · %2$s</string>
+    <plurals name="chat_info_members">
+        <item quantity="one">%1$s member</item>
+        <item quantity="other">%1$s members</item>
+    </plurals>
+    <plurals name="chat_info_subscribers">
+        <item quantity="one">%1$s subscriber</item>
+        <item quantity="other">%1$s subscribers</item>
+    </plurals>
+    <string name="chat_info_action_leave">Leave</string>
+
+    <!-- Information rows; each label goes under its value. -->
+    <string name="chat_info_description">Description</string>
+    <string name="chat_info_link">Link</string>
+    <string name="chat_info_invite_link">Invite link</string>
+    <string name="chat_info_qr_code">QR code</string>
+    <string name="chat_info_share_link">Share link</string>
+    <string name="chat_info_link_copied">Link copied</string>
+    <string name="chat_info_qr_title">QR code</string>
+    <!-- Spoken by screen readers for the QR code. -->
+    <string name="chat_info_qr_description">QR code of the link</string>
+    <string name="chat_info_media_empty_body">What members share in the chat shows here.</string>
+
+    <!-- Members -->
+    <string name="chat_info_section_members">Members</string>
+    <string name="chat_info_section_subscribers">Subscribers</string>
+    <plurals name="chat_info_all_members">
+        <item quantity="one">See %1$s member</item>
+        <item quantity="other">See all %1$s members</item>
+    </plurals>
+    <plurals name="chat_info_all_subscribers">
+        <item quantity="one">See %1$s subscriber</item>
+        <item quantity="other">See all %1$s subscribers</item>
+    </plurals>
+    <string name="chat_info_members_hidden">Only admins can see the members of this group.</string>
+    <string name="chat_info_role_owner">Owner</string>
+    <string name="chat_info_role_admin">Admin</string>
+    <string name="chat_info_role_restricted">Restricted</string>
+    <string name="chat_info_role_removed">Removed</string>
+    <!-- What a long press on a member does, spoken by screen readers. -->
+    <string name="chat_info_member_menu">Show actions</string>
+    <string name="chat_info_member_promote">Promote to admin</string>
+    <string name="chat_info_member_edit_rights">Edit admin rights</string>
+    <string name="chat_info_member_dismiss">Dismiss admin</string>
+    <string name="chat_info_member_restrict">Restrict</string>
+    <string name="chat_info_member_unrestrict">Lift restrictions</string>
+    <string name="chat_info_member_remove">Remove</string>
+    <string name="chat_info_member_unban">Allow back</string>
+    <!-- Snackbars after a change. %1$s is the member's name. -->
+    <string name="chat_info_member_dismissed">%1$s is no longer an admin</string>
+    <string name="chat_info_member_unrestricted">%1$s\'s restrictions were lifted</string>
+    <string name="chat_info_member_unbanned">%1$s can join again</string>
+    <string name="chat_info_member_removed">%1$s was removed</string>
+    <!-- Removing a member. %1$s is their name. -->
+    <string name="chat_info_remove_title">Remove %1$s?</string>
+    <string name="chat_info_remove_text">They\'ll be removed from the group and can\'t join again until an admin allows it.</string>
+    <string name="chat_info_remove_text_channel">They\'ll be removed from the channel and can\'t subscribe again until an admin allows it.</string>
+    <string name="chat_info_members_search">Search members</string>
+    <!-- Spoken by screen readers for the button that clears the search. -->
+    <string name="chat_info_members_search_clear">Clear search</string>
+    <string name="chat_info_members_loading">Loading members</string>
+    <string name="chat_info_members_empty">Nobody here</string>
+    <string name="chat_info_members_empty_body">Nobody in this chat matches this list.</string>
+    <string name="chat_info_members_none_found">No members found</string>
+    <!-- %1$s is what was searched for. -->
+    <string name="chat_info_members_none_found_body">Nobody matches \u201c%1$s\u201d.</string>
+    <string name="chat_info_members_error">Couldn\'t load the members</string>
+    <string name="chat_info_filter_all">All</string>
+    <string name="chat_info_filter_subscribers">Subscribers</string>
+    <string name="chat_info_filter_admins">Admins</string>
+    <string name="chat_info_filter_restricted">Restricted</string>
+    <string name="chat_info_filter_removed">Removed</string>
+
+    <!-- Administration -->
+    <string name="chat_info_section_administration">Administration</string>
+    <string name="chat_info_edit">Name and description</string>
+    <string name="chat_info_permissions">Permissions</string>
+    <string name="chat_info_administrators">Administrators</string>
+    <string name="chat_info_invite_links">Invite links</string>
+    <string name="chat_info_restricted">Restricted users</string>
+    <string name="chat_info_removed">Removed users</string>
+    <string name="chat_info_save">Save</string>
+    <!-- Spoken by screen readers while a change is on its way. -->
+    <string name="chat_info_saving">Saving</string>
+    <string name="chat_info_group_name">Group name</string>
+    <string name="chat_info_channel_name">Channel name</string>
+    <string name="chat_info_description_note">Everyone who finds this chat can read its description.</string>
+
+    <!-- Rights and restrictions of a member -->
+    <string name="chat_info_promote_title">Promote to admin</string>
+    <string name="chat_info_rights_title">Admin rights</string>
+    <string name="chat_info_restrictions_title">Restrictions</string>
+    <string name="chat_info_rights_header">What this admin can do</string>
+    <string name="chat_info_restrictions_header">What this member can do</string>
+    <string name="chat_info_right_change_info">Change chat info</string>
+    <string name="chat_info_right_post_messages">Post messages</string>
+    <string name="chat_info_right_edit_messages">Edit messages of others</string>
+    <string name="chat_info_right_delete_messages">Delete messages</string>
+    <string name="chat_info_right_restrict_members">Ban and restrict members</string>
+    <string name="chat_info_right_invite_users">Invite users</string>
+    <string name="chat_info_right_pin_messages">Pin messages</string>
+    <string name="chat_info_right_manage_video_chats">Manage video chats</string>
+    <string name="chat_info_right_post_stories">Post stories</string>
+    <string name="chat_info_right_edit_stories">Edit stories of others</string>
+    <string name="chat_info_right_delete_stories">Delete stories of others</string>
+    <string name="chat_info_right_manage_direct_messages">Manage direct messages</string>
+    <string name="chat_info_right_manage_tags">Edit member tags</string>
+    <string name="chat_info_right_promote_members">Add new admins</string>
+    <string name="chat_info_right_anonymous">Remain anonymous</string>
+
+    <!-- What members may do -->
+    <string name="chat_info_permissions_header">What members can do</string>
+    <string name="chat_info_permission_send_messages">Send messages</string>
+    <string name="chat_info_permission_send_photos">Send photos</string>
+    <string name="chat_info_permission_send_videos">Send videos</string>
+    <string name="chat_info_permission_send_files">Send files</string>
+    <string name="chat_info_permission_send_music">Send music</string>
+    <string name="chat_info_permission_send_voice">Send voice messages</string>
+    <string name="chat_info_permission_send_video_messages">Send video messages</string>
+    <string name="chat_info_permission_send_stickers">Send stickers and GIFs</string>
+    <string name="chat_info_permission_send_polls">Send polls</string>
+    <string name="chat_info_permission_link_previews">Add link previews</string>
+    <string name="chat_info_permission_react">React to messages</string>
+    <string name="chat_info_permission_add_members">Add members</string>
+    <string name="chat_info_permission_pin_messages">Pin messages</string>
+    <string name="chat_info_permission_change_info">Change chat info</string>
+    <string name="chat_info_slow_mode">Slow mode</string>
+    <string name="chat_info_slow_mode_summary">How long members wait between their messages</string>
+    <string name="chat_info_slow_mode_off">Off</string>
+    <plurals name="chat_info_slow_mode_seconds">
+        <item quantity="one">Every %1$d second</item>
+        <item quantity="other">Every %1$d seconds</item>
+    </plurals>
+    <plurals name="chat_info_slow_mode_minutes">
+        <item quantity="one">Every minute</item>
+        <item quantity="other">Every %1$d minutes</item>
+    </plurals>
+    <plurals name="chat_info_slow_mode_hours">
+        <item quantity="one">Every hour</item>
+        <item quantity="other">Every %1$d hours</item>
+    </plurals>
+
+    <!-- Invite links -->
+    <string name="chat_info_primary_link">Primary link</string>
+    <string name="chat_info_your_links">Your links</string>
+    <string name="chat_info_revoked_links">Revoked links</string>
+    <string name="chat_info_link_create">Create a new link</string>
+    <string name="chat_info_link_copy">Copy</string>
+    <string name="chat_info_link_share">Share</string>
+    <string name="chat_info_link_edit">Edit</string>
+    <string name="chat_info_link_revoke">Revoke link</string>
+    <string name="chat_info_link_delete">Delete</string>
+    <!-- Spoken by screen readers for a revoked link's button. %1$s is the link's name. -->
+    <string name="chat_info_link_delete_named">Delete %1$s</string>
+    <string name="chat_info_links_delete_all">Delete all revoked links</string>
+    <plurals name="chat_info_link_joined">
+        <item quantity="one">%1$d joined</item>
+        <item quantity="other">%1$d joined</item>
+    </plurals>
+    <plurals name="chat_info_link_requests">
+        <item quantity="one">%1$d waiting for approval</item>
+        <item quantity="other">%1$d waiting for approval</item>
+    </plurals>
+    <!-- Under a link: how many joined, then its state ("3 joined · Expires Oct 30"). -->
+    <string name="chat_info_link_detail">%1$s · %2$s</string>
+    <!-- %1$s is a date. -->
+    <string name="chat_info_link_expires">Expires %1$s</string>
+    <string name="chat_info_link_state_expired">Expired</string>
+    <string name="chat_info_link_state_full">Full</string>
+    <string name="chat_info_link_state_revoked">Revoked</string>
+    <string name="chat_info_link_revoke_title">Revoke this link?</string>
+    <string name="chat_info_link_revoke_text">Nobody can join through it any more. People who joined stay.</string>
+    <string name="chat_info_link_revoke_primary_text">Nobody can join through it any more, and a new primary link replaces it. People who joined stay.</string>
+    <string name="chat_info_link_revoke_confirm">Revoke</string>
+    <string name="chat_info_link_delete_title">Delete this link?</string>
+    <string name="chat_info_links_delete_all_title">Delete all revoked links?</string>
+    <string name="chat_info_link_delete_text">Deleted links can\'t be restored.</string>
+    <string name="chat_info_link_revoked">Link revoked</string>
+    <string name="chat_info_link_deleted">Link deleted</string>
+    <string name="chat_info_links_deleted">Revoked links deleted</string>
+    <string name="chat_info_link_new_title">New invite link</string>
+    <string name="chat_info_link_edit_title">Edit invite link</string>
+    <string name="chat_info_link_name">Name (optional)</string>
+    <!-- Under the name: who sees it, and %1$d of %2$d characters. -->
+    <string name="chat_info_link_name_note">Only admins see it. %1$d/%2$d</string>
+    <string name="chat_info_link_expires_header">Expires</string>
+    <string name="chat_info_link_never">Never</string>
+    <string name="chat_info_link_in_hour">In 1 hour</string>
+    <string name="chat_info_link_in_day">In 1 day</string>
+    <string name="chat_info_link_in_week">In 1 week</string>
+    <!-- An edited link's own expiry. %1$s is a date and time. -->
+    <string name="chat_info_link_on">On %1$s</string>
+    <string name="chat_info_link_limit_header">Limit members</string>
+    <string name="chat_info_link_no_limit">No limit</string>
+    <plurals name="chat_info_link_limit">
+        <item quantity="one">%1$s person</item>
+        <item quantity="other">%1$s people</item>
+    </plurals>
+    <string name="chat_info_link_requests_switch">Request admin approval</string>
+    <string name="chat_info_link_requests_summary">Admins approve each person who joins through this link</string>
+    <string name="chat_info_link_create_button">Create link</string>
+
+    <!-- Leaving, deleting and clearing -->
+    <string name="chat_info_clear_history">Clear history</string>
+    <string name="chat_info_delete_group">Delete group</string>
+    <string name="chat_info_delete_channel">Delete channel</string>
+    <string name="chat_info_leave_group_title">Leave group?</string>
+    <string name="chat_info_leave_channel_title">Leave channel?</string>
+    <!-- %1$s is the chat's title. -->
+    <string name="chat_info_leave_text">You\'ll leave %1$s and it will be removed from your chats.</string>
+    <string name="chat_info_delete_group_title">Delete group for everyone?</string>
+    <string name="chat_info_delete_channel_title">Delete channel for everyone?</string>
+    <string name="chat_info_delete_text">%1$s and all its messages will be deleted for every member. This can\'t be undone.</string>
+    <string name="chat_info_delete_confirm">Delete</string>
+    <string name="chat_info_clear_history_title">Clear history?</string>
+    <string name="chat_info_clear_history_text">The messages of %1$s will be deleted for you. Other members still see them.</string>
+    <string name="chat_info_clear_history_confirm">Clear</string>
+    <string name="chat_info_history_cleared">History cleared</string>
 </resources>

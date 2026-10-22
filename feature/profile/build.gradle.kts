@@ -9,6 +9,8 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+    // Draws the QR code of a group's or channel's link on the device (REQUIREMENTS.md FR-P3); nothing leaves it.
+    implementation(libs.zxing.core)
 
     // ProfileViewModel is tested through the real TDLib repositories on FakeTdlibClient (docs/TESTING.md).
     testImplementation(projects.core.data)

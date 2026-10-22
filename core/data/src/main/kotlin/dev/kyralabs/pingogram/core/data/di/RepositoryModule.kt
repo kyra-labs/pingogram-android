@@ -23,7 +23,10 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibInviteLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
@@ -60,7 +63,10 @@ import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
+import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
@@ -165,6 +171,15 @@ interface RepositoryModule {
 
     @Binds
     fun userProfileRepository(repository: TdlibUserProfileRepository): UserProfileRepository
+
+    @Binds
+    fun groupInfoRepository(repository: TdlibGroupInfoRepository): GroupInfoRepository
+
+    @Binds
+    fun groupAdministrationRepository(repository: TdlibGroupAdministrationRepository): GroupAdministrationRepository
+
+    @Binds
+    fun inviteLinkRepository(repository: TdlibInviteLinkRepository): InviteLinkRepository
 
     @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository

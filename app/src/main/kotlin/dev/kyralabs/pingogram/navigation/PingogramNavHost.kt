@@ -211,6 +211,7 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenMedia = openMedia,
                     onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
                     onOpenProfile = navController::navigateToProfile,
+                    onOpenChatInfo = navController::navigateToChatInfo,
                 )
             }
         }
@@ -239,8 +240,10 @@ private fun NavGraphBuilder.mainGraph(
             onOpenMedia = openMedia,
             onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
             onOpenProfile = navController::navigateToProfile,
+            onOpenChatInfo = navController::navigateToChatInfo,
         )
         profile(navController)
+        chatInfo(navController)
         mediaViewer(navController)
     }
 }

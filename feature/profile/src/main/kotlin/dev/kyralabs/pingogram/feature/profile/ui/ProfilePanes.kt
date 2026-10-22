@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.profile.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -68,8 +69,7 @@ import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
-/** The profile and its shared media side by side, as Material's supporting pane layout. */
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+/** The profile and its shared media side by side, as Material's supporting pane layout ([SupportingPanes]). */
 @Composable
 internal fun ProfilePanes(
     page: ProfilePageParts,
@@ -77,6 +77,26 @@ internal fun ProfilePanes(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier,
     gridState: LazyGridState,
+) {
+    SupportingPanes(
+        main = { ProfilePage(page, onBack, snackbarHostState, Modifier, rememberLazyGridState(), withMedia = false) },
+        supporting = { SharedMediaPane(page.media, page.onMediaEvent, page.mediaActions, gridState) },
+        modifier = modifier,
+    )
+}
+
+/**
+ * Material's supporting pane canonical layout (`SupportingPaneScaffold` of `material3-adaptive`): [main] as the main
+ * pane and [supporting] beside it, each in its own rounded container on the window's `surfaceContainer`
+ * (`paneContainer`, as the chats' and settings' panes). The profile and a group's or channel's info page show their
+ * shared media this way on expanded windows.
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@Composable
+internal fun SupportingPanes(
+    main: @Composable () -> Unit,
+    supporting: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
     val value =
@@ -94,14 +114,10 @@ internal fun ProfilePanes(
         directive = directive,
         value = value,
         mainPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) {
-                ProfilePage(page, onBack, snackbarHostState, Modifier, rememberLazyGridState(), withMedia = false)
-            }
+            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = false)) { main() }
         },
         supportingPane = {
-            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) {
-                SharedMediaPane(page, gridState)
-            }
+            AnimatedPane(modifier = Modifier.paneContainer(twoPanes = true, last = true)) { supporting() }
         },
         modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
     )
@@ -113,9 +129,12 @@ internal fun ProfilePanes(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SharedMediaPane(
-    page: ProfilePageParts,
+internal fun SharedMediaPane(
+    media: SharedMediaUiState,
+    onMediaEvent: (SharedMediaEvent) -> Unit,
+    mediaActions: SharedMediaActions,
     gridState: LazyGridState,
+    @StringRes emptyBody: Int = R.string.profile_media_empty_body,
 ) {
     Scaffold(
         containerColor = profilePageColor(),
@@ -136,20 +155,24 @@ private fun SharedMediaPane(
             )
         },
     ) { innerPadding ->
-        SharedMediaPaneBody(page, innerPadding, gridState)
+        SharedMediaPaneBody(media, onMediaEvent, mediaActions, innerPadding, gridState, emptyBody)
     }
 }
 
+@Suppress("LongParameterList") // What the pane shows, where its events go, and the pane's own layout state.
 @Composable
 private fun SharedMediaPaneBody(
-    page: ProfilePageParts,
+    media: SharedMediaUiState,
+    onMediaEvent: (SharedMediaEvent) -> Unit,
+    mediaActions: SharedMediaActions,
     innerPadding: PaddingValues,
     gridState: LazyGridState,
+    @StringRes emptyBody: Int,
 ) {
     val margin = windowMargin()
     val sizes = MaterialTheme.sizes
     val extraLarge = MaterialTheme.spacing.extraLarge
-    SharedMediaLoadMoreEffect(gridState, page.media, page.onMediaEvent)
+    SharedMediaLoadMoreEffect(gridState, media, onMediaEvent)
     BoxWithConstraints(Modifier.fillMaxSize().consumeWindowInsets(innerPadding)) {
         val columns = (maxWidth / sizes.sharedMediaCell).toInt().coerceAtLeast(1)
         val cellSizePx = with(LocalDensity.current) { (maxWidth / columns).roundToPx() }
@@ -160,7 +183,7 @@ private fun SharedMediaPaneBody(
             contentPadding =
                 remember(innerPadding, extraLarge) { innerPadding.withTop(0.dp).plusBottom(extraLarge) },
         ) {
-            sharedMediaItems(page.media, page.onMediaEvent, page.mediaActions, cellSizePx, margin)
+            sharedMediaItems(media, onMediaEvent, mediaActions, cellSizePx, margin, emptyBody = emptyBody)
         }
     }
 }

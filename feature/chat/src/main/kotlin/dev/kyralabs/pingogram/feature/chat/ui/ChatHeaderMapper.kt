@@ -23,7 +23,7 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
  * precedence, what people are doing in it, then its status ([status]). Saved Messages has neither. A secret chat
  * (FR-E1) has its lock and self-destruct timer, and while it waits for the other user or after it ended, its state
  * ("Waiting for Ada to come online", "Secret chat ended") in place of the status. The title of a private or secret
- * chat opens the other user's profile.
+ * chat opens the other user's profile, that of a group or channel its info page.
  */
 internal fun HeaderSources.toHeader(): ChatHeader {
     val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
@@ -55,6 +55,7 @@ internal fun HeaderSources.toHeader(): ChatHeader {
             },
         profileUserId = chat.userId.takeUnless { isSavedMessages },
         secret = secretHeader(),
+        opensChatInfo = chat.hasInfoPage,
     )
 }
 
@@ -142,3 +143,7 @@ internal val Chat.isGroup: Boolean
 
 internal val Chat.isChannel: Boolean
     get() = (type as? ChatType.Supergroup)?.isChannel == true
+
+/** Whether the chat is a group or channel, whose info page its title opens. */
+private val Chat.hasInfoPage: Boolean
+    get() = type is ChatType.BasicGroup || type is ChatType.Supergroup
