@@ -383,3 +383,10 @@ data class QrLoginRoute(
 /** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */
 @Serializable
 data object MyQrCodeRoute
+
+/**
+ * "Send feedback" (`docs/TESTING_GUIDE.md`), `:feature:feedback`: the report of the build, the device, the last crash
+ * and TDLib's errors, which the user shares themselves; pushed above Settings → About.
+ */
+@Serializable
+data object FeedbackRoute
