@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
+  chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
 - App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's

@@ -105,6 +105,9 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.core.splashscreen)
+    // The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md).
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
     // HiltWorkerFactory for WorkManager's configuration (PingogramApplication); WorkManager itself comes with
     // core:notifications.
     implementation(libs.androidx.hilt.work)
@@ -141,6 +144,7 @@ dependencies {
     testImplementation(projects.core.testing)
     // The language repository's tests keep the app's settings in a DataStore of their own.
     testImplementation(libs.androidx.datastore.preferences)
+    testImplementation(libs.androidx.glance.appwidget.testing)
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
