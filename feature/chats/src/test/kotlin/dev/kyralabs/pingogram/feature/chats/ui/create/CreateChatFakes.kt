@@ -99,7 +99,6 @@ data class ChannelRequest(
 
 /** Answers each call with what its handler gives, and records every call. */
 class FakeChatCreationRepository : ChatCreationRepository {
-    var onPreparePhoto: suspend (String) -> Outcome<String> = { uri -> Outcome.Success("/cache/uploads/$uri.jpg") }
     var onCreateGroup: suspend (GroupRequest) -> Outcome<CreatedGroup> = {
         Outcome.Success(CreatedGroup(GROUP_ID, persistentListOf()))
     }
@@ -109,19 +108,12 @@ class FakeChatCreationRepository : ChatCreationRepository {
     var onInviteLink: suspend (Long) -> Outcome<String> = { Outcome.Success(LINK) }
     var onAddMembers: suspend (List<Long>) -> Outcome<ImmutableList<Long>> = { Outcome.Success(persistentListOf()) }
 
-    val discarded = mutableListOf<String>()
     val groups = mutableListOf<GroupRequest>()
     val channels = mutableListOf<ChannelRequest>()
     val checkedUsernames = mutableListOf<Pair<Long, String>>()
     val setUsernames = mutableListOf<Pair<Long, String>>()
     val inviteLinks = mutableListOf<Long>()
     val added = mutableListOf<Pair<Long, List<Long>>>()
-
-    override suspend fun preparePhoto(uri: String): Outcome<String> = onPreparePhoto(uri)
-
-    override fun discardPhoto(path: String) {
-        discarded += path
-    }
 
     override suspend fun createGroup(
         title: String,

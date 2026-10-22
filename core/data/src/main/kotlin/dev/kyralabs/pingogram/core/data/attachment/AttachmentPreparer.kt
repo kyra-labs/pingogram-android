@@ -36,10 +36,11 @@ internal class AttachmentPreparer(
     private val content: ContentSource,
     private val media: MediaProcessor,
 ) {
-    /** The file at [uri] prepared as [kind] says. */
+    /** The file at [uri] prepared as [kind] says; a photo at most [photoMaxSide] pixels on its longer side. */
     suspend fun prepare(
         uri: String,
         kind: AttachmentKind,
+        photoMaxSide: Int = MAX_PHOTO_SIDE,
     ): Outcome<Attachment> {
         val info = content.describe(uri)
         if ((info.size ?: 0) > MAX_FILE_SIZE) return Outcome.Failure(DomainError.FileTooLarge)
@@ -61,7 +62,7 @@ internal class AttachmentPreparer(
                         when {
                             kind == AttachmentKind.Document -> document()
                             type == GIF -> document()
-                            type?.startsWith(IMAGE) == true -> photo(copy, directory) ?: document()
+                            type?.startsWith(IMAGE) == true -> photo(copy, directory, photoMaxSide) ?: document()
                             type?.startsWith(VIDEO) == true -> video(copy, copied.size, directory) ?: document()
                             else -> document()
                         }
@@ -141,16 +142,18 @@ internal class AttachmentPreparer(
     }
 
     /**
-     * The image in [source] written anew into [directory] as the photo to send; null when it cannot be decoded. The
-     * source, which still has its metadata, is deleted once the photo is written if [deleteSource].
+     * The image in [source] written anew into [directory] as the photo to send, at most [maxSide] pixels on its longer
+     * side; null when it cannot be decoded. The source, which still has its metadata, is deleted once the photo is
+     * written if [deleteSource].
      */
     private fun photo(
         source: File,
         directory: File,
+        maxSide: Int = MAX_PHOTO_SIDE,
         deleteSource: Boolean = true,
     ): Attachment.Photo? {
         val image = media.imageInfo(source) ?: return null
-        val plan = photoPlan(image.width, image.height, image.orientation)
+        val plan = photoPlan(image.width, image.height, image.orientation, maxSide)
         val target = File.createTempFile(PHOTO_PREFIX, JPEG_SUFFIX, directory)
         return if (media.writePhoto(source, plan, target) && target.length() > 0) {
             if (deleteSource) source.delete()

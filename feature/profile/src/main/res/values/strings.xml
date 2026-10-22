@@ -209,7 +209,7 @@
 
     <!-- Administration -->
     <string name="chat_info_section_administration">Administration</string>
-    <string name="chat_info_edit">Name and description</string>
+    <string name="chat_info_edit">Photo, name and description</string>
     <string name="chat_info_permissions">Permissions</string>
     <string name="chat_info_administrators">Administrators</string>
     <string name="chat_info_invite_links">Invite links</string>
@@ -218,6 +218,14 @@
     <string name="chat_info_save">Save</string>
     <!-- Spoken by screen readers while a change is on its way. -->
     <string name="chat_info_saving">Saving</string>
+    <!-- Spoken by screen readers for the photo on the page that edits it. -->
+    <string name="chat_info_group_photo">Group photo</string>
+    <string name="chat_info_channel_photo">Channel photo</string>
+    <string name="chat_info_remove_photo_title">Remove the group\'s photo?</string>
+    <string name="chat_info_remove_photo_title_channel">Remove the channel\'s photo?</string>
+    <string name="chat_info_remove_photo_text">Members will see the group\'s initials in its place.</string>
+    <string name="chat_info_remove_photo_text_channel">Subscribers will see the channel\'s initials in its place.</string>
+    <string name="chat_info_remove_photo_confirm">Remove</string>
     <string name="chat_info_group_name">Group name</string>
     <string name="chat_info_channel_name">Channel name</string>
     <string name="chat_info_description_note">Everyone who finds this chat can read its description.</string>

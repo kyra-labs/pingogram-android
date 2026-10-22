@@ -20,7 +20,8 @@ import org.robolectric.annotation.Config
  * Goldens of the info page of groups and channels and the pages it opens (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md`
  * §12): a group the user administers in light, dark, AMOLED, high contrast and right to left, on an expanded window
  * with the shared media beside it, a channel the user reads, the error; the members, a member's rights and
- * restrictions, the permissions with slow mode, editing the name, the invite links and a new link.
+ * restrictions, the permissions with slow mode, editing the photo and name (a new photo uploading in dark), the invite
+ * links and a new link.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -70,21 +71,11 @@ class ChatInfoScreenshotTest {
     fun permissions() = page(ScreenshotVariant.Light) { ChatPermissionsScreen(ChatInfoPreviewData.permissions, {}, {}) }
 
     @Test
-    fun editInfo() =
-        page(ScreenshotVariant.Light) {
-            EditChatInfoScreen(
-                EditChatInfoUiState.Content(
-                    kind = ChatInfoPreviewData.group.kind,
-                    title = "Rust Berlin",
-                    description =
-                        ChatInfoPreviewData.group.description
-                            ?.text
-                            .orEmpty(),
-                ),
-                {},
-                {},
-            )
-        }
+    fun editInfo() = page(ScreenshotVariant.Light) { EditChatInfoScreen(ChatInfoPreviewData.editInfo, {}, {}) }
+
+    @Test
+    fun editInfoUploadingDark() =
+        page(ScreenshotVariant.Dark) { EditChatInfoScreen(ChatInfoPreviewData.editInfoUploading, {}, {}) }
 
     @Test
     fun inviteLinksLight() =

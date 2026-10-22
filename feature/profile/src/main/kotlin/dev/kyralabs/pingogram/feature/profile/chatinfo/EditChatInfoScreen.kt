@@ -1,5 +1,8 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,10 +14,12 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -36,12 +41,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
+import dev.kyralabs.pingogram.core.ui.component.PhotoEditor
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
+import dev.kyralabs.pingogram.feature.profile.ui.profileRowContainerColor
 
 /** The page that edits a group's or channel's title and description: hoists its view model; closes once saved. */
 @Composable
@@ -56,6 +63,10 @@ internal fun EditChatInfoRoute(
     val showDetails = isDebuggable()
     val haptics = LocalHapticFeedback.current
     val currentOnBack by rememberUpdatedState(onBack)
+    val photoPicker =
+        rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+            if (uri != null) viewModel.onEvent(EditChatInfoEvent.PhotoPicked(uri.toString()))
+        }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -71,15 +82,29 @@ internal fun EditChatInfoRoute(
             }
         }
     }
-    EditChatInfoScreen(state, viewModel::onEvent, onBack, modifier, snackbarHostState)
+    EditChatInfoScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+        onPickPhoto = { photoPicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) },
+    )
 }
 
 /**
- * Editing the title and description (`docs/DESIGN_SYSTEM.md` §6 "Group and channel info"), a settings-style page:
- * the name and the description in rounded tonal `TextField`s on the page, the description over several lines with
- * what it is for below it, a field's error below it; a `LinearWavyProgressIndicator` while Telegram answers, then a
- * default `Button` "Save" at the end. The content keeps clear of the keyboard.
+ * Editing the photo, title and description (`docs/DESIGN_SYSTEM.md` §6 "Group and channel info"), a settings-style
+ * page:
+ * - **Photo**: a segment of its own on the rows' container with the shared [PhotoEditor] (the photo large and round,
+ *   "Set new photo", which opens the system photo picker through [onPickPhoto], and "Remove photo" in `error`, which
+ *   asks with an `AlertDialog`), its upload's progress around it. It changes at once, apart from "Save".
+ * - **Texts**: the name and the description in rounded tonal `TextField`s on the page, the description over several
+ *   lines with what it is for below it, a field's error below it; a `LinearWavyProgressIndicator` while Telegram
+ *   answers, then a default `Button` "Save" at the end.
+ *
+ * The content keeps clear of the keyboard.
  */
+@Suppress("LongParameterList") // The state, where its events go, back, the snackbars and the photo picker.
 @Composable
 internal fun EditChatInfoScreen(
     state: EditChatInfoUiState,
@@ -87,6 +112,7 @@ internal fun EditChatInfoScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onPickPhoto: () -> Unit = {},
 ) {
     InfoPageScaffold(
         title = stringResource(R.string.chat_info_edit),
@@ -105,10 +131,68 @@ internal fun EditChatInfoScreen(
             }
 
             is EditChatInfoUiState.Content -> {
-                InfoPageContent(innerPadding) { EditFields(state, onEvent) }
+                InfoPageContent(innerPadding) {
+                    PhotoSegment(state, onEvent, onPickPhoto)
+                    EditFields(state, onEvent)
+                }
+                if (state.confirmingPhotoRemoval) RemovePhotoDialog(state.kind, onEvent)
             }
         }
     }
+}
+
+/** The photo on the rows' container, in a segment of its own, with what can be done with it. */
+@Composable
+private fun PhotoSegment(
+    state: EditChatInfoUiState.Content,
+    onEvent: (EditChatInfoEvent) -> Unit,
+    onPickPhoto: () -> Unit,
+) {
+    Surface(
+        shape = ListItemDefaults.segmentedShapes(index = 0, count = 1).shape,
+        color = profileRowContainerColor(),
+    ) {
+        PhotoEditor(
+            photo = state.photo,
+            name = state.title,
+            avatarId = state.avatarId,
+            task = state.photoTask,
+            contentDescription =
+                stringResource(
+                    if (state.kind ==
+                        GroupKind.Channel
+                    ) {
+                        R.string.chat_info_channel_photo
+                    } else {
+                        R.string.chat_info_group_photo
+                    },
+                ),
+            onPick = onPickPhoto,
+            onRemove = { onEvent(EditChatInfoEvent.RemovePhoto) },
+        )
+    }
+}
+
+/** Whether to remove the photo: an `AlertDialog`, as every destructive action asks. */
+@Composable
+private fun RemovePhotoDialog(
+    kind: GroupKind,
+    onEvent: (EditChatInfoEvent) -> Unit,
+) {
+    val channel = kind == GroupKind.Channel
+    ConfirmationDialog(
+        title =
+            stringResource(
+                if (channel) R.string.chat_info_remove_photo_title_channel else R.string.chat_info_remove_photo_title,
+            ),
+        text =
+            stringResource(
+                if (channel) R.string.chat_info_remove_photo_text_channel else R.string.chat_info_remove_photo_text,
+            ),
+        confirm = stringResource(R.string.chat_info_remove_photo_confirm),
+        onConfirm = { onEvent(EditChatInfoEvent.ConfirmPhotoRemoval) },
+        onDismiss = { onEvent(EditChatInfoEvent.DismissPhotoRemoval) },
+    )
 }
 
 @Composable

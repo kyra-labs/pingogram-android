@@ -17,7 +17,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [GroupAdministrationRepository] on TDLib: `setChatTitle`, `setChatDescription`, `setChatPermissions`,
+ * [GroupAdministrationRepository] on TDLib: `setChatTitle`, `setChatDescription`, `setChatPhoto` (a static photo
+ * from a local file, its progress from the file's `updateFile`s, or null to remove it), `setChatPermissions`,
  * `setChatSlowModeDelay`, `setChatMemberStatus` and `deleteChatHistory`, each sent once as asked. TDLib checks the
  * rights itself and Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow
  * mode delay Telegram does not accept are refused before anything is sent.
@@ -41,6 +42,15 @@ class TdlibGroupAdministrationRepository
             chatId: Long,
             description: String,
         ): Outcome<Unit> = client.request(TdApi.SetChatDescription(chatId, description.trim())).map {}
+
+        override suspend fun setPhoto(
+            chatId: Long,
+            path: String,
+            onProgress: (progress: Float) -> Unit,
+        ): Outcome<Unit> = client.uploadPhoto(path, onProgress) { photo -> TdApi.SetChatPhoto(chatId, photo) }
+
+        override suspend fun removePhoto(chatId: Long): Outcome<Unit> =
+            client.request(TdApi.SetChatPhoto(chatId, null)).map {}
 
         override suspend fun setPermissions(
             chatId: Long,

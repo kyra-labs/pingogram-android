@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
@@ -75,6 +76,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -163,6 +165,9 @@ interface RepositoryModule {
 
     @Binds
     fun chatCreationRepository(repository: TdlibChatCreationRepository): ChatCreationRepository
+
+    @Binds
+    fun pickedPhotoRepository(repository: AndroidPickedPhotoRepository): PickedPhotoRepository
 
     @Binds
     fun storageRepository(repository: TdlibStorageRepository): StorageRepository
