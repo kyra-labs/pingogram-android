@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui.components
+package dev.kyralabs.pingogram.core.ui.qr
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme

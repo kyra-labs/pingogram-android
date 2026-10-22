@@ -36,6 +36,12 @@ interface LinkDispatcher {
         fromOutside: Boolean = false,
     )
 
+    /**
+     * Opens [target], a link already resolved elsewhere (the QR code scanner), as [open] would once it resolved it: its
+     * screen, or why it does not open.
+     */
+    fun show(target: LinkTarget)
+
     /** Stops looking up the link being opened: nothing opens. */
     fun cancel()
 }
@@ -76,6 +82,12 @@ class LinkViewModel
                 }
         }
 
+        override fun show(target: LinkTarget) {
+            job?.cancel()
+            resolving.value = false
+            job = viewModelScope.launch { effectChannel.send(effectOf(target, fromOutside = false)) }
+        }
+
         override fun cancel() {
             job?.cancel()
             job = null
@@ -91,7 +103,15 @@ class LinkViewModel
                     is Outcome.Success -> resolved.value
                     is Outcome.Failure -> return LinkEffect.Notice(LinkNotice.Failed(resolved.error))
                 }
-            return when {
+            return effectOf(target, fromOutside)
+        }
+
+        /** The screen of [target], or why it does not open; a chat's suggested text becomes its draft first. */
+        private suspend fun effectOf(
+            target: LinkTarget,
+            fromOutside: Boolean,
+        ): LinkEffect =
+            when {
                 target is LinkTarget.NotFound -> {
                     LinkEffect.Notice(LinkNotice.NotFound(target.subject))
                 }
@@ -104,10 +124,6 @@ class LinkViewModel
                     LinkEffect.Notice(LinkNotice.Unsupported(target.url.takeIf(::isWebLink)))
                 }
 
-                !target.hasScreen() -> {
-                    LinkEffect.Notice(LinkNotice.NotYet)
-                }
-
                 else -> {
                     // The chat opens either way; without the draft, the composer stays as it was.
                     if (target is LinkTarget.Chat) {
@@ -116,5 +132,4 @@ class LinkViewModel
                     LinkEffect.Open(target, fromOutside)
                 }
             }
-        }
     }

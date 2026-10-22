@@ -85,7 +85,8 @@ import java.time.Instant
  * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
  * picker through [onSendAs]. The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel],
  * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
- * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent].
+ * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent]. In a public group or channel
+ * the user is not in, a filled "Join" button takes the composer's place ([JoinButton], [onJoin]).
  */
 @Composable
 internal fun ChatBottomBar(
@@ -107,6 +108,7 @@ internal fun ChatBottomBar(
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
     onSendSticker: (Sticker) -> Unit = {},
     panelState: ComposerPanelState = rememberComposerPanelState(),
+    onJoin: () -> Unit = {},
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
@@ -115,6 +117,10 @@ internal fun ChatBottomBar(
         when (composer) {
             is ComposerUiState.Unavailable -> {
                 UnavailableLabel(composer.reason)
+            }
+
+            is ComposerUiState.Join -> {
+                JoinButton(composer, onJoin)
             }
 
             is ComposerUiState.Available -> {
@@ -402,7 +408,7 @@ internal fun RowScope.Appearing(
 }
 
 /** The edges the bottom bar keeps clear of: the keyboard and the navigation bar below, cutouts at the sides. */
-private val BOTTOM_EDGES = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+internal val BOTTOM_EDGES = WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
 
 @PingogramPreviews
 @Composable

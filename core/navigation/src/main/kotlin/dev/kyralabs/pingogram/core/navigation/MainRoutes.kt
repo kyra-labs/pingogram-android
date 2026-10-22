@@ -326,3 +326,46 @@ data class EditInviteLinkRoute(
     val chatId: Long,
     val link: String? = null,
 )
+
+/**
+ * The join sheet of invite link [inviteLink] (`REQUIREMENTS.md` FR-P5), `:feature:profile`: a dialog destination above
+ * the screen the link was opened from, as the forward sheet is. It shows the chat and joins only on "Join".
+ */
+@Serializable
+data class ChatInviteRoute(
+    val inviteLink: String,
+) {
+    override fun toString() = "ChatInviteRoute(…)"
+}
+
+/** The boosts of channel or supergroup [chatId], read only (`REQUIREMENTS.md` FR-P5), pushed above its info page. */
+@Serializable
+data class ChatBoostRoute(
+    val chatId: Long,
+)
+
+/**
+ * The QR code scanner (`REQUIREMENTS.md` FR-P5, `docs/adr/0012-camerax-and-zxing-qr-scanner.md`), `:feature:scanner`,
+ * full screen above the screen it is opened from: the Contacts tab, the user's own QR code, or Active sessions'
+ * "Link desktop device", whose [purpose] is the name of a `ScanPurpose` (a login code only), which this module does
+ * not depend on.
+ */
+@Serializable
+data class QrScannerRoute(
+    val purpose: String,
+)
+
+/**
+ * Logging in another device with QR code login link [link] (`tg://login?token=…`), `:feature:settings`: a settings page
+ * that asks before confirming it, then shows the new session.
+ */
+@Serializable
+data class QrLoginRoute(
+    val link: String,
+) {
+    override fun toString() = "QrLoginRoute(…)"
+}
+
+/** The user's own QR code, to share their profile, `:feature:settings`: pushed above the screen it is opened from. */
+@Serializable
+data object MyQrCodeRoute

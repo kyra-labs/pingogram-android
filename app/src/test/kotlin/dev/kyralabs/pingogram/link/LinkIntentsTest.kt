@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.link
 
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import org.junit.Assert.assertEquals
@@ -7,9 +8,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-/** Which intents carry a Telegram link to open. */
+/**
+ * Which intents carry a Telegram link to open. A plain [Application], like the app's other tests: Pingogram's own would
+ * start TDLib and its controllers, whose coroutines outlive the test and fail the next one.
+ */
 @RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class LinkIntentsTest {
     @Test
     fun `a view intent of a Telegram link carries it`() {

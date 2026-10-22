@@ -286,7 +286,7 @@ private fun ActiveSessions.toState(
  * The row of [this] session: its device, its app and system ("Pingogram 0.3.0 · Android 15", the version alone when
  * it already names the app), and where and when it was last active ("Online" for this device).
  */
-private fun ActiveSession.toItem(
+internal fun ActiveSession.toItem(
     formatter: SettingsTimeFormatter,
     now: Instant,
 ): SessionItem {

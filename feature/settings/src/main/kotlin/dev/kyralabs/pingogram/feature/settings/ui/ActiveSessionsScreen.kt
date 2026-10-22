@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,13 +20,16 @@ import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The Active sessions page: hoists [ActiveSessionsViewModel], loads the sessions again whenever the page shows, and
- * shows its results in snackbars. [onBack] leaves the page.
+ * The Active sessions page: hoists [ActiveSessionsViewModel], loads the sessions again whenever the page shows (back
+ * from linking a device too), and shows its results in snackbars. [onLinkDevice] opens the QR code scanner for a
+ * login code, [onBack] leaves the page.
  */
 @Composable
 internal fun ActiveSessionsRoute(
+    onLinkDevice: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ActiveSessionsViewModel = hiltViewModel(),
@@ -72,11 +76,14 @@ internal fun ActiveSessionsRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onLinkDevice = onLinkDevice,
     )
 }
 
 /**
- * Active sessions (`REQUIREMENTS.md` FR-S1): this device and "Terminate all other sessions", the new logins with
+ * Active sessions (`REQUIREMENTS.md` FR-S1): "Link desktop device" first ([onLinkDevice], the QR code scanner for the
+ * code Telegram shows on a computer, `REQUIREMENTS.md` FR-P5), then this device and "Terminate all other sessions", the
+ * new logins with
  * "Yes, it's me" and "No, terminate", then the other sessions, each of which a tap offers to terminate. Each
  * session shows its device, app and system, and where and when it was last active. Terminations are confirmed in an
  * `AlertDialog` first (destructive).
@@ -88,6 +95,7 @@ internal fun ActiveSessionsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onLinkDevice: () -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_active_sessions),
@@ -95,6 +103,7 @@ internal fun ActiveSessionsScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
+        LinkDeviceGroup(onLinkDevice)
         when (val sessions = state.sessions) {
             SessionsState.Loading -> {
                 SettingsLoading(stringResource(R.string.settings_sessions_loading))
@@ -182,6 +191,22 @@ private fun Sessions(
     }
 }
 
+/** "Link desktop device": a row of its own, the QR code scanner's icon in the group's tonal circle. */
+@Composable
+private fun LinkDeviceGroup(onLinkDevice: () -> Unit) {
+    SettingsGroup {
+        item(key = LINK_DEVICE) { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_link_device),
+                shapes = shapes,
+                icon = UiR.drawable.ic_qr_code_scanner,
+                supportingContent = { Text(stringResource(R.string.settings_link_device_summary)) },
+                onClick = onLinkDevice,
+            )
+        }
+    }
+}
+
 @PingogramPreviews
 @Composable
 private fun ActiveSessionsScreenPreview() {
@@ -226,3 +251,5 @@ private fun ActiveSessionsScreenErrorPreview() {
 
 /** The key of "Terminate all other sessions" among the session rows, which are keyed by session id. */
 private const val TERMINATE_ALL = "terminateAll"
+
+private const val LINK_DEVICE = "linkDevice"

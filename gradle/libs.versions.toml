@@ -24,6 +24,11 @@ androidxTestExtJunit = "1.3.0"
 # work-testing for the worker's tests only.
 androidxWork = "2.12.0"
 assertj = "3.27.7"
+# CameraX for the in-app QR code scanner only (feature:scanner, REQUIREMENTS.md FR-P5; approved by the owner 2026-10-21;
+# docs/adr/0012-camerax-and-zxing-qr-scanner.md): camera-core, its Camera2 implementation, the lifecycle binding and
+# camera-compose's CameraXViewfinder. First-party Jetpack, no network code and no Google Play services, so foss stays
+# Google-free; frames are decoded on the device by ZXing and never leave it.
+camerax = "1.6.2"
 # Coil 3 image loading, without any coil-network-* artifact: images come only from TDLib's local files
 # (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
 coil = "3.6.3"
@@ -74,7 +79,8 @@ tdlib = "a94b83d67ab4c8397c6245e541b31a4131ea2f79"
 # catalog allows no empty value) fails the build with instructions, unless pingogram.tdlib.aar is set.
 tdlibAarSha256 = "9984a3569df68d2d18a30b0d138021aa464f0fadcf1f0ec32edd19a5b3bccecd"
 turbine = "1.2.1"
-# QR code encoder for QR login (feature:auth): pure Java, no Android or network code; R8 keeps only the encoder.
+# QR codes on the device: the encoder for the codes Pingogram shows (core:ui) and the decoder of the QR code scanner
+# (feature:scanner). Pure Java, no Android or network code; R8 keeps only what is used.
 zxing = "3.5.4"
 
 [libraries]
@@ -108,6 +114,10 @@ androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profi
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-work-runtime = { group = "androidx.work", name = "work-runtime", version.ref = "androidxWork" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "androidxWork" }
+camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+camerax-compose = { group = "androidx.camera", name = "camera-compose", version.ref = "camerax" }
+camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 # AsyncImage and the singleton ImageLoader; brings coil-core (okio, coroutines). No network artifact (see coil above).
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

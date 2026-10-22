@@ -80,6 +80,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 sendAsRepository = FakeSendAsRepository(),
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,
+                chatJoinRepository = FakeChatJoinRepository(),
                 threadRepositories =
                     ThreadRepositories(
                         FakePinnedMessageRepository(),

@@ -111,6 +111,7 @@ dependencies {
     implementation(projects.feature.contacts)
     implementation(projects.feature.media)
     implementation(projects.feature.profile)
+    implementation(projects.feature.scanner)
     implementation(projects.feature.settings)
 
     // FCM push, gms only (docs/adr/0004-push-delivery.md); foss never sees Firebase or Play services.

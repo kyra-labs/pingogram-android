@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
+import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -28,6 +29,7 @@ import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
+import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
@@ -54,6 +56,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as Privac
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
@@ -64,7 +68,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRou
  * [LanguageRoute], [AboutRoute] or [PrivacySecurityRoute]. Once Edit profile saved the profile
  * ([popBackStackAfterProfileSaved], or beside Settings home), the tab says so.
  */
-fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
+fun NavGraphBuilder.settingsScreen(
+    onOpen: (route: Any) -> Unit,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
+) {
     composable<SettingsRoute> { entry ->
         val results = entry.savedStateHandle
         val profileSaved by results.getStateFlow(PROFILE_SAVED_RESULT, false).collectAsStateWithLifecycle()
@@ -73,6 +80,7 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
             profileSaved = profileSaved,
             onProfileSavedShown = { results[PROFILE_SAVED_RESULT] = false },
             onProfileSaved = { results[PROFILE_SAVED_RESULT] = true },
+            onScanQrCode = onScanQrCode,
         )
     }
 }
@@ -87,14 +95,19 @@ fun NavGraphBuilder.settingsScreen(onOpen: (route: Any) -> Unit) {
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
  * [onBack] leaves each of them; Edit profile leaves with [onProfileSaved] once it saved, which the app implements with
  * [popBackStackAfterProfileSaved], and a flow of 2-step verification with [onTwoStepVerificationDone] once it is done,
- * which the app implements with [popBackStackAfterTwoStepVerification]. The detail pane of [SettingsListDetail] adds
- * them to a `NavHost` of its own, with these callbacks on its own back stack.
+ * which the app implements with [popBackStackAfterTwoStepVerification]. Active sessions' "Link desktop device" and the
+ * user's own QR code ([MyQrCodeRoute]) open the QR code scanner, full screen, with [onScanQrCode] (for a device's login
+ * code only, or any Telegram link); [QrLoginRoute], which a scanned or opened login code leads to, asks before it logs
+ * the device in. The detail pane of [SettingsListDetail] adds them to a `NavHost` of its own, with these callbacks on
+ * its own back stack.
  */
+@Suppress("LongParameterList") // Where the settings pages lead.
 fun NavGraphBuilder.settingsPages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
     onProfileSaved: () -> Unit,
     onTwoStepVerificationDone: (TwoStepVerificationResult) -> Unit,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     settingsPage<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
@@ -147,12 +160,34 @@ fun NavGraphBuilder.settingsPages(
         }
     }
     settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
-    settingsPage<ActiveSessionsRoute> { ActiveSessionsScreenRoute(onBack = onBack) }
+    devicePages(onOpen, onBack, onScanQrCode)
     settingsPage<PasscodeLockRoute> {
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
     }
     settingsPage<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
     twoStepVerificationPages(onOpen, onBack, onTwoStepVerificationDone)
+}
+
+/**
+ * Active sessions, the confirmation of a device's login ([QrLoginRoute]) and the user's QR code ([MyQrCodeRoute]),
+ * whose scanner opens with [onScanQrCode].
+ */
+private fun NavGraphBuilder.devicePages(
+    onOpen: (route: Any) -> Unit,
+    onBack: () -> Unit,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
+) {
+    settingsPage<ActiveSessionsRoute> {
+        ActiveSessionsScreenRoute(onLinkDevice = { onScanQrCode(true) }, onBack = onBack)
+    }
+    settingsPage<QrLoginRoute> { QrLoginScreenRoute(onBack = onBack) }
+    settingsPage<MyQrCodeRoute> {
+        MyQrCodeScreenRoute(
+            onScan = { onScanQrCode(false) },
+            onEditProfile = { onOpen(EditProfileRoute) },
+            onBack = onBack,
+        )
+    }
 }
 
 /** [TwoStepVerificationRoute] and the flows it pushes above itself, [TwoStepVerificationFlowRoute]. */

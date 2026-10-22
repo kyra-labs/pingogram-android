@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.navigation.ArchiveRoute
 import dev.kyralabs.pingogram.core.navigation.AuthRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
@@ -47,10 +48,6 @@ import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
-import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
-import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterTwoStepVerification
-import dev.kyralabs.pingogram.feature.settings.navigation.settingsPages
-import dev.kyralabs.pingogram.feature.settings.navigation.settingsScreen
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
 /**
@@ -86,6 +83,10 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
+ *
+ * The QR code scanner (from the Contacts tab, the user's QR code, or Active sessions' "Link desktop device") is full
+ * screen; a Telegram link it read closes it and opens through [onOpenLinkTarget], the app's link dispatcher, as a
+ * tapped link would. An invitation's join sheet is a dialog destination like the forward sheet ([chatInvite]).
  */
 @Composable
 internal fun PingogramNavHost(
@@ -95,6 +96,7 @@ internal fun PingogramNavHost(
     modifier: Modifier = Modifier,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
+    onOpenLinkTarget: (LinkTarget) -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
@@ -122,7 +124,7 @@ internal fun PingogramNavHost(
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph(navController, search, besideList)
+        mainGraph(navController, search, besideList, onOpenLinkTarget)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
@@ -199,6 +201,7 @@ private fun NavGraphBuilder.mainGraph(
     navController: NavHostController,
     search: GlobalSearchState,
     besideList: State<Boolean>,
+    onOpenLinkTarget: (LinkTarget) -> Unit,
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
@@ -230,14 +233,8 @@ private fun NavGraphBuilder.mainGraph(
             }
         }
         contacts(navController, openChat)
-        // Settings pages are pushed above the tab on every window, as the archive is.
-        settingsScreen(onOpen = { route -> navController.navigate(route) { launchSingleTop = true } })
-        settingsPages(
-            onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
-            onBack = { navController.popBackStack() },
-            onProfileSaved = { navController.popBackStackAfterProfileSaved() },
-            onTwoStepVerificationDone = { navController.popBackStackAfterTwoStepVerification(it) },
-        )
+        settings(navController)
+        qrScanner(navController, onOpenLinkTarget)
         // Full-screen search, on compact and medium windows (expanded ones dock it in the Chats tab's list pane):
         // results push the conversation above it, as the archive does, and back returns to the results. In a window
         // that grew while it showed, they open beside the chat list.
@@ -263,6 +260,7 @@ private fun NavGraphBuilder.mainGraph(
         )
         profile(navController, besideList)
         chatInfo(navController, besideList)
+        chatInvite(navController)
         mediaViewer(navController)
         share(navController)
     }

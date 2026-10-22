@@ -286,6 +286,28 @@ class TdlibLinkRepositoryTest {
         }
 
     @Test
+    fun `a boost link opens the boosts of the chat it names`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeChatBoost("https://t.me/news?boost"))
+            client.on(TdApi.GetChatBoostLinkInfo::class, TdResult.Success(TdApi.ChatBoostLinkInfo(true, CHAT)))
+
+            assertEquals(Outcome.Success(LinkTarget.ChatBoost(CHAT)), repository.resolve("https://t.me/news?boost"))
+            assertEquals("https://t.me/news?boost", client.sentOf<TdApi.GetChatBoostLinkInfo>().single().url)
+        }
+
+    @Test
+    fun `a boost link to a chat the user cannot see is not found`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeChatBoost("https://t.me/boost?c=1"))
+            client.on(TdApi.GetChatBoostLinkInfo::class, TdResult.Success(TdApi.ChatBoostLinkInfo(false, 0)))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.NotFound(LinkSubject.Chat)),
+                repository.resolve("https://t.me/boost?c=1"),
+            )
+        }
+
+    @Test
     fun `a message to share keeps its text`() =
         runTest {
             linkType(
@@ -420,8 +442,8 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.ChatInvite("https://t.me/+abc"),
                 ),
                 Arguments.of(
-                    TdApi.InternalLinkTypeChatBoost("https://t.me/news?boost"),
-                    LinkTarget.ChatBoost("https://t.me/news?boost"),
+                    TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionQrCode("")),
+                    LinkTarget.MyQrCode,
                 ),
             )
 

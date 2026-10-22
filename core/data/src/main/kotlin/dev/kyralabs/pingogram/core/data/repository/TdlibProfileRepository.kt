@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
+import dev.kyralabs.pingogram.core.domain.model.ProfileLink
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -81,6 +82,9 @@ class TdlibProfileRepository
             path: String,
             onProgress: (progress: Float) -> Unit,
         ): Outcome<Unit> = client.uploadPhoto(path, onProgress) { photo -> TdApi.SetProfilePhoto(photo, false) }
+
+        override suspend fun profileLink(): Outcome<ProfileLink> =
+            client.request(TdApi.GetUserLink()).map { ProfileLink(it.url, it.expiresIn) }
 
         override suspend fun deleteProfilePhoto(): Outcome<Unit> =
             when (val me = client.request(TdApi.GetMe())) {

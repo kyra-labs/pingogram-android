@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ActiveSession
 import dev.kyralabs.pingogram.core.domain.model.ActiveSessions
 
 /**
@@ -23,4 +24,12 @@ interface SessionRepository {
 
     /** Confirms the unconfirmed session [sessionId] as a login of the user's. */
     suspend fun confirm(sessionId: Long): Outcome<Unit>
+
+    /**
+     * Logs another device in to the account with the QR code it shows ([link], `tg://login?token=…`,
+     * `confirmQrCodeAuthentication`), and returns its new session. Only on the user's explicit confirmation: whoever
+     * shows the code gets the account. A code that expired, was used, or is no login code fails with
+     * `DomainError.QrLoginExpired`.
+     */
+    suspend fun confirmQrCodeLogin(link: String): Outcome<ActiveSession>
 }

@@ -231,7 +231,7 @@ private fun ProfileSubtitle(header: ProfileHeader) {
 
 /** A label after the status: `labelMediumEmphasized` on a pill of [container]. */
 @Composable
-private fun ProfileLabel(
+internal fun ProfileLabel(
     text: String,
     container: Color,
     content: Color,

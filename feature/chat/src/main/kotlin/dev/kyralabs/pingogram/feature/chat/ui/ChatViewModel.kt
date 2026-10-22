@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -239,6 +240,7 @@ class ChatViewModel internal constructor(
     sendAsRepository: SendAsRepository,
     secretChatRepository: SecretChatRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
+    chatJoinRepository: ChatJoinRepository,
     threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
     private val log: ChatLog,
@@ -270,6 +272,7 @@ class ChatViewModel internal constructor(
         sendAsRepository: SendAsRepository,
         secretChatRepository: SecretChatRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
+        chatJoinRepository: ChatJoinRepository,
         threadRepositories: ThreadRepositories,
         shareInbox: ShareInbox,
         @Assisted("messageId") messageId: Long? = null,
@@ -298,6 +301,7 @@ class ChatViewModel internal constructor(
         sendAsRepository,
         secretChatRepository,
         autoDownloadPolicy,
+        chatJoinRepository,
         threadRepositories,
         shareInbox,
         AndroidChatLog,
@@ -440,6 +444,8 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    private val joining = ChatJoining(chatId, chatJoinRepository, viewModelScope) { effectChannel.trySend(it) }
 
     /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
     val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
@@ -697,6 +703,7 @@ class ChatViewModel internal constructor(
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
             .combine(sendAs.button) { state, sendAs -> state.withSendAs(sendAs) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
+            .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
@@ -731,6 +738,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.OpenReply -> window.showMessage(event.messageId)
             is ChatEvent.OpenThread -> thread.open(event.messageId)
             ChatEvent.Retry -> retry()
+            ChatEvent.JoinChat -> joining.join()
             is ChatEvent.RevealSpoilers -> revealedSpoilers.update { it.adding(event.messageId) }
             is ChatEvent.ToggleTime -> shownTimes.update { it.toggling(event.messageId) }
             is ChatEvent.OpenMedia -> uiState.value.mediaToOpen(event.messageId)?.let(effectChannel::trySend)

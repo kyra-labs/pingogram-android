@@ -598,4 +598,32 @@
     <string name="lock_forgot_dialog_text">A forgotten passcode can\'t be recovered. Logging out removes it and deletes this account\'s data from this device, including secret chats, which exist only here. Your other chats stay in your Telegram account, and you can log in again.</string>
     <string name="lock_forgot_dialog_confirm">Log out</string>
     <string name="lock_logging_out">Logging out</string>
+    <!-- Linking a desktop device by its QR code, and the user's own QR code (REQUIREMENTS.md FR-P5). -->
+    <string name="settings_link_device">Link desktop device</string>
+    <string name="settings_link_device_summary">Scan the QR code Telegram shows on your computer</string>
+    <string name="settings_qr_login_title">Link a device</string>
+    <string name="settings_qr_login_question">Log in on another device?</string>
+    <string name="settings_qr_login_warning">Only scan codes that Telegram shows on your own devices. Whoever shows this code gets full access to your account.</string>
+    <string name="settings_qr_login_confirm">Log in</string>
+    <string name="settings_qr_login_cancel">Cancel</string>
+    <string name="settings_qr_login_busy">Logging in…</string>
+    <string name="settings_qr_login_done">Device linked</string>
+    <string name="settings_qr_login_new_session">New session</string>
+    <string name="settings_qr_login_done_note">You can log it out any time in Active sessions.</string>
+    <string name="settings_qr_login_finish">Done</string>
+    <string name="settings_my_qr_title">Your QR code</string>
+    <string name="settings_my_qr_loading">Loading your QR code</string>
+    <!-- %1$s: the user's name. -->
+    <string name="settings_my_qr_description">QR code of %1$s\'s profile</string>
+    <string name="settings_my_qr_share">Share</string>
+    <string name="settings_my_qr_scan">Scan QR code</string>
+    <string name="settings_my_qr_set_username">Set username</string>
+    <plurals name="settings_my_qr_temporary_minutes">
+        <item quantity="one">Without a username, this code works for %1$s more minute.</item>
+        <item quantity="other">Without a username, this code works for %1$s more minutes.</item>
+    </plurals>
+    <plurals name="settings_my_qr_temporary_hours">
+        <item quantity="one">Without a username, this code works for %1$s more hour.</item>
+        <item quantity="other">Without a username, this code works for %1$s more hours.</item>
+    </plurals>
 </resources>

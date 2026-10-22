@@ -210,10 +210,8 @@ internal fun ChatEffects(
                         context.openedFileNotice(effect, resources, openFile)
                     }
 
-                    ChatEffect.PlaybackFailed,
-                    ChatEffect.MessageUnavailable,
-                    ChatEffect.ActionUnavailable,
-                    ChatEffect.PinnedHidden,
+                    ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
+                    ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -327,6 +325,8 @@ private fun ChatEffect.noticeText(): Int =
     when (this) {
         ChatEffect.PlaybackFailed -> R.string.content_playback_failed
         ChatEffect.ActionUnavailable -> R.string.message_action_unavailable
+        ChatEffect.JoinRequestSent -> R.string.composer_join_request_sent
+        ChatEffect.JoinRefused -> R.string.composer_join_refused
         ChatEffect.PinnedHidden -> R.string.pinned_hidden
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)

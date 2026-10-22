@@ -31,7 +31,7 @@
     <string name="error_bio_too_long">Your bio is too long.</string>
     <string name="error_photo_invalid">This image can\'t be used as a profile photo. Try another one.</string>
     <string name="error_title_invalid">Enter a name.</string>
-    <string name="error_too_many_chats">You\'re in too many groups and channels. Leave one to create a new one.</string>
+    <string name="error_too_many_chats">You\'re in too many groups and channels. Leave one to create or join another.</string>
     <string name="error_too_many_public_links">You have too many public links. Make one of your groups or channels private first.</string>
     <string name="error_account_restricted">Telegram has limited your account, so you can\'t create groups or channels for now.</string>
     <!-- A picked photo, video, file or contact could not be read. -->
@@ -44,6 +44,9 @@
     <string name="error_description_too_long">The description is too long.</string>
     <string name="error_not_mutual_contact">Only people who have you in their contacts too can be added here.</string>
     <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
+    <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
+    <string name="error_chat_full">This group is full.</string>
+    <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

@@ -91,6 +91,7 @@ internal fun SettingsListDetail(
     onProfileSavedShown: () -> Unit,
     onProfileSaved: () -> Unit,
     modifier: Modifier = Modifier,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit = {},
 ) {
     // Pages by name: a key the navigator saves, which still reads after an update that removed a page (as none).
     val navigator =
@@ -141,6 +142,7 @@ internal fun SettingsListDetail(
                         onProfileSaved()
                         closePage()
                     },
+                    onScanQrCode = onScanQrCode,
                 )
             }
         },
@@ -177,10 +179,11 @@ private fun DetailContent(
     backButton: Boolean,
     onClose: () -> Unit,
     onProfileSaved: () -> Unit,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     if (page != null) {
         // Each page its own back stack and view models, gone with it.
-        key(page.name) { SettingsPagePane(page, backButton, onClose, onProfileSaved) }
+        key(page.name) { SettingsPagePane(page, backButton, onClose, onProfileSaved, onScanQrCode) }
     } else {
         NoSettingsPageSelected()
     }
@@ -200,6 +203,7 @@ private fun SettingsPagePane(
     backButton: Boolean,
     onClose: () -> Unit,
     onProfileSaved: () -> Unit,
+    onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     val viewModelStoreOwner = rememberViewModelStoreOwner()
     CompositionLocalProvider(
@@ -232,6 +236,7 @@ private fun SettingsPagePane(
                 },
                 onProfileSaved = onProfileSaved,
                 onTwoStepVerificationDone = { navController.popBackStackAfterTwoStepVerification(it) },
+                onScanQrCode = onScanQrCode,
             )
         }
     }

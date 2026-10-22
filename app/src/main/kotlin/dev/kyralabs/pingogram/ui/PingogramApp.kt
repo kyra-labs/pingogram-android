@@ -165,7 +165,16 @@ fun PingogramApp(
                         LocalNavigationBarVisibility provides navigationBarVisibility,
                         LocalTabReselection provides tabReselection,
                     ) {
-                        AppContent(uiState, navController, search, chatToOpen, onChatOpened)
+                        AppContent(uiState, search) {
+                            PingogramNavHost(
+                                navController = navController,
+                                uiState = uiState,
+                                search = search,
+                                chatToOpen = chatToOpen,
+                                onChatOpened = onChatOpened,
+                                onOpenLinkTarget = { target -> links?.show(target) },
+                            )
+                        }
                     }
                     // Compact windows only: composed there even while hidden (FloatingNavigationBar).
                     if (floatingBar) {
@@ -201,27 +210,19 @@ fun PingogramApp(
     }
 }
 
-/** Progress while [uiState] is not known yet, the `NavHost` once it is; signed out, docked [search] closes. */
+/** Progress while [uiState] is not known yet, then [navHost]; signed out, docked [search] closes. */
 @Composable
 private fun AppContent(
     uiState: MainActivityUiState,
-    navController: NavHostController,
     search: GlobalSearchState,
-    chatToOpen: Long?,
-    onChatOpened: () -> Unit,
+    navHost: @Composable () -> Unit,
 ) {
     ResetSearchWhenSignedOut(uiState, search)
     if (uiState == MainActivityUiState.Loading) {
         // The same progress as the login flow's first step: TDLib is still starting.
         AuthProgressScreen(isLoggingOut = false)
     } else {
-        PingogramNavHost(
-            navController = navController,
-            uiState = uiState,
-            search = search,
-            chatToOpen = chatToOpen,
-            onChatOpened = onChatOpened,
-        )
+        navHost()
     }
 }
 
