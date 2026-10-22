@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatCreationLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
+import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
@@ -44,6 +45,7 @@ import java.util.Locale
 class NewChannelViewModelTest {
     private val contacts = FakeContactRepository()
     private val creation = FakeChatCreationRepository()
+    private val photos = FakePickedPhotoRepository()
     private val users = FakeUserRepository()
 
     @BeforeEach
@@ -65,6 +67,7 @@ class NewChannelViewModelTest {
             NewChannelViewModel(
                 savedStateHandle = savedState,
                 repository = creation,
+                photoRepository = photos,
                 userRepository = users,
                 contactRepository = contacts,
                 clock = FakeWallClock(NOW),
@@ -154,7 +157,7 @@ class NewChannelViewModelTest {
             details(viewModel, ChatDetailsEvent.TitleChanged("Other"))
             assertEquals("News", viewModel.details.value.title)
             clear(viewModel)
-            assertTrue(creation.discarded.isEmpty())
+            assertTrue(photos.discarded.isEmpty())
         }
 
     @Test

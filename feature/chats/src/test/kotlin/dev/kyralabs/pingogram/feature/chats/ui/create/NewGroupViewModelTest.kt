@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.CreatedGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageAutoDelete
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
+import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.NOW
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import dev.kyralabs.pingogram.feature.chats.ui.FakeUserRepository
@@ -46,6 +47,7 @@ import java.util.Locale
 class NewGroupViewModelTest {
     private val contacts = FakeContactRepository()
     private val creation = FakeChatCreationRepository()
+    private val photos = FakePickedPhotoRepository()
     private val users = FakeUserRepository()
 
     @BeforeEach
@@ -79,6 +81,7 @@ class NewGroupViewModelTest {
             NewGroupViewModel(
                 savedStateHandle = savedState,
                 repository = creation,
+                photoRepository = photos,
                 userRepository = users,
                 contactRepository = contacts,
                 clock = FakeWallClock(NOW),
@@ -301,7 +304,7 @@ class NewGroupViewModelTest {
             )
             assertEquals(listOf(CreateChatEffect.OpenChat(GROUP_ID)), effects)
             clear(viewModel)
-            assertTrue(creation.discarded.isEmpty())
+            assertTrue(photos.discarded.isEmpty())
         }
 
     @Test
@@ -429,7 +432,7 @@ class NewGroupViewModelTest {
     fun `a picked photo is copied, and a picture that cannot be one is a snackbar`() =
         runTest {
             val copy = CompletableDeferred<Outcome<String>>()
-            creation.onPreparePhoto = { copy.await() }
+            photos.onPreparePhoto = { copy.await() }
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
 
@@ -440,11 +443,11 @@ class NewGroupViewModelTest {
             runCurrent()
             assertEquals(ChatPhoto.Ready("/copy.jpg"), viewModel.details.value.photo)
 
-            creation.onPreparePhoto = { Outcome.Failure(DomainError.PhotoInvalid) }
+            photos.onPreparePhoto = { Outcome.Failure(DomainError.PhotoInvalid) }
             details(viewModel, ChatDetailsEvent.PhotoPicked("content://clip"))
             assertEquals(ChatPhoto.None, viewModel.details.value.photo)
             assertEquals(listOf(CreateChatEffect.ShowError(DomainError.PhotoInvalid)), effects)
-            assertEquals(listOf("/copy.jpg"), creation.discarded)
+            assertEquals(listOf("/copy.jpg"), photos.discarded)
         }
 
     @Test
@@ -458,7 +461,7 @@ class NewGroupViewModelTest {
 
             clear(viewModel)
 
-            assertEquals(listOf("/cache/uploads/a.jpg", "/cache/uploads/b.jpg"), creation.discarded)
+            assertEquals(listOf("/cache/uploads/a.jpg", "/cache/uploads/b.jpg"), photos.discarded)
         }
 
     // Process death

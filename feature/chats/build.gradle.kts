@@ -10,6 +10,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
 
     // ChatListViewModel is tested against fakes of the domain repositories and a fake clock.
+    // The picked photo of a new group or channel comes from its fake there, shared with the other features.
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

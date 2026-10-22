@@ -2,10 +2,6 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.data.attachment.FakeContentSource
-import dev.kyralabs.pingogram.core.data.attachment.FakeMediaProcessor
-import dev.kyralabs.pingogram.core.data.attachment.ImageInfo
-import dev.kyralabs.pingogram.core.data.attachment.Orientation
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.domain.model.CreatedGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageAutoDelete
@@ -41,16 +37,12 @@ class TdlibChatCreationRepositoryTest {
     lateinit var cacheDir: File
 
     private val client = FakeTdlibClient()
-    private val content = FakeContentSource()
-    private val media = FakeMediaProcessor()
     private val files by lazy { UploadFiles { cacheDir } }
 
     private fun TestScope.repository() =
         TdlibChatCreationRepository(
             client = client,
             files = files,
-            content = content,
-            media = media,
             io = StandardTestDispatcher(testScheduler),
             scope = backgroundScope,
         )
@@ -68,7 +60,7 @@ class TdlibChatCreationRepositoryTest {
         isChannel: Boolean,
     ) = chat(id = id, type = TdApi.ChatTypeSupergroup(SUPERGROUP_ID, isChannel))
 
-    /** A prepared photo copy, as [TdlibChatCreationRepository.preparePhoto] leaves it. */
+    /** A prepared photo copy, as `PickedPhotoRepository.preparePhoto` leaves it. */
     private fun photoCopy(): String = File(files.newUploadDirectory(), "photo.jpg").apply { writeText("jpeg") }.path
 
     // Groups
@@ -197,22 +189,6 @@ class TdlibChatCreationRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.AccountRestricted), created)
             assertTrue(client.sentOf<TdApi.SetChatPhoto>().isEmpty())
             assertTrue(File(path).exists())
-        }
-
-    @Test
-    fun `a picked image becomes a photo copy, anything else is refused and leaves nothing`() =
-        runTest {
-            val repository = repository()
-            content.add("content://photo", "photo.jpg", "image/jpeg", bytes = byteArrayOf(1))
-            media.images[1] = ImageInfo(800, 600, Orientation.Normal)
-            content.add("content://clip", "clip.mp4", "video/mp4", bytes = byteArrayOf(2))
-
-            val photo = repository.preparePhoto("content://photo")
-            val video = repository.preparePhoto("content://clip")
-
-            assertTrue(File((photo as Outcome.Success).value).exists())
-            assertEquals(Outcome.Failure(DomainError.PhotoInvalid), video)
-            assertEquals(1, File(cacheDir, "uploads").listFiles()?.size)
         }
 
     // Channels

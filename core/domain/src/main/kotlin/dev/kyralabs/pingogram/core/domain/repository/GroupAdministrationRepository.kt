@@ -26,6 +26,20 @@ interface GroupAdministrationRepository {
         description: String,
     ): Outcome<Unit>
 
+    /**
+     * Makes the photo at [path] (a copy from `PickedPhotoRepository.preparePhoto`, which the caller deletes afterwards)
+     * the photo of chat [chatId], waiting while it uploads and handing the share uploaded, from 0 to 1, to
+     * [onProgress].
+     */
+    suspend fun setPhoto(
+        chatId: Long,
+        path: String,
+        onProgress: (progress: Float) -> Unit,
+    ): Outcome<Unit>
+
+    /** Removes the photo of chat [chatId]; the chat then shows its initials. */
+    suspend fun removePhoto(chatId: Long): Outcome<Unit>
+
     /** Sets what members of group [chatId] may do by default (not for channels). */
     suspend fun setPermissions(
         chatId: Long,

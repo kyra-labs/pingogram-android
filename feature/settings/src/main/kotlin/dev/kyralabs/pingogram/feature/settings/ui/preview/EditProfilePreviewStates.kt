@@ -4,9 +4,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileDialog
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileUiState
-import dev.kyralabs.pingogram.feature.settings.ui.PhotoTask
 import dev.kyralabs.pingogram.feature.settings.ui.UsernameStatus
 
 /** Every state of the Edit profile page for its previews, named in the preview pane. */

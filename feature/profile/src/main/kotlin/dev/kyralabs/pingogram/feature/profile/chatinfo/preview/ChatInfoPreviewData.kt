@@ -1,11 +1,14 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo.preview
 
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.chatinfo.AdminRight
@@ -15,6 +18,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatLink
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatMembersUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatPermissionsUiState
+import dev.kyralabs.pingogram.feature.profile.chatinfo.EditChatInfoUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkUiState
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinkItem
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksUiState
@@ -147,6 +151,22 @@ object ChatInfoPreviewData {
                         )
                     }.toImmutableList(),
             canRevoke = false,
+        )
+
+    /** Editing the group's photo, name and description, without a photo. */
+    val editInfo =
+        EditChatInfoUiState.Content(
+            kind = group.kind,
+            title = "Rust Berlin",
+            description = group.description?.text.orEmpty(),
+            avatarId = group.header.userId,
+        )
+
+    /** The same with a photo whose new one uploads. */
+    val editInfoUploading =
+        editInfo.copy(
+            photo = ProfilePhoto(small = FileRef(1, 0), big = FileRef(2, 0), minithumbnail = null),
+            photoTask = PhotoTask.Uploading(progress = 0.6f),
         )
 
     val restrictions =

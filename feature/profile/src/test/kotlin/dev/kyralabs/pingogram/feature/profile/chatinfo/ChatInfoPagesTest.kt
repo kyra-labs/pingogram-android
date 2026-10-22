@@ -3,8 +3,12 @@ package dev.kyralabs.pingogram.feature.profile.chatinfo
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -14,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
@@ -28,10 +33,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The info page, the rights page and the link editor send their events: the info page's pills and rows, a right's
- * switch (and none for a right the user lacks), creating a link with a name, an expiry and join requests.
+ * The info page, the rights page, the edit page and the link editor send their events: the info page's pills and rows,
+ * a right's switch (and none for a right the user lacks), the photo's buttons, creating a link with a name, an expiry
+ * and join requests.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -124,6 +131,34 @@ class ChatInfoPagesTest {
             ),
             events.filterNot { it is EditInviteLinkEvent.NameChanged },
         )
+    }
+
+    @Test
+    fun `the photo opens the picker, and removing it asks first`() {
+        val events = mutableListOf<EditChatInfoEvent>()
+        var picked = 0
+        var state by mutableStateOf<EditChatInfoUiState>(
+            ChatInfoPreviewData.editInfoUploading.copy(photoTask = PhotoTask.None),
+        )
+        setContent {
+            EditChatInfoScreen(state, onEvent = { events += it }, onBack = {}, onPickPhoto = { picked++ })
+        }
+
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_set)).performClick()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_remove)).performClick()
+        state = (state as EditChatInfoUiState.Content).copy(confirmingPhotoRemoval = true)
+        composeRule.onNodeWithText(string(R.string.chat_info_remove_photo_confirm)).performClick()
+
+        assertEquals(1, picked)
+        assertEquals(listOf(EditChatInfoEvent.RemovePhoto, EditChatInfoEvent.ConfirmPhotoRemoval), events)
+    }
+
+    @Test
+    fun `while the photo uploads its buttons wait`() {
+        setContent { EditChatInfoScreen(ChatInfoPreviewData.editInfoUploading, onEvent = {}, onBack = {}) }
+
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_set)).assertIsNotEnabled()
+        composeRule.onNode(hasContentDescription(string(UiR.string.photo_editor_uploading))).assertExists()
     }
 
     private companion object {

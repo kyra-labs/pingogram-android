@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.profile.chatinfo
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
@@ -9,7 +10,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
+import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -26,13 +31,16 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * The administrators' pages on the real TDLib repositories: [MemberRightsViewModel] (promoting within the user's own
- * rights, restricting within the group's defaults, revoking, process death), [ChatPermissionsViewModel] (a switch and
- * the slow mode, shown at once, undone on a refusal) and [EditChatInfoViewModel] (what changed is sent, a refused title
- * shows under its field).
+ * The administrators' pages on the real TDLib repositories (and a fake for picked photos): [MemberRightsViewModel]
+ * (promoting within the user's own rights, restricting within the group's defaults, revoking, process death),
+ * [ChatPermissionsViewModel] (a switch and the slow mode, shown at once, undone on a refusal) and
+ * [EditChatInfoViewModel] (what changed is sent, a refused title shows under its field, the photo uploaded with its
+ * progress or removed after a question).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AdministrationViewModelsTest : GroupViewModelTest() {
+    private val photos = FakePickedPhotoRepository()
+
     private fun <T> TestScope.collected(flow: Flow<T>): List<T> {
         val items = mutableListOf<T>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.toList(items) }
@@ -216,11 +224,14 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
                 chatRepository = chats,
                 groupInfoRepository = TdlibGroupInfoRepository(client),
                 administrationRepository = TdlibGroupAdministrationRepository(client),
+                photoRepository = photos,
             )
         created += viewModel
         runCurrent()
         return viewModel
     }
+
+    private val EditChatInfoViewModel.content get() = uiState.value as EditChatInfoUiState.Content
 
     @Test
     fun `saving sends only what changed and closes the page`() =
@@ -256,5 +267,82 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
             assertEquals(DomainError.TitleInvalid, content.titleError)
             assertFalse(content.isSaving)
             assertEquals("Rust", (editInfo(handle).uiState.value as EditChatInfoUiState.Content).title)
+        }
+
+    @Test
+    fun `a picked photo is prepared, uploaded with its progress, and its copy discarded`() =
+        runTest {
+            answerSupergroup()
+            val copy = "/cache/uploads/1/photo.jpg"
+            photos.onPreparePhoto = { Outcome.Success(copy) }
+            val upload = CompletableDeferred<TdResult<TdApi.Ok>>()
+            client.on(TdApi.SetChatPhoto::class) { upload.await() }
+            val viewModel = editInfo()
+
+            viewModel.onEvent(EditChatInfoEvent.PhotoPicked("content://media/picker/1"))
+            runCurrent()
+            client.emit(
+                TdApiFixtures.updateFile(
+                    ProfileFixtures.uploadingFile(localPath = copy, size = 1_000, uploadedSize = 400),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(PhotoTask.Uploading(0.4f), viewModel.content.photoTask)
+            val sent = client.sentOf<TdApi.SetChatPhoto>().single()
+            assertEquals(CHAT, sent.chatId)
+            assertEquals(copy, ((sent.photo as TdApi.InputChatPhotoStatic).photo as TdApi.InputFileLocal).path)
+            assertTrue(photos.discarded.isEmpty())
+
+            upload.complete(TdResult.Success(TdApi.Ok()))
+            client.emit(TdApi.UpdateChatPhoto(CHAT, TdApiFixtures.chatPhotoInfo()))
+            runCurrent()
+
+            assertEquals(PhotoTask.None, viewModel.content.photoTask)
+            assertEquals(listOf(copy), photos.discarded)
+            // The page shows the new photo as soon as TDLib reports it.
+            assertTrue(viewModel.content.photo != null)
+        }
+
+    @Test
+    fun `an image that cannot be a photo is a snackbar, and nothing is sent`() =
+        runTest {
+            answerSupergroup()
+            photos.onPreparePhoto = { Outcome.Failure(DomainError.PhotoInvalid) }
+            val viewModel = editInfo()
+            val effects = collected(viewModel.effects)
+
+            viewModel.onEvent(EditChatInfoEvent.PhotoPicked("content://media/picker/1"))
+            runCurrent()
+
+            assertEquals(listOf(EditChatInfoEffect.ShowError(DomainError.PhotoInvalid)), effects)
+            assertEquals(PhotoTask.None, viewModel.content.photoTask)
+            assertTrue(client.sentOf<TdApi.SetChatPhoto>().isEmpty())
+        }
+
+    @Test
+    fun `removing the photo asks first, survives process death, and a refusal is a snackbar`() =
+        runTest {
+            answerSupergroup()
+            client.on(TdApi.SetChatPhoto::class, TdResult.Failure(TdError(400, "CHAT_ADMIN_REQUIRED")))
+            val handle = SavedStateHandle()
+            val viewModel = editInfo(handle)
+            client.emit(TdApi.UpdateChatPhoto(CHAT, TdApiFixtures.chatPhotoInfo()))
+            runCurrent()
+
+            viewModel.onEvent(EditChatInfoEvent.RemovePhoto)
+            assertTrue(viewModel.content.confirmingPhotoRemoval)
+            assertTrue(client.sentOf<TdApi.SetChatPhoto>().isEmpty())
+            val restored = editInfo(handle)
+            assertTrue(restored.content.confirmingPhotoRemoval)
+
+            val effects = collected(restored.effects)
+            restored.onEvent(EditChatInfoEvent.ConfirmPhotoRemoval)
+            runCurrent()
+
+            assertEquals(null, client.sentOf<TdApi.SetChatPhoto>().single().photo)
+            assertFalse(restored.content.confirmingPhotoRemoval)
+            assertEquals(PhotoTask.None, restored.content.photoTask)
+            assertEquals(listOf(EditChatInfoEffect.ShowError(DomainError.AdminRightsRequired)), effects)
         }
 }

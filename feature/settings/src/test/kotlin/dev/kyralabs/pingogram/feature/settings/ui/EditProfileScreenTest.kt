@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performTextReplacement
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
@@ -35,6 +36,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Typing on the Edit profile page, what it says about usernames, when Save is enabled, and its confirmations. The
@@ -247,7 +249,7 @@ class EditProfileScreenTest {
     fun `set new photo opens the photo picker`() {
         setScreen()
 
-        composeRule.onNodeWithText(string(R.string.settings_profile_photo_set)).performClick()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_set)).performClick()
 
         assertEquals(1, photoPickerOpened)
     }
@@ -256,14 +258,14 @@ class EditProfileScreenTest {
     fun `without a photo there is nothing to remove`() {
         setScreen()
 
-        composeRule.onNodeWithText(string(R.string.settings_profile_photo_remove)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_remove)).assertDoesNotExist()
     }
 
     @Test
     fun `remove photo asks for confirmation first`() {
         setScreen(SettingsPreviewData.editProfileWithPhoto)
 
-        composeRule.onNodeWithText(string(R.string.settings_profile_photo_remove)).performClick()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_remove)).performClick()
 
         assertEquals(listOf(EditProfileEvent.RemovePhoto), events)
     }
@@ -284,9 +286,9 @@ class EditProfileScreenTest {
     fun `while the photo uploads, its buttons wait`() {
         setScreen(SettingsPreviewData.editProfileWithPhoto.copy(photoTask = PhotoTask.Uploading(progress = 0.4f)))
 
-        composeRule.onNode(hasContentDescription(string(R.string.settings_profile_photo_uploading))).assertExists()
-        composeRule.onNodeWithText(string(R.string.settings_profile_photo_set)).assertIsNotEnabled()
-        composeRule.onNodeWithText(string(R.string.settings_profile_photo_remove)).assertIsNotEnabled()
+        composeRule.onNode(hasContentDescription(string(UiR.string.photo_editor_uploading))).assertExists()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_set)).assertIsNotEnabled()
+        composeRule.onNodeWithText(string(UiR.string.photo_editor_remove)).assertIsNotEnabled()
     }
 
     @Test
