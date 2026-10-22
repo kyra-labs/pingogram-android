@@ -11,6 +11,7 @@ import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.SettingsPage
+import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
@@ -56,12 +57,15 @@ internal fun OpenLinkEffect(
  * - A **user's profile** is pushed, and so is a group's or channel's **info** (`ChatInfoRoute`).
  * - **Contacts** and **Settings** switch tabs, a page of Settings is pushed above its tab; **Edit profile** and **New
  *   chat** are pushed; **search** opens with [onOpenSearch], docked or full screen as the window wants.
+ * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
+ *   goes to, never sent by itself.
  */
 @Suppress("CyclomaticComplexMethod") // One branch per kind of target, each a single navigation.
 internal fun NavHostController.openLinkTarget(
     target: LinkTarget,
     fromOutside: Boolean,
     onOpenSearch: () -> Unit,
+    onShare: (SharedContent) -> Unit = {},
 ): Boolean {
     when (target) {
         is LinkTarget.Chat -> openLinkedChat(target, fromOutside)
@@ -72,6 +76,7 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.Settings -> openSettings(target.page)
         is LinkTarget.NewChat -> navigate(NewChatRoute) { launchSingleTop = true }
         LinkTarget.Search -> onOpenSearch()
+        is LinkTarget.MessageDraft -> onShare(SharedContent(text = target.text))
         else -> return false
     }
     return true

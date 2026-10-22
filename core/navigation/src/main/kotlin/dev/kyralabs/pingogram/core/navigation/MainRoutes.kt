@@ -247,6 +247,16 @@ data class ForwardRoute(
 )
 
 /**
+ * The share sheet (`REQUIREMENTS.md` FR-N2, direct share) for what another app shared, or a `t.me/share` link, kept in
+ * memory under [shareId] (`ShareInbox` of `:feature:chat`): a dialog destination above the screen it is opened from,
+ * which picks the chat or chats it goes to. After process death the share is gone and the sheet closes at once.
+ */
+@Serializable
+data class ShareRoute(
+    val shareId: Long,
+)
+
+/**
  * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
  * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
  * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a

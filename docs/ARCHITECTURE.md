@@ -193,7 +193,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   no cache) is the one entry point: `getInternalLinkType`, then the lookup the kind needs (`searchPublicChat`,
   `searchUserByPhoneNumber`, `searchUserByToken`, `getMessageLinkInfo`, Saved Messages through `getMe`), into a
   `LinkTarget` (a chat at a message with an optional draft, a profile, a chat's info, a page of the app, the targets of
-  screens still to come: an invitation, a QR login, a boost, a message to share; not found; a login code; unsupported).
+  screens still to come: an invitation, a QR login, a boost; a message to share, which opens the share sheet (Direct
+  share, below); not found; a login code; unsupported).
   `:app`'s `LinkViewModel` (a `LinkDispatcher`, scoped to the activity, one link at a time) turns it into a
   `LinkEffect`: a screen, which `PingogramApp` opens (`openLinkTarget`, `LinkNavigation.kt`), or a notice in the shell's
   own `SnackbarHost` ("Opening link…" with Cancel after 200 ms, "Open in browser" for web links it does not open, which
@@ -412,8 +413,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Other, and Transfers (low importance, no badge: the progress of background transfers), created at every start; the one place that decides channels, except the `foss` flavor's "Connection" channel
   of "Keep connected", which only that flavor creates, with its service.
 - Android 11+: a long-lived conversation shortcut per chat (`ConversationShortcuts`), linked by `setShortcutId` and
-  `LocusId`, so notifications show in the conversation section. No share target yet (sharing into a chat needs a chat
-  picker and a prefilled composer; M4, `docs/ROADMAP.md`); no bubbles yet (they need a resizable chat activity of their own).
+  `LocusId`, so notifications show in the conversation section. Every one is a Direct Share target: it carries
+  `NotificationIntents.SHARE_TARGET_CATEGORY`, which `:app`'s `res/xml/shortcuts.xml` `<share-target>` names for
+  `MainActivity`, and `ShareTargetShortcuts` (started by `PingogramApplication`) publishes the 8 most recent chats of
+  the main chat list where the user can write, Saved Messages left out, 5 s after they last changed (Direct share,
+  below). No bubbles yet (they need a resizable chat activity of their own).
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go
@@ -448,6 +452,30 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `TdlibPushRepository` (Push, above).
 - `core:notifications` depends on `core:domain`, `core:common` and `core:ui` (previews, names, avatar colors), never
   on `core:data` or TDLib.
+
+## Direct share
+
+`REQUIREMENTS.md` FR-N2, `docs/adr/0014-direct-share.md`. Nothing is ever sent without the user's tap.
+
+- **In**: `MainActivity`'s `SEND` / `SEND_MULTIPLE` filters (text, images, videos, any files). `:app`'s `shareOf` makes
+  an `IncomingShare`: `core:domain`'s `SharedContent` (the text, the files' `content://` URIs, never `file://` ones or
+  Pingogram's own providers, and whether they go as media or documents) and the chat of a Direct Share target
+  (`EXTRA_SHORTCUT_ID`, `NotificationIntents.chatIdOfShortcut`). `MainActivityViewModel.shareToOpen` holds it, like
+  `linkToOpen`, until logged in and unlocked (`OpenShareEffect`); a `t.me/share` link (`LinkTarget.MessageDraft`)
+  arrives through `openLinkTarget`. In memory only: the files' read grants end with the process.
+- **Hand-over**: `feature:chat`'s `ShareInbox` (singleton): `offer` keeps a share for the share sheet by id
+  (`ShareRoute(shareId)`), `deliver` keeps one for a chat. `:app`'s `openShare` opens the sheet, or a Direct Share
+  target's chat above the chat list.
+- **Share sheet** (`ShareRoute`, a dialog destination like the forward sheet, `ShareViewModel`): the forward sheet's
+  chat list (`ChatTargets`: Saved Messages first, the chat list, search; chats where the user can write) and parts. One
+  chat picked opens it with the share delivered to it; several get it at once after "Send" with an optional comment,
+  through `core:domain`'s `ShareRepository` (`TdlibShareRepository`) in the `@ApplicationScope`, its result
+  (`ShareResults`) a snackbar of the app shell (`ShareNotices`).
+- **Composer**: `ChatShares` (part of `ChatViewModel`) takes a share delivered to its chat once the conversation is on
+  screen: a text into the field after the chat's draft (`ChatComposer.addShared`), files into the attach preview with
+  the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
+- **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
+  each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
 
 ## Error handling
 

@@ -33,6 +33,8 @@ import kotlin.time.Duration.Companion.seconds
  * - TDLib closing (logout): the copies of every message followed go; their messages are gone with the database.
  * - At start, copies and camera files older than [maxAge] go: what a crash or a closed preview left behind, or a
  *   message TDLib still had to send after a restart and that nothing else reported.
+ * - Copies [hold] keeps (a share sending the same copies to several chats, one after the other) stay while held, even
+ *   once a message uploaded them; [release] lets them go [DELETE_GRACE] later, unless a message still uploads them.
  *
  * Updates are queued as they come and handled one at a time, in TDLib's order, on [io], where all file work runs.
  */
@@ -55,6 +57,9 @@ class UploadCleaner internal constructor(
     /** The copies of each message being sent (or failed, to be sent again), by id; touched on the queue only. */
     private val following = HashMap<Long, Set<String>>()
 
+    /** How many holds keep each copy ([hold]); touched on the queue only. */
+    private val held = HashMap<String, Int>()
+
     private val queue = Channel<Event>(Channel.UNLIMITED)
 
     init {
@@ -68,10 +73,48 @@ class UploadCleaner internal constructor(
         }
     }
 
+    /**
+     * Keeps the copies at [paths] until [release]: none of them is deleted meanwhile, whatever happens to the messages
+     * that upload them. Takes effect before any update TDLib sends after this call.
+     */
+    fun hold(paths: Collection<String>) {
+        if (paths.isNotEmpty()) queue.trySend(Event.Hold(paths.toList()))
+    }
+
+    /**
+     * Ends a [hold] of [paths]: after [DELETE_GRACE] (so that the messages sent while they were held are followed by
+     * then), the copies no message uploads and no other hold keeps are deleted. Returns at once.
+     */
+    fun release(paths: Collection<String>) {
+        if (paths.isEmpty()) return
+        val released = paths.toList()
+        scope.launch(io) {
+            delay(DELETE_GRACE)
+            queue.trySend(Event.Release(released))
+        }
+    }
+
     private fun handle(event: Event) {
         when (event) {
-            is Event.GraceOver -> delete(event.paths)
-            is Event.Update -> handle(event.update)
+            is Event.GraceOver -> {
+                delete(event.paths)
+            }
+
+            is Event.Update -> {
+                handle(event.update)
+            }
+
+            is Event.Hold -> {
+                event.paths.forEach { held[it] = (held[it] ?: 0) + 1 }
+            }
+
+            is Event.Release -> {
+                event.paths.forEach { path ->
+                    val count = (held[path] ?: 0) - 1
+                    if (count > 0) held[path] = count else held.remove(path)
+                }
+                delete(event.paths)
+            }
         }
     }
 
@@ -117,15 +160,23 @@ class UploadCleaner internal constructor(
         delete(all)
     }
 
-    /** Deletes the copies among [paths] that no message being followed uploads. */
+    /** Deletes the copies among [paths] that no message being followed uploads and no hold keeps. */
     private fun delete(paths: Collection<String>) {
         if (paths.isEmpty()) return
         val inUse = following.values.flatten().toSet()
-        files.deleteUploads(paths.filter { it !in inUse && files.isUpload(it) })
+        files.deleteUploads(paths.filter { it !in inUse && it !in held && files.isUpload(it) })
     }
 
-    /** What the queue holds: an update, or the end of a deleted message's grace. */
+    /** What the queue holds: an update, the end of a deleted message's grace, or a hold taken or ended. */
     private sealed interface Event {
+        class Hold(
+            val paths: List<String>,
+        ) : Event
+
+        class Release(
+            val paths: List<String>,
+        ) : Event
+
         class Update(
             val update: TdApi.Update,
         ) : Event
@@ -136,7 +187,10 @@ class UploadCleaner internal constructor(
     }
 
     internal companion object {
-        /** How long a deleted message's copies wait for a message sent again that takes them over. */
+        /**
+         * How long a deleted message's copies wait for a message sent again that takes them over, and released copies
+         * for the messages sent while held.
+         */
         val DELETE_GRACE: Duration = 5.seconds
 
         /** How old leftover copies and camera files are deleted at start. */

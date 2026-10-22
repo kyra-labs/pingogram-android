@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSendAsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibShareRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
@@ -80,6 +81,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ShareRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
@@ -227,4 +229,7 @@ interface RepositoryModule {
 
     @Binds
     fun linkRepository(repository: TdlibLinkRepository): LinkRepository
+
+    @Binds
+    fun shareRepository(repository: TdlibShareRepository): ShareRepository
 }
