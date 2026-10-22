@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.pingogram.android.roborazzi)
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.pingogram.android.licenses)
+    // The languages it ships, from the translations (docs/TRANSLATING.md): locale config and resource filters.
+    alias(libs.plugins.pingogram.android.locales)
     // Firebase for the gms flavor's push notifications, and the check that keeps foss free of it.
     alias(libs.plugins.pingogram.android.gms)
 }
@@ -21,13 +23,6 @@ android {
     // shortcut_target_package below.
     buildFeatures {
         resValues = true
-    }
-
-    // Only the languages Pingogram ships (docs/PERFORMANCE.md §8): those of res/xml/locales_config.xml, which Android
-    // 13+ and Settings → Language list. The libraries' translations of other languages are left out, so a screen never
-    // mixes Pingogram's English with, say, a date picker in the system's German, and the APK is smaller.
-    androidResources {
-        localeFilters += shippedLanguages(file("src/main/res/xml/locales_config.xml"))
     }
 
     // Settings → Language switches among these languages at run time, so a bundle installs all of them, not only the
@@ -151,20 +146,3 @@ dependencies {
     testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)
 }
-
-/**
- * The languages a locale config lists (the `android:name` of each `<locale>`, BCP 47 tags) as resource qualifiers:
- * "en", "pt-rBR" for "pt-BR", "b+sr+Latn" for "sr-Latn".
- */
-fun shippedLanguages(localeConfig: File): List<String> =
-    Regex("""<locale\s+android:name="([^"]+)"""")
-        .findAll(localeConfig.readText())
-        .map { match ->
-            val parts = match.groupValues[1].split('-')
-            when {
-                parts.size == 1 -> parts[0]
-                parts.size == 2 && parts[1].length == 2 -> "${parts[0]}-r${parts[1]}"
-                else -> parts.joinToString("+", prefix = "b+")
-            }
-        }.toList()
-        .also { check(it.isNotEmpty()) { "$localeConfig lists no languages" } }

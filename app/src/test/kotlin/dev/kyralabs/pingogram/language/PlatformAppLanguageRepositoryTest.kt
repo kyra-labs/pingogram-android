@@ -27,9 +27,9 @@ import java.io.File
 import java.util.Locale
 
 /**
- * [PlatformAppLanguageRepository] on Robolectric's Android: the languages of `res/xml/locales_config.xml`, Android's
- * per-app language from Android 13 on, the app's settings before, and the context `MainActivity` takes before Android
- * 13 ([contextInLanguage]).
+ * [PlatformAppLanguageRepository] on Robolectric's Android: the languages of the generated
+ * `res/xml/locales_config.xml`, Android's per-app language from Android 13 on, the app's settings before, and the
+ * context `MainActivity` takes before Android 13 ([contextInLanguage]).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
