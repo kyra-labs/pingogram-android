@@ -77,6 +77,9 @@ sealed interface ChatEffect {
     /** The pinned messages bar was hidden on this device: a snackbar says it returns with a newer pinned message. */
     data object PinnedHidden : ChatEffect
 
+    /** A bot's menu button opens a Mini App, which Pingogram cannot open yet: a snackbar says so, never a WebView. */
+    data object MiniAppsUnsupported : ChatEffect
+
     /**
      * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
      * the channel's discussion group for a post's comments.

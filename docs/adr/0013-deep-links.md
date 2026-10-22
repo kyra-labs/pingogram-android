@@ -45,7 +45,12 @@ dangerous to act on (a login code someone else asked for).
     `MyProfilePage` and `Settings` → Edit profile (`SettingsSectionEditProfile` too), `Settings` → Settings, or its page
     for appearance, data and storage, devices (active sessions), language, notifications, privacy and security,
     `ContactsPage` → Contacts, `NewPrivateChat` / `NewGroupChat` / `NewChannelChat` → New chat, `Search` → search,
-    `MessageDraft` → the share sheet with the text, to pick its chat (`docs/adr/0014-direct-share.md`).
+    `MessageDraft` → the share sheet with the text, to pick its chat (`docs/adr/0014-direct-share.md`), `BotStart`
+    (`t.me/bot?start=…`, added with bot commands, 2026-10-22): `searchPublicChat` of the bot's username, which must be
+    a bot's (otherwise "No one has this username"), then the bot's chat with "Start" in the composer's place; the
+    start parameter reaches the conversation through `feature:chat`'s `BotStartInbox` (in memory, kept in the
+    conversation's saved state once taken), and `sendBotStartMessage` sends it only when the user taps "Start". The
+    link's `autostart` is not honoured: nothing starts by itself (Telegram API terms; the link may come from anyone).
   - Resolved, their screens added with FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`; until then "Pingogram
     can't open this link yet"): `ChatInvite`, `QrCodeAuthentication` (the target keeps the link, which TDLib's type
     does not) and `ChatBoost` (read only) open the join sheet (`ChatInviteRoute`, which asks before joining), the
@@ -55,7 +60,7 @@ dangerous to act on (a login code someone else asked for).
   - Not opened ("Pingogram can't open this kind of link yet", and "Open in browser" for `https` links, which targets a
     browser through a `CATEGORY_APP_BROWSER` selector, or a chooser without Pingogram, so it never comes back here):
     `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, `StickerSet`, bots
-    (`BotStart`, `BotStartInGroup`, `BotAddToChannel`, `AttachmentMenuBot`, `WebApp`, `MainWebApp`, `Game`), `Invoice`,
+    (`BotStartInGroup`, `BotAddToChannel`, `AttachmentMenuBot`, `WebApp`, `MainWebApp`, `Game`), `Invoice`,
     `PassportDataRequest`, `PremiumFeaturesPage`, `PremiumGiftCode`, `PremiumGiftPurchase`, `StarPurchase`, `TonConnect`,
     `TonWalletTransfer`, `GiftAuction`, `GiftCollection`, `UpgradedGift`, `Story`, `StoryAlbum`, `NewStory`, `LiveStory`,
     `VideoChat`, `GroupCall`, `CallsPage`, `BusinessChat`, `DirectMessagesChat`, `ChatAffiliateProgram`,

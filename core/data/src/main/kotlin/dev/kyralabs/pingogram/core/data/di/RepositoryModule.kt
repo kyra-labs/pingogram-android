@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibBotInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
@@ -59,6 +60,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
+import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
@@ -226,6 +228,9 @@ interface RepositoryModule {
 
     @Binds
     fun sendAsRepository(repository: TdlibSendAsRepository): SendAsRepository
+
+    @Binds
+    fun botInfoRepository(repository: TdlibBotInfoRepository): BotInfoRepository
 
     @Binds
     fun secretChatRepository(repository: TdlibSecretChatRepository): SecretChatRepository

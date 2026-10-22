@@ -9,6 +9,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Bot commands: in chats with bots, a "/" button at the start of the message field lists the bots' commands with
+  what each does (in groups, which bot it belongs to, with search when there are many). Tap one to send it, or the
+  arrow beside it to put it into the field and add something after it. Typing "/" suggests the matching commands
+  above the field; on a keyboard, the arrow keys pick one, Enter sends it and Tab puts it into the field. The
+  attachment button moves to the end of the field in these chats.
+- Bots you have not used yet show what they can do, with their picture, and a "Start" button that starts them. Links
+  that start a bot (`t.me/bot?start=…`) open its chat with "Start" ready; nothing is sent until you tap it.
+- A bot's menu button appears at the start of the field. Bots whose menu opens a Mini App say that Pingogram can't
+  open Mini Apps yet.
+
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the

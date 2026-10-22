@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.bot.ComposerBotButton
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsChoice
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -41,16 +42,27 @@ sealed interface ComposerUiState {
     ) : ComposerUiState
 
     /**
+     * A private chat with a bot that has no messages yet, or that a start link opened: "Start" in the composer's place,
+     * which starts the bot (`sendBotStartMessage`) once tapped; busy while Telegram is asked ([isStarting]).
+     */
+    data class BotStart(
+        val isStarting: Boolean = false,
+    ) : ComposerUiState
+
+    /**
      * The composer. [canSchedule] whether its send menu offers scheduling, which secret chats do not allow; [bar] the
      * message it replies to or edits, shown above the text field; null for a new message. [attachOptions] what its
      * attach button offers, as the chat allows; empty hides the button, as while editing. [sendAs] who new messages go
-     * out as, where the user can choose (its avatar opens the send-as picker); null hides it, as while editing.
+     * out as, where the user can choose (its avatar opens the send-as picker); null hides it, as while editing. [bot]
+     * the button of the chat's bots at the start of the pill, where they offer commands or a menu; null hides it, as
+     * while editing.
      */
     data class Available(
         val canSchedule: Boolean,
         val bar: ComposerBar? = null,
         val attachOptions: ImmutableList<AttachOption> = persistentListOf(),
         val sendAs: SendAsChoice? = null,
+        val bot: ComposerBotButton? = null,
     ) : ComposerUiState
 }
 
