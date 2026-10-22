@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.navigation.OpenShareEffect
 import dev.kyralabs.pingogram.navigation.isInMainGraph
 import dev.kyralabs.pingogram.navigation.openLinkTarget
 import dev.kyralabs.pingogram.navigation.openShare
+import dev.kyralabs.pingogram.navigation.rememberChatBesideList
 import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -92,6 +93,7 @@ internal fun LinkEffects(
     val showDetails = isDebuggable()
     val currentOnOpenSearch by rememberUpdatedState(onOpenSearch)
     val currentOnShare by rememberUpdatedState(onShare)
+    val besideList by rememberChatBesideList()
     LaunchedEffect(links, navController, snackbars) {
         links.effects.collect { effect ->
             when (effect) {
@@ -103,6 +105,7 @@ internal fun LinkEffects(
                                 fromOutside = effect.fromOutside,
                                 onOpenSearch = currentOnOpenSearch,
                                 onShare = currentOnShare,
+                                besideList = besideList,
                             )
                     if (!opened) launch { snackbars.showSnackbar(resources.getString(R.string.link_not_yet)) }
                 }

@@ -1,8 +1,13 @@
 package dev.kyralabs.pingogram.feature.profile.navigation
 
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.ProfileRoute
+import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
+import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.avatarTransformTarget
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRoute
 
 /**
@@ -11,7 +16,8 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * channel a mention in the bio named), [onOpenProfile] another user's profile (a mention), [onOpenMedia] a photo, video
  * or GIF of the shared media in the media viewer, and [onOpenMessage] a file, song or voice message in the chat at its
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
- * the user; without it, those rows are left out.
+ * the user; without it, those rows are left out. It grows out of the conversation's avatar that opened it, and shrinks
+ * back into it (`docs/DESIGN_SYSTEM.md` §5, [avatarTransformTarget]).
  */
 fun NavGraphBuilder.profileScreen(
     onBack: () -> Unit,
@@ -21,14 +27,19 @@ fun NavGraphBuilder.profileScreen(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     onEditContact: ((userId: Long) -> Unit)? = null,
 ) {
-    composable<ProfileRoute> {
-        ProfileScreenRoute(
-            onBack = onBack,
-            onOpenChat = onOpenChat,
-            onOpenProfile = onOpenProfile,
-            onOpenMedia = onOpenMedia,
-            onOpenMessage = onOpenMessage,
-            onEditContact = onEditContact,
-        )
+    composable<ProfileRoute> { entry ->
+        val userId = entry.toRoute<ProfileRoute>().userId
+        // It grows out of the conversation's avatar, and shrinks back into it.
+        ProvideNavAnimatedVisibilityScope(this) {
+            ProfileScreenRoute(
+                onBack = onBack,
+                onOpenChat = onOpenChat,
+                onOpenProfile = onOpenProfile,
+                onOpenMedia = onOpenMedia,
+                onOpenMessage = onOpenMessage,
+                modifier = Modifier.avatarTransformTarget(AvatarTransformKey.profile(userId)),
+                onEditContact = onEditContact,
+            )
+        }
     }
 }

@@ -49,8 +49,8 @@ fun NavGraphBuilder.chatScreen(
  * Navigation): the same screen as [ChatDestination], with the top bar's back button only where [onBack] is given,
  * i.e. when the pane shows alone, opened at [messageId] if not null (a message found by search). [onOpenMedia] opens a
  * tapped photo, video or GIF in the media viewer, full screen above the whole layout; [onOpenChat] the chat messages
- * were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page, pushed
- * above the whole layout.
+ * were forwarded to; [onOpenProfile] a user's profile and [onOpenChatInfo] a group's or channel's info page, which the
+ * layout pushes above itself or shows beside the conversation.
  *
  * Each chat, and each message it is opened at, gets a fresh composition and view model: its own saved UI state (the
  * scroll position), and a [ViewModelStoreOwner][androidx.lifecycle.ViewModelStoreOwner] of its own

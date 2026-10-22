@@ -41,6 +41,8 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
+import dev.kyralabs.pingogram.core.ui.transition.avatarTransform
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
@@ -203,6 +205,15 @@ private fun ChatTitle(
             name = title,
             id = header.chatId,
             size = MaterialTheme.sizes.avatarSmall,
+            // It grows into the profile or info page the title opens (docs/DESIGN_SYSTEM.md §5).
+            modifier =
+                Modifier.avatarTransform(
+                    when {
+                        userId != null && onOpenProfile != null -> AvatarTransformKey.profile(userId)
+                        openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
+                        else -> null
+                    },
+                ),
             placeholderIcon = header.placeholderIcon,
         )
         Column {

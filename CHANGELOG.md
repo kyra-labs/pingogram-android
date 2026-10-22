@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Very wide windows (1600 dp and more, e.g. a desktop or an external display): a profile or a group's or channel's
+  info opens beside the conversation, as a third pane, instead of covering the chats. Drag the handle between them to
+  make it narrower or wider; back closes it first.
+- On tablets and other wide windows, a chat opened from a link, from search or from a profile's "Message" now opens
+  beside the chat list instead of covering it.
+- The conversation's avatar grows into the profile or info page it opens (unless animations are off).
 - Share into Pingogram: text, links, photos, videos and files shared from other apps open a "Send to" sheet with your
   chats (Saved Messages first, and search). Pick one chat to open it with the text in the message field or the files
   ready to send, so you can check and add to it before tapping send; pick several to send it to all of them at once,

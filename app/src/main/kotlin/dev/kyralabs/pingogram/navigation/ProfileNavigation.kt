@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.navigation
 
+import androidx.compose.runtime.State
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -16,18 +17,24 @@ import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
 
 /**
  * A user's profile (`REQUIREMENTS.md` FR-P2), pushed above the screen it is opened from. Its "Message" returns to the
- * conversation below it when that is the user's chat, and pushes the chat otherwise; another chat (a secret chat just
- * started, a group a mention named), another profile, a file at its message in the chat, and a photo, video or GIF in
- * the media viewer are pushed above it, so back returns to the profile. "Add to contacts" and "Edit contact" push
+ * conversation below it when that is the user's chat; otherwise the chat (also a secret chat just started, a group a
+ * mention named, a file at its message) opens in the Chats tab's detail pane on expanded and wider windows
+ * ([besideList], [navigateToChat]) and is pushed above the profile on others, so back returns to the profile. Another
+ * profile and a photo, video or GIF in the media viewer are pushed above it. "Add to contacts" and "Edit contact" push
  * the contact editor (`EditContactRoute`, `feature:contacts`) above it.
  */
-internal fun NavGraphBuilder.profile(navController: NavHostController) {
+internal fun NavGraphBuilder.profile(
+    navController: NavHostController,
+    besideList: State<Boolean>,
+) {
     profileScreen(
         onBack = { navController.popBackStack() },
-        onOpenChat = { chatId -> navController.openChatFromProfile(chatId) },
+        onOpenChat = { chatId -> navController.openChatFromProfile(chatId, besideList = besideList.value) },
         onOpenProfile = { userId -> navController.navigateToProfile(userId) },
         onOpenMedia = { chatId, messageId -> navController.navigateToMediaViewer(chatId, messageId) },
-        onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId)) },
+        onOpenMessage = { chatId, messageId ->
+            navController.navigateToChat(chatId, messageId, besideList = besideList.value)
+        },
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
     )
 }
@@ -38,29 +45,38 @@ internal fun NavHostController.navigateToProfile(userId: Long) {
 }
 
 /**
- * Opens chat [chatId] from a profile: back to the conversation below the profile if it is that chat (the profile was
- * opened from its title), else the chat pushed above the profile.
+ * Opens chat [chatId] from a profile or an info page: back to the conversation below it if it is that chat (the page
+ * was opened from its title), else [besideList] in the Chats tab's detail pane, or pushed above the page.
  */
-private fun NavHostController.openChatFromProfile(chatId: Long) {
+private fun NavHostController.openChatFromProfile(
+    chatId: Long,
+    besideList: Boolean,
+) {
     val below = previousBackStackEntry
     val isBelow = below?.destination?.hasRoute<ChatRoute>() == true && below.toRoute<ChatRoute>().chatId == chatId
-    if (isBelow) popBackStack() else navigate(ChatRoute(chatId)) { launchSingleTop = true }
+    if (isBelow) popBackStack() else navigateToChat(chatId, besideList = besideList)
 }
 
 /**
  * The info page of a group or channel and the pages it opens (`REQUIREMENTS.md` FR-P3, FR-P4), each pushed above the
- * one before. A chat or profile it names is pushed above it, the shared media as from a profile. Once the user left or
- * deleted the chat, the back stack returns to the chat list, as the conversation below is gone.
+ * one before. A profile it names is pushed above it; a chat opens as from a profile ([besideList]), and so does the
+ * shared media. Once the user left or deleted the chat, the back stack returns to the chat list, as the conversation
+ * below is gone.
  */
-internal fun NavGraphBuilder.chatInfo(navController: NavHostController) {
+internal fun NavGraphBuilder.chatInfo(
+    navController: NavHostController,
+    besideList: State<Boolean>,
+) {
     chatInfoScreens(
         onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
         onBack = { navController.popBackStack() },
         onLeft = { navController.popBackStackToChats() },
-        onOpenChat = { chatId -> navController.openChatFromProfile(chatId) },
+        onOpenChat = { chatId -> navController.openChatFromProfile(chatId, besideList = besideList.value) },
         onOpenProfile = { userId -> navController.navigateToProfile(userId) },
         onOpenMedia = { chatId, messageId -> navController.navigateToMediaViewer(chatId, messageId) },
-        onOpenMessage = { chatId, messageId -> navController.navigate(ChatRoute(chatId, messageId)) },
+        onOpenMessage = { chatId, messageId ->
+            navController.navigateToChat(chatId, messageId, besideList = besideList.value)
+        },
         onSaved = { navController.popBackStackAfterGroupChange() },
     )
 }
