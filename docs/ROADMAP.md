@@ -72,7 +72,7 @@ the release workflow so the owner can install and test on a phone.
 - [ ] Group/channel info, members, admins, permissions, invite links, create/leave/delete
 - [ ] Forum topics, comments threads, pinned messages bar
 - [x] Secret chats: create/accept, TTL, lock indicators (accepting is TDLib's own, `docs/TDLIB.md`)
-- [ ] Deep links (`tg://`, `t.me`) via `getInternalLinkType`
+- [x] Deep links (`tg://`, `t.me`) via `getInternalLinkType` (scope and what is left out: `docs/adr/0013-deep-links.md`)
 - [ ] Direct share: share text, links and files from other apps into a chat (a share target with a chat picker and a
       prefilled composer; the conversation shortcuts as Direct Share targets), moved from M3 (owner, 2026-10-21)
 
