@@ -118,7 +118,8 @@ import kotlinx.collections.immutable.ImmutableSet
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows. [onOpenProfile],
- * where the app has profiles, is what the title of a private chat opens; tapped mentions, senders' avatars and names
+ * where the app has profiles, is what the title of a private chat opens, [onOpenChatInfo] what that of a group or
+ * channel opens; tapped mentions, senders' avatars and names
  * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]).
  */
 @Composable
@@ -139,11 +140,11 @@ internal fun ChatScreen(
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit = {},
     lift: MessageLiftState = rememberMessageLiftState(),
     onOpenProfile: ((userId: Long) -> Unit)? = null,
+    onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
 ) {
     val content = state.content
     val selection = state.selection
-    val clearSelection = { onEvent(SelectionEvent.Clear) }
-    val selectionBack = rememberSelectionBack(enabled = selection != null, onBack = clearSelection)
+    val selectionBack = rememberSelectionBack(enabled = selection != null, onBack = { onEvent(SelectionEvent.Clear) })
     LeaveComposerWhileSelecting(selecting = selection != null)
     val showJump by remember(listState) { derivedStateOf { listState.canScrollBackward } }
     val scrollToNewest = rememberJumpToNewest(listState, content, onEvent)
@@ -163,6 +164,7 @@ internal fun ChatScreen(
             snackbarHostState = snackbarHostState,
             bubbleResources = bubbleResources,
             onOpenProfile = onOpenProfile,
+            onOpenChatInfo = onOpenChatInfo,
             bottomBar = {
                 ChatScreenBottomBar(
                     state = state,
@@ -213,6 +215,7 @@ private fun ChatScaffold(
     snackbarHostState: SnackbarHostState,
     bubbleResources: BubbleResources,
     onOpenProfile: ((userId: Long) -> Unit)?,
+    onOpenChatInfo: ((chatId: Long) -> Unit)?,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -228,6 +231,7 @@ private fun ChatScaffold(
                 onClearSelection = { onEvent(SelectionEvent.Clear) },
                 onOpenProfile = onOpenProfile,
                 onSecretChatEvent = onEvent,
+                onOpenChatInfo = onOpenChatInfo,
             )
         },
         bottomBar = bottomBar,

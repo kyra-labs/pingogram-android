@@ -91,7 +91,7 @@ class TdErrorMappingTest {
                     DomainError.Unknown(400, "Call to checkAuthenticationCode unexpected"),
                 ),
                 Arguments.of(400, "SOME_NEW_ERROR", DomainError.Unknown(400, "SOME_NEW_ERROR")),
-            ) + profileErrors() + attachmentErrors()
+            ) + profileErrors() + attachmentErrors() + groupErrors()
 
         /** Editing the profile: usernames, the bio and photos. */
         private fun profileErrors(): List<Arguments> =
@@ -127,6 +127,18 @@ class TdErrorMappingTest {
                 Arguments.of(400, "Polls can't be sent to the private chat", DomainError.SendingNotAllowed),
                 Arguments.of(400, "Non-anonymous polls can't be sent to channel chats", DomainError.SendingNotAllowed),
                 Arguments.of(403, "CHAT_SEND_MEDIA_FORBIDDEN", DomainError.SendingNotAllowed),
+            )
+
+        /** Administering groups and channels. */
+        private fun groupErrors(): List<Arguments> =
+            listOf(
+                Arguments.of(400, "CHAT_ADMIN_REQUIRED", DomainError.AdminRightsRequired),
+                Arguments.of(403, "RIGHT_FORBIDDEN", DomainError.AdminRightsRequired),
+                Arguments.of(400, "USER_ADMIN_INVALID", DomainError.AdminRightsRequired),
+                Arguments.of(400, "Not enough rights to change chat title", DomainError.AdminRightsRequired),
+                Arguments.of(400, "CHAT_ABOUT_TOO_LONG", DomainError.DescriptionTooLong),
+                Arguments.of(400, "USER_NOT_MUTUAL_CONTACT", DomainError.NotMutualContact),
+                Arguments.of(400, "ADMINS_TOO_MUCH", DomainError.TooManyAdmins),
             )
     }
 }

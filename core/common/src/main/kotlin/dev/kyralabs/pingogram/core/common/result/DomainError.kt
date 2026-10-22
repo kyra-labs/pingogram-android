@@ -146,4 +146,21 @@ sealed interface DomainError {
      * channels for now.
      */
     data object AccountRestricted : DomainError
+
+    // Groups and channels (REQUIREMENTS.md FR-P3).
+
+    /**
+     * The current user's rights do not allow this (`CHAT_ADMIN_REQUIRED`, `RIGHT_FORBIDDEN`, TDLib's "Not enough
+     * rights"): e.g. an administrator granting a right they lack themselves, or editing one they did not promote.
+     */
+    data object AdminRightsRequired : DomainError
+
+    /** The description is longer than Telegram accepts (`CHAT_ABOUT_TOO_LONG`). */
+    data object DescriptionTooLong : DomainError
+
+    /** Only a mutual contact can be made an administrator of a basic group, or added (`USER_NOT_MUTUAL_CONTACT`). */
+    data object NotMutualContact : DomainError
+
+    /** The group or channel has as many administrators as Telegram allows (`ADMINS_TOO_MUCH`). */
+    data object TooManyAdmins : DomainError
 }

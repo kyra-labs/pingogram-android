@@ -125,6 +125,15 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHANNELS_TOO_MUCH" to DomainError.TooManyChats,
         "CHANNELS_ADMIN_PUBLIC_TOO_MUCH" to DomainError.TooManyPublicLinks,
         "USER_RESTRICTED" to DomainError.AccountRestricted,
+        // Administering groups and channels: channels.editAdmin, channels.editBanned, messages.editChatTitle, ….
+        "CHAT_ADMIN_REQUIRED" to DomainError.AdminRightsRequired,
+        "RIGHT_FORBIDDEN" to DomainError.AdminRightsRequired,
+        "USER_ADMIN_INVALID" to DomainError.AdminRightsRequired,
+        "ADMIN_RANK_INVALID" to DomainError.AdminRightsRequired,
+        "USER_CREATOR" to DomainError.AdminRightsRequired,
+        "CHAT_ABOUT_TOO_LONG" to DomainError.DescriptionTooLong,
+        "USER_NOT_MUTUAL_CONTACT" to DomainError.NotMutualContact,
+        "ADMINS_TOO_MUCH" to DomainError.TooManyAdmins,
     )
 
 /**
@@ -163,4 +172,7 @@ private val TDLIB_PATTERNS: List<Pair<Regex, DomainError>> =
     listOf(
         Regex("""^File of size \d+ bytes is too big""") to DomainError.FileTooLarge,
         Regex("""^Not enough rights to send """) to DomainError.SendingNotAllowed,
+        // TDLib's own rights checks of the administration functions ("Not enough rights to …"), after the sending
+        // check above, as the first match wins.
+        Regex("""^Not enough rights\b""") to DomainError.AdminRightsRequired,
     )

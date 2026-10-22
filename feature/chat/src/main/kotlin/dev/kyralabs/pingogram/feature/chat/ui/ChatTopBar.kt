@@ -53,11 +53,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * pulsing [TypingDots] while someone is typing or doing something else in the chat. No actions in other chats yet
  * (calls come in M5, search in the chat in M6, and Material allows two at most). In a private or secret chat the
  * title opens the other user's profile through [onOpenProfile] (`REQUIREMENTS.md` FR-P2), its state layer over the
- * title; groups and channels keep it inert until chat info comes. A secret chat (`REQUIREMENTS.md` FR-E1,
- * [ChatHeader.secret]) has a lock before its name, and two actions ([SecretChatActions]): its self-destruct timer,
- * with the timer on a badge, and its encryption key, both through [onSecretChatEvent]. It sits on the screen's
- * `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in the detail
- * pane beside the chat list, which has nothing to go back to.
+ * title; in a group or channel it opens the chat's info page through [onOpenChatInfo] (FR-P3). A secret chat
+ * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and two actions ([SecretChatActions]): its
+ * self-destruct timer, with the timer on a badge, and its encryption key, both through [onSecretChatEvent]. It sits on
+ * the screen's `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in
+ * the detail pane beside the chat list, which has nothing to go back to.
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
@@ -75,6 +75,7 @@ internal fun ChatTopBar(
     onClearSelection: () -> Unit = {},
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onSecretChatEvent: (SecretChatEvent) -> Unit = {},
+    onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
@@ -88,7 +89,10 @@ internal fun ChatTopBar(
                 contentKey = { it != null },
                 label = "chatTitle",
             ) { count ->
-                if (count != null) SelectionTitle(count) else header?.let { ChatTitle(it, onOpenProfile) }
+                when {
+                    count != null -> SelectionTitle(count)
+                    header != null -> ChatTitle(header, onOpenProfile, onOpenChatInfo)
+                }
             }
         },
         modifier = modifier,
@@ -154,27 +158,38 @@ private fun SelectionTitle(count: Int) {
 
 /**
  * The avatar beside the name and the subtitle; one heading for screen readers, a button that opens the profile where
- * there is one ([onOpenProfile]). While someone is doing something in the chat, the heading is a polite live region,
- * so screen readers announce it ("Grace is typing…") when it starts or changes; the status is not, as "last seen"
- * changes every minute.
+ * there is one ([onOpenProfile]), or the info page of a group or channel ([onOpenChatInfo]). While someone is doing
+ * something in the chat, the heading is a polite live region, so screen readers announce it ("Grace is typing…") when
+ * it starts or changes; the status is not, as "last seen" changes every minute.
  */
 @Composable
 private fun ChatTitle(
     header: ChatHeader,
     onOpenProfile: ((userId: Long) -> Unit)?,
+    onOpenChatInfo: ((chatId: Long) -> Unit)?,
 ) {
     val title = header.title.resolve()
     val isAction = header.subtitle is ChatSubtitle.Action
     val userId = header.profileUserId
     val openLabel = stringResource(R.string.chat_open_profile)
+    val infoLabel = stringResource(R.string.chat_open_info)
+    val openInfo = onOpenChatInfo.takeIf { header.opensChatInfo }
     Row(
         modifier =
             Modifier
                 .then(
-                    if (userId != null && onOpenProfile != null) {
-                        Modifier.clickable(onClickLabel = openLabel, role = Role.Button) { onOpenProfile(userId) }
-                    } else {
-                        Modifier
+                    when {
+                        userId != null && onOpenProfile != null -> {
+                            Modifier.clickable(onClickLabel = openLabel, role = Role.Button) { onOpenProfile(userId) }
+                        }
+
+                        openInfo != null -> {
+                            Modifier.clickable(onClickLabel = infoLabel, role = Role.Button) { openInfo(header.chatId) }
+                        }
+
+                        else -> {
+                            Modifier
+                        }
                     },
                 ).semantics(mergeDescendants = true) {
                     heading()

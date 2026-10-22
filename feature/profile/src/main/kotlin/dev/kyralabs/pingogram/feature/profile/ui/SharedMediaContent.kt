@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -88,7 +89,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The shared media's items for a [LazyGridScope] whose cells are [cellSize] wide ([cellSizePx] in pixels, the size the
  * grid's images are decoded at): the tabs ([SharedMediaTabRow]) as a full-span item, then the shown tab's content,
- * inset by [margin] from the grid's sides. Nothing while [media] has no chat yet.
+ * inset by [margin] from the grid's sides. Nothing while [media] has no chat yet. An empty tab says [emptyBody] below
+ * its title: what shows there, for a private chat or a group.
  */
 @Suppress("LongParameterList") // The state, where its events go, and the grid's geometry.
 internal fun LazyGridScope.sharedMediaItems(
@@ -98,6 +100,7 @@ internal fun LazyGridScope.sharedMediaItems(
     cellSizePx: Int,
     margin: Dp,
     showTabs: Boolean = true,
+    @StringRes emptyBody: Int = R.string.profile_media_empty_body,
 ) {
     val chatId = media.chatId ?: return
     if (showTabs) {
@@ -111,7 +114,7 @@ internal fun LazyGridScope.sharedMediaItems(
         }
 
         SharedMediaContent.Empty -> {
-            fullSpan(key = STATE, contentType = STATE) { MediaEmpty(media.selected) }
+            fullSpan(key = STATE, contentType = STATE) { MediaEmpty(media.selected, emptyBody) }
         }
 
         is SharedMediaContent.Error -> {

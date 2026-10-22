@@ -250,6 +250,45 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - "Online" and "last seen" are worded once, by `core:ui`'s `UserStatusFormatter`, for the conversation's top bar and
   the profile.
 
+## Group and channel info
+
+- `feature:profile` also shows groups and channels (FR-P3, the leaving and deleting of FR-P4): `ChatInfoRoute(chatId)`,
+  which the conversation's title opens in basic groups, supergroups and channels (`ChatHeader.opensChatInfo`;
+  private and secret chats keep `ProfileRoute`), pushed above the conversation on every window, also from the detail
+  pane. Three repositories of `core:domain`, none a cache (TDLib announces groups with `updateBasicGroup` /
+  `updateSupergroup` and their full info only to whoever asks):
+  - `GroupInfoRepository` (`TdlibGroupInfoRepository`): `groupInfo(chatId)` is `getBasicGroup` / `getSupergroup` with
+    their full info, then every update of the group, its full info and `updateChatPermissions` while collected, as
+    one `GroupInfo` (kind, usernames, counts, the user's `MemberRole` and its rights, the default permissions, the
+    description, the slow mode, the primary invite link); full info that fails leaves the head with `detailsError`.
+    `members` pages `getSupergroupMembers` (recent, administrators, restricted, banned, or a search), up to 200 a
+    page; a basic group's members all come with its full info (`searchChatMembers` filters them), and it
+    restricts and bans nobody; `member` is `getChatMember`.
+  - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
+    `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
+    restricting, banning, lifting), and clearing the history (`deleteChatHistory` for the user only). Leaving and
+    deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
+  - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
+    revoked), one link, creating, editing, revoking and deleting them.
+
+  Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
+  `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
+- Pages (`feature:profile` `chatinfo/`, each with its view model, routes in `core:navigation`): the info page
+  (`ChatInfoViewModel`: the chat from `ChatRepository`, the group from `GroupInfoRepository`, the first members, mute,
+  the confirmations, and the shared media through the profile's `ProfileSharedMedia`), the members
+  (`ChatMembersRoute(chatId, filter)`, `ChatMembersViewModel`: the filters the user's rights allow, paging, a search
+  after a pause, the actions each member's role and the user's rights allow), a member's rights
+  (`MemberRightsRoute(chatId, userId, restrict)`: promoting only with rights the user has, restricting only within the
+  chat's defaults), the name and description (`EditChatInfoRoute`), the permissions and slow mode
+  (`ChatPermissionsRoute`), and the invite links (`InviteLinksRoute`, `EditInviteLinkRoute(chatId, link?)`). What a
+  view model types or chooses is kept in its `SavedStateHandle`. A page that changed members or links leaves a flag in
+  the saved state of the page below (`popBackStackAfterGroupChange`), which reads its list again. Once the user left
+  or deleted the chat, `:app` pops back to the chat list.
+- Compact and medium windows show the info page as one `LazyVerticalGrid`, as the profile; expanded ones put the shared
+  media in a supporting pane (`SupportingPanes`, shared with the profile).
+- QR codes of a link are encoded on the device with ZXing's core (already used by QR login, `feature:auth`) into a bitmap
+  of one pixel per module on `Dispatchers.Default`, drawn scaled without filtering; nothing leaves the device.
+
 ## Threading
 
 - TDLib callbacks arrive on TDLib's thread; `TdlibClient` immediately hops to

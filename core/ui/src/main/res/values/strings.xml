@@ -39,6 +39,11 @@
     <string name="error_file_too_large">This file is too large to send.</string>
     <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
     <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
+    <!-- Groups and channels: what administrators change. -->
+    <string name="error_admin_rights_required">You don\'t have the rights to do this here.</string>
+    <string name="error_description_too_long">The description is too long.</string>
+    <string name="error_not_mutual_contact">Only people who have you in their contacts too can be added here.</string>
+    <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">

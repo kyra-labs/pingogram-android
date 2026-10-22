@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -97,7 +98,10 @@ internal fun MediaLoading() {
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun MediaEmpty(kind: SharedMediaKind) {
+internal fun MediaEmpty(
+    kind: SharedMediaKind,
+    @StringRes body: Int = R.string.profile_media_empty_body,
+) {
     val colors = MaterialTheme.colorScheme
     MediaNotice(
         shape = MaterialShapes.Cookie9Sided,
@@ -105,7 +109,7 @@ internal fun MediaEmpty(kind: SharedMediaKind) {
         container = colors.primaryContainer,
         content = colors.onPrimaryContainer,
         title = stringResource(kind.emptyTitle),
-        body = stringResource(R.string.profile_media_empty_body),
+        body = stringResource(body),
     )
 }
 
