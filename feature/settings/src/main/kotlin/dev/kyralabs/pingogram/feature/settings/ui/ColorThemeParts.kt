@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,7 +51,6 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The parts of the Theme page (docs/DESIGN_SYSTEM.md §6, "Color themes"): the chips and the live preview.
@@ -198,12 +199,17 @@ private fun PreviewChatRow() {
     }
 }
 
-/** The preview's time, 9:41, as the user's language writes times ("9:41 AM", "9.41", "09:41"). */
+/**
+ * The preview's time, 9:41, as the user's language and clock write times ("9:41 AM", "9.41", "09:41"): the platform's
+ * pattern, as the chat list's times (`TimePatterns`), not java.time's, whose patterns change between JDKs.
+ */
 @Composable
 private fun sampleTime(): String {
     val locale = LocalConfiguration.current.locales[0]
-    return remember(locale) {
-        DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(SampleTime)
+    val is24HourClock = DateFormat.is24HourFormat(LocalContext.current)
+    return remember(locale, is24HourClock) {
+        val pattern = DateFormat.getBestDateTimePattern(locale, if (is24HourClock) "Hm" else "hm")
+        DateTimeFormatter.ofPattern(pattern, locale).format(SampleTime)
     }
 }
 
