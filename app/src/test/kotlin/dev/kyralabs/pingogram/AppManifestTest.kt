@@ -36,7 +36,9 @@ import org.xmlpull.v1.XmlPullParser
  * Firebase Cloud Messaging keeps WAKE_LOCK on every version and adds its c2dm RECEIVE permission
  * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
- * 2026-10-20), in the foreground only: no background location, and location hardware is optional.
+ * 2026-10-20), in the foreground only: no background location, and location hardware is optional. CAMERA is the
+ * in-app QR code scanner's only (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md), and no camera is
+ * required to install.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
  * Telegram links (`tg:`, `t.me`, `telegram.me`, `telegram.dog`) open in the single-task main activity through browsable
@@ -75,6 +77,8 @@ class AppManifestTest {
                 // Contacts sync only, opt-in (docs/adr/0011-contacts-sync.md): read when the user turns it on, opens
                 // Contacts while it is on, or taps Sync now; never in the background.
                 Manifest.permission.READ_CONTACTS,
+                // The in-app QR code scanner only (docs/adr/0012-camerax-and-zxing-qr-scanner.md).
+                Manifest.permission.CAMERA,
             ) + FlavorManifest.requestedPermissions,
             requested,
         )
@@ -103,6 +107,8 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 // Contacts sync's only permission, on every version.
                 Manifest.permission.READ_CONTACTS to "",
+                // The QR code scanner's only permission, on every version.
+                Manifest.permission.CAMERA to "",
                 Manifest.permission.WAKE_LOCK to "30",
                 Manifest.permission.WRITE_EXTERNAL_STORAGE to "28",
             ) + FlavorManifest.declaredPermissions,
@@ -138,6 +144,23 @@ class AppManifestTest {
                 .single { it.androidAttribute("name") == "android.hardware.microphone" }
 
         assertEquals("false", microphone.androidAttribute("required"))
+    }
+
+    @Test
+    fun `the camera is used where there is one, not required to install`() {
+        val features =
+            mergedManifest()
+                .elements("uses-feature")
+                .associate { it.androidAttribute("name") to it.androidAttribute("required") }
+
+        assertEquals(
+            mapOf(
+                "android.hardware.camera" to "false",
+                "android.hardware.camera.any" to "false",
+                "android.hardware.camera.autofocus" to "false",
+            ),
+            features.filterKeys { it.startsWith("android.hardware.camera") },
+        )
     }
 
     @Test

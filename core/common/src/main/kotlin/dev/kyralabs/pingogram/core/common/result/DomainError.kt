@@ -163,4 +163,21 @@ sealed interface DomainError {
 
     /** The group or channel has as many administrators as Telegram allows (`ADMINS_TOO_MUCH`). */
     data object TooManyAdmins : DomainError
+
+    // Joining groups and channels, and logging in other devices (REQUIREMENTS.md FR-P5).
+
+    /**
+     * The invite link expired, was revoked, reached its limit of members, or is no invite link at all
+     * (`INVITE_HASH_EXPIRED`, `INVITE_HASH_INVALID`, TDLib's "Wrong invite link").
+     */
+    data object InviteLinkInvalid : DomainError
+
+    /** The group has as many members as Telegram allows (`USERS_TOO_MUCH`). */
+    data object ChatFull : DomainError
+
+    /**
+     * The QR code of a login on another device expired, was used already, or is no login code
+     * (`AUTH_TOKEN_EXPIRED`, `AUTH_TOKEN_INVALID`, `AUTH_TOKEN_ALREADY_ACCEPTED`): the other device shows a new one.
+     */
+    data object QrLoginExpired : DomainError
 }

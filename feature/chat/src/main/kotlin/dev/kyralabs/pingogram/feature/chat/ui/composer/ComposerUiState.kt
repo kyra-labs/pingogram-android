@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SecretChatState
@@ -26,6 +27,17 @@ sealed interface ComposerUiState {
     /** No composer, and a short label in its place that says why: [reason]. */
     data class Unavailable(
         val reason: UiText,
+    ) : ComposerUiState
+
+    /**
+     * A public group or channel the user is not in (`REQUIREMENTS.md` FR-P5): "Join" in the composer's place, "Join
+     * channel" for a [isChannel], or "Request to join" where administrators accept new members ([requestsToJoin]);
+     * busy while Telegram is asked ([isJoining]).
+     */
+    data class Join(
+        val isChannel: Boolean,
+        val requestsToJoin: Boolean,
+        val isJoining: Boolean = false,
     ) : ComposerUiState
 
     /**
@@ -80,7 +92,8 @@ sealed interface ComposerBar {
  * The composer of [chat], from the current user's [writeAccess] to it: its [user] for a private or secret chat, its
  * [basicGroup] or [supergroup] for a group or channel (null while unknown, or for other chats). A secret chat also
  * needs its [secretChat] ready (`REQUIREMENTS.md` FR-E1): while it waits for the other user, and once it ended, a
- * label says why there is no composer; nothing shows while TDLib has not announced it.
+ * label says why there is no composer; nothing shows while TDLib has not announced it. A public group or channel the
+ * user left or never joined offers "Join" instead ([ComposerUiState.Join]).
  */
 internal fun composerState(
     chat: Chat,
@@ -91,6 +104,9 @@ internal fun composerState(
 ): ComposerUiState =
     if (chat.type is ChatType.Secret && secretChat?.state != SecretChatState.Ready) {
         secretComposerState(secretChat?.state)
+    } else if (supergroup != null && supergroup.canJoin()) {
+        val isChannel = (chat.type as? ChatType.Supergroup)?.isChannel == true
+        ComposerUiState.Join(isChannel = isChannel, requestsToJoin = supergroup.joinByRequest && !isChannel)
     } else {
         when (chat.writeAccess(user, basicGroup, supergroup)) {
             WriteAccess.Allowed -> ComposerUiState.Available(canSchedule = chat.type !is ChatType.Secret)
@@ -107,3 +123,10 @@ private fun secretComposerState(state: SecretChatState?): ComposerUiState =
         SecretChatState.Closed -> ComposerUiState.Unavailable(UiText.resource(R.string.composer_secret_closed))
         SecretChatState.Ready, null -> ComposerUiState.Hidden
     }
+
+/**
+ * Whether the user can join this supergroup or channel from its conversation: it is public (a username anyone can
+ * find), and they left it or never joined; not if they were removed, nor a private one, which only an invite link
+ * opens.
+ */
+private fun Supergroup.canJoin(): Boolean = status == ChatMemberStatus.Left && usernames.isNotEmpty()

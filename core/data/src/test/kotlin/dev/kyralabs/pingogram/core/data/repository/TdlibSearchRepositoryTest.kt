@@ -220,7 +220,8 @@ class TdlibSearchRepositoryTest {
 
             assertEquals(listOf(30L, 31L), repository().searchPublicChats("@news").ids())
             val search = client.sentOf<TdApi.SearchPublicChats>().single()
-            assertEquals("@news", search.query)
+            // The @ is left out (publicChatQuery), as TDLib looks up the username itself.
+            assertEquals("news", search.query)
             assertNull(search.typeFilter)
         }
 
@@ -450,5 +451,15 @@ class TdlibSearchRepositoryTest {
 
     private companion object {
         const val UNKNOWN_CHAT = 404L
+    }
+
+    @Test
+    fun `a typed username or t_me link searches public chats for the username`() {
+        assertEquals("rustberlin", publicChatQuery(" @rustberlin "))
+        assertEquals("rustberlin", publicChatQuery("https://t.me/rustberlin"))
+        assertEquals("rustberlin", publicChatQuery("t.me/rustberlin/"))
+        assertEquals("Rust_Berlin", publicChatQuery("telegram.me/Rust_Berlin"))
+        assertEquals("rust berlin", publicChatQuery("rust berlin"))
+        assertEquals("t.me/+abcdef", publicChatQuery("t.me/+abcdef"))
     }
 }

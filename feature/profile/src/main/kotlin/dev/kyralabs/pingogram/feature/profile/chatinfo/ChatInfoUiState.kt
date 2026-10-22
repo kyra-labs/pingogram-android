@@ -99,11 +99,12 @@ data class ChatAdministration(
     val canManageInviteLinks: Boolean = false,
     val bannedCount: Int? = null,
     val restrictedCount: Int? = null,
+    val canViewBoosts: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
-                bannedCount == null && restrictedCount == null
+                bannedCount == null && restrictedCount == null && !canViewBoosts
 }
 
 /**
@@ -237,6 +238,9 @@ enum class ChatInfoPage {
     EditInfo,
     Permissions,
     InviteLinks,
+
+    /** The boosts of a channel or supergroup, read only (`REQUIREMENTS.md` FR-P5). */
+    Boosts,
 }
 
 /** One-off side effects of [ChatInfoViewModel], handled once by its route. */

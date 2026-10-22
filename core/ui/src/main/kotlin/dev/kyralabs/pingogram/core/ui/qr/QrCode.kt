@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui.components
+package dev.kyralabs.pingogram.core.ui.qr
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ColorScheme
@@ -19,17 +19,18 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 
 /**
- * The QR code of [link], drawn on a canvas: dark modules on a light quiet zone of [QUIET_ZONE_MODULES], in color scheme
- * roles that keep it dark on light in every theme ([qrColors]), as scanners expect. It is encoded once per link and
- * its path built once per size; drawing reads the colors only.
+ * The QR code of [text] (a link), drawn on a canvas: dark modules on a light quiet zone of [QUIET_ZONE_MODULES], in
+ * color scheme roles that keep it dark on light in every theme ([qrColors]), as scanners expect. It is encoded once per
+ * text and its path built once per size, so it stays sharp at any size; drawing reads the colors only. One renderer for
+ * every QR code Pingogram shows: the login's, a group's or channel's link, the user's own.
  */
 @Composable
-internal fun QrCode(
-    link: String,
+fun QrCode(
+    text: String,
     contentDescription: String,
     modifier: Modifier = Modifier,
 ) {
-    val matrix = remember(link) { encodeQrCode(link) }
+    val matrix = remember(text) { encodeQrCode(text) }
     val (moduleColor, backgroundColor) = qrColors(MaterialTheme.colorScheme)
     Box(
         modifier =
@@ -50,9 +51,10 @@ internal fun QrCode(
 /**
  * The module and quiet zone colors: `onSurface` on `surfaceContainerLowest` in a light theme, and the inverse roles
  * (`inverseOnSurface` on `inverseSurface`) in a dark one, so modules stay dark on a light ground with a contrast well
- * above what scanners need, whatever the theme, contrast level or dynamic palette.
+ * above what scanners need, whatever the theme, contrast level or dynamic palette (a scanner reads light-on-dark
+ * codes poorly).
  */
-internal fun qrColors(colors: ColorScheme): Pair<Color, Color> =
+fun qrColors(colors: ColorScheme): Pair<Color, Color> =
     if (colors.surfaceContainerLowest.luminance() > colors.onSurface.luminance()) {
         colors.onSurface to colors.surfaceContainerLowest
     } else {

@@ -8,6 +8,7 @@
 ├────────────────────────────────────────────────────────────────┤
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
+│   · scanner (the QR code scanner, CameraX)                     │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
@@ -251,9 +252,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `telegram.me` and `telegram.dog`. `core:domain`'s `LinkRepository.resolve(link)` (`TdlibLinkRepository`, `core:data`,
   no cache) is the one entry point: `getInternalLinkType`, then the lookup the kind needs (`searchPublicChat`,
   `searchUserByPhoneNumber`, `searchUserByToken`, `getMessageLinkInfo`, Saved Messages through `getMe`), into a
-  `LinkTarget` (a chat at a message with an optional draft, a profile, a chat's info, a page of the app, the targets of
-  screens still to come: an invitation, a QR login, a boost; a message to share, which opens the share sheet (Direct
-  share, below); not found; a login code; unsupported).
+  `LinkTarget` (a chat at a message with an optional draft, a profile, a chat's info, a page of the app, an invitation,
+  a QR login, a chat's boosts, the user's QR code; a message to share, which opens the share sheet (Direct share,
+  below); not found; a login code; unsupported).
   `:app`'s `LinkViewModel` (a `LinkDispatcher`, scoped to the activity, one link at a time) turns it into a
   `LinkEffect`: a screen, which `PingogramApp` opens (`openLinkTarget`, `LinkNavigation.kt`), or a notice in the shell's
   own `SnackbarHost` ("Opening link…" with Cancel after 200 ms, "Open in browser" for web links it does not open, which
@@ -364,8 +365,43 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   or deleted the chat, `:app` pops back to the chat list.
 - Compact and medium windows show the info page as one `LazyVerticalGrid`, as the profile; expanded ones put the shared
   media in a supporting pane (`SupportingPanes`, shared with the profile).
-- QR codes of a link are encoded on the device with ZXing's core (already used by QR login, `feature:auth`) into a bitmap
-  of one pixel per module on `Dispatchers.Default`, drawn scaled without filtering; nothing leaves the device.
+- QR codes of a link are encoded on the device with ZXing's core by `core:ui`'s `QrCode` (`qr/`), shared with QR login
+  and the user's own code: the modules as one path built once per size, dark on light in every theme; nothing leaves
+  the device.
+
+## QR codes, joining and boosts
+
+FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-links.md`):
+
+- **Joining**: `core:domain`'s `ChatJoinRepository` (`TdlibChatJoinRepository`, no cache) checks an invite link
+  (`checkChatInviteLink`, which only reads, into a `ChatInvite`) and joins by it (`joinChatByInviteLink`) or a public
+  chat (`joinChat`), into a `JoinResult` (joined, request sent, a bot's check, declined). `feature:profile`'s join sheet
+  (`ChatInviteRoute(inviteLink)`, a dialog destination like the forward sheet, `ChatInviteViewModel`) shows the chat and
+  joins only on "Join"; a chat the user is in opens at once, a joined one in the sheet's place. `feature:chat`'s
+  `ChatJoining` (a part of `ChatViewModel`) puts "Join" in the composer's place of a public supergroup or channel the
+  user left or never joined (`ComposerUiState.Join`, `Supergroup.joinByRequest`); TDLib's `updateSupergroup` then
+  turns the composer back on by itself.
+- **Boosts**, read only: `ChatBoostRepository` (`TdlibChatBoostRepository`: `getChatBoostStatus`, and
+  `getAvailableChatBoostSlots` only to count unused boosts; `boostChat` is never sent). `ChatBoostRoute(chatId)` is a
+  page of the group info pages, a row of administrators' "Administration" in supergroups and channels, and what a boost
+  link opens (`getChatBoostLinkInfo` in `TdlibLinkRepository`).
+- **The scanner**: `feature:scanner` (the only module with CameraX) holds `QrScannerRoute(purpose)`, full screen
+  (`isFullScreen`, no navigation): `ScannerCamera` (CameraX `Preview` in `CameraXViewfinder`, `ImageAnalysis` on its
+  own thread, the torch) and `QrAnalyzer`/`QrDecoder` (ZXing, at most five frames a second, stopping at the first
+  code), `QrImageReader` for a picked image (Photo Picker, IO dispatcher). `QrScannerViewModel` holds the camera's
+  permission step (`CameraAccess`, refused for good in the `SavedStateHandle`), resolves a Telegram link with
+  `LinkRepository` and keeps what does not open on screen (`ScanResult`: no Telegram link, with Copy; no login code
+  when linking a device; a login code; not found; a failure). A target that opens leaves the scanner through `:app`,
+  which pops it and hands the target to `LinkDispatcher.show`, as a tapped link that resolved. It opens from the
+  Contacts tab's top bar, the user's QR code, and Active sessions' "Link desktop device" (`ScanPurpose.DeviceLogin`,
+  through `settingsPages`' `onScanQrCode`, which the detail pane of Settings passes on to `:app`).
+- **Linking a device**: `SessionRepository.confirmQrCodeLogin` (`confirmQrCodeAuthentication`) behind
+  `feature:settings`' `QrLoginRoute(link)` (`QrLoginViewModel`), which sends nothing until "Log in", for a scanned code
+  and a `tg://login` link from another app alike, then shows the new session; Active sessions below it loads its list
+  again as it shows.
+- **The user's QR code**: `ProfileRepository.profileLink` (`getUserLink`: `t.me/<username>`, or a temporary link
+  without one) behind `MyQrCodeRoute` (`MyQrCodeViewModel`, a settings page), from the Contacts tab and
+  `tg://settings/qr_code`, shared through Android's share sheet.
 
 ## Threading
 

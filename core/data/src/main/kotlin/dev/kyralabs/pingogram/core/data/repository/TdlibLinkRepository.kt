@@ -26,6 +26,7 @@ import javax.inject.Singleton
  *   username of a person.
  * - **Messages** (`getMessageLinkInfo`): the chat at the message; the chat alone when the message is gone but the chat
  *   is there. A message in a topic or a thread opens in the chat itself, as `ChatRoute` has no topic yet.
+ * - **Boosts** (`getChatBoostLinkInfo`): the chat whose boosts the link shows.
  * - **Saved Messages** (`getMe`, `createPrivateChat`), and the pages of the app a link names.
  *
  * A lookup that finds nothing (`USERNAME_NOT_OCCUPIED`, any other 400, or a 404) is [LinkTarget.NotFound]; network
@@ -64,6 +65,10 @@ class TdlibLinkRepository
 
                 is TdApi.InternalLinkTypeSavedMessages -> {
                     savedMessages()
+                }
+
+                is TdApi.InternalLinkTypeChatBoost -> {
+                    boostedChat(type.url)
                 }
 
                 else -> {
@@ -165,6 +170,21 @@ class TdlibLinkRepository
                 is Outcome.Failure -> found.orNotFound(LinkSubject.Message)
             }
 
+        /** The chat a boost link names (`getChatBoostLinkInfo`); td_api.tl: `chat_id` 0 when it is not accessible. */
+        private suspend fun boostedChat(url: String): Outcome<LinkTarget> =
+            when (val found = client.request(TdApi.GetChatBoostLinkInfo(url))) {
+                is Outcome.Success -> {
+                    val chatId = found.value.chatId
+                    Outcome.Success(
+                        if (chatId == 0L) LinkTarget.NotFound(LinkSubject.Chat) else LinkTarget.ChatBoost(chatId),
+                    )
+                }
+
+                is Outcome.Failure -> {
+                    found.orNotFound(LinkSubject.Chat)
+                }
+            }
+
         private suspend fun savedMessages(): Outcome<LinkTarget> {
             val me =
                 when (val found = client.request(TdApi.GetMe())) {
@@ -200,8 +220,6 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.
         is TdApi.InternalLinkTypeQrCodeAuthentication -> LinkTarget.QrCodeLogin(link)
 
-        is TdApi.InternalLinkTypeChatBoost -> LinkTarget.ChatBoost(url)
-
         is TdApi.InternalLinkTypeMessageDraft -> LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
 
         // Never entered anywhere: someone may be logging in to the user's account with it.
@@ -220,6 +238,7 @@ private fun TdApi.SettingsSection?.toTarget(): LinkTarget =
         is TdApi.SettingsSectionLanguage -> LinkTarget.Settings(SettingsPage.Language)
         is TdApi.SettingsSectionNotifications -> LinkTarget.Settings(SettingsPage.Notifications)
         is TdApi.SettingsSectionPrivacyAndSecurity -> LinkTarget.Settings(SettingsPage.PrivacyAndSecurity)
+        is TdApi.SettingsSectionQrCode -> LinkTarget.MyQrCode
         else -> LinkTarget.Settings()
     }
 

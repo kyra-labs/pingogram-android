@@ -138,9 +138,12 @@ light or dark theme.</sub>
   Sync now, never in the background; turning it off deletes them from Telegram.
 - **Search** across your chats, contacts, public chats and channels, and messages.
 - **Telegram links:** `tg://`, `t.me`, `telegram.me` and `telegram.dog` links from other apps
-  and in messages open in Pingogram (usernames, phone numbers, message links, Saved Messages,
-  settings pages and more); on Android 12 and later, turn on "Open supported links" for
-  Pingogram (Settings → About → Open Telegram links) so `t.me` links skip the browser.
+  and in messages open in Pingogram (usernames, phone numbers, message links, invite links,
+  Saved Messages, settings pages and more); on Android 12 and later, turn on "Open supported
+  links" for Pingogram (Settings → About → Open Telegram links) so `t.me` links skip the browser.
+- **QR codes:** scan Telegram QR codes with the camera or from an image, link a desktop device
+  by its login code (Pingogram always asks first), and show your own profile's QR code. Join
+  groups and channels from invite links, and see a channel's boosts.
 - **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
   active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
   or face, notifications, appearance (system, light or dark theme, AMOLED black, dynamic color,
@@ -149,6 +152,14 @@ light or dark theme.</sub>
 - **Built the Android way:** a floating navigation bar on phones and a navigation rail with a
   list-detail layout on larger screens, edge-to-edge, predictive back, and layouts that hold up
   at 200% font size and with TalkBack.
+
+### Permissions
+
+Pingogram asks for each permission only when you use what needs it, and says why first:
+notifications (Android 13+), the microphone for voice messages, the location you send, your
+contacts only if you turn on contacts sync, and the camera only for the QR code scanner. The
+scanner reads codes on your phone: nothing the camera sees is kept or sent, only the Telegram
+link a code holds is opened through TDLib. There are no analytics, ads or trackers.
 
 ### Not yet
 

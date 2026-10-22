@@ -18,7 +18,7 @@
     <string name="link_opening">Opening link…</string>
     <string name="link_opening_cancel">Cancel</string>
     <string name="link_not_supported">Pingogram can\'t open this kind of link yet</string>
-    <!-- Links to invitations, QR code logins, boosts and messages to share, whose screens come later -->
+    <!-- A link that cannot open where the app is now (outside the main screens) -->
     <string name="link_not_yet">Pingogram can\'t open this link yet</string>
     <string name="link_open_in_browser">Open in browser</string>
     <string name="link_no_browser">No app on this device opens this link</string>
@@ -28,4 +28,5 @@
     <string name="link_not_found_phone_number">No one on Telegram can be found by this phone number</string>
     <string name="link_not_found_user_token">This contact link has expired</string>
     <string name="link_not_found_message">This message isn\'t available</string>
+    <string name="link_not_found_chat">This channel or group isn\'t available</string>
 </resources>

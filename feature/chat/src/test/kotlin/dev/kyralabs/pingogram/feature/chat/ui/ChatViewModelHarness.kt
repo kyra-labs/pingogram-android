@@ -57,6 +57,7 @@ abstract class ChatViewModelHarness {
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
     protected val autoDownloads = FakeAutoDownloadPolicy()
+    protected val joins = FakeChatJoinRepository()
     protected val pinnedMessages = FakePinnedMessageRepository()
     protected val hiddenPins = FakeHiddenPinsRepository()
     protected val forumTopics = FakeForumTopicRepository()
@@ -114,6 +115,7 @@ abstract class ChatViewModelHarness {
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,
+                chatJoinRepository = joins,
                 threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
                 shareInbox = shareInbox,
                 log = { logged += it },

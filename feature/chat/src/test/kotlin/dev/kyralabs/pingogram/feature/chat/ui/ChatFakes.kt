@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.ChatInvite
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
@@ -35,6 +37,7 @@ import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -636,6 +639,21 @@ class FakeUserRepository : UserRepository {
     /** A user of [setUsers], else [DomainError.NotFound]. */
     override suspend fun getUser(id: Long): Outcome<User> =
         userMap.value[id]?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
+}
+
+/** Joins with [result], counting the chats it was asked to join ([joined]). */
+class FakeChatJoinRepository : ChatJoinRepository {
+    var result: Outcome<JoinResult> = Outcome.Success(JoinResult.Joined(0))
+    val joined = mutableListOf<Long>()
+
+    override suspend fun checkInvite(inviteLink: String): Outcome<ChatInvite> = unused()
+
+    override suspend fun joinByInvite(inviteLink: String): Outcome<JoinResult> = unused()
+
+    override suspend fun join(chatId: Long): Outcome<JoinResult> {
+        joined += chatId
+        return result
+    }
 }
 
 class FakeGroupRepository : GroupRepository {

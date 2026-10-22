@@ -139,6 +139,12 @@ class TdErrorMappingTest {
                 Arguments.of(400, "CHAT_ABOUT_TOO_LONG", DomainError.DescriptionTooLong),
                 Arguments.of(400, "USER_NOT_MUTUAL_CONTACT", DomainError.NotMutualContact),
                 Arguments.of(400, "ADMINS_TOO_MUCH", DomainError.TooManyAdmins),
+                Arguments.of(400, "INVITE_HASH_EXPIRED", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "INVITE_HASH_INVALID", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "Wrong invite link", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "USERS_TOO_MUCH", DomainError.ChatFull),
+                Arguments.of(400, "AUTH_TOKEN_EXPIRED", DomainError.QrLoginExpired),
+                Arguments.of(400, "AUTH_TOKEN_ALREADY_ACCEPTED", DomainError.QrLoginExpired),
             )
     }
 }

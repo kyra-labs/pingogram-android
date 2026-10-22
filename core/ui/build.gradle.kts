@@ -26,5 +26,9 @@ dependencies {
     // needs it, and Pingogram has no Views (CLAUDE.md rule 4).
     implementation(libs.lottie) { exclude(group = "androidx.appcompat", module = "appcompat") }
 
+    // Encodes the QR codes Pingogram shows (qr/QrCode.kt: the login's, a chat's link, the user's own) on the device;
+    // nothing leaves it. Pure Java; R8 keeps only what is used.
+    implementation(libs.zxing.core)
+
     testImplementation(libs.kotlinx.coroutines.test)
 }

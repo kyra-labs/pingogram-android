@@ -29,6 +29,7 @@ internal fun TdApi.Supergroup.toSupergroup(): Supergroup {
         isVerified = verification?.isVerified == true,
         isScam = verification?.isScam == true,
         isFake = verification?.isFake == true,
+        joinByRequest = joinByRequest,
         joinToSendMessages = joinToSendMessages,
     )
 }

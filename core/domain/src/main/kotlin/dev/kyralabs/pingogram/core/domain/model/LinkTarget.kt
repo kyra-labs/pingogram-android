@@ -2,9 +2,9 @@ package dev.kyralabs.pingogram.core.domain.model
 
 /**
  * Where a Telegram link (`tg://…`, `https://t.me/…`) leads, as `LinkRepository.resolve` finds it with TDLib's
- * `getInternalLinkType` (`docs/adr/0013-deep-links.md`). The app opens the screen each target names; the targets of
- * screens Pingogram does not have yet ([ChatInvite], [QrCodeLogin], [ChatBoost], [MessageDraft]) carry what those
- * screens will need, and the app says it cannot open them yet.
+ * `getInternalLinkType` (`docs/adr/0013-deep-links.md`). The app opens the screen each target names; the target of a
+ * screen Pingogram does not have yet ([MessageDraft]) carries what it will need, and the app says it cannot open it
+ * yet.
  *
  * Nothing here changes anything on Telegram: joining a chat, confirming a login and sending a message wait for the
  * user's confirmation on the screen the target opens. `toString()` of the targets that carry user content leaves it
@@ -53,7 +53,7 @@ sealed interface LinkTarget {
     data object Search : LinkTarget
 
     /**
-     * An invitation to a chat ([inviteLink], `t.me/+…`, `t.me/joinchat/…`): its screen will show the chat and ask
+     * An invitation to a chat ([inviteLink], `t.me/+…`, `t.me/joinchat/…`): the join sheet shows the chat and asks
      * before joining.
      */
     data class ChatInvite(
@@ -63,8 +63,8 @@ sealed interface LinkTarget {
     }
 
     /**
-     * A login of another device by QR code ([link], `tg://login?token=…`): its screen will ask before confirming it
-     * with `confirmQrCodeAuthentication`, and show what is being logged in.
+     * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
+     * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */
     data class QrCodeLogin(
         val link: String,
@@ -72,12 +72,16 @@ sealed interface LinkTarget {
         override fun toString() = "QrCodeLogin(…)"
     }
 
-    /** Boosting a channel ([url], `t.me/channel?boost`): read only in Pingogram (`REQUIREMENTS.md` FR-P5). */
+    /**
+     * Boosting channel or supergroup [chatId] (`t.me/channel?boost`, `t.me/boost?c=123`): its boosts, read only in
+     * Pingogram (`REQUIREMENTS.md` FR-P5).
+     */
     data class ChatBoost(
-        val url: String,
-    ) : LinkTarget {
-        override fun toString() = "ChatBoost(…)"
-    }
+        val chatId: Long,
+    ) : LinkTarget
+
+    /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */
+    data object MyQrCode : LinkTarget
 
     /**
      * A message to share ([text], `t.me/share?url=…`): its screen will let the user pick the chat it goes to, with the
@@ -140,4 +144,7 @@ enum class LinkSubject {
 
     /** `t.me/channel/123`: the chat or the message is gone, or the user cannot see it. */
     Message,
+
+    /** `t.me/boost?c=123`: the channel or group is gone, or the user cannot see it. */
+    Chat,
 }

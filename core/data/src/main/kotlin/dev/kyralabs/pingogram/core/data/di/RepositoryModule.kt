@@ -16,7 +16,9 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatJoinRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
@@ -58,7 +60,9 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
@@ -204,6 +208,12 @@ interface RepositoryModule {
 
     @Binds
     fun inviteLinkRepository(repository: TdlibInviteLinkRepository): InviteLinkRepository
+
+    @Binds
+    fun chatJoinRepository(repository: TdlibChatJoinRepository): ChatJoinRepository
+
+    @Binds
+    fun chatBoostRepository(repository: TdlibChatBoostRepository): ChatBoostRepository
 
     @Binds
     fun sharedMediaRepository(repository: TdlibSharedMediaRepository): SharedMediaRepository

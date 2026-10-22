@@ -98,6 +98,12 @@
     <!-- Instead of the composer, where the user may not write. -->
     <string name="composer_restricted">You can\'t send messages in this chat</string>
     <string name="composer_not_member">You\'re not a member of this group</string>
+    <!-- In the composer's place in a public group or channel the user is not in (REQUIREMENTS.md FR-P5). -->
+    <string name="composer_join_group">Join group</string>
+    <string name="composer_join_channel">Join channel</string>
+    <string name="composer_request_to_join">Request to join</string>
+    <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
+    <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->
     <string name="composer_format_bold">Bold</string>
     <string name="composer_format_italic">Italic</string>

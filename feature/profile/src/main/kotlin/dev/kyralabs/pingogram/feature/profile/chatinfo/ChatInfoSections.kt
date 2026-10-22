@@ -231,8 +231,8 @@ internal fun ChatMembersGroup(
 
 /**
  * What administrators manage, each row where their rights allow it (`docs/DESIGN_SYSTEM.md` §6): "Name and
- * description", "Permissions" (groups), "Administrators", "Invite links", "Restricted users" and "Removed users", the
- * counts as supporting text. Each opens its page.
+ * description", "Permissions" (groups), "Administrators", "Invite links", "Restricted users", "Removed users" and, for
+ * supergroups and channels, "Boosts" (read only), the counts as supporting text. Each opens its page.
  */
 @Composable
 internal fun ChatAdministrationGroup(
@@ -277,6 +277,7 @@ internal fun ChatAdministrationGroup(
                 members("restricted", R.string.chat_info_restricted, MemberFilter.Restricted, it)
             },
             administration.bannedCount?.let { members("banned", R.string.chat_info_removed, MemberFilter.Banned, it) },
+            page("boosts", R.string.chat_info_boosts, ChatInfoPage.Boosts).takeIf { administration.canViewBoosts },
         )
     ProfileGroup(rows, modifier, title = stringResource(R.string.chat_info_section_administration))
 }

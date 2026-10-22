@@ -7,6 +7,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import dev.kyralabs.pingogram.core.navigation.ChatBoostRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.ChatMembersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatPermissionsRoute
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoNavigation
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoPage
 import dev.kyralabs.pingogram.feature.profile.chatinfo.INVITE_LINKS_CHANGED_RESULT
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MEMBERS_CHANGED_RESULT
+import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatBoostRoute as ChatBoostScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoRoute as ChatInfoScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatMembersRoute as ChatMembersScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatPermissionsRoute as ChatPermissionsScreenRoute
@@ -33,7 +35,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsRoute as Memb
  * Adds the info page of a group or channel, [ChatInfoRoute] (`REQUIREMENTS.md` FR-P3, FR-P4), and the pages it
  * opens to the graph, each pushed above the one before: the members ([ChatMembersRoute]), a member's rights
  * ([MemberRightsRoute]), editing the title and description ([EditChatInfoRoute]), the permissions
- * ([ChatPermissionsRoute]) and the invite links ([InviteLinksRoute], [EditInviteLinkRoute]). [onOpen] pushes one of
+ * ([ChatPermissionsRoute]), the invite links ([InviteLinksRoute], [EditInviteLinkRoute]) and the boosts
+ * ([ChatBoostRoute], also from a boost link). [onOpen] pushes one of
  * those routes, [onBack] leaves the page shown. [onLeft] runs once the user left or deleted the chat, which is gone
  * from the lists. [onOpenChat] opens a chat (a mention, a removed channel), [onOpenProfile] a member's profile, and
  * [onOpenMedia] / [onOpenMessage] the shared media as the profile's do. A rights page or link editor that saved goes
@@ -69,6 +72,7 @@ fun NavGraphBuilder.chatInfoScreens(
                                     ChatInfoPage.EditInfo -> EditChatInfoRoute(chatId)
                                     ChatInfoPage.Permissions -> ChatPermissionsRoute(chatId)
                                     ChatInfoPage.InviteLinks -> InviteLinksRoute(chatId)
+                                    ChatInfoPage.Boosts -> ChatBoostRoute(chatId)
                                 },
                             )
                         },
@@ -102,6 +106,7 @@ fun NavGraphBuilder.chatInfoScreens(
         )
     }
     composable<EditInviteLinkRoute> { EditInviteLinkScreenRoute(onBack = onBack, onSaved = onSaved) }
+    composable<ChatBoostRoute> { ChatBoostScreenRoute(onBack = onBack) }
 }
 
 /**

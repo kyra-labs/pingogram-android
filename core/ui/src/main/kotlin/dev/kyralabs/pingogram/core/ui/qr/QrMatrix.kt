@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui.components
+package dev.kyralabs.pingogram.core.ui.qr
 
 import androidx.compose.runtime.Immutable
 import com.google.zxing.WriterException
@@ -19,7 +19,7 @@ internal class QrMatrix(
 
 /**
  * Encodes [text] as a QR code with error correction level M, on the device with ZXing; null if it does not fit in one
- * (a `tg://login` link always does). An ASCII text is encoded in byte mode without an ECI header, which every
+ * (a Telegram link always does). An ASCII text is encoded in byte mode without an ECI header, which every
  * scanner reads.
  */
 internal fun encodeQrCode(text: String): QrMatrix? {

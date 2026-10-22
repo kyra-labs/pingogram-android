@@ -215,6 +215,10 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
   default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
   Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
   the background; turning it off deletes the imported numbers from Telegram.
+- The QR code scanner (FR-P5, `docs/adr/0012-camerax-and-zxing-qr-scanner.md`, approved by the owner 2026-10-21) is
+  the camera's only use (`CAMERA`, asked when the scanner opens, after it says why; no camera is required to install):
+  frames are decoded on the device by ZXing and dropped, nothing the camera sees is kept or sent, and only the text of
+  a Telegram link reaches TDLib. Scanning from an image uses the Photo Picker, without a permission.
 
 ### 6.3 Accessibility (Google standards)
 

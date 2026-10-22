@@ -13,15 +13,24 @@ import dev.kyralabs.pingogram.feature.contacts.ui.NewContactRoute as NewContactS
 /**
  * Adds the Contacts tab, [ContactsRoute], to the graph: a contact calls [onOpenChat] with the id of its private chat,
  * "Add contact" [onAddContact] ([navigateToNewContact]), and a contact's Edit [onEditContact] with its user id
- * ([navigateToEditContact]).
+ * ([navigateToEditContact]); the top bar opens the user's own QR code ([onOpenMyQrCode]) and the QR code scanner
+ * ([onScanQrCode]).
  */
 fun NavGraphBuilder.contactsScreen(
     onOpenChat: (chatId: Long) -> Unit,
     onAddContact: () -> Unit,
     onEditContact: (userId: Long) -> Unit,
+    onOpenMyQrCode: () -> Unit = {},
+    onScanQrCode: () -> Unit = {},
 ) {
     composable<ContactsRoute> {
-        ContactsScreenRoute(onOpenChat = onOpenChat, onAddContact = onAddContact, onEditContact = onEditContact)
+        ContactsScreenRoute(
+            onOpenChat = onOpenChat,
+            onAddContact = onAddContact,
+            onEditContact = onEditContact,
+            onOpenMyQrCode = onOpenMyQrCode,
+            onScanQrCode = onScanQrCode,
+        )
     }
 }
 

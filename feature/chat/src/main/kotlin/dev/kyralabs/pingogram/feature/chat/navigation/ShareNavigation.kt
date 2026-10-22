@@ -2,10 +2,11 @@ package dev.kyralabs.pingogram.feature.chat.navigation
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.dialog
 import dev.kyralabs.pingogram.core.navigation.ShareRoute
+import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
+import dev.kyralabs.pingogram.core.ui.component.SheetDialogProperties
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareResultNotices
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareSheetRoute
 
@@ -19,10 +20,8 @@ fun NavGraphBuilder.shareSheet(
     onClose: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
 ) {
-    dialog<ShareRoute>(
-        dialogProperties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
-        NoWindowDim()
+    dialog<ShareRoute>(dialogProperties = SheetDialogProperties) {
+        NoDialogWindowDim()
         ShareSheetRoute(onClose = onClose, onOpenChat = onOpenChat)
     }
 }

@@ -2,7 +2,9 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.mapper.toActiveSession
 import dev.kyralabs.pingogram.core.data.mapper.toActiveSessions
+import dev.kyralabs.pingogram.core.domain.model.ActiveSession
 import dev.kyralabs.pingogram.core.domain.model.ActiveSessions
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -11,9 +13,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [SessionRepository] on TDLib's `getActiveSessions`, `terminateSession`, `terminateAllOtherSessions` and
- * `confirmSession`, each a request to Telegram. TDLib sorts the sessions (td/telegram/AccountManager.cpp), and keeps
- * terminations it has not sent yet in its database, sending them once it can.
+ * [SessionRepository] on TDLib's `getActiveSessions`, `terminateSession`, `terminateAllOtherSessions`, `confirmSession`
+ * and `confirmQrCodeAuthentication`, each a request to Telegram. TDLib sorts the sessions
+ * (td/telegram/AccountManager.cpp), and keeps terminations it has not sent yet in its database, sending them once it
+ * can.
  */
 @Singleton
 class TdlibSessionRepository
@@ -32,4 +35,7 @@ class TdlibSessionRepository
 
         override suspend fun confirm(sessionId: Long): Outcome<Unit> =
             client.request(TdApi.ConfirmSession(sessionId)).map {}
+
+        override suspend fun confirmQrCodeLogin(link: String): Outcome<ActiveSession> =
+            client.request(TdApi.ConfirmQrCodeAuthentication(link)).map { it.toActiveSession() }
     }

@@ -360,4 +360,56 @@
     <string name="chat_info_clear_history_text">The messages of %1$s will be deleted for you. Other members still see them.</string>
     <string name="chat_info_clear_history_confirm">Clear</string>
     <string name="chat_info_history_cleared">History cleared</string>
+
+    <!-- The join sheet of an invite link (REQUIREMENTS.md FR-P5). -->
+    <string name="invite_join_group">Join group</string>
+    <string name="invite_join_channel">Join channel</string>
+    <string name="invite_request_to_join">Request to join</string>
+    <string name="invite_cancel">Cancel</string>
+    <string name="invite_joining">Joining…</string>
+    <!-- %1$s: the names of a few members, separated by commas. -->
+    <string name="invite_members_include">Members include %1$s</string>
+    <string name="invite_request_note_group">An admin has to accept your request to join this group.</string>
+    <string name="invite_request_note_channel">An admin has to accept your request to join this channel.</string>
+    <string name="invite_needs_subscription">Joining needs a paid subscription, which Pingogram doesn\'t offer.</string>
+    <string name="invite_needs_bot_approval">This group checks new members with a bot, which Pingogram can\'t show yet.</string>
+    <string name="invite_declined">Telegram didn\'t let you join.</string>
+    <string name="invite_request_sent_title">Request sent</string>
+    <string name="invite_request_sent_group">You can join the group once an admin accepts your request.</string>
+    <string name="invite_request_sent_channel">You can read the channel once an admin accepts your request.</string>
+    <string name="invite_done">Done</string>
+    <string name="invite_failed_title">Can\'t open this invite</string>
+    <string name="invite_try_again">Try again</string>
+    <string name="invite_close">Close</string>
+    <!-- The boosts of a channel or group, read only (REQUIREMENTS.md FR-P5). -->
+    <string name="chat_info_boosts">Boosts</string>
+    <string name="boost_title">Boosts</string>
+    <string name="boost_section_level">Level</string>
+    <string name="boost_section_overview">Overview</string>
+    <!-- %1$s: the level. -->
+    <string name="boost_level">Level %1$s</string>
+    <plurals name="boost_count">
+        <item quantity="one">%1$s boost</item>
+        <item quantity="other">%1$s boosts</item>
+    </plurals>
+    <!-- %1$s: the boosts still needed, %2$s: the next level. -->
+    <plurals name="boost_to_next_level">
+        <item quantity="one">%1$s more boost for level %2$s</item>
+        <item quantity="other">%1$s more boosts for level %2$s</item>
+    </plurals>
+    <string name="boost_max_level">The highest level is reached</string>
+    <string name="boost_row_boosts">Boosts</string>
+    <string name="boost_row_premium_subscribers">Subscribers with Telegram Premium</string>
+    <string name="boost_row_premium_members">Members with Telegram Premium</string>
+    <!-- %1$s: how many, %2$s: their share ("312 · 2.5%"). -->
+    <string name="boost_premium_value">%1$s · %2$s</string>
+    <string name="boost_row_you">You</string>
+    <string name="boost_you_boost_channel">You boost this channel</string>
+    <string name="boost_you_boost_group">You boost this group</string>
+    <string name="boost_note_channel">Subscribers with Telegram Premium can boost a channel to unlock features for it. Pingogram shows boosts, but can\'t give them.</string>
+    <string name="boost_note_group">Members with Telegram Premium can boost a group to unlock features for it. Pingogram shows boosts, but can\'t give them.</string>
+    <plurals name="boost_unused">
+        <item quantity="one">You have %1$s boost that isn\'t in use.</item>
+        <item quantity="other">You have %1$s boosts that aren\'t in use.</item>
+    </plurals>
 </resources>

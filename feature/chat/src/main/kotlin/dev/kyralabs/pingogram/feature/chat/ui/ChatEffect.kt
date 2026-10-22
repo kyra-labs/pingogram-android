@@ -68,6 +68,12 @@ sealed interface ChatEffect {
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
 
+    /** "Join" sent a request to join the chat, which an administrator accepts: a snackbar says so. */
+    data object JoinRequestSent : ChatEffect
+
+    /** Telegram did not let the user join, or the chat checks new members with a bot first: a snackbar says so. */
+    data object JoinRefused : ChatEffect
+
     /** The pinned messages bar was hidden on this device: a snackbar says it returns with a newer pinned message. */
     data object PinnedHidden : ChatEffect
 

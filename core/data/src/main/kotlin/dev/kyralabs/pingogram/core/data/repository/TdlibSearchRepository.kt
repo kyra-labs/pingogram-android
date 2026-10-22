@@ -36,7 +36,8 @@ import javax.inject.Singleton
  * - **Contacts**: `searchContacts`, then `createPrivateChat` for each user, which TDLib answers from memory for a
  *   contact. All contacts: `getContacts`, their chats asked for all at once, then sorted by name in the user's
  *   language.
- * - **Public chats**: `searchPublicChats`; TDLib leaves out the user's chats and contacts.
+ * - **Public chats**: `searchPublicChats`; TDLib leaves out the user's chats and contacts. A typed `@username` or
+ *   `t.me/username` link is searched as the username it names ([publicChatQuery], `REQUIREMENTS.md` FR-P5).
  * - **A username**: `searchPublicChat`, for a mention tapped in a message ([publicChat]).
  * - **Messages**: `searchMessages` in every chat list (`chat_list` null, so the archive too), paged by TDLib's offset,
  *   with `searchMessagesFilterPhotoAndVideo` or `searchMessagesFilterUrl` for photos and videos or links, which TDLib
@@ -115,7 +116,7 @@ class TdlibSearchRepository
             }
 
         override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> {
-            val text = query.trim()
+            val text = publicChatQuery(query)
             if (text.isEmpty()) return Outcome.Success(persistentListOf())
             return chatRepository.chatsFound(client.request(TdApi.SearchPublicChats(text, null)).orNothing(::noChats))
         }
@@ -257,3 +258,20 @@ private fun noChats() = TdApi.Chats(0, LongArray(0))
 private fun noUsers() = TdApi.Users(0, LongArray(0))
 
 private fun noMessages() = TdApi.FoundMessages(0, emptyArray(), "")
+
+/**
+ * What public chats [query] searches for: the username of a typed `@username` or of a `t.me/username` link
+ * (`telegram.me`, `telegram.dog`, with or without `https://`), else the query itself, trimmed.
+ */
+internal fun publicChatQuery(query: String): String {
+    val text = query.trim()
+    USERNAME_LINK.matchEntire(text)?.let { return it.groupValues[1] }
+    return text.removePrefix("@")
+}
+
+/** A link to a username: `t.me/username`, with or without the scheme, `telegram.me` and `telegram.dog` too. */
+private val USERNAME_LINK =
+    Regex(
+        """(?:https?://)?(?:www\.)?(?:t\.me|telegram\.me|telegram\.dog)/@?([A-Za-z0-9_]{4,32})/?""",
+        RegexOption.IGNORE_CASE,
+    )

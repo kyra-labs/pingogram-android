@@ -414,6 +414,8 @@ class ChatInfoViewModel internal constructor(
                         details?.restrictedCount?.takeIf {
                             restrict && info.kind == GroupKind.Supergroup
                         },
+                    // Boosts are a supergroup's or channel's; basic groups have none.
+                    canViewBoosts = info.kind != GroupKind.BasicGroup,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

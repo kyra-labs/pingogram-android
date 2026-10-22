@@ -299,6 +299,7 @@ private fun ChatScreenBottomBar(
                 onEvent(ChatEvent.SendSticker(sticker))
                 onSent(SendOptions())
             },
+            onJoin = { onEvent(ChatEvent.JoinChat) },
         )
     }
 }

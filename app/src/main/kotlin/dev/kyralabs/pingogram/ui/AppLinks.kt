@@ -157,10 +157,6 @@ internal fun noticeText(
             resources.getString(R.string.link_not_supported)
         }
 
-        LinkNotice.NotYet -> {
-            resources.getString(R.string.link_not_yet)
-        }
-
         LinkNotice.LoginCode -> {
             resources.getString(R.string.link_login_code)
         }
@@ -172,6 +168,7 @@ internal fun noticeText(
                     LinkSubject.PhoneNumber -> R.string.link_not_found_phone_number
                     LinkSubject.UserToken -> R.string.link_not_found_user_token
                     LinkSubject.Message -> R.string.link_not_found_message
+                    LinkSubject.Chat -> R.string.link_not_found_chat
                 },
             )
         }

@@ -30,9 +30,6 @@ sealed interface LinkNotice {
         override fun toString() = "Unsupported(web=${browserUrl != null})"
     }
 
-    /** A link whose screen Pingogram does not have yet ([hasScreen]): an invitation, a QR login, a boost. */
-    data object NotYet : LinkNotice
-
     /** A login code: never used, and not to be shared (`docs/adr/0013-deep-links.md`, Security). */
     data object LoginCode : LinkNotice
 
@@ -46,31 +43,3 @@ sealed interface LinkNotice {
         val error: DomainError,
     ) : LinkNotice
 }
-
-/**
- * Whether Pingogram has a screen for [this][LinkTarget] yet. A message to share opens the share sheet. An invitation
- * (the join sheet), a QR code login (its confirmation) and a boost come with their screens later; until then they say
- * so ([LinkNotice.NotYet]). Notices ([LinkTarget.NotFound], [LinkTarget.LoginCode], [LinkTarget.Unsupported]) have
- * none.
- */
-internal fun LinkTarget.hasScreen(): Boolean =
-    when (this) {
-        is LinkTarget.Chat,
-        is LinkTarget.ChatInfo,
-        is LinkTarget.UserProfile,
-        LinkTarget.EditProfile,
-        LinkTarget.Contacts,
-        is LinkTarget.Settings,
-        is LinkTarget.NewChat,
-        LinkTarget.Search,
-        is LinkTarget.MessageDraft,
-        -> true
-
-        is LinkTarget.ChatInvite,
-        is LinkTarget.QrCodeLogin,
-        is LinkTarget.ChatBoost,
-        LinkTarget.LoginCode,
-        is LinkTarget.NotFound,
-        is LinkTarget.Unsupported,
-        -> false
-    }

@@ -300,4 +300,31 @@ class TdlibSessionRepositoryTest {
 
             assertEquals(Outcome.Failure(DomainError.Network), twoStepVerification.state())
         }
+
+    @Test
+    fun `confirming a QR code login sends the link and returns the new session`() =
+        runTest {
+            client.on(
+                TdApi.ConfirmQrCodeAuthentication::class,
+                TdResult.Success(session(7, TdApi.SessionDeviceTypeMac())),
+            )
+
+            val outcome = repository.confirmQrCodeLogin("tg://login?token=abc")
+
+            assertEquals("tg://login?token=abc", client.sentOf<TdApi.ConfirmQrCodeAuthentication>().single().link)
+            val confirmed = (outcome as Outcome.Success).value
+            assertEquals(7L, confirmed.id)
+            assertEquals(SessionDevice.Desktop, confirmed.device)
+        }
+
+    @Test
+    fun `an expired QR code login says so`() =
+        runTest {
+            client.on(TdApi.ConfirmQrCodeAuthentication::class, TdResult.Failure(TdError(400, "AUTH_TOKEN_EXPIRED")))
+
+            assertEquals(
+                Outcome.Failure(DomainError.QrLoginExpired),
+                repository.confirmQrCodeLogin("tg://login?token=x"),
+            )
+        }
 }

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
+import dev.kyralabs.pingogram.core.domain.model.ProfileLink
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -241,4 +242,18 @@ class TdlibProfileRepositoryTest {
                 Arguments.of(TdApi.CheckChatUsernameResultPublicGroupsUnavailable(), UsernameCheck.Unavailable),
             )
     }
+
+    @Test
+    fun `the profile link is TDLib's, permanent with a username and temporary without`() =
+        runTest {
+            client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/ada", 0)))
+            val permanent = repository().profileLink()
+            client.on(TdApi.GetUserLink::class, TdResult.Success(TdApi.UserLink("https://t.me/contact/abc", 3600)))
+            val temporary = repository().profileLink()
+
+            assertEquals(Outcome.Success(ProfileLink("https://t.me/ada", 0)), permanent)
+            assertEquals(false, (permanent as Outcome.Success).value.isTemporary)
+            assertEquals(true, (temporary as Outcome.Success).value.isTemporary)
+            assertEquals(false, "contact/abc" in temporary.value.toString())
+        }
 }

@@ -22,12 +22,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.qr.QrCode
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
-import dev.kyralabs.pingogram.feature.auth.ui.components.QrCode
 import dev.kyralabs.pingogram.feature.auth.ui.components.isCompactHeightWindow
 import dev.kyralabs.pingogram.feature.auth.ui.components.squareAroundContent
 import dev.kyralabs.pingogram.feature.auth.ui.components.squareOfWidth
@@ -82,7 +82,7 @@ fun QrCodeScreen(
             contentAlignment = Alignment.Center,
         ) {
             QrCode(
-                link = state.link,
+                text = state.link,
                 contentDescription = stringResource(R.string.auth_qr_code_description),
                 modifier = Modifier.fillMaxSize(QR_CODE_FRACTION).clip(MaterialTheme.shapes.medium),
             )

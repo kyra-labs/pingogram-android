@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.contacts.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,16 +18,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -34,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -95,6 +106,8 @@ internal fun ContactsScreen(
     onSyncEvent: (ContactSyncEvent) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    onOpenMyQrCode: () -> Unit = {},
+    onScanQrCode: () -> Unit = {},
 ) {
     ScrollToTopOnReselect(ContactsRoute, listState)
     val callbacks =
@@ -105,7 +118,7 @@ internal fun ContactsScreen(
         modifier = modifier,
         // The top bar's container; the content sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { ContactsTopBar() },
+        topBar = { ContactsTopBar(onOpenMyQrCode, onScanQrCode) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
@@ -122,9 +135,16 @@ internal fun ContactsScreen(
     }
 }
 
-/** The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's. */
+/**
+ * The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's, with two
+ * `FilledTonalIconButton` actions, each with its tooltip (`REQUIREMENTS.md` FR-P5): the user's own QR code
+ * ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode]).
+ */
 @Composable
-private fun ContactsTopBar() {
+private fun ContactsTopBar(
+    onOpenMyQrCode: () -> Unit,
+    onScanQrCode: () -> Unit,
+) {
     TopAppBar(
         title = {
             Text(
@@ -134,6 +154,10 @@ private fun ContactsTopBar() {
                 style = MaterialTheme.typography.titleLargeEmphasized,
             )
         },
+        actions = {
+            TopBarAction(UiR.drawable.ic_qr_code, stringResource(R.string.contacts_my_qr_code), onOpenMyQrCode)
+            TopBarAction(UiR.drawable.ic_qr_code_scanner, stringResource(R.string.contacts_scan_qr_code), onScanQrCode)
+        },
         // The bar insets its title by the compact margin itself.
         modifier = Modifier.padding(horizontal = windowMargin() - MaterialTheme.spacing.windowMarginCompact),
         colors =
@@ -142,6 +166,25 @@ private fun ContactsTopBar() {
                 scrolledContainerColor = Color.Transparent,
             ),
     )
+}
+
+/** An action of the top bar: a `FilledTonalIconButton` with [icon], named [label], with a plain tooltip. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TopBarAction(
+    @DrawableRes icon: Int,
+    label: String,
+    onClick: () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+    ) {
+        FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+            Icon(painterResource(icon), contentDescription = label)
+        }
+    }
 }
 
 /**

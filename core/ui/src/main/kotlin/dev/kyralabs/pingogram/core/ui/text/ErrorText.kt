@@ -88,5 +88,8 @@ private fun DomainError.messageRes(): Int =
         DomainError.DescriptionTooLong -> R.string.error_description_too_long
         DomainError.NotMutualContact -> R.string.error_not_mutual_contact
         DomainError.TooManyAdmins -> R.string.error_too_many_admins
+        DomainError.InviteLinkInvalid -> R.string.error_invite_link_invalid
+        DomainError.ChatFull -> R.string.error_chat_full
+        DomainError.QrLoginExpired -> R.string.error_qr_login_expired
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }

@@ -46,9 +46,12 @@ dangerous to act on (a login code someone else asked for).
     for appearance, data and storage, devices (active sessions), language, notifications, privacy and security,
     `ContactsPage` → Contacts, `NewPrivateChat` / `NewGroupChat` / `NewChannelChat` → New chat, `Search` → search,
     `MessageDraft` → the share sheet with the text, to pick its chat (`docs/adr/0014-direct-share.md`).
-  - Resolved, screens added later (until then "Pingogram can't open this link yet"): `ChatInvite` (the join sheet, which
-    asks before joining), `QrCodeAuthentication` (a confirmation that shows the device before
-    `confirmQrCodeAuthentication`; the target keeps the link, which TDLib's type does not), `ChatBoost` (read only).
+  - Resolved, their screens added with FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`; until then "Pingogram
+    can't open this link yet"): `ChatInvite`, `QrCodeAuthentication` (the target keeps the link, which TDLib's type
+    does not) and `ChatBoost` (read only) open the join sheet (`ChatInviteRoute`, which asks before joining), the
+    login's confirmation (`QrLoginRoute`, which asks before anything is sent, whether the link was scanned or came from
+    another app) and the boosts page (`ChatBoostRoute`, the chat from `getChatBoostLinkInfo`); `SettingsSectionQrCode`
+    opens the user's QR code (`MyQrCodeRoute`).
   - Not opened ("Pingogram can't open this kind of link yet", and "Open in browser" for `https` links, which targets a
     browser through a `CATEGORY_APP_BROWSER` selector, or a chooser without Pingogram, so it never comes back here):
     `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, `StickerSet`, bots
@@ -72,8 +75,9 @@ dangerous to act on (a login code someone else asked for).
 
 ## Consequences
 
-- `ChatInviteRoute`, the QR login confirmation and boosts add their screens (as direct share did, ADR 0014) by
-  returning true from `LinkTarget.hasScreen()` and a branch in `openLinkTarget`; `LinkRepository` already gives them their targets.
+- Every target now has its screen: the join sheet, the QR login confirmation, boosts and the user's QR code
+  (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`), and the share sheet (direct share, ADR 0014), each a branch in
+  `openLinkTarget`. A new kind of link adds its target to `LinkRepository` and its branch there.
 - A chat's info opens `ChatInfoRoute(chatId)` (group and channel info, #129).
 - `@username` mentions keep their own path (`ChatMentions`, the profile's mentions: `searchPublicChat`), as they need
   no `getInternalLinkType`; `t.me` and `tg:` links in the same texts go through `LinkRepository`.

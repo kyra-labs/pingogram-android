@@ -77,6 +77,22 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   you are signed out opens once you've logged in, and one opened while the app is locked after you unlock it. On
   Android 12 and later, Settings → About → "Open Telegram links" lets Pingogram open `t.me` links instead of the
   browser.
+- Joining by invite link: an invite link (`t.me/+…`) opens a sheet with the group or channel's photo, name, description,
+  how many are in it and a few members you may know. Nothing happens until you tap "Join"; where admins accept new
+  members, "Request to join" sends a request and says so. A link that expired says so; if you're in the chat already,
+  it opens at once. Public groups and channels you're not in show "Join" in place of the composer, and search finds
+  them by a typed `@username` or `t.me/` link too.
+- Scan QR codes: the Contacts tab's QR button opens a scanner that reads Telegram QR codes with the camera, or from an
+  image you pick. Pingogram asks for the camera only when you open the scanner, after saying why, and only uses it
+  there; codes are read on your phone, and nothing the camera sees leaves it. A code that isn't a Telegram link shows
+  its text, which you can copy. Phones without a camera can still scan from an image.
+- Link desktop device: Settings → Privacy and security → Active sessions → "Link desktop device" scans the QR code
+  Telegram shows on your computer. Pingogram asks before logging the other device in, also for a login code opened
+  from another app, then shows the new session; an expired code says to show a new one.
+- Your QR code: the Contacts tab's other QR button shows a QR code of your profile link with your photo and name, to
+  share or to let others scan. Without a username, it's a temporary link and says how long it works.
+- Boosts: admins of a channel or supergroup see its boost level, its boosts and how many more the next level needs in
+  its info page; boost links open the same page. Pingogram shows boosts but doesn't give them.
 - Pinned messages bar: a chat with pinned messages shows the pinned one at the top of the conversation, with "2 of 5"
   where there are several. Tap it to jump to the message; each tap then moves on to the next older pin. The list button
   shows them all, and the close button unpins the message if you may, or hides the bar until something new is pinned.

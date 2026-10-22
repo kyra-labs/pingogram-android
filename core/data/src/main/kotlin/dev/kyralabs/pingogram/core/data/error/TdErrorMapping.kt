@@ -134,6 +134,16 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHAT_ABOUT_TOO_LONG" to DomainError.DescriptionTooLong,
         "USER_NOT_MUTUAL_CONTACT" to DomainError.NotMutualContact,
         "ADMINS_TOO_MUCH" to DomainError.TooManyAdmins,
+        // Joining: messages.checkChatInvite, messages.importChatInvite, channels.joinChannel.
+        "INVITE_HASH_EXPIRED" to DomainError.InviteLinkInvalid,
+        "INVITE_HASH_INVALID" to DomainError.InviteLinkInvalid,
+        "INVITE_HASH_EMPTY" to DomainError.InviteLinkInvalid,
+        "USERS_TOO_MUCH" to DomainError.ChatFull,
+        // Logging in another device by QR code: auth.acceptLoginToken.
+        "AUTH_TOKEN_EXPIRED" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_INVALID" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_INVALIDX" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_ALREADY_ACCEPTED" to DomainError.QrLoginExpired,
     )
 
 /**
@@ -161,6 +171,8 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         // createNewBasicGroupChat and createNewSupergroupChat with a title that is empty once cleaned
         // (ChatManager::create_new_chat, create_new_channel).
         "Title must be non-empty" to DomainError.TitleInvalid,
+        // checkChatInviteLink and joinChatByInviteLink with a link that is no invite link (LinkManager).
+        "Wrong invite link" to DomainError.InviteLinkInvalid,
     )
 
 /**

@@ -31,7 +31,8 @@ import kotlinx.coroutines.launch
  * invitation ([shareInvite]), and a phone's contact not on Telegram the messaging app ([inviteByMessage]); neither
  * needs a permission. Snackbars say what failed and what was deleted, the newest replacing the one shown. Contacts
  * sync's dialogs, permission request and snackbars come from [ContactSyncHost]; each time the tab starts (back from
- * Android's settings too) it tells the view model ([ContactsEvent.Started]).
+ * Android's settings too) it tells the view model ([ContactsEvent.Started]). The top bar opens the user's own QR code
+ * ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode]).
  */
 @Composable
 internal fun ContactsRoute(
@@ -39,6 +40,8 @@ internal fun ContactsRoute(
     onAddContact: () -> Unit,
     onEditContact: (userId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenMyQrCode: () -> Unit = {},
+    onScanQrCode: () -> Unit = {},
     viewModel: ContactsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +100,8 @@ internal fun ContactsRoute(
         syncControls = syncControls,
         onSyncEvent = viewModel.contactSync::onEvent,
         snackbarHostState = snackbarHostState,
+        onOpenMyQrCode = onOpenMyQrCode,
+        onScanQrCode = onScanQrCode,
     )
 }
 

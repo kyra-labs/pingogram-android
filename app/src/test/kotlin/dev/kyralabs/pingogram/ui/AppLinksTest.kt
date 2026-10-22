@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
+import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.link.LinkDispatcher
@@ -149,6 +150,8 @@ class AppLinksTest {
             link: String,
             fromOutside: Boolean,
         ) = Unit
+
+        override fun show(target: LinkTarget) = Unit
 
         override fun cancel() {
             cancelled++

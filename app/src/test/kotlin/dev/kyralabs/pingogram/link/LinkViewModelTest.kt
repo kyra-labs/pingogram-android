@@ -242,16 +242,49 @@ class LinkViewModelTest {
         }
 
     @Test
-    fun `links whose screens come later say so`() =
+    fun `an invitation opens the join sheet, resolving only the link`() =
         runTest {
             linkType(TdApi.InternalLinkTypeChatInvite("https://t.me/+abc"))
 
             viewModel.effects.test {
                 viewModel.open("https://t.me/+abc")
 
-                assertEquals(LinkEffect.Notice(LinkNotice.NotYet), awaitItem())
+                assertEquals(
+                    LinkEffect.Open(LinkTarget.ChatInvite("https://t.me/+abc"), fromOutside = false),
+                    awaitItem(),
+                )
             }
+            // Nothing joins before the user taps "Join" on the sheet.
             assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
+        }
+
+    @Test
+    fun `a QR code login from another app opens its confirmation, confirming nothing`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeQrCodeAuthentication())
+
+            viewModel.effects.test {
+                viewModel.open("tg://login?token=abc", fromOutside = true)
+
+                assertEquals(
+                    LinkEffect.Open(LinkTarget.QrCodeLogin("tg://login?token=abc"), fromOutside = true),
+                    awaitItem(),
+                )
+            }
+            assertEquals(emptyList<Any>(), client.sentOf<TdApi.ConfirmQrCodeAuthentication>())
+        }
+
+    @Test
+    fun `a target the scanner resolved opens as a resolved link would`() =
+        runTest {
+            viewModel.effects.test {
+                viewModel.show(LinkTarget.ChatBoost(CHANNEL))
+                assertEquals(LinkEffect.Open(LinkTarget.ChatBoost(CHANNEL), fromOutside = false), awaitItem())
+
+                viewModel.show(LinkTarget.LoginCode)
+                assertEquals(LinkEffect.Notice(LinkNotice.LoginCode), awaitItem())
+            }
+            assertEquals(emptyList<Any>(), client.sent)
         }
 
     @Test
