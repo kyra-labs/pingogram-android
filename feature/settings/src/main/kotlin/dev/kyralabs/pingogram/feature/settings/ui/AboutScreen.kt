@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -36,7 +37,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The About page: hoists [AboutViewModel] and opens the links it asks for. [onOpenLicenses] opens the open-source
  * licenses; [onBack] leaves the page. On Android 12 and later, "Open Telegram links" opens Android's "Open by default"
  * settings of the app ([openLinkSettings]), where the user lets Pingogram open `t.me` links
- * (`docs/adr/0013-deep-links.md`); before 12, Android asks which app opens them anyway.
+ * (`docs/adr/0013-deep-links.md`); before 12, Android asks which app opens them anyway. "Send feedback" opens through
+ * the app's [LocalFeedbackLauncher].
  */
 @Composable
 internal fun AboutRoute(
@@ -68,6 +70,7 @@ internal fun AboutRoute(
         onBack = onBack,
         modifier = modifier,
         onOpenLinkSettings = onOpenLinkSettings,
+        onSendFeedback = LocalFeedbackLauncher.current,
     )
 }
 
@@ -93,7 +96,8 @@ private fun Context.openLinkSettings() {
  * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source
  * code on GitHub (opened in the browser), its license, the open-source licenses of what it is built from
  * ([onOpenLicenses]), "Open Telegram links" in Android's settings where they have it ([onOpenLinkSettings], null
- * where they do not), and the statement that it is an unofficial client, not affiliated with Telegram, as Telegram's
+ * where they do not), "Send feedback" ([onSendFeedback], where the app has it), and the statement that it is an
+ * unofficial client, not affiliated with Telegram, as Telegram's
  * API terms require of third-party apps (`CLAUDE.md` rule 3).
  */
 @Composable
@@ -104,6 +108,7 @@ internal fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenLinkSettings: (() -> Unit)? = null,
+    onSendFeedback: (() -> Unit)? = null,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
         AboutLogo()
@@ -147,6 +152,7 @@ internal fun AboutScreen(
                 )
             }
             if (onOpenLinkSettings != null) openTelegramLinksItem(onOpenLinkSettings)
+            if (onSendFeedback != null) sendFeedbackItem(onSendFeedback)
         }
         Text(
             text = stringResource(R.string.settings_about_unofficial),
@@ -189,6 +195,18 @@ private fun SettingsGroupScope.openTelegramLinksItem(onClick: () -> Unit) =
         )
     }
 
+/** "Send feedback", which prepares a report of the build, the device and the last crash to share ([onClick]). */
+private fun SettingsGroupScope.sendFeedbackItem(onClick: () -> Unit) =
+    item { shapes ->
+        SettingsRow(
+            title = stringResource(R.string.settings_about_feedback),
+            shapes = shapes,
+            icon = UiR.drawable.ic_bug_report,
+            supportingContent = { Text(stringResource(R.string.settings_about_feedback_summary)) },
+            onClick = onClick,
+        )
+    }
+
 /** Opens [uri] in the app that handles it, the browser for a web address, if there is one. */
 internal fun UriHandler.tryOpen(uri: String) {
     try {
@@ -208,6 +226,7 @@ private fun AboutScreenPreview() {
             onOpenLicenses = {},
             onBack = {},
             onOpenLinkSettings = {},
+            onSendFeedback = {},
         )
     }
 }

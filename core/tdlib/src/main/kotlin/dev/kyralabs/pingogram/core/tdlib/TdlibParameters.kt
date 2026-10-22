@@ -49,7 +49,7 @@ class TdlibDirectories(
     val database: File get() = root.resolve("db")
     val files: File get() = root.resolve("files")
 
-    /** TDLib's own log, written only in debug builds. */
+    /** TDLib's own log (`TdlibLogSettings`): verbosity 1 in release, for the feedback report; 3 in debug builds. */
     val logFile: File get() = root.resolve("logs/tdlib.log")
 
     companion object {

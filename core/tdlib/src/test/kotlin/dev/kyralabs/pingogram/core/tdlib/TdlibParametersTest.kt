@@ -86,14 +86,16 @@ class TdlibParametersTest {
     }
 
     @Test
-    fun `release builds log errors and warnings only, to no file`() {
-        assertEquals(TdlibLogSettings(1, null), TdlibLogSettings.of(isDebug = false, TdlibDirectories(filesDir)))
+    fun `release builds log errors only, to a small file for the feedback report`() {
+        val settings = TdlibLogSettings.of(isDebug = false, TdlibDirectories(filesDir.resolve("tdlib")))
+
+        assertEquals(TdlibLogSettings(1, filesDir.resolve("tdlib/logs/tdlib.log"), 1L * 1024 * 1024), settings)
     }
 
     @Test
     fun `debug builds log at verbosity 3 to a file under the TDLib directory`() {
         val settings = TdlibLogSettings.of(isDebug = true, TdlibDirectories(filesDir.resolve("tdlib")))
 
-        assertEquals(TdlibLogSettings(3, filesDir.resolve("tdlib/logs/tdlib.log")), settings)
+        assertEquals(TdlibLogSettings(3, filesDir.resolve("tdlib/logs/tdlib.log"), 10L * 1024 * 1024), settings)
     }
 }

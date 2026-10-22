@@ -47,6 +47,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
+import dev.kyralabs.pingogram.feature.feedback.navigation.feedbackScreen
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.ui.ChatsListDetail
 
@@ -235,6 +236,8 @@ private fun NavGraphBuilder.mainGraph(
         contacts(navController, openChat)
         settings(navController)
         qrScanner(navController, onOpenLinkTarget)
+        // "Send feedback", from Settings → About (LocalFeedbackLauncher, provided by PingogramApp).
+        feedbackScreen(onBack = { navController.popBackStack() })
         // Full-screen search, on compact and medium windows (expanded ones dock it in the Chats tab's list pane):
         // results push the conversation above it, as the archive does, and back returns to the results. In a window
         // that grew while it showed, they open beside the chat list.

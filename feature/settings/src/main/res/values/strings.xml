@@ -426,6 +426,8 @@
          t.me links instead of the browser (docs/adr/0013-deep-links.md) -->
     <string name="settings_about_open_links">Open Telegram links</string>
     <string name="settings_about_open_links_summary">Let Pingogram open t.me links: turn on \"Open supported links\" in Android\'s settings</string>
+    <string name="settings_about_feedback">Send feedback or report a bug</string>
+    <string name="settings_about_feedback_summary">Prepares a report that you read and share yourself</string>
 
     <!-- Open-source licenses (FR-S1, About) -->
     <!-- Spoken by screen readers for the progress indicator while the list of libraries loads. -->
