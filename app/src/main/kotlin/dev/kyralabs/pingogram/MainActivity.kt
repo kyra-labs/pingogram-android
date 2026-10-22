@@ -32,12 +32,15 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
+import dev.kyralabs.pingogram.core.ui.component.CallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
+import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
@@ -124,6 +127,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var animatedStickers: AnimatedStickers
 
+    /** What the call buttons call through ([LocalCallStarter]): `feature:calls`' call screen. */
+    @Inject
+    lateinit var calls: Calls
+
+    /** One instance for the activity: a static composition local's new value would compose everything again. */
+    private val callStarter by lazy { CallStarter { userId -> calls.call(userId) } }
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
@@ -179,6 +189,8 @@ class MainActivity : ComponentActivity() {
                         LocalSecureWindow provides secureRequests,
                         // Telegram links tapped in the app open in it (LinkUriHandler).
                         LocalUriHandler provides rememberLinkUriHandler(links, uiState),
+                        // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
+                        LocalCallStarter provides callStarter,
                     ) {
                         LockableApp(
                             locked = locked,

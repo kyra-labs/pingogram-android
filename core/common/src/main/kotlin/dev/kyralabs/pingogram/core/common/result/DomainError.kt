@@ -180,4 +180,12 @@ sealed interface DomainError {
      * (`AUTH_TOKEN_EXPIRED`, `AUTH_TOKEN_INVALID`, `AUTH_TOKEN_ALREADY_ACCEPTED`): the other device shows a new one.
      */
     data object QrLoginExpired : DomainError
+
+    // Calls (REQUIREMENTS.md FR-V1).
+
+    /** The other person's privacy settings do not let the user call them (`USER_PRIVACY_RESTRICTED`). */
+    data object CallPrivacyRestricted : DomainError
+
+    /** The other person's app is too old for calls with this one (`PARTICIPANT_VERSION_OUTDATED`). */
+    data object CallPeerOutdated : DomainError
 }

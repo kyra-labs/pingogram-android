@@ -14,6 +14,7 @@ import kotlinx.collections.immutable.ImmutableList
  * @property isBlocked the user is on the current user's main block list (`BlockListRepository`).
  * @property botDescription what a bot says about itself, for its profile; null for users who are no bots.
  * @property groupsInCommon how many groups and channels the current user shares with the user.
+ * @property canBeCalled the user's privacy settings let the current user call them (td_api.tl `can_be_called`).
  */
 data class UserFullInfo(
     val bio: FormattedText,
@@ -21,6 +22,7 @@ data class UserFullInfo(
     val isBlocked: Boolean,
     val botDescription: String?,
     val groupsInCommon: Int,
+    val canBeCalled: Boolean = false,
 ) {
     override fun toString() = "UserFullInfo(isBlocked=$isBlocked, groupsInCommon=$groupsInCommon, …)"
 }

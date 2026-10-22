@@ -33,6 +33,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   you type. Bots that ask where you are ask you first, once per bot until Pingogram restarts; "Not now" searches
   without your location. Games from inline bots can't be played yet.
 - App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
+- Voice calls: Pingogram rings with your ringtone when someone calls, on the lock screen too, where you slide to answer
+  or decline, or decline and write a message instead. During a call you can mute, switch between the phone, the speaker
+  and a wired or Bluetooth headset, and put the call on hold; the screen turns off when you hold the phone to your ear.
+  Four emojis show when the call is end-to-end encrypted: if the other person sees the same ones, nobody is listening
+  in. Calls work with your headset's buttons, your car and your watch, and a phone call puts a Pingogram call on hold.
+  Pingogram asks for the microphone before your first call, and on Android 12 and later for your Bluetooth headsets.
+- Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
+  "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work

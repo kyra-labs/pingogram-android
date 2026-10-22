@@ -412,4 +412,6 @@
         <item quantity="one">You have %1$s boost that isn\'t in use.</item>
         <item quantity="other">You have %1$s boosts that aren\'t in use.</item>
     </plurals>
+    <!-- The profile's call pill (REQUIREMENTS.md FR-V1). -->
+    <string name="profile_action_call">Call</string>
 </resources>

@@ -10,6 +10,22 @@
       "licenses": ["BSL-1.0"]
     },
     {
+      "id": "io.github.pytgcalls:ntgcalls",
+      "name": "NTgCalls",
+      "description": "The call engine: one-to-one calls with the protocol of Telegram's apps, on WebRTC (docs/adr/0015-call-media-engine.md).",
+      "website": "https://github.com/pytgcalls/ntgcalls",
+      "developers": ["Laky-64", "NTgCalls contributors"],
+      "licenses": ["LGPL-3.0-only"]
+    },
+    {
+      "id": "ntgcalls-third-party",
+      "name": "NTgCalls' third-party code",
+      "description": "What the call engine's library contains: WebRTC, Boost, FFmpeg (LGPL-2.1-or-later), Opus, Oboe and LLVM's libc++, each under its own license, reproduced in full.",
+      "website": "https://github.com/pytgcalls/ntgcalls/blob/master/THIRD_PARTY_NOTICES.md",
+      "developers": ["The WebRTC project authors", "Boost", "FFmpeg", "Xiph.Org", "Google", "LLVM"],
+      "licenses": ["LicenseRef-NTgCalls-Notices"]
+    },
+    {
       "id": "google-sans-flex",
       "name": "Google Sans Flex",
       "description": "The variable typeface of every text in Pingogram, bundled with the app.",

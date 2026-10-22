@@ -1,4 +1,4 @@
-# 0018 — Translations on Hosted Weblate
+# 0019 — Translations on Hosted Weblate
 
 Status: accepted (owner decision 2026-10-22: Hosted Weblate, its libre plan for open-source projects; self-hosting
 stays possible; `docs/ROADMAP.md` M6 "Localization: at least 5 languages")

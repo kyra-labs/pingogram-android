@@ -75,4 +75,5 @@ private fun TdApi.UserFullInfo.toUserFullInfo(): UserFullInfo =
         isBlocked = blockList is TdApi.BlockListMain,
         botDescription = botInfo?.description?.takeIf { it.isNotBlank() },
         groupsInCommon = groupInCommonCount.coerceAtLeast(0),
+        canBeCalled = canBeCalled,
     )

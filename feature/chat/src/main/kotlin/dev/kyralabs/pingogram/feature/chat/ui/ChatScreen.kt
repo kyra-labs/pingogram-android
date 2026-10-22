@@ -518,7 +518,7 @@ private fun ChatItemRow(
         }
 
         is ChatItem.Service -> {
-            ServiceMessageRow(item, modifier)
+            ServiceMessageRow(item, modifier, canCallBack = selectedIds == null)
         }
 
         is ChatItem.DateSeparator -> {

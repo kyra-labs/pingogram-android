@@ -103,6 +103,9 @@ internal fun Project.usePrebuiltAar(
     configuration: String,
     taskName: String,
 ) {
+    // Taken out of the lambdas below: one that reached `layout` would capture the Project, which the configuration
+    // cache cannot store with the task.
+    val root = layout.settingsDirectory.asFile
     val configure: PrebuiltAarSpec.() -> Unit = {
         aarName.set(aar.name)
         repository.set(layout.settingsDirectory.dir(aar.repository))
@@ -112,7 +115,7 @@ internal fun Project.usePrebuiltAar(
         overrideAar.fileProvider(
             providers
                 .gradleProperty(aar.overrideProperty)
-                .map { layout.settingsDirectory.asFile.resolve(it.trim()) },
+                .map { root.resolve(it.trim()) },
         )
         offline.set(gradle.startParameter.isOffline)
     }
