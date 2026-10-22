@@ -163,6 +163,41 @@ class CallManagerTest {
         }
 
     @Test
+    fun `an incoming video call rings as a voice call that says so`() =
+        runTest {
+            val manager = manager()
+
+            repository.update(
+                Call(
+                    3,
+                    42,
+                    isOutgoing = false,
+                    isVideo = true,
+                    state = CallState.Pending(isCreated = true, isReceived = true),
+                ),
+            )
+            runCurrent()
+
+            assertTrue(manager.call.value!!.videoOffered)
+            manager.answer()
+            runCurrent()
+            assertEquals(listOf(3 to ENGINE_PROTOCOL), repository.accepted)
+        }
+
+    @Test
+    fun `the other side turning video on says the call stays audio only`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            assertFalse(manager.call.value!!.videoOffered)
+
+            repository.update(Call(7, 42, isOutgoing = true, isVideo = true, state = CallState.Ready(connection)))
+            runCurrent()
+
+            assertTrue(manager.call.value!!.videoOffered)
+        }
+
+    @Test
     fun `a second incoming call while in one is declined`() =
         runTest {
             val manager = manager()

@@ -172,6 +172,7 @@ private fun InCall(
                 name = state.person.name,
                 status = { CallStatus(state) },
                 subtitle = {
+                    if (state.videoOffered) AudioOnlyNote()
                     AnimatedVisibility(
                         visible = state.emojis.isNotEmpty(),
                         enter =
@@ -293,6 +294,21 @@ private fun CallHeader(
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
         subtitle()
     }
+}
+
+/** The other person wants video, which Pingogram does not have yet (`docs/adr/0019-video-and-group-calls-scope.md`). */
+@Composable
+private fun AudioOnlyNote() {
+    Text(
+        stringResource(R.string.call_audio_only),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier =
+            Modifier
+                .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
+                .padding(bottom = MaterialTheme.spacing.medium),
+    )
 }
 
 /**

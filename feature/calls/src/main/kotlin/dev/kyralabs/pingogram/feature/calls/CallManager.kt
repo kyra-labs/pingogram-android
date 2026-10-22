@@ -238,6 +238,7 @@ class CallManager
             val incoming = Live(call.userId, isOutgoing = false, scope = callScope())
             incoming.callId = call.id
             incoming.phase = CallPhase.Ringing(reachedDevice = true)
+            incoming.videoOffered = call.isVideo
             start(incoming)
         }
 
@@ -286,6 +287,7 @@ class CallManager
             update: Call,
         ) {
             if (call.phase is CallPhase.Ended) return
+            if (update.isVideo) call.videoOffered = true
             when (val state = update.state) {
                 is CallState.Pending -> {
                     if (call.isOutgoing) {
@@ -533,6 +535,7 @@ class CallManager
             var connecting = false
             var discarding = false
             var ringbackStarted = false
+            var videoOffered = false
             var system: SystemCall? = null
             var session: CallSession? = null
 
@@ -547,6 +550,7 @@ class CallManager
                     isOnHold = onHold,
                     audio = audio,
                     connectedAtMillis = connectedAt,
+                    videoOffered = videoOffered,
                 )
         }
 

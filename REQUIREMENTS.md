@@ -176,7 +176,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 
 - FR-V1 Should: Voice calls via TDLib + libtgvoip/tgcalls (`createCall`, `acceptCall`) with
   CallKit-style full-screen notification, speaker/mute, encryption emoji.
-- FR-V2 Later: Video calls, group calls / live streams.
+- FR-V2 Should [M5.1]: 1:1 video calls, then group voice chats and watching live streams (`docs/adr/0019-video-and-group-calls-scope.md`); group video later.
 
 ### 5.8 Secret chats [M4]
 

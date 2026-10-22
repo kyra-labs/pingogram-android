@@ -274,6 +274,7 @@ private fun ActiveCall.toUiState(
         isOnHold = isOnHold,
         route = audio.route,
         routes = audio.available,
+        videoOffered = videoOffered,
     )
 
 /** "0:07", "12:34", "1:02:03". */
