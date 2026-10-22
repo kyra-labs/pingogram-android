@@ -57,10 +57,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
   scrolling, and flinging back, has less to do in each frame.
 
-### Changed
-- The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
-  scrolling, and flinging back, has less to do in each frame.
-
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
