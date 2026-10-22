@@ -78,7 +78,7 @@ media3 = "1.11.1"
 ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f"
 # SHA-256 of ntgcalls-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release, verified by
 # build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
-ntgcallsAarSha256 = "unpinned"
+ntgcallsAarSha256 = "18d37addf4c714e4ab1a033f1d7d19c76e982b764450585a2f96c8382d379b4f"
 robolectric = "4.17"
 roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT
