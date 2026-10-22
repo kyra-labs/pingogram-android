@@ -51,7 +51,7 @@ enum class PingogramChannel(
     ),
 
     /**
-     * Incoming calls, with the ringtone (`docs/adr/0017-calls-and-telecom.md`). A new id: a channel's sound cannot be
+     * Incoming calls, with the ringtone (`docs/adr/0018-calls-and-telecom.md`). A new id: a channel's sound cannot be
      * changed once created, and "calls" (until 0.4.0) had the notification sound; [NotificationChannels] deletes it.
      */
     Calls(

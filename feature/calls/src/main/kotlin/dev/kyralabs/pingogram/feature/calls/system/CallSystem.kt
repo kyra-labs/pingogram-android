@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Android's view of a call (`docs/adr/0017-calls-and-telecom.md`): Telecom as a self-managed calling app, so the
+ * Android's view of a call (`docs/adr/0018-calls-and-telecom.md`): Telecom as a self-managed calling app, so the
  * system's UI, Bluetooth headsets, cars and watches know of the call, route its audio and can answer or end it; or,
  * where the device has no Telecom, the audio mode and route set directly. [TelecomCallSystem] in production, a fake
  * in tests.

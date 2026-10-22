@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0017-calls-and-telecom.md). The permissions they need are declared, with
+<!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0018-calls-and-telecom.md). The permissions they need are declared, with
      their reasons, in :app's manifest, the one place that lists them (AppManifestTest). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 

@@ -98,7 +98,7 @@
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
 
-    <!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0017-calls-and-telecom.md), approved by the owner for calls only on
+    <!-- Calls (REQUIREMENTS.md FR-V1, docs/adr/0018-calls-and-telecom.md), approved by the owner for calls only on
          2026-10-22. RECORD_AUDIO above is asked for again before the first call or answer, after the call screen says
          why. MANAGE_OWN_CALLS: Pingogram is a self-managed calling app in Android's Telecom, so the system UI,
          Bluetooth headsets, cars and watches know its calls, and a phone call puts one on hold. The call's foreground
@@ -199,6 +199,19 @@
             android:name="dev.kyralabs.pingogram.feature.calls.ui.CallActivity"
             android:theme="@style/Theme.Pingogram"
             tools:node="merge" />
+        <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md). Exported for the system's
+             widget updates; it takes nothing else. -->
+        <receiver
+            android:name=".widget.RecentChatsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_recent_chats_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recent_chats_widget_info" />
+        </receiver>
 
         <!-- WorkManager starts when first used (PingogramApplication's Configuration.Provider, with Hilt's worker
              factory), not at every process start through App Startup. -->

@@ -34,7 +34,7 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Keeps the app running while the user's call rings or goes on (`docs/adr/0017-calls-and-telecom.md`): a foreground
+ * Keeps the app running while the user's call rings or goes on (`docs/adr/0018-calls-and-telecom.md`): a foreground
  * service of type `phoneCall`, and `microphone` too once the user talks, whose notification is the call's
  * ([CallNotifications], same id). It stops when the call ends.
  *

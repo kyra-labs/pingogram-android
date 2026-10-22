@@ -38,13 +38,14 @@ import kotlin.time.Duration.Companion.seconds
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The round avatars of notifications and conversation shortcuts: the small profile photo when TDLib has it (one that is
- * missing downloads first, briefly awaited), otherwise the initials on one of the placeholder colors the app's avatars
- * use (`docs/DESIGN_SYSTEM.md` §2.2), from the wallpaper's scheme when dynamic color is on. Bitmaps are drawn on the
- * IO dispatcher, never on the main thread, and kept for the process ([CACHE_SIZE] of them).
+ * The round avatars of notifications, conversation shortcuts and the home screen widget: the small profile photo when
+ * TDLib has it (one that is missing downloads first, briefly awaited), otherwise the initials on one of the placeholder
+ * colors the app's avatars use (`docs/DESIGN_SYSTEM.md` §2.2), from the wallpaper's scheme when dynamic color is on, or
+ * the color theme's. Bitmaps are drawn on the IO dispatcher, never on the main thread, and kept for the process
+ * ([CACHE_SIZE] of them).
  */
 @Singleton
-internal class AvatarIcons
+class AvatarIcons
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
@@ -52,7 +53,7 @@ internal class AvatarIcons
         private val appearanceRepository: AppearanceRepository,
         @param:Dispatcher(IO) private val ioDispatcher: CoroutineDispatcher,
     ) {
-        private val cache = LruCache<String, IconCompat>(CACHE_SIZE)
+        private val cache = LruCache<String, Avatar>(CACHE_SIZE)
 
         /** The size Android draws a notification's large icon at, which conversations use for avatars too. */
         private val size by lazy {
@@ -64,26 +65,45 @@ internal class AvatarIcons
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) Typeface.create(font, INITIALS_WEIGHT, false) else font
         }
 
-        /** The avatar of the user or chat [id] named [name], with [photo] if it has one. */
-        suspend fun icon(
+        /**
+         * The avatar of the user or chat [id] named [name], with [photo] if it has one, at a notification's size: the
+         * same icon object for the same avatar while it is cached, so shortcuts can tell what changed.
+         */
+        internal suspend fun icon(
             photo: ProfilePhoto?,
             id: Long,
             name: String,
-        ): IconCompat {
-            val path = photo?.let { downloadedPath(it.small.id) }
-            return path?.let { photoIcon(it) } ?: initialsIcon(id, name)
-        }
+        ): IconCompat = avatar(photo, id, name, size).icon
 
-        private suspend fun initialsIcon(
+        /** The same avatar as [icon], [sizePx] wide, e.g. for the home screen widget's rows. */
+        suspend fun bitmap(
+            photo: ProfilePhoto?,
             id: Long,
             name: String,
-        ): IconCompat {
+            sizePx: Int,
+        ): Bitmap = avatar(photo, id, name, sizePx).bitmap
+
+        private suspend fun avatar(
+            photo: ProfilePhoto?,
+            id: Long,
+            name: String,
+            size: Int,
+        ): Avatar {
+            val path = photo?.let { downloadedPath(it.small.id) }
+            return path?.let { photoAvatar(it, size) } ?: initialsAvatar(id, name, size)
+        }
+
+        private suspend fun initialsAvatar(
+            id: Long,
+            name: String,
+            size: Int,
+        ): Avatar {
             val appearance = appearanceRepository.appearance.first()
             val dynamicColor = appearance.dynamicColor
             val palette = appearance.palette
-            val key = "initials:$id:$dynamicColor:$palette:$name"
+            val key = "initials:$size:$id:$dynamicColor:$palette:$name"
             return cache.get(key)
-                ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor, palette) })
+                ?: cached(key, withContext(ioDispatcher) { initials(id, name, dynamicColor, palette, size) })
         }
 
         /** Where file [fileId] is once downloaded, downloading it if needed; null if it does not arrive in time. */
@@ -105,20 +125,34 @@ internal class AvatarIcons
                 }
             }
 
-        /** The round photo at [path]; null if it cannot be decoded. */
-        private suspend fun photoIcon(path: String): IconCompat? {
-            val key = "photo:$path"
+        /** The round photo at [path], [size] wide; null if it cannot be decoded. */
+        private suspend fun photoAvatar(
+            path: String,
+            size: Int,
+        ): Avatar? {
+            val key = "photo:$size:$path"
             return cache.get(key)
-                ?: withContext(ioDispatcher) { BitmapFactory.decodeFile(path)?.let(::circle) }?.let { cached(key, it) }
+                ?: withContext(ioDispatcher) { BitmapFactory.decodeFile(path)?.let { circle(it, size) } }
+                    ?.let { cached(key, it) }
         }
 
         private fun cached(
             key: String,
             bitmap: Bitmap,
-        ): IconCompat = IconCompat.createWithBitmap(bitmap).also { cache.put(key, it) }
+        ): Avatar = Avatar(bitmap).also { cache.put(key, it) }
+
+        /** A drawn avatar, and its icon, made once. */
+        private class Avatar(
+            val bitmap: Bitmap,
+        ) {
+            val icon: IconCompat by lazy { IconCompat.createWithBitmap(bitmap) }
+        }
 
         /** [source] cropped to its centered square and drawn round, [size] wide. */
-        private fun circle(source: Bitmap): Bitmap {
+        private fun circle(
+            source: Bitmap,
+            size: Int,
+        ): Bitmap {
             val output = createBitmap(size, size)
             val side = minOf(source.width, source.height).toFloat()
             val scale = size / side
@@ -144,6 +178,7 @@ internal class AvatarIcons
             name: String,
             dynamicColor: Boolean,
             palette: ThemePalette,
+            size: Int,
         ): Bitmap {
             val colors = standaloneColorScheme(context, dynamicColor, palette).avatarPlaceholderColors(id)
             val output = createBitmap(size, size)

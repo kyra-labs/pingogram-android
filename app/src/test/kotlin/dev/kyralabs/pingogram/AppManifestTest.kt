@@ -38,7 +38,7 @@ import org.xmlpull.v1.XmlPullParser
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional. CAMERA is the
  * in-app QR code scanner's only (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md), and no camera is
- * required to install. Calls (approved 2026-10-22 for calls only, docs/adr/0017-calls-and-telecom.md): MANAGE_OWN_CALLS
+ * required to install. Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS
  * (self-managed Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL and FOREGROUND_SERVICE_MICROPHONE,
  * USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT (Bluetooth headsets' names),
  * MODIFY_AUDIO_SETTINGS (the audio mode without Telecom) and WAKE_LOCK on every version (the proximity wake lock); the
@@ -83,7 +83,7 @@ class AppManifestTest {
                 Manifest.permission.READ_CONTACTS,
                 // The in-app QR code scanner only (docs/adr/0012-camerax-and-zxing-qr-scanner.md).
                 Manifest.permission.CAMERA,
-                // Calls only (docs/adr/0017-calls-and-telecom.md).
+                // Calls only (docs/adr/0018-calls-and-telecom.md).
                 Manifest.permission.MANAGE_OWN_CALLS,
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL,
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
@@ -121,7 +121,7 @@ class AppManifestTest {
                 Manifest.permission.READ_CONTACTS to "",
                 // The QR code scanner's only permission, on every version.
                 Manifest.permission.CAMERA to "",
-                // Calls only, on every version (docs/adr/0017-calls-and-telecom.md).
+                // Calls only, on every version (docs/adr/0018-calls-and-telecom.md).
                 Manifest.permission.MANAGE_OWN_CALLS to "",
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL to "",
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE to "",

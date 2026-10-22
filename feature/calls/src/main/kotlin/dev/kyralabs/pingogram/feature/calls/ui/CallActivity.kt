@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 /**
- * The call screen as an activity of its own (`docs/adr/0017-calls-and-telecom.md`): it shows over the lock screen and
+ * The call screen as an activity of its own (`docs/adr/0018-calls-and-telecom.md`): it shows over the lock screen and
  * turns the screen on while a call rings or goes on, and shows nothing of the app's chats, which stay behind the lock
  * screen and the passcode lock. Not exported: it opens from the app (call buttons), from the call's notifications
  * (its full-screen intent, "Answer", a tap) and from Telecom.

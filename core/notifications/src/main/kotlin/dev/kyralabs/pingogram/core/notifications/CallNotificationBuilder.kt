@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
- * The notifications of a call (`REQUIREMENTS.md` FR-V1, `docs/adr/0017-calls-and-telecom.md`), as Android's call
+ * The notifications of a call (`REQUIREMENTS.md` FR-V1, `docs/adr/0018-calls-and-telecom.md`), as Android's call
  * style ([NotificationCompat.CallStyle]): the system shows them as calls, with the caller's name and avatar.
  *
  * - **Incoming** ([incoming]): "Answer" and "Decline", in [PingogramChannel.Calls], which rings with the ringtone until

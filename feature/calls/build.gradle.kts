@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    // Android's Telecom as a self-managed calling app (docs/adr/0017-calls-and-telecom.md).
+    // Android's Telecom as a self-managed calling app (docs/adr/0018-calls-and-telecom.md).
     implementation(libs.androidx.core.telecom)
 
     testImplementation(libs.kotlinx.coroutines.test)

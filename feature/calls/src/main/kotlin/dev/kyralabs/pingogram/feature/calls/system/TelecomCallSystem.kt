@@ -26,7 +26,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * [CallSystem] on Android's Telecom through Jetpack's `core-telecom` (`docs/adr/0017-calls-and-telecom.md`): Pingogram
+ * [CallSystem] on Android's Telecom through Jetpack's `core-telecom` (`docs/adr/0018-calls-and-telecom.md`): Pingogram
  * registers as a self-managed calling app (`MANAGE_OWN_CALLS`), each call is added with [CallsManager.addCall], and
  * Telecom routes its audio (earpiece, speaker, wired headset, Bluetooth), puts it on hold for a phone call and lets
  * headsets, cars and watches answer and end it. Before Android 14 the library does this through its own

@@ -143,6 +143,8 @@ regresses by more than 10%.
   connection alive with a `specialUse` foreground service; the switch says under it that this uses more battery, and
   the background battery budget of §1 is measured with it off. It adds no polling or alarm: the wakeups are TDLib's
   keep-alive and the updates Telegram sends.
+- The home screen widget has no timer (`updatePeriodMillis` 0): it is redrawn when the chats change while the process
+  runs and a widget is placed, 1 s after the last change (`docs/adr/0017-home-screen-widget.md`).
 - Respect Doze and App Standby buckets; never request battery-optimization exemptions by default.
 
 ## 7. Network & data

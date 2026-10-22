@@ -1,4 +1,4 @@
-# 0017 — Calls in Android: Telecom, the foreground service, the notifications and the call screen
+# 0018 — Calls in Android: Telecom, the foreground service, the notifications and the call screen
 
 Status: accepted (permissions approved by the owner for calls only, 2026-10-22)
 
