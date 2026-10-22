@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
+import dev.kyralabs.pingogram.share.IncomingShare
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,10 +24,11 @@ import kotlin.time.TimeSource
 /**
  * Whether the account is logged in ([uiState]), from TDLib's login steps; the Appearance settings the app's theme
  * follows ([appearance]); whether the passcode lock holds the app ([lock], [hideContent]); how long the splash screen
- * stays ([keepSplashScreen]); the chat a notification or a conversation shortcut asked to open ([chatToOpen]); and the
- * Telegram link another app opened Pingogram with ([linkToOpen]). Nothing to restore after process death: TDLib
- * reports the current step again, the settings are saved, a passcode locks the app at every start, and the back stack
- * restored after process death already holds an opened chat or link.
+ * stays ([keepSplashScreen]); the chat a notification or a conversation shortcut asked to open ([chatToOpen]); the
+ * Telegram link another app opened Pingogram with ([linkToOpen]); and what another app shared with it
+ * ([shareToOpen]). Nothing to restore after process death: TDLib reports the current step again, the settings are
+ * saved, a passcode locks the app at every start, the back stack restored after process death already holds an opened
+ * chat or link, and a share's read grants end with the process.
  */
 @HiltViewModel
 class MainActivityViewModel internal constructor(
@@ -106,6 +108,25 @@ class MainActivityViewModel internal constructor(
     /** The link of [linkToOpen] was handed over to be opened. */
     fun onLinkOpened() {
         mutableLinkToOpen.value = null
+    }
+
+    private val mutableShareToOpen = MutableStateFlow<IncomingShare?>(null)
+
+    /**
+     * What another app shared with Pingogram (`REQUIREMENTS.md` FR-N2, direct share), until the app took it
+     * ([onShareOpened]): once the account is logged in and the app unlocked, as a link. Like a link it waits through
+     * the login flow; nothing of it is sent before the user picks a chat and taps send.
+     */
+    val shareToOpen: StateFlow<IncomingShare?> = mutableShareToOpen.asStateFlow()
+
+    /** Asks to open [share]; a later share replaces one not opened yet. */
+    fun openShare(share: IncomingShare) {
+        mutableShareToOpen.value = share
+    }
+
+    /** The share of [shareToOpen] was handed over to be opened. */
+    fun onShareOpened() {
+        mutableShareToOpen.value = null
     }
 
     /** The app left the screen, not for a configuration change: the passcode lock's auto-lock starts counting. */

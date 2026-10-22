@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.followedBy
 import dev.kyralabs.pingogram.feature.chat.ui.composer.restoredText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.savedEntities
 import kotlinx.collections.immutable.PersistentList
@@ -38,6 +39,7 @@ import kotlinx.coroutines.launch
  *   once, takes the composer's reply along ([ReplyHandoff]), and sends; a refusal gives the reply back with a snackbar
  *   ([ChatEffect.ShowError]), a scheduled message is confirmed ([ChatEffect.MessageScheduled]). A refused poll opens
  *   again as it was.
+ * - **Shared files** ([addShared], direct share) join the preview like picked ones, their text as its caption.
  * - **Camera** ([takePhoto]): a new file for the camera app ([ChatEffect.LaunchCamera]), whose photo joins the preview
  *   ([photoTaken]); not taken, the file is deleted.
  * - **Process death**: the preview's ready attachments, the caption, the poll form and the camera's file are kept in
@@ -98,6 +100,21 @@ internal class ChatAttachments(
 
     /** Files from the document picker, by their URIs. */
     fun pickFiles(uris: List<String>) = pick(uris, AttachmentKind.Document)
+
+    /**
+     * Files shared into the chat (`REQUIREMENTS.md` FR-N2, direct share), by their URIs, read with the grant they came
+     * with: they join the preview as [kind] says, as picked ones do, [text] becoming its caption after what it holds.
+     */
+    fun addShared(
+        uris: List<String>,
+        kind: AttachmentKind,
+        text: FormattedText,
+    ) {
+        pick(uris, kind)
+        if (text.text.isBlank() || mutablePreview.value == null) return
+        val current = caption.content
+        caption.setContent(if (current.text.isBlank()) text else current.followedBy(text))
+    }
 
     /** Asks the camera app for a photo, into a new file of the app's cache. */
     fun takePhoto() {

@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Share into Pingogram: text, links, photos, videos and files shared from other apps open a "Send to" sheet with your
+  chats (Saved Messages first, and search). Pick one chat to open it with the text in the message field or the files
+  ready to send, so you can check and add to it before tapping send; pick several to send it to all of them at once,
+  with an optional comment. `t.me/share` links open the same sheet. Your most recent chats also appear directly in
+  Android's share sheet (Android 11 and later). A share waits until you are signed in and the app is unlocked, and
+  Pingogram needs no storage permission for it.
 - Contacts: the Contacts tab lists your Telegram contacts alphabetically, with who is online and when the others were
   last seen, and a letter index along the edge of long lists to jump to a letter. Search filters the list as you type.
   Tap a contact to open your chat; long-press to edit or delete them. Add contacts by phone number or by username;

@@ -130,6 +130,30 @@
                 <data android:host="telegram.me" />
                 <data android:host="telegram.dog" />
             </intent-filter>
+            <!-- Direct share (REQUIREMENTS.md FR-N2): text, links, photos, videos and any files other apps share,
+                 one or several. No permission: shared content:// URIs are read with the grant they come with, once the
+                 user picked a chat, and copied into the upload cache like attachments; nothing is sent before the user
+                 taps send. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <!-- The share target of the conversation shortcuts, which makes the system's share sheet list recent chats
+                 (Direct Share targets, Android 11+; core:notifications ConversationShortcuts). -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- WorkManager starts when first used (PingogramApplication's Configuration.Provider, with Hilt's worker

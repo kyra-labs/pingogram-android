@@ -2,38 +2,24 @@ package dev.kyralabs.pingogram.feature.chat.ui.forward
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
-import dev.kyralabs.pingogram.core.domain.model.BasicGroup
-import dev.kyralabs.pingogram.core.domain.model.Chat
-import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
-import dev.kyralabs.pingogram.core.domain.model.Supergroup
-import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
-import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
-import dev.kyralabs.pingogram.core.ui.R
-import dev.kyralabs.pingogram.core.ui.text.UiText
-import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.textOrCaption
-import dev.kyralabs.pingogram.feature.chat.ui.userId
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,16 +31,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -67,11 +49,11 @@ import kotlinx.coroutines.launch
  * - **Opening** ([open]): TDLib's properties of every message, asked at once; the sheet opens with those TDLib lets be
  *   forwarded (protected content never is), else a snackbar says it is not possible ([ChatEffect.ActionUnavailable]).
  *   It offers "Hide sender's name" where every message can be copied, and "Hide captions" where one has a caption.
- * - **Targets**: without a query Saved Messages first (created on the device if needed), then the main chat list in
- *   TDLib's order, as far as it is loaded; [loadMore] loads its next page when the list's end comes near. A query
- *   ([setQuery]) searches the chats ([SearchRepository.searchChats]) once it has not changed for [DEBOUNCE_MILLIS],
- *   cancelling the previous search. Either way only chats where the user can send messages
- *   ([writeAccess] [WriteAccess.Allowed]), and secret chats only when every message can be copied into one.
+ * - **Targets** ([ChatTargets]): without a query Saved Messages first (created on the device if needed), then the
+ *   main chat list in TDLib's order, as far as it is loaded; [loadMore] loads its next page when the list's end comes
+ *   near. A query ([setQuery]) searches the chats ([SearchRepository.searchChats]) once it has not changed for
+ *   [DEBOUNCE_MILLIS], cancelling the previous search. Either way only chats where the user can send messages
+ *   ([WriteAccess.Allowed]), and secret chats only when every message can be copied into one.
  * - **Picking**: [toggle] picks or unpicks a chat; picked chats stay picked while a search hides them. Hiding captions
  *   hides the sender's name too, and showing the sender's name shows the captions, as TDLib copies only without names.
  * - **Sending** ([send]) closes the sheet at once and forwards to each picked chat in turn, with the comment first
@@ -104,8 +86,7 @@ internal class ChatForwarding(
 
     private val request = MutableStateFlow<ForwardRequest?>(null)
     private val choice = MutableStateFlow(Choice())
-    private val query = MutableStateFlow("")
-    private val pages = MutableStateFlow(PageLoad())
+    private val chatTargets = ChatTargets(chats, search, users, groups, scope)
 
     /** The sheet being prepared, which another [open] replaces. */
     private var opening: Job? = null
@@ -155,7 +136,7 @@ internal class ChatForwarding(
                 }
                 comment.setContent(FormattedText.Empty)
                 choice.value = Choice()
-                query.value = ""
+                chatTargets.setQuery("")
                 request.value =
                     ForwardRequest(
                         messageIds = allowed.map { it.first.id },
@@ -189,7 +170,7 @@ internal class ChatForwarding(
 
     /** What the search field holds now; it is searched once it has not changed for [DEBOUNCE_MILLIS]. */
     fun setQuery(text: String) {
-        query.value = text
+        chatTargets.setQuery(text)
     }
 
     /** Picks chat [chatId], or unpicks it if it was picked. */
@@ -215,14 +196,7 @@ internal class ChatForwarding(
      * sheet shows search results, which come whole.
      */
     fun loadMore() {
-        val load = pages.value
-        val showsChatList = request.value != null && query.value.isBlank()
-        if (!showsChatList || load.isLoading || load.isComplete) return
-        pages.value = load.copy(isLoading = true)
-        scope.launch {
-            val result = chats.loadChats(ChatListType.Main)
-            pages.update { it.copy(isLoading = false, isComplete = (result as? Outcome.Success)?.value == false) }
-        }
+        if (request.value != null) chatTargets.loadMore()
     }
 
     /** Closes the sheet and forwards to every picked chat, the comment first; nothing while no chat is picked. */
@@ -270,21 +244,18 @@ internal class ChatForwarding(
 
     /** The sheet for [request]: its targets as the query and the chats change, with the user's choices. */
     private fun sheetOf(request: ForwardRequest): Flow<ForwardSheet> {
+        // Only chats where the user can send messages; into a secret chat only what can be copied there.
         val found =
-            query
-                .map { it.trim() }
-                .debounce { if (it.isEmpty()) 0L else DEBOUNCE_MILLIS }
-                .distinctUntilChanged()
-                .flatMapLatest { text -> if (text.isEmpty()) mainChats() else searchChats(text) }
-        val people = combine(users.users, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
-        val targets = combine(found, people) { found, people -> found to people.targetsOf(found.chats, request) }
-        return combine(targets, choice, pages) { (found, targets), choice, pages ->
+            chatTargets.targets { chat, access ->
+                access == WriteAccess.Allowed && (chat.type !is ChatType.Secret || request.canCopyToSecretChat)
+            }
+        return combine(found, choice) { found, choice ->
             ForwardSheet(
                 messageCount = request.messageIds.size,
-                targets = targets,
+                targets = found.targets,
                 selectedIds = choice.selected,
-                isSearching = found.isSearch,
-                isLoading = found.isLoading || (!found.isSearch && targets.isEmpty() && pages.isLoading),
+                isSearching = found.isSearching,
+                isLoading = found.isLoading,
                 searchError = found.error,
                 canHideSenderName = request.canHideSenderName,
                 hasCaptions = request.hasCaptions,
@@ -293,40 +264,6 @@ internal class ChatForwarding(
             )
         }
     }
-
-    /** Saved Messages, then the main chat list without it, in TDLib's order. */
-    private fun mainChats(): Flow<Found> =
-        combine(chats.chatList(ChatListType.Main), savedMessages()) { list, saved ->
-            val ordered = if (saved == null) list else listOf(saved) + list.filter { it.id != saved.id }
-            Found(ordered, isSearch = false)
-        }
-
-    /**
-     * The current user's Saved Messages, then every change; null until the user and the chat are known. A chat TDLib
-     * never had is created on the device ([ChatRepository.privateChat]), which announces it.
-     */
-    private fun savedMessages(): Flow<Chat?> =
-        users.myUserId.flatMapLatest { me ->
-            if (me == null) {
-                flowOf(null)
-            } else {
-                channelFlow {
-                    if (chats.chat(me).first() == null) launch { chats.privateChat(me) }
-                    chats.chat(me).collect { send(it) }
-                }
-            }
-        }
-
-    /** The chats [text] finds, local ones first; loading until the first answer, an error in place of none. */
-    private fun searchChats(text: String): Flow<Found> =
-        search
-            .searchChats(text)
-            .map { result ->
-                when (result) {
-                    is Outcome.Success -> Found(result.value, isSearch = true)
-                    is Outcome.Failure -> Found(emptyList(), isSearch = true, error = result.error)
-                }
-            }.onStart { emit(Found(emptyList(), isSearch = true, isLoading = true)) }
 
     /** What the sheet forwards, as far as the choices depend on it. */
     private data class ForwardRequest(
@@ -343,81 +280,9 @@ internal class ChatForwarding(
         val hideCaptions: Boolean = false,
     )
 
-    /** Whether a page of the main chat list loads, and whether TDLib has no more. */
-    private data class PageLoad(
-        val isLoading: Boolean = false,
-        val isComplete: Boolean = false,
-    )
-
-    /** The chats found, before they are checked and mapped. */
-    private class Found(
-        val chats: List<Chat>,
-        val isSearch: Boolean,
-        val isLoading: Boolean = false,
-        val error: DomainError? = null,
-    )
-
-    /** What checking and mapping a chat takes besides the chat. */
-    private class People(
-        val users: ImmutableMap<Long, User>,
-        val myUserId: Long?,
-        val basicGroups: ImmutableMap<Long, BasicGroup>,
-        val supergroups: ImmutableMap<Long, Supergroup>,
-    ) {
-        /** [chats] the request's messages can go to, as targets, in their order and each once. */
-        fun targetsOf(
-            chats: List<Chat>,
-            request: ForwardRequest,
-        ): ImmutableList<ForwardTarget> {
-            if (chats.isEmpty()) return persistentListOf()
-            return chats
-                .distinctBy { it.id }
-                .filter { canReceive(it, request) }
-                .map(::targetOf)
-                .toImmutableList()
-        }
-
-        /** Whether the user can send messages in [chat]; into a secret chat only what can be copied there. */
-        private fun canReceive(
-            chat: Chat,
-            request: ForwardRequest,
-        ): Boolean {
-            val type = chat.type
-            val access =
-                chat.writeAccess(
-                    user = chat.userId?.let(users::get),
-                    basicGroup = (type as? ChatType.BasicGroup)?.let { basicGroups[it.basicGroupId] },
-                    supergroup = (type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] },
-                )
-            return access == WriteAccess.Allowed && (type !is ChatType.Secret || request.canCopyToSecretChat)
-        }
-
-        private fun targetOf(chat: Chat): ForwardTarget {
-            val isSavedMessages = chat.type is ChatType.Private && chat.userId == myUserId
-            val isDeletedAccount = chat.userId?.let(users::get)?.isDeleted == true
-            return ForwardTarget(
-                chatId = chat.id,
-                title =
-                    when {
-                        isSavedMessages -> UiText.resource(R.string.chat_saved_messages)
-                        isDeletedAccount -> UiText.resource(R.string.user_deleted_account)
-                        else -> UiText.Plain(chat.title)
-                    },
-                photo = if (isSavedMessages) null else chat.photo,
-                placeholderIcon =
-                    when {
-                        isSavedMessages -> R.drawable.ic_bookmark_filled
-                        isDeletedAccount -> R.drawable.ic_person_filled
-                        else -> null
-                    },
-                isSecret = chat.type is ChatType.Secret,
-            )
-        }
-    }
-
     internal companion object {
         /** How long the query must stay unchanged before it is searched. */
-        const val DEBOUNCE_MILLIS = 300L
+        const val DEBOUNCE_MILLIS = ChatTargets.DEBOUNCE_MILLIS
 
         private const val STOP_TIMEOUT_MILLIS = 5_000L
     }

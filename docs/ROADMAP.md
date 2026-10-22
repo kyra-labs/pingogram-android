@@ -73,8 +73,9 @@ the release workflow so the owner can install and test on a phone.
 - [ ] Forum topics, comments threads, pinned messages bar
 - [x] Secret chats: create/accept, TTL, lock indicators (accepting is TDLib's own, `docs/TDLIB.md`)
 - [ ] Deep links (`tg://`, `t.me`) via `getInternalLinkType`
-- [ ] Direct share: share text, links and files from other apps into a chat (a share target with a chat picker and a
-      prefilled composer; the conversation shortcuts as Direct Share targets), moved from M3 (owner, 2026-10-21)
+- [x] Direct share: share text, links and files from other apps into a chat (a share target with a chat picker and a
+      prefilled composer; the conversation shortcuts as Direct Share targets), moved from M3 (owner, 2026-10-21);
+      `docs/adr/0014-direct-share.md`
 
 ## M5 — Calls → `v0.5.0`
 

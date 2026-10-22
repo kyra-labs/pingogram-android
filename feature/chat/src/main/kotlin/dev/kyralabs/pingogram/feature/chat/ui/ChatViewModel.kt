@@ -65,6 +65,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.ChatSendAs
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsChoice
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsSheet
+import dev.kyralabs.pingogram.feature.chat.ui.share.ChatShares
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -86,6 +88,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -165,6 +168,9 @@ import java.util.Locale
  *   location (found by the sheet's own `ShareLocationViewModel`) and a poll ([ChatUiState.poll], [pollEditor]), each
  *   taking the composer's reply along. The uploads of the messages being sent
  *   ([ChatUiState.uploads]) come from [FileRepository.observeUpload], and can be cancelled.
+ * - **Shared into the chat** ([ChatShares], `REQUIREMENTS.md` FR-N2, direct share): what another app shared to this
+ *   chat, through a Direct Share target or the share sheet, goes into the composer once the conversation is on screen,
+ *   a text into the field, files into the attach preview; the user sends it.
  * - **Voice messages** ([ChatRecorder]): held, locked, paused, sent or cancelled from the composer's microphone on the
  *   [VoiceRecorder], as [voiceRecording] (kept out of [uiState], like the forward sheet, as only the composer shows
  *   it); recording stops what plays, the screen stopping locks and pauses it, and clearing the view model throws it
@@ -221,6 +227,7 @@ class ChatViewModel internal constructor(
     sendAsRepository: SendAsRepository,
     secretChatRepository: SecretChatRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
+    shareInbox: ShareInbox,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -249,6 +256,7 @@ class ChatViewModel internal constructor(
         sendAsRepository: SendAsRepository,
         secretChatRepository: SecretChatRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
+        shareInbox: ShareInbox,
         @Assisted("messageId") messageId: Long? = null,
     ) : this(
         chatId,
@@ -274,6 +282,7 @@ class ChatViewModel internal constructor(
         sendAsRepository,
         secretChatRepository,
         autoDownloadPolicy,
+        shareInbox,
         AndroidChatLog,
         messageId,
     )
@@ -304,6 +313,9 @@ class ChatViewModel internal constructor(
      */
     @Volatile
     private var isOpen = false
+
+    /** [isOpen] as it changes, for what waits for the conversation to be on screen ([ChatShares]). */
+    private val onScreen = MutableStateFlow(false)
 
     private val sendFailures = SendFailures()
 
@@ -389,6 +401,8 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
             log = log,
         )
+
+    private val shares = ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope)
 
     /** The voice message being recorded in the composer; null while there is none. */
     val voiceRecording: StateFlow<VoiceRecordingUiState?> get() = recorder.state
@@ -659,6 +673,7 @@ class ChatViewModel internal constructor(
         viewModelScope.launch(Dispatchers.Main) {
             composer.start()
             attachments.start()
+            shares.start()
             recorder.start()
             views.start()
             autoDownloads.start()
@@ -772,6 +787,7 @@ class ChatViewModel internal constructor(
     private fun setOpen(open: Boolean) {
         if (open == isOpen) return
         isOpen = open
+        onScreen.value = open
         if (!open) {
             composer.flush()
             playback.pause()

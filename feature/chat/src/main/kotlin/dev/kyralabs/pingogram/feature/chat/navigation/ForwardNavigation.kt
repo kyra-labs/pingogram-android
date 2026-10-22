@@ -31,7 +31,7 @@ fun NavGraphBuilder.forwardSheet(onClose: () -> Unit) {
 
 /** The dialog window holding this composition dims nothing behind it: the sheet's scrim is the only one. */
 @Composable
-private fun NoWindowDim() {
+internal fun NoWindowDim() {
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
     SideEffect {
         window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)

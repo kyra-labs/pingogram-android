@@ -115,9 +115,7 @@ class TdlibAttachmentRepository internal constructor(
         }
 
     /**
-     * `sendMessage` for a group of one and `sendMessageAlbum` for the others ([albumGroups]), one after the other in
-     * their order, with [options] and the caption on [captionIndex]'s attachment; only the first group replies to
-     * [replyToMessageId]. The first group TDLib refuses ends the send with its error.
+     * [sendAttachments]; the copies of the attachments TDLib did not accept are deleted, as nothing will send them.
      */
     override suspend fun send(
         chatId: Long,
@@ -126,27 +124,10 @@ class TdlibAttachmentRepository internal constructor(
         options: SendOptions,
         replyToMessageId: Long?,
     ): Outcome<Unit> {
-        val captioned = captionIndex(attachments)
-        val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
-        var sent = 0
-        for ((index, group) in albumGroups(attachments).withIndex()) {
-            val contents =
-                group.mapIndexed { offset, attachment ->
-                    attachment.toInputMessageContent(tdCaption.takeIf { sent + offset == captioned })
-                }
-            val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
-            val result =
-                if (contents.size == 1) {
-                    client.sendMessage(chatId, contents[0], options, replyTo)
-                } else {
-                    val all = contents.toTypedArray()
-                    client.request(TdApi.SendMessageAlbum(chatId, null, replyTo, options.toTdOptions(), all))
-                }
-            if (result is Outcome.Failure) {
-                discard(attachments.drop(sent))
-                return result
-            }
-            sent += group.size
+        val result = client.sendAttachments(chatId, attachments, caption, options, replyToMessageId)
+        result.failure?.let { failure ->
+            discard(attachments.drop(result.sent))
+            return failure
         }
         return Outcome.Success(Unit)
     }
@@ -197,6 +178,46 @@ class TdlibAttachmentRepository internal constructor(
         const val MAX_NAME_LENGTH = 64
     }
 }
+
+/**
+ * Sends [attachments] to chat [chatId]: `sendMessage` for a group of one and `sendMessageAlbum` for the others
+ * ([albumGroups]), one after the other in their order, with [options] and the caption on [captionIndex]'s attachment;
+ * only the first group replies to [replyToMessageId]. The first group TDLib refuses ends the send with its error. The
+ * copies are left as they are: those sent are TDLib's now (`UploadCleaner`), the others still the caller's.
+ */
+internal suspend fun TdlibClient.sendAttachments(
+    chatId: Long,
+    attachments: List<Attachment>,
+    caption: FormattedText,
+    options: SendOptions,
+    replyToMessageId: Long?,
+): AttachmentSend {
+    val captioned = captionIndex(attachments)
+    val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
+    var sent = 0
+    for ((index, group) in albumGroups(attachments).withIndex()) {
+        val contents =
+            group.mapIndexed { offset, attachment ->
+                attachment.toInputMessageContent(tdCaption.takeIf { sent + offset == captioned })
+            }
+        val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
+        val result =
+            if (contents.size == 1) {
+                sendMessage(chatId, contents[0], options, replyTo)
+            } else {
+                request(TdApi.SendMessageAlbum(chatId, null, replyTo, options.toTdOptions(), contents.toTypedArray()))
+            }
+        if (result is Outcome.Failure) return AttachmentSend(sent, result)
+        sent += group.size
+    }
+    return AttachmentSend(sent, failure = null)
+}
+
+/** What [sendAttachments] did: [sent] attachments TDLib accepted, in their order, then [failure], if any refused. */
+internal class AttachmentSend(
+    val sent: Int,
+    val failure: Outcome.Failure?,
+)
 
 /** `sendMessage` of [content] to [chatId] with [options], replying as [replyTo] says. */
 internal suspend fun TdlibClient.sendMessage(

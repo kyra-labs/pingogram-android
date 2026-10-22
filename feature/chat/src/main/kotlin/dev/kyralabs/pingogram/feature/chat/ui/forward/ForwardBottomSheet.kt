@@ -50,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -61,6 +62,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.ForwardEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LinkDialog
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ForwardPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -147,12 +150,24 @@ internal fun ColumnScope.ForwardContent(
     listState: LazyListState = rememberLazyListState(),
 ) {
     ForwardHeader(sheet)
-    SearchField(query)
+    ChatSearchField(query)
     Box(Modifier.weight(1f).fillMaxWidth()) {
         if (sheet.targets.isEmpty()) {
-            NoTargets(sheet)
+            NoTargets(
+                isLoading = sheet.isLoading,
+                isSearching = sheet.isSearching,
+                error = sheet.searchError,
+                noChats = stringResource(R.string.forward_no_chats),
+            )
         } else {
-            TargetList(sheet, listState, onEvent)
+            TargetList(
+                targets = sheet.targets,
+                selectedIds = sheet.selectedIds,
+                isSearching = sheet.isSearching,
+                listState = listState,
+                onToggle = { onEvent(ForwardEvent.ToggleTarget(it)) },
+                onLoadMore = { onEvent(ForwardEvent.LoadMore) },
+            )
         }
     }
     val motion = MaterialTheme.motionScheme
@@ -190,9 +205,9 @@ private fun ForwardHeader(sheet: ForwardSheet) {
     }
 }
 
-/** The search bar's input field on its container, with a clear button while there is text. */
+/** The search bar's input field on its container, with a clear button while there is text; also the share sheet's. */
 @Composable
-private fun SearchField(query: TextFieldState) {
+internal fun ChatSearchField(query: TextFieldState) {
     val spacing = MaterialTheme.spacing
     val hasText = query.text.isNotEmpty()
     val keyboard = LocalSoftwareKeyboardController.current
@@ -226,18 +241,23 @@ private fun SearchField(query: TextFieldState) {
 }
 
 /**
- * The chats, keyed by id; near the end of the chat list (not of search results, which come whole) the next page
- * loads, again whenever a page leaves the end near.
+ * The chats [targets], keyed by id, [selectedIds] picked, each toggled through [onToggle]; near the end of the chat
+ * list (not of search results, [isSearching], which come whole) the next page loads ([onLoadMore]), again whenever a
+ * page leaves the end near. Also the share sheet's.
  */
+@Suppress("LongParameterList") // The list, what is picked, and what the user does with it.
 @Composable
-private fun TargetList(
-    sheet: ForwardSheet,
+internal fun TargetList(
+    targets: ImmutableList<ForwardTarget>,
+    selectedIds: ImmutableSet<Long>,
+    isSearching: Boolean,
     listState: LazyListState,
-    onEvent: (ChatEvent) -> Unit,
+    onToggle: (chatId: Long) -> Unit,
+    onLoadMore: () -> Unit,
 ) {
-    val currentOnEvent by rememberUpdatedState(onEvent)
-    LaunchedEffect(listState, sheet.isSearching) {
-        if (sheet.isSearching) return@LaunchedEffect
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+    LaunchedEffect(listState, isSearching) {
+        if (isSearching) return@LaunchedEffect
         snapshotFlow {
             val layout = listState.layoutInfo
             val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
@@ -245,15 +265,15 @@ private fun TargetList(
             layout.totalItemsCount.takeIf { it > 0 && lastVisible >= it - 1 - LOAD_MORE_THRESHOLD }
         }.filterNotNull()
             .distinctUntilChanged()
-            .collect { currentOnEvent(ForwardEvent.LoadMore) }
+            .collect { currentOnLoadMore() }
     }
     val motion = MaterialTheme.motionScheme
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-        items(sheet.targets, key = { it.chatId }, contentType = { TARGET }) { target ->
+        items(targets, key = { it.chatId }, contentType = { TARGET }) { target ->
             ForwardTargetRow(
                 target = target,
-                selected = target.chatId in sheet.selectedIds,
-                onToggle = { onEvent(ForwardEvent.ToggleTarget(target.chatId)) },
+                selected = target.chatId in selectedIds,
+                onToggle = { onToggle(target.chatId) },
                 modifier =
                     Modifier.animateItem(
                         fadeInSpec = motion.defaultEffectsSpec(),
@@ -265,14 +285,21 @@ private fun TargetList(
     }
 }
 
-/** Why there are no chats: loading (after a short wait), the search failed or found none, or there are none. */
+/**
+ * Why there are no chats: loading (after a short wait), the search failed ([error]) or found none ([isSearching]), or
+ * there are none ([noChats] says so). Also the share sheet's.
+ */
 @Composable
-private fun NoTargets(sheet: ForwardSheet) {
+internal fun NoTargets(
+    isLoading: Boolean,
+    isSearching: Boolean,
+    error: DomainError?,
+    noChats: String,
+) {
     val spacing = MaterialTheme.spacing
     Box(Modifier.fillMaxSize().padding(spacing.extraLarge), contentAlignment = Alignment.Center) {
-        val error = sheet.searchError
         when {
-            sheet.isLoading -> {
+            isLoading -> {
                 DelayedLoadingIndicator()
             }
 
@@ -281,8 +308,8 @@ private fun NoTargets(sheet: ForwardSheet) {
                     text =
                         when {
                             error != null -> errorText(error)
-                            sheet.isSearching -> stringResource(R.string.forward_nothing_found)
-                            else -> stringResource(R.string.forward_no_chats)
+                            isSearching -> stringResource(R.string.forward_nothing_found)
+                            else -> noChats
                         },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

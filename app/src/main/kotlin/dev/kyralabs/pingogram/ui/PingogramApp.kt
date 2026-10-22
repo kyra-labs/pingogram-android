@@ -47,6 +47,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
 import dev.kyralabs.pingogram.link.LinkDispatcher
@@ -58,6 +59,7 @@ import dev.kyralabs.pingogram.navigation.isInMainGraph
 import dev.kyralabs.pingogram.navigation.navigateToTopLevelDestination
 import dev.kyralabs.pingogram.navigation.screenEntryAsState
 import dev.kyralabs.pingogram.navigation.topLevelDestination
+import dev.kyralabs.pingogram.share.IncomingShare
 
 /**
  * The app shell: the `NavHost` and the app's navigation (`docs/DESIGN_SYSTEM.md` §6–7). [uiState] decides between the
@@ -97,12 +99,16 @@ import dev.kyralabs.pingogram.navigation.topLevelDestination
  * ([LinkHandling]) opens a screen or shows a snackbar in the shell's own [SnackbarHost], above the floating navigation
  * bar's place and the keyboard.
  *
+ * What another app shares (`REQUIREMENTS.md` FR-N2, direct share) opens through [shares] the same way: [shareToOpen]
+ * once logged in (reported to [onShareOpened]), as the share sheet to pick chats or a Direct Share target's chat.
+ *
  * Tapping the tab that is already selected, in the floating bar or the rail, scrolls its screen back to the top: the
  * shell reports it through [tabReselection] ([LocalTabReselection]) instead of navigating.
  *
  * The selected tab comes from the back stack, so it survives rotation and process death along with the
  * `NavController` state, and stays right when back or a deep link changes the destination.
  */
+@Suppress("LongMethod") // The shell's one layout: navigation, content, floating bar, what opens from outside.
 @Composable
 fun PingogramApp(
     uiState: MainActivityUiState,
@@ -115,6 +121,9 @@ fun PingogramApp(
     links: LinkDispatcher? = null,
     linkToOpen: String? = null,
     onLinkOpened: () -> Unit = {},
+    shares: ShareInbox? = null,
+    shareToOpen: IncomingShare? = null,
+    onShareOpened: () -> Unit = {},
 ) {
     val currentEntry = navController.screenEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
@@ -175,7 +184,17 @@ fun PingogramApp(
                                     .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
                         )
                     }
-                    LinkHandling(links, uiState, navController, openSearch, linkToOpen, onLinkOpened)
+                    LinkHandling(
+                        links = links,
+                        uiState = uiState,
+                        navController = navController,
+                        onOpenSearch = openSearch,
+                        linkToOpen = linkToOpen,
+                        onLinkOpened = onLinkOpened,
+                        shares = shares,
+                        shareToOpen = shareToOpen,
+                        onShareOpened = onShareOpened,
+                    )
                 }
             }
         }

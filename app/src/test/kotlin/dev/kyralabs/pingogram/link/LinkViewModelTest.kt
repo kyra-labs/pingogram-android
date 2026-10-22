@@ -254,6 +254,21 @@ class LinkViewModelTest {
             assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
         }
 
+    @Test
+    fun `a message to share opens the share sheet, sending nothing`() =
+        runTest {
+            val text = TdApi.FormattedText("https://example.com\nLook", emptyArray())
+            linkType(TdApi.InternalLinkTypeMessageDraft(text, true))
+
+            viewModel.effects.test {
+                viewModel.open("https://t.me/share?url=https://example.com&text=Look")
+
+                val target = (awaitItem() as LinkEffect.Open).target as LinkTarget.MessageDraft
+                assertEquals("https://example.com\nLook", target.text.text)
+            }
+            assertEquals(listOf(TdApi.GetInternalLinkType::class.java), client.sent.map { it.javaClass })
+        }
+
     private companion object {
         const val LINK = "https://t.me/ada"
         const val USER = 42L

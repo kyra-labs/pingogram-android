@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.ChatLog
 import dev.kyralabs.pingogram.feature.chat.ui.attach.ReplyHandoff
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -46,6 +48,7 @@ import kotlinx.coroutines.launch
  *   at once, giving the composer back what it held, and sends the edit ([MessageActionRepository.editText] or
  *   `editCaption`, from [messageOf]'s message); nothing when the text did not change. A refused edit comes back, if
  *   the composer is still as the edit left it, with a snackbar. [cancelEdit] gives the composer back without editing.
+ * - **Shared text** ([addShared], direct share) joins the field once the chat's draft is known, for the user to send.
  * - **Process death**: the text, its formatting and the mode are kept in [savedState] on every change.
  *
  * Runs in [scope], the view model's, on the main thread like the text field, following the text and the drafts from
@@ -84,6 +87,9 @@ internal class ChatComposer(
     private val echoes = ArrayDeque<Pair<String, Long?>>()
 
     private var pendingSave: Job? = null
+
+    /** Completed once TDLib reported the chat's draft, which fills an empty field first ([addShared]). */
+    private val draftReported = CompletableDeferred<Unit>()
 
     /** Starts following the text (for [savedState] and the draft) and the chat's drafts, once. */
     fun start() {
@@ -318,6 +324,22 @@ internal class ChatComposer(
             reported.replyToMessageId?.let { setMode(ComposerMode.Replying(it)) }
             text.setContent(reported.text)
         }
+        draftReported.complete(Unit)
+    }
+
+    /**
+     * Puts [shared], a text shared into the chat (`REQUIREMENTS.md` FR-N2, direct share), into the field for the user
+     * to send, after what the field holds on a line of its own, once the chat's draft is known (so a draft still to
+     * fill the field is kept); an edit in progress ends first. Like typed text, it becomes the chat's draft.
+     */
+    fun addShared(shared: FormattedText) {
+        if (shared.text.isBlank()) return
+        scope.launch {
+            draftReported.await()
+            cancelEdit()
+            val current = text.content
+            text.setContent(if (current.text.isBlank()) shared else current.followedBy(shared))
+        }
     }
 
     private fun remember(draft: ComposerDraft) {
@@ -359,4 +381,11 @@ internal class ChatComposer(
         /** Saved drafts waiting for their echo, at most; older ones are forgotten (TDLib skipped them). */
         private const val MAX_ECHOES = 8
     }
+}
+
+/** This text, a line break, then [next], whose formatting moves along: shared text after what a field holds. */
+internal fun FormattedText.followedBy(next: FormattedText): FormattedText {
+    val offset = text.length + 1
+    val moved = next.entities.map { it.copy(offset = it.offset + offset) }
+    return FormattedText("$text\n${next.text}", (entities + moved).toImmutableList())
 }

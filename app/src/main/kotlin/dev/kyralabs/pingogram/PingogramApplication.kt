@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
+import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import javax.inject.Inject
 
@@ -34,6 +35,10 @@ class PingogramApplication :
     /** Shows TDLib's notifications in every process, the ones a notification action starts too. */
     @Inject
     lateinit var notificationRenderer: NotificationRenderer
+
+    /** Offers the most recent chats in the system's share sheet (Direct Share targets, FR-N2). */
+    @Inject
+    lateinit var shareTargetShortcuts: ShareTargetShortcuts
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -59,6 +64,8 @@ class PingogramApplication :
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
+        // Publishes the most recent chats as conversation shortcuts the share sheet lists, while logged in.
+        shareTargetShortcuts.start()
         // foss: starts or stops the "Keep connected" service as its setting and the login change; gms: registers the
         // push token with Telegram at every login and deletes it at logout.
         backgroundConnection.start()
