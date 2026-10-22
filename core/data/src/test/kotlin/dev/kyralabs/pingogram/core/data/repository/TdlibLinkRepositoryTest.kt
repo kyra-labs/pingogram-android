@@ -69,6 +69,53 @@ class TdlibLinkRepositoryTest {
         }
 
     @Test
+    fun `a bot's start link opens its chat with the start parameter, never started by itself`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeBotStart("helper_bot", "ref42", true))
+            // A private chat's id is its user's.
+            client.on(
+                TdApi.SearchPublicChat::class,
+                TdResult.Success(chat(id = USER, type = TdApi.ChatTypePrivate(USER))),
+            )
+            client.on(TdApi.GetUser::class, TdResult.Success(user(id = USER, type = TdApi.UserTypeBot())))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.BotStart(USER, USER, "ref42")),
+                repository.resolve("https://t.me/helper_bot?start=ref42"),
+            )
+            assertEquals("helper_bot", client.sentOf<TdApi.SearchPublicChat>().single().username)
+            assertTrue(client.sentOf<TdApi.SendBotStartMessage>().isEmpty())
+        }
+
+    @Test
+    fun `a start link to someone who is no bot is not found`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeBotStart("ada", "ref42", false))
+            client.on(
+                TdApi.SearchPublicChat::class,
+                TdResult.Success(chat(id = CHAT, type = TdApi.ChatTypePrivate(USER))),
+            )
+            client.on(TdApi.GetUser::class, TdResult.Success(user(id = USER)))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.NotFound(LinkSubject.Username)),
+                repository.resolve("https://t.me/ada?start=ref42"),
+            )
+        }
+
+    @Test
+    fun `a start link to a bot nobody has is not found`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeBotStart("gone_bot", "", false))
+            client.on(TdApi.SearchPublicChat::class, TdResult.Failure(TdError(400, "USERNAME_NOT_OCCUPIED")))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.NotFound(LinkSubject.Username)),
+                repository.resolve("https://t.me/gone_bot?start"),
+            )
+        }
+
+    @Test
     fun `a username with a text opens the person's chat with the text`() =
         runTest {
             linkType(TdApi.InternalLinkTypePublicChat("ada", "Hello", false))
@@ -455,7 +502,6 @@ class TdlibLinkRepositoryTest {
                 TdApi.InternalLinkTypeTheme(),
                 TdApi.InternalLinkTypeBackground(),
                 TdApi.InternalLinkTypeStickerSet(),
-                TdApi.InternalLinkTypeBotStart(),
                 TdApi.InternalLinkTypeWebApp(),
                 TdApi.InternalLinkTypeInvoice(),
                 TdApi.InternalLinkTypePassportDataRequest(),

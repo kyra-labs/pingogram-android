@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -51,6 +52,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PreviewDraft
 import dev.kyralabs.pingogram.feature.chat.ui.attach.attachOptions
 import dev.kyralabs.pingogram.feature.chat.ui.attach.isChannel
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotCommandsSheet
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.bot.ChatBotCommands
+import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bot.withBots
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerMode
@@ -189,6 +195,10 @@ import java.util.Locale
  * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
  *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
  *   [uiState] like the forward sheet).
+ * - **Bots** ([ChatBotCommands], `REQUIREMENTS.md` FR-C5): the commands of the chat's bots, in their sheet
+ *   ([botCommandsSheet]) and as suggestions while a command is typed ([commandSuggestions]), both kept out of [uiState]
+ *   like the forward sheet; a bot's menu button; and in a private chat with a bot its description while the chat is
+ *   empty ([ChatUiState.botIntro]) and "Start" ([ComposerUiState.BotStart]), also after a start link.
  * - **Forum topics** ([ChatThread], `REQUIREMENTS.md` FR-C9): with a [topic], the conversation is that topic's: its
  *   history, what is sent goes into it, its name in the header, its unread state, and its pins.
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
@@ -213,7 +223,11 @@ import java.util.Locale
  * destination and the detail pane of the Chats tab create it with their [chatId] (and the destination with its route's
  * [initialMessageId]) through [Factory].
  */
-@Suppress("LongParameterList")
+@Suppress(
+    "LongParameterList",
+    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands); this wires them.
+    "LargeClass",
+)
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ChatViewModel.Factory::class)
 class ChatViewModel internal constructor(
@@ -243,6 +257,8 @@ class ChatViewModel internal constructor(
     chatJoinRepository: ChatJoinRepository,
     threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
+    botInfoRepository: BotInfoRepository,
+    botStartInbox: BotStartInbox,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -275,6 +291,8 @@ class ChatViewModel internal constructor(
         chatJoinRepository: ChatJoinRepository,
         threadRepositories: ThreadRepositories,
         shareInbox: ShareInbox,
+        botInfoRepository: BotInfoRepository,
+        botStartInbox: BotStartInbox,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -304,6 +322,8 @@ class ChatViewModel internal constructor(
         chatJoinRepository,
         threadRepositories,
         shareInbox,
+        botInfoRepository,
+        botStartInbox,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -446,6 +466,27 @@ class ChatViewModel internal constructor(
         )
 
     private val joining = ChatJoining(chatId, chatJoinRepository, viewModelScope) { effectChannel.trySend(it) }
+
+    private val bots =
+        ChatBotCommands(
+            chatId = chatId,
+            repository = botInfoRepository,
+            users = userRepository,
+            chats = chatRepository,
+            messages = messageRepository,
+            composer = composer,
+            inbox = botStartInbox,
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+            log = log,
+        )
+
+    /** The bots' commands sheet; null while it is closed. Kept out of [uiState], like the forward sheet. */
+    val botCommandsSheet: StateFlow<BotCommandsSheet?> get() = bots.sheet
+
+    /** The commands suggested above the composer while one is typed; null while none is. Kept out of [uiState]. */
+    val commandSuggestions: StateFlow<CommandSuggestions?> get() = bots.suggestions
 
     /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
     val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
@@ -702,6 +743,7 @@ class ChatViewModel internal constructor(
             .combine(selection.state(history)) { state, selection -> state.copy(selection = selection) }
             .combine(reporting.sheet) { state, report -> state.copy(report = report) }
             .combine(sendAs.button) { state, sendAs -> state.withSendAs(sendAs) }
+            .combine(bots.state) { state, bots -> state.withBots(bots) }
             .combine(autoDownloads.state) { state, downloads -> state.copy(mediaDownloads = downloads) }
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
@@ -719,6 +761,7 @@ class ChatViewModel internal constructor(
             composer.start()
             attachments.start()
             shares.start()
+            bots.start()
             recorder.start()
             views.start()
             autoDownloads.start()
@@ -758,6 +801,7 @@ class ChatViewModel internal constructor(
             is SelectionEvent -> selectionEvents.onEvent(event)
             is VoiceEvent -> recorder.onEvent(event)
             is SendAsEvent -> sendAs.onEvent(event)
+            is BotEvent -> bots.onEvent(event)
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
             else -> onMessageEvent(event)

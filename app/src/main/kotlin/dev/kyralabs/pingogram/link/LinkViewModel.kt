@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.isWebLink
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -49,15 +50,18 @@ interface LinkDispatcher {
 /**
  * [LinkDispatcher] on [LinkRepository] (`docs/adr/0013-deep-links.md`): resolves one link at a time, a new one
  * replacing the one before, and turns the target into a screen to open or a notice ([LinkEffect]). A chat with a
- * suggested text gets it as its draft first, unless it has one ([LinkRepository.prefillDraft]); nothing is ever sent,
- * joined or confirmed here. Scoped to the activity, so a link being looked up survives rotation; nothing to restore
- * after process death, as the link is gone with the screen that tapped it (an intent is not handled again then).
+ * suggested text gets it as its draft first, unless it has one ([LinkRepository.prefillDraft]), and a bot's start link
+ * hands its parameter to the bot's conversation ([BotStartInbox]), whose "Start" sends it once tapped; nothing is ever
+ * sent, joined or confirmed here. Scoped to the activity, so a link being looked up survives rotation; nothing to
+ * restore after process death, as the link is gone with the screen that tapped it (an intent is not handled again
+ * then).
  */
 @HiltViewModel
 class LinkViewModel
     @Inject
     constructor(
         private val linkRepository: LinkRepository,
+        private val botStarts: BotStartInbox,
     ) : ViewModel(),
         LinkDispatcher {
         private val resolving = MutableStateFlow(false)
@@ -129,6 +133,7 @@ class LinkViewModel
                     if (target is LinkTarget.Chat) {
                         target.draftText?.let { linkRepository.prefillDraft(target.chatId, it) }
                     }
+                    if (target is LinkTarget.BotStart) botStarts.deliver(target.chatId, target.parameter)
                     LinkEffect.Open(target, fromOutside)
                 }
             }

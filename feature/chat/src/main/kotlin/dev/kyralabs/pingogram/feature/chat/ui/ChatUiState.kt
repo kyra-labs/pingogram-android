@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
@@ -46,6 +47,8 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property mediaDownloads whether the photos in the bubbles download by themselves on the current network, and the
  *   ones the user asked to download meanwhile.
  * @property pinnedBar the pinned messages bar over the messages (`REQUIREMENTS.md` FR-C9); null while there is none.
+ * @property botIntro what a private chat's bot shows while the chat is empty (`REQUIREMENTS.md` FR-C5); null for other
+ *   chats, and bots that show nothing.
  */
 @Immutable
 data class ChatUiState(
@@ -66,6 +69,7 @@ data class ChatUiState(
     val report: ReportSheet? = null,
     val mediaDownloads: MediaDownloads = MediaDownloads(),
     val pinnedBar: PinnedBar? = null,
+    val botIntro: BotIntro? = null,
 )
 
 /**

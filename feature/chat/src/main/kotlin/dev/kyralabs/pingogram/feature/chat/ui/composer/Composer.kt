@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +59,11 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.VoiceEvent
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotMenuButton
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartButton
+import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsArea
+import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
@@ -87,6 +94,11 @@ import java.time.Instant
  * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
  * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent]. In a public group or channel
  * the user is not in, a filled "Join" button takes the composer's place ([JoinButton], [onJoin]).
+ *
+ * Where the chat's bots offer commands or a menu ([bots]), their button starts the pill ([BotMenuButton]) and the
+ * attach "+" moves to its end, in the gallery's place; while a command is typed, the commands it starts show above
+ * the composer ([CommandSuggestionsArea]); in an empty bot chat, or one a start link opened, "Start" takes the
+ * composer's place ([BotStartButton]).
  */
 @Composable
 internal fun ChatBottomBar(
@@ -109,10 +121,12 @@ internal fun ChatBottomBar(
     onSendSticker: (Sticker) -> Unit = {},
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
+    bots: BotInput = BotInput(),
 ) {
     // Nothing in a channel the user only reads, or while the chat is not known.
     if (composer == ComposerUiState.Hidden) return
     val drag = remember { RecordDrag() }
+    val suggestionsState = remember { CommandSuggestionsState() }
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface) {
         when (composer) {
             is ComposerUiState.Unavailable -> {
@@ -121,6 +135,10 @@ internal fun ChatBottomBar(
 
             is ComposerUiState.Join -> {
                 JoinButton(composer, onJoin)
+            }
+
+            is ComposerUiState.BotStart -> {
+                BotStartButton(composer, bots.onStart)
             }
 
             is ComposerUiState.Available -> {
@@ -134,6 +152,7 @@ internal fun ChatBottomBar(
                             .wrapContentWidth()
                             .widthIn(max = MaterialTheme.sizes.bubbleMaxWidth),
                     ) {
+                        CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
                         BarArea(composer.bar, onShowBarMessage, onCloseBar)
                         Composer(
                             composer,
@@ -146,23 +165,13 @@ internal fun ChatBottomBar(
                             panelState,
                             now,
                             onSendAs,
+                            bots.onMenu,
+                            onFieldKey = suggestionsState.keysFor(bots),
                         )
                     }
-                    PanelArea(panelState) {
-                        EmojiPanel(
-                            state = panel,
-                            onEmoji = { emoji ->
-                                text.insert(emoji)
-                                onPanelEvent(EmojiPanelEvent.EmojiPicked(emoji))
-                            },
-                            onBackspace = text::deleteBackward,
-                            onSticker = onSendSticker,
-                            onEvent = onPanelEvent,
-                            modifier = Modifier.fillMaxSize(),
-                            // Not while editing: a sticker would be a new message.
-                            showStickers = composer.attachOptions.isNotEmpty(),
-                        )
-                    }
+                    // Not while editing: a sticker would be a new message.
+                    val stickers = composer.attachOptions.isNotEmpty()
+                    ComposerEmojiPanel(panelState, panel, text, onPanelEvent, onSendSticker, stickers)
                 }
             }
 
@@ -221,7 +230,8 @@ private fun BarArea(
  * [LinkDialog], a time from [ScheduleDialog]. Sending and saving confirm with a haptic (`HapticFeedbackType.Confirm`).
  * [focus] moves the focus to the text field. While it records, the recording bar ([RecordingBar]) takes the place of
  * the pill. Before the pill, the send-as avatar ([SendAsButton]) where the user can choose who they send as
- * ([onSendAs]).
+ * ([onSendAs]). The bot button opens the bots' commands or menu ([onBotMenu]); [onFieldKey] sees the field's keys
+ * first, for the command suggestions.
  */
 @Suppress("LongParameterList") // Its state and text, where sends and the focus go, and the attach buttons.
 @Composable
@@ -236,6 +246,8 @@ private fun Composer(
     panel: ComposerPanelState,
     now: () -> Instant = Instant::now,
     onSendAs: () -> Unit = {},
+    onBotMenu: () -> Unit = {},
+    onFieldKey: (KeyEvent) -> Boolean = { false },
 ) {
     val haptics = LocalHapticFeedback.current
     val edit = composer.bar as? ComposerBar.Edit
@@ -275,6 +287,8 @@ private fun Composer(
                 focusRequester = focusRequester,
                 canSend = canSend,
                 modifier = Modifier.weight(1f),
+                onBotMenu = onBotMenu,
+                onFieldKey = onFieldKey,
             )
         }
         ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
@@ -332,6 +346,10 @@ private fun RowScope.ComposerAction(
  * The composer's pill ([ComposerField] on `surfaceContainer`, one step above the bar's `surface`, as the top bar): the
  * attach "+" at its start where the chat takes attachments; the emoji button at its end, and the gallery while the
  * field is empty ([canSend] false) where the chat takes photos and the composer does not edit.
+ *
+ * Where the chat's bots offer commands or a menu ([ComposerUiState.Available.bot]), the bot button ([BotMenuButton],
+ * [onBotMenu]) takes the start and the "+" the gallery's place at the end, while the field is empty, so the field keeps
+ * the width it has in other chats; the gallery is the attach menu's first option.
  */
 @Suppress("LongParameterList") // The field's state, where its text and focus go, and its buttons.
 @Composable
@@ -346,7 +364,11 @@ private fun ComposerPill(
     focusRequester: FocusRequester,
     canSend: Boolean,
     modifier: Modifier = Modifier,
+    onBotMenu: () -> Unit = {},
+    onFieldKey: (KeyEvent) -> Boolean = { false },
 ) {
+    val bot = composer.bot
+    val canAttach = composer.attachOptions.isNotEmpty()
     val gallery = composer.bar !is ComposerBar.Edit && AttachOption.Gallery in composer.attachOptions
     ComposerField(
         text = text,
@@ -356,17 +378,43 @@ private fun ComposerPill(
         modifier = modifier.focusRequester(focusRequester),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         leadingIcons =
-            if (composer.attachOptions.isNotEmpty()) {
-                { AttachButton(attach.onAttach) }
-            } else {
-                null
+            when {
+                bot != null -> {
+                    { BotMenuButton(bot, onBotMenu) }
+                }
+
+                canAttach -> {
+                    { AttachButton(attach.onAttach) }
+                }
+
+                else -> {
+                    null
+                }
             },
         trailingIcons = {
             PanelButton(panel, focusRequester)
-            if (gallery) Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
+            when {
+                bot != null && canAttach -> Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
+                gallery -> Appearing(visible = !canSend) { GalleryButton(attach.onGallery) }
+            }
         },
+        onKeyEvent = onFieldKey,
     )
 }
+
+/**
+ * What the composer does with the chat's bots: the commands [suggestions] for the command being typed (null while
+ * none), sending one ([onSendCommand]) or putting it into the field ([onInsertCommand]), the bot button ([onMenu]) and
+ * "Start" ([onStart]).
+ */
+@Immutable
+internal class BotInput(
+    val suggestions: CommandSuggestions? = null,
+    val onSendCommand: (String) -> Unit = {},
+    val onInsertCommand: (String) -> Unit = {},
+    val onMenu: () -> Unit = {},
+    val onStart: () -> Unit = {},
+)
 
 /** What the attach buttons open: the attach menu ([onAttach]) and the system photo picker ([onGallery]). */
 private data class AttachInput(
