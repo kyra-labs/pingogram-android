@@ -20,6 +20,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -41,8 +42,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
 import dev.kyralabs.pingogram.language.contextInLanguage
 import dev.kyralabs.pingogram.language.inAppLanguageOf
+import dev.kyralabs.pingogram.link.LinkViewModel
+import dev.kyralabs.pingogram.link.linkOf
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
+import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,6 +81,12 @@ import javax.inject.Inject
  * already, through [onNewIntent] ([NotificationIntents.chatIdOf]). A restored activity (rotation, process death) does
  * not act on its old intent again: its restored back stack shows the chat already.
  *
+ * A Telegram link another app opens (`tg://`, `https://t.me/…`, the manifest's intent filters,
+ * `docs/adr/0013-deep-links.md`) arrives the same way ([linkOf]) and opens through [links] once the account is logged
+ * in and the app unlocked; signed out, after the login. The activity is `singleTask`, so a link from another app's task
+ * opens in Pingogram's own task and window, through [onNewIntent] when it runs, rather than in a second copy of the app
+ * above the other app. Reopened from the recent apps, its launching intent is not handled again.
+ *
  * The passcode lock (`REQUIREMENTS.md` FR-S1, [MainActivityViewModel.lock]) shows its lock screen instead of the app
  * ([LockableApp]); a chat a notification asked for opens only once it is unlocked. The activity tells the lock when the
  * app leaves the screen and comes back ([onStop], [onStart]), but not for a configuration change. While locked, the
@@ -94,6 +104,9 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
+
+    /** Opens Telegram links, from intents and tapped in the app; the activity's, so a lookup survives rotation. */
+    private val links: LinkViewModel by viewModels()
 
     /** Plays animated stickers in the conversation and the sticker panel ([LocalAnimatedStickers]). */
     @Inject
@@ -132,7 +145,7 @@ class MainActivity : ComponentActivity() {
         splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
         splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
         enableEdgeToEdge()
-        if (savedInstanceState == null) openChatOf(intent)
+        if (savedInstanceState == null) handle(intent)
         languageApplied = followAppLanguage()
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
@@ -142,6 +155,7 @@ class MainActivity : ComponentActivity() {
             if (settings != null && lock != LockState.Unknown && inAppLanguage) {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
+                val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
                 val locked = lock == LockState.Locked
                 val secureRequests = remember { SecureWindowRequests() }
@@ -150,6 +164,8 @@ class MainActivity : ComponentActivity() {
                     CompositionLocalProvider(
                         LocalAnimatedStickers provides animatedStickers,
                         LocalSecureWindow provides secureRequests,
+                        // Telegram links tapped in the app open in it (LinkUriHandler).
+                        LocalUriHandler provides rememberLinkUriHandler(links, uiState),
                     ) {
                         LockableApp(
                             locked = locked,
@@ -160,6 +176,9 @@ class MainActivity : ComponentActivity() {
                                 uiState = uiState,
                                 chatToOpen = chatToOpen,
                                 onChatOpened = viewModel::onChatOpened,
+                                links = links,
+                                linkToOpen = linkToOpen,
+                                onLinkOpened = viewModel::onLinkOpened,
                             )
                         }
                     }
@@ -205,7 +224,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        openChatOf(intent)
+        handle(intent)
     }
 
     /**
@@ -224,9 +243,13 @@ class MainActivity : ComponentActivity() {
             .stateIn(lifecycleScope, SharingStarted.Eagerly, initialValue = false)
     }
 
-    /** Opens the chat [intent] names, if it is a notification's or a conversation shortcut's. */
-    private fun openChatOf(intent: Intent?) {
+    /**
+     * Opens the chat [intent] names, if it is a notification's or a conversation shortcut's, or the Telegram link it
+     * views.
+     */
+    private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        linkOf(intent)?.let(viewModel::openLink)
     }
 
     /** [PingogramTheme] for [settings], with system bar icons that contrast with the theme it resolves to. */

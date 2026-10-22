@@ -137,6 +137,10 @@ light or dark theme.</sub>
   their names and numbers read and sent to Telegram, when you turn it on, open Contacts or tap
   Sync now, never in the background; turning it off deletes them from Telegram.
 - **Search** across your chats, contacts, public chats and channels, and messages.
+- **Telegram links:** `tg://`, `t.me`, `telegram.me` and `telegram.dog` links from other apps
+  and in messages open in Pingogram (usernames, phone numbers, message links, Saved Messages,
+  settings pages and more); on Android 12 and later, turn on "Open supported links" for
+  Pingogram (Settings → About → Open Telegram links) so `t.me` links skip the browser.
 - **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
   active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
   or face, notifications, appearance (system, light or dark theme, AMOLED black, dynamic color,

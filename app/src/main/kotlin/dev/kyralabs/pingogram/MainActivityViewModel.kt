@@ -23,9 +23,10 @@ import kotlin.time.TimeSource
 /**
  * Whether the account is logged in ([uiState]), from TDLib's login steps; the Appearance settings the app's theme
  * follows ([appearance]); whether the passcode lock holds the app ([lock], [hideContent]); how long the splash screen
- * stays ([keepSplashScreen]); and the chat a notification or a conversation shortcut asked to open ([chatToOpen]).
- * Nothing to restore after process death: TDLib reports the current step again, the settings are saved, a passcode
- * locks the app at every start, and the back stack restored after process death already holds an opened chat.
+ * stays ([keepSplashScreen]); the chat a notification or a conversation shortcut asked to open ([chatToOpen]); and the
+ * Telegram link another app opened Pingogram with ([linkToOpen]). Nothing to restore after process death: TDLib
+ * reports the current step again, the settings are saved, a passcode locks the app at every start, and the back stack
+ * restored after process death already holds an opened chat or link.
  */
 @HiltViewModel
 class MainActivityViewModel internal constructor(
@@ -86,6 +87,25 @@ class MainActivityViewModel internal constructor(
     /** The chat of [chatToOpen] was opened, or dropped because nobody is logged in. */
     fun onChatOpened() {
         mutableChatToOpen.value = null
+    }
+
+    private val mutableLinkToOpen = MutableStateFlow<String?>(null)
+
+    /**
+     * The Telegram link another app opened Pingogram with (`docs/adr/0013-deep-links.md`), until the app took it
+     * ([onLinkOpened]): once the account is logged in and the app unlocked. A link belongs to no account, so unlike
+     * [chatToOpen] it waits through the login flow and opens after logging in.
+     */
+    val linkToOpen: StateFlow<String?> = mutableLinkToOpen.asStateFlow()
+
+    /** Asks to open [link]; a later link replaces one not opened yet. */
+    fun openLink(link: String) {
+        mutableLinkToOpen.value = link
+    }
+
+    /** The link of [linkToOpen] was handed over to be opened. */
+    fun onLinkOpened() {
+        mutableLinkToOpen.value = null
     }
 
     /** The app left the screen, not for a configuration change: the passcode lock's auto-lock starts counting. */

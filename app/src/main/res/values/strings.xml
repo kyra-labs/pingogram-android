@@ -12,4 +12,20 @@
     <!-- The conversation pane beside the chat list on large screens, while no chat is open -->
     <string name="chats_no_chat_selected_title">Select a chat to start reading</string>
     <string name="chats_no_chat_selected_body">Its messages show here, beside your chats.</string>
+
+    <!-- Telegram links (tg://, t.me) opened from another app or tapped in the app (docs/adr/0013-deep-links.md) -->
+    <!-- Shown while a link is looked up for longer than a moment, with a button that stops it -->
+    <string name="link_opening">Opening link…</string>
+    <string name="link_opening_cancel">Cancel</string>
+    <string name="link_not_supported">Pingogram can\'t open this kind of link yet</string>
+    <!-- Links to invitations, QR code logins, boosts and messages to share, whose screens come later -->
+    <string name="link_not_yet">Pingogram can\'t open this link yet</string>
+    <string name="link_open_in_browser">Open in browser</string>
+    <string name="link_no_browser">No app on this device opens this link</string>
+    <!-- A link with a login code (t.me/login/…): Pingogram never enters it, as someone may be logging in with it -->
+    <string name="link_login_code">Pingogram never uses login codes from links. Don\'t share this code with anyone.</string>
+    <string name="link_not_found_username">No one has this username</string>
+    <string name="link_not_found_phone_number">No one on Telegram can be found by this phone number</string>
+    <string name="link_not_found_user_token">This contact link has expired</string>
+    <string name="link_not_found_message">This message isn\'t available</string>
 </resources>
