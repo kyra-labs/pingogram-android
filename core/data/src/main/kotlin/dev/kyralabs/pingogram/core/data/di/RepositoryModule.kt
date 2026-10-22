@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepos
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibInviteLinkRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
@@ -67,6 +68,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationReposito
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.InviteLinkRepository
+import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
@@ -222,4 +224,7 @@ interface RepositoryModule {
 
     @Binds
     fun autoDownloadPolicy(policy: DefaultAutoDownloadPolicy): AutoDownloadPolicy
+
+    @Binds
+    fun linkRepository(repository: TdlibLinkRepository): LinkRepository
 }

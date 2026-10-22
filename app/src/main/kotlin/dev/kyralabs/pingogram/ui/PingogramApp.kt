@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
+import dev.kyralabs.pingogram.link.LinkDispatcher
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import dev.kyralabs.pingogram.navigation.isFullScreen
@@ -90,6 +91,12 @@ import dev.kyralabs.pingogram.navigation.topLevelDestination
  * [chatToOpen] (from a notification) is opened above the chat list once the account is logged in, then reported to
  * [onChatOpened]; nobody logged in drops it ([PingogramNavHost]).
  *
+ * Telegram links (`docs/adr/0013-deep-links.md`) open through [links]: [linkToOpen], the one another app opened
+ * Pingogram with, once the account is logged in (reported to [onLinkOpened]), and every one tapped in the app, which
+ * the app's `LocalUriHandler` hands over ([rememberLinkUriHandler], provided by `MainActivity`). What comes of them
+ * ([LinkHandling]) opens a screen or shows a snackbar in the shell's own [SnackbarHost], above the floating navigation
+ * bar's place and the keyboard.
+ *
  * Tapping the tab that is already selected, in the floating bar or the rail, scrolls its screen back to the top: the
  * shell reports it through [tabReselection] ([LocalTabReselection]) instead of navigating.
  *
@@ -105,6 +112,9 @@ fun PingogramApp(
     tabReselection: TabReselection = remember { TabReselection() },
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
+    links: LinkDispatcher? = null,
+    linkToOpen: String? = null,
+    onLinkOpened: () -> Unit = {},
 ) {
     val currentEntry = navController.screenEntryAsState()
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
@@ -127,7 +137,6 @@ fun PingogramApp(
     val floatingBar = adaptiveType == NavigationSuiteType.ShortNavigationBarCompact
     // The space the floating bar takes on the tabs; a screen may hide the bar itself there, never its space.
     val floatingBarSpace = inMainGraph && floatingBar
-    val floatingBarSlot = showNavigation && floatingBar && currentTab != null
     val showRail = showNavigation && !floatingBar
     val search = rememberGlobalSearchState()
     val searchOpen by rememberSearchOpen(navController, search)
@@ -152,7 +161,7 @@ fun PingogramApp(
                     // Compact windows only: composed there even while hidden (FloatingNavigationBar).
                     if (floatingBar) {
                         FloatingNavigationBar(
-                            visible = floatingBarSlot && !navigationBarVisibility.isHidden,
+                            visible = showNavigation && currentTab != null && !navigationBarVisibility.isHidden,
                             selected = barTab,
                             // The bar shows only on a tab itself.
                             onSelect = { navController.selectTab(it, currentTab, tabReselection) },
@@ -166,6 +175,7 @@ fun PingogramApp(
                                     .padding(bottom = FloatingToolbarDefaults.ScreenOffset),
                         )
                     }
+                    LinkHandling(links, uiState, navController, openSearch, linkToOpen, onLinkOpened)
                 }
             }
         }

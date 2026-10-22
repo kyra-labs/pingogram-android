@@ -364,6 +364,10 @@
     <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>
     <string name="settings_about_licenses">Open-source licenses</string>
     <string name="settings_about_licenses_summary">Libraries, fonts and icons</string>
+    <!-- Android 12+: opens Android's "Open by default" settings, where "Open supported links" lets Pingogram open
+         t.me links instead of the browser (docs/adr/0013-deep-links.md) -->
+    <string name="settings_about_open_links">Open Telegram links</string>
+    <string name="settings_about_open_links_summary">Let Pingogram open t.me links: turn on \"Open supported links\" in Android\'s settings</string>
 
     <!-- Open-source licenses (FR-S1, About) -->
     <!-- Spoken by screen readers for the progress indicator while the list of libraries loads. -->

@@ -188,8 +188,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   closes. Back pops that `NavHost` first, then the navigator closes the page. Both list-detail layouts share their pane
   parts from `core:ui` (`ListDetailPanes.kt`: the rounded pane container, the drag handle and its anchors, following
   the window's directive, showing a detail in place of another).
-- Deep links: `tg://`, `https://t.me/...`, `https://telegram.me/...` resolved through
-  TDLib `getInternalLinkType` in a `LinkRouter` and dispatched to routes.
+- Deep links (`docs/adr/0013-deep-links.md`): `tg://` and `http(s)://` links to `t.me` (and its subdomains),
+  `telegram.me` and `telegram.dog`. `core:domain`'s `LinkRepository.resolve(link)` (`TdlibLinkRepository`, `core:data`,
+  no cache) is the one entry point: `getInternalLinkType`, then the lookup the kind needs (`searchPublicChat`,
+  `searchUserByPhoneNumber`, `searchUserByToken`, `getMessageLinkInfo`, Saved Messages through `getMe`), into a
+  `LinkTarget` (a chat at a message with an optional draft, a profile, a chat's info, a page of the app, the targets of
+  screens still to come: an invitation, a QR login, a boost, a message to share; not found; a login code; unsupported).
+  `:app`'s `LinkViewModel` (a `LinkDispatcher`, scoped to the activity, one link at a time) turns it into a
+  `LinkEffect`: a screen, which `PingogramApp` opens (`openLinkTarget`, `LinkNavigation.kt`), or a notice in the shell's
+  own `SnackbarHost` ("Opening link…" with Cancel after 200 ms, "Open in browser" for web links it does not open, which
+  targets a browser and never Pingogram). Links arrive from `MainActivity`'s browsable `VIEW` filters (not App Links
+  verified; `singleTask`, `linkOf`), kept in `MainActivityViewModel.linkToOpen` through the login and the passcode lock
+  and handed over by `OpenLinkEffect` once the main graph shows; and from taps in the app, through the app's
+  `LocalUriHandler` (`LinkUriHandler`, provided by `MainActivity`), which every feature already opens links with, so messages, bios, descriptions
+  and sponsored messages need no hook of their own. Other links keep going to the system's handler. Mentions
+  (`@username`) keep their own `searchPublicChat` path.
 - Predictive back: `PredictiveBackHandler` for the media viewer, attach sheet and selection
   mode; everything else relies on Navigation's built-in support, with the `NavHost`'s predictive
   pop transitions from `core:ui` (`docs/DESIGN_SYSTEM.md` §5).

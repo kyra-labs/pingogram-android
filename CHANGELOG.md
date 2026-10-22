@@ -54,6 +54,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   do and set slow mode; promote members to admins and choose their rights, restrict, remove or let back removed
   users, one person at a time; and manage invite links: create links with a name, an expiry, a member limit or admin
   approval, edit, revoke and delete them.
+- Telegram links open in Pingogram: `tg://` links, and `t.me`, `telegram.me` and `telegram.dog` links from other apps
+  or tapped in messages, bios and sponsored messages. A username opens the person's profile, or the chat of a bot,
+  group or channel; a phone number or contact link the person's profile; a message link the chat at that message;
+  links to Saved Messages, Contacts, Settings and its pages, Edit profile, New chat and search open those screens. A
+  link with a suggested text puts it in the chat's composer, never sending it. Links Pingogram can't open yet say so,
+  and web links among them offer "Open in browser". Pingogram never uses login codes from links. A link opened while
+  you are signed out opens once you've logged in, and one opened while the app is locked after you unlock it. On
+  Android 12 and later, Settings → About → "Open Telegram links" lets Pingogram open `t.me` links instead of the
+  browser.
 
 ### Changed
 - Pingogram starts faster right after installing, about a quarter faster from cold: it now ships a Baseline Profile, so

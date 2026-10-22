@@ -1,5 +1,12 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
@@ -26,7 +34,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The About page: hoists [AboutViewModel] and opens the links it asks for. [onOpenLicenses] opens the open-source
- * licenses; [onBack] leaves the page.
+ * licenses; [onBack] leaves the page. On Android 12 and later, "Open Telegram links" opens Android's "Open by default"
+ * settings of the app ([openLinkSettings]), where the user lets Pingogram open `t.me` links
+ * (`docs/adr/0013-deep-links.md`); before 12, Android asks which app opens them anyway.
  */
 @Composable
 internal fun AboutRoute(
@@ -37,6 +47,13 @@ internal fun AboutRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val onOpenLinkSettings =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            { context.openLinkSettings() }
+        } else {
+            null
+        }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -50,14 +67,34 @@ internal fun AboutRoute(
         onOpenLicenses = onOpenLicenses,
         onBack = onBack,
         modifier = modifier,
+        onOpenLinkSettings = onOpenLinkSettings,
     )
+}
+
+/**
+ * Android's "Open by default" settings of the app, where "Open supported links" lets it open `t.me` links: they cannot
+ * be verified App Links, which only Telegram could publish. The app's details if a system has no such page.
+ */
+@RequiresApi(Build.VERSION_CODES.S)
+private fun Context.openLinkSettings() {
+    val app = Uri.fromParts("package", packageName, null)
+    try {
+        startActivity(Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, app))
+    } catch (_: ActivityNotFoundException) {
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app))
+        } catch (_: ActivityNotFoundException) {
+            // No settings app to open; nothing else to do.
+        }
+    }
 }
 
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): the logo in the theme's `primary`, the app and its version, its source
  * code on GitHub (opened in the browser), its license, the open-source licenses of what it is built from
- * ([onOpenLicenses]), and the statement that it is an unofficial client, not
- * affiliated with Telegram, as Telegram's API terms require of third-party apps (`CLAUDE.md` rule 3).
+ * ([onOpenLicenses]), "Open Telegram links" in Android's settings where they have it ([onOpenLinkSettings], null
+ * where they do not), and the statement that it is an unofficial client, not affiliated with Telegram, as Telegram's
+ * API terms require of third-party apps (`CLAUDE.md` rule 3).
  */
 @Composable
 internal fun AboutScreen(
@@ -66,19 +103,10 @@ internal fun AboutScreen(
     onOpenLicenses: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenLinkSettings: (() -> Unit)? = null,
 ) {
     SettingsPageScaffold(title = stringResource(R.string.settings_about), onBack = onBack, modifier = modifier) {
-        Image(
-            painter = painterResource(UiR.drawable.logo_pingogram),
-            // The app's name, which the logo spells; the row below names the app again with its version.
-            contentDescription = stringResource(R.string.settings_about_app_name),
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = MaterialTheme.spacing.extraLarge)
-                    .wrapContentWidth(),
-        )
+        AboutLogo()
         SettingsGroup(title = stringResource(R.string.settings_section_app)) {
             item { shapes ->
                 SettingsRow(
@@ -118,6 +146,7 @@ internal fun AboutScreen(
                     onClick = onOpenLicenses,
                 )
             }
+            if (onOpenLinkSettings != null) openTelegramLinksItem(onOpenLinkSettings)
         }
         Text(
             text = stringResource(R.string.settings_about_unofficial),
@@ -127,6 +156,38 @@ internal fun AboutScreen(
         )
     }
 }
+
+/** Pingogram's logo in the theme's `primary`, centred above the page's rows. */
+@Composable
+private fun AboutLogo() {
+    Image(
+        painter = painterResource(UiR.drawable.logo_pingogram),
+        // The app's name, which the logo spells; the row below names the app again with its version.
+        contentDescription = stringResource(R.string.settings_about_app_name),
+        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = MaterialTheme.spacing.extraLarge)
+                .wrapContentWidth(),
+    )
+}
+
+/** "Open Telegram links" (Android 12+), which opens Android's "Open by default" settings of the app ([onClick]). */
+private fun SettingsGroupScope.openTelegramLinksItem(onClick: () -> Unit) =
+    item { shapes ->
+        SettingsRow(
+            title = stringResource(R.string.settings_about_open_links),
+            shapes = shapes,
+            icon = UiR.drawable.ic_link,
+            supportingContent = { Text(stringResource(R.string.settings_about_open_links_summary)) },
+            trailingContent = {
+                // Says that the row leaves the app; the row's text names it.
+                Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null)
+            },
+            onClick = onClick,
+        )
+    }
 
 /** Opens [uri] in the app that handles it, the browser for a web address, if there is one. */
 internal fun UriHandler.tryOpen(uri: String) {
@@ -141,6 +202,12 @@ internal fun UriHandler.tryOpen(uri: String) {
 @Composable
 private fun AboutScreenPreview() {
     PingogramPreview {
-        AboutScreen(state = AboutUiState(versionName = "0.3.0"), onEvent = {}, onOpenLicenses = {}, onBack = {})
+        AboutScreen(
+            state = AboutUiState(versionName = "0.3.0"),
+            onEvent = {},
+            onOpenLicenses = {},
+            onBack = {},
+            onOpenLinkSettings = {},
+        )
     }
 }

@@ -36,6 +36,8 @@ import org.robolectric.annotation.Config
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
  * themed icons. The locale config lists the shipped languages for Android 13+'s per-app language settings.
+ * Telegram links (`tg:`, `t.me`, `telegram.me`, `telegram.dog`) open in the single-task main activity through browsable
+ * view filters that are not App Links verified (docs/adr/0013-deep-links.md): Telegram owns those domains.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -197,6 +199,40 @@ class AppManifestTest {
         val application = mergedManifest().elements("application").single()
 
         assertEquals("@xml/locales_config", application.androidAttribute("localeConfig"))
+    }
+
+    @Test
+    fun `Telegram links open in the main activity, without App Links verification`() {
+        val activity =
+            mergedManifest()
+                .elements("activity")
+                .single { it.androidAttribute("name") == "dev.kyralabs.pingogram.MainActivity" }
+        val views =
+            activity.elements("intent-filter").filter { filter ->
+                filter.elements("action").any { it.androidAttribute("name") == "android.intent.action.VIEW" }
+            }
+        val filters =
+            views.map { filter ->
+                val categories = filter.elements("category").map { it.androidAttribute("name") }.toSet()
+                val data = filter.elements("data")
+                Triple(
+                    categories,
+                    data.map { it.androidAttribute("scheme") }.filter { it.isNotEmpty() }.toSet(),
+                    data.map { it.androidAttribute("host") }.filter { it.isNotEmpty() }.toSet(),
+                )
+            }
+        val browsable = setOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE")
+
+        assertEquals("singleTask", activity.androidAttribute("launchMode"))
+        assertEquals(
+            setOf(
+                Triple(browsable, setOf("tg"), emptySet()),
+                Triple(browsable, setOf("https", "http"), setOf("t.me", "*.t.me", "telegram.me", "telegram.dog")),
+            ),
+            filters.toSet(),
+        )
+        // Said explicitly, as Lint asks of browsable http(s) filters that are not App Links.
+        assertEquals(listOf("", "false"), views.map { it.androidAttribute("autoVerify") }.sorted())
     }
 
     private companion object {

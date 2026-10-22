@@ -97,13 +97,38 @@
         android:theme="@style/Theme.Pingogram.Starting"
         tools:targetApi="tiramisu">
 
+        <!-- singleTask: a Telegram link from another app opens in Pingogram's own task, through onNewIntent when it runs,
+             not in a second copy of the app inside the other app's task (docs/adr/0013-deep-links.md). -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Telegram's app links, tg://resolve?domain=… and the like, which only Telegram clients open. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tg" />
+            </intent-filter>
+            <!-- Telegram's web links, t.me/username and the like. Not verified as App Links (autoVerify false): only
+                 Telegram can publish the assetlinks.json of its domains, so from Android 12 on these open in the
+                 browser unless the user lets Pingogram open them ("Open supported links" in Android's settings for the
+                 app; Settings → About → Open Telegram links). TDLib reads the link (getInternalLinkType). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:scheme="http" />
+                <data android:host="t.me" />
+                <data android:host="*.t.me" />
+                <data android:host="telegram.me" />
+                <data android:host="telegram.dog" />
             </intent-filter>
         </activity>
 
