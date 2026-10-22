@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -151,21 +150,11 @@ private fun codeDescription(
         }
 
         is AuthCodeType.SmsWord -> {
-            withStart(
-                type.firstLetter,
-                R.string.auth_code_sent_sms_word,
-                R.string.auth_code_sent_sms_word_start,
-                phoneNumber,
-            )
+            stringResource(R.string.auth_code_sent_sms_word, phoneNumber) + firstPartHint(type.firstLetter)
         }
 
         is AuthCodeType.SmsPhrase -> {
-            withStart(
-                type.firstWord,
-                R.string.auth_code_sent_sms_phrase,
-                R.string.auth_code_sent_sms_phrase_start,
-                phoneNumber,
-            )
+            stringResource(R.string.auth_code_sent_sms_phrase, phoneNumber) + firstPartHint(type.firstWord)
         }
 
         is AuthCodeType.Call -> {
@@ -195,19 +184,9 @@ private fun codeDescription(
         }
     }
 
-/** [withoutStart] for [phoneNumber], or [withStart] naming the code's [start] too where Telegram tells it. */
 @Composable
-private fun withStart(
-    start: String,
-    @StringRes withoutStart: Int,
-    @StringRes withStart: Int,
-    phoneNumber: String,
-): String =
-    if (start.isBlank()) {
-        stringResource(withoutStart, phoneNumber)
-    } else {
-        stringResource(withStart, phoneNumber, start.bidiIsolated())
-    }
+private fun firstPartHint(start: String): String =
+    if (start.isBlank()) "" else " " + stringResource(R.string.auth_code_sent_starts_with, start.bidiIsolated())
 
 @Composable
 private fun resendText(type: AuthCodeType): String =

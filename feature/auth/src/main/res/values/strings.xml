@@ -16,7 +16,7 @@
     <string name="auth_privacy_policy">Privacy Policy</string>
 
     <!-- Welcome (FR-A1) -->
-    <string name="auth_welcome_title" translatable="false">Pingogram</string>
+    <string name="auth_welcome_title">Pingogram</string>
     <string name="auth_welcome_tagline">A fast, private Telegram client for Android.</string>
     <string name="auth_welcome_disclaimer">Pingogram is an independent, open-source app. It isn\'t made by Telegram.</string>
     <string name="auth_start_messaging">Start messaging</string>
@@ -42,10 +42,8 @@
     <string name="auth_code_sent_sms">We sent an SMS with the code to %1$s.</string>
     <string name="auth_code_sent_sms_word">We sent an SMS with a code word to %1$s.</string>
     <string name="auth_code_sent_sms_phrase">We sent an SMS with a code phrase to %1$s.</string>
-    <!-- The same, when Telegram tells the start of the code: %1$s the phone number, %2$s the code word's first letters or
-         the code phrase's first word. One sentence each, so languages can order the parts as they need. -->
-    <string name="auth_code_sent_sms_word_start">We sent an SMS with a code word to %1$s. It starts with “%2$s”.</string>
-    <string name="auth_code_sent_sms_phrase_start">We sent an SMS with a code phrase to %1$s. It starts with “%2$s”.</string>
+    <!-- %1$s: the first letters or the first word of the code. -->
+    <string name="auth_code_sent_starts_with">It starts with “%1$s”.</string>
     <string name="auth_code_sent_call">We\'re calling %1$s. Enter the code you hear.</string>
     <string name="auth_code_sent_flash_call">We\'re calling %1$s. Enter the number that calls you.</string>
     <!-- %2$s: the beginning of the calling number; %3$d: how many of its last digits make the code. -->

@@ -33,7 +33,6 @@ import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
-import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.profile.R
@@ -146,7 +145,7 @@ private fun Modifier.memberSemantics(
 ): Modifier =
     semantics {
         contentDescription =
-            spokenList(resources, listOf(name, item.status?.resolve(resources), item.role?.resolve(resources)))
+            listOfNotNull(name, item.status?.resolve(resources), item.role?.resolve(resources)).joinToString(", ")
         if (onAction != null && actions.isNotEmpty()) {
             customActions =
                 actions.map { action ->

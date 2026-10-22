@@ -236,9 +236,6 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - English source strings; RTL layouts verified (Arabic/Hebrew); per-app language selector;
   plurals via ICU; dates via `java.time` + `DateTimeFormatter` localized; numbers via
   `NumberFormat`. Telegram's own translations (`getLanguagePackStrings`) considered later.
-- Translations come from Hosted Weblate (owner decision 2026-10-22), never machine-translated into the repository; a
-  language ships once it covers 80% of the strings (`docs/TRANSLATING.md`). Pseudo-locales `en-XA` and `ar-XB` in debug
-  builds check long text and right to left.
 
 ### 6.5 Reliability
 
@@ -263,8 +260,7 @@ Every screen must satisfy this list before merge:
 - [ ] Foreground services declare `foregroundServiceType`
 - [ ] Per-app language, large-screen keyboard/mouse support, state restoration (rotation, process death)
 - [ ] Accessibility (§6.3), haptics via `HapticFeedbackType`, no custom vibration patterns > 50 ms
-- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `ExtraTranslation` fatal (`MissingTranslation`
-      informational: a language ships at 80% translated, `docs/adr/0020-translations-on-weblate.md`)
+- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `MissingTranslation` fatal
 - [ ] Performance budgets in `docs/PERFORMANCE.md` met for the screen
 - [ ] Android 16 Live Updates (`ProgressStyle` notification) for long uploads/downloads where available
 

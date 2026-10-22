@@ -33,10 +33,9 @@ import javax.inject.Singleton
 /**
  * [AppLanguageRepository] on Android's per-app language from Android 13 ([LocaleManager], which Android's settings
  * share), and on [DataStoreLanguagePreference] before, where the app applies the language itself ([InAppLanguage],
- * `MainActivity`). The languages it ships are those of the generated `res/xml/locales_config.xml`
- * (`pingogram.android.locales`, `docs/TRANSLATING.md`), which Android 13+ lists in its settings too
- * (`android:localeConfig`), and which the build packages resources for (`localeFilters`), read once on the IO
- * dispatcher.
+ * `MainActivity`). The languages it ships are those of `res/xml/locales_config.xml`, which Android 13+ lists in its
+ * settings too (`android:localeConfig`), and which the build packages resources for (`localeFilters`), read once on
+ * the IO dispatcher.
  */
 @Singleton
 class PlatformAppLanguageRepository

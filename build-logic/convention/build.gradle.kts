@@ -75,10 +75,6 @@ gradlePlugin {
             id = libs.plugins.pingogram.android.gms.pluginId
             implementationClass = "AndroidGmsConventionPlugin"
         }
-        register("androidLocales") {
-            id = libs.plugins.pingogram.android.locales.pluginId
-            implementationClass = "AndroidLocalesConventionPlugin"
-        }
         register("androidHilt") {
             id = libs.plugins.pingogram.android.hilt.pluginId
             implementationClass = "AndroidHiltConventionPlugin"

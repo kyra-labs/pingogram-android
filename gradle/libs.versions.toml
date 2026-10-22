@@ -53,6 +53,8 @@ detekt = "1.23.8"
 # :app applies it only when the file exists (pingogram.android.gms, docs/adr/0004-push-delivery.md).
 googleServices = "4.5.0"
 gradleVersionsPlugin = "0.54.0"
+# Gradle Play Publisher: the optional upload of release.yml's Play bundle (docs/PLAY_STORE.md §7).
+gradlePlayPublisher = "4.1.1"
 hilt = "2.60.1"
 # javax.inject annotations (@Qualifier for core:common's @Dispatcher); the API's only release
 javaxInject = "1"
@@ -192,6 +194,7 @@ android-test = { id = "com.android.test", version.ref = "androidGradlePlugin" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxBenchmark" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "gradlePlayPublisher" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -208,7 +211,6 @@ pingogram-android-gms = { id = "pingogram.android.gms" }
 pingogram-android-hilt = { id = "pingogram.android.hilt" }
 pingogram-android-library = { id = "pingogram.android.library" }
 pingogram-android-licenses = { id = "pingogram.android.licenses" }
-pingogram-android-locales = { id = "pingogram.android.locales" }
 pingogram-android-lint = { id = "pingogram.android.lint" }
 pingogram-android-roborazzi = { id = "pingogram.android.roborazzi" }
 pingogram-android-test = { id = "pingogram.android.test" }

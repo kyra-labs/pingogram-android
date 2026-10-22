@@ -254,7 +254,4 @@
     <string name="pane_extra_width_medium">Medium</string>
     <string name="pane_extra_width_wide">Wide</string>
     <string name="pane_extra_width_next">Change width</string>
-    <!-- What separates the parts of a description screen readers read as one ("Alice, online, Admin"): a comma and a
-         space in English. The quotes keep the space; translate the punctuation inside them. -->
-    <string name="list_separator">", "</string>
 </resources>

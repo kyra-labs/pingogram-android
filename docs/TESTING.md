@@ -53,8 +53,8 @@ saying why.
 - `PingogramHardcodedToken` (`build-logic/detekt-rules`) fails `:feature:*` production code that uses
   literal colors, `sp`/`dp` values (except `0.dp`), corner shapes or animation specs instead of the
   `MaterialTheme` tokens (`docs/DESIGN_SYSTEM.md` §1). Test sources and `core`/`app` are not checked.
-- Android Lint: every warning is an error; `NewApi`, `UnusedResources` and `ExtraTranslation` are
-  fatal, `MissingTranslation` informational (a language ships at 80% translated, `docs/TRANSLATING.md`). Checks that do not fit the project are disabled, each with its reason, in
+- Android Lint: every warning is an error; `NewApi`, `UnusedResources` and `MissingTranslation` are
+  fatal. Checks that do not fit the project are disabled, each with its reason, in
   `AndroidLintConventionPlugin`.
 
 ## Test DC accounts

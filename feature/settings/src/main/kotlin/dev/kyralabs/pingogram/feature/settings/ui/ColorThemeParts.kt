@@ -1,6 +1,5 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,8 +29,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,8 +45,6 @@ import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The parts of the Theme page (docs/DESIGN_SYSTEM.md §6, "Color themes"): the chips and the live preview.
@@ -190,7 +184,7 @@ private fun PreviewChatRow() {
             verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
         ) {
             Text(
-                sampleTime(),
+                stringResource(R.string.settings_color_theme_sample_time),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.primary,
             )
@@ -198,22 +192,6 @@ private fun PreviewChatRow() {
         }
     }
 }
-
-/**
- * The preview's time, 9:41, as the user's language and clock write times ("9:41 AM", "9.41", "09:41"): the platform's
- * pattern, as the chat list's times (`TimePatterns`), not java.time's, whose patterns change between JDKs.
- */
-@Composable
-private fun sampleTime(): String {
-    val locale = LocalConfiguration.current.locales[0]
-    val is24HourClock = DateFormat.is24HourFormat(LocalContext.current)
-    return remember(locale, is24HourClock) {
-        val pattern = DateFormat.getBestDateTimePattern(locale, if (is24HourClock) "Hm" else "hm")
-        DateTimeFormatter.ofPattern(pattern, locale).format(SampleTime)
-    }
-}
-
-private val SampleTime = LocalTime.of(9, 41)
 
 /** One bubble of [ThemePreview]: outgoing on `primaryContainer` at the end, incoming on `surfaceContainerHigh`. */
 @Composable
