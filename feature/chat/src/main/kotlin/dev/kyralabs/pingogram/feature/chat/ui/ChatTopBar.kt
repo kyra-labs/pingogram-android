@@ -207,13 +207,7 @@ private fun ChatTitle(
             size = MaterialTheme.sizes.avatarSmall,
             // It grows into the profile or info page the title opens (docs/DESIGN_SYSTEM.md §5).
             modifier =
-                Modifier.avatarTransform(
-                    when {
-                        userId != null && onOpenProfile != null -> AvatarTransformKey.profile(userId)
-                        openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
-                        else -> null
-                    },
-                ),
+                Modifier.avatarTransform(avatarTransformKey(userId.takeIf { onOpenProfile != null }, openInfo, header)),
             placeholderIcon = header.placeholderIcon,
         )
         Column {
@@ -331,3 +325,15 @@ private fun SubtitleText(
         style = style,
     )
 }
+
+/** The key of the title's avatar transform: into [profileUserId]'s profile, else the info page [openInfo] opens. */
+private fun avatarTransformKey(
+    profileUserId: Long?,
+    openInfo: ((chatId: Long) -> Unit)?,
+    header: ChatHeader,
+): AvatarTransformKey? =
+    when {
+        profileUserId != null -> AvatarTransformKey.profile(profileUserId)
+        openInfo != null -> AvatarTransformKey.chatInfo(header.chatId)
+        else -> null
+    }

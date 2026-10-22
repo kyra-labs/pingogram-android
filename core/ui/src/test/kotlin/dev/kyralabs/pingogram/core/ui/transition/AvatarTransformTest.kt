@@ -54,22 +54,25 @@ class AvatarTransformTest {
 
     @Test
     fun `in the scopes the avatar shares its bounds`() {
-        assertNotSame(base, transformed(inScopes = true) { avatarTransform(AvatarTransformKey.profile(USER)) })
+        assertNotSame(base, base.transformed(inScopes = true) { avatarTransform(AvatarTransformKey.profile(USER)) })
     }
 
     @Test
     fun `in the scopes the page shares its bounds`() {
-        assertNotSame(base, transformed(inScopes = true) { avatarTransformTarget(AvatarTransformKey.profile(USER)) })
+        assertNotSame(
+            base,
+            base.transformed(inScopes = true) { avatarTransformTarget(AvatarTransformKey.profile(USER)) },
+        )
     }
 
     @Test
     fun `a title that opens nothing shares nothing`() {
-        assertSame(base, transformed(inScopes = true) { avatarTransform(null) })
+        assertSame(base, base.transformed(inScopes = true) { avatarTransform(null) })
     }
 
     @Test
     fun `outside the scopes nothing is shared`() {
-        assertSame(base, transformed(inScopes = false) { avatarTransform(AvatarTransformKey.profile(USER)) })
+        assertSame(base, base.transformed(inScopes = false) { avatarTransform(AvatarTransformKey.profile(USER)) })
     }
 
     @Test
@@ -77,7 +80,7 @@ class AvatarTransformTest {
         setAnimatorDurationScale(0f)
         check(!ValueAnimator.areAnimatorsEnabled())
 
-        assertSame(base, transformed(inScopes = true) { avatarTransform(AvatarTransformKey.profile(USER)) })
+        assertSame(base, base.transformed(inScopes = true) { avatarTransform(AvatarTransformKey.profile(USER)) })
     }
 
     @Test
@@ -85,7 +88,7 @@ class AvatarTransformTest {
         setAnimatorDurationScale(0f)
         check(!ValueAnimator.areAnimatorsEnabled())
 
-        assertSame(base, transformed(inScopes = true) { avatarTransformTarget(AvatarTransformKey.chatInfo(USER)) })
+        assertSame(base, base.transformed(inScopes = true) { avatarTransformTarget(AvatarTransformKey.chatInfo(USER)) })
     }
 
     @Test
@@ -93,16 +96,17 @@ class AvatarTransformTest {
         assertNotEquals(AvatarTransformKey.profile(USER), AvatarTransformKey.chatInfo(USER))
     }
 
-    /** What [transform] makes of [base], in the scopes the app's `NavHost` provides or without them. */
-    private fun transformed(
+    /** What [transform] makes of this modifier, in the scopes the app's `NavHost` provides or without them. */
+    private fun Modifier.transformed(
         inScopes: Boolean,
         transform: @Composable Modifier.() -> Modifier,
     ): Modifier {
+        val original = this
         lateinit var result: Modifier
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val content = @Composable {
-                    result = base.transform()
+                    result = original.transform()
                     Box(result)
                 }
                 if (inScopes) InScopes(content) else content()

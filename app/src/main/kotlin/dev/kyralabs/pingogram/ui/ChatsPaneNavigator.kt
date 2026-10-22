@@ -26,11 +26,11 @@ import kotlin.math.min
 
 /**
  * The Chats tab's pane navigator: Material's list-detail navigation (the history of destinations, back, predictive
- * back), except that the extra pane takes a partition only while the history holds it. Material's navigator gives every
- * partition the directive has to a pane, so on an extra-large window, with three, the extra pane would show empty beside
- * every conversation; here the list and the conversation share the window until a profile or an info page opens
- * beside them (`docs/DESIGN_SYSTEM.md` §7). Each step of the history is laid out with its own partitions, so back from
- * the extra pane, predictive back included, animates to the two panes again.
+ * back), except that the extra pane takes a partition only while the history holds it. Material's navigator gives
+ * every partition the directive has to a pane, so on an extra-large window, with three, the extra pane would show
+ * empty beside every conversation; here the list and the conversation share the window until a profile or an info
+ * page opens beside them (`docs/DESIGN_SYSTEM.md` §7). Each step of the history is laid out with its own partitions,
+ * so back from the extra pane, predictive back included, animates to the two panes again.
  *
  * Content keys are strings ([ChatsPaneContent.key]), which the history is saved with ([rememberChatsPaneNavigator]).
  */

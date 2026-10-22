@@ -211,12 +211,15 @@ internal fun ChatsListDetail(
                     if (extra != null) {
                         ChatsExtraPane(
                             content = extra,
-                            onClose = opener::closeExtra,
-                            onOpenChat = opener::openChat,
-                            onOpenMessage = opener::openMessage,
-                            onOpenMedia = onOpenMedia,
-                            onEditContact = onEditContact,
-                            onLeft = opener::closeChat,
+                            navigation =
+                                ExtraPaneNavigation(
+                                    onClose = opener::closeExtra,
+                                    onOpenChat = opener::openChat,
+                                    onOpenMessage = opener::openMessage,
+                                    onOpenMedia = onOpenMedia,
+                                    onEditContact = onEditContact,
+                                    onLeft = opener::closeChat,
+                                ),
                         )
                     }
                 }
@@ -337,22 +340,16 @@ private fun rememberPaneOpener(
 ): PaneOpener {
     // A message found by search, as [chat id, message id]; saved, so its chat still opens at it after process death.
     val message = rememberSaveable { mutableStateOf<LongArray?>(null) }
-    val panes =
-        rememberUpdatedState(
-            if (threePanes) {
-                3
-            } else if (twoPanes) {
-                2
-            } else {
-                1
-            },
-        )
+    val currentTwoPanes = rememberUpdatedState(twoPanes)
+    val currentThreePanes = rememberUpdatedState(threePanes)
     val currentCallbacks = rememberUpdatedState(callbacks())
-    return remember(navigator, scope) { PaneOpener(navigator, scope, message, panes, currentCallbacks) }
+    return remember(navigator, scope) {
+        PaneOpener(navigator, scope, message, currentTwoPanes, currentThreePanes, currentCallbacks)
+    }
 }
 
 /**
- * Opens what the panes ask for in the panes the window has ([panes]):
+ * Opens what the panes ask for in the panes the window has ([twoPanes], [threePanes]):
  * - a chat in the detail pane in place of the one shown, closing the extra pane, and a message found by search there
  *   too, at that message ([messageIn]); with one pane, pushed full screen;
  * - with three panes, a profile or an info page in the extra pane beside the conversation, in place of the one shown;
@@ -366,7 +363,8 @@ private class PaneOpener(
     private val navigator: ThreePaneScaffoldNavigator<String>,
     private val scope: CoroutineScope,
     private val message: MutableState<LongArray?>,
-    private val panes: State<Int>,
+    private val twoPanes: State<Boolean>,
+    private val threePanes: State<Boolean>,
     private val callbacks: State<PaneCallbacks>,
 ) {
     fun openChat(chatId: Long) = open(chatId, messageId = null)
@@ -380,7 +378,7 @@ private class PaneOpener(
         chatId: Long,
         messageId: Long?,
     ) {
-        if (panes.value < 2) {
+        if (!twoPanes.value) {
             message.value = null
             callbacks.value.onOpenChat(chatId, messageId)
             return
@@ -395,73 +393,74 @@ private class PaneOpener(
             }
 
             shownChatId == chatId && current?.pane == ListDetailPaneScaffoldRole.Extra -> {
-                back()
+                show(pane = null)
             }
 
             else -> {
-                backToList()
-                navigate(ListDetailPaneScaffoldRole.Detail, ChatsPaneContent.Chat(chatId))
+                closeChat()
+                show(ListDetailPaneScaffoldRole.Detail, ChatsPaneContent.Chat(chatId).key)
             }
         }
     }
 
-    fun openProfile(userId: Long) {
-        val chatId = shownChatId()
-        if (panes.value < 3 || chatId == null) {
-            callbacks.value.onOpenProfile(userId)
-        } else {
-            showExtra(ChatsPaneContent.Profile(chatId, userId))
-        }
-    }
+    fun openProfile(userId: Long) =
+        openPage({ chatId -> ChatsPaneContent.Profile(chatId, userId) }) { callbacks.value.onOpenProfile(userId) }
 
-    fun openChatInfo(infoChatId: Long) {
-        val chatId = shownChatId()
-        if (panes.value < 3 || chatId == null) {
+    fun openChatInfo(infoChatId: Long) =
+        openPage({ chatId -> ChatsPaneContent.ChatInfo(chatId, infoChatId) }) {
             callbacks.value.onOpenChatInfo(infoChatId)
-        } else {
-            showExtra(ChatsPaneContent.ChatInfo(chatId, infoChatId))
         }
-    }
 
     /** Closes the extra pane, back to the conversation. */
     fun closeExtra() {
-        if (navigator.currentDestination?.pane == ListDetailPaneScaffoldRole.Extra) back()
+        if (navigator.currentDestination?.pane == ListDetailPaneScaffoldRole.Extra) show(pane = null)
     }
-
-    /** Closes the conversation and what is beside it, back to the list. */
-    fun closeChat() = backToList()
 
     /** The message chat [chatId]'s conversation opens at; null for its usual place. */
     fun messageIn(chatId: Long): Long? = message.value?.takeIf { it[0] == chatId }?.get(1)
 
-    private fun shownChatId(): Long? = ChatsPaneContent.of(navigator.currentDestination?.contentKey)?.chatId
-
-    private fun showExtra(content: ChatsPaneContent) {
+    /**
+     * Shows the page [content] makes for the chat in the detail pane, in place of the page shown; [orElse] where
+     * the window has no third pane, or no chat shows.
+     */
+    private fun openPage(
+        content: (chatId: Long) -> ChatsPaneContent,
+        orElse: () -> Unit,
+    ) {
         val current = navigator.currentDestination
-        if (current?.contentKey == content.key) return
-        if (current?.pane == ListDetailPaneScaffoldRole.Extra) back()
-        navigate(ListDetailPaneScaffoldRole.Extra, content)
+        val chatId = ChatsPaneContent.of(current?.contentKey)?.chatId
+        if (!threePanes.value || chatId == null) return orElse()
+        val page = content(chatId)
+        if (current?.contentKey == page.key) return
+        if (current?.pane == ListDetailPaneScaffoldRole.Extra) show(pane = null)
+        show(ListDetailPaneScaffoldRole.Extra, page.key)
     }
 
-    private fun backToList() {
+    /** Closes the conversation and what is beside it, back to the list. */
+    fun closeChat() {
         repeat(MAX_DEPTH) {
             if (navigator.currentDestination?.pane != ListDetailPaneScaffoldRole.List &&
                 navigator.canNavigateBack(BackNavigationBehavior.PopLatest)
             ) {
-                back()
+                show(pane = null)
             }
         }
     }
 
-    private fun back() {
-        scope.launch(start = CoroutineStart.UNDISPATCHED) { navigator.navigateBack(BackNavigationBehavior.PopLatest) }
-    }
-
-    private fun navigate(
-        pane: ThreePaneScaffoldRole,
-        content: ChatsPaneContent,
+    /** Shows [key] in [pane]; without a pane, goes back one step. */
+    private fun show(
+        pane: ThreePaneScaffoldRole?,
+        key: String? = null,
     ) {
-        scope.launch(start = CoroutineStart.UNDISPATCHED) { navigator.navigateTo(pane, content.key) }
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            if (pane ==
+                null
+            ) {
+                navigator.navigateBack(BackNavigationBehavior.PopLatest)
+            } else {
+                navigator.navigateTo(pane, key)
+            }
+        }
     }
 
     private companion object {

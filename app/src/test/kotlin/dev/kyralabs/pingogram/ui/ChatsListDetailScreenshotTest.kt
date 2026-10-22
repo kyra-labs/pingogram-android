@@ -44,8 +44,9 @@ import dev.kyralabs.pingogram.feature.chat.R as ChatR
  * The Chats tab's list-detail layout ([ChatsListDetail]) on an expanded window, light and dark, with no chat open,
  * with a conversation beside the list, whose row looks selected, and with the profile its title pushed above it; on a
  * large window too, whose list pane is wider; and on an extra-large one, with the conversation alone beside the list
- * and with the profile in the third pane (`docs/TESTING.md`). The screens run their real view models and repositories on a [FakeTdlibClient] bound
- * with Hilt, with the chats of [ChatsScript] and a [StoppedWallClock] in UTC, so times never change.
+ * and with the profile in the third pane (`docs/TESTING.md`). The screens run their real view models and repositories
+ * on a [FakeTdlibClient] bound with Hilt, with the chats of [ChatsScript] and a [StoppedWallClock] in UTC, so times
+ * never change.
  */
 @HiltAndroidTest
 @UninstallModules(TdlibModule::class, TimeModule::class)
