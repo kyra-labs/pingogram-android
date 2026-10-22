@@ -67,6 +67,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
@@ -126,7 +128,9 @@ import kotlinx.collections.immutable.ImmutableSet
  * - **Bots** (`REQUIREMENTS.md` FR-C5): the composer's bot button opens their commands or menu
  *   ([BotEvent.OpenMenu]), the commands that a command being typed starts show above the composer
  *   ([commandSuggestions], the view model's, kept apart from [state]), and a bot's empty chat shows what it does
- *   ([BotIntroArea]) with "Start" in the composer's place.
+ *   ([BotIntroArea]) with "Start" in the composer's place. While the field holds an inline query ("@gif cats"), the
+ *   bot's results show above the composer ([inlineResults], the view model's, kept apart from [state]); sending one
+ *   scrolls to the newest message.
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -156,6 +160,7 @@ internal fun ChatScreen(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     commandSuggestions: CommandSuggestions? = null,
+    inlineResults: InlineBotUiState? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -192,6 +197,7 @@ internal fun ChatScreen(
                     emojiPanel = emojiPanel,
                     onEmojiPanelEvent = onEmojiPanelEvent,
                     commandSuggestions = commandSuggestions,
+                    inlineResults = inlineResults,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             jumpButton = {
@@ -262,7 +268,8 @@ private fun ChatScaffold(
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
  * [onAttach] gets the option the composer's gallery button picks at once, or null for its "+", the attach menu. A
- * command sent from the [commandSuggestions] reports through [onSent] too.
+ * command sent from the [commandSuggestions] reports through [onSent] too, and so does a result of the
+ * [inlineResults].
  */
 @Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
 @Composable
@@ -277,6 +284,7 @@ private fun ChatScreenBottomBar(
     emojiPanel: EmojiPanelUiState,
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit,
     commandSuggestions: CommandSuggestions?,
+    inlineResults: InlineBotUiState?,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
     val bots =
@@ -291,6 +299,14 @@ private fun ChatScreenBottomBar(
                 onMenu = { onEvent(BotEvent.OpenMenu) },
                 onStart = { onEvent(BotEvent.Start) },
             )
+        }
+    val canSchedule = (state.composer as? ComposerUiState.Available)?.canSchedule == true
+    val inline =
+        remember(inlineResults, canSchedule, onEvent, onSent) {
+            InlineBotInput(inlineResults, canSchedule) { event ->
+                onEvent(event)
+                if (event is InlineBotEvent.Send) onSent(event.options)
+            }
         }
     SelectionBottomBar(
         actions = state.selection?.actions,
@@ -322,6 +338,7 @@ private fun ChatScreenBottomBar(
             },
             onJoin = { onEvent(ChatEvent.JoinChat) },
             bots = bots,
+            inline = inline,
         )
     }
 }

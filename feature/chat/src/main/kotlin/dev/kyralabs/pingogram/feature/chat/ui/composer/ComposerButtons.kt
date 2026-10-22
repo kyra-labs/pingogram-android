@@ -193,9 +193,12 @@ internal fun SaveEditButton(onSave: () -> Unit) {
     }
 }
 
-/** The other ways to send, under the send button's trailing part: without sound, and at a time where [canSchedule]. */
+/**
+ * The other ways to send, under the send button (and an inline bot's result): without sound, and at a time where
+ * [canSchedule].
+ */
 @Composable
-private fun SendOptionsMenu(
+internal fun SendOptionsMenu(
     expanded: Boolean,
     canSchedule: Boolean,
     onDismiss: () -> Unit,

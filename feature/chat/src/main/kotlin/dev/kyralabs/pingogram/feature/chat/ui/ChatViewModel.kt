@@ -72,6 +72,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
+import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
 import dev.kyralabs.pingogram.feature.chat.ui.secret.ChatSecretChat
@@ -207,6 +211,9 @@ import java.util.Locale
  *   ([botCommandsSheet]) and as suggestions while a command is typed ([commandSuggestions]), both kept out of [uiState]
  *   like the forward sheet; a bot's menu button; and in a private chat with a bot its description while the chat is
  *   empty ([ChatUiState.botIntro]) and "Start" ([ComposerUiState.BotStart]), also after a start link.
+ * - **Inline bots** ([ChatInlineBots], "@gif cats"): while the field starts with an inline bot's username, its results
+ *   above the composer ([inlineResults], kept out of [uiState] like the suggestions), paged, sent with the composer's
+ *   reply; the question whether to share the location with a bot that asks for it ([inlineLocationSheet]).
  * - **Forum topics** ([ChatThread], `REQUIREMENTS.md` FR-C9): with a [topic], the conversation is that topic's: its
  *   history, what is sent goes into it, its name in the header, its unread state, and its pins.
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
@@ -235,8 +242,8 @@ import java.util.Locale
  */
 @Suppress(
     "LongParameterList",
-    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands, ChatBotButtons…);
-    // what is left here wires them into one state and one event handler.
+    // One part per feature of the conversation, each its own class (ChatSendAs, ChatBotCommands, ChatBotButtons,
+    // ChatInlineBots…); what is left here wires them into one state and one event handler.
     "LargeClass",
 )
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -271,6 +278,7 @@ class ChatViewModel internal constructor(
     botButtonRepository: BotButtonRepository,
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
+    inlineBotRepositories: InlineBotRepositories,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -306,6 +314,7 @@ class ChatViewModel internal constructor(
         botButtonRepository: BotButtonRepository,
         botInfoRepository: BotInfoRepository,
         botStartInbox: BotStartInbox,
+        inlineBotRepositories: InlineBotRepositories,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -338,6 +347,7 @@ class ChatViewModel internal constructor(
         botButtonRepository,
         botInfoRepository,
         botStartInbox,
+        inlineBotRepositories,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -501,6 +511,23 @@ class ChatViewModel internal constructor(
 
     /** The commands suggested above the composer while one is typed; null while none is. Kept out of [uiState]. */
     val commandSuggestions: StateFlow<CommandSuggestions?> get() = bots.suggestions
+
+    private val inlineBots =
+        ChatInlineBots(
+            chatId = chatId,
+            repositories = inlineBotRepositories,
+            bots = thread.inlineBots(inlineBotRepositories.bots),
+            composer = composer,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+            log = log,
+        )
+
+    /** The inline bot and its results while the field holds an inline query; null while not. Kept out of [uiState]. */
+    val inlineResults: StateFlow<InlineBotUiState?> get() = inlineBots.state
+
+    /** Whether to share the location with an inline bot that asks for it; null while not asked. */
+    val inlineLocationSheet: StateFlow<InlineLocationSheet?> get() = inlineBots.locationSheet
 
     /** The send-as picker; null while it is not open. Kept out of [uiState], like the forward sheet. */
     val sendAsSheet: StateFlow<SendAsSheet?> get() = sendAs.sheet
@@ -848,6 +875,7 @@ class ChatViewModel internal constructor(
             is VoiceEvent -> recorder.onEvent(event)
             is SendAsEvent -> sendAs.onEvent(event)
             is BotEvent -> bots.onEvent(event)
+            is InlineBotEvent -> inlineBots.onEvent(event)
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
             is BotButtonEvent -> botButtons.onEvent(event)

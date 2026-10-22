@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import kotlinx.collections.immutable.toImmutableList
@@ -130,6 +131,20 @@ internal class TopicVoiceNoteRepository(
         options: SendOptions,
         replyToMessageId: Long?,
     ): Outcome<Unit> = voiceNotes.sendVoiceNote(chatId, voiceNote, options.copy(topic = topic), replyToMessageId)
+}
+
+/** [inlineBots] whose results are sent into [topic]. */
+internal class TopicInlineBotRepository(
+    private val inlineBots: InlineBotRepository,
+    private val topic: MessageTopic,
+) : InlineBotRepository by inlineBots {
+    override suspend fun send(
+        chatId: Long,
+        queryId: Long,
+        resultId: String,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ) = inlineBots.send(chatId, queryId, resultId, options.copy(topic = topic), replyToMessageId)
 }
 
 /** [chats] whose messages viewed on screen are viewed in [topic], which reads them there. */
