@@ -25,6 +25,11 @@ data class ActiveCall(
     val audio: CallAudio = CallAudio(),
     /** When the call first connected, on the elapsed-realtime clock in milliseconds; null before. */
     val connectedAtMillis: Long? = null,
+    /**
+     * The other person called with video, or turned it on: Pingogram has no video calls yet and talks with audio only
+     * (`docs/adr/0019-video-and-group-calls-scope.md`).
+     */
+    val videoOffered: Boolean = false,
 )
 
 /** Where an [ActiveCall] is, as the user sees it. */

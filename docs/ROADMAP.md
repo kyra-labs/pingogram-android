@@ -79,9 +79,18 @@ the release workflow so the owner can install and test on a phone.
 
 ## M5 — Calls → `v0.5.0`
 
-- [ ] Voice calls (TDLib + tgcalls), full-screen call notification, in-call UI with Expressive
-      shapes for avatar/encryption emoji, audio routing
-- [ ] Decide on video calls / group calls scope (ADR)
+- [x] Voice calls (TDLib + NTgCalls, `docs/adr/0015-call-media-engine.md`; tgcalls has no Android build outside
+      Telegram's apps), full-screen call notification, in-call UI with Expressive shapes for avatar/encryption emoji,
+      audio routing, Telecom (`docs/adr/0018-calls-and-telecom.md`)
+- [x] Decide on video calls / group calls scope (`docs/adr/0019-video-and-group-calls-scope.md`: all feasible; 1:1
+      video next, then group voice chats and live streams)
+
+## M5.1 — Video and group calls (after `v0.5.0`)
+
+- [ ] 1:1 video calls: camera, self-view, switch camera, camera on and off, picture-in-picture, lower resolutions on
+      weak connections; the frame path measured on a device (`docs/adr/0019-video-and-group-calls-scope.md`)
+- [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
+- [ ] Live streams: watching
 
 ## M6 — Polish → `v1.0.0`
 

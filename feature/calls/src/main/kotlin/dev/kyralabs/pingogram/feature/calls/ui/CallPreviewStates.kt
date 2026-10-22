@@ -19,6 +19,8 @@ internal object CallPreviewStates {
 
     val incoming = CallUiState.InCall(ada, isOutgoing = false, stage = CallStage.Ringing, duration = null)
 
+    val incomingVideo = incoming.copy(videoOffered = true)
+
     val ringing = CallUiState.InCall(ada, isOutgoing = true, stage = CallStage.RingingThere, duration = null)
 
     val connected =
@@ -54,6 +56,10 @@ private fun Preview(state: CallUiState) {
 @PingogramVariantPreviews
 @Composable
 private fun CallIncomingPreview() = Preview(CallPreviewStates.incoming)
+
+@PingogramPreviews
+@Composable
+private fun CallIncomingVideoPreview() = Preview(CallPreviewStates.incomingVideo)
 
 @PingogramPreviews
 @Composable
