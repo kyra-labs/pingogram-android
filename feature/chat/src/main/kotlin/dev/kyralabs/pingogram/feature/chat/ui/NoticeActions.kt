@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
+import dev.kyralabs.pingogram.feature.chat.ui.bots.botButtonNotice
 
 /**
  * The snackbars of forwarding, selecting, reporting and saving, for [ChatEffects]: their text ([noticeOf], with error
@@ -37,18 +38,26 @@ internal class NoticeActions(
 ) {
     private val resources: Resources get() = context.resources
 
-    /** The text of the snackbar of [effect], a forward or a [SelectionEffect]; empty where none shows. */
+    /** The text of the snackbar of [effect], a forward, a [SelectionEffect] or a [BotButtonEffect]; empty for none. */
     fun noticeOf(effect: ChatEffect): String =
-        if (effect is SelectionEffect) {
-            context.selectionNotice(
-                effect = effect,
-                resources = resources,
-                copyText = files.copyText,
-                showsStorageRationale = activity.showsStorageRationale(),
-                requestStoragePermission = permissions.requestStorage,
-            )
-        } else {
-            forwardNotice(resources, effect, showErrorDetails)
+        when (effect) {
+            is SelectionEffect -> {
+                context.selectionNotice(
+                    effect = effect,
+                    resources = resources,
+                    copyText = files.copyText,
+                    showsStorageRationale = activity.showsStorageRationale(),
+                    requestStoragePermission = permissions.requestStorage,
+                )
+            }
+
+            is BotButtonEffect -> {
+                botButtonNotice(resources, effect)
+            }
+
+            else -> {
+                forwardNotice(resources, effect, showErrorDetails)
+            }
         }
 
     /** Does what the action of [effect]'s snackbar does; the text of the snackbar that follows, empty for none. */

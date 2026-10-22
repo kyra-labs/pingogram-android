@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
@@ -261,6 +262,8 @@ sealed interface ChatItem {
      *   read, so the bubble shows the timer itself, not a countdown.
      * @property thread the link to the message's thread under the bubble (`REQUIREMENTS.md` FR-C9): a channel post's
      *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
+     * @property keyboard the buttons a bot attached to the message, under the bubble; null for none. An album's are
+     *   those of the item that has them.
      */
     data class Bubble(
         val id: Long,
@@ -290,6 +293,7 @@ sealed interface ChatItem {
         val senderUserId: Long? = null,
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
+        val keyboard: BotKeyboard? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import dev.kyralabs.pingogram.core.testing.ReplyMarkupFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.failedState
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -417,6 +418,22 @@ class TdlibMessageRepositoryTest {
             client.emit(updateMessageEdited(CHAT, messageId = 1, editDate = 1_700_000_100))
 
             assertEquals(message(id = 1, editDate = 1_700_000_100).toMessage(), repository.loadedMessage(1))
+        }
+
+    @Test
+    fun `updateMessageEdited replaces the bot's buttons in place`() =
+        runTest {
+            val repository = repositoryWith(1)
+            val keyboard = ReplyMarkupFixtures.inlineKeyboard(arrayOf(ReplyMarkupFixtures.inlineButton("Next page")))
+
+            client.emit(ReplyMarkupFixtures.updateMessageEdited(CHAT, 1, editDate = 1_700_000_100, keyboard))
+            assertEquals(
+                ReplyMarkupFixtures.withMarkup(message(id = 1, editDate = 1_700_000_100), keyboard).toMessage(),
+                repository.loadedMessage(1),
+            )
+
+            client.emit(ReplyMarkupFixtures.updateMessageEdited(CHAT, 1, editDate = 1_700_000_200, null))
+            assertEquals(null, repository.loadedMessage(1).replyMarkup)
         }
 
     @Test

@@ -42,6 +42,8 @@ data class Message(
     val content: MessageContent,
     /** The forum topic or message thread the message is in; null for neither. */
     val topic: MessageTopic? = null,
+    /** The buttons a bot attached to the message, current with every edit; null if there are none. */
+    val replyMarkup: ReplyMarkup? = null,
 )
 
 /** Who sent a message: a user, or a chat (a channel, or a group's anonymous admins). */

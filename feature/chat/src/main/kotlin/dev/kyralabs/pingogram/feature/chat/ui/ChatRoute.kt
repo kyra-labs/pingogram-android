@@ -247,7 +247,7 @@ internal fun ChatEffects(
                         if (openUri(effect.url)) "" else resources.getString(R.string.sponsored_no_app)
                     }
 
-                    is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect -> {
+                    is ChatEffect.Forwarded, is ChatEffect.ForwardFailed, is SelectionEffect, is BotButtonEffect -> {
                         noticeActions.noticeOf(effect)
                     }
 

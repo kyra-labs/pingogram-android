@@ -44,6 +44,7 @@ internal fun TdApi.Message.toMessage(): Message {
         selfDestruct = selfDestructType?.toSelfDestruct(),
         content = content.toMessageContent(sender, isChannelPost),
         topic = topicId?.toMessageTopic(),
+        replyMarkup = replyMarkup?.toReplyMarkup(),
     )
 }
 

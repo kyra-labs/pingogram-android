@@ -10,8 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
-- A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
-  chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
+- Bot buttons: the buttons bots put under their messages now show, in rows under the message, and change when the
+  bot updates them. A button can answer with a short notice or an alert, open a link (Pingogram asks first when the
+  button's text hides where a web link goes), log you in to a site with your Telegram account after you agree (and
+  only lets the bot message you if you allow it), ask for your 2-step verification password, put an inline query
+  ("@bot …") into this chat's message field or into a chat you pick, copy a text, or open a profile. A button
+  waiting for its bot shows a small progress indicator. Mini Apps, games and payments are not supported yet, and
+  Pingogram says so.
 - Bot commands: in chats with bots, a "/" button at the start of the message field lists the bots' commands with
   what each does (in groups, which bot it belongs to, with search when there are many). Tap one to send it, or the
   arrow beside it to put it into the field and add something after it. Typing "/" suggests the matching commands
@@ -27,6 +32,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 
+- A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
+  chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
