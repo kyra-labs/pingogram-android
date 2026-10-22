@@ -45,8 +45,8 @@ data object SettingsRoute
 data object EditProfileRoute
 
 /**
- * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast, `:feature:settings`,
- * pushed above the Settings tab.
+ * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast,
+ * `:feature:settings`, pushed above the Settings tab.
  */
 @Serializable
 data object AppearanceRoute

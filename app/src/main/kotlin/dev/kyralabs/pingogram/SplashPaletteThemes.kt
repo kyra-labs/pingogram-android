@@ -12,117 +12,105 @@ import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 internal fun paletteSplashTheme(
     palette: ThemePalette,
     mode: SplashMode,
-): Int =
-    when (palette) {
-        ThemePalette.Pingogram -> {
-            error("Pingogram's splash screen themes are SplashScreenThemes.kt's")
-        }
+): Int {
+    val themes =
+        checkNotNull(PaletteSplashThemes[palette]) { "Pingogram's splash screen themes are SplashScreenThemes.kt's" }
+    return themes[mode.ordinal]
+}
 
-        ThemePalette.Blue -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemBlue
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemBlueAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Blue
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Blue
-            }
-        }
+/** Which of a color theme's splash screen themes: the system's theme mode (with true black at night), light or dark. */
+internal enum class SplashMode {
+    System,
+    SystemAmoled,
+    Light,
+    Dark,
+}
 
-        ThemePalette.Teal -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemTeal
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemTealAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Teal
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Teal
-            }
-        }
-
-        ThemePalette.Green -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemGreen
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemGreenAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Green
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Green
-            }
-        }
-
-        ThemePalette.Lime -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemLime
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemLimeAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Lime
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Lime
-            }
-        }
-
-        ThemePalette.Yellow -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemYellow
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemYellowAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Yellow
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Yellow
-            }
-        }
-
-        ThemePalette.Orange -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemOrange
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemOrangeAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Orange
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Orange
-            }
-        }
-
-        ThemePalette.Red -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemRed
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemRedAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Red
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Red
-            }
-        }
-
-        ThemePalette.Pink -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemPink
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemPinkAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Pink
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Pink
-            }
-        }
-
-        ThemePalette.Purple -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemPurple
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemPurpleAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Purple
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Purple
-            }
-        }
-
-        ThemePalette.Indigo -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemIndigo
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemIndigoAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Indigo
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Indigo
-            }
-        }
-
-        ThemePalette.Brown -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemBrown
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemBrownAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Brown
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Brown
-            }
-        }
-
-        ThemePalette.Monochrome -> {
-            when (mode) {
-                SplashMode.System -> R.style.Theme_Pingogram_Starting_SystemMonochrome
-                SplashMode.SystemAmoled -> R.style.Theme_Pingogram_Starting_SystemMonochromeAmoled
-                SplashMode.Light -> R.style.Theme_Pingogram_Starting_Light_Monochrome
-                SplashMode.Dark -> R.style.Theme_Pingogram_Starting_Dark_Monochrome
-            }
-        }
-    }
+/** The splash screen themes of each color theme but Pingogram, in [SplashMode]'s order. */
+private val PaletteSplashThemes: Map<ThemePalette, IntArray> =
+    mapOf(
+        ThemePalette.Blue to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemBlue,
+                R.style.Theme_Pingogram_Starting_SystemBlueAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Blue,
+                R.style.Theme_Pingogram_Starting_Dark_Blue,
+            ),
+        ThemePalette.Teal to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemTeal,
+                R.style.Theme_Pingogram_Starting_SystemTealAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Teal,
+                R.style.Theme_Pingogram_Starting_Dark_Teal,
+            ),
+        ThemePalette.Green to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemGreen,
+                R.style.Theme_Pingogram_Starting_SystemGreenAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Green,
+                R.style.Theme_Pingogram_Starting_Dark_Green,
+            ),
+        ThemePalette.Lime to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemLime,
+                R.style.Theme_Pingogram_Starting_SystemLimeAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Lime,
+                R.style.Theme_Pingogram_Starting_Dark_Lime,
+            ),
+        ThemePalette.Yellow to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemYellow,
+                R.style.Theme_Pingogram_Starting_SystemYellowAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Yellow,
+                R.style.Theme_Pingogram_Starting_Dark_Yellow,
+            ),
+        ThemePalette.Orange to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemOrange,
+                R.style.Theme_Pingogram_Starting_SystemOrangeAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Orange,
+                R.style.Theme_Pingogram_Starting_Dark_Orange,
+            ),
+        ThemePalette.Red to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemRed,
+                R.style.Theme_Pingogram_Starting_SystemRedAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Red,
+                R.style.Theme_Pingogram_Starting_Dark_Red,
+            ),
+        ThemePalette.Pink to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemPink,
+                R.style.Theme_Pingogram_Starting_SystemPinkAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Pink,
+                R.style.Theme_Pingogram_Starting_Dark_Pink,
+            ),
+        ThemePalette.Purple to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemPurple,
+                R.style.Theme_Pingogram_Starting_SystemPurpleAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Purple,
+                R.style.Theme_Pingogram_Starting_Dark_Purple,
+            ),
+        ThemePalette.Indigo to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemIndigo,
+                R.style.Theme_Pingogram_Starting_SystemIndigoAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Indigo,
+                R.style.Theme_Pingogram_Starting_Dark_Indigo,
+            ),
+        ThemePalette.Brown to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemBrown,
+                R.style.Theme_Pingogram_Starting_SystemBrownAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Brown,
+                R.style.Theme_Pingogram_Starting_Dark_Brown,
+            ),
+        ThemePalette.Monochrome to
+            intArrayOf(
+                R.style.Theme_Pingogram_Starting_SystemMonochrome,
+                R.style.Theme_Pingogram_Starting_SystemMonochromeAmoled,
+                R.style.Theme_Pingogram_Starting_Light_Monochrome,
+                R.style.Theme_Pingogram_Starting_Dark_Monochrome,
+            ),
+    )

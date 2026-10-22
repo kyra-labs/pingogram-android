@@ -152,7 +152,14 @@ class PingogramColorSchemeTest {
         dynamicScheme: ColorScheme? = null,
         dynamicSchemeFollowsContrast: Boolean = false,
         palette: ThemePalette = ThemePalette.Pingogram,
-    ): ColorScheme = pingogramColorScheme(dark, palette, contrast, amoled, dynamicScheme, dynamicSchemeFollowsContrast)
+    ): ColorScheme =
+        pingogramColorScheme(
+            dark = dark,
+            palette = palette,
+            contrast = contrast,
+            amoled = amoled,
+            dynamic = dynamicScheme?.let { DynamicColors(it, dynamicSchemeFollowsContrast) },
+        )
 
     private fun contrastRatio(
         first: Color,

@@ -131,44 +131,7 @@ internal fun ThemePreview(
         verticalArrangement = Arrangement.spacedBy(spacing.medium),
     ) {
         Text(themeName, style = MaterialTheme.typography.titleSmallEmphasized, color = colors.primary)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar(
-                photo = null,
-                name = stringResource(R.string.settings_color_theme_sample_name),
-                id = 2,
-                size = MaterialTheme.sizes.avatarRow,
-            )
-            Column(
-                Modifier
-                    .weight(1f)
-                    .padding(horizontal = spacing.large),
-            ) {
-                Text(
-                    stringResource(R.string.settings_color_theme_sample_name),
-                    style = MaterialTheme.typography.titleMediumEmphasized.userContent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    stringResource(R.string.settings_color_theme_sample_preview),
-                    style = MaterialTheme.typography.bodyMedium.userContent,
-                    color = colors.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-            ) {
-                Text(
-                    stringResource(R.string.settings_color_theme_sample_time),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.primary,
-                )
-                Badge(containerColor = colors.primary, contentColor = colors.onPrimary) { Text("2") }
-            }
-        }
+        PreviewChatRow()
         PreviewBubble(
             text = stringResource(R.string.settings_color_theme_sample_incoming),
             outgoing = false,
@@ -181,6 +144,51 @@ internal fun ThemePreview(
             Button(onClick = {}, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.settings_color_theme_sample_button))
             }
+        }
+    }
+}
+
+/** The chat list row of [ThemePreview]: avatar, name, preview, time and unread badge, in the list's roles. */
+@Composable
+private fun PreviewChatRow() {
+    val colors = MaterialTheme.colorScheme
+    val spacing = MaterialTheme.spacing
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Avatar(
+            photo = null,
+            name = stringResource(R.string.settings_color_theme_sample_name),
+            id = 2,
+            size = MaterialTheme.sizes.avatarRow,
+        )
+        Column(
+            Modifier
+                .weight(1f)
+                .padding(horizontal = spacing.large),
+        ) {
+            Text(
+                stringResource(R.string.settings_color_theme_sample_name),
+                style = MaterialTheme.typography.titleMediumEmphasized.userContent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                stringResource(R.string.settings_color_theme_sample_preview),
+                style = MaterialTheme.typography.bodyMedium.userContent,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
+        ) {
+            Text(
+                stringResource(R.string.settings_color_theme_sample_time),
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.primary,
+            )
+            Badge(containerColor = colors.primary, contentColor = colors.onPrimary) { Text("2") }
         }
     }
 }

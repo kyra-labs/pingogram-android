@@ -21,53 +21,62 @@ internal const val MANIFEST_SPLASH_SCREEN_THEME = 0
 internal fun splashScreenThemeOf(settings: AppearanceSettings): Int {
     val palette = settings.palette.takeUnless { settings.dynamicColor || it == ThemePalette.Pingogram }
     return when (settings.themeMode) {
-        ThemeMode.System -> {
-            when {
-                palette != null -> {
-                    paletteSplashTheme(palette, if (settings.amoled) SplashMode.SystemAmoled else SplashMode.System)
-                }
-
-                settings.dynamicColor && settings.amoled -> {
-                    R.style.Theme_Pingogram_Starting_SystemDynamicAmoled
-                }
-
-                settings.dynamicColor -> {
-                    MANIFEST_SPLASH_SCREEN_THEME
-                }
-
-                settings.amoled -> {
-                    R.style.Theme_Pingogram_Starting_SystemBrandAmoled
-                }
-
-                else -> {
-                    R.style.Theme_Pingogram_Starting_SystemBrand
-                }
-            }
-        }
-
-        ThemeMode.Light -> {
-            when {
-                palette != null -> paletteSplashTheme(palette, SplashMode.Light)
-                settings.dynamicColor -> R.style.Theme_Pingogram_Starting_Light_Dynamic
-                else -> R.style.Theme_Pingogram_Starting_Light_Brand
-            }
-        }
-
-        ThemeMode.Dark -> {
-            when {
-                settings.amoled -> R.style.Theme_Pingogram_Starting_Dark_Black
-                palette != null -> paletteSplashTheme(palette, SplashMode.Dark)
-                settings.dynamicColor -> R.style.Theme_Pingogram_Starting_Dark_Dynamic
-                else -> R.style.Theme_Pingogram_Starting_Dark_Brand
-            }
-        }
+        ThemeMode.System -> systemSplashTheme(settings, palette)
+        ThemeMode.Light -> lightSplashTheme(settings, palette)
+        ThemeMode.Dark -> darkSplashTheme(settings, palette)
     }
 }
 
-/** Which of a color theme's splash screen themes: the system's theme mode (with true black at night), light or dark. */
-internal enum class SplashMode {
-    System,
-    SystemAmoled,
-    Light,
-    Dark,
-}
+/** In the system's theme mode: [palette]'s (a color theme's other than Pingogram), the wallpaper's or the brand's. */
+@StyleRes
+private fun systemSplashTheme(
+    settings: AppearanceSettings,
+    palette: ThemePalette?,
+): Int =
+    when {
+        palette != null -> {
+            paletteSplashTheme(
+                palette,
+                if (settings.amoled) SplashMode.SystemAmoled else SplashMode.System,
+            )
+        }
+
+        settings.dynamicColor && settings.amoled -> {
+            R.style.Theme_Pingogram_Starting_SystemDynamicAmoled
+        }
+
+        settings.dynamicColor -> {
+            MANIFEST_SPLASH_SCREEN_THEME
+        }
+
+        settings.amoled -> {
+            R.style.Theme_Pingogram_Starting_SystemBrandAmoled
+        }
+
+        else -> {
+            R.style.Theme_Pingogram_Starting_SystemBrand
+        }
+    }
+
+@StyleRes
+private fun lightSplashTheme(
+    settings: AppearanceSettings,
+    palette: ThemePalette?,
+): Int =
+    when {
+        palette != null -> paletteSplashTheme(palette, SplashMode.Light)
+        settings.dynamicColor -> R.style.Theme_Pingogram_Starting_Light_Dynamic
+        else -> R.style.Theme_Pingogram_Starting_Light_Brand
+    }
+
+@StyleRes
+private fun darkSplashTheme(
+    settings: AppearanceSettings,
+    palette: ThemePalette?,
+): Int =
+    when {
+        settings.amoled -> R.style.Theme_Pingogram_Starting_Dark_Black
+        palette != null -> paletteSplashTheme(palette, SplashMode.Dark)
+        settings.dynamicColor -> R.style.Theme_Pingogram_Starting_Dark_Dynamic
+        else -> R.style.Theme_Pingogram_Starting_Dark_Brand
+    }

@@ -45,14 +45,7 @@ fun rememberPingogramColorScheme(
             } else {
                 null
             }
-        pingogramColorScheme(
-            dark = dark,
-            palette = palette,
-            contrast = contrast,
-            amoled = amoled,
-            dynamicScheme = dynamic?.scheme,
-            dynamicSchemeFollowsContrast = dynamic?.followsContrast ?: false,
-        )
+        pingogramColorScheme(dark = dark, palette = palette, contrast = contrast, amoled = amoled, dynamic = dynamic)
     }
 }
 
@@ -84,21 +77,20 @@ fun wallpaperColorScheme(
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) systemDynamicColors(context, dark).scheme else null
 
 /**
- * Picks the scheme for the given settings. [dynamicScheme] is the platform's Material You scheme, or
- * null when dynamic color is off or unavailable. Dynamic schemes from the tonal palettes (before Android 14, or where
- * the system leaves its color roles stale) have no contrast levels ([dynamicSchemeFollowsContrast] = false), so a
- * medium or high [contrast] falls back to the color theme [palette] there: accessibility wins over wallpaper colors.
+ * Picks the scheme for the given settings. [dynamic] is the platform's Material You scheme, or null when dynamic color
+ * is off or unavailable. Dynamic schemes from the tonal palettes (before Android 14, or where the system leaves its
+ * color roles stale) have no contrast levels ([DynamicColors.followsContrast] false), so a medium or high [contrast]
+ * falls back to the color theme [palette] there: accessibility wins over wallpaper colors.
  */
 internal fun pingogramColorScheme(
     dark: Boolean,
     palette: ThemePalette,
     contrast: Contrast,
     amoled: Boolean,
-    dynamicScheme: ColorScheme?,
-    dynamicSchemeFollowsContrast: Boolean,
+    dynamic: DynamicColors?,
 ): ColorScheme {
-    val useDynamic = dynamicScheme != null && (dynamicSchemeFollowsContrast || contrast == Contrast.Standard)
-    val scheme = if (useDynamic) dynamicScheme else themeColorScheme(palette, dark, contrast)
+    val useDynamic = dynamic != null && (dynamic.followsContrast || contrast == Contrast.Standard)
+    val scheme = if (useDynamic) dynamic.scheme else themeColorScheme(palette, dark, contrast)
     return if (dark && amoled) scheme.withAmoledSurfaces() else scheme
 }
 

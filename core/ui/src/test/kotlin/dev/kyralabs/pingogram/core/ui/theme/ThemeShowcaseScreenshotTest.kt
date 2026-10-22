@@ -18,8 +18,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of the theme tokens with the brand schemes, and the color roles of a few generated color themes. AMOLED and high contrast only change colors,
- * so only the color sheet is captured for them.
+ * Goldens of the theme tokens with the brand schemes, and the color roles of a few generated color themes. AMOLED and
+ * high contrast only change colors, so only the color sheet is captured for them.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w411dp-h891dp-xxhdpi")

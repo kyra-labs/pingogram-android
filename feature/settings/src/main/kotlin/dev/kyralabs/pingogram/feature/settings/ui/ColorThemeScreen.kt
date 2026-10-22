@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.content.Context
-import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.FlowRow
@@ -88,10 +87,9 @@ private fun rememberWallpaperSchemes(): WallpaperSchemes? {
 }
 
 private fun wallpaperSchemes(context: Context): WallpaperSchemes? {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
-    val light = wallpaperColorScheme(context, dark = false) ?: return null
-    val dark = wallpaperColorScheme(context, dark = true) ?: return null
-    return WallpaperSchemes(light, dark)
+    val light = wallpaperColorScheme(context, dark = false)
+    val dark = wallpaperColorScheme(context, dark = true)
+    return if (light != null && dark != null) WallpaperSchemes(light, dark) else null
 }
 
 /** The wallpaper's schemes for its chip, light and dark. */
