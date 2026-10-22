@@ -12,9 +12,12 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
@@ -28,7 +31,8 @@ import org.robolectric.annotation.Config
 
 /**
  * The pinned messages bar in the conversation (`REQUIREMENTS.md` FR-C9): taps cycle through the pins as the view model
- * answers them, its buttons send their events, and screen readers hear it as one item with the buttons as actions.
+ * answers them, counted from the oldest; its buttons send their events, screen readers hear it as one item with the
+ * buttons as actions, and dragging the list is reported.
  * The screen is stateless: a small reducer stands in for the view model.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -42,12 +46,13 @@ class PinnedMessagesBarTest {
 
     private val events = mutableListOf<ChatEvent>()
 
+    /** Newest first, as the view model has them; the bar counts them from the oldest. */
     private val pins = listOf(30L to "Newest", 21L to "Middle", 3L to "Oldest")
 
     private fun barAt(index: Int) =
         PinnedBar(
             messageId = pins[index].first,
-            index = index,
+            position = pins.size - 1 - index,
             count = pins.size,
             sender = UiText.Plain("Ada"),
             preview = UiText.Plain(pins[index].second),
@@ -64,7 +69,9 @@ class PinnedMessagesBarTest {
                         // Only the bar's: the list reports what it shows too.
                         if (event is PinnedEvent) events += event
                         // As the view model does: the bar moves on to the next older pin, back to the newest.
-                        if (event == PinnedEvent.ShowCurrent) bar = barAt((bar.index + 1) % pins.size)
+                        if (event == PinnedEvent.ShowCurrent) {
+                            bar = barAt((pins.size - bar.position) % pins.size)
+                        }
                     },
                     onBack = {},
                 )
@@ -74,20 +81,20 @@ class PinnedMessagesBarTest {
     }
 
     @Test
-    fun `taps cycle through the pinned messages, back to the newest`() {
+    fun `taps cycle through the pinned messages, newest last, back to the newest`() {
         setScreen()
-        composeRule.onNodeWithText("Pinned message 1 of 3").assertExists()
+        composeRule.onNodeWithText("Pinned message 3 of 3").assertExists()
 
-        composeRule.onNodeWithText("Pinned message 1 of 3").performClick()
+        composeRule.onNodeWithText("Pinned message 3 of 3").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Pinned message 2 of 3").assertExists()
         composeRule.onNodeWithText("Ada: Middle").assertExists()
 
         composeRule.onNodeWithText("Pinned message 2 of 3").performClick()
-        composeRule.onNodeWithText("Pinned message 3 of 3").performClick()
+        composeRule.onNodeWithText("Pinned message 1 of 3").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Pinned message 1 of 3").assertExists()
+        composeRule.onNodeWithText("Pinned message 3 of 3").assertExists()
         assertEquals(List(3) { PinnedEvent.ShowCurrent }, events)
     }
 
@@ -121,7 +128,7 @@ class PinnedMessagesBarTest {
         setScreen()
         composeRule.onAllNodes(hasContentDescription("Hide pinned messages")).assertCountEquals(1)
         composeRule.onNodeWithContentDescription("Hide pinned messages").assert(isHiddenFromAccessibility())
-        val bar = composeRule.onNodeWithText("Pinned message 1 of 3")
+        val bar = composeRule.onNodeWithText("Pinned message 3 of 3")
 
         val actions =
             bar
@@ -134,6 +141,16 @@ class PinnedMessagesBarTest {
         actions.forEach { it.action() }
 
         assertEquals(listOf(PinnedEvent.ShowCurrent, PinnedEvent.OpenList, PinnedEvent.Close), events)
+    }
+
+    @Test
+    fun `dragging the list tells the bar to follow it again`() {
+        setScreen()
+
+        composeRule.onNodeWithTag(MESSAGE_LIST_TEST_TAG).performTouchInput { swipeDown() }
+        composeRule.waitForIdle()
+
+        assertEquals(PinnedEvent.ListDragged, events.firstOrNull())
     }
 
     private fun isHiddenFromAccessibility() = SemanticsMatcher.keyIsDefined(SemanticsProperties.HideFromAccessibility)

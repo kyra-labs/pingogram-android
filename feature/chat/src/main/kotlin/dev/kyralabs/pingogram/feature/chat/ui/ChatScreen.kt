@@ -420,6 +420,7 @@ private fun MessageList(
         listState = listState,
     )
     ReportVisibleMessages(content.items, listState, onEvent)
+    ReportListDrags(listState, onEvent)
     ReportSponsoredViews(content.items, listState, onEvent)
     ReportNearEnds(listState, onEvent)
 }
@@ -566,7 +567,7 @@ private const val SECRET_INTRO = "secretIntro"
 
 // The conversation scroll benchmark and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list by
 // this tag, which `MainActivity` shows as a resource id.
-private const val MESSAGE_LIST_TEST_TAG = "message_list"
+internal const val MESSAGE_LIST_TEST_TAG = "message_list"
 
 @PingogramPreviews
 @PingogramVariantPreviews

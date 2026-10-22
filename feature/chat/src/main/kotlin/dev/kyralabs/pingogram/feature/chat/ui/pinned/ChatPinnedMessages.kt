@@ -39,11 +39,15 @@ import kotlinx.coroutines.launch
  * (`REQUIREMENTS.md` FR-C9): the bar over the conversation
  * ([bar]) and the sheet that lists them all ([sheet], kept out of the screen's state like the forward sheet).
  *
- * - **Pins** come from `PinnedMessageRepository.pinnedMessages`, newest first, and follow every pin and unpin.
+ * - **Pins** come from `PinnedMessageRepository.pinnedMessages`, newest first, and follow every pin and unpin. The bar
+ *   counts them from the oldest, as the list shows them: the newest is the last ([PinnedBar.position]).
+ * - **Following the list** ([setVisible]): the bar shows the newest pinned message at or above the newest message on
+ *   screen, so at the bottom of the chat the newest pin, and an older one as the list scrolls up past it; above every
+ *   pin, the oldest. Before the list reports anything, the newest.
  * - **Cycling** ([PinnedEvent.ShowCurrent]): a tap shows the bar's message in the list ([onShow], the jump a reply
  *   quote makes) and moves the bar on to the next older one, back to the newest after the oldest, as Telegram's apps
- *   do. A message tapped in the sheet becomes the bar's. The bar starts at the newest, and goes back there when its
- *   message is unpinned.
+ *   do; a message tapped in the sheet becomes the bar's. That choice holds while the list moves to it, until the user
+ *   drags the list ([PinnedEvent.ListDragged]) or the message is unpinned; then the bar follows the list again.
  * - **Closing** ([PinnedEvent.Close]): where the user may unpin the message (TDLib's `can_be_pinned` of the newest pin,
  *   [MessageActionRepository.properties]) it is unpinned ([MessageActionRepository.unpin]); for others the bar hides on
  *   this device ([HiddenPinsRepository]) until a newer message is pinned, with a snackbar that says so.
@@ -71,8 +75,17 @@ internal class ChatPinnedMessages(
             .pinnedMessages(chatId, topic)
             .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
 
-    /** The bar's message, by id; null for the newest. */
-    private val shown = MutableStateFlow<Long?>(null)
+    /** The newest message on screen, by id; null until the list reports one. */
+    private val newestVisible = MutableStateFlow<Long?>(null)
+
+    /** The message a tap or the sheet chose for the bar, by id, until the user drags the list; null to follow it. */
+    private val chosen = MutableStateFlow<Long?>(null)
+
+    /** The bar's message, by id: the chosen one while it is pinned, else the one closest above the screen. */
+    private val shown: Flow<Long?> =
+        combine(pins, newestVisible, chosen) { pins, newestVisible, chosen ->
+            pins.firstOrNull { it.id == chosen }?.id ?: closestAbove(pins, newestVisible)?.id
+        }.distinctUntilChanged()
 
     private val listOpen = MutableStateFlow(false)
 
@@ -95,7 +108,8 @@ internal class ChatPinnedMessages(
                 null
             } else {
                 val message = pins[index]
-                PinnedBar(message.id, index, pins.size, named.senderOf(message), named.previewOf(message), canUnpin)
+                val position = pins.size - 1 - index
+                PinnedBar(message.id, position, pins.size, named.senderOf(message), named.previewOf(message), canUnpin)
             }
         }.onStart { emit(null) }
             .distinctUntilChanged()
@@ -106,14 +120,20 @@ internal class ChatPinnedMessages(
             if (!open || named.pins.isEmpty()) {
                 null
             } else {
-                val rows = named.pins.map { PinnedRow(it.id, named.senderOf(it), named.previewOf(it)) }
+                val rows = named.pins.asReversed().map { PinnedRow(it.id, named.senderOf(it), named.previewOf(it)) }
                 PinnedSheet(rows.toImmutableList(), shownId ?: named.pins.first().id)
             }
         }.stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
+    /** The list shows [messageIds] now; an empty set (the list left the screen) keeps the bar as it is. */
+    fun setVisible(messageIds: Set<Long>) {
+        messageIds.maxOrNull()?.let { newestVisible.value = it }
+    }
+
     fun onEvent(event: PinnedEvent) {
         when (event) {
             PinnedEvent.ShowCurrent -> showCurrent()
+            PinnedEvent.ListDragged -> chosen.value = null
             PinnedEvent.Close -> close()
             PinnedEvent.OpenList -> listOpen.value = true
             PinnedEvent.DismissList -> listOpen.value = false
@@ -125,15 +145,16 @@ internal class ChatPinnedMessages(
         scope.launch {
             val pins = pins.first()
             if (pins.isEmpty()) return@launch
-            val index = pins.indexOfFirst { it.id == shown.value }.coerceAtLeast(0)
+            val shownId = shown.first()
+            val index = pins.indexOfFirst { it.id == shownId }.coerceAtLeast(0)
             onShow(pins[index].id)
-            shown.value = pins[(index + 1) % pins.size].id
+            chosen.value = pins[(index + 1) % pins.size].id
         }
     }
 
     private fun showFromList(messageId: Long) {
         listOpen.value = false
-        shown.value = messageId
+        chosen.value = messageId
         onShow(messageId)
     }
 
@@ -141,7 +162,8 @@ internal class ChatPinnedMessages(
         scope.launch {
             val pins = pins.first()
             val newest = pins.firstOrNull() ?: return@launch
-            val message = pins.firstOrNull { it.id == shown.value } ?: newest
+            val shownId = shown.first()
+            val message = pins.firstOrNull { it.id == shownId } ?: newest
             if (canUnpin.first()) {
                 val unpinned = actions.unpin(chatId, message.id)
                 if (unpinned is Outcome.Failure) onEffect(ChatEffect.ShowError(unpinned.error))
@@ -174,5 +196,19 @@ internal class ChatPinnedMessages(
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
+
+        /**
+         * Of [pins] (newest first), the newest at or above message [newestVisible]: the closest pinned message above
+         * the screen, or on it; the oldest above every pin; the newest while nothing is known of the screen.
+         */
+        fun closestAbove(
+            pins: List<Message>,
+            newestVisible: Long?,
+        ): Message? =
+            if (newestVisible == null) {
+                pins.firstOrNull()
+            } else {
+                pins.firstOrNull { it.id <= newestVisible } ?: pins.lastOrNull()
+            }
     }
 }

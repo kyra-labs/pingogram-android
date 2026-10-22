@@ -5,24 +5,24 @@ import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 
 /**
- * The pinned messages bar over the conversation (`REQUIREMENTS.md` FR-C9): pinned message [messageId], the [index]th
- * of [count] counted from the newest (0), with its [sender] (null where the chat itself posts, as a channel does) and
+ * The pinned messages bar over the conversation (`REQUIREMENTS.md` FR-C9): pinned message [messageId] at [position]
+ * of [count], counted from the oldest (0) as the list shows them, so the newest is the last; with its [sender] (null where the chat itself posts, as a channel does) and
  * one line of it ([preview]). [canUnpin] where the user may unpin it, which the close button then does; otherwise it
  * only hides the bar.
  */
 @Immutable
 data class PinnedBar(
     val messageId: Long,
-    val index: Int,
+    val position: Int,
     val count: Int,
     val sender: UiText?,
     val preview: UiText,
     val canUnpin: Boolean,
 ) {
-    override fun toString() = "PinnedBar(messageId=$messageId, index=$index, count=$count, canUnpin=$canUnpin, …)"
+    override fun toString() = "PinnedBar(messageId=$messageId, position=$position, count=$count, canUnpin=$canUnpin, …)"
 }
 
-/** The sheet of every pinned message of the chat, newest first ([rows]); [shownId] is the one the bar shows. */
+/** The sheet of every pinned message of the chat, oldest first as in the list ([rows]); [shownId] is the bar's. */
 @Immutable
 data class PinnedSheet(
     val rows: ImmutableList<PinnedRow>,

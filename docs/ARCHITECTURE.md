@@ -166,8 +166,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and `updateMessageEdited`. `HiddenPinsRepository` (`DataStoreHiddenPinsRepository`, the settings file) keeps, per chat,
   the newest pin when a member who may not unpin hid the bar, which returns with a newer pin. `feature:chat`'s
   `ChatPinnedMessages` (a part of `ChatViewModel`, given both through `ThreadRepositories`) maps the bar
-  (`ChatUiState.pinnedBar`), cycles through the pins as taps show each in the list (`ChatWindow.showMessage`, the jump of
-  a reply quote), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
+  (`ChatUiState.pinnedBar`, its position counted from the oldest pin), follows the list (`ChatEvent.MessagesVisible`:
+  the newest pin at or above the newest message on screen), cycles through the pins as taps show each in the list
+  (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
+  `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
 - **Forum topics** (FR-C9): a message's `topic` (`MessageTopic`, `core:domain`: a forum topic or a message thread) comes
   from td_api.tl `message.topic_id`; `SendOptions.topic` sends into one (`sendMessage.topic_id`, every kind of message).

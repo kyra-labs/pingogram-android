@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,6 +13,7 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 
 // What the message list reports and follows, read from its layout, outside the items (docs/PERFORMANCE.md §4).
@@ -84,6 +86,24 @@ internal fun ReportVisibleMessages(
         } finally {
             currentOnEvent(ChatEvent.MessagesVisible(emptySet()))
         }
+    }
+}
+
+/**
+ * Reports each time the user starts dragging [listState] ([PinnedEvent.ListDragged]), so the pinned messages bar
+ * follows the screen again after a tap chose its message. The list's own jumps (to a reply, to a pinned message) are
+ * no drags, so they leave that choice.
+ */
+@Composable
+internal fun ReportListDrags(
+    listState: LazyListState,
+    onEvent: (ChatEvent) -> Unit,
+) {
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions
+            .filterIsInstance<DragInteraction.Start>()
+            .collect { currentOnEvent(PinnedEvent.ListDragged) }
     }
 }
 

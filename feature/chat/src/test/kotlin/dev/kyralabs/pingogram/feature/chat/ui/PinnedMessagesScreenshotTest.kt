@@ -16,9 +16,10 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Goldens of the pinned messages bar on a compact phone, light and dark (`docs/TESTING.md`, `REQUIREMENTS.md`
- * FR-C9): one pinned message the user may unpin in a private chat, the second of five in a group, which the user may
- * only hide, and the sheet of every pinned message. Brand colors.
+ * Goldens of the pinned messages bar on a compact phone, light and dark, and on an expanded window (`docs/TESTING.md`,
+ * `REQUIREMENTS.md` FR-C9): one pinned message the user may unpin in a private chat, the second newest of five in a
+ * group ("4 of 5", its segment second from the bottom), which the user may only hide, and the sheet of every pinned
+ * message, oldest first. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -36,6 +37,10 @@ class PinnedMessagesScreenshotTest(
 
     @Test
     fun dark() = capture("dark", ThemeMode.Dark)
+
+    @Test
+    @Config(qualifiers = EXPANDED)
+    fun expanded() = capture("expanded", ThemeMode.Light)
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
