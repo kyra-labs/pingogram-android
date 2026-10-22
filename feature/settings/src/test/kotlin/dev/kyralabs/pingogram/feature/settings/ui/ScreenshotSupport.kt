@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.unit.LayoutDirection
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
@@ -47,7 +48,7 @@ class ComponentActivityRegistration : ExternalResource() {
 
 /**
  * Shows [content] in [PingogramTheme] with the colors of [palette] (the brand's by default) in [themeMode], with
- * true-black surfaces if [amoled], and
+ * true-black surfaces if [amoled], conversations as [chat] sets them, and
  * captures the whole screen, dialogs included, as the golden `src/test/snapshots/<test class>.<name>.png`: once loading
  * has taken [LoadingIndicatorDelay], so a page that is still loading shows its delayed indicator.
  */
@@ -58,6 +59,7 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
     themeMode: ThemeMode,
     amoled: Boolean = false,
     palette: ThemePalette = ThemePalette.Pingogram,
+    chat: ChatAppearance = ChatAppearance(),
     content: @Composable () -> Unit,
 ) {
     setContent {
@@ -66,6 +68,7 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
             dynamicColor = false,
             palette = palette,
             amoled = amoled,
+            chat = chat,
             content = content,
         )
     }
@@ -103,6 +106,7 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
     name: String,
     variant: ScreenshotVariant,
     palette: ThemePalette = ThemePalette.Pingogram,
+    chat: ChatAppearance = ChatAppearance(),
     content: @Composable () -> Unit,
 ) {
     setContent {
@@ -116,6 +120,7 @@ fun AndroidComposeTestRule<*, *>.captureScreen(
             dynamicColor = false,
             palette = palette,
             amoled = variant.amoled,
+            chat = chat,
         ) {
             CompositionLocalProvider(LocalLayoutDirection provides variant.layoutDirection, content = content)
         }

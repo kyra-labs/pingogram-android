@@ -91,6 +91,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
+- **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
+  scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
+  the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands
+  conversations a `ChatStyle` (`MaterialTheme.chatStyle`, `core:ui`): the scaled message text with its optical size
+  re-derived, the bubble shapes with the chosen corners, and the wallpaper as a `Brush` (null for none), rebuilt as
+  the scheme cross-fades. `feature:settings`' Chat appearance page (`ChatAppearanceRoute`, `ChatAppearanceViewModel`)
+  sets it, with a preview drawn from that same style. The conversation (`feature:chat`'s `BubbleTheme`, the
+  conversation's sheet) does not read it yet: wiring it in is the conversation owner's change.
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
