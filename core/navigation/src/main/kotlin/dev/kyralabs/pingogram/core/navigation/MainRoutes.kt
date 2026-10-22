@@ -45,11 +45,18 @@ data object SettingsRoute
 data object EditProfileRoute
 
 /**
- * Appearance settings (`REQUIREMENTS.md` FR-S2): theme, dynamic color, AMOLED black and contrast, `:feature:settings`,
- * pushed above the Settings tab.
+ * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast,
+ * `:feature:settings`, pushed above the Settings tab.
  */
 @Serializable
 data object AppearanceRoute
+
+/**
+ * The color theme (`REQUIREMENTS.md` FR-S2, `docs/adr/0016-color-themes.md`): the wallpaper's colors or one of the
+ * generated themes, `:feature:settings`, pushed above Appearance.
+ */
+@Serializable
+data object ColorThemeRoute
 
 /**
  * The app's language (`REQUIREMENTS.md` FR-S1, §6.4): the system's or one of the languages Pingogram ships,

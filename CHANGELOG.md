@@ -19,6 +19,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   that start a bot (`t.me/bot?start=…`) open its chat with "Start" ready; nothing is sent until you tap it.
 - A bot's menu button appears at the start of the field. Bots whose menu opens a Mini App say that Pingogram can't
   open Mini Apps yet.
+- Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
+  more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
+  Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
+  with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so

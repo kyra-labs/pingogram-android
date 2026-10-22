@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,6 +23,12 @@ interface AppearanceRepository {
 
     /** Saves whether dynamic color is on; fails as [setThemeMode] does. */
     suspend fun setDynamicColor(enabled: Boolean): Outcome<Unit>
+
+    /**
+     * Saves [palette] as the color theme and turns dynamic color off, in one write, so the theme never shows the one
+     * without the other; fails as [setThemeMode] does.
+     */
+    suspend fun setPalette(palette: ThemePalette): Outcome<Unit>
 
     /** Saves [contrast]; fails as [setThemeMode] does. */
     suspend fun setContrast(contrast: Contrast): Outcome<Unit>

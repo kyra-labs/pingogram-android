@@ -86,17 +86,6 @@ class AppearanceViewModelTest {
         }
 
     @Test
-    fun `turning dynamic color off saves it`() =
-        runTest {
-            repository.save(AppearanceSettings())
-            val viewModel = viewModel()
-
-            send(viewModel, AppearanceEvent.SetDynamicColor(false))
-
-            assertEquals(AppearanceUiState.Content(AppearanceSettings(dynamicColor = false)), viewModel.state)
-        }
-
-    @Test
     fun `turning AMOLED black on saves it`() =
         runTest {
             repository.save(AppearanceSettings())
