@@ -33,12 +33,29 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   you type. Bots that ask where you are ask you first, once per bot until Pingogram restarts; "Not now" searches
   without your location. Games from inline bots can't be played yet.
 - App shortcuts: long-press Pingogram's icon for New chat, Search and Saved Messages.
+- Voice calls: Pingogram rings with your ringtone when someone calls, on the lock screen too, where you slide to answer
+  or decline, or decline and write a message instead. During a call you can mute, switch between the phone, the speaker
+  and a wired or Bluetooth headset, and put the call on hold; the screen turns off when you hold the phone to your ear.
+  Four emojis show when the call is end-to-end encrypted: if the other person sees the same ones, nobody is listening
+  in. Calls work with your headset's buttons, your car and your watch, and a phone call puts a Pingogram call on hold.
+  Pingogram asks for the microphone before your first call, and on Android 12 and later for your Bluetooth headsets.
+- Someone who calls you with video reaches you as a voice call: Pingogram has no video calls yet, and the call screen
+  says you're talking with audio only.
+- Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
+  "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
   more (blue, teal, green, lime, yellow, orange, red, pink, purple, indigo, brown and monochrome), like Pixel's
   Wallpaper & style, with a preview of a chat and messages in the theme. Dark theme, AMOLED black and contrast work
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 - A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
+- Chat appearance (Settings → Appearance → Chat appearance): message text size from 85% to 130%, how round message
+  bubbles are, and a wallpaper behind the messages, a tint or a gradient in your theme's colors, with a live preview.
+  Conversations take them up in a coming update.
+
+### Changed
+- The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
+  scrolling, and flinging back, has less to do in each frame.
 
 ### Changed
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so

@@ -13,6 +13,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
@@ -38,6 +39,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThemePalette
  * @param contrast used where the system has no contrast setting (before Android 14); from Android 14 the system's
  *   contrast level replaces it ([systemContrastOrNull]), for the colors and the typography alike.
  * @param amoled true-black surfaces in dark theme.
+ * @param chat how conversations look ([ChatStyle], `MaterialTheme.chatStyle`): message text size, bubble corners and
+ *   wallpaper.
  */
 @Composable
 fun PingogramTheme(
@@ -46,6 +49,7 @@ fun PingogramTheme(
     palette: ThemePalette = ThemePalette.Pingogram,
     contrast: Contrast = Contrast.Standard,
     amoled: Boolean = false,
+    chat: ChatAppearance = ChatAppearance(),
     content: @Composable () -> Unit,
 ) {
     val dark = themeMode.isDark()
@@ -57,15 +61,18 @@ fun PingogramTheme(
         )
     val pingogramColors = remember(colorScheme, dark) { pingogramColors(colorScheme, dark) }
     val settings =
-        remember(dynamicColor, palette, contrast, amoled, dark) {
-            ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled)
+        remember(dynamicColor, palette, contrast, amoled, dark, chat) {
+            ThemeSettings(dynamicColor, palette, contrast, amoled, dark && amoled, chat)
         }
+    val fontWeightAdjustment = LocalConfiguration.current.fontWeightAdjustmentOrZero()
+    val messageText = pingogramMessageText(chat.textScale, fontWeightAdjustment, effectiveContrast)
+    val conversationStyle =
+        remember(chat, messageText, colorScheme) { chatStyle(chat, messageText, PingogramShapes, colorScheme) }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = ExpressiveMotionScheme,
         shapes = PingogramShapes,
-        typography =
-            pingogramTypography(LocalConfiguration.current.fontWeightAdjustmentOrZero(), effectiveContrast),
+        typography = pingogramTypography(fontWeightAdjustment, effectiveContrast),
     ) {
         CompositionLocalProvider(
             LocalPingogramColors provides pingogramColors,
@@ -73,6 +80,7 @@ fun PingogramTheme(
             LocalPingogramSizes provides DefaultSizes,
             LocalRippleThemeConfiguration provides RippleDefaults.InsetFocusRingThemeConfiguration,
             LocalThemeSettings provides settings,
+            LocalChatStyle provides conversationStyle,
             content = content,
         )
     }
@@ -92,6 +100,7 @@ fun PingogramDarkTheme(content: @Composable () -> Unit) {
         palette = settings.palette,
         contrast = settings.contrast,
         amoled = settings.amoled,
+        chat = settings.chat,
         content = content,
     )
 }
@@ -106,6 +115,7 @@ private data class ThemeSettings(
     val contrast: Contrast,
     val amoled: Boolean,
     val amoledBlack: Boolean,
+    val chat: ChatAppearance,
 )
 
 private val LocalThemeSettings =
@@ -116,6 +126,7 @@ private val LocalThemeSettings =
             contrast = Contrast.Standard,
             amoled = false,
             amoledBlack = false,
+            chat = ChatAppearance(),
         )
     }
 

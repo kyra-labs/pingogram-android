@@ -121,7 +121,7 @@ private fun TdApi.MessageContent.toActivityAction(): ServiceAction? =
 private val MessageSender?.userId: Long?
     get() = (this as? MessageSender.User)?.userId
 
-private fun TdApi.CallDiscardReason.toCallDiscardReason(): CallDiscardReason =
+internal fun TdApi.CallDiscardReason?.toCallDiscardReason(): CallDiscardReason =
     when (this) {
         is TdApi.CallDiscardReasonMissed -> CallDiscardReason.Missed
 

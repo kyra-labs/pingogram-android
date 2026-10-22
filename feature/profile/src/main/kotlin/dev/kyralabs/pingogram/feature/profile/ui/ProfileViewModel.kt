@@ -535,6 +535,7 @@ class ProfileViewModel internal constructor(
             isBlocked = blockedNow.takeIf { !isSelf && !isDeleted },
             isChangingBlock = overlay.isChangingBlock,
             canReport = !isSelf && !isDeleted && chat != null,
+            callUserId = user.id.takeIf { isRegular && !isSelf && info?.canBeCalled == true },
         )
     }
 

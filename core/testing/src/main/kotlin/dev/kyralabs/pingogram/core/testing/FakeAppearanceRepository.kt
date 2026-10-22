@@ -3,6 +3,9 @@ package dev.kyralabs.pingogram.core.testing
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
@@ -45,6 +48,15 @@ class FakeAppearanceRepository(
     override suspend fun setContrast(contrast: Contrast) = change { it.copy(contrast = contrast) }
 
     override suspend fun setAmoled(enabled: Boolean) = change { it.copy(amoled = enabled) }
+
+    override suspend fun setChatTextScale(scale: Float) =
+        change { it.copy(chat = it.chat.copy(textScale = ChatAppearance.textScaleOf(scale))) }
+
+    override suspend fun setBubbleCorners(corners: BubbleCorners) =
+        change { it.copy(chat = it.chat.copy(bubbleCorners = corners)) }
+
+    override suspend fun setChatWallpaper(wallpaper: ChatWallpaper) =
+        change { it.copy(chat = it.chat.copy(wallpaper = wallpaper)) }
 
     private fun change(transform: (AppearanceSettings) -> AppearanceSettings): Outcome<Unit> {
         failure?.let { return Outcome.Failure(it) }

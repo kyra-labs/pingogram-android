@@ -71,6 +71,7 @@ include(":core:testing")
 include(":core:ui")
 
 include(":feature:auth")
+include(":feature:calls")
 include(":feature:chat")
 include(":feature:chats")
 include(":feature:contacts")

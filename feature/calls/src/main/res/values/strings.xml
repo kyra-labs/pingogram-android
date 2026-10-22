@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The other person while TDLib does not know their name. -->
+    <string name="call_someone">Someone</string>
+
+    <!-- The call's stage under the name (call screen, ongoing notification). -->
+    <string name="call_status_requesting">Calling…</string>
+    <string name="call_status_calling">Calling…</string>
+    <string name="call_status_incoming">Incoming voice call</string>
+    <string name="call_status_ringing">Ringing…</string>
+    <string name="call_status_connecting">Connecting…</string>
+    <string name="call_status_connected">In call</string>
+    <string name="call_status_reconnecting">Reconnecting…</string>
+    <string name="call_status_on_hold">On hold</string>
+    <string name="call_status_ended">Call ended</string>
+    <string name="call_end_no_answer">No answer</string>
+    <string name="call_end_missed">Missed call</string>
+    <string name="call_end_busy">Busy</string>
+    <string name="call_end_declined">Call declined</string>
+    <string name="call_end_disconnected">Connection lost</string>
+
+    <!-- The connection's quality beside the timer, for screen readers. -->
+    <string name="call_signal_good">Good connection</string>
+    <string name="call_signal_weak">Weak connection</string>
+
+    <!-- The key's emojis at the top of the call screen. %1$s: the four emojis. -->
+    <string name="call_key_description">Encryption key: %1$s</string>
+    <string name="call_key_explain">Explain the emojis</string>
+    <!-- %1$s: the other person's name. -->
+    <string name="call_key_explanation">If %1$s sees the same emojis, your call is end-to-end encrypted.</string>
+
+    <string name="call_minimize">Back to the app</string>
+    <string name="call_answer">Answer</string>
+    <string name="call_decline">Decline</string>
+    <string name="call_hang_up">Hang up</string>
+    <string name="call_mute">Mute</string>
+    <string name="call_hold">Hold</string>
+    <string name="call_speaker">Speaker</string>
+    <string name="call_audio">Audio</string>
+    <!-- Under the name when the other person calls with video or turns it on (docs/adr/0019-video-and-group-calls-scope.md). -->
+    <string name="call_audio_only">Video calls aren\'t supported yet: you\'re talking with audio only</string>
+    <!-- The incoming call's chip: declines the call and opens the chat with the caller. -->
+    <string name="call_message">Message</string>
+    <!-- The answer slider, for screen readers, which answer and decline through its actions. -->
+    <string name="call_slide_description">Incoming call. Slide toward Answer to answer, or toward Decline to decline</string>
+
+    <!-- The audio outputs of the route menu. -->
+    <string name="call_route_phone">Phone</string>
+    <string name="call_route_speaker">Speaker</string>
+    <string name="call_route_headset">Wired headset</string>
+    <string name="call_route_bluetooth">Bluetooth</string>
+    <string name="call_route_selected">Selected</string>
+
+    <!-- Before Android asks for the microphone (and Bluetooth headsets on Android 12+). -->
+    <string name="call_microphone_rationale">To talk, Pingogram needs your microphone. It is used only during calls, and nothing is recorded. On Android 12 and later, Android also asks to find your Bluetooth headsets, so you can move the call to one.</string>
+    <string name="call_microphone_settings">To talk, allow Pingogram to use your microphone in its settings.</string>
+    <string name="call_not_now">Not now</string>
+    <string name="call_continue">Continue</string>
+    <string name="call_open_settings">Open settings</string>
+</resources>

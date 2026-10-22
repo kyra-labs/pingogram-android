@@ -59,6 +59,13 @@ data object AppearanceRoute
 data object ColorThemeRoute
 
 /**
+ * How conversations look (`REQUIREMENTS.md` FR-S1, Chat settings): message text size, bubble corners and wallpaper,
+ * `:feature:settings`, pushed above Appearance.
+ */
+@Serializable
+data object ChatAppearanceRoute
+
+/**
  * The app's language (`REQUIREMENTS.md` FR-S1, §6.4): the system's or one of the languages Pingogram ships,
  * `:feature:settings`, pushed above the Settings tab.
  */

@@ -5,11 +5,15 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
@@ -135,6 +139,46 @@ class DataStoreAppearanceRepositoryTest {
         }
 
     @Test
+    fun `the chat appearance survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = repository(dataStore(firstProcess))
+            first.setChatTextScale(1.2f)
+            first.setBubbleCorners(BubbleCorners.Large)
+            first.setChatWallpaper(ChatWallpaper.SecondaryToPrimary)
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val restarted = repository().appearance.first()
+
+            assertEquals(ChatAppearance(1.2f, BubbleCorners.Large, ChatWallpaper.SecondaryToPrimary), restarted.chat)
+        }
+
+    @Test
+    fun `a text size off the steps or out of range reads as the nearest step`() =
+        runTest {
+            val dataStore = dataStore()
+            dataStore.edit { it[floatPreferencesKey("appearance.chat.text_scale")] = 1.17f }
+            assertEquals(
+                1.15f,
+                repository(dataStore)
+                    .appearance
+                    .first()
+                    .chat.textScale,
+                0.001f,
+            )
+
+            dataStore.edit { it[floatPreferencesKey("appearance.chat.text_scale")] = 9f }
+            assertEquals(
+                ChatAppearance.MAX_TEXT_SCALE,
+                repository(dataStore)
+                    .appearance
+                    .first()
+                    .chat.textScale,
+                0.001f,
+            )
+        }
+
+    @Test
     fun `a value saved by another version that this one does not know reads as the default`() =
         runTest {
             val dataStore = dataStore()
@@ -142,6 +186,8 @@ class DataStoreAppearanceRepositoryTest {
                 it[stringPreferencesKey("appearance.theme_mode")] = "Sepia"
                 it[stringPreferencesKey("appearance.contrast")] = "Extreme"
                 it[stringPreferencesKey("appearance.palette")] = "Chartreuse"
+                it[stringPreferencesKey("appearance.chat.bubble_corners")] = "Square"
+                it[stringPreferencesKey("appearance.chat.wallpaper")] = "Photo"
             }
 
             assertEquals(AppearanceSettings(), repository(dataStore).appearance.first())

@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
+import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
@@ -63,6 +64,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun secretChatCache(repository: TdlibSecretChatRepository): TdlibUpdateCache
+
+    /** TDLib announces each call, an incoming one too, only with `updateCall`. */
+    @Binds
+    @IntoSet
+    fun callCache(repository: TdlibCallRepository): TdlibUpdateCache
 
     @Binds
     @IntoSet

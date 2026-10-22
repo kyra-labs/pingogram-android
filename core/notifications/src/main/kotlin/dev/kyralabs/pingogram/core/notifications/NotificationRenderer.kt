@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroup
+import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,8 @@ import javax.inject.Singleton
  *   ([ChatNotificationAlerts]); restored ones never do.
  * - The groups of chats whose conversation is on screen are not shown at all: the user sees the messages arrive, and
  *   TDLib removes them as they are read. One still unread when the chat leaves the screen shows then, silently.
+ * - Calls groups (an incoming call) are not shown either: `feature:calls` rings with its own call notification
+ *   ([CallNotificationBuilder]); a missed call reaches the chat's group as a message.
  * - Once TDLib has restored the notifications of the last run, notifications of this app that it no longer knows are
  *   cancelled (they belong to a previous process).
  * - Logging out, or a start without a logged-in account, cancels everything and removes the conversation shortcuts.
@@ -93,7 +96,7 @@ class NotificationRenderer
                     manager.cancel(GROUP_TAG, groupId)
                 }
                 for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
-                    val visible = group.chatId !in active.openChatIds
+                    val visible = group.chatId !in active.openChatIds && group.type != NotificationGroupType.Calls
                     val previous = shown[group.id]
                     if (previous != null && previous.group == group && previous.visible == visible) continue
                     shown[group.id] = Shown(group, visible)

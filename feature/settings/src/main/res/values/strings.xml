@@ -53,6 +53,38 @@
     <string name="settings_amoled_summary">Pure black backgrounds in dark theme</string>
     <string name="settings_section_colors">Colors</string>
     <!-- Settings → Appearance → Theme (docs/adr/0016-color-themes.md): the color theme, as Pixel's Wallpaper & style. -->
+    <!-- Settings → Appearance → Chat appearance (REQUIREMENTS.md FR-S1): how conversations look. The row on Appearance shows the
+         text size, the corners and the wallpaper, e.g. "110% text · Very rounded · No wallpaper" -->
+    <string name="settings_chat_appearance">Chat appearance</string>
+    <string name="settings_section_chats">Chats</string>
+    <string name="settings_chat_appearance_summary">%1$s text · %2$s · %3$s</string>
+    <string name="settings_chat_section_messages">Messages</string>
+    <string name="settings_chat_section_wallpaper">Wallpaper</string>
+    <!-- Screen readers' description of the page's sample conversation -->
+    <string name="settings_chat_preview">Preview of a conversation with these settings</string>
+    <!-- The sample conversation: two messages from a friend and the user's reply -->
+    <string name="settings_chat_sample_first">Are you coming to the climbing wall on Sunday?</string>
+    <string name="settings_chat_sample_second">We start at nine 🧗</string>
+    <string name="settings_chat_sample_reply">Count me in! I\'ll bring snacks.</string>
+    <string name="settings_chat_text_size">Message text size</string>
+    <string name="settings_chat_bubble_corners">Bubble corners</string>
+    <!-- How round message bubbles are, from least to most: the steps of a slider -->
+    <string name="settings_chat_corners_medium">Slightly rounded</string>
+    <string name="settings_chat_corners_large">Rounded</string>
+    <string name="settings_chat_corners_large_increased">More rounded</string>
+    <string name="settings_chat_corners_extra_large">Very rounded</string>
+    <string name="settings_chat_corners_extra_large_increased">Most rounded</string>
+    <!-- Chat wallpapers, drawn from the current theme's colors: none, a plain gray, a tint of the theme's main, second
+         or third color, or a gradient between two of them. Also the "No wallpaper" of the Appearance row's summary -->
+    <string name="settings_chat_wallpaper_none">No wallpaper</string>
+    <string name="settings_chat_wallpaper_neutral">Gray</string>
+    <string name="settings_chat_wallpaper_primary">Main color</string>
+    <string name="settings_chat_wallpaper_secondary">Second color</string>
+    <string name="settings_chat_wallpaper_tertiary">Third color</string>
+    <string name="settings_chat_wallpaper_primary_tertiary">Main to third color</string>
+    <string name="settings_chat_wallpaper_secondary_primary">Second to main color</string>
+    <string name="settings_chat_wallpaper_tertiary_secondary">Third to second color</string>
+    <string name="settings_chat_wallpaper_neutral_primary">Gray to main color</string>
     <string name="settings_color_theme">Theme</string>
     <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
     <string name="settings_color_theme_section_basic">Basic colors</string>

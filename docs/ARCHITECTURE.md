@@ -8,7 +8,7 @@
 ├────────────────────────────────────────────────────────────────┤
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
-│   · scanner (the QR code scanner, CameraX)                     │
+│   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
@@ -91,6 +91,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `tools/theme` generates into `core:ui` (`themeColorScheme`) and whose splash screens into `:app`
   (`SplashPaletteThemes.kt`); `feature:settings`' Theme page (`ColorThemeRoute`, `ColorThemeViewModel`) picks one,
   saving it and dynamic color in one write (`AppearanceRepository.setPalette`).
+- **Chat appearance** (FR-S1, Chat settings): `AppearanceSettings.chat` (`ChatAppearance`, `core:domain`: message text
+  scale 0.85–1.3 in 5% steps, `BubbleCorners` from the shape scale, `ChatWallpaper` from the theme's roles) lives with
+  the theme settings in DataStore (`appearance.chat.*`), so `PingogramTheme` gets it with the rest and hands
+  conversations a `ChatStyle` (`MaterialTheme.chatStyle`, `core:ui`): the scaled message text with its optical size
+  re-derived, the bubble shapes with the chosen corners, and the wallpaper as a `Brush` (null for none), rebuilt as
+  the scheme cross-fades. `feature:settings`' Chat appearance page (`ChatAppearanceRoute`, `ChatAppearanceViewModel`)
+  sets it, with a preview drawn from that same style. The conversation (`feature:chat`'s `BubbleTheme`, the
+  conversation's sheet) does not read it yet: wiring it in is the conversation owner's change.
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
@@ -652,6 +660,33 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the text as caption (`ChatAttachments.addShared`), prepared and later cleaned up as picked files are.
 - **Several chats**: `TdlibShareRepository` prepares the files once (`AttachmentPreparer`) and sends the same copies to
   each chat (`sendAttachments`), holding them from `UploadCleaner` (`hold`, `release`) until all were sent.
+
+## Calls
+
+`REQUIREMENTS.md` FR-V1, `docs/adr/0015-call-media-engine.md` (the engine), `docs/adr/0018-calls-and-telecom.md` (Android).
+
+- **Signaling**: `core:domain`'s `CallRepository` (`TdlibCallRepository`, `core:data`, a `TdlibUpdateCache`: TDLib
+  announces every call with `updateCall` only) keeps the session's calls and passes the other side's engine data
+  (`updateNewCallSignalingData`) on; it starts (`createCall`), answers (`acceptCall`), ends (`discardCall`) calls and
+  sends the engine's data (`sendCallSignalingData`). TDLib does the Diffie-Hellman exchange and gives the key, the
+  emojis and the servers in `callStateReady` (`CallConnection`).
+- **Engine**: `:feature:calls`' `CallEngine` (`NtgCallsEngine`: NTgCalls, the AAR `pingogram.ntgcalls` installs) takes
+  TDLib's key (`skipExchange`), the servers and the other side's library versions, and opens the microphone and the
+  speaker through Oboe. Its blocking Java API runs on one thread of its own; its library loads with the first call.
+- **`CallManager`** (`:feature:calls`, started by `PingogramApplication` through `Calls` before TDLib) is the call's state
+  machine: one call at a time (another incoming one is declined), `ActiveCall` as its state, the engine started once
+  TDLib says ready (with the data the other side sent before kept per call), Telecom (`CallSystem`:
+  `TelecomCallSystem` on Jetpack's `core-telecom`, `AudioManagerCall` without Telecom) for routes, hold, mute and
+  answering from headsets, the foreground service (`CallService`: `phoneCall`, `microphone` once talking, the proximity
+  wake lock at the earpiece) and the ringback and busy tones (`ToneGenerator`). Its parts are interfaces bound in
+  `CallsModule`, so its tests run on the JVM.
+- **Notifications**: `CallNotifications` posts `core:notifications`' `CallNotificationBuilder` (call style) as the call
+  changes, with the service's id; "Decline" and "Hang up" go to `CallActionReceiver`, "Answer" and the full-screen
+  intent to `CallActivity`. `NotificationRenderer` skips TDLib's call notification groups.
+- **Call screen**: `CallActivity` (its own task, over the lock screen, not exported) with `CallViewModel` (the call,
+  the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
+  buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
+  features as a callback (features do not depend on each other).
 
 ## Home screen widget
 
