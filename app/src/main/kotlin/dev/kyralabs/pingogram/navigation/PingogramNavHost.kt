@@ -9,10 +9,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraphBuilder
@@ -42,6 +44,7 @@ import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
+import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.settings.navigation.popBackStackAfterProfileSaved
@@ -76,8 +79,10 @@ import dev.kyralabs.pingogram.ui.ChatsListDetail
  *
  * The media viewer's Forward opens the forward sheet, a dialog destination of `feature:chat`, above it, and the viewer
  * shows what came of it ([mediaViewer]). What another app shares opens the share sheet, another, above any screen
- * ([share]). A user's profile ([profile]) is pushed above the conversation whose title, a
- * sender's avatar or name, or a mention opened it.
+ * ([share]). A user's profile ([profile]) is pushed above the conversation whose title, a sender's avatar or name, or a
+ * mention opened it, growing out of the title's avatar (`avatarTransform`), and so is a group's or channel's info page
+ * ([chatInfo]); on extra-large windows the Chats tab opens both beside the conversation instead. On expanded and wider
+ * windows, a chat that search, a deep link or a profile opens shows in the Chats tab's detail pane ([navigateToChat]).
  *
  * [chatToOpen], a chat a notification asked for, opens above the chat list ([navigateToChatAboveList]) once the main
  * graph shows, and is reported to [onChatOpened]; signed out, it is dropped and reported too.
@@ -95,6 +100,8 @@ internal fun PingogramNavHost(
     val axisDistance = with(LocalDensity.current) { SharedAxisDistance.roundToPx() }
     // Saved with the back stack, so after rotation or process death the restored back stack finds the same graph.
     val startSignedIn = rememberSaveable { uiState == MainActivityUiState.SignedIn }
+    // Read by the callbacks when they run, so the graph is not built again as the window changes.
+    val besideList = rememberChatBesideList()
     NavHost(
         navController = navController,
         startDestination = if (startSignedIn) MainGraph else AuthRoute,
@@ -115,7 +122,7 @@ internal fun PingogramNavHost(
         // MainActivityUiState turns SignedIn on the same step, and the effect below leaves the flow then.
         // Navigating here as well could act on a login that a logout has already replaced.
         authScreen(onAuthorized = {})
-        mainGraph(navController, search)
+        mainGraph(navController, search, besideList)
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
@@ -191,6 +198,7 @@ private fun NavDestination.isPushed(): Boolean = isInMainGraph() && topLevelDest
 private fun NavGraphBuilder.mainGraph(
     navController: NavHostController,
     search: GlobalSearchState,
+    besideList: State<Boolean>,
 ) {
     navigation<MainGraph>(startDestination = TopLevelDestination.Start.route) {
         val openChat = { chatId: Long -> navController.navigate(ChatRoute(chatId)) { launchSingleTop = true } }
@@ -199,8 +207,10 @@ private fun NavGraphBuilder.mainGraph(
         }
         // Full screen above everything, the list-detail layout too.
         val openMedia = { chatId: Long, messageId: Long -> navController.navigateToMediaViewer(chatId, messageId) }
-        // The Chats tab lays out the chat list and the conversation side by side on expanded windows.
-        composable<ChatsRoute> {
+        // The Chats tab lays out the chat list and the conversation side by side on expanded windows, and a profile or
+        // an info page beside them on extra-large ones.
+        composable<ChatsRoute> { entry ->
+            val request by entry.savedStateHandle.chatToShow().collectAsStateWithLifecycle()
             // The conversation in the detail pane shares its media with the viewer, as the pushed one does.
             ProvideNavAnimatedVisibilityScope(this) {
                 ChatsListDetail(
@@ -213,6 +223,9 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenNewChat = { navController.navigate(NewChatRoute) { launchSingleTop = true } },
                     onOpenProfile = navController::navigateToProfile,
                     onOpenChatInfo = navController::navigateToChatInfo,
+                    onEditContact = navController::navigateToEditContact,
+                    chatToShow = request.toChatToShow(),
+                    onChatShown = { entry.savedStateHandle.chatShown() },
                 )
             }
         }
@@ -226,12 +239,15 @@ private fun NavGraphBuilder.mainGraph(
             onTwoStepVerificationDone = { navController.popBackStackAfterTwoStepVerification(it) },
         )
         // Full-screen search, on compact and medium windows (expanded ones dock it in the Chats tab's list pane):
-        // results push the conversation above it, as the archive does, and back returns to the results.
+        // results push the conversation above it, as the archive does, and back returns to the results. In a window
+        // that grew while it showed, they open beside the chat list.
         searchScreen(
             state = search,
             onBack = { navController.popBackStack() },
-            onOpenChat = openChat,
-            onOpenMessage = openMessage,
+            onOpenChat = { chatId -> navController.navigateToChat(chatId, besideList = besideList.value) },
+            onOpenMessage = { chatId, messageId ->
+                navController.navigateToChat(chatId, messageId, besideList = besideList.value)
+            },
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         newChatScreens(navController)
@@ -245,8 +261,8 @@ private fun NavGraphBuilder.mainGraph(
             onOpenProfile = navController::navigateToProfile,
             onOpenChatInfo = navController::navigateToChatInfo,
         )
-        profile(navController)
-        chatInfo(navController)
+        profile(navController, besideList)
+        chatInfo(navController, besideList)
         mediaViewer(navController)
         share(navController)
     }

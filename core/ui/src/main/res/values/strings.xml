@@ -243,4 +243,10 @@
     <string name="photo_editor_uploading">Uploading photo</string>
     <!-- Spoken by screen readers for the progress while the photo is removed. -->
     <string name="photo_editor_removing">Removing photo</string>
+    <!-- The drag handle between the conversation and the profile or group info beside it, on very wide windows -->
+    <string name="pane_extra_drag_handle">Resize the side pane</string>
+    <string name="pane_extra_width_narrow">Narrow</string>
+    <string name="pane_extra_width_medium">Medium</string>
+    <string name="pane_extra_width_wide">Wide</string>
+    <string name="pane_extra_width_next">Change width</string>
 </resources>

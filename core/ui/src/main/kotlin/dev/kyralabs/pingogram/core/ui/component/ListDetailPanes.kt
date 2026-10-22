@@ -29,8 +29,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
-// What the app's list-detail layouts share (docs/DESIGN_SYSTEM.md §2.2, §7): the Chats tab (chat list | conversation)
-// and Settings (Settings home | a page) on expanded and wider windows.
+// What the app's list-detail layouts share (docs/DESIGN_SYSTEM.md §2.2, §7): the Chats tab (chat list | conversation,
+// and on extra-large windows a profile or a group's info beside it) and Settings (Settings home | a page) on expanded
+// and wider windows.
 
 /**
  * Each pane's own rounded container beside the other (`docs/DESIGN_SYSTEM.md` §2.2, §7): `extraLarge` corners on the

@@ -229,6 +229,24 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   closes. Back pops that `NavHost` first, then the navigator closes the page. Both list-detail layouts share their pane
   parts from `core:ui` (`ListDetailPanes.kt`: the rounded pane container, the drag handle and its anchors, following
   the window's directive, showing a detail in place of another).
+- Third pane (extra-large windows, ≥ 1600 dp): the Chats tab's scaffold has a third partition there
+  (`chatsPaneScaffoldDirective`; Material gives large windows three already, which `:app` caps at two), and opens a
+  user's profile or a group's or channel's info page in the extra pane beside the conversation instead of pushing it
+  (`ChatsExtraPane`). Its navigator is `:app`'s `ChatsPaneNavigator`, Material's list-detail navigation except that the
+  extra pane takes a partition only while the history holds it, so the conversation is not narrowed by an empty pane;
+  the history (the list, a chat, a page beside it, as `ChatsPaneContent` string keys) is saved. The pane holds a
+  `NavHost` of its own, as Settings' detail pane does (`ProfileRoute` or `ChatInfoRoute` at its start, the info page's
+  pages and other profiles above it), with its own view model store, and is laid out as a window of its width
+  (`core:ui`'s `PaneAsWindow`), so the pages show their one-pane layouts. A chat a page opens goes to the detail pane,
+  closing the extra one. Back pops the pane's `NavHost`, then closes the pane, then the conversation. Its width is
+  `core:ui`'s `ExtraPaneWidth` (360 dp, 412 dp or a third of the window, saved), resized by `ExtraPaneDragHandle`,
+  since Material's drag handle resizes only two panes. Below extra-large, profiles and info pages are pushed as before.
+- Opening a chat beside the list from elsewhere (expanded and wider windows): a deep link, full-screen search (a window
+  that grew while it showed) and a profile's or info page's "Message" and shared media call `navigateToChat(chatId,
+  messageId, besideList)` (`ChatsPaneNavigation.kt`), which leaves the request in the Chats tab entry's saved state
+  (`chatToShow`) and pops back to the tab; `ChatsListDetail` shows it in the detail pane and takes it, so it survives
+  rotation and process death on the way. A profile opened from the chat's own title still pops back to it. Narrower
+  windows push `ChatRoute` as before.
 - Deep links (`docs/adr/0013-deep-links.md`): `tg://` and `http(s)://` links to `t.me` (and its subdomains),
   `telegram.me` and `telegram.dog`. `core:domain`'s `LinkRepository.resolve(link)` (`TdlibLinkRepository`, `core:data`,
   no cache) is the one entry point: `getInternalLinkType`, then the lookup the kind needs (`searchPublicChat`,
@@ -264,8 +282,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   mention (`feature:chat` hands the user up through `onOpenProfile`, `:app` navigates). The profile's "Message" pops
   back to the conversation below it when that is the user's chat, and pushes the chat otherwise; its shared media open
   the media viewer or the chat at a message. "Add to contacts" / "Edit contact" call `profileScreen`'s `onEditContact`,
-  which `:app` points at `feature:contacts`' `navigateToEditContact(userId)` (without it the rows are left out). A
-  profile as a third pane beside the conversation on extra-large windows (§7 of the design system) is not built.
+  which `:app` points at `feature:contacts`' `navigateToEditContact(userId)` (without it the rows are left out). On
+  extra-large windows the Chats tab opens them in its third pane instead (above). The title's avatar grows into the
+  pushed profile or info page with a container transform (`core:ui`'s `avatarTransform` / `avatarTransformTarget`, keyed
+  by `AvatarTransformKey`), which steps aside with reduced motion like every `containerTransform`; not into the third
+  pane, which comes in with the scaffold's own motion.
 - "Show in chat" in the media viewer pops it and pushes `ChatRoute(chatId, messageId)` in place of the
   conversation of the same chat below it, if there is one.
 - Forwarding (FR-C6): the forward sheet (`ChatForwarding` and `ForwardBottomSheet`, `feature:chat`) exists once. The
@@ -309,8 +330,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 
 - `feature:profile` also shows groups and channels (FR-P3, the leaving and deleting of FR-P4): `ChatInfoRoute(chatId)`,
   which the conversation's title opens in basic groups, supergroups and channels (`ChatHeader.opensChatInfo`;
-  private and secret chats keep `ProfileRoute`), pushed above the conversation on every window, also from the detail
-  pane. Three repositories of `core:domain`, none a cache (TDLib announces groups with `updateBasicGroup` /
+  private and secret chats keep `ProfileRoute`), pushed above the conversation, also from the detail pane, except on
+  extra-large windows, where the Chats tab opens it in its third pane (Navigation). Three repositories of `core:domain`, none a cache (TDLib announces groups with `updateBasicGroup` /
   `updateSupergroup` and their full info only to whoever asks):
   - `GroupInfoRepository` (`TdlibGroupInfoRepository`): `groupInfo(chatId)` is `getBasicGroup` / `getSupergroup` with
     their full info, then every update of the group, its full info and `updateChatPermissions` while collected, as

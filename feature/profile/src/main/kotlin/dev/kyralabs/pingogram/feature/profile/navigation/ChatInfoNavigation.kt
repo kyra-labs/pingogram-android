@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.profile.navigation
 
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
@@ -13,6 +14,9 @@ import dev.kyralabs.pingogram.core.navigation.EditChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.EditInviteLinkRoute
 import dev.kyralabs.pingogram.core.navigation.InviteLinksRoute
 import dev.kyralabs.pingogram.core.navigation.MemberRightsRoute
+import dev.kyralabs.pingogram.core.ui.transition.AvatarTransformKey
+import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.core.ui.transition.avatarTransformTarget
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoNavigation
 import dev.kyralabs.pingogram.feature.profile.chatinfo.ChatInfoPage
 import dev.kyralabs.pingogram.feature.profile.chatinfo.INVITE_LINKS_CHANGED_RESULT
@@ -48,27 +52,31 @@ fun NavGraphBuilder.chatInfoScreens(
 ) {
     composable<ChatInfoRoute> { entry ->
         val chatId = entry.toRoute<ChatInfoRoute>().chatId
-        ChatInfoScreenRoute(
-            navigation =
-                ChatInfoNavigation(
-                    onBack = onBack,
-                    onLeft = onLeft,
-                    onOpenChat = onOpenChat,
-                    onOpenProfile = onOpenProfile,
-                    onOpenMembers = { filter -> onOpen(ChatMembersRoute(chatId, filter.name)) },
-                    onOpenPage = { page ->
-                        onOpen(
-                            when (page) {
-                                ChatInfoPage.EditInfo -> EditChatInfoRoute(chatId)
-                                ChatInfoPage.Permissions -> ChatPermissionsRoute(chatId)
-                                ChatInfoPage.InviteLinks -> InviteLinksRoute(chatId)
-                            },
-                        )
-                    },
-                    onOpenMedia = onOpenMedia,
-                    onOpenMessage = onOpenMessage,
-                ),
-        )
+        // It grows out of the conversation's avatar, and shrinks back into it.
+        ProvideNavAnimatedVisibilityScope(this) {
+            ChatInfoScreenRoute(
+                modifier = Modifier.avatarTransformTarget(AvatarTransformKey.chatInfo(chatId)),
+                navigation =
+                    ChatInfoNavigation(
+                        onBack = onBack,
+                        onLeft = onLeft,
+                        onOpenChat = onOpenChat,
+                        onOpenProfile = onOpenProfile,
+                        onOpenMembers = { filter -> onOpen(ChatMembersRoute(chatId, filter.name)) },
+                        onOpenPage = { page ->
+                            onOpen(
+                                when (page) {
+                                    ChatInfoPage.EditInfo -> EditChatInfoRoute(chatId)
+                                    ChatInfoPage.Permissions -> ChatPermissionsRoute(chatId)
+                                    ChatInfoPage.InviteLinks -> InviteLinksRoute(chatId)
+                                },
+                            )
+                        },
+                        onOpenMedia = onOpenMedia,
+                        onOpenMessage = onOpenMessage,
+                    ),
+            )
+        }
     }
     composable<ChatMembersRoute> { entry ->
         val chatId = entry.toRoute<ChatMembersRoute>().chatId

@@ -51,9 +51,11 @@ internal fun OpenLinkEffect(
  * Opens the screen of a link's [target] (`docs/adr/0013-deep-links.md`); false for a target without a screen yet
  * (`hasScreen`), which then opens nothing.
  *
- * - A **chat** is pushed above the screen the link was tapped on, or, from another app ([fromOutside]), above the chat
- *   list, as from a notification, so back returns to the chat list. A link to the chat already open shows nothing new;
- *   one to a message of it opens the conversation at the message in its place, as "Show in chat" does.
+ * - A **chat** opens in the Chats tab's detail pane on expanded and wider windows ([besideList], [navigateToChat]),
+ *   back on the Chats tab. On others it is pushed above the screen the link was tapped on, or, from another app
+ *   ([fromOutside]), above the chat list, as from a notification, so back returns to the chat list. A link to the chat
+ *   already open shows nothing new; one to a message of it opens the conversation at the message in its place, as
+ *   "Show in chat" does.
  * - A **user's profile** is pushed, and so is a group's or channel's **info** (`ChatInfoRoute`).
  * - **Contacts** and **Settings** switch tabs, a page of Settings is pushed above its tab; **Edit profile** and **New
  *   chat** are pushed; **search** opens with [onOpenSearch], docked or full screen as the window wants.
@@ -66,9 +68,10 @@ internal fun NavHostController.openLinkTarget(
     fromOutside: Boolean,
     onOpenSearch: () -> Unit,
     onShare: (SharedContent) -> Unit = {},
+    besideList: Boolean = false,
 ): Boolean {
     when (target) {
-        is LinkTarget.Chat -> openLinkedChat(target, fromOutside)
+        is LinkTarget.Chat -> openLinkedChat(target, fromOutside, besideList)
         is LinkTarget.ChatInfo -> navigateToChatInfo(target.chatId)
         is LinkTarget.UserProfile -> navigateToProfile(target.userId)
         LinkTarget.EditProfile -> navigate(EditProfileRoute) { launchSingleTop = true }
@@ -82,15 +85,20 @@ internal fun NavHostController.openLinkTarget(
     return true
 }
 
-/** Pushes the conversation of [target], [fromOutside] above the chat list; nothing if it shows already. */
+/**
+ * Opens the conversation of [target] in the Chats tab's detail pane where [besideList], or pushes it, [fromOutside]
+ * above the chat list; nothing if it shows already.
+ */
 private fun NavHostController.openLinkedChat(
     target: LinkTarget.Chat,
     fromOutside: Boolean,
+    besideList: Boolean,
 ) {
     val current = currentBackStackEntry
     val openChat = current?.takeIf { it.destination.hasRoute<ChatRoute>() }?.toRoute<ChatRoute>()
     val sameChat = openChat?.chatId == target.chatId
     if (sameChat && target.messageId == null) return
+    if (besideList) return navigateToChat(target.chatId, target.messageId, besideList = true)
     navigate(ChatRoute(target.chatId, target.messageId)) {
         when {
             sameChat -> popUpTo<ChatRoute> { inclusive = true }

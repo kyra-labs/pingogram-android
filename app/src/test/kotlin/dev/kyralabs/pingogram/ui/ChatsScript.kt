@@ -16,7 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Three private chats as TDLib announces them while the main chat list loads, with their users and a short history
  * each, scripted on a [FakeTdlibClient] for the tests of the Chats tab that run the real repositories: `getChat`, and
  * `getChatHistory` from any message with TDLib's offsets (a conversation with unread messages opens around the last
- * one read). Opening and closing a chat succeed; the archive and every later page of the main list are empty.
+ * one read), and `createPrivateChat` for their users. Opening and closing a chat succeed; the archive and every later
+ * page of the main list are empty.
  */
 internal object ChatsScript {
     const val ADA = 101L
@@ -64,6 +65,11 @@ internal object ChatsScript {
         tdlib.on(TdApi.GetChat::class) { request ->
             chats.firstOrNull { it.id == request.chatId }?.let { TdResult.Success(it) }
                 ?: TdResult.Failure(TdError(404, "Not Found"))
+        }
+        // A user's private chat has the user's id.
+        tdlib.on(TdApi.CreatePrivateChat::class) { request ->
+            chats.firstOrNull { it.id == request.userId }?.let { TdResult.Success(it) }
+                ?: TdResult.Failure(TdError(400, "USER_ID_INVALID"))
         }
         tdlib.on(TdApi.OpenChat::class, TdResult.Success(TdApi.Ok()))
         tdlib.on(TdApi.CloseChat::class, TdResult.Success(TdApi.Ok()))
