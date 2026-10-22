@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Send feedback: Settings → About → "Send feedback or report a bug" prepares a report on your phone (the app's version,
+  your phone and Android version, the last crash and the end of the connection log, with messages, names and phone
+  numbers taken out) that you read first and then share with an app you choose or open as a GitHub issue. Pingogram
+  sends nothing by itself.
 - Bot buttons: the buttons bots put under their messages now show, in rows under the message, and change when the
   bot updates them. A button can answer with a short notice or an alert, open a link (Pingogram asks first when the
   button's text hides where a web link goes), log you in to a site with your Telegram account after you agree (and

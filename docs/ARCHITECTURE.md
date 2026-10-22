@@ -9,6 +9,7 @@
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
 │   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
+│   · feedback (the report testers share themselves)             │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
@@ -704,6 +705,24 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   goes. Rows open their chat with `NotificationIntents.openChat`; "New chat" sends `tg://new` to `MainActivity`.
 - Goldens draw the real `RemoteViews` (`GlanceRemoteViews`) in an `AppWidgetHostView`, the only parent Android fills a
   widget's list in.
+
+## Feedback
+
+`docs/TESTING_GUIDE.md`, `CLAUDE.md` rule 10: nothing leaves the device unless the user shares it.
+
+- `core:data`'s `CrashRecorder`, made and installed by `PingogramApplication` before anything else (Hilt included),
+  chains Android's default uncaught exception handler: it writes the last crash (time, thread, the exception and its
+  causes with redacted messages, at most 40 frames each) to `filesDir/diagnostics/last_crash.txt`, then hands the crash
+  on. TDLib logs its errors (verbosity 1) to its rotating file in release builds too (`docs/TDLIB.md`).
+- `core:domain`'s `DiagnosticsRepository` (`AndroidDiagnosticsRepository`, `core:data`) reads them on the IO dispatcher
+  into a `DiagnosticReport`: `AppInfo` (version, version code, flavor, build type), the device, the crash and the last
+  200 lines of TDLib's log, every line through `Redaction` (TDLib's text and name fields, quoted strings, emails,
+  tokens, numbers of 7 digits or more).
+- `feature:feedback` (`FeedbackRoute`, pushed above Settings → About, whose row opens it through `core:ui`'s
+  `LocalFeedbackLauncher`, which `PingogramApp` provides) shows the report with the user's description
+  (`FeedbackViewModel`, the description in saved state), and on request shares its text (`ACTION_SEND`), copies it,
+  or opens a new GitHub issue from `.github/ISSUE_TEMPLATE/bug_report.yml` with its fields in the address (at most
+  8,000 characters, the log's oldest lines dropped first).
 
 ## Error handling
 

@@ -131,6 +131,7 @@ dependencies {
     implementation(projects.feature.chat)
     implementation(projects.feature.chats)
     implementation(projects.feature.contacts)
+    implementation(projects.feature.feedback)
     implementation(projects.feature.media)
     implementation(projects.feature.profile)
     implementation(projects.feature.scanner)

@@ -9,6 +9,7 @@ import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
+import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
@@ -71,6 +72,9 @@ class PingogramApplication :
     lateinit var imageLoader: dagger.Lazy<ImageLoader>
 
     override fun onCreate() {
+        // Keeps the last crash on the device for "Send feedback", which the user shares themselves; first, so a crash
+        // while the app starts is kept too.
+        CrashRecorder(this).install()
         super.onCreate()
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()

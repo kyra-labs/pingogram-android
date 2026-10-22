@@ -211,7 +211,9 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Optional app passcode with biometric prompt; screen obscured in recents when enabled.
 - Network only to Telegram data centers (via TDLib) and user-requested links; no third-party
   network calls (the `gms` flavor's push service, FR-N3, is the one exception; `foss` has none). `networkSecurityConfig` with cleartext disabled.
-- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release.
+- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release. Logs and the last
+  crash stay on the device; "Send feedback" redacts them into a report the user reads and shares themselves
+  (`docs/TESTING_GUIDE.md`), never sent by the app.
 - Contacts sync (FR-P1, `docs/adr/0011-contacts-sync.md`, approved by the owner 2026-10-21) is opt-in and off by
   default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
   Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in

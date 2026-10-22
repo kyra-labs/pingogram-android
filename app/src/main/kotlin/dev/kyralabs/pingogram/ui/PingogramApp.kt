@@ -36,6 +36,7 @@ import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
@@ -50,6 +51,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
+import dev.kyralabs.pingogram.feature.feedback.navigation.navigateToFeedback
 import dev.kyralabs.pingogram.link.LinkDispatcher
 import dev.kyralabs.pingogram.navigation.PingogramNavHost
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
@@ -150,6 +152,7 @@ fun PingogramApp(
     val search = rememberGlobalSearchState()
     val searchOpen by rememberSearchOpen(navController, search)
     val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
+    val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
@@ -164,6 +167,7 @@ fun PingogramApp(
                             if (floatingBarSpace) floatingNavigationBarInsets() else WindowInsets(0, 0, 0, 0),
                         LocalNavigationBarVisibility provides navigationBarVisibility,
                         LocalTabReselection provides tabReselection,
+                        LocalFeedbackLauncher provides openFeedback,
                     ) {
                         AppContent(uiState, search) {
                             PingogramNavHost(

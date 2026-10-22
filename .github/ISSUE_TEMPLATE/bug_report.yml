@@ -9,7 +9,7 @@ body:
     id: version
     attributes:
       label: Pingogram version
-      placeholder: "0.2.0 (arm64-v8a) — see Settings → About"
+      placeholder: "0.5.0 (5000002), gms, release — see Settings → About"
     validations:
       required: true
   - type: input
@@ -36,7 +36,7 @@ body:
     id: logs
     attributes:
       label: Logs / crash trace
-      description: From Logcat or Settings → About → Export logs (debug builds). Redact anything personal.
+      description: From Settings → About → Send feedback or report a bug (docs/TESTING_GUIDE.md), or Logcat. Remove anything personal.
       render: text
   - type: checkboxes
     id: checks
