@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SessionDevice
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -66,8 +67,11 @@ internal fun SessionRow(
         }
     }
     if (onClick != null) {
+        val terminate = stringResource(R.string.settings_session_terminate)
         SegmentedListItem(
             onClick = onClick,
+            // Names what a tap does; the list item's click supplies the action.
+            modifier = Modifier.semantics { onClick(label = terminate, action = null) },
             shapes = shapes,
             enabled = !isBusy,
             leadingContent = leading,

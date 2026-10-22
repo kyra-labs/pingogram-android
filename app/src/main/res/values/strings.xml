@@ -31,6 +31,10 @@
     <string name="widget_secret_chat">Secret chat</string>
     <!-- A group's last message after its sender: "Alice: Hi there" -->
     <string name="widget_preview_sender">%1$s: %2$s</string>
+    <!-- Spoken by screen readers for a muted chat in the widget. -->
+    <string name="widget_muted">Muted</string>
+    <!-- Spoken by screen readers for a chat with an unread mention in the widget, shown as "@". -->
+    <string name="widget_unread_mention">Unread mention</string>
     <plurals name="widget_unread_messages">
         <item quantity="one">%d unread message</item>
         <item quantity="other">%d unread messages</item>

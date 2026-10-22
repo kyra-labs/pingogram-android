@@ -149,7 +149,11 @@ private fun SlowModeSegment(
                         if (next != step) haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         sliderState.value = value
                     },
-                    onValueChangeFinished = { onChange(SlowModeDelays[step]) },
+                    // The state's value, not this composition's step: an accessibility action sets the value and
+                    // finishes at once.
+                    onValueChangeFinished = {
+                        onChange(SlowModeDelays[sliderState.value.roundToInt().coerceIn(SlowModeDelays.indices)])
+                    },
                     modifier =
                         Modifier
                             .padding(

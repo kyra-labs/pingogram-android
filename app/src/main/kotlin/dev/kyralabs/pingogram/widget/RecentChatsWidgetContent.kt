@@ -28,7 +28,6 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
-import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.semantics.contentDescription
@@ -157,22 +156,33 @@ private fun ChatRow(chat: WidgetChat) {
                 maxLines = 1,
             )
         }
+        // Muted shows by its symbol too, not by the badge's color alone (`REQUIREMENTS.md` §6.3).
+        if (chat.isMuted) {
+            Image(
+                ImageProvider(UiR.drawable.ic_notifications_off),
+                contentDescription = null,
+                modifier = GlanceModifier.size(WidgetTokens.mutedIcon).padding(end = WidgetTokens.mutedIconGap),
+                colorFilter = ColorFilter.tint(colors.onSurfaceVariant),
+            )
+        }
         if (unread || chat.hasUnreadMention) UnreadBadge(chat)
     }
 }
 
-/** The unread count ("@" for a mention) on `primary`, `surfaceVariant` while the chat is muted, as in the chat list. */
+/**
+ * The unread count ("@" for a mention) on `primary`, `surfaceVariant` while the chat is muted, as in the chat list;
+ * as tall as its text, which follows the font scale.
+ */
 @Composable
 private fun UnreadBadge(chat: WidgetChat) {
     val colors = GlanceTheme.colors
     Box(
         modifier =
             GlanceModifier
-                .height(WidgetTokens.badge)
                 .background(
                     ImageProvider(R.drawable.widget_pill),
                     colorFilter = ColorFilter.tint(if (chat.isMuted) colors.surfaceVariant else colors.primary),
-                ).padding(horizontal = WidgetTokens.badgePadding),
+                ).padding(horizontal = WidgetTokens.badgePadding, vertical = WidgetTokens.badgeVerticalPadding),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -208,7 +218,7 @@ private fun Notice(text: String) {
     }
 }
 
-/** "Alice, 3 unread messages, Hi there": the title, the unread count and the preview. */
+/** "Alice, muted, 3 unread messages, unread mention, Hi there": the title, its state and counts, the preview. */
 private fun rowDescription(
     context: Context,
     chat: WidgetChat,
@@ -217,9 +227,11 @@ private fun rowDescription(
         context.resources,
         listOf(
             chat.title,
+            context.getString(R.string.widget_muted).takeIf { chat.isMuted },
             chat.unreadCount.takeIf { it > 0 }?.let {
                 context.resources.getQuantityString(R.plurals.widget_unread_messages, it, it)
             },
+            context.getString(R.string.widget_unread_mention).takeIf { chat.hasUnreadMention },
             chat.preview,
         ),
     )
@@ -259,11 +271,16 @@ internal object WidgetTokens {
     val titleActionInset = 8.dp
 
     /**
-     * The unread badge: Material's large badge, 16 dp tall, here 20 dp for the launcher's larger text; its pill's
-     * radius is `R.dimen.widget_pill_radius`.
+     * The unread badge: Material's large badge, about 20 dp tall at the default font scale for the launcher's larger
+     * text (its text and 2 dp above and below), growing with the text; its pill's radius is
+     * `R.dimen.widget_pill_radius`.
      */
-    val badge = 20.dp
     val badgePadding = 6.dp
+    val badgeVerticalPadding = 2.dp
+
+    /** A muted chat's symbol before its badge: 16 dp (`sizes.inlineIcon`) and its 4 dp gap (`spacing.extraSmall`). */
+    val mutedIcon = 20.dp
+    val mutedIconGap = 4.dp
 
     /** `titleMedium`, `bodyMedium` and `labelSmall` of the type scale. */
     val title = 16.sp
