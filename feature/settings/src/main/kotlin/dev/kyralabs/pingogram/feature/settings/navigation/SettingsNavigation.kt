@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
+import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
@@ -46,6 +47,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveS
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadRoute as AutoDownloadScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
@@ -87,11 +89,27 @@ fun NavGraphBuilder.settingsScreen(
     }
 }
 
+/** Appearance and the pages it opens with [onOpen]: the Theme page and Chat appearance. */
+private fun NavGraphBuilder.appearancePages(
+    onOpen: (route: Any) -> Unit,
+    onBack: () -> Unit,
+) {
+    settingsPage<AppearanceRoute> {
+        AppearanceScreenRoute(
+            onOpenColorTheme = { onOpen(ColorThemeRoute) },
+            onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
+            onBack = onBack,
+        )
+    }
+    settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
+    settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
+}
+
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
- * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] above Appearance,
- * [NotificationExceptionsRoute] above Notifications,
+ * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] and [ChatAppearanceRoute] above
+ * Appearance, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
  * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
@@ -104,6 +122,7 @@ fun NavGraphBuilder.settingsScreen(
  * the device in. The detail pane of [SettingsListDetail] adds them to a `NavHost` of its own, with these callbacks on
  * its own back stack.
  */
+
 @Suppress("LongParameterList") // Where the settings pages lead.
 fun NavGraphBuilder.settingsPages(
     onOpen: (route: Any) -> Unit,
@@ -113,10 +132,7 @@ fun NavGraphBuilder.settingsPages(
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
-    settingsPage<AppearanceRoute> {
-        AppearanceScreenRoute(onOpenColorTheme = { onOpen(ColorThemeRoute) }, onBack = onBack)
-    }
-    settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
+    appearancePages(onOpen, onBack)
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }

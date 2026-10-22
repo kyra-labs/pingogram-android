@@ -39,6 +39,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   with every theme, and the splash screen follows it (Android 13+). It replaces the "Dynamic color" switch.
 - A home screen widget of your recent chats with their unread counts: tap a chat to open it, or the pencil for a new
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
+- Chat appearance (Settings → Appearance → Chat appearance): message text size from 85% to 130%, how round message
+  bubbles are, and a wallpaper behind the messages, a tint or a gradient in your theme's colors, with a live preview.
+  Conversations take them up in a coming update.
 
 ### Fixed
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so

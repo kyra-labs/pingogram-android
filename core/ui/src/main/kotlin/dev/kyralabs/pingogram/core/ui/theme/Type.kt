@@ -43,6 +43,35 @@ fun pingogramTypography(
     return Typographies.computeIfAbsent(key) { buildTypography(it.fontWeightAdjustment, it.grade) }
 }
 
+/**
+ * Message text at [scale] times `bodyLarge` (the Chat appearance setting, `docs/DESIGN_SYSTEM.md` §3.2): its size and
+ * line height scaled and its optical size re-derived from the new size, otherwise [pingogramTypography]'s
+ * `bodyLarge`; [scale] 1 is that style itself. Cached per scale, adjustment and grade, like the typography.
+ */
+fun pingogramMessageText(
+    scale: Float,
+    fontWeightAdjustment: Int = 0,
+    contrast: Contrast = Contrast.Standard,
+): TextStyle {
+    val typography = pingogramTypography(fontWeightAdjustment, contrast)
+    if (scale == 1f) return typography.bodyLarge
+    val grade = if (contrast == Contrast.High) HIGH_CONTRAST_GRADE else GRADE
+    return MessageTexts.computeIfAbsent(MessageTextKey(scale, fontWeightAdjustment, grade)) { key ->
+        val token = Typography().bodyLarge
+        token
+            .copy(fontSize = token.fontSize * key.scale, lineHeight = token.lineHeight * key.scale)
+            .withGoogleSansFlex(NoTracking, null, key.fontWeightAdjustment, key.grade, emphasized = false)
+    }
+}
+
+private data class MessageTextKey(
+    val scale: Float,
+    val fontWeightAdjustment: Int,
+    val grade: Int,
+)
+
+private val MessageTexts = ConcurrentHashMap<MessageTextKey, TextStyle>()
+
 /** What a [Typography] is built from: the "Bold text" adjustment and the grade. */
 private data class TypographyKey(
     val fontWeightAdjustment: Int,

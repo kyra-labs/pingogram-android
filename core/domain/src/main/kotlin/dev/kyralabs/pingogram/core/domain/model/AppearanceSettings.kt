@@ -10,6 +10,7 @@ package dev.kyralabs.pingogram.core.domain.model
  *   12, and for a medium or high [contrast] where the wallpaper's colors have no contrast levels.
  * @property contrast the contrast level where the system has no contrast setting (before Android 14).
  * @property amoled true-black surfaces in dark theme.
+ * @property chat how conversations look: message text size, bubble corners, wallpaper.
  */
 data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.System,
@@ -17,4 +18,5 @@ data class AppearanceSettings(
     val palette: ThemePalette = ThemePalette.Pingogram,
     val contrast: Contrast = Contrast.Standard,
     val amoled: Boolean = false,
+    val chat: ChatAppearance = ChatAppearance(),
 )

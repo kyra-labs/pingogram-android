@@ -292,6 +292,7 @@ class MainActivity : ComponentActivity() {
             palette = settings.palette,
             contrast = settings.contrast,
             amoled = settings.amoled,
+            chat = settings.chat,
             content = content,
         )
     }

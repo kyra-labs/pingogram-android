@@ -21,6 +21,8 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.model.ThemePalette
@@ -51,6 +53,7 @@ class AppearanceScreenTest {
 
     private val events = mutableListOf<AppearanceEvent>()
     private var themeOpened = 0
+    private var chatAppearanceOpened = 0
     private val performedHaptics = mutableListOf<HapticFeedbackType>()
     private val haptics =
         object : HapticFeedback {
@@ -72,6 +75,7 @@ class AppearanceScreenTest {
                         onEvent = { events += it },
                         onBack = {},
                         onOpenColorTheme = { themeOpened++ },
+                        onOpenChatAppearance = { chatAppearanceOpened++ },
                         dynamicColorAvailable = dynamicColorAvailable,
                         systemContrast = systemContrast,
                     )
@@ -162,6 +166,18 @@ class AppearanceScreenTest {
         node(R.string.settings_color_theme).performClick()
 
         assertEquals(1, themeOpened)
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `the Chat appearance row sums up the chat settings and opens their page`() {
+        setScreen(AppearanceSettings(chat = ChatAppearance(textScale = 1.2f, wallpaper = ChatWallpaper.Primary)))
+
+        composeRule.onNodeWithText("120% text", substring = true).assertExists()
+        composeRule.onNodeWithText(string(R.string.settings_chat_wallpaper_primary), substring = true).assertExists()
+        node(R.string.settings_chat_appearance).performClick()
+
+        assertEquals(1, chatAppearanceOpened)
         assertTrue(events.isEmpty())
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -22,6 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
@@ -34,15 +36,18 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.systemContrastOrNull
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 
 /**
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
- * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page; [onBack] leaves.
+ * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
+ * [onOpenChatAppearance] the Chat appearance page; [onBack] leaves.
  */
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
+    onOpenChatAppearance: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -65,6 +70,7 @@ internal fun AppearanceRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onOpenColorTheme = onOpenColorTheme,
+        onOpenChatAppearance = onOpenChatAppearance,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -77,7 +83,8 @@ internal fun AppearanceRoute(
  * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): light or dark (system, light or dark, as a
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
- * the contrast level.
+ * the contrast level; then under "Chats" a row that opens the Chat appearance page ([onOpenChatAppearance]: message
+ * text size, bubble corners, wallpaper) with their summary.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -88,6 +95,7 @@ internal fun AppearanceScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenColorTheme: () -> Unit = {},
+    onOpenChatAppearance: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -107,7 +115,7 @@ internal fun AppearanceScreen(
                 AppearanceSettingsContent(
                     state.settings,
                     onEvent,
-                    onOpenColorTheme,
+                    AppearancePages(onOpenColorTheme, onOpenChatAppearance),
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -128,7 +136,7 @@ private fun AppearanceLoading() {
 private fun AppearanceSettingsContent(
     settings: AppearanceSettings,
     onEvent: (AppearanceEvent) -> Unit,
-    onOpenColorTheme: () -> Unit,
+    pages: AppearancePages,
     dynamicColorAvailable: Boolean,
     systemContrast: Contrast?,
 ) {
@@ -155,7 +163,7 @@ private fun AppearanceSettingsContent(
         }
     }
     SettingsGroup(title = stringResource(R.string.settings_section_colors)) {
-        item { shapes -> ColorThemeItem(settings, dynamicColorAvailable, shapes, onOpenColorTheme) }
+        item { shapes -> ColorThemeItem(settings, dynamicColorAvailable, shapes, pages.onOpenColorTheme) }
         item { shapes ->
             ContrastItem(
                 contrast = systemContrast ?: settings.contrast,
@@ -170,6 +178,44 @@ private fun AppearanceSettingsContent(
             )
         }
     }
+    SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
+        item { shapes -> ChatAppearanceItem(settings.chat, shapes, pages.onOpenChatAppearance) }
+    }
+}
+
+/** What opens the pages above Appearance. */
+private class AppearancePages(
+    val onOpenColorTheme: () -> Unit,
+    val onOpenChatAppearance: () -> Unit,
+)
+
+/** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
+@Composable
+private fun ChatAppearanceItem(
+    chat: ChatAppearance,
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    val percent =
+        remember(chat.textScale, locale) {
+            NumberFormat.getPercentInstance(locale).format(chat.textScale.toDouble())
+        }
+    SettingsRow(
+        title = stringResource(R.string.settings_chat_appearance),
+        shapes = shapes,
+        supportingContent = {
+            Text(
+                stringResource(
+                    R.string.settings_chat_appearance_summary,
+                    percent,
+                    chat.bubbleCorners.label(),
+                    chat.wallpaper.label(),
+                ),
+            )
+        },
+        onClick = onClick,
+    )
 }
 
 @PingogramPreviews
