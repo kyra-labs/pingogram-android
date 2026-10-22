@@ -18,6 +18,24 @@
     <string name="shortcut_saved_messages">Saved</string>
     <string name="shortcut_saved_messages_long">Saved Messages</string>
 
+    <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md): its name and description in the
+         launcher's widget list, its title and "New chat" button, the messages it shows instead of chats -->
+    <string name="widget_recent_chats_label">Recent chats</string>
+    <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
+    <string name="widget_title">Chats</string>
+    <string name="widget_new_chat">New chat</string>
+    <string name="widget_signed_out">Sign in to Pingogram to see your chats here</string>
+    <string name="widget_locked">Pingogram is locked. Open it to see your chats.</string>
+    <string name="widget_no_chats">No chats yet</string>
+    <!-- In place of a secret chat's last message, which stays off the home screen -->
+    <string name="widget_secret_chat">Secret chat</string>
+    <!-- A group's last message after its sender: "Alice: Hi there" -->
+    <string name="widget_preview_sender">%1$s: %2$s</string>
+    <plurals name="widget_unread_messages">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+
     <!-- The conversation pane beside the chat list on large screens, while no chat is open -->
     <string name="chats_no_chat_selected_title">Select a chat to start reading</string>
     <string name="chats_no_chat_selected_body">Its messages show here, beside your chats.</string>

@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -39,6 +40,10 @@ class PingogramApplication :
     /** Offers the most recent chats in the system's share sheet (Direct Share targets, FR-N2). */
     @Inject
     lateinit var shareTargetShortcuts: ShareTargetShortcuts
+
+    /** Keeps the home screen widget of recent chats current while one is placed. */
+    @Inject
+    lateinit var recentChatsWidgetUpdater: RecentChatsWidgetUpdater
 
     /** Keeps new messages arriving in the background as far as the flavor can: "Keep connected" (foss), FCM (gms). */
     @Inject
@@ -66,6 +71,8 @@ class PingogramApplication :
         notificationRenderer.start()
         // Publishes the most recent chats as conversation shortcuts the share sheet lists, while logged in.
         shareTargetShortcuts.start()
+        // Redraws the home screen widget when the chats change, only while a widget is placed.
+        recentChatsWidgetUpdater.start()
         // foss: starts or stops the "Keep connected" service as its setting and the login change; gms: registers the
         // push token with Telegram at every login and deletes it at logout.
         backgroundConnection.start()
