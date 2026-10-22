@@ -79,6 +79,8 @@ import androidx.compose.ui.unit.dp
  *   so its last row can scroll clear of one.
  * @property floatingNavigationBar the height of the floating navigation bar's pill and of the search button beside it,
  *   as Google Photos' (`docs/DESIGN_SYSTEM.md` §6.1): the floating toolbar's 64 dp less its 8 dp of padding.
+ * @property themeChip the diameter of a color theme's chip in Settings → Appearance → Theme, as Pixel's Wallpaper &
+ *   style chips.
  * @property denseTopAppBar the height of the small top app bar over the dense lists of the Chats and Contacts tabs and
  *   the archive (`docs/DESIGN_SYSTEM.md` §7, Density): Material's compact top app bar, 8 dp lower than its default.
  * @property pinPadMaxWidth the widest the passcode lock's keypad gets, so its keys stay within a thumb's reach.
@@ -147,6 +149,7 @@ data class PingogramSizes(
     val fabSmall: Dp = 56.dp,
     val floatingNavigationBar: Dp = 56.dp,
     val denseTopAppBar: Dp = 56.dp,
+    val themeChip: Dp = 56.dp,
     val pinPadMaxWidth: Dp = 360.dp,
     val passcodeDot: Dp = 14.dp,
     val composerField: Dp = 56.dp,

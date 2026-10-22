@@ -154,10 +154,11 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   (last seen, photo, calls, groups, blocked users, passcode lock w/ biometrics, 2FA, active
   sessions), Notifications (per-type channels, exceptions, sounds), Data & Storage (auto-download
   per network, storage usage via `getStorageStatistics`, clear cache), Chat settings (theme mode,
-  dynamic color toggle, seed color, message corner radius, font size, chat wallpaper—solid/gradient
+  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper—solid/gradient
   only), Language (per-app language API), About (version, licenses, GitHub link).
-- FR-S2 Must: Appearance: System / Light / Dark, Dynamic color (Android 12+), brand palette
-  fallback, AMOLED black option, contrast levels (standard/medium/high per M3).
+- FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
+  curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
+  (standard/medium/high per M3).
 
 ### 5.6 Notifications & background [M3]
 

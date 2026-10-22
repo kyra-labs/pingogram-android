@@ -45,15 +45,41 @@
     <!-- Appearance (FR-S2) -->
     <!-- Spoken by screen readers for the progress indicator while the settings load. -->
     <string name="settings_appearance_loading">Loading appearance settings</string>
-    <string name="settings_section_theme">Theme</string>
+    <string name="settings_section_light_dark">Light and dark</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_amoled">AMOLED black</string>
     <string name="settings_amoled_summary">Pure black backgrounds in dark theme</string>
     <string name="settings_section_colors">Colors</string>
-    <string name="settings_dynamic_color">Dynamic color</string>
-    <string name="settings_dynamic_color_summary">Colors from your wallpaper</string>
+    <!-- Settings → Appearance → Theme (docs/adr/0016-color-themes.md): the color theme, as Pixel's Wallpaper & style. -->
+    <string name="settings_color_theme">Theme</string>
+    <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
+    <string name="settings_color_theme_section_basic">Basic colors</string>
+    <!-- The name of each theme, on its chip for screen readers and under "Theme" in Appearance. -->
+    <string name="settings_color_theme_wallpaper">Wallpaper colors</string>
+    <string name="settings_color_theme_pingogram">Pingogram</string>
+    <string name="settings_color_theme_blue">Blue</string>
+    <string name="settings_color_theme_teal">Teal</string>
+    <string name="settings_color_theme_green">Green</string>
+    <string name="settings_color_theme_lime">Lime</string>
+    <string name="settings_color_theme_yellow">Yellow</string>
+    <string name="settings_color_theme_orange">Orange</string>
+    <string name="settings_color_theme_red">Red</string>
+    <string name="settings_color_theme_pink">Pink</string>
+    <string name="settings_color_theme_purple">Purple</string>
+    <string name="settings_color_theme_indigo">Indigo</string>
+    <string name="settings_color_theme_brown">Brown</string>
+    <string name="settings_color_theme_monochrome">Monochrome</string>
+    <!-- What screen readers hear for the live preview at the top of the Theme page; %1$s is the theme's name. -->
+    <string name="settings_color_theme_preview">Preview of the %1$s theme: a chat, two messages and a button</string>
+    <!-- Sample content of the preview: a contact's name, the last message, its time, two messages and a button. -->
+    <string name="settings_color_theme_sample_name">Ada Lovelace</string>
+    <string name="settings_color_theme_sample_preview">See you at the ferry?</string>
+    <string name="settings_color_theme_sample_time">9:41</string>
+    <string name="settings_color_theme_sample_incoming">Running ten minutes late</string>
+    <string name="settings_color_theme_sample_outgoing">No rush, I saved you a seat</string>
+    <string name="settings_color_theme_sample_button">Send</string>
     <string name="settings_contrast">Contrast</string>
     <string name="settings_contrast_standard">Standard</string>
     <string name="settings_contrast_medium">Medium</string>
@@ -61,7 +87,8 @@
     <!-- Android 14+, where the system's contrast setting applies to every app. -->
     <string name="settings_contrast_follows_system">Follows your device\'s contrast setting</string>
     <!-- Before Android 14, wallpaper colors have no contrast levels. -->
-    <string name="settings_contrast_brand_colors">Medium and high contrast use Pingogram\'s colors instead of your wallpaper\'s</string>
+    <!-- %1$s is the theme's name, e.g. "Pingogram". -->
+    <string name="settings_contrast_fallback_theme">Medium and high contrast use the %1$s theme instead of your wallpaper\'s colors</string>
 
     <!-- Language (FR-S1, per-app language) -->
     <!-- Spoken by screen readers for the progress indicator while the languages load. -->

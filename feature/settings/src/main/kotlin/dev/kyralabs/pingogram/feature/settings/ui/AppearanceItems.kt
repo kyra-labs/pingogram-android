@@ -47,26 +47,27 @@ import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The contrast level, one row of its group ([shapes]): a heading, why it cannot be changed ([followsSystem]) or what
- * it changes ([usesBrandColors]), and the levels below it ([ChoiceRow]), in one segment.
+ * it changes (a [fallbackTheme] the wallpaper's colors give way to at this level), and the levels below it
+ * ([ChoiceRow]), in one segment.
  */
 @Composable
 internal fun ContrastItem(
     contrast: Contrast,
     followsSystem: Boolean,
-    usesBrandColors: Boolean,
+    fallbackTheme: ColorThemeOption?,
     shapes: ListItemShapes,
     onSelect: (Contrast) -> Unit,
 ) {
     val note =
         when {
-            followsSystem -> R.string.settings_contrast_follows_system
-            usesBrandColors -> R.string.settings_contrast_brand_colors
+            followsSystem -> stringResource(R.string.settings_contrast_follows_system)
+            fallbackTheme != null -> stringResource(R.string.settings_contrast_fallback_theme, fallbackTheme.name())
             else -> null
         }
     SettingsSegment(shapes) {
         SegmentedListItem(
             shapes = ListItemDefaults.shapes(),
-            supportingContent = note?.let { { Text(stringResource(it)) } },
+            supportingContent = note?.let { { Text(it) } },
             colors = nestedItemColors(),
         ) {
             Text(stringResource(R.string.settings_contrast))

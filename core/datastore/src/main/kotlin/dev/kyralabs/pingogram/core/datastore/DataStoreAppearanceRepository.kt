@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -43,6 +44,12 @@ class DataStoreAppearanceRepository
 
         override suspend fun setDynamicColor(enabled: Boolean) = edit { it[DYNAMIC_COLOR] = enabled }
 
+        override suspend fun setPalette(palette: ThemePalette) =
+            edit {
+                it[PALETTE] = palette.name
+                it[DYNAMIC_COLOR] = false
+            }
+
         override suspend fun setContrast(contrast: Contrast) = edit { it[CONTRAST] = contrast.name }
 
         override suspend fun setAmoled(enabled: Boolean) = edit { it[AMOLED] = enabled }
@@ -61,6 +68,7 @@ private fun Preferences.toAppearanceSettings(): AppearanceSettings {
     return AppearanceSettings(
         themeMode = enumOrNull<ThemeMode>(this[THEME_MODE]) ?: defaults.themeMode,
         dynamicColor = this[DYNAMIC_COLOR] ?: defaults.dynamicColor,
+        palette = enumOrNull<ThemePalette>(this[PALETTE]) ?: defaults.palette,
         contrast = enumOrNull<Contrast>(this[CONTRAST]) ?: defaults.contrast,
         amoled = this[AMOLED] ?: defaults.amoled,
     )
@@ -71,5 +79,6 @@ private inline fun <reified E : Enum<E>> enumOrNull(name: String?): E? = enumVal
 // Keys of the settings file; renaming one loses what users saved under it.
 private val THEME_MODE = stringPreferencesKey("appearance.theme_mode")
 private val DYNAMIC_COLOR = booleanPreferencesKey("appearance.dynamic_color")
+private val PALETTE = stringPreferencesKey("appearance.palette")
 private val CONTRAST = stringPreferencesKey("appearance.contrast")
 private val AMOLED = booleanPreferencesKey("appearance.amoled")

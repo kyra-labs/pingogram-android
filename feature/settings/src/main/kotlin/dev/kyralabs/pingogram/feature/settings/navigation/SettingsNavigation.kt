@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
+import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
@@ -45,6 +46,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveS
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadRoute as AutoDownloadScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.LanguageRoute as LanguageScreenRoute
@@ -88,7 +90,8 @@ fun NavGraphBuilder.settingsScreen(
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
- * ones these push above themselves, which they open with [onOpen]: [NotificationExceptionsRoute] above Notifications,
+ * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] above Appearance,
+ * [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
  * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
@@ -110,7 +113,10 @@ fun NavGraphBuilder.settingsPages(
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
     settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
-    settingsPage<AppearanceRoute> { AppearanceScreenRoute(onBack = onBack) }
+    settingsPage<AppearanceRoute> {
+        AppearanceScreenRoute(onOpenColorTheme = { onOpen(ColorThemeRoute) }, onBack = onBack)
+    }
+    settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
