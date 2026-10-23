@@ -177,7 +177,6 @@ private fun TtlGroup(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DeleteNowSection(
     state: DeleteAccountUiState.Content,
@@ -191,164 +190,16 @@ private fun DeleteNowSection(
         PageText(stringResource(R.string.settings_delete_account_what_is_lost))
         PageText(stringResource(R.string.settings_delete_account_what_stays))
         PageText(stringResource(R.string.settings_delete_account_sign_up_again))
-        TextField(
-            state = reason,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isDeleting,
-            label = { Text(stringResource(R.string.settings_delete_account_reason)) },
-            // The reason is the user's own text: it takes its own direction (`docs/DESIGN_SYSTEM.md` §9).
-            textStyle = LocalTextStyle.current.userContent,
-            keyboardOptions =
-                KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
-            lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = REASON_MAX_LINES),
-            shape = TextFieldDefaults.roundedShape,
-            colors = TextFieldDefaults.tonalColors(),
-        )
-        if (state.hasPassword) {
-            PageText(stringResource(R.string.settings_delete_account_password_text))
-            if (state.passwordHint.isNotEmpty()) {
-                PageText(
-                    stringResource(R.string.settings_two_step_hint_is, state.passwordHint.bidiIsolated())
-                        .bidiIsolated(),
-                )
-            }
-            TwoStepPasswordField(
-                state = password,
-                spec =
-                    TwoStepFieldSpec(
-                        label = stringResource(R.string.settings_two_step_label_password),
-                        error = state.passwordError?.let { errorText(it) },
-                        enabled = !state.isDeleting,
-                        imeAction = ImeAction.Done,
-                        onAction = { onEvent(DeleteAccountEvent.RequestDeletion) },
-                    ),
-                isNewPassword = false,
-            )
-        }
-        state.floodWaitSeconds?.let { FloodWaitNote(seconds = it, totalSeconds = state.floodWaitTotalSeconds) }
-        if (state.isDeleting) {
-            val deleting = stringResource(R.string.settings_delete_account_deleting)
-            LinearWavyProgressIndicator(Modifier.fillMaxWidth().semantics { contentDescription = deleting })
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Button(
-                onClick = { onEvent(DeleteAccountEvent.RequestDeletion) },
-                enabled = state.canDelete(passwordEntered = password.text.isNotEmpty()),
-                shapes = ButtonDefaults.shapes(),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-            ) {
-                Text(
-                    stringResource(R.string.settings_delete_account),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                )
-            }
-        }
+        ReasonField(reason, enabled = !state.isDeleting)
+        if (state.hasPassword) PasswordPart(state, password, onEvent)
+        DeleteActions(state, passwordEntered = password.text.isNotEmpty(), onEvent)
     }
     if (state.confirming) {
-        DestructiveDialog(
-            icon = UiR.drawable.ic_delete,
-            texts =
-                DestructiveDialogTexts(
-                    title = stringResource(R.string.settings_delete_account_dialog_title),
-                    text = stringResource(R.string.settings_delete_account_dialog_text),
-                    confirm = stringResource(R.string.settings_delete_account_dialog_confirm),
-                ),
+        DeleteConfirmation(
             onConfirm = {
                 onEvent(DeleteAccountEvent.ConfirmDeletion(reason.text.toString(), password.text.toString()))
             },
             onDismiss = { onEvent(DeleteAccountEvent.DismissConfirmation) },
         )
     }
-}
-
-/** What the page says: `bodyMedium` in `onSurfaceVariant`, inset like the settings notes. */
-@Composable
-private fun PageText(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium,
-    )
-}
-
-/** A period of [days]: in months where it is one of Telegram's choices ("6 months"), in days otherwise. */
-@Composable
-internal fun ttlText(days: Int): String {
-    val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
-    val months = TtlMonths[days]
-    return if (months != null) {
-        pluralStringResource(R.plurals.settings_delete_account_ttl_months, months, numbers.format(months))
-    } else {
-        pluralStringResource(R.plurals.settings_delete_account_ttl_days, days, numbers.format(days))
-    }
-}
-
-/** The months of Telegram's choices, by their days ([DeleteAccountViewModel.TtlChoices]). */
-private val TtlMonths = mapOf(30 to 1, 90 to 3, 180 to 6, 365 to 12, 548 to 18, 730 to 24)
-
-private const val REASON_MAX_LINES = 4
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountPreviewStates.withPassword, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenWithoutPasswordPreview() {
-    PingogramPreview {
-        DeleteAccountScreen(state = DeleteAccountPreviewStates.withoutPassword, onEvent = {}, onBack = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenDeletingPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountPreviewStates.deleting, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenConfirmingPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountPreviewStates.confirming, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenWrongPasswordPreview() {
-    PingogramPreview {
-        DeleteAccountScreen(state = DeleteAccountPreviewStates.wrongPassword, onEvent = {}, onBack = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenFloodWaitPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountPreviewStates.floodWait, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenLoadingPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountUiState.Loading, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun DeleteAccountScreenErrorPreview() {
-    PingogramPreview {
-        DeleteAccountScreen(state = DeleteAccountUiState.Error(DomainError.Network), onEvent = {}, onBack = {})
-    }
-}
-
-@Preview(name = "Expanded", widthDp = 840, heightDp = 891)
-@Composable
-private fun DeleteAccountScreenExpandedPreview() {
-    PingogramPreview { DeleteAccountScreen(state = DeleteAccountPreviewStates.withPassword, onEvent = {}, onBack = {}) }
 }

@@ -27,10 +27,9 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.account.ttlText
+import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Privacy and security page: hoists [PrivacySecurityViewModel] and, for "Sync contacts",
@@ -113,7 +112,10 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
                 SecuritySection(state, onOpen)
-                AccountSection(state, onOpen)
+                DeleteAccountGroup(
+                    accountTtlDays = state.accountTtlDays,
+                    onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
+                )
             }
         }
     }
@@ -215,25 +217,6 @@ private fun SecuritySection(
                 icon = R.drawable.ic_pin,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
-            )
-        }
-    }
-}
-
-/** "Delete account", opening its page, with how long the account may stay unused before Telegram deletes it. */
-@Composable
-private fun AccountSection(
-    state: PrivacySecurityUiState.Content,
-    onOpen: (PrivacySecurityPage) -> Unit,
-) {
-    SettingsGroup(title = stringResource(R.string.settings_section_account)) {
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_delete_account),
-                summary = stringResource(R.string.settings_delete_account_summary, ttlText(state.accountTtlDays)),
-                icon = UiR.drawable.ic_delete,
-                shapes = shapes,
-                onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
             )
         }
     }

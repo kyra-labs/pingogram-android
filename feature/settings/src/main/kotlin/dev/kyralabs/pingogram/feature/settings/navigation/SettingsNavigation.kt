@@ -113,8 +113,8 @@ private fun NavGraphBuilder.appearancePages(
  * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] and [ChatAppearanceRoute] above
  * Appearance, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute] above Data and storage,
- * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
- * [PasscodeLockRoute] and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
+ * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
+ * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
  * [onBack] leaves each of them; Edit profile leaves with [onProfileSaved] once it saved, which the app implements with
  * [popBackStackAfterProfileSaved], and a flow of 2-step verification with [onTwoStepVerificationDone] once it is done,

@@ -43,6 +43,7 @@ import javax.inject.Inject
  * setting's page as soon as it is back. The counts and 2-step verification load again whenever the page shows again
  * ([PrivacySecurityEvent.Refresh]), keeping what shows meanwhile and if that fails: there are no updates for them.
  */
+@Suppress("LongParameterList") // One repository per part of the page, as the page sums up each of their pages.
 @HiltViewModel
 class PrivacySecurityViewModel
     @Inject
