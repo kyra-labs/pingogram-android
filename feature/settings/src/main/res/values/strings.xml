@@ -779,7 +779,6 @@
     <string name="settings_chat_folder_delete_dialog_title">Delete this folder?</string>
     <string name="settings_chat_folder_delete_dialog_text">The folder goes from all your devices. Its chats stay in your chat list.</string>
     <string name="settings_chat_folder_delete_dialog_confirm">Delete</string>
-    <string name="settings_chat_folder_saved">Folder saved</string>
     <string name="settings_chat_folder_name_required">Give the folder a name.</string>
     <string name="settings_chat_folder_no_chats">Add at least one chat or kind of chat.</string>
 
@@ -792,8 +791,6 @@
     <string name="settings_chat_folder_picker_chats">Chats</string>
     <string name="settings_chat_folder_picker_no_results">No chats found</string>
     <string name="settings_chat_folder_picker_done">Done</string>
-    <!-- Spoken by screen readers for the progress indicator while chats load in the sheet. -->
-    <string name="settings_chat_folder_picker_loading">Loading chats</string>
 
     <!-- The icons a folder can have, as screen readers name them. -->
     <string name="settings_chat_folder_icon_all">All chats</string>
