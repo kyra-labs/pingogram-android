@@ -158,6 +158,7 @@ internal fun StickerSetListScreen(
     }
 }
 
+@Suppress("LongParameterList") // The page's kind, state and events, where a set opens, and the list's state.
 @Composable
 private fun StickerSetList(
     archived: Boolean,

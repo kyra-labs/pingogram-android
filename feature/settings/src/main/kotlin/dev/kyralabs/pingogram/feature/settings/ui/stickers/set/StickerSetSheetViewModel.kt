@@ -121,9 +121,11 @@ class StickerSetSheetViewModel internal constructor(
     }
 
     private fun change(install: Boolean) {
-        val content = uiState.value as? StickerSetSheetUiState.Content ?: return
-        val id = resolvedId ?: return
-        if (content.isChanging || content.isInstalled == install) return
+        // Only a set on screen, with its id known, not changing already, and not in the state asked for.
+        val content =
+            (uiState.value as? StickerSetSheetUiState.Content)?.takeIf { !it.isChanging && it.isInstalled != install }
+        val id = resolvedId
+        if (content == null || id == null) return
         mutableUiState.value = content.copy(isChanging = true, changeError = null)
         viewModelScope.launch {
             val outcome = if (install) repository.install(id) else repository.remove(id)

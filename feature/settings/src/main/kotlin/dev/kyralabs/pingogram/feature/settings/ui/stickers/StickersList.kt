@@ -193,8 +193,8 @@ private fun LazyListScope.sets(
 /**
  * An installed set: its cover, its title (user content) over how many stickers it has, and a drag handle at the end
  * ([handleModifier] starts the drag), in the list item's dragged shape while [dragged]. A tap opens its menu (Show
- * stickers, Share link, Archive; Remove in `error`); screen readers get the menu's items and "Move up" / "Move down" as custom
- * actions.
+ * stickers, Share link, Archive; Remove in `error`); screen readers get the menu's items and "Move up" / "Move down"
+ * as custom actions.
  */
 @Suppress("LongParameterList") // A row's content, its states, its menu and the two ways to move it.
 @Composable

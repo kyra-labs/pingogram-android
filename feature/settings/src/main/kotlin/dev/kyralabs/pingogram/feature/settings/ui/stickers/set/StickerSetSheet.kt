@@ -61,8 +61,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
-import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.sticker.StickerCover
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -70,7 +68,6 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.shareStickerSet
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerCount
 import kotlinx.coroutines.launch
@@ -403,41 +400,3 @@ private fun FailedActions(
 
 private const val TITLE = "title"
 private const val STICKER = "sticker"
-
-@PingogramPreviews
-@Composable
-private fun StickerSetContentPreview() {
-    PingogramPreview {
-        StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun StickerSetContentAddedPreview() {
-    PingogramPreview {
-        StickerSetContent(StickerSetSheetPreviewStates.added, onEvent = {}, onShare = {}, onClose = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun StickerSetContentAddingPreview() {
-    PingogramPreview {
-        StickerSetContent(StickerSetSheetPreviewStates.adding, onEvent = {}, onShare = {}, onClose = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun StickerSetContentNotFoundPreview() {
-    PingogramPreview {
-        StickerSetContent(StickerSetSheetPreviewStates.notFound, onEvent = {}, onShare = {}, onClose = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun StickerSetContentLoadingPreview() {
-    PingogramPreview { StickerSetContent(StickerSetSheetUiState.Loading, onEvent = {}, onShare = {}, onClose = {}) }
-}

@@ -162,7 +162,8 @@ private fun NavGraphBuilder.stickerPages(
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
  * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute]
  * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the
- * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute] above Data and storage,
+ * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
+ * above Notifications, [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
