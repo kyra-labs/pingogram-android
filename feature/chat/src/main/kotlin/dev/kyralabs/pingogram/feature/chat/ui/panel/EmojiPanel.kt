@@ -147,24 +147,26 @@ private fun PanelTabBar(
             ) {
                 tabs.forEachIndexed { index, entry ->
                     val selected = entry == tab
-                    ToggleButton(
-                        checked = selected,
-                        onCheckedChange = { onSelect(entry) },
-                        modifier = Modifier.semantics { role = Role.Tab },
-                        shapes =
-                            when (index) {
-                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                tabs.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                            },
-                        colors = colors,
-                    ) {
-                        val typography = MaterialTheme.typography
-                        Text(
-                            text = stringResource(entry.label),
-                            maxLines = 1,
-                            style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
-                        )
+                    val label = stringResource(entry.label)
+                    Box(Modifier.panelTab(label, selected, onSelect = { onSelect(entry) })) {
+                        ToggleButton(
+                            checked = selected,
+                            onCheckedChange = { onSelect(entry) },
+                            shapes =
+                                when (index) {
+                                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                    tabs.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                                },
+                            colors = colors,
+                        ) {
+                            val typography = MaterialTheme.typography
+                            Text(
+                                text = label,
+                                maxLines = 1,
+                                style = if (selected) typography.labelLargeEmphasized else typography.labelLarge,
+                            )
+                        }
                     }
                 }
             }

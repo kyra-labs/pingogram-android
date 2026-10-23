@@ -106,7 +106,7 @@ class ComposerPanelTest {
         setComposer()
         openPanel()
 
-        composeRule.onNodeWithText(string(R.string.panel_tab_stickers)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.panel_tab_stickers)).performClick()
         composeRule.onNodeWithContentDescription(string(UiR.string.preview_sticker_emoji, "🐱")).performClick()
 
         assertEquals(listOf("🐱"), stickers.map { it.emoji })
@@ -117,7 +117,7 @@ class ComposerPanelTest {
         setComposer(composer = ComposerUiState.Available(canSchedule = true))
         openPanel()
 
-        composeRule.onNodeWithText(string(R.string.panel_tab_stickers)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(string(R.string.panel_tab_stickers)).assertDoesNotExist()
         composeRule.onNodeWithText("😀").assertExists()
     }
 
