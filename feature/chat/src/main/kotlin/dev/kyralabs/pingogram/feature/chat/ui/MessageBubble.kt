@@ -43,6 +43,7 @@ import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -477,7 +478,8 @@ internal fun BubbleHeader(
 }
 
 /**
- * The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
+ * The text or caption in the message text style (`bodyLarge` at the size chosen in Chat appearance,
+ * `MaterialTheme.chatStyle`) with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
  * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
  * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its layout is kept in
@@ -526,14 +528,14 @@ private fun BubbleText(
                     matchColor = MaterialTheme.colorScheme.tertiary,
                 ),
             color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge.userContent,
+            style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
         )
     } else {
         Text(
             text = text,
             color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge.userContent,
+            style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },
         )
     }

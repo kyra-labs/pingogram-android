@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.MessageBubbleShapes
+import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 
 /**
@@ -33,7 +34,8 @@ internal class BubbleStyle(
 
 /**
  * The [BubbleStyle] of both sides and of a selected bubble (selection mode, either side), and the bubble [shapes] by
- * side and place in a group, built once per theme for the whole list.
+ * side and place in a group (`MaterialTheme.chatStyle`'s, with the user's bubble corners), built once per theme for the
+ * whole list.
  */
 @Immutable
 internal class BubbleTheme(
@@ -65,13 +67,14 @@ internal fun rememberBubbleTheme(): BubbleTheme {
         rememberFormattedTextStyles(codeBackground = outgoing.block, spoilerColor = outgoing.spoiler)
     val selectedText =
         rememberFormattedTextStyles(codeBackground = selected.block, spoilerColor = selected.spoiler)
-    val shapes = MaterialTheme.shapes
+    // The bubbles' shapes with the corners chosen in Chat appearance (docs/DESIGN_SYSTEM.md §4).
+    val shapes = MaterialTheme.chatStyle.bubbleShapes
     return remember(incoming, outgoing, selected, incomingText, outgoingText, selectedText, shapes) {
         BubbleTheme(
             incoming = BubbleStyle(incoming, incomingText),
             outgoing = BubbleStyle(outgoing, outgoingText),
             selected = BubbleStyle(selected, selectedText),
-            shapes = MessageBubbleShapes(shapes),
+            shapes = shapes,
         )
     }
 }

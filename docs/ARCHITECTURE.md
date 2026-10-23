@@ -100,8 +100,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   conversations a `ChatStyle` (`MaterialTheme.chatStyle`, `core:ui`): the scaled message text with its optical size
   re-derived, the bubble shapes with the chosen corners, and the wallpaper as a `Brush` (null for none), rebuilt as
   the scheme cross-fades. `feature:settings`' Chat appearance page (`ChatAppearanceRoute`, `ChatAppearanceViewModel`)
-  sets it, with a preview drawn from that same style. The conversation (`feature:chat`'s `BubbleTheme`, the
-  conversation's sheet) does not read it yet: wiring it in is the conversation owner's change.
+  sets it, with a preview drawn from that same style. The conversation draws with it too: `feature:chat`'s
+  `BubbleTheme` takes its bubble shapes, `BubbleText` its message text (texts and captions; the composer, link previews
+  and sponsored messages keep their own styles), and the conversation's sheet paints its wallpaper behind the bars and
+  the messages, in the draw phase.
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
