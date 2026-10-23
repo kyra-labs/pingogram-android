@@ -24,6 +24,8 @@
     <string name="error_password_recovery_unavailable">This account has no recovery email, so its password can\'t be recovered.</string>
     <string name="error_password_recovery_expired">The recovery code has expired. Request a new one.</string>
     <string name="error_too_many_pinned_chats">You can\'t pin more chats here. Unpin a chat first.</string>
+    <string name="error_too_many_chat_folders">You have as many folders as Telegram allows. Delete one first.</string>
+    <string name="error_chat_folder_empty">Add at least one chat or kind of chat to the folder.</string>
     <string name="error_premium_required">Only Telegram Premium subscribers can do this.</string>
     <string name="error_username_taken">This username is already taken.</string>
     <string name="error_username_invalid">Telegram doesn\'t accept this username.</string>

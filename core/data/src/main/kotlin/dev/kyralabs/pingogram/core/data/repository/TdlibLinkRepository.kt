@@ -246,6 +246,7 @@ private fun TdApi.SettingsSection?.toTarget(): LinkTarget =
     when (this) {
         is TdApi.SettingsSectionEditProfile -> LinkTarget.EditProfile
         is TdApi.SettingsSectionAppearance -> LinkTarget.Settings(SettingsPage.Appearance)
+        is TdApi.SettingsSectionChatFolders -> LinkTarget.Settings(SettingsPage.ChatFolders)
         is TdApi.SettingsSectionDataAndStorage -> LinkTarget.Settings(SettingsPage.DataAndStorage)
         is TdApi.SettingsSectionDevices -> LinkTarget.Settings(SettingsPage.ActiveSessions)
         is TdApi.SettingsSectionLanguage -> LinkTarget.Settings(SettingsPage.Language)

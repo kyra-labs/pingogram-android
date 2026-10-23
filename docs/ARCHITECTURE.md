@@ -115,6 +115,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **Chat folders** (FR-L3): `ChatRepository` keeps the folders TDLib announces (`updateChatFolders`: the tabs above
+  the chat list and the main list's place among them). `core:domain`'s `ChatFolderRepository` (`TdlibChatFolderRepository`,
+  `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as
+  `ChatFolderSettings`), creates, edits, deletes (`deleteChatFolder`, its chats kept) and reorders folders
+  (`reorderChatFolders`, the main list kept in its place), lists Telegram's suggestions (`getRecommendedChatFolders`),
+  and holds the requests of shared folders (their invite links, `checkChatFolderInviteLink`,
+  `addChatFolderByInviteLink`) for the screens that come next. A folder that includes nothing is refused before
+  TDLib (`DomainError.ChatFolderEmpty`). `feature:settings`' Chat folders page (`ChatFoldersRoute`,
+  `ChatFoldersViewModel`: each folder read again whenever the folders change, a dragged order shown at once and taken
+  back when Telegram refuses it) opens the editor (`ChatFolderEditRoute(folderId)`, `ChatFolderEditViewModel`: the
+  draft in saved state; what it does not show, the pinned chats, the tag's color and a title's custom emoji, kept
+  from the folder as Telegram has it; the picker's chats from the main list, filtered on the device).
+  `tg://settings/folders` opens the page.
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which

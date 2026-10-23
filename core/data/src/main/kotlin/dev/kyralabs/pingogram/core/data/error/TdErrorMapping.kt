@@ -139,6 +139,12 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "INVITE_HASH_INVALID" to DomainError.InviteLinkInvalid,
         "INVITE_HASH_EMPTY" to DomainError.InviteLinkInvalid,
         "USERS_TOO_MUCH" to DomainError.ChatFull,
+        // Chat folders: messages.updateDialogFilter, chatlists.checkChatlistInvite, chatlists.joinChatlistInvite.
+        "DIALOG_FILTERS_TOO_MUCH" to DomainError.TooManyChatFolders,
+        "CHATLISTS_TOO_MUCH" to DomainError.TooManyChatFolders,
+        "FILTER_INCLUDE_EMPTY" to DomainError.ChatFolderEmpty,
+        "INVITE_SLUG_EXPIRED" to DomainError.InviteLinkInvalid,
+        "INVITE_SLUG_EMPTY" to DomainError.InviteLinkInvalid,
         // Logging in another device by QR code: auth.acceptLoginToken.
         "AUTH_TOKEN_EXPIRED" to DomainError.QrLoginExpired,
         "AUTH_TOKEN_INVALID" to DomainError.QrLoginExpired,
