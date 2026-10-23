@@ -38,10 +38,11 @@ import org.xmlpull.v1.XmlPullParser
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional. CAMERA is the
  * in-app QR code scanner's (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md) and video calls'
- * (approved for 1:1 video, docs/adr/0019-video-and-group-calls-scope.md), and no camera is required to install. Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS
- * (self-managed Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE and
- * FOREGROUND_SERVICE_CAMERA,
- * USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT (Bluetooth headsets' names),
+ * (approved for 1:1 video, docs/adr/0019-video-and-group-calls-scope.md), and no camera is required to install.
+ * Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS (self-managed
+ * Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE and
+ * FOREGROUND_SERVICE_CAMERA, USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT
+ * (Bluetooth headsets' names),
  * MODIFY_AUDIO_SETTINGS (the audio mode without Telecom) and WAKE_LOCK on every version (the proximity wake lock); the
  * call screen and the call service are private, Telecom optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
