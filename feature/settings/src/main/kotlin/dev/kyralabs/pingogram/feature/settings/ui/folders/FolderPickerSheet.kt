@@ -77,8 +77,8 @@ internal fun FolderPickerSheet(
 
 /**
  * The picker's content: its title in `titleLargeEmphasized`, the search bar's input field, the kinds of chats with
- * checkboxes, the chats as toggleable rows inset like the chat list's (a picked one `large` in `secondaryContainer`, its
- * avatar turned into a check), and "Done".
+ * checkboxes, the chats as toggleable rows inset like the chat list's (a picked one `large` in `secondaryContainer`,
+ * its avatar turned into a check), and "Done".
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

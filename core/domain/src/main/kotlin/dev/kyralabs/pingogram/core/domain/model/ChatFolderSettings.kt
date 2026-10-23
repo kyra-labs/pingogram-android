@@ -1,8 +1,8 @@
 package dev.kyralabs.pingogram.core.domain.model
 
 /**
- * What a chat folder holds (TDLib's `chatFolder`, `REQUIREMENTS.md` FR-L3): its [title] and icon, the chats and kinds of
- * chats it includes, and those it leaves out. A chat is in the folder if it is one of [includedChatIds] or of the
+ * What a chat folder holds (TDLib's `chatFolder`, `REQUIREMENTS.md` FR-L3): its [title] and icon, the chats and kinds
+ * of chats it includes, and those it leaves out. A chat is in the folder if it is one of [includedChatIds] or of the
  * included kinds, unless it is one of [excludedChatIds] or of the excluded kinds; [pinnedChatIds], pinned at the top of
  * the folder, are always in it. A folder must include at least one chat or kind of chat.
  *

@@ -44,7 +44,7 @@ sealed interface ChatFolderEditUiState {
     }
 }
 
-/** A chat of a folder or of the picker: its avatar, its [title] (user content), and whether the picker [selected] it. */
+/** A chat of a folder or of the picker: its avatar, its [title] (user content), and whether the picker picked it. */
 @Immutable
 data class FolderChatItem(
     val chatId: Long,

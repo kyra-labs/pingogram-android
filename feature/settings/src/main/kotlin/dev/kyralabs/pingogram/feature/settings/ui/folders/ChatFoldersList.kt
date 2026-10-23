@@ -282,7 +282,7 @@ private fun RecommendedFolderRow(
     }
 }
 
-/** What [folder] includes: its kinds of chats, then how many chats were chosen, after "Shared ·" for a shared folder. */
+/** What [folder] includes: its kinds of chats, then how many chats were chosen; "Shared · …" for a shared folder. */
 @Composable
 private fun folderSummary(folder: FolderItem): String {
     val locale = LocalConfiguration.current.locales[0]

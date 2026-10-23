@@ -57,7 +57,9 @@ interface ChatFolderRepository {
     /** The invite links the user made for folder [id]. */
     suspend fun inviteLinks(id: Int): Outcome<List<ChatFolderInviteLink>>
 
-    /** Makes an invite link for folder [id] that shares [chatIds] (from [shareableChats]); the folder becomes shared. */
+    /**
+     * Makes an invite link for folder [id] that shares [chatIds] (from [shareableChats]); the folder becomes shared.
+     */
     suspend fun createInviteLink(
         id: Int,
         chatIds: List<Long>,
