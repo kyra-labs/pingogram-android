@@ -9,6 +9,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Delete account: Settings → Privacy and security → Delete account deletes your Telegram account, after your 2-step
+  verification password where you set one and a confirmation, and signs out. The same page sets how long your account
+  may stay unused before Telegram deletes it (1 to 24 months).
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

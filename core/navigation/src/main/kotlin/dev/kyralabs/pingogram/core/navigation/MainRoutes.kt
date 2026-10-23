@@ -143,6 +143,13 @@ data object PasscodeLockRoute
 @Serializable
 data object SetPasscodeRoute
 
+/**
+ * Deleting the account (Google Play's account deletion policy, `docs/PLAY_STORE.md`) and how long it may stay unused
+ * before Telegram deletes it, pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object DeleteAccountRoute
+
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object TwoStepVerificationRoute
