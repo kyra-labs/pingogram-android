@@ -30,11 +30,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
 
-### Changed
-- The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
-  avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
-  swipe them.
-
 ## [0.5.0] - 2026-10-23
 
 ### Added
