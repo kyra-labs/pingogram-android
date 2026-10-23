@@ -58,6 +58,9 @@ sealed interface GroupCallUiState {
     ) : GroupCallUiState {
         /** The controls apply: joined and not over. */
         val hasControls: Boolean get() = stage !is GroupCallStage.Ended
+
+        /** There is video to watch, which picture-in-picture keeps showing: a live stream, or others' videos. */
+        fun watches(): Boolean = isStream || video.remote.isNotEmpty()
     }
 }
 
@@ -69,6 +72,22 @@ data class GroupCallVideoUi(
     /** The camera the user sends (the self-view shows), or null with it off. */
     val camera: CameraFacing? = null,
     val canSwitchCamera: Boolean = false,
+    /** The others' videos the screen shows, the pinned one first: at most four (the manager's choice). */
+    val remote: ImmutableList<ParticipantVideoUi> = persistentListOf(),
+)
+
+/** A participant's video tile: whose it is, where its frames come from, and whether the user pinned it. */
+@Immutable
+data class ParticipantVideoUi(
+    /** The participant's row key: "user:42" or "chat:-100". */
+    val key: String,
+    /** The video's endpoint, which the tile's renderer receives the frames of. */
+    val endpointId: String,
+    val name: String,
+    /** The participant held their video back: the tile says so. */
+    val isPaused: Boolean,
+    val isPinned: Boolean,
+    val isSpeaking: Boolean,
 )
 
 /** The voice chat's chat: its title and photo. */
@@ -148,6 +167,11 @@ sealed interface GroupCallEvent {
 
     /** The other camera: front after back, and back. */
     data object SwitchCamera : GroupCallEvent
+
+    /** Pins the video of the participant with this [key] on this device, or unpins it if it is pinned. */
+    data class TogglePin(
+        val key: String,
+    ) : GroupCallEvent
 
     /** Android answered the camera's permission request. */
     data class CameraResult(

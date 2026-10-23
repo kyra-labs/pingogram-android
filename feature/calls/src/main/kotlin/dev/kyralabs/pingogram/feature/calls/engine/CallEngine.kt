@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +46,7 @@ interface CallEngine {
 }
 
 /** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
+@Suppress("TooManyFunctions") // The voice chat's audio, hold, stream requests, and each kind of video it carries.
 interface GroupCallSession {
     /** The join payload for `joinVideoChat` (JSON), and the microphone's audio source (SSRC) in it. */
     val joinPayload: String
@@ -98,9 +100,27 @@ interface GroupCallSession {
     /** Where the user's own camera's frames go (the self-view), on the engine's threads; null for nowhere. */
     suspend fun setSelfVideoSink(sink: VideoFrameSink?)
 
+    /**
+     * Receives exactly [videos] of other participants, adding those not received yet and stopping the others
+     * (NTgCalls' `addIncomingVideo` / `removeIncomingVideo`, `docs/adr/0024-video-in-voice-chats.md`). Their frames go
+     * to the sinks of [setIncomingVideoSinks], by endpoint; a video without a sink is received and dropped.
+     */
+    suspend fun receiveVideos(videos: List<IncomingVideo>)
+
+    /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
+    fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
+
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
 }
+
+/** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
+data class IncomingVideo(
+    /** The participant's user or chat id. */
+    val participantId: Long,
+    val endpointId: String,
+    val sourceGroups: List<GroupCallVideoSourceGroup>,
+)
 
 /** How a group call reaches the device. */
 enum class GroupCallMode {

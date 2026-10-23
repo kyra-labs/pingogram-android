@@ -25,6 +25,14 @@ internal object GroupCallPreviewStates {
         isCurrentUser: Boolean = false,
     ) = GroupCallParticipantUi("user:$id", id, name, null, isCurrentUser, state)
 
+    private fun video(
+        id: Long,
+        name: String,
+        isPaused: Boolean = false,
+        isPinned: Boolean = false,
+        isSpeaking: Boolean = false,
+    ) = ParticipantVideoUi("user:$id", "endpoint-$id", name, isPaused, isPinned, isSpeaking)
+
     private val participants =
         persistentListOf(
             participant(1, "Grace Hopper", ParticipantState.Speaking),
@@ -54,6 +62,32 @@ internal object GroupCallPreviewStates {
     /** The user sends the front camera: the self-view above the participants. */
     val camera =
         connected.copy(video = GroupCallVideoUi(canSend = true, camera = CameraFacing.Front, canSwitchCamera = true))
+
+    /** Others send their video: Grace's pinned across the width, Katherine's paused, the user's camera last. */
+    val videos =
+        camera.copy(
+            video =
+                camera.video.copy(
+                    remote =
+                        persistentListOf(
+                            video(1, "Grace Hopper", isPinned = true, isSpeaking = true),
+                            video(2, "Alan Turing"),
+                            video(4, "Katherine Johnson", isPaused = true),
+                        ),
+                ),
+        )
+
+    /** One other video, unpinned: it alone takes the width; no camera of the user's. */
+    val video =
+        cameraOffered.copy(
+            video =
+                cameraOffered.video.copy(
+                    remote =
+                        persistentListOf(
+                            video(1, "Grace Hopper"),
+                        ),
+                ),
+        )
 
     /** An administrator keeps the user muted: Raise hand in Mute's place, raised. */
     val raiseHand = connected.copy(canUnmute = false, isHandRaised = true)
@@ -90,6 +124,15 @@ private fun GroupCallConnectedPreview() = Preview(GroupCallPreviewStates.connect
 @PingogramPreviews
 @Composable
 private fun GroupCallCameraPreview() = Preview(GroupCallPreviewStates.camera)
+
+@PingogramPreviews
+@PingogramVariantPreviews
+@Composable
+private fun GroupCallVideosPreview() = Preview(GroupCallPreviewStates.videos)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallVideoPreview() = Preview(GroupCallPreviewStates.video)
 
 @PingogramPreviews
 @Composable

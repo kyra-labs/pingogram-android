@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
+import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.feature.calls.CALL_ID
 import dev.kyralabs.pingogram.feature.calls.CHAT_ID
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.MuteRequest
 import dev.kyralabs.pingogram.feature.calls.SELF_ID
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -218,6 +220,43 @@ class GroupCallViewModelTest {
         }
 
     @Test
+    fun `shows the others' videos by name, and a tap pins and unpins one`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            val viewModel = viewModel(manager, GroupCallActivity.ACTION_JOIN)
+            engine.groupSessions
+                .single()
+                .state.value = CallMediaState.Connected
+            val video = GroupCallParticipantVideo("grace", persistentListOf(), isPaused = false)
+            repository.participant(participant(7, "9", isSpeaking = true, video = video))
+            runCurrent()
+
+            val remote = (viewModel.uiState.value as GroupCallUiState.InCall).video.remote
+            assertEquals(
+                listOf(ParticipantVideoUi("user:7", "grace", "Grace Hopper", false, false, isSpeaking = true)),
+                remote,
+            )
+
+            viewModel.onEvent(GroupCallEvent.TogglePin("user:7"))
+            runCurrent()
+            assertTrue(
+                (viewModel.uiState.value as GroupCallUiState.InCall)
+                    .video.remote
+                    .single()
+                    .isPinned,
+            )
+
+            viewModel.onEvent(GroupCallEvent.TogglePin("user:7"))
+            runCurrent()
+            assertFalse(
+                (viewModel.uiState.value as GroupCallUiState.InCall)
+                    .video.remote
+                    .single()
+                    .isPinned,
+            )
+        }
+
+    @Test
     fun `no camera is offered without one on the device`() =
         runTest(dispatcher) {
             camera.hasCamera = false
@@ -263,6 +302,7 @@ class GroupCallViewModelTest {
         order: String,
         isCurrentUser: Boolean = false,
         isSpeaking: Boolean = false,
+        video: GroupCallParticipantVideo? = null,
     ) = GroupCallParticipant(
         participant = MessageSender.User(userId),
         audioSourceId = userId.toInt(),
@@ -277,5 +317,6 @@ class GroupCallViewModelTest {
         canBeMutedForAllUsers = false,
         canBeUnmutedForAllUsers = false,
         order = order,
+        video = video,
     )
 }

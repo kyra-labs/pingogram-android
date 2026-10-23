@@ -388,7 +388,7 @@ private fun VideoOverlay(
                 SelfView(
                     mirror = state.video.camera == CameraFacing.Front,
                     canSwitch = state.video.canSwitchCamera,
-                    landscape = compactHeight,
+                    aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
                     video = video,
                     onSwitch = { onEvent(CallEvent.SwitchCamera) },
                     modifier = modifier.width(minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION),
@@ -508,14 +508,15 @@ private fun OverlayPill(
 }
 
 /**
- * The user's own camera in a `large`-rounded card, 3:4 (4:3 in landscape), mirrored for the front camera as a mirror
- * shows; "Switch camera" at its bottom end where the device has a front and a back camera.
+ * The user's own camera in a `large`-rounded card of [aspectRatio] (the call screen's 3:4, 4:3 in landscape), mirrored
+ * for the front camera as a mirror shows; "Switch camera" at its bottom end where the device has a front and a back
+ * camera.
  */
 @Composable
 internal fun SelfView(
     mirror: Boolean,
     canSwitch: Boolean,
-    landscape: Boolean,
+    aspectRatio: Float,
     video: CallVideo,
     onSwitch: () -> Unit,
     modifier: Modifier = Modifier,
@@ -523,7 +524,7 @@ internal fun SelfView(
     val description = stringResource(R.string.call_self_view)
     Box(
         modifier
-            .aspectRatio(if (landscape) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT)
+            .aspectRatio(aspectRatio)
             .clip(MaterialTheme.shapes.large),
     ) {
         video(CallVideoSlot.Self, mirror, Modifier.fillMaxSize().semantics { contentDescription = description })
@@ -1195,7 +1196,7 @@ private fun CallStage.isRinging() =
 /** The self-view's width against the window's shorter side, and its shape (portrait; landscape in landscape). */
 private const val SELF_VIEW_FRACTION = 0.3f
 private const val SELF_VIEW_ASPECT = 3f / 4f
-private const val SELF_VIEW_ASPECT_LANDSCAPE = 4f / 3f
+internal const val SELF_VIEW_ASPECT_LANDSCAPE = 4f / 3f
 
 /** The avatar's largest width against the window's, as the system's dialer shows an incoming caller. */
 private const val AVATAR_WIDTH_FRACTION = 0.6f

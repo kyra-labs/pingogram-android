@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
+import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
 import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
@@ -241,6 +242,18 @@ class FakeGroupCallSession(
 
     override suspend fun setSelfVideoSink(sink: VideoFrameSink?) {
         selfSink = sink
+    }
+
+    /** The others' videos received, as the manager last asked. */
+    var received: List<IncomingVideo> = emptyList()
+    var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
+
+    override suspend fun receiveVideos(videos: List<IncomingVideo>) {
+        received = videos
+    }
+
+    override fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>) {
+        incomingSinks = sinks
     }
 
     override suspend fun close() {

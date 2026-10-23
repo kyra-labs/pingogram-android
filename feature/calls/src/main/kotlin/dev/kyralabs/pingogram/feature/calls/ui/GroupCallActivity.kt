@@ -72,6 +72,15 @@ class GroupCallActivity : ComponentActivity() {
         CallVideoView(name = slot.name, mirror = mirror, onSink = viewModel::setSelfVideoSink, modifier = modifier)
     }
 
+    private val participantVideo: ParticipantVideo = { endpointId, modifier ->
+        CallVideoView(
+            name = "Participant $endpointId",
+            mirror = false,
+            onSink = { viewModel.setParticipantVideoSink(endpointId, it) },
+            modifier = modifier,
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -103,8 +112,8 @@ class GroupCallActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(state) { if (state == GroupCallUiState.Closed) finish() }
-            val stream = (state as? GroupCallUiState.InCall)?.let { it.isStream && it.hasControls } == true
-            LaunchedEffect(stream) { updatePictureInPicture(stream) }
+            val watching = (state as? GroupCallUiState.InCall)?.let { it.watches() && it.hasControls } == true
+            LaunchedEffect(watching) { updatePictureInPicture(watching) }
             settings?.let { appearanceSettings ->
                 CallTheme(appearanceSettings) {
                     GroupCallScreen(
@@ -115,6 +124,7 @@ class GroupCallActivity : ComponentActivity() {
                         onOpenSettings = ::openAppSettings,
                         video = video,
                         selfVideo = selfVideo,
+                        participantVideo = participantVideo,
                         pictureInPicture = inPictureInPicture,
                     )
                 }
@@ -130,13 +140,16 @@ class GroupCallActivity : ComponentActivity() {
         inPictureInPicture = isInPictureInPictureMode
     }
 
-    /** Leaving with Home: a live stream goes on in picture-in-picture (Android 12+ enters it by itself). */
+    /**
+     * Leaving with Home: a live stream, or a voice chat with others' videos, goes on in picture-in-picture (Android 12+
+     * enters it by itself).
+     */
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && streams()) enterPictureInPicture()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && watches()) enterPictureInPicture()
     }
 
-    private fun streams() = (viewModel.uiState.value as? GroupCallUiState.InCall)?.isStream == true
+    private fun watches() = (viewModel.uiState.value as? GroupCallUiState.InCall)?.watches() == true
 
     private fun canPictureInPicture() = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
@@ -173,9 +186,9 @@ class GroupCallActivity : ComponentActivity() {
                 false
             }
 
-    /** Back to the app while the voice chat goes on; a live stream keeps showing in picture-in-picture. */
+    /** Back to the app while the voice chat goes on; a stream or others' videos keep showing in picture-in-picture. */
     private fun minimize() {
-        if (streams() && enterPictureInPicture()) return
+        if (watches() && enterPictureInPicture()) return
         packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
         moveTaskToBack(true)
     }
@@ -185,7 +198,7 @@ class GroupCallActivity : ComponentActivity() {
     }
 
     companion object {
-        /** Live streams are mostly landscape. */
+        /** Live streams are mostly landscape, and a pinned video's tile is 16:9 too. */
         private val PICTURE_IN_PICTURE_SHAPE = Rational(16, 9)
 
         const val EXTRA_ACTION = "action"
