@@ -9,6 +9,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
+  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

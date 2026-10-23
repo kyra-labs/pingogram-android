@@ -76,7 +76,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
 /**
  * Debug builds use the committed `app/debug.keystore` so every contributor gets the same signature;
- * release builds use [ReleaseSigning] or, when it is not configured, fail before any task runs.
+ * release builds use [ReleaseSigning] or, when it is not configured, fail before any task runs, unless the build asks
+ * for unsigned release APKs with `-Ppingogram.unsignedRelease=true`.
  */
 private fun Project.configureSigning(android: ApplicationExtension) {
     android.signingConfigs.getByName("debug") {
@@ -106,7 +107,11 @@ private fun Project.configureSigning(android: ApplicationExtension) {
         }
 
         is ReleaseSigning.Resolution.Missing -> {
-            failReleasePackaging(resolution.message)
+            // F-Droid builds release APKs without the owner's key and signs them itself, and a reproducibility check
+            // compares an unsigned build with a signed release (docs/RELEASE.md, "F-Droid and IzzyOnDroid").
+            if (providers.gradleProperty(UNSIGNED_RELEASE_PROPERTY).orNull != "true") {
+                failReleasePackaging(resolution.message)
+            }
         }
     }
 
@@ -137,6 +142,9 @@ private fun Project.failReleasePackaging(message: String) {
         if (requested.isNotEmpty()) throw GradleException("Cannot run ${requested.joinToString()}. $message")
     }
 }
+
+/** The Gradle property that lets release variants package without a signing config: unsigned APKs. */
+private const val UNSIGNED_RELEASE_PROPERTY = "pingogram.unsignedRelease"
 
 /** ABIs that dependencies may ship native code for, but TDLib (and so the app) does not support. */
 private val UNSUPPORTED_ABIS = listOf("x86", "riscv64")
