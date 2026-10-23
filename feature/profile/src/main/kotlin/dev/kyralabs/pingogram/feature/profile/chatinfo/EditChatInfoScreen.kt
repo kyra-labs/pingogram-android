@@ -33,7 +33,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -271,7 +273,13 @@ internal fun InfoTextField(
         modifier = modifier.fillMaxWidth().semantics { if (errorText != null) error(errorText) },
         enabled = enabled,
         label = { Text(label) },
-        supportingText = (errorText ?: supporting)?.let { { Text(it) } },
+        supportingText =
+            (errorText ?: supporting)?.let {
+                {
+                    // An error is announced as it appears, a hint is not (`REQUIREMENTS.md` §6.3).
+                    Text(it, Modifier.semantics { if (errorText != null) liveRegion = LiveRegionMode.Polite })
+                }
+            },
         isError = errorText != null,
         keyboardOptions = keyboardOptions,
         singleLine = singleLine,

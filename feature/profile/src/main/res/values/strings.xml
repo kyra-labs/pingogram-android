@@ -49,6 +49,10 @@
     <string name="profile_copy_phone">Copy phone number</string>
     <!-- What tapping the rows does, spoken by screen readers ("double-tap to copy"). -->
     <string name="profile_copy">Copy</string>
+    <!-- What tapping the phone number does, spoken by screen readers ("double-tap to call"). -->
+    <string name="profile_call">Call</string>
+    <!-- What tapping a photo, video or file of the shared media does, spoken by screen readers ("double-tap to open"). -->
+    <string name="profile_shared_media_open">Open</string>
     <!-- The label of what Pingogram puts on the clipboard, which Android may show. -->
     <string name="profile_copy_label">Copied from Pingogram</string>
     <!-- Snackbars before Android 13, which confirms copies itself. -->

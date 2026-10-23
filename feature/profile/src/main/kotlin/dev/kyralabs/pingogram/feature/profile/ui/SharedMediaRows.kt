@@ -93,6 +93,7 @@ internal fun LazyGridItemScope.MediaCell(
     onClick: () -> Unit,
 ) {
     val resources = LocalResources.current
+    val open = stringResource(R.string.profile_shared_media_open)
     val fileId =
         remember(item, cellSizePx) {
             item.photo?.fileIdFor(cellSizePx) ?: item.thumbnail?.imageFileId
@@ -104,7 +105,7 @@ internal fun LazyGridItemScope.MediaCell(
                 .aspectRatio(1f)
                 .padding(MaterialTheme.sizes.mediaAlbumGap / 2)
                 .clip(MaterialTheme.shapes.extraSmall)
-                .clickable(onClickLabel = null, role = Role.Button, onClick = onClick)
+                .clickable(onClickLabel = open, role = Role.Button, onClick = onClick)
                 .semantics { contentDescription = item.description(resources) },
     ) {
         ProfileImage(

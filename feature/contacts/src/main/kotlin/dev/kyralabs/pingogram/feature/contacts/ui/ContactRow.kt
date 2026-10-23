@@ -44,6 +44,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -127,8 +128,8 @@ private fun Modifier.rowSemantics(
     onDelete: () -> Unit,
 ): Modifier =
     semantics {
-        val fromPhone = if (item.fromPhone) ", ${resources.getString(R.string.contacts_from_phone)}" else ""
-        contentDescription = "${item.name}, ${item.status.resolve(resources)}$fromPhone"
+        val fromPhone = resources.getString(R.string.contacts_from_phone).takeIf { item.fromPhone }
+        contentDescription = spokenList(resources, listOf(item.name, item.status.resolve(resources), fromPhone))
         customActions =
             listOf(
                 CustomAccessibilityAction(resources.getString(R.string.contacts_edit)) {

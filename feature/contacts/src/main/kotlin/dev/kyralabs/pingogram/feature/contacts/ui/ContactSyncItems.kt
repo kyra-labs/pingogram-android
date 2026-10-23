@@ -232,6 +232,7 @@ internal fun InviteRow(
             Text(
                 text = number,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium.numericContent,
             )
         },

@@ -71,11 +71,23 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   scrolling, and flinging back, has less to do in each frame.
 
 ### Fixed
+- Unencrypted web traffic is now refused on Android 8 and 9 too, as later versions already did. Pingogram never
+  used any; this makes sure no part of it can.
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
   oldest. The bar now also follows the chat as you scroll: it shows the pinned message just above what is on screen,
   so the newest one at the bottom of the chat and older ones as you scroll up. Tapping it still jumps to that message
   and moves on to the next older one, in forum topics and comment threads too.
+- Accessibility (docs/audit/accessibility.md):
+  - The navigation bar's tabs take taps over the bar's whole height.
+  - Field errors after sign-in steps, 2-step verification and group editing are announced to screen readers.
+  - Rows that copy, call, terminate a session or open shared media say so to TalkBack.
+  - Each language in Settings → Language is read in its own voice and direction.
+  - The calling codes in the country picker read "+44" in right-to-left languages.
+  - At large font sizes, a profile's long "last seen" no longer hides its "Scam" or "Fake" label, page titles end in an
+    ellipsis, and the contact form's choices wrap instead of being cut.
+  - TalkBack's slider adjustment now saves the slow-mode delay it lands on.
+  - The widget shows and reads muted chats and mentions, and its badge grows with the font size.
 
 ## [0.4.0] - 2026-10-22
 

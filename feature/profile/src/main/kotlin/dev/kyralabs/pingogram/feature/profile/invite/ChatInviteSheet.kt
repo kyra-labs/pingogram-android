@@ -54,6 +54,7 @@ import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -242,12 +243,23 @@ private fun InviteDetails(
 @Composable
 private fun InviteTitle(invite: InviteCard) {
     val colors = MaterialTheme.colorScheme
-    val verified = stringResource(R.string.profile_badge_verified)
+    val verified = stringResource(R.string.profile_badge_verified).takeIf { invite.isVerified }
+    val warning =
+        when {
+            invite.isScam -> stringResource(R.string.profile_badge_scam)
+            invite.isFake -> stringResource(R.string.profile_badge_fake)
+            else -> null
+        }
+    val resources = LocalResources.current
     Row(
         modifier =
             Modifier.semantics(mergeDescendants = true) {
                 heading()
-                if (invite.isVerified) contentDescription = "${invite.title}, $verified"
+                // The badge and the label are read with the title, the warning last.
+                if (invite.isVerified) {
+                    contentDescription =
+                        spokenList(resources, listOf(invite.title, verified, warning))
+                }
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -292,7 +304,7 @@ private fun InviteTitle(invite: InviteCard) {
 @Composable
 private fun InviteMembers(members: List<InviteMember>) {
     val names = members.map { it.name.resolve() }
-    val description = stringResource(R.string.invite_members_include, names.joinToString())
+    val description = stringResource(R.string.invite_members_include, spokenList(LocalResources.current, names))
     Row(
         modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),

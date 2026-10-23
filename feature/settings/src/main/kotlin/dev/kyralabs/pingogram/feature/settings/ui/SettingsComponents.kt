@@ -42,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.topOnly
@@ -194,6 +195,7 @@ internal fun SettingsTopBarTitle(
         text = title,
         modifier = Modifier.semantics { heading() },
         maxLines = if (expanded) EXPANDED_TITLE_MAX_LINES else 1,
+        overflow = TextOverflow.Ellipsis,
         autoSize = TextAutoSize.StepBased(maxFontSize = style.fontSize),
         style = style,
     )

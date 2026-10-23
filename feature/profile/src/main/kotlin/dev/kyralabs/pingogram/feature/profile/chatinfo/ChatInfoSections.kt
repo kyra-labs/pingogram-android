@@ -26,6 +26,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
@@ -162,8 +163,11 @@ private fun LinkRow(
     shapes: ListItemShapes,
     onEvent: (ChatInfoEvent) -> Unit,
 ) {
+    val copy = stringResource(R.string.profile_copy)
     SegmentedListItem(
         onClick = { onEvent(ChatInfoEvent.CopyLink) },
+        // Names what a tap does; the list item's click supplies the action.
+        modifier = Modifier.semantics { onClick(label = copy, action = null) },
         shapes = shapes,
         colors = profileRowColors(),
         supportingContent = {
