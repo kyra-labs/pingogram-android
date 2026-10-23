@@ -59,7 +59,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.ChatBotCommands
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bot.withBots
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonDialog
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardDialog
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyUiState
 import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotButtons
+import dev.kyralabs.pingogram.feature.chat.ui.bots.ChatBotKeyboard
+import dev.kyralabs.pingogram.feature.chat.ui.bots.KeyboardShareSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineSheet
 import dev.kyralabs.pingogram.feature.chat.ui.bots.withPendingButtons
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
@@ -204,6 +208,10 @@ import java.util.Locale
  * - **Bots' buttons** ([ChatBotButtons]): what a tap on a button under a bot's message does (callbacks, links,
  *   logins, inline queries, copying, profiles), the progress of the buttons that wait in their bubbles, and the
  *   alerts, questions and chat picker that follow ([botButtonDialog], [switchInlineSheet], kept out of [uiState]).
+ * - **Bots' keyboards** ([ChatBotKeyboard]): the keyboard in effect in the chat, for the composer ([botReply]), what
+ *   its buttons send or share (the phone number after a question, [botKeyboardDialog]; the location and a poll through
+ *   the attach menu's sheets; users or a chat through a picker, [keyboardShareSheet]), and a bot's request for a
+ *   reply, all kept out of [uiState].
  * - **Send-as** ([ChatSendAs]): who new messages go out as in a group or channel where the user can choose, as the
  *   composer's avatar ([ComposerUiState.Available.sendAs]), and the picker that changes it ([sendAsSheet], kept out of
  *   [uiState] like the forward sheet).
@@ -255,12 +263,12 @@ class ChatViewModel internal constructor(
     messages: MessageRepository,
     messageActionRepository: MessageActionRepository,
     sponsoredMessageRepository: SponsoredMessageRepository,
-    attachmentRepository: AttachmentRepository,
+    private val attachmentRepository: AttachmentRepository,
     private val userRepository: UserRepository,
-    groupRepository: GroupRepository,
+    private val groupRepository: GroupRepository,
     chatActionRepository: ChatActionRepository,
     fileRepository: FileRepository,
-    searchRepository: SearchRepository,
+    private val searchRepository: SearchRepository,
     sharedStorageRepository: SharedStorageRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
@@ -275,14 +283,14 @@ class ChatViewModel internal constructor(
     chatJoinRepository: ChatJoinRepository,
     threadRepositories: ThreadRepositories,
     shareInbox: ShareInbox,
-    botButtonRepository: BotButtonRepository,
+    private val botButtonRepository: BotButtonRepository,
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
     inlineBotRepositories: InlineBotRepositories,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
-    topic: MessageTopic? = null,
+    private val topic: MessageTopic? = null,
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -714,6 +722,39 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
+    private val botKeyboard =
+        ChatBotKeyboard(
+            chatId = chatId,
+            enabled = topic == null,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            history = history,
+            messages = messageRepository,
+            attachments = attachmentRepository,
+            repository = botButtonRepository,
+            users = userRepository,
+            chats = chatRepository,
+            search = searchRepository,
+            groups = groupRepository,
+            composer = composer,
+            savedState = savedStateHandle,
+            canWrite = { uiState.value.composer is ComposerUiState.Available },
+            // uiState is made below: read once collected.
+            writable = flowOf(Unit).flatMapLatest { uiState.map { it.composer is ComposerUiState.Available } },
+            onOpenPoll = attachments::openPoll,
+            scope = viewModelScope,
+            dispatcher = dispatcher,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The bot's keyboard in the composer, and its field's hint. Kept out of [uiState]: only the composer shows it. */
+    val botReply: StateFlow<BotReplyUiState> get() = botKeyboard.state
+
+    /** The question before a keyboard button shares the user's phone number; null while none shows. */
+    val botKeyboardDialog: StateFlow<BotKeyboardDialog?> get() = botKeyboard.dialog
+
+    /** The users or chat picker of a keyboard button; null while it is closed. Kept out of [uiState]. */
+    val keyboardShareSheet: StateFlow<KeyboardShareSheet?> get() = botKeyboard.shareSheet
+
     /**
      * The basic group or supergroup of a group or channel: its member count, and the user's membership; the secret
      * chat of a secret chat: its state.
@@ -835,6 +876,7 @@ class ChatViewModel internal constructor(
             attachments.start()
             shares.start()
             bots.start()
+            botKeyboard.start()
             recorder.start()
             views.start()
             autoDownloads.start()
@@ -879,6 +921,7 @@ class ChatViewModel internal constructor(
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
             is BotButtonEvent -> botButtons.onEvent(event)
+            is BotKeyboardEvent -> botKeyboard.onEvent(event)
             else -> onMessageEvent(event)
         }
     }

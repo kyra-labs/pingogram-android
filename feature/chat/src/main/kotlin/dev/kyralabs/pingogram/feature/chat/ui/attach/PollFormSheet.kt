@@ -258,7 +258,16 @@ private fun LazyListScope.settingItems(
             title = stringResource(R.string.poll_quiz),
             checked = editor.isQuiz,
             onCheckedChange = { editor.isQuiz = it },
-            note = stringResource(R.string.poll_quiz_note),
+            // A bot's keyboard button may ask for a quiz, or for a regular poll.
+            enabled = editor.requiredQuiz == null,
+            note =
+                stringResource(
+                    when (editor.requiredQuiz) {
+                        true -> R.string.poll_quiz_required
+                        false -> R.string.poll_regular_required
+                        null -> R.string.poll_quiz_note
+                    },
+                ),
         )
     }
 }

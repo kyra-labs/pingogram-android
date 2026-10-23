@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
+import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
@@ -127,10 +128,9 @@ internal fun ConversationRoute(
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
+        onShareLocation = { attach.onPick(AttachOption.Location) },
         onLaunchCamera = { path ->
-            launchers.takePhoto(path).also { launched ->
-                if (!launched) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false))
-            }
+            launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
         },
     )
     ChatScreen(
@@ -151,6 +151,7 @@ internal fun ConversationRoute(
         onOpenChatInfo = onOpenChatInfo,
         commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
         inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+        botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
     )
     ChatSheets(viewModel)
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
@@ -166,7 +167,8 @@ internal fun ConversationRoute(
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
  * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat] and a message's thread to
  * [onOpenThread]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can. After forwarding a snackbar says to how many chats, or to which one, with an action
+ * says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet through
+ * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
  * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
  * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
@@ -178,7 +180,11 @@ internal fun ConversationRoute(
  * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
  * (`docs/DESIGN_SYSTEM.md` §5).
  */
-@Suppress("CyclomaticComplexMethod") // One branch per effect, all in one place: the compiler sees none is missed.
+@Suppress(
+    // One branch per effect, all in one place: the compiler sees none is missed.
+    "CyclomaticComplexMethod",
+    "LongMethod",
+)
 @Composable
 internal fun ChatEffects(
     effects: Flow<ChatEffect>,
@@ -194,6 +200,7 @@ internal fun ChatEffects(
     onLaunchCamera: (path: String) -> Boolean = { false },
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
     onEvent: (ChatEvent) -> Unit = {},
+    onShareLocation: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -239,8 +246,10 @@ internal fun ChatEffects(
                         openNamed(effect, onOpenProfile, onOpenChat, onOpenThread)
                     }
 
-                    is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera -> {
-                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, resources)
+                    is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera,
+                    is BotKeyboardEffect,
+                    -> {
+                        handOver(effect, onOpenMedia, composerFocus, onLaunchCamera, resources, onShareLocation)
                     }
 
                     is ChatEffect.OpenUrl -> {
@@ -266,7 +275,8 @@ internal fun ChatEffects(
 
 /**
  * Hands [effect] to the screen: media to the viewer through [onOpenMedia], the focus to the composer through
- * [composerFocus], a photo to take to the camera app through [onLaunchCamera]; the snackbar when no camera app opens,
+ * [composerFocus], a photo to take to the camera app through [onLaunchCamera], a bot's request for the location to
+ * the "Location" sheet through [onShareLocation], which asks the user first; the snackbar when no camera app opens,
  * else nothing.
  */
 private fun handOver(
@@ -275,8 +285,14 @@ private fun handOver(
     composerFocus: ComposerFocusState,
     onLaunchCamera: (path: String) -> Boolean,
     resources: Resources,
+    onShareLocation: () -> Unit = {},
 ): String =
     when (effect) {
+        BotKeyboardEffect.ShareLocation -> {
+            onShareLocation()
+            ""
+        }
+
         is ChatEffect.OpenMedia -> {
             onOpenMedia(effect.messageId)
             ""

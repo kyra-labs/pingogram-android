@@ -202,7 +202,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ComposerUiState.BotStart`) and the bot's intro the empty state's (`ChatUiState.botIntro`); a tap sends
   `sendBotStartMessage` with the link's parameter, which `:app`'s `LinkViewModel` hands over through `feature:chat`'s
   `BotStartInbox` (a singleton, in memory, like `ShareInbox`; the conversation takes it, also when already open, and
-  keeps it in its saved state until sent). Reply keyboards and Mini Apps come later.
+  keeps it in its saved state until sent). Mini Apps come later; reply keyboards are below (Bot keyboards).
 - **Inline bots** (FR-C5, "@gif cats"): `core:domain`'s `InlineBotRepository` (`TdlibInlineBotRepository`, `core:data`,
   no cache: TDLib keeps the users it resolved and recent answers) finds the bot a typed username names
   (`searchPublicChat`, then `getUser`'s `userTypeBot.is_inline`, `inline_query_placeholder`, `need_location`; a username
@@ -261,15 +261,32 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   markup (`HistoryCache`), so buttons change in place. `BotButtonRepository` (`TdlibBotButtonRepository`, no cache)
   sends what a tap asks: `getCallbackQueryAnswer` (a bot that does not answer, TDLib's 502 or no answer within 30 s,
   is `CallbackAnswer.NoAnswer`, not an error), `getLoginUrlInfo` and `getLoginUrl`, and `shareUsersWithBot` /
-  `shareChatWithBot` for the reply keyboard to come. `feature:chat` shows the inline keyboard under its bubble
-  (`ChatItem.Bubble.keyboard`, `BotKeyboardButtons`, a part of the bubble's footer layout beside the comments link, no
-  subcomposition), and `ChatBotButtons` (a part of `ChatViewModel`) handles taps: the buttons waiting for Telegram
-  (`ChatUiState` items copied only for those bubbles, `withPendingButtons`), the alerts and questions
+  `shareChatWithBot` for the reply keyboard (Bot keyboards, below). `feature:chat` shows the inline keyboard under its
+  bubble (`ChatItem.Bubble.keyboard`, `BotKeyboardButtons`, a part of the bubble's footer layout beside the comments
+  link, no subcomposition), and `ChatBotButtons` (a part of `ChatViewModel`) handles taps: the buttons waiting for
+  Telegram (`ChatUiState` items copied only for those bubbles, `withPendingButtons`), the alerts and questions
   (`botButtonDialog`, the password in a `TextFieldState` never saved) and the chat picker of an inline query
   (`switchInlineSheet`, the forward sheet's `ChatTargets` filtered by the chat kinds the bot allows), kept out of
   `ChatUiState`. A query for another chat reaches its composer through `ShareInbox.deliver`, as a direct share does.
-  Mini Apps, games and payments say that Pingogram does not offer them yet. The reply keyboard, forced replies and
-  removing the keyboard are modelled only; their UI comes later.
+  Mini Apps, games and payments say that Pingogram does not offer them yet.
+- **Bot keyboards** (reply keyboards): TDLib names the message whose markup is in effect for the user
+  (`chat.reply_markup_message_id`, `updateChatReplyMarkup`; `Chat.replyMarkupMessageId`, kept by `TdlibChatRepository`;
+  TDLib applies the personal flags and removals). `ChatBotKeyboard` (a part of `ChatViewModel`, `bots/`, the whole
+  chat's conversation only) takes that message from the history, so a bot's edit counts at once, or fetches it once
+  (`MessageRepository.message`), and gives the composer `BotReplyUiState` (`botReply`, kept out of `ChatUiState`: the
+  keyboard's rows as the inline keyboards' `BotKeyboard`, its resize, one-time and persistent flags, the field's hint).
+  Text buttons send their text (in groups replying to the keyboard's message); the phone number goes as the user's own
+  contact (`AttachmentRepository.sendContact`) after an `AlertDialog` (`botKeyboardDialog`); the location through the
+  attach menu's "Location" sheet and its permission step (`BotKeyboardEffect.ShareLocation`); a poll through the poll
+  form, a quiz or a regular poll where the button requires one (`PollEditor.requiredQuiz`, saved); users and chats
+  through a picker (`keyboardShareSheet`, `ChatTargets` with the contacts for people, filtered by the button's
+  restrictions as far as the device knows them: kind, forum, username, creator, administrator) and
+  `BotButtonRepository.shareUsers` / `shareChat`, never `only_check`. A force reply (or a keyboard that asks for one)
+  starts a reply to its message once (saved), with its hint. On screen the keyboard takes the panel's place
+  (`ComposerPanelState.content`, `PanelContent.BotKeyboard`, `BotReplyKeyboardPanel`): `BotKeyboardEffects` shows it
+  whenever neither the system keyboard nor the emoji panel is up, unless the user put it away (`BotKeyboardState`,
+  saved: the toggle, the field, the emoji button, back, a one-time keyboard's tap), which a persistent keyboard ignores
+  except after a one-time tap. While an inline query shows its results (Inline bots), the keyboard steps aside.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

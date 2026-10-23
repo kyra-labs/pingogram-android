@@ -33,6 +33,8 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.BotButtonEvent
 import dev.kyralabs.pingogram.feature.chat.ui.preview.BotButtonsPreviewData
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The buttons a bot attaches under a message (docs/DESIGN_SYSTEM.md §6 "Bot buttons").
@@ -56,25 +58,39 @@ internal fun BotKeyboardButtons(
     // Rows a small spacing apart: the buttons are 40 dp tall, so their 48 dp touch targets meet without overlapping.
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
         keyboard.rows.forEachIndexed { rowIndex, row ->
-            key(rowIndex) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    row.forEachIndexed { column, button ->
-                        key(column) {
-                            val position = BotButtonPosition(rowIndex, column)
-                            BotButton(
-                                button = button,
-                                shapes = connectedShapes(column, row.size),
-                                isPending = position in keyboard.pending,
-                                onClick = { onPress(position) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-                }
+            key(rowIndex) { BotKeyboardRow(row, rowIndex, keyboard.pending, onPress) }
+        }
+    }
+}
+
+/**
+ * Row [rowIndex] of a keyboard, its [buttons] a connected group sharing the row's width, those in [pending] showing
+ * their progress; a tap goes to [onPress]. Also a row of a bot's keyboard in the system keyboard's place
+ * (`BotReplyKeyboardPanel`).
+ */
+@Composable
+internal fun BotKeyboardRow(
+    buttons: ImmutableList<BotKeyboardButton>,
+    rowIndex: Int,
+    pending: ImmutableSet<BotButtonPosition>,
+    onPress: (BotButtonPosition) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        buttons.forEachIndexed { column, button ->
+            key(column) {
+                val position = BotButtonPosition(rowIndex, column)
+                BotButton(
+                    button = button,
+                    shapes = connectedShapes(column, buttons.size),
+                    isPending = position in pending,
+                    onClick = { onPress(position) },
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

@@ -375,6 +375,14 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(isMarkedAsUnread = update.isMarkedAsUnread) }
         }
 
+        else -> {
+            chatSettingChange(update)
+        }
+    }
+
+/** The change an update of what the chat allows and offers makes; null for any other update. */
+private fun chatSettingChange(update: TdApi.Update): ChatChange? =
+    when (update) {
         is TdApi.UpdateChatHasProtectedContent -> {
             ChatChange(update.chatId) { it.copy(hasProtectedContent = update.hasProtectedContent) }
         }
@@ -389,6 +397,11 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
 
         is TdApi.UpdateChatMessageSender -> {
             ChatChange(update.chatId) { it.copy(messageSender = update.messageSenderId?.toMessageSender()) }
+        }
+
+        // TDLib hands the whole message over; the chat keeps its id, and the conversation fetches it if needed.
+        is TdApi.UpdateChatReplyMarkup -> {
+            ChatChange(update.chatId) { it.copy(replyMarkupMessageId = update.replyMarkupMessage?.id ?: 0) }
         }
 
         else -> {

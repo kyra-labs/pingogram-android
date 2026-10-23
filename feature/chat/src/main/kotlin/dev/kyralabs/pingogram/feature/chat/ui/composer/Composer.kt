@@ -43,6 +43,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -64,6 +65,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartButton
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestionsState
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotButtonPosition
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardEffects
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardInput
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardToggle
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyKeyboardPanel
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyUiState
+import dev.kyralabs.pingogram.feature.chat.ui.bots.PanelPlace
+import dev.kyralabs.pingogram.feature.chat.ui.bots.composerBotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotInput
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsArea
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineResultsState
@@ -102,7 +111,10 @@ import java.time.Instant
  * attach "+" moves to its end, in the gallery's place; while a command is typed, the commands it starts show above
  * the composer ([CommandSuggestionsArea]); in an empty bot chat, or one a start link opened, "Start" takes the
  * composer's place ([BotStartButton]). While the field holds an inline query to an inline bot ([inline], "@gif cats"),
- * its results show there instead ([InlineResultsArea]), and the bot's placeholder after "@gif " in the field.
+ * its results show there instead ([InlineResultsArea]), and the bot's placeholder after "@gif " in the field. A bot's
+ * keyboard in effect ([BotInput.reply]) shows in the panel's place ([BotReplyKeyboardPanel], by its rules:
+ * [BotKeyboardEffects]), with a toggle in the pill ([BotKeyboardToggle]) and its hint in the field; not while editing,
+ * nor while an inline query shows its results, which win.
  */
 @Composable
 internal fun ChatBottomBar(
@@ -149,7 +161,10 @@ internal fun ChatBottomBar(
 
             is ComposerUiState.Available -> {
                 ComposerPanelEffects(panelState, enabled = recording == null)
-                if (panelState.isOpen) LaunchedEffect(Unit) { onPanelEvent(EmojiPanelEvent.Opened) }
+                if (panelState.shows(PanelContent.Emoji)) LaunchedEffect(Unit) { onPanelEvent(EmojiPanelEvent.Opened) }
+                // Not while editing: a button would send a new message; nor while an inline query shows its results.
+                val usable = composer.bar !is ComposerBar.Edit && inline.state == null
+                val botKeyboard = composerBotKeyboard(panelState, bots.reply, usable, enabled = recording == null)
                 Column(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
                     // As wide as a bubble can be, centred, so the field never stretches across a wide window.
                     Column(
@@ -176,11 +191,14 @@ internal fun ChatBottomBar(
                             // The commands' keys first, then the inline results'; the two never show together.
                             onFieldKey = { suggestionsState.keysFor(bots)(it) || inlineState.keysFor(inline)(it) },
                             fieldHint = inline.state?.takeIf { it.showsPlaceholder }?.placeholder,
+                            botKeyboard = botKeyboard,
                         )
                     }
-                    // Not while editing: a sticker would be a new message.
-                    val stickers = composer.attachOptions.isNotEmpty()
-                    ComposerEmojiPanel(panelState, panel, text, onPanelEvent, onSendSticker, stickers)
+                    PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
+                        // Not while editing: a sticker would be a new message.
+                        val stickers = composer.attachOptions.isNotEmpty()
+                        ComposerEmojiPanel(panelState, panel, text, onPanelEvent, onSendSticker, stickers)
+                    }
                 }
             }
 
@@ -258,6 +276,7 @@ private fun Composer(
     onBotMenu: () -> Unit = {},
     onFieldKey: (KeyEvent) -> Boolean = { false },
     fieldHint: String? = null,
+    botKeyboard: BotKeyboardInput? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val edit = composer.bar as? ComposerBar.Edit
@@ -300,6 +319,7 @@ private fun Composer(
                 onBotMenu = onBotMenu,
                 onFieldKey = onFieldKey,
                 hint = fieldHint,
+                botKeyboard = botKeyboard,
             )
         }
         ComposerAction(edit, canSend, composer.canSchedule, send, onSchedule = { scheduling = true }, voice)
@@ -378,6 +398,7 @@ private fun ComposerPill(
     onBotMenu: () -> Unit = {},
     onFieldKey: (KeyEvent) -> Boolean = { false },
     hint: String? = null,
+    botKeyboard: BotKeyboardInput? = null,
 ) {
     val bot = composer.bot
     val canAttach = composer.attachOptions.isNotEmpty()
@@ -388,6 +409,7 @@ private fun ComposerPill(
         onLink = onLink,
         onFocusChanged = onFocusChanged,
         modifier = modifier.focusRequester(focusRequester),
+        placeholder = botKeyboard?.placeholder.orEmpty().ifBlank { stringResource(R.string.composer_placeholder) },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         leadingIcons =
             when {
@@ -404,6 +426,7 @@ private fun ComposerPill(
                 }
             },
         trailingIcons = {
+            botKeyboard?.keyboard?.let { BotKeyboardToggle(panel, it, botKeyboard.state, focusRequester) }
             PanelButton(panel, focusRequester)
             when {
                 bot != null && canAttach -> Appearing(visible = !canSend) { AttachButton(attach.onAttach) }
@@ -418,7 +441,8 @@ private fun ComposerPill(
 /**
  * What the composer does with the chat's bots: the commands [suggestions] for the command being typed (null while
  * none), sending one ([onSendCommand]) or putting it into the field ([onInsertCommand]), the bot button ([onMenu]) and
- * "Start" ([onStart]).
+ * "Start" ([onStart]); the bot's keyboard in effect and the field's hint ([reply]), whose buttons go to
+ * [onKeyboardPress].
  */
 @Immutable
 internal class BotInput(
@@ -427,6 +451,8 @@ internal class BotInput(
     val onInsertCommand: (String) -> Unit = {},
     val onMenu: () -> Unit = {},
     val onStart: () -> Unit = {},
+    val reply: BotReplyUiState = BotReplyUiState(),
+    val onKeyboardPress: (BotButtonPosition) -> Unit = {},
 )
 
 /** What the attach buttons open: the attach menu ([onAttach]) and the system photo picker ([onGallery]). */

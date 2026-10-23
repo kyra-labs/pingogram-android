@@ -27,7 +27,8 @@ sealed interface ReplyMarkup {
      * A keyboard of the bot's in place of the system keyboard while the chat is open: its [rows]; [resize] if it may be
      * as short as its buttons need (else as tall as the system keyboard); [oneTime] if it hides once a button was
      * used; [persistent] if it stays shown while the user types; [personal] if it is meant for the users the message
-     * mentions or replies to only; [placeholder] the hint of the text field while it shows, empty for the usual one.
+     * mentions or replies to only; [placeholder] the hint of the text field while it shows, empty for the usual one;
+     * [forceReply] if the user is also asked to reply to the message, as with [ForceReply].
      */
     data class ShowKeyboard(
         val rows: ImmutableList<ImmutableList<KeyboardButton>>,
@@ -36,6 +37,7 @@ sealed interface ReplyMarkup {
         val persistent: Boolean,
         val personal: Boolean,
         val placeholder: String,
+        val forceReply: Boolean = false,
     ) : ReplyMarkup
 
     /** Hides the bot's keyboard; [personal] if only for the users the message mentions or replies to. */

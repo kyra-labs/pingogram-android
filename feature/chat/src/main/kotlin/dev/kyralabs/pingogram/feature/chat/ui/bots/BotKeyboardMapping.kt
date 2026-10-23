@@ -40,17 +40,20 @@ private fun InlineKeyboardButton.toKeyboardButton(): BotKeyboardButton =
                 is InlineKeyboardButtonType.SwitchInline -> BotButtonMark.SwitchInline
                 else -> BotButtonMark.None
             },
-        tone =
-            when (style) {
-                BotButtonStyle.Primary -> BotButtonTone.Primary
-
-                BotButtonStyle.Danger -> BotButtonTone.Danger
-
-                // Success has no green in the scheme; a link's style already shows in its mark.
-                BotButtonStyle.Default, BotButtonStyle.Success, BotButtonStyle.Link -> BotButtonTone.Tonal
-            },
+        tone = style.tone(),
         isEnabled = type != InlineKeyboardButtonType.Disabled,
     )
+
+/** The colors of a button of this style; also a reply keyboard's (`BotReplyKeyboard`). */
+internal fun BotButtonStyle.tone(): BotButtonTone =
+    when (this) {
+        BotButtonStyle.Primary -> BotButtonTone.Primary
+
+        BotButtonStyle.Danger -> BotButtonTone.Danger
+
+        // Success has no green in the scheme; a link's style already shows in its mark.
+        BotButtonStyle.Default, BotButtonStyle.Success, BotButtonStyle.Link -> BotButtonTone.Tonal
+    }
 
 /**
  * The state with the [pending] buttons (by message id) showing their progress in their bubbles. Only bubbles whose
@@ -93,6 +96,7 @@ internal fun botButtonNotice(
                     UnsupportedButton.Game -> R.string.bot_unsupported_game
                     UnsupportedButton.Payment -> R.string.bot_unsupported_payment
                     UnsupportedButton.InlineLink -> R.string.bot_unsupported_inline_link
+                    UnsupportedButton.ManagedBot -> R.string.bot_unsupported_managed_bot
                 },
             )
         }

@@ -38,6 +38,7 @@ internal fun TdApi.Chat.toChat(mutedScopes: Set<NotificationScope>): Chat? {
         messageAutoDeleteTime = messageAutoDeleteTime,
         permissions = permissions.toChatPermissions(),
         messageSender = messageSenderId?.toMessageSender(),
+        replyMarkupMessageId = replyMarkupMessageId,
     )
 }
 
