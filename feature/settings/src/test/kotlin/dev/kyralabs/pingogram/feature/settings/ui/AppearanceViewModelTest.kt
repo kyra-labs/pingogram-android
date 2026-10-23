@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -36,7 +37,9 @@ class AppearanceViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.viewModel() = AppearanceViewModel(repository).also { runCurrent() }
+    private val composerSettings = FakeComposerSettingsRepository()
+
+    private fun TestScope.viewModel() = AppearanceViewModel(repository, composerSettings).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: AppearanceViewModel): List<AppearanceEffect> {
         val effects = mutableListOf<AppearanceEffect>()
@@ -132,5 +135,31 @@ class AppearanceViewModelTest {
             send(viewModel, AppearanceEvent.SetAmoled(true))
 
             assertTrue(effects.isEmpty())
+        }
+
+    @Test
+    fun `send with Ctrl+Enter is off at first, and turning it on saves and shows it`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+
+            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+
+            assertEquals(true, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+        }
+
+    @Test
+    fun `a send key that cannot be saved stays as it was, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            composerSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+
+            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }
