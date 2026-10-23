@@ -32,6 +32,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the page too.
 - Shared folders: a folder link (`t.me/addlist/…`) shows the folder and its chats. Pick the chats you want to join
   and add the folder with one tap, or join the chats added to a folder you have. Nothing is joined until you tap.
+- Stickers: Settings → Stickers lists your sticker sets in the order the sticker panel shows them. Drag a set by its
+  handle, or touch and hold it, to move it; tap it to share its link, archive it or remove it, with "Undo" right
+  after. Trending stickers shows the sets popular on Telegram and Archived stickers the ones you archived, each with
+  "Add".
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

@@ -16,6 +16,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStat
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -106,6 +109,18 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun folderInviteFailed() =
         check { FolderInviteContent(state = FolderInvitePreviewStates.offline, onEvent = {}, onCancel = {}) }
+
+    @Test
+    fun stickers() =
+        check {
+            StickersScreen(StickersPreviewStates.content, onEvent = {}, onOpenList = {}, onShare = {}, onBack = {})
+        }
+
+    @Test
+    fun trendingStickers() =
+        check {
+            StickerSetListScreen(archived = false, state = StickersPreviewStates.trending, onEvent = {}, onBack = {})
+        }
 
     @Test
     fun notifications() =

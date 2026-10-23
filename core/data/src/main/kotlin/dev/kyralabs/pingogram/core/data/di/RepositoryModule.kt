@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibShareRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSharedMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
@@ -120,6 +121,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
+import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StoryRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
@@ -298,6 +300,9 @@ interface RepositoryModule {
 
     @Binds
     fun stickerRepository(repository: TdlibStickerRepository): StickerRepository
+
+    @Binds
+    fun stickerSetRepository(repository: TdlibStickerSetRepository): StickerSetRepository
 
     @Binds
     fun emojiCatalogRepository(repository: AndroidEmojiCatalogRepository): EmojiCatalogRepository

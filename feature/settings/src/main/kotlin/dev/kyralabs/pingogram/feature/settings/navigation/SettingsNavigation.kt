@@ -37,6 +37,8 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
+import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
+import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
@@ -68,6 +70,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as 
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
@@ -122,12 +126,25 @@ private fun NavGraphBuilder.folderPages(
     settingsPage<ChatFolderEditRoute> { ChatFolderEditScreenRoute(onBack = onBack) }
 }
 
+/** Stickers and the Trending and Archived stickers pages above it. */
+private fun NavGraphBuilder.stickerPages(
+    onOpen: (route: Any) -> Unit,
+    onBack: () -> Unit,
+) {
+    settingsPage<StickersRoute> {
+        StickersScreenRoute(onOpenList = { onOpen(StickerSetListRoute(archived = it)) }, onBack = onBack)
+    }
+    settingsPage<StickerSetListRoute> { entry ->
+        StickerSetListScreenRoute(archived = entry.toRoute<StickerSetListRoute>().archived, onBack = onBack)
+    }
+}
+
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
- * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
- * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] and [ChatAppearanceRoute] above
- * Appearance, [ChatFolderEditRoute] above Chat folders, [NotificationExceptionsRoute] above Notifications,
- * [AutoDownloadRoute] above Data and storage,
+ * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
+ * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute]
+ * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] above
+ * Stickers, [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
@@ -151,6 +168,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     appearancePages(onOpen, onBack)
     folderPages(onOpen, onBack)
+    stickerPages(onOpen, onBack)
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
@@ -303,6 +321,7 @@ internal val SettingsPage.route: Any
             SettingsPage.EditProfile -> EditProfileRoute
             SettingsPage.Appearance -> AppearanceRoute
             SettingsPage.ChatFolders -> ChatFoldersRoute
+            SettingsPage.Stickers -> StickersRoute
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
             SettingsPage.Language -> LanguageRoute

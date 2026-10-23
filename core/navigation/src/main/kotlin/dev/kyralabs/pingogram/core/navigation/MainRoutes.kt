@@ -54,6 +54,16 @@ data class ChatFolderEditRoute(
     val folderId: Int? = null,
 )
 
+/** The user's sticker sets (`REQUIREMENTS.md` FR-C5): their order, archiving and removing them. */
+@Serializable
+data object StickersRoute
+
+/** The archived sticker sets ([archived]) or the trending ones, pushed above [StickersRoute]. */
+@Serializable
+data class StickerSetListRoute(
+    val archived: Boolean,
+)
+
 /**
  * The sheet of a shared chat folder's link [inviteLink] (`t.me/addlist/…`), `:feature:settings`: a dialog destination
  * above the screen the link was opened from.

@@ -29,19 +29,19 @@ class TdlibStickerRepository
         private val client: TdlibClient,
     ) : StickerRepository {
         override fun installedSets(): Flow<Outcome<List<StickerSetSummary>>> =
-            readOn({ it is TdApi.UpdateInstalledStickerSets && it.stickerType is TdApi.StickerTypeRegular }) {
+            client.readOn({ it is TdApi.UpdateInstalledStickerSets && it.stickerType is TdApi.StickerTypeRegular }) {
                 client.request(TdApi.GetInstalledStickerSets(TdApi.StickerTypeRegular())).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun recentStickers(): Flow<Outcome<List<Sticker>>> =
-            readOn({ it is TdApi.UpdateRecentStickers && !it.isAttached }) {
+            client.readOn({ it is TdApi.UpdateRecentStickers && !it.isAttached }) {
                 client.request(TdApi.GetRecentStickers(false)).map { it.toStickers() }
             }
 
         override fun favoriteStickers(): Flow<Outcome<List<Sticker>>> =
-            readOn({ it is TdApi.UpdateFavoriteStickers }) {
+            client.readOn({ it is TdApi.UpdateFavoriteStickers }) {
                 client.request(TdApi.GetFavoriteStickers()).map { it.toStickers() }
             }
 
@@ -50,32 +50,38 @@ class TdlibStickerRepository
                 set.stickers.orEmpty().mapNotNull { it.toSticker() }
             }
 
-        /**
-         * [read] once subscribed to the updates, so no change in between is missed, then again on every update that
-         * [changes] says is about it. Updates that come while a read is under way wait for it (TDLib's updates are
-         * buffered), so each read sees the list as it is after them.
-         */
-        private fun <T> readOn(
-            changes: (TdApi.Update) -> Boolean,
-            read: suspend () -> Outcome<T>,
-        ): Flow<Outcome<T>> =
-            client.updates
-                .onSubscription { emit(ReadNow) }
-                .filter { it === ReadNow || changes(it) }
-                .map { read() }
-
         private fun TdApi.Stickers.toStickers(): List<Sticker> = stickers.orEmpty().mapNotNull { it.toSticker() }
-
-        private fun TdApi.StickerSetInfo.toStickerSetSummary() =
-            StickerSetSummary(
-                id = id,
-                title = title.orEmpty(),
-                size = size,
-                cover = covers?.firstOrNull()?.toSticker(),
-            )
     }
 
-/** Marks the point of subscription in [TdlibStickerRepository]'s lists: the first read; never sent by TDLib. */
+/** A sticker set as the panel and Settings → Stickers show it: its first cover stands for it. */
+internal fun TdApi.StickerSetInfo.toStickerSetSummary() =
+    StickerSetSummary(
+        id = id,
+        title = title.orEmpty(),
+        size = size,
+        cover = covers?.firstOrNull()?.toSticker(),
+        name = name.orEmpty(),
+        isInstalled = isInstalled,
+        isArchived = isArchived,
+        isOfficial = isOfficial,
+        isViewed = isViewed,
+    )
+
+/**
+ * [read] once subscribed to [TdlibClient.updates], so no change in between is missed, then again on every update that
+ * [changes] says is about it. Updates that come while a read is under way wait for it (TDLib's updates are buffered),
+ * so each read sees the list as it is after them.
+ */
+internal fun <T> TdlibClient.readOn(
+    changes: (TdApi.Update) -> Boolean,
+    read: suspend () -> Outcome<T>,
+): Flow<Outcome<T>> =
+    updates
+        .onSubscription { emit(ReadNow) }
+        .filter { it === ReadNow || changes(it) }
+        .map { read() }
+
+/** Marks the point of subscription in [readOn]: the first read; never sent by TDLib. */
 private object ReadNow : TdApi.Update() {
     override fun getConstructor() = 0
 }
