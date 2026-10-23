@@ -5,13 +5,17 @@ import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.SystemCall
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallListener
@@ -159,12 +163,19 @@ class FakeCallSession(
 
     /** Every camera the session was told to send, in order (null: none). */
     val cameras = mutableListOf<CallCamera?>()
+
+    /** The quality each camera above was sent at. */
+    val qualities = mutableListOf<VideoQuality>()
     var localSink: VideoFrameSink? = null
     var remoteSink: VideoFrameSink? = null
     override val remoteVideo = MutableStateFlow(RemoteVideo.Off)
 
-    override suspend fun setCamera(camera: CallCamera?) {
+    override suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    ) {
         cameras += camera
+        qualities += quality
     }
 
     override suspend fun setVideoSinks(
@@ -277,3 +288,9 @@ class FakeCallClock(
 /** Starts [block] right here until it first suspends, as a call from the screen would. */
 fun CoroutineScope.launchNow(block: suspend CoroutineScope.() -> Unit) =
     launch(start = CoroutineStart.UNDISPATCHED, block = block)
+
+/** The network a call goes over: Wi-Fi without Data Saver until a test changes [networkStatus]. */
+class FakeNetworkRepository : NetworkRepository {
+    override val networkStatus =
+        MutableStateFlow(NetworkStatus(NetworkType.WiFi, isMetered = false, isDataSaverOn = false))
+}

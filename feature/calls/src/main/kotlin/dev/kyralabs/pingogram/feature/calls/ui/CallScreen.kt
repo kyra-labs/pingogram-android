@@ -148,6 +148,7 @@ fun CallScreen(
     modifier: Modifier = Modifier,
     onMessage: (userId: Long) -> Unit = {},
     video: CallVideo = PlaceholderVideo,
+    pictureInPicture: Boolean = false,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainer) {
         when (state) {
@@ -160,7 +161,9 @@ fun CallScreen(
             }
 
             is CallUiState.InCall -> {
-                if (state.video.shows) {
+                if (pictureInPicture) {
+                    PictureInPicture(state, video)
+                } else if (state.video.shows) {
                     VideoInCall(state, onEvent, onMinimize, video)
                 } else {
                     InCall(state, onEvent, onMinimize, onMessage)
@@ -423,6 +426,29 @@ private fun VideoOverlay(
                     CallControlsPanel(state, docked = true, onEvent)
                 }
             }
+        }
+    }
+}
+
+/**
+ * The call in picture-in-picture: only its video (the other person's, the user's own while theirs is off), or the
+ * avatar once neither camera sends; the window's own controls hang up and return to the screen.
+ */
+@Composable
+private fun PictureInPicture(
+    state: CallUiState.InCall,
+    video: CallVideo,
+) {
+    val remote = state.video.remote != RemoteVideo.Off
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (state.video.shows) {
+            video(
+                if (remote) CallVideoSlot.Remote else CallVideoSlot.Self,
+                !remote && state.video.camera == CameraFacing.Front,
+                Modifier.fillMaxSize(),
+            )
+        } else {
+            CallAvatar(state.person, minOf(maxWidth, maxHeight) * AVATAR_WIDTH_FRACTION, ringing = false, large = true)
         }
     }
 }

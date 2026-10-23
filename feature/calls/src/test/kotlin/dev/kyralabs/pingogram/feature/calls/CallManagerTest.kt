@@ -7,10 +7,13 @@ import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
 import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
@@ -35,9 +38,20 @@ class CallManagerTest {
     private val foreground = FakeCallForeground()
     private val tones = FakeCallTones()
     private val clock = FakeCallClock()
+    private val network = FakeNetworkRepository()
 
     private fun TestScope.manager() =
-        CallManager(repository, engine, system, foreground, tones, clock, { "Ada" }, backgroundScope).also {
+        CallManager(
+            repository,
+            engine,
+            system,
+            foreground,
+            tones,
+            clock,
+            { "Ada" },
+            { network },
+            backgroundScope,
+        ).also {
             it.start()
             runCurrent()
         }
@@ -590,6 +604,57 @@ class CallManagerTest {
                     .cameras
                     .last(),
             )
+        }
+
+    @Test
+    fun `sends 720p on Wi-Fi, 480p on mobile data, 360p roaming or with Data Saver`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            manager.setCameraOn(true)
+            runCurrent()
+            val session = engine.sessions.single()
+            assertEquals(VideoQuality.High, session.qualities.last())
+
+            network.networkStatus.value = NetworkStatus(NetworkType.Mobile, isMetered = true, isDataSaverOn = false)
+            runCurrent()
+            assertEquals(VideoQuality.Medium, session.qualities.last())
+
+            network.networkStatus.value = NetworkStatus(NetworkType.Mobile, isMetered = true, isDataSaverOn = true)
+            runCurrent()
+            assertEquals(VideoQuality.Low, session.qualities.last())
+
+            network.networkStatus.value = NetworkStatus(NetworkType.Roaming, isMetered = true, isDataSaverOn = false)
+            runCurrent()
+            assertEquals(VideoQuality.Low, session.qualities.last())
+
+            // Offline while the call reconnects: the last network's quality stays.
+            network.networkStatus.value = NetworkStatus.Offline
+            runCurrent()
+            assertEquals(VideoQuality.Low, session.qualities.last())
+            assertEquals(FRONT_CAMERA, session.cameras.last())
+        }
+
+    @Test
+    fun `a call whose connection was lost sends at most 480p from then on`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            manager.setCameraOn(true)
+            val session = engine.sessions.single()
+            session.state.value = CallMediaState.Connected
+            runCurrent()
+
+            session.state.value = CallMediaState.Connecting
+            runCurrent()
+            session.state.value = CallMediaState.Connected
+            runCurrent()
+
+            assertEquals(VideoQuality.Medium, session.qualities.last())
         }
 
     @Test

@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.feature.calls.FakeCallForeground
 import dev.kyralabs.pingogram.feature.calls.FakeCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeCallSystem
 import dev.kyralabs.pingogram.feature.calls.FakeCallTones
+import dev.kyralabs.pingogram.feature.calls.FakeNetworkRepository
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import kotlinx.collections.immutable.ImmutableMap
@@ -72,10 +73,17 @@ class CallViewModelTest {
     }
 
     private fun TestScope.manager() =
-        CallManager(repository, engine, FakeCallSystem(), FakeCallForeground(), FakeCallTones(), clock, {
-            "Ada"
-        }, backgroundScope)
-            .also { it.start() }
+        CallManager(
+            repository,
+            engine,
+            FakeCallSystem(),
+            FakeCallForeground(),
+            FakeCallTones(),
+            clock,
+            { "Ada" },
+            { FakeNetworkRepository() },
+            backgroundScope,
+        ).also { it.start() }
 
     private fun TestScope.viewModel(
         manager: CallManager,

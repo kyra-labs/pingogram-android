@@ -755,7 +755,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   fills with `CallVideoView` (WebRTC's `EglRenderer` in a `TextureView`); each view hands its renderer to the call as a
   `VideoFrameSink` while the screen is started (`CallViewModel.setVideoSink`), so a screen in the background draws and
   receives nothing. The camera's permission is asked when it is turned on (`CameraAccess`, `CallEffect`), and the call
-  service adds the `camera` foreground type while the camera sends.
+  service adds the `camera` foreground type while the camera sends. A video call goes on in picture-in-picture when
+  the user leaves it (`CallActivity`: auto-enter on Android 12+, `onUserLeaveHint` before, back and "Back to the app";
+  "Hang up" as its `RemoteAction`), the screen showing only the video there. The most the camera sends
+  (`VideoQuality`) follows `NetworkRepository`: 720p on Wi-Fi, 480p on mobile data and after the connection was lost
+  once, 360p roaming or with Data Saver.
 
 ## Home screen widget
 

@@ -15,7 +15,7 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the call screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): an incoming call, an outgoing one that
  * rings, connected, a video call (both videos, the user's only, the other person's paused), reconnecting muted on a
- * Bluetooth headset, ended with an error, and the microphone's rationale;
+ * Bluetooth headset, ended with an error, the microphone's rationale, and picture-in-picture with and without video;
  * light, dark, AMOLED, high contrast, right to left, 200% font scale, a phone in landscape and a 700 dp window. Brand
  * colors.
  */
@@ -96,6 +96,14 @@ class CallScreenshotTest {
     fun videoPausedDark() = capture(CallPreviewStates.videoPaused, ThemeMode.Dark)
 
     @Test
+    @Config(qualifiers = "w240dp-h427dp-xxhdpi")
+    fun videoPictureInPicture() = capture(CallPreviewStates.video, pictureInPicture = true)
+
+    @Test
+    @Config(qualifiers = "w240dp-h427dp-xxhdpi")
+    fun pictureInPictureWithoutVideo() = capture(CallPreviewStates.connected, ThemeMode.Dark, pictureInPicture = true)
+
+    @Test
     fun reconnectingDark() = capture(CallPreviewStates.reconnecting, ThemeMode.Dark)
 
     @Test
@@ -110,10 +118,11 @@ class CallScreenshotTest {
         amoled: Boolean = false,
         contrast: Contrast = Contrast.Standard,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+        pictureInPicture: Boolean = false,
     ) = captureRoboImage {
         CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
             PingogramTheme(themeMode = themeMode, dynamicColor = false, amoled = amoled, contrast = contrast) {
-                CallScreen(state, {}, {}, {}, {})
+                CallScreen(state, {}, {}, {}, {}, pictureInPicture = pictureInPicture)
             }
         }
     }

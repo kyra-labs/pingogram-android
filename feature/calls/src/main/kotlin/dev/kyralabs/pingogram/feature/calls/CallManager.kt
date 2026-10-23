@@ -9,13 +9,17 @@ import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.SystemCall
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallListener
@@ -56,13 +60,15 @@ import kotlin.time.Duration.Companion.seconds
  * it) is kept per call until the engine connects.
  *
  * Video (`docs/adr/0019-video-and-group-calls-scope.md`): the camera, which camera, and where the frames go are kept
- * per call and given to the engine once it connects; the camera sends only from then on.
+ * per call and given to the engine once it connects; the camera sends only from then on. The most it sends follows
+ * the network ([VideoQuality]): 720p on Wi-Fi, 480p on mobile data or once the connection was lost in the call, 360p
+ * when roaming or with Data Saver; WebRTC lowers it further by itself when the connection cannot carry it.
  */
 @Singleton
 @Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
 class CallManager
     @Inject
-    @Suppress("LongParameterList") // Injected: TDLib's calls, engine, Telecom, service, tones, clock, names, scope.
+    @Suppress("LongParameterList") // Injected: TDLib's calls, engine, Telecom, service, tones, clock, names, network.
     internal constructor(
         private val callRepository: CallRepository,
         private val engine: CallEngine,
@@ -71,6 +77,9 @@ class CallManager
         private val tones: CallTones,
         private val clock: CallClock,
         private val names: CallerNames,
+        // Lazy: the repository asks Android for the network when it is made, which the first call does off the main
+        // thread, not the activities that inject this at their start (`docs/PERFORMANCE.md` §2).
+        private val network: dagger.Lazy<NetworkRepository>,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val mutableCall = MutableStateFlow<ActiveCall?>(null)
@@ -304,6 +313,9 @@ class CallManager
                     call.system = system
                     if (call.phase is CallPhase.Connected) system.setActive()
                     call.scope.launch { system.audio.collect { audio -> mutex.withLock { updateAudio(call, audio) } } }
+                    call.scope.launch {
+                        network.get().networkStatus.collect { status -> mutex.withLock { onNetwork(call, status) } }
+                    }
                     // The system's mute (a headset's button, the system UI) after the value it starts with.
                     call.scope.launch {
                         system.isMuted.drop(1).collect { muted ->
@@ -398,7 +410,11 @@ class CallManager
                 if (call.muted) session.setMuted(true)
                 // One collector each, so the engine gets the changes in order and the latest wins.
                 call.scope.launch { call.sinks.collect { session.setVideoSinks(it.local, it.remote) } }
-                call.scope.launch { call.camera.collect { session.setCamera(it) } }
+                call.scope.launch {
+                    call.camera.collect { source ->
+                        session.setCamera(source?.camera, source?.quality ?: VideoQuality.High)
+                    }
+                }
                 call.scope.launch {
                     session.remoteVideo.collect { video -> mutex.withLock { onRemoteVideo(call, video) } }
                 }
@@ -424,6 +440,11 @@ class CallManager
                 }
 
                 CallMediaState.Connecting -> {
+                    if (call.connectedAt != null && !call.reconnected) {
+                        // Lost once: the rest of the call sends less video, which a weak connection keeps up with.
+                        call.reconnected = true
+                        applyCamera(call)
+                    }
                     call.phase = if (call.connectedAt == null) CallPhase.Connecting else CallPhase.Reconnecting
                 }
 
@@ -452,11 +473,21 @@ class CallManager
             publish()
         }
 
-        /** The camera [call] should send now, which the engine gets once it connects: none while held. */
+        /** The camera [call] should send now and how much, which the engine gets once it connects: none while held. */
         private fun applyCamera(call: Live) {
             if (call.wantsCamera) call.hadVideo = true
-            call.camera.value = call.sendingCamera()
+            call.camera.value = call.sendingCamera()?.let { CameraSource(it, call.videoQuality()) }
             publish()
+        }
+
+        /** The network the call goes over; without one the last one's quality stays, as the call reconnects. */
+        private fun onNetwork(
+            call: Live,
+            status: NetworkStatus,
+        ) {
+            if (live !== call || status.type == NetworkType.None || call.network == status) return
+            call.network = status
+            applyCamera(call)
         }
 
         /** Asks the engine for the device's cameras once per call. */
@@ -648,8 +679,22 @@ class CallManager
 
             /** Either side sent video, or the call was made as a video call: TDLib's `is_video` when it ends. */
             var hadVideo = false
-            val camera = MutableStateFlow<CallCamera?>(null)
+            val camera = MutableStateFlow<CameraSource?>(null)
+            var network: NetworkStatus? = null
+            var reconnected = false
             val sinks = MutableStateFlow(VideoSinks())
+
+            fun videoQuality(): VideoQuality {
+                val status = network
+                val byNetwork =
+                    when {
+                        status == null -> VideoQuality.High
+                        status.savesData || status.type == NetworkType.Roaming -> VideoQuality.Low
+                        status.isMetered || status.type == NetworkType.Mobile -> VideoQuality.Medium
+                        else -> VideoQuality.High
+                    }
+                return if (reconnected && byNetwork == VideoQuality.High) VideoQuality.Medium else byNetwork
+            }
 
             fun sendingCamera(): CallCamera? =
                 if (!wantsCamera || onHold) {
@@ -728,4 +773,10 @@ private fun CallState.isRinging() = this is CallState.Pending
 private data class VideoSinks(
     val local: VideoFrameSink? = null,
     val remote: VideoFrameSink? = null,
+)
+
+/** The camera a call sends and the most it sends. */
+private data class CameraSource(
+    val camera: CallCamera,
+    val quality: VideoQuality,
 )
