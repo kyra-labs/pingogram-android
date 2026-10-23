@@ -146,3 +146,14 @@ dependencies {
     testImplementation(libs.turbine)
     kspTest(libs.hilt.compiler)
 }
+
+// Uploading the gms bundle to Google Play's internal track (docs/PLAY_STORE.md §7): only when release.yml's optional
+// step passes a service account's key, so no build loads the plugin otherwise and no credentials live here.
+providers.gradleProperty("pingogram.play.serviceAccount").orNull?.let { key ->
+    apply(plugin = "com.github.triplet.play")
+    configure<com.github.triplet.gradle.play.PlayPublisherExtension> {
+        serviceAccountCredentials.set(file(key))
+        track.set("internal")
+        defaultToAppBundles.set(true)
+    }
+}
