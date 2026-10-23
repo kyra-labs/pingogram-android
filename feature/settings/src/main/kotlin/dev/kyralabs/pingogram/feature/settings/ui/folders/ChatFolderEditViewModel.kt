@@ -85,7 +85,7 @@ class ChatFolderEditViewModel internal constructor(
             when {
                 error != null -> ChatFolderEditUiState.Error(error)
                 draft == null -> ChatFolderEditUiState.Loading
-                else -> draft.toContent(status, chats)
+                else -> draft.toContent(isNew = folderId == null, status, chats)
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatFolderEditUiState.Loading)
 
@@ -109,7 +109,10 @@ class ChatFolderEditViewModel internal constructor(
     fun onEvent(event: ChatFolderEditEvent) {
         when (event) {
             ChatFolderEditEvent.Retry -> {
-                retry()
+                if (loadError.value != null) {
+                    loadError.value = null
+                    viewModelScope.launch { load() }
+                }
             }
 
             is ChatFolderEditEvent.NameChanged -> {
@@ -141,7 +144,7 @@ class ChatFolderEditViewModel internal constructor(
             }
 
             is ChatFolderEditEvent.OpenPicker -> {
-                openPicker(event.side)
+                setPicker(event.side)
             }
 
             is ChatFolderEditEvent.PickerQueryChanged -> {
@@ -153,7 +156,7 @@ class ChatFolderEditViewModel internal constructor(
             }
 
             ChatFolderEditEvent.ClosePicker -> {
-                closePicker()
+                setPicker(null)
             }
 
             ChatFolderEditEvent.Save -> {
@@ -191,15 +194,9 @@ class ChatFolderEditViewModel internal constructor(
                 }
             }
         original = settings
-        val loaded = savedDraft() ?: FolderDraft.of(settings)
+        val loaded = FolderDraft.restore(savedStateHandle) ?: FolderDraft.of(settings)
         draft.value = loaded
         (loaded.included + loaded.excluded).forEach(::learnChat)
-    }
-
-    private fun retry() {
-        if (loadError.value == null) return
-        loadError.value = null
-        viewModelScope.launch { load() }
     }
 
     /** Looks up chat [id]'s name and photo once, for its row. */
@@ -225,23 +222,18 @@ class ChatFolderEditViewModel internal constructor(
         }
     }
 
-    private fun openPicker(side: FolderPickerSide) {
+    /** Opens the picker for [side], or closes it with null. */
+    private fun setPicker(side: FolderPickerSide?) {
         pickerSide.value = side
-        savedStateHandle[KEY_PICKER] = side.name
+        savedStateHandle[KEY_PICKER] = side?.name
         setPickerQuery("")
         // The chat list shows the chats TDLib loaded; the picker asks for its first page itself.
-        viewModelScope.launch { chatRepository.loadChats(ChatListType.Main) }
+        if (side != null) viewModelScope.launch { chatRepository.loadChats(ChatListType.Main) }
     }
 
     private fun setPickerQuery(query: String) {
         pickerQuery.value = query
         savedStateHandle[KEY_QUERY] = query
-    }
-
-    private fun closePicker() {
-        pickerSide.value = null
-        savedStateHandle.remove<String>(KEY_PICKER)
-        setPickerQuery("")
     }
 
     private fun togglePicked(chat: FolderChatItem) {
@@ -251,9 +243,9 @@ class ChatFolderEditViewModel internal constructor(
     }
 
     private fun save() {
-        val current = draft.value ?: return
-        val base = original ?: return
-        if (status.value.isBusy) return
+        val current = draft.value
+        val base = original
+        if (current == null || base == null || status.value.isBusy) return
         val nameMissing = current.name.isBlank()
         val nothingIncluded = !current.includesAnything
         if (nameMissing || nothingIncluded) {
@@ -302,47 +294,6 @@ class ChatFolderEditViewModel internal constructor(
         }
     }
 
-    private fun savedDraft(): FolderDraft? = FolderDraft.restore(savedStateHandle)
-
-    private fun FolderDraft.toContent(
-        status: EditStatus,
-        chats: Map<Long, FolderChatItem>,
-    ) = ChatFolderEditUiState.Content(
-        isNew = folderId == null,
-        name = name,
-        iconName = iconName,
-        includedTypes = includedTypes.toImmutableSet(),
-        excludedTypes = excludedTypes.toImmutableSet(),
-        includedChats = included.mapNotNull { chats[it] }.toImmutableList(),
-        excludedChats = excluded.mapNotNull { chats[it] }.toImmutableList(),
-        nameMissing = status.nameMissing,
-        nothingIncluded = status.nothingIncluded,
-        isSaving = status.isSaving,
-        isDeleting = status.isDeleting,
-        confirmingDelete = status.confirmingDelete,
-    )
-
-    private fun pickerState(
-        side: FolderPickerSide,
-        query: String,
-        chats: List<Chat>,
-        draft: FolderDraft?,
-    ): FolderPickerUiState {
-        val picked = draft?.chatsOf(side).orEmpty()
-        val needle = query.trim()
-        val matches =
-            chats
-                .filter { needle.isEmpty() || it.title.contains(needle, ignoreCase = true) }
-                .map { it.toFolderChatItem().copy(selected = it.id in picked) }
-        return FolderPickerUiState(
-            side = side,
-            query = query,
-            includedTypes = draft?.includedTypes.orEmpty().toImmutableSet(),
-            excludedTypes = draft?.excludedTypes.orEmpty().toImmutableSet(),
-            chats = matches.toImmutableList(),
-        )
-    }
-
     private companion object {
         const val KEY_PICKER = "picker"
         const val KEY_QUERY = "pickerQuery"
@@ -365,3 +316,43 @@ private data class EditStatus(
 private fun Chat.toFolderChatItem() = FolderChatItem(chatId = id, title = title, photo = photo)
 
 private fun <T> Set<T>.toggle(item: T): Set<T> = if (item in this) this - item else this + item
+
+private fun FolderDraft.toContent(
+    isNew: Boolean,
+    status: EditStatus,
+    chats: Map<Long, FolderChatItem>,
+) = ChatFolderEditUiState.Content(
+    isNew = isNew,
+    name = name,
+    iconName = iconName,
+    includedTypes = includedTypes.toImmutableSet(),
+    excludedTypes = excludedTypes.toImmutableSet(),
+    includedChats = included.mapNotNull { chats[it] }.toImmutableList(),
+    excludedChats = excluded.mapNotNull { chats[it] }.toImmutableList(),
+    nameMissing = status.nameMissing,
+    nothingIncluded = status.nothingIncluded,
+    isSaving = status.isSaving,
+    isDeleting = status.isDeleting,
+    confirmingDelete = status.confirmingDelete,
+)
+
+private fun pickerState(
+    side: FolderPickerSide,
+    query: String,
+    chats: List<Chat>,
+    draft: FolderDraft?,
+): FolderPickerUiState {
+    val picked = draft?.chatsOf(side).orEmpty()
+    val needle = query.trim()
+    val matches =
+        chats
+            .filter { needle.isEmpty() || it.title.contains(needle, ignoreCase = true) }
+            .map { it.toFolderChatItem().copy(selected = it.id in picked) }
+    return FolderPickerUiState(
+        side = side,
+        query = query,
+        includedTypes = draft?.includedTypes.orEmpty().toImmutableSet(),
+        excludedTypes = draft?.excludedTypes.orEmpty().toImmutableSet(),
+        chats = matches.toImmutableList(),
+    )
+}

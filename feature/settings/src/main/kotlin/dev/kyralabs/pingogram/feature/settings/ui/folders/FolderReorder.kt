@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.folders
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -55,23 +56,30 @@ internal class FolderReorderState(
     fun drag(delta: Float) {
         val id = draggedId ?: return
         offset += delta
-        val items = listState.layoutInfo.visibleItemsInfo
-        val dragged = items.firstOrNull { it.key == folderRowKey(id) } ?: return
-        val center = dragged.offset + offset + dragged.size / 2f
-        val target =
-            items.firstOrNull { item ->
-                item.key != dragged.key &&
-                    (item.key as? String)?.startsWith(FOLDER_KEY_PREFIX) == true &&
-                    center >= item.offset &&
-                    center < item.offset + item.size
-            } ?: return
-        val targetId = order.firstOrNull { folderRowKey(it) == target.key } ?: return
+        val (dragged, target) = swapTarget(id) ?: return
         val from = order.indexOf(id)
-        val to = order.indexOf(targetId)
+        val to = order.indexOfFirst { folderRowKey(it) == target.key }
         order = order.toMutableList().apply { add(to, removeAt(from)) }
         // The row takes the target's place in the next layout: keep it under the finger.
         offset += dragged.offset - target.offset
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+    }
+
+    /** The dragged folder [id]'s row and the folder row under its centre, if it passed over another one. */
+    private fun swapTarget(id: Int): Pair<LazyListItemInfo, LazyListItemInfo>? {
+        val items = listState.layoutInfo.visibleItemsInfo
+        val dragged = items.firstOrNull { it.key == folderRowKey(id) }
+        val center = dragged?.let { it.offset + offset + it.size / 2f }
+        val target =
+            center?.let {
+                items.firstOrNull { item ->
+                    item.key != dragged.key &&
+                        (item.key as? String)?.startsWith(FOLDER_KEY_PREFIX) == true &&
+                        center >= item.offset &&
+                        center < item.offset + item.size
+                }
+            }
+        return if (dragged != null && target != null) dragged to target else null
     }
 
     fun end() {

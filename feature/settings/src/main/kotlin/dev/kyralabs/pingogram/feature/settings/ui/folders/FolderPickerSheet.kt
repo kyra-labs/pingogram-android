@@ -88,24 +88,7 @@ internal fun FolderPickerContent(
 ) {
     val included = picker.side == FolderPickerSide.Included
     LazyColumn(Modifier.fillMaxWidth()) {
-        item(key = TITLE) {
-            Text(
-                text =
-                    stringResource(
-                        pick(
-                            included,
-                            R.string.settings_chat_folder_picker_include,
-                            R.string.settings_chat_folder_picker_exclude,
-                        ),
-                    ),
-                modifier =
-                    Modifier
-                        .padding(horizontal = MaterialTheme.spacing.large)
-                        .padding(bottom = MaterialTheme.spacing.medium)
-                        .semantics { heading() },
-                style = MaterialTheme.typography.titleLargeEmphasized,
-            )
-        }
+        item(key = TITLE) { PickerTitle(included) }
         item(key = SEARCH) {
             PickerSearchField(picker.query) { onEvent(ChatFolderEditEvent.PickerQueryChanged(it)) }
         }
@@ -137,20 +120,46 @@ internal fun FolderPickerContent(
         items(picker.chats, key = { it.chatId }) { chat ->
             PickerChatRow(chat) { onEvent(ChatFolderEditEvent.TogglePickedChat(chat)) }
         }
-        item(key = DONE) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(MaterialTheme.spacing.large),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Button(onClick = { onEvent(ChatFolderEditEvent.ClosePicker) }, shapes = ButtonDefaults.shapes()) {
-                    Text(
-                        stringResource(R.string.settings_chat_folder_picker_done),
-                        style = MaterialTheme.typography.labelLargeEmphasized,
-                    )
-                }
-            }
+        item(key = DONE) { PickerDone { onEvent(ChatFolderEditEvent.ClosePicker) } }
+    }
+}
+
+/** The picker's title in `titleLargeEmphasized`, a heading for screen readers. */
+@Composable
+private fun PickerTitle(included: Boolean) {
+    Text(
+        text =
+            stringResource(
+                pick(
+                    included,
+                    R.string.settings_chat_folder_picker_include,
+                    R.string.settings_chat_folder_picker_exclude,
+                ),
+            ),
+        modifier =
+            Modifier
+                .padding(horizontal = MaterialTheme.spacing.large)
+                .padding(bottom = MaterialTheme.spacing.medium)
+                .semantics { heading() },
+        style = MaterialTheme.typography.titleLargeEmphasized,
+    )
+}
+
+/** "Done" at the end, which closes the picker with what was picked. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun PickerDone(onDone: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(MaterialTheme.spacing.large),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        Button(onClick = onDone, shapes = ButtonDefaults.shapes()) {
+            Text(
+                stringResource(R.string.settings_chat_folder_picker_done),
+                style = MaterialTheme.typography.labelLargeEmphasized,
+            )
         }
     }
 }

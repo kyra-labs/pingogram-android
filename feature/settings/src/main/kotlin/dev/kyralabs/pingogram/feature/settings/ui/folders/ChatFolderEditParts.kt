@@ -203,28 +203,7 @@ internal fun FolderChatsGroup(
                     enabled = !state.isBusy,
                 )
             }
-            if (included) {
-                state.includedTypes.sortedBy { it.ordinal }.forEach { type ->
-                    typeRow(type.name, type.label, type.icon, state.isBusy) {
-                        onEvent(ChatFolderEditEvent.ToggleIncludedType(type))
-                    }
-                }
-            } else {
-                state.excludedTypes.sortedBy { it.ordinal }.forEach { type ->
-                    typeRow(type.name, type.label, type.icon, state.isBusy) {
-                        onEvent(ChatFolderEditEvent.ToggleExcludedType(type))
-                    }
-                }
-            }
-            (if (included) state.includedChats else state.excludedChats).forEach { chat ->
-                item(key = chat.chatId) { shapes ->
-                    FolderChatRow(
-                        chat,
-                        shapes,
-                        state.isBusy,
-                    ) { onEvent(ChatFolderEditEvent.RemoveChat(side, chat.chatId)) }
-                }
-            }
+            sideRows(state, side, onEvent)
         }
         if (included && state.nothingIncluded) {
             Text(
@@ -233,6 +212,33 @@ internal fun FolderChatsGroup(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
             )
+        }
+    }
+}
+
+/** The kinds of chats and the chats on [side] of the folder, each with its remove button. */
+private fun SettingsGroupScope.sideRows(
+    state: ChatFolderEditUiState.Content,
+    side: FolderPickerSide,
+    onEvent: (ChatFolderEditEvent) -> Unit,
+) {
+    if (side == FolderPickerSide.Included) {
+        state.includedTypes.sortedBy { it.ordinal }.forEach { type ->
+            typeRow(type.name, type.label, type.icon, state.isBusy) {
+                onEvent(ChatFolderEditEvent.ToggleIncludedType(type))
+            }
+        }
+    } else {
+        state.excludedTypes.sortedBy { it.ordinal }.forEach { type ->
+            typeRow(type.name, type.label, type.icon, state.isBusy) {
+                onEvent(ChatFolderEditEvent.ToggleExcludedType(type))
+            }
+        }
+    }
+    val chats = if (side == FolderPickerSide.Included) state.includedChats else state.excludedChats
+    chats.forEach { chat ->
+        item(key = chat.chatId) { shapes ->
+            FolderChatRow(chat, shapes, state.isBusy) { onEvent(ChatFolderEditEvent.RemoveChat(side, chat.chatId)) }
         }
     }
 }
