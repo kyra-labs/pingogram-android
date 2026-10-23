@@ -41,7 +41,8 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  * (`docs/ARCHITECTURE.md`, Navigation). Its archive row calls [onOpenArchive], its rows call [onOpenChat] with their
  * chat's id, and its "New chat" buttons call [onOpenNewChat]; [openChatId]'s row looks and reads as selected. The
  * "New chat" floating action button grows into the New chat screen ([newChatScreen]) while the destination provides
- * its animated visibility scope.
+ * its animated visibility scope. A story ring above the chats calls [onOpenStory] with its chat, for the stories viewer
+ * (`StoryViewerRoute`, `:feature:media`).
  */
 @Composable
 fun ChatListPane(
@@ -49,6 +50,7 @@ fun ChatListPane(
     onOpenChat: (chatId: Long) -> Unit,
     onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
 ) {
     ChatListRoute(
@@ -56,6 +58,7 @@ fun ChatListPane(
         onOpenChat = onOpenChat,
         onOpenNewChat = onOpenNewChat,
         modifier = modifier,
+        onOpenStory = onOpenStory,
         openChatId = openChatId,
     )
 }

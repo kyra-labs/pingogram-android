@@ -174,6 +174,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecureWindow` (requests counted in `SecureWindowRequests`, `LocalSecureWindow`), which `ChatRoute` does for a secret
   chat and `MediaViewerRoute` for its media; `MainActivity` keeps `FLAG_SECURE` while the lock or any screen needs it, in
   its one `SecureWindowEffect`, so neither clears the flag the other set.
+- **Stories** (M6, read only): `core:domain`'s `StoryRepository` (`TdlibStoryRepository`, `core:data`, a
+  `TdlibUpdateCache`: TDLib announces each chat's active stories only with `updateChatActiveStories`) keeps every chat's
+  `ActiveStories` (list, `order`, `max_read_story_id`, story ids and dates) for the session and lists those of a
+  `StoryList` in TDLib's order (by `order`, then chat id, both descending). The first chats of the main list load once
+  per session (`loadActiveStories`, which answers 404 once all are loaded), more as the rings' row nears its end; a chat
+  not announced is asked for with `getChatActiveStories`. A story is `getStory`, then its `updateStory` and
+  `updateStoryDeleted` while collected; viewing is `openStory` / `closeStory`, reactions `setStoryReaction` (emoji
+  only, those `getStoryAvailableReactions` offers without Premium), replies a text message to the poster's private chat
+  replying to the story (`inputMessageReplyToStory`). `activateStoryStealthMode` is never sent: every story shown is
+  marked viewed. Areas, privacy settings, interactions, saving and posting are left out. `feature:chats` draws the rings
+  as the chat list's first row (`StoryRingsViewModel`, `StoryRingsRow`, passed to `ChatListScreen` as its `stories`
+  slot, which the route gives only while there are rings and whose state the row reads in its own composition, so the
+  rings changing recomposes nothing else). A ring opens `StoryViewerRoute(chatId, storyId?)` of `core:navigation`, a
+  full-screen destination of `feature:media` (beside the media viewer, whose video player, images, caption and
+  swipe-to-close it reuses; a module of its own would have needed copies of them, as features do not share code):
+  `StoryViewerViewModel` pages through the main list's chats as they were when it opened, from the chat's first unseen
+  story, keeps the chats, the one shown and its story in its saved state, and plays each story through `StoryTimeline`
+  (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
+  phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
+  priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then

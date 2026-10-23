@@ -3,10 +3,13 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -15,7 +18,10 @@ import androidx.compose.ui.test.performTouchInput
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -137,6 +143,27 @@ class ChatListRecompositionTest {
     }
 
     @Test
+    fun `a story ring turning seen recomposes the rings row alone, and scrolling past it nothing`() {
+        setScreen(connection = ConnectionStatus.Ready, withStories = true)
+
+        // The counter sees a composable compose again only from its second time on: change the rings once first.
+        seeRing(1)
+        counter.reset()
+        seeRing(2)
+
+        val recomposed = counter.recomposedOwnFunctions
+        assertTrue(recomposed.toString(), recomposed.isNotEmpty())
+        assertEquals(emptyList<String>(), recomposed.filterNot { STORY_RINGS in it })
+
+        counter.reset()
+        repeat(SCROLL_FRAMES) {
+            composeRule.runOnIdle { listState.dispatchRawDelta(SCROLL_STEP) }
+            frame()
+        }
+        assertEquals(emptyList<String>(), counter.recomposedOwn)
+    }
+
+    @Test
     fun `the counter sees a recomposition`() {
         setScreen(connection = ConnectionStatus.Ready)
 
@@ -148,7 +175,19 @@ class ChatListRecompositionTest {
 
     private var connection by mutableStateOf(ConnectionStatus.Ready)
 
-    private fun setScreen(connection: ConnectionStatus) {
+    private var rings by mutableStateOf(StoryRingsPreviewData.rings)
+
+    /** Marks ring [index] seen, as the viewer does, and lets the frames pass. */
+    private fun seeRing(index: Int) {
+        rings =
+            rings.mapIndexed { i, ring -> if (i == index) ring.copy(hasUnread = false) else ring }.toPersistentList()
+        repeat(SETTLE_FRAMES) { frame() }
+    }
+
+    private fun setScreen(
+        connection: ConnectionStatus,
+        withStories: Boolean = false,
+    ) {
         this.connection = connection
         val items =
             (0 until ROWS)
@@ -159,6 +198,11 @@ class ChatListRecompositionTest {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 val holder = rememberSaveableStateHolder()
+                // Read in the row's own composition, as the route does.
+                val stories: @Composable (Modifier) -> Unit =
+                    remember {
+                        { modifier -> StoryRingsRow(rings = rings, onOpen = {}, onNearEnd = {}, modifier = modifier) }
+                    }
                 if (shown) {
                     holder.SaveableStateProvider(SCREEN_KEY) {
                         listState = rememberLazyListState()
@@ -171,6 +215,7 @@ class ChatListRecompositionTest {
                                 ),
                             onEvent = {},
                             listState = listState,
+                            stories = stories.takeIf { withStories },
                         )
                     }
                 }
@@ -206,5 +251,6 @@ class ChatListRecompositionTest {
         const val SCREEN_KEY = "chats"
         const val CHAT_LIST_TEST_TAG = "chat_list"
         const val NEW_CHAT_BUTTON = "NewChatButton"
+        const val STORY_RINGS = "StoryRingsKt"
     }
 }

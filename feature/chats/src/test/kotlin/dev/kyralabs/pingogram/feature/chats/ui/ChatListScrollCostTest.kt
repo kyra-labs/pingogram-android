@@ -8,6 +8,8 @@ import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsPreviewData
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -20,12 +22,12 @@ import java.lang.management.ManagementFactory
 
 /**
  * What the chat list's scroll frames cost on the JVM (`docs/PERFORMANCE.md` §9): the main thread's CPU time per frame
- * while the list scrolls by [STEP] px a frame through 600 rows, after the JIT warmed up, printed as percentiles, with
- * Pingogram's list state ([rememberScrollingListState]) and with Compose's default one. A measurement, not a check:
- * it runs only with `-Ppingogram.scrollCost` (`./gradlew :feature:chats:testDebugUnitTest -Ppingogram.scrollCost
- * --tests '*ScrollCostTest*' --rerun`), and its numbers are relative: compare two runs on the same machine, each
- * test in its own run, as the JIT carries over between tests of one run. Robolectric neither draws nor runs
- * Compose's prefetch between frames as a phone does, so only composition and measuring are seen.
+ * while the list scrolls by [STEP] px a frame through 600 rows below the story rings, after the JIT warmed up, printed
+ * as percentiles, with Pingogram's list state ([rememberScrollingListState]) and with Compose's default one. A
+ * measurement, not a check: it runs only with `-Ppingogram.scrollCost` (`./gradlew :feature:chats:testDebugUnitTest
+ * -Ppingogram.scrollCost --tests '*ScrollCostTest*' --rerun`), and its numbers are relative: compare two runs on the
+ * same machine, each test in its own run, as the JIT carries over between tests of one run. Robolectric neither draws
+ * nor runs Compose's prefetch between frames as a phone does, so only composition and measuring are seen.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -66,6 +68,15 @@ class ChatListScrollCostTest {
                         ),
                     onEvent = {},
                     listState = listState,
+                    // The Chats tab's first row, as it has stories.
+                    stories = { modifier ->
+                        StoryRingsRow(
+                            rings = StoryRingsPreviewData.rings,
+                            onOpen = {},
+                            onNearEnd = {},
+                            modifier = modifier,
+                        )
+                    },
                 )
             }
         }

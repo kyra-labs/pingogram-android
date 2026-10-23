@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Stories: the chats with stories show as rings at the top of the chat list, a coloured ring while there is something
+  you haven't seen. Tap one to watch: photos stay for five seconds, videos play once (with a mute button), and the
+  next story and the next chat's follow by themselves. Tap the right side for the next story, the left for the
+  previous one, hold to pause, swipe sideways to another chat and down to close. You can react with an emoji, and
+  reply privately to people's stories. Stories you watch are marked as seen, as in Telegram's apps; Pingogram has no
+  way to watch them unseen, and doesn't post or save stories.
 - Chat export: "Export chat" on a profile or a group's or channel's info page (Saved Messages: on your own profile)
   writes the chat's history into a folder you choose, as a page to read in any browser (HTML) or as data (JSON), with
   the photos, videos, voice messages and files you pick up to a size you set, and all messages or those from a day

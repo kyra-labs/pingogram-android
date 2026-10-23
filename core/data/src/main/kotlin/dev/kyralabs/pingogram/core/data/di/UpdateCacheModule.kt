@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
@@ -64,6 +65,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun secretChatCache(repository: TdlibSecretChatRepository): TdlibUpdateCache
+
+    /** TDLib announces each chat's active stories only with `updateChatActiveStories`. */
+    @Binds
+    @IntoSet
+    fun storyCache(repository: TdlibStoryRepository): TdlibUpdateCache
 
     /** TDLib announces each call, an incoming one too, only with `updateCall`. */
     @Binds

@@ -316,7 +316,7 @@ internal class FakeVideoPlayer : VideoPlayer {
 
     override var durationMillis: Long? = null
 
-    /** `play:<path>:<kind>`, `pause`, `resume`, `seek:<position>`, `stop` and `release`, in order. */
+    /** `play:<path>:<kind>`, `pause`, `resume`, `seek:<position>`, `stop`, `muted:<muted>` and `release`, in order. */
     val calls = mutableListOf<String>()
 
     override fun play(
@@ -342,6 +342,10 @@ internal class FakeVideoPlayer : VideoPlayer {
 
     override fun stop() {
         calls += "stop"
+    }
+
+    override fun setMuted(muted: Boolean) {
+        calls += "muted:$muted"
     }
 
     override fun release() {

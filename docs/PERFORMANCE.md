@@ -285,6 +285,12 @@ regresses by more than 10%.
   same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
   P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
   the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
+- Story rings (2026-10-23, the same machine under other agents' builds, so only runs side by side compare):
+  `ChatListScrollCostTest` with the rings row as the list's first item and without it, interleaved three times each:
+  without P50 1.30 ms, P90 9.9–10.0 ms, P99 13.3–17.0 ms; with P50 1.38–1.46 ms, P90 10.0–11.1 ms, P99 12.5–15.9 ms.
+  The rings scroll away in the first frames, after which the row costs nothing, as `ChatListRecompositionTest` checks
+  (a ring turning seen recomposes the row alone; scrolling past it recomposes nothing). Before the change, on a quieter
+  machine: P50 1.2 ms, P90 9.3–9.5 ms, P99 11.6–13.9 ms.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

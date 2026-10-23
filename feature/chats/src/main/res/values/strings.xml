@@ -265,4 +265,12 @@
     <string name="create_not_added_text_channel">Their privacy settings don\'t let you add them to channels. You can send them an invite link instead.</string>
     <string name="create_not_added_share">Share invite link</string>
     <string name="create_not_added_ok">OK</string>
+    <!-- Story rings above the chat list. -->
+    <string name="stories_your_story">Your story</string>
+    <plurals name="stories_count">
+        <item quantity="one">%d story</item>
+        <item quantity="other">%d stories</item>
+    </plurals>
+    <string name="stories_a11y_unseen">not seen</string>
+    <string name="stories_a11y_seen">seen</string>
 </resources>

@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -109,6 +110,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   and reads as selected ([ChatListItem]); not in selection mode, whose own selection the toolbar acts on.
  * - **Header**: [header] shows at the top of the sheet, above the list, which does not scroll it away: the request to
  *   allow notifications ([NotificationPromptHost]) on the Chats tab.
+ * - **Stories**: [stories], where there are any, is the list's first row, above the archive row, and scrolls away with
+ *   the chats: the story rings on the Chats tab (`StoryRingsRow`). One item of the list, so scrolling the chats costs
+ *   what it did. A row that appears above the first one while the list shows its top is scrolled into view.
  */
 @Composable
 internal fun ChatListScreen(
@@ -120,6 +124,7 @@ internal fun ChatListScreen(
     onBack: () -> Unit = {},
     openChatId: Long? = null,
     header: @Composable () -> Unit = {},
+    stories: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
@@ -147,7 +152,7 @@ internal fun ChatListScreen(
             },
             contentWindowInsets = insets,
         ) { innerPadding ->
-            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header)
+            ChatListBody(state, onEvent, listState, innerPadding, openChatId, folderSwitch, header, stories)
         }
         if (state.kind == ChatListKind.Chats) {
             // Over the Scaffold: in its button slot, every frame of the button's width animation (collapsing while
@@ -202,7 +207,7 @@ private fun contentWindowInsets(
  * it measures it anew, e.g. when the connection pill or the folder tabs change the top bar's height, and those
  * frames stop here.
  */
-@Suppress("LongParameterList") // The state, events, list state and padding, the open chat, folder switch and header.
+@Suppress("LongParameterList") // The state, events, list, padding, open chat, folder switch, header, stories.
 @Composable
 private fun ChatListBody(
     uiState: ChatListUiState,
@@ -212,20 +217,15 @@ private fun ChatListBody(
     openChatId: Long?,
     folderSwitch: FolderSwitch,
     header: @Composable () -> Unit,
+    stories: (@Composable (Modifier) -> Unit)?,
 ) {
-    val state = rememberShownList(uiState, listState, folderSwitch)
+    val state = rememberShownList(uiState, listState, folderSwitch, hasStories = stories != null)
     val animateRows = folderSwitch.animateRows
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
         val contentPadding = rememberClearOfNewChatButton(sheetPadding, state.kind)
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(contentPadding.sidesOnly()),
-                contentAlignment = Alignment.TopCenter,
-            ) { header() }
+            Box(Modifier.fillMaxWidth().padding(contentPadding.sidesOnly()), Alignment.TopCenter) { header() }
             Box(Modifier.weight(1f)) {
                 val contentModifier = Modifier.fadeThrough(folderSwitch).fillMaxSize()
                 when (val content = state.content) {
@@ -263,6 +263,7 @@ private fun ChatListBody(
                         ChatList(
                             items = content.items,
                             state = state,
+                            stories = stories,
                             listState = listState,
                             contentPadding = contentPadding,
                             openChatId = openChatId,
@@ -322,6 +323,7 @@ private fun rememberShownList(
     state: ChatListUiState,
     listState: LazyListState,
     folderSwitch: FolderSwitch,
+    hasStories: Boolean,
 ): ChatListUiState {
     var shownFolderId by rememberSaveable { mutableStateOf(state.selectedFolderId) }
     val positions = rememberSaveable(saver = FolderPositions.Saver) { FolderPositions() }
@@ -331,6 +333,7 @@ private fun rememberShownList(
     val isShown = state.selectedFolderId == shownFolderId
     SideEffect { if (isShown) lastShown.value = state }
     val currentState by rememberUpdatedState(state)
+    val currentHasStories by rememberUpdatedState(hasStories)
     val motionScheme = MaterialTheme.motionScheme
     LaunchedEffect(state.selectedFolderId) {
         // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
@@ -342,7 +345,7 @@ private fun rememberShownList(
             shownFolderId = state.selectedFolderId
             // Applied in the layout pass that brings the selected folder's rows, so the list does not keep the row
             // that was first in the old list.
-            positions.restore(currentState, listState)
+            positions.restore(currentState, currentHasStories, listState)
             if (animated) folderSwitch.scale.snapTo(FADE_THROUGH_INITIAL_SCALE)
         }
         coroutineScope {
@@ -379,9 +382,13 @@ private class FolderPositions(
         positions[folderId] = ListPosition(first.key, index, listState.firstVisibleItemScrollOffset)
     }
 
-    /** Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass. */
+    /**
+     * Puts the list of [state]'s folder where it was left, or at its top, in the next layout pass; the story rings
+     * ([hasStories]) and the archive row come first.
+     */
     fun restore(
         state: ChatListUiState,
+        hasStories: Boolean,
         listState: LazyListState,
     ) {
         val position = positions[state.selectedFolderId]
@@ -390,10 +397,12 @@ private class FolderPositions(
             return
         }
         val items = (state.content as? ChatListContent.Content)?.items.orEmpty()
-        val rowsAbove = if (state.archive != null) 1 else 0
+        val storyRows = if (hasStories) 1 else 0
+        val rowsAbove = storyRows + if (state.archive != null) 1 else 0
         val index =
             when (val key = position.key) {
-                ARCHIVE_ROW -> 0.takeIf { state.archive != null }
+                STORIES_ROW -> 0.takeIf { hasStories }
+                ARCHIVE_ROW -> storyRows.takeIf { state.archive != null }
                 else -> items.indexOfFirst { it.id == key }.takeIf { it >= 0 }?.plus(rowsAbove)
             }
         if (index != null) {
@@ -429,7 +438,8 @@ private class FolderPositions(
 }
 
 /**
- * A list's first visible row: its [key] (a chat id, or [ARCHIVE_ROW]), its [index], and the [offset] scrolled past it.
+ * A list's first visible row: its [key] (a chat id, [STORIES_ROW] or [ARCHIVE_ROW]), its [index], and the [offset]
+ * scrolled past it.
  */
 private class ListPosition(
     val key: Any,
@@ -438,18 +448,19 @@ private class ListPosition(
 )
 
 /**
- * The archive row of [state], if any, then its chats ([items]), keyed by id, each row animating to its new place when
- * the order changes and fading out when it leaves (archived, deleted). Outside selection mode, [openChatId]'s row is
- * open. Reports to [ChatListEvent.NearEndChanged]
+ * The story rings ([stories]) and the archive row of [state], if any, then its chats ([items]), keyed by id, each row
+ * animating to its new place when the order changes and fading out when it leaves (archived, deleted). Outside
+ * selection mode, [openChatId]'s row is open. Reports to [ChatListEvent.NearEndChanged]
  * whether the end is within [LOAD_MORE_THRESHOLD] rows: at once, on every change, afresh for another folder, and false
- * when the list leaves the screen. An archive row that appears above the first chat while the list shows its top is
- * scrolled into view.
+ * when the list leaves the screen. A row that appears above the first one (the rings, the archive row) while the list
+ * shows its top is scrolled into view.
  */
 @Suppress("LongParameterList") // The rows, the selection and open chat they show, and the list's state and padding.
 @Composable
 private fun ChatList(
     items: ImmutableList<ChatListItemModel>,
     state: ChatListUiState,
+    stories: (@Composable (Modifier) -> Unit)?,
     listState: LazyListState,
     contentPadding: PaddingValues,
     openChatId: Long?,
@@ -469,6 +480,11 @@ private fun ChatList(
         contentPadding = contentPadding,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (stories != null) {
+            item(key = STORIES_ROW, contentType = STORIES_ROW) {
+                stories(Modifier.listRow(this, maxWidth, motionScheme.takeIf { animateRows }))
+            }
+        }
         if (archive != null) {
             item(key = ARCHIVE_ROW, contentType = ARCHIVE_ROW) {
                 ArchiveRow(
@@ -493,13 +509,7 @@ private fun ChatList(
             )
         }
     }
-    val hasArchive = archive != null
-    LaunchedEffect(hasArchive) {
-        // Inserted above the first chat, which the list keeps in place: show the row if the list was at its top.
-        if (hasArchive && listState.firstVisibleItemIndex == 1 && listState.firstVisibleItemScrollOffset == 0) {
-            listState.scrollToItem(0)
-        }
-    }
+    ShowRowsAddedAtTop(listState, rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0))
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(listState, folderId) {
         try {
@@ -629,6 +639,7 @@ private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
 private const val ARCHIVE_ROW = "archive"
+private const val STORIES_ROW = "stories"
 
 // The Macrobenchmarks and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list and the row they
 // scroll and open by these tags, which `MainActivity` shows as resource ids.

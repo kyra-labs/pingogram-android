@@ -10,7 +10,9 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui.compose)
 
-    // MediaViewerViewModel is tested against fakes of the domain repositories and of the player.
+    // MediaViewerViewModel is tested against fakes of the domain repositories and of the player; the stories viewer
+    // against the stories repository's fake there, shared with the chat list's rings.
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }
