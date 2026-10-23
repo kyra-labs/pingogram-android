@@ -111,6 +111,11 @@ class CallActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
+            // A call that ends in picture-in-picture is not rated: its window has no room for the question.
+            val asksRating = (state as? CallUiState.InCall)?.rating != null
+            LaunchedEffect(asksRating, inPictureInPicture) {
+                if (asksRating && inPictureInPicture) viewModel.onEvent(CallEvent.DismissRating)
+            }
             val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
             LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->

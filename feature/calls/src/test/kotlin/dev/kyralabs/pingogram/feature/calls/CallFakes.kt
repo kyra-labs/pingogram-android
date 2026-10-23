@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
@@ -65,6 +66,13 @@ class FakeCallRepository : CallRepository {
     val startedVideo = mutableListOf<Boolean>()
     val discardedVideo = mutableListOf<Boolean>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
+    val rated = mutableListOf<Rating>()
+
+    data class Rating(
+        val callId: Int,
+        val stars: Int,
+        val problems: Set<CallProblem>,
+    )
 
     data class Discard(
         val callId: Int,
@@ -112,6 +120,15 @@ class FakeCallRepository : CallRepository {
         discarded += Discard(callId, isDisconnected, duration)
         discardedVideo += isVideo
         return discardResult
+    }
+
+    override suspend fun rateCall(
+        callId: Int,
+        stars: Int,
+        problems: Set<CallProblem>,
+    ): Outcome<Unit> {
+        rated += Rating(callId, stars, problems)
+        return Outcome.Success(Unit)
     }
 
     override suspend fun sendSignalingData(
