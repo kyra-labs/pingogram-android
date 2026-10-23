@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
+import dev.kyralabs.pingogram.core.ui.component.VoiceChatBarSlot
 import dev.kyralabs.pingogram.core.ui.component.rememberScrollingListState
 import dev.kyralabs.pingogram.core.ui.component.rememberSelectionBack
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -296,6 +297,8 @@ private fun ChatScaffold(
             // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
             val wallpaper = MaterialTheme.chatStyle.wallpaper
             Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
+                // The chat's voice chat, joined on feature:calls' screen (ADR 0023).
+                state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }

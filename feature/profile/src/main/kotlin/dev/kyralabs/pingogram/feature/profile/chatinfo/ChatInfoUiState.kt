@@ -76,6 +76,8 @@ data class ChatInfoActions(
     val canClearHistory: Boolean = false,
     val isBusy: Boolean = false,
     val canExport: Boolean = false,
+    /** The user may start a voice chat (`docs/adr/0023-group-voice-chats-and-live-streams.md`). */
+    val canStartVoiceChat: Boolean = false,
 )
 
 /**
