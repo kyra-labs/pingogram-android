@@ -10,9 +10,11 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -96,6 +98,14 @@ class SettingsAccessibilityChecksTest {
                 onBack = {},
             )
         }
+
+    @Test
+    fun folderInvite() =
+        check { FolderInviteContent(state = FolderInvitePreviewStates.newFolder, onEvent = {}, onCancel = {}) }
+
+    @Test
+    fun folderInviteFailed() =
+        check { FolderInviteContent(state = FolderInvitePreviewStates.offline, onEvent = {}, onCancel = {}) }
 
     @Test
     fun notifications() =

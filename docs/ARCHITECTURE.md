@@ -120,14 +120,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as
   `ChatFolderSettings`), creates, edits, deletes (`deleteChatFolder`, its chats kept) and reorders folders
   (`reorderChatFolders`, the main list kept in its place), lists Telegram's suggestions (`getRecommendedChatFolders`),
-  and holds the requests of shared folders (their invite links, `checkChatFolderInviteLink`,
-  `addChatFolderByInviteLink`) for the screens that come next. A folder that includes nothing is refused before
+  and the requests of shared folders: their invite links (`getChatFolderInviteLinks`, `createChatFolderInviteLink`),
+  and a shared folder's link (`checkChatFolderInviteLink`, `addChatFolderByInviteLink`). A folder that includes nothing is refused before
   TDLib (`DomainError.ChatFolderEmpty`). `feature:settings`' Chat folders page (`ChatFoldersRoute`,
   `ChatFoldersViewModel`: each folder read again whenever the folders change, a dragged order shown at once and taken
   back when Telegram refuses it) opens the editor (`ChatFolderEditRoute(folderId)`, `ChatFolderEditViewModel`: the
   draft in saved state; what it does not show, the pinned chats, the tag's color and a title's custom emoji, kept
   from the folder as Telegram has it; the picker's chats from the main list, filtered on the device).
-  `tg://settings/folders` opens the page.
+  `tg://settings/folders` opens the page. A shared folder's link (`t.me/addlist/…`, `LinkTarget.ChatFolderInvite`)
+  opens `ChatFolderInviteRoute(inviteLink)`, a dialog destination like the join sheet (`chatFolderInviteSheet`,
+  registered in `:app`'s `NavHost`, `FolderInviteViewModel`), which checks the link (only reading) and adds the folder
+  with the chats the user picked, joining them, only on "Add folder"; a folder the user has offers the chats added to
+  it since.
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which
@@ -830,6 +834,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   "Hang up" as its `RemoteAction`), the screen showing only the video there. The most the camera sends
   (`VideoQuality`) follows `NetworkRepository`: 720p on Wi-Fi, 480p on mobile data and after the connection was lost
   once, 360p roaming or with Data Saver.
+- **Voice chats and live streams** (`docs/adr/0023-group-voice-chats-and-live-streams.md`): `core:domain`'s
+  `GroupCallRepository` (`TdlibGroupCallRepository`, `core:data`, a `TdlibUpdateCache`) keeps each chat's voice chat
+  (`chat.video_chat`, `updateChatVideoChat`), the group calls (`updateGroupCall`, `getGroupCall` for one not announced)
+  and the participants of the call the user is in (`updateGroupCallParticipant`; an empty `order` drops one), and wraps
+  `createVideoChat`, `joinVideoChat`, `leaveGroupCall`, `endGroupCall`, the mute and hand toggles and a live stream's
+  `getGroupCallStreams` / `getGroupCallStreamSegment`. The engine's group call (`CallEngine.createGroupCall`,
+  `GroupCallSession`) makes the join payload, connects with TDLib's answer and asks for a stream's time and one-second
+  segments (`StreamRequest`). **`GroupCallManager`** (`:feature:calls`) is its state machine beside `CallManager`
+  (`ActiveGroupCall`: joining, connected, reconnecting, ended; muted, may unmute, hand raised, may end): it joins muted
+  as the chat's default participant, tells TDLib when the user unmutes, follows an administrator's mute, leaves, ends
+  the call for everyone, and answers a stream's requests from TDLib. It shares Telecom (`SystemCallRequest.voiceChat`,
+  `pingogram:chat/<id>`) and the foreground service, and `CallLine` keeps one call at a time across both managers: an
+  incoming one-to-one call during a voice chat is declined.
 
 ## Home screen widget
 

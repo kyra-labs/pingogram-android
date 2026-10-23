@@ -22,6 +22,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   those it leaves out (muted, read, archived), or delete it. Drag a folder by its handle, or touch and hold it, to
   move its tab. Telegram's suggested folders can be added with one tap. Links to Telegram's folder settings open
   the page too.
+- Shared folders: a folder link (`t.me/addlist/…`) shows the folder and its chats. Pick the chats you want to join
+  and add the folder with one tap, or join the chats added to a folder you have. Nothing is joined until you tap.
+
+### Changed
+- The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
+  avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
+  swipe them.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

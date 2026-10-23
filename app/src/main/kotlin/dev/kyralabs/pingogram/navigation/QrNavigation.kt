@@ -3,10 +3,12 @@ package dev.kyralabs.pingogram.navigation
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
+import dev.kyralabs.pingogram.core.navigation.ChatFolderInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInviteSheet
 import dev.kyralabs.pingogram.feature.scanner.navigation.qrScannerScreen
+import dev.kyralabs.pingogram.feature.settings.navigation.chatFolderInviteSheet
 
 /**
  * The QR code scanner (`REQUIREMENTS.md` FR-P5), full screen above the screen it was opened from. A Telegram link it
@@ -38,4 +40,9 @@ internal fun NavGraphBuilder.chatInvite(navController: NavHostController) {
         },
         onClose = { navController.popBackStack<ChatInviteRoute>(inclusive = true) },
     )
+}
+
+/** The sheet of a shared folder's link (`t.me/addlist/…`), a dialog destination above the screen it was opened from. */
+internal fun NavGraphBuilder.chatFolderInvite(navController: NavHostController) {
+    chatFolderInviteSheet(onClose = { navController.popBackStack<ChatFolderInviteRoute>(inclusive = true) })
 }

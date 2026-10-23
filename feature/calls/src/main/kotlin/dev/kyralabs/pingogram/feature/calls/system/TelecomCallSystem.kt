@@ -89,7 +89,7 @@ class TelecomCallSystem
         private fun attributes(request: SystemCallRequest) =
             CallAttributesCompat(
                 displayName = request.displayName,
-                address = "pingogram:user/${request.userId}".toUri(),
+                address = request.address.toUri(),
                 direction =
                     if (request.isOutgoing) {
                         CallAttributesCompat.DIRECTION_OUTGOING

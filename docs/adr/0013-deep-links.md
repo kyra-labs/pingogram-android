@@ -56,7 +56,9 @@ dangerous to act on (a login code someone else asked for).
     does not) and `ChatBoost` (read only) open the join sheet (`ChatInviteRoute`, which asks before joining), the
     login's confirmation (`QrLoginRoute`, which asks before anything is sent, whether the link was scanned or came from
     another app) and the boosts page (`ChatBoostRoute`, the chat from `getChatBoostLinkInfo`); `SettingsSectionQrCode`
-    opens the user's QR code (`MyQrCodeRoute`).
+    opens the user's QR code (`MyQrCodeRoute`); `ChatFolderInvite` (`t.me/addlist/…`, added 2026-10-23) the shared
+    folder's sheet (`ChatFolderInviteRoute`, which asks before adding the folder and joining its chats), and
+    `SettingsSectionChatFolders` the Chat folders page.
   - Not opened ("Pingogram can't open this kind of link yet", and "Open in browser" for `https` links, which targets a
     browser through a `CATEGORY_APP_BROWSER` selector, or a chooser without Pingogram, so it never comes back here):
     `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, `StickerSet`, bots
@@ -64,7 +66,7 @@ dangerous to act on (a login code someone else asked for).
     `PassportDataRequest`, `PremiumFeaturesPage`, `PremiumGiftCode`, `PremiumGiftPurchase`, `StarPurchase`, `TonConnect`,
     `TonWalletTransfer`, `GiftAuction`, `GiftCollection`, `UpgradedGift`, `Story`, `StoryAlbum`, `NewStory`, `LiveStory`,
     `VideoChat`, `GroupCall`, `CallsPage`, `BusinessChat`, `DirectMessagesChat`, `ChatAffiliateProgram`,
-    `ChatSelection`, `ChatFolderInvite`, `InstantView`, `Oauth`, `RequestManagedBot`, `RestorePurchases`,
+    `ChatSelection`, `InstantView`, `Oauth`, `RequestManagedBot`, `RestorePurchases`,
     `TextCompositionStyle`, `PhoneNumberConfirmation`, `UnknownDeepLink`, any kind a newer TDLib adds, and links TDLib
     refuses as not internal.
 - **Security.** `AuthenticationCode` (`t.me/login/12345`) is never entered or acted upon: someone may be logging in to
