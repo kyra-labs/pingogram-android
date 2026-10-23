@@ -717,4 +717,96 @@
     <string name="settings_delete_account_dialog_title">Delete your account?</string>
     <string name="settings_delete_account_dialog_text">Your account and everything in it is deleted on every device, for good. This can\'t be undone.</string>
     <string name="settings_delete_account_dialog_confirm">Delete account</string>
+
+    <!-- Chat folders (FR-L3), Settings → Chat folders -->
+    <string name="settings_chat_folders">Chat folders</string>
+    <string name="settings_chat_folders_summary">Sort your chats into tabs</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_chat_folders_loading">Loading your folders</string>
+    <string name="settings_chat_folders_section_yours">Your folders</string>
+    <string name="settings_chat_folders_footer">Folders show as tabs above your chats. Touch and hold a folder, or drag its handle, to move it.</string>
+    <string name="settings_chat_folders_new">New folder</string>
+    <string name="settings_chat_folders_none">No folders yet. Create one, or add one Telegram suggests.</string>
+    <string name="settings_chat_folders_section_recommended">Suggested folders</string>
+    <string name="settings_chat_folders_add">Add</string>
+    <!-- The screen reader's label of a suggested folder's button. %1$s is the folder's name. -->
+    <string name="settings_chat_folders_add_named">Add %1$s</string>
+    <!-- Spoken by screen readers while a suggested folder is created. %1$s is the folder's name. -->
+    <string name="settings_chat_folders_adding">Adding %1$s</string>
+    <string name="settings_chat_folders_move_up">Move up</string>
+    <string name="settings_chat_folders_move_down">Move down</string>
+    <!-- A folder's summary: what it includes. -->
+    <plurals name="settings_chat_folders_chat_count">
+        <item quantity="one">%1$s chat</item>
+        <item quantity="other">%1$s chats</item>
+    </plurals>
+    <string name="settings_chat_folders_type_contacts">Contacts</string>
+    <string name="settings_chat_folders_type_non_contacts">Non-contacts</string>
+    <string name="settings_chat_folders_type_groups">Groups</string>
+    <string name="settings_chat_folders_type_channels">Channels</string>
+    <string name="settings_chat_folders_type_bots">Bots</string>
+    <string name="settings_chat_folders_type_muted">Muted</string>
+    <string name="settings_chat_folders_type_read">Read</string>
+    <string name="settings_chat_folders_type_archived">Archived</string>
+    <!-- A shared folder's summary. %1$s is what it includes, e.g. "Groups and 3 chats". -->
+    <string name="settings_chat_folders_shared">Shared · %1$s</string>
+
+    <!-- Editing a folder -->
+    <string name="settings_chat_folder_new_title">New folder</string>
+    <string name="settings_chat_folder_edit_title">Edit folder</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder loads. -->
+    <string name="settings_chat_folder_loading">Loading the folder</string>
+    <string name="settings_chat_folder_name">Folder name</string>
+    <!-- Below the name field: how many characters are left. %1$s and %2$s are numbers. -->
+    <string name="settings_chat_folder_name_count">%1$s / %2$s</string>
+    <string name="settings_chat_folder_section_icon">Icon</string>
+    <string name="settings_chat_folder_icon_automatic">Automatic</string>
+    <string name="settings_chat_folder_section_included">Included chats</string>
+    <string name="settings_chat_folder_add_chats">Add chats</string>
+    <string name="settings_chat_folder_included_footer">Choose chats or kinds of chats to show in this folder.</string>
+    <string name="settings_chat_folder_section_excluded">Excluded chats</string>
+    <string name="settings_chat_folder_exclude_chats">Exclude chats</string>
+    <string name="settings_chat_folder_excluded_footer">Choose chats or kinds of chats that never show in this folder.</string>
+    <!-- The screen reader's label of a row's remove button. %1$s is a chat's name or a kind of chats. -->
+    <string name="settings_chat_folder_remove">Remove %1$s</string>
+    <string name="settings_chat_folder_save">Save</string>
+    <string name="settings_chat_folder_create">Create</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is saved. -->
+    <string name="settings_chat_folder_saving">Saving the folder</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is deleted. -->
+    <string name="settings_chat_folder_deleting">Deleting the folder</string>
+    <string name="settings_chat_folder_delete">Delete folder</string>
+    <string name="settings_chat_folder_delete_dialog_title">Delete this folder?</string>
+    <string name="settings_chat_folder_delete_dialog_text">The folder goes from all your devices. Its chats stay in your chat list.</string>
+    <string name="settings_chat_folder_delete_dialog_confirm">Delete</string>
+    <string name="settings_chat_folder_name_required">Give the folder a name.</string>
+    <string name="settings_chat_folder_no_chats">Add at least one chat or kind of chat.</string>
+
+    <!-- The sheet that picks a folder's chats -->
+    <string name="settings_chat_folder_picker_include">Add chats</string>
+    <string name="settings_chat_folder_picker_exclude">Exclude chats</string>
+    <string name="settings_chat_folder_picker_search">Search chats</string>
+    <string name="settings_chat_folder_picker_clear">Clear search</string>
+    <string name="settings_chat_folder_picker_types">Kinds of chats</string>
+    <string name="settings_chat_folder_picker_chats">Chats</string>
+    <string name="settings_chat_folder_picker_no_results">No chats found</string>
+    <string name="settings_chat_folder_picker_done">Done</string>
+
+    <!-- The icons a folder can have, as screen readers name them. -->
+    <string name="settings_chat_folder_icon_all">All chats</string>
+    <string name="settings_chat_folder_icon_unread">Unread</string>
+    <string name="settings_chat_folder_icon_unmuted">Unmuted</string>
+    <string name="settings_chat_folder_icon_channels">Channels</string>
+    <string name="settings_chat_folder_icon_groups">Groups</string>
+    <string name="settings_chat_folder_icon_private">Private chats</string>
+    <string name="settings_chat_folder_icon_custom">Folder</string>
+    <string name="settings_chat_folder_icon_setup">Settings</string>
+    <string name="settings_chat_folder_icon_favorite">Favorites</string>
+    <string name="settings_chat_folder_icon_flower">Flower</string>
+    <string name="settings_chat_folder_icon_game">Games</string>
+    <string name="settings_chat_folder_icon_sport">Sport</string>
+    <string name="settings_chat_folder_icon_book">Books</string>
+    <string name="settings_chat_folder_icon_travel">Travel</string>
+    <string name="settings_chat_folder_icon_light">Ideas</string>
+    <string name="settings_chat_folder_icon_palette">Art</string>
 </resources>

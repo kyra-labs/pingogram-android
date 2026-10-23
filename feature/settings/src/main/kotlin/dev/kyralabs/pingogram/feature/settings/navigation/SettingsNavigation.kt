@@ -19,6 +19,8 @@ import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
+import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
+import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
@@ -60,6 +62,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as Ope
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountRoute as DeleteAccountScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
@@ -107,11 +111,22 @@ private fun NavGraphBuilder.appearancePages(
     settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
 }
 
+/** Chat folders and the folder editor above it. */
+private fun NavGraphBuilder.folderPages(
+    onOpen: (route: Any) -> Unit,
+    onBack: () -> Unit,
+) {
+    settingsPage<ChatFoldersRoute> {
+        ChatFoldersScreenRoute(onOpenFolder = { onOpen(ChatFolderEditRoute(it)) }, onBack = onBack)
+    }
+    settingsPage<ChatFolderEditRoute> { ChatFolderEditScreenRoute(onBack = onBack) }
+}
+
 /**
- * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute],
+ * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
  * [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
  * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] and [ChatAppearanceRoute] above
- * Appearance, [NotificationExceptionsRoute] above Notifications,
+ * Appearance, [ChatFolderEditRoute] above Chat folders, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
@@ -135,6 +150,7 @@ fun NavGraphBuilder.settingsPages(
 ) {
     settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
     appearancePages(onOpen, onBack)
+    folderPages(onOpen, onBack)
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
@@ -286,6 +302,7 @@ internal val SettingsPage.route: Any
         when (this) {
             SettingsPage.EditProfile -> EditProfileRoute
             SettingsPage.Appearance -> AppearanceRoute
+            SettingsPage.ChatFolders -> ChatFoldersRoute
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
             SettingsPage.Language -> LanguageRoute

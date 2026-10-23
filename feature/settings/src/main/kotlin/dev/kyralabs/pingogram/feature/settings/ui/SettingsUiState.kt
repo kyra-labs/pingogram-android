@@ -44,6 +44,7 @@ data class AccountUiModel(
 enum class SettingsPage {
     EditProfile,
     Appearance,
+    ChatFolders,
     Notifications,
     DataStorage,
     Language,

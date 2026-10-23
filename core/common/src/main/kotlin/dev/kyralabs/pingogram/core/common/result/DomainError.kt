@@ -80,6 +80,14 @@ sealed interface DomainError {
      */
     data object TooManyPinnedChats : DomainError
 
+    // Chat folders (REQUIREMENTS.md FR-L3).
+
+    /** The account has as many chat folders, or shared ones, as Telegram allows (Telegram Premium raises it). */
+    data object TooManyChatFolders : DomainError
+
+    /** A chat folder must include at least one chat or kind of chat. */
+    data object ChatFolderEmpty : DomainError
+
     // Sending files, contacts and polls (REQUIREMENTS.md FR-C5).
 
     /**

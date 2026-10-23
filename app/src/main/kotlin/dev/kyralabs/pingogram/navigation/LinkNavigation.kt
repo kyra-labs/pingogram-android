@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatBoostRoute
+import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
@@ -127,6 +128,7 @@ private fun NavHostController.openSettings(page: SettingsPage?) {
         when (page) {
             null -> return
             SettingsPage.Appearance -> AppearanceRoute
+            SettingsPage.ChatFolders -> ChatFoldersRoute
             SettingsPage.DataAndStorage -> DataStorageRoute
             SettingsPage.ActiveSessions -> ActiveSessionsRoute
             SettingsPage.Language -> LanguageRoute
