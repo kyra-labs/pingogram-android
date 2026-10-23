@@ -287,8 +287,9 @@ internal fun ChatAdministrationGroup(
 }
 
 /**
- * The rest, segmented rows without icons: "Clear history" (groups) and, for the owner, "Delete group" or "Delete
- * channel" in `error`; each asks first.
+ * The rest, segmented rows without icons: "Export chat" (`docs/adr/0021-chat-export.md`, where the chat lets its
+ * content be saved), "Clear history" (groups) and, for the owner, "Delete group" or "Delete channel" in `error`; the
+ * last two ask first.
  */
 @Composable
 internal fun ChatInfoMoreGroup(
@@ -298,6 +299,16 @@ internal fun ChatInfoMoreGroup(
     modifier: Modifier = Modifier,
 ) {
     val rows = mutableListOf<ProfileRow>()
+    if (actions.canExport) {
+        rows +=
+            ProfileRow("export") { shapes ->
+                ChatInfoActionRow(
+                    stringResource(R.string.profile_export_chat),
+                    shapes,
+                    { onEvent(ChatInfoEvent.Open(ChatInfoPage.Export)) },
+                )
+            }
+    }
     if (actions.canClearHistory) {
         rows +=
             ProfileRow("clear") { shapes ->

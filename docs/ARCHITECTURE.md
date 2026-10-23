@@ -778,6 +778,40 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Goldens draw the real `RemoteViews` (`GlanceRemoteViews`) in an `AppWidgetHostView`, the only parent Android fills a
   widget's list in.
 
+## Chat export
+
+`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`. Nothing is uploaded: only TDLib is asked, for the chat's
+messages and their files, and the output goes only to the folder the user picked; logs hold no message text, names or
+folder.
+
+- **Entry**: the profile's "More" group (`feature:profile`'s `profileScreen(onExportChat)`, the private chat's id,
+  Saved Messages on one's own profile, which the Saved Messages title opens) and the info page's last group
+  (`ChatInfoPage.Export`), where the chat lets its content be saved. Both push `feature:chat`'s
+  `ChatExportRoute(chatId)` (`chatExportScreen`, registered in `:app`'s `NavHost` and in the extra pane's).
+- **The page** (`feature:chat` `export/`, `ChatExportViewModel`): `core:domain`'s `ChatExportRepository` says whether
+  the chat may be exported (not secret chats, not chats with protected content); the form (format, media kinds, the
+  size limit, the day to start from, the folder) lives in the `SavedStateHandle`. The folder comes from the Storage
+  Access Framework's picker (`OpenDocumentTree`, no permission); `ExportFolderRepository`
+  (`AndroidExportFolderRepository`, `core:data`) persists its grant and reads its name, and gives the grant back when
+  another is picked or the page closes without exporting. "Export" hands the options to `ChatExportJobs`, whose job
+  then holds the folder; the page follows it (`job(chatId)`) to its result.
+- **The job**: `core:notifications`' `WorkManagerChatExportJobs` runs `ChatExportWorker` as unique work per chat
+  (`chat_export_<id>`, expedited, kept while one runs) in WorkManager's `dataSync` foreground service, as the user's
+  transfers run, with `ChatExportNotificationBuilder`'s notification in the "Transfers" channel ("Exporting Ada", the
+  progress, "Cancel" through `WorkManager.createCancelPendingIntent`) and a note once it ended. Its options are its
+  input data, its progress WorkManager's progress data, its result or error its output (`ChatExportInput.kt`). It
+  waits for TDLib to log in after a restart, and gives the folder's grant back at the end.
+- **The export**: `core:data`'s `DocumentChatExporter` (behind `core:domain`'s `ChatExporter`) reads the history
+  through `TdlibChatExportRepository` (`getChatHistory`, `only_local` false, 100 a page, newest first, a `FLOOD_WAIT`
+  waited out for the seconds asked; names with `getUser` / `getChat`, once per export; files with `downloadFile` at
+  priority 1, synchronous, one at a time, cancelled in TDLib with the export), maps each message to `ExportMessage`
+  (`core:domain`: service texts and summaries worded by `ResourceExportTexts`, `core:ui`'s previews), copies the
+  chosen media into `media/` and writes each page to a temporary file in the cache (`ExportRecords.kt`). Then it
+  writes `messages.html` (`HtmlExportWriter`: self-contained, no script) or `messages.json` (`JsonExportWriter`, the
+  ADR's schema) from the last page to the first, each reversed, so it never holds more than a page. All writing goes
+  through `DocumentTree` (`AndroidDocumentTree` on `DocumentsContract`, an in-memory folder in tests). Cancelled or
+  failed, it deletes its folder and its temporary files.
+
 ## Feedback
 
 `docs/TESTING_GUIDE.md`, `CLAUDE.md` rule 10: nothing leaves the device unless the user shares it.

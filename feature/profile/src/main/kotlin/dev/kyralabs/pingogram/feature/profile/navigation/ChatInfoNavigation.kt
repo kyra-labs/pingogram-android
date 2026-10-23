@@ -8,6 +8,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.navigation.ChatBoostRoute
+import dev.kyralabs.pingogram.core.navigation.ChatExportRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.ChatMembersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatPermissionsRoute
@@ -36,11 +37,12 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsRoute as Memb
  * opens to the graph, each pushed above the one before: the members ([ChatMembersRoute]), a member's rights
  * ([MemberRightsRoute]), editing the title and description ([EditChatInfoRoute]), the permissions
  * ([ChatPermissionsRoute]), the invite links ([InviteLinksRoute], [EditInviteLinkRoute]) and the boosts
- * ([ChatBoostRoute], also from a boost link). [onOpen] pushes one of
- * those routes, [onBack] leaves the page shown. [onLeft] runs once the user left or deleted the chat, which is gone
- * from the lists. [onOpenChat] opens a chat (a mention, a removed channel), [onOpenProfile] a member's profile, and
- * [onOpenMedia] / [onOpenMessage] the shared media as the profile's do. A rights page or link editor that saved goes
- * back through [NavController.popBackStackAfterGroupChange], so the page below reads its list again.
+ * ([ChatBoostRoute], also from a boost link). "Export chat" opens `:feature:chat`'s [ChatExportRoute], which the
+ * `NavHost` must hold too. [onOpen] pushes one of those routes, [onBack] leaves the page shown. [onLeft] runs once the
+ * user left or deleted the chat, which is gone from the lists. [onOpenChat] opens a chat (a mention, a removed
+ * channel), [onOpenProfile] a member's profile, and [onOpenMedia] / [onOpenMessage] the shared media as the
+ * profile's do. A rights page or link editor that saved goes back through
+ * [NavController.popBackStackAfterGroupChange], so the page below reads its list again.
  */
 @Suppress("LongParameterList") // The app's navigation from the info page.
 fun NavGraphBuilder.chatInfoScreens(
@@ -73,6 +75,7 @@ fun NavGraphBuilder.chatInfoScreens(
                                     ChatInfoPage.Permissions -> ChatPermissionsRoute(chatId)
                                     ChatInfoPage.InviteLinks -> InviteLinksRoute(chatId)
                                     ChatInfoPage.Boosts -> ChatBoostRoute(chatId)
+                                    ChatInfoPage.Export -> ChatExportRoute(chatId)
                                 },
                             )
                         },

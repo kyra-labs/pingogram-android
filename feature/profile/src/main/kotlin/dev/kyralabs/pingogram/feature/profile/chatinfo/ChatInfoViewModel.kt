@@ -401,6 +401,7 @@ class ChatInfoViewModel internal constructor(
                     canDelete = info.myRole is MemberRole.Owner && canDelete == true,
                     canClearHistory = info.kind != GroupKind.Channel,
                     isBusy = overlay.isBusy,
+                    canExport = !chat.hasProtectedContent,
                 ),
             members = membersPreview(info, now),
             administration =

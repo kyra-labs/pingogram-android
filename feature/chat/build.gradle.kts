@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.media3.exoplayer)
 
     // ChatViewModel is tested against fakes of the domain repositories and a fake clock; core:testing's fakes of the
-    // app's language and the device's language detection among them.
+    // app's language and the device's language detection among them, and assertAccessible for the export page.
     testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

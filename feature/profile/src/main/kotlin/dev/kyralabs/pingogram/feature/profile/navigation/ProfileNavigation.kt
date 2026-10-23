@@ -16,8 +16,10 @@ import dev.kyralabs.pingogram.feature.profile.ui.ProfileRoute as ProfileScreenRo
  * channel a mention in the bio named), [onOpenProfile] another user's profile (a mention), [onOpenMedia] a photo, video
  * or GIF of the shared media in the media viewer, and [onOpenMessage] a file, song or voice message in the chat at its
  * message. [onEditContact], where the app has a contact editor, is what "Add to contacts" and "Edit contact" open for
- * the user; without it, those rows are left out. It grows out of the conversation's avatar that opened it, and shrinks
- * back into it (`docs/DESIGN_SYSTEM.md` §5, [avatarTransformTarget]).
+ * the user; without it, those rows are left out. [onExportChat], where the app has the export page, is what "Export
+ * chat" opens for the private chat (Saved Messages on one's own profile); without it, that row is left out. It grows
+ * out of the conversation's avatar that opened it, and shrinks back into it (`docs/DESIGN_SYSTEM.md` §5,
+ * [avatarTransformTarget]).
  */
 fun NavGraphBuilder.profileScreen(
     onBack: () -> Unit,
@@ -26,6 +28,7 @@ fun NavGraphBuilder.profileScreen(
     onOpenMedia: (chatId: Long, messageId: Long) -> Unit,
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     onEditContact: ((userId: Long) -> Unit)? = null,
+    onExportChat: ((chatId: Long) -> Unit)? = null,
 ) {
     composable<ProfileRoute> { entry ->
         val userId = entry.toRoute<ProfileRoute>().userId
@@ -39,6 +42,7 @@ fun NavGraphBuilder.profileScreen(
                 onOpenMessage = onOpenMessage,
                 modifier = Modifier.avatarTransformTarget(AvatarTransformKey.profile(userId)),
                 onEditContact = onEditContact,
+                onExportChat = onExportChat,
             )
         }
     }

@@ -45,10 +45,10 @@ class ChatProfilesTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `the titles of Saved Messages and of groups open nothing`() =
+    fun `the title of Saved Messages opens the user's own profile, that of a group no profile`() =
         runViewModelTest {
             users.setUsers(user(ME))
-            assertNull(showing(chat(id = ME), history(message(1, chatId = ME))).state.header?.profileUserId)
+            assertEquals(ME, showing(chat(id = ME), history(message(1, chatId = ME))).state.header?.profileUserId)
             assertNull(showing(groupChat, history(message(1, chatId = groupChat.id))).state.header?.profileUserId)
         }
 
