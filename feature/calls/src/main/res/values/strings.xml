@@ -93,4 +93,27 @@
     <string name="group_call_end_confirm">End</string>
     <string name="group_call_cancel">Cancel</string>
     <string name="group_call_microphone_rationale">To speak in the voice chat, Pingogram needs the microphone. You join muted, and nothing is sent until you unmute.</string>
+    <!-- Recent calls (the call history). -->
+    <string name="recent_calls_title">Recent calls</string>
+    <string name="recent_calls_back">Back</string>
+    <string name="recent_calls_filter_all">All</string>
+    <string name="recent_calls_filter_missed">Missed</string>
+    <string name="recent_calls_today">Today</string>
+    <string name="recent_calls_yesterday">Yesterday</string>
+    <string name="recent_calls_empty">No calls yet</string>
+    <string name="recent_calls_empty_body">Calls you make and get show here. Start one from a chat or a profile.</string>
+    <string name="recent_calls_no_missed">No missed calls</string>
+    <string name="recent_calls_no_missed_body">Calls you didn\'t answer show here.</string>
+    <string name="recent_calls_error">Couldn\'t load your calls</string>
+    <string name="recent_calls_try_again">Try again</string>
+    <!-- How a call went and how long it lasted: "Outgoing call · 4:05". -->
+    <string name="recent_calls_kind_and_length">%1$s · %2$s</string>
+    <!-- What a tap on a row does, for screen readers. -->
+    <string name="recent_calls_call_back">Call back</string>
+    <string name="recent_calls_video_call_back">Video call back</string>
+    <string name="recent_calls_row_menu">More options</string>
+    <string name="recent_calls_delete">Delete from call history</string>
+    <string name="recent_calls_deleted">Call deleted from your history</string>
+    <!-- How long an answered call lasted, for screen readers: "lasted 4:05". -->
+    <string name="recent_calls_duration">lasted %1$s</string>
 </resources>

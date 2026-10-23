@@ -2,22 +2,24 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The groups of Settings home that open the other settings pages, without headings (docs/DESIGN_SYSTEM.md §6).
 
 /**
- * The groups of rows that open the other settings pages: General (Appearance, Notifications, Data and storage,
- * Language), Privacy and security, About, their icons in circles of one container role per group: `primary`,
- * `tertiary`, `secondary` (`docs/DESIGN_SYSTEM.md` §2.2). With a [selection] they are selectable, the open page's
- * selected.
+ * The groups of rows that open the other settings pages: Recent calls where the app provides it, General (Appearance,
+ * Notifications, Data and storage, Language), Privacy and security, About, their icons in circles of one container
+ * role per group: `primary`, `tertiary`, `secondary` (`docs/DESIGN_SYSTEM.md` §2.2). With a [selection] they are
+ * selectable, the open page's selected.
  */
 @Composable
 internal fun PageGroups(
     onOpenPage: (SettingsPage) -> Unit,
     selection: SettingsPageSelection? = null,
 ) {
+    LocalRecentCallsLauncher.current?.let { RecentCallsGroup(it) }
     GeneralGroup(onOpenPage, selection)
     SettingsGroup(iconTone = SettingsIconTone.Tertiary) {
         item { shapes ->
@@ -40,6 +42,25 @@ internal fun PageGroups(
                 shapes = shapes,
                 selected = selection?.let { it.openPage == SettingsPage.About },
                 onClick = { onOpenPage(SettingsPage.About) },
+            )
+        }
+    }
+}
+
+/**
+ * Recent calls (`:feature:calls`, `docs/DESIGN_SYSTEM.md` §6 "Recent calls"), a group of its own above General: it
+ * opens a page of another feature, pushed above Settings, not a settings page in the detail pane.
+ */
+@Composable
+private fun RecentCallsGroup(onOpen: () -> Unit) {
+    SettingsGroup {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_recent_calls),
+                summary = stringResource(R.string.settings_recent_calls_summary),
+                icon = UiR.drawable.ic_history,
+                shapes = shapes,
+                onClick = onOpen,
             )
         }
     }

@@ -876,6 +876,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   goes to the screen's `CallVideoView` (`GroupCallManager.setVideoSink`) and on in picture-in-picture. The features
   reach voice chats through `core:ui`'s `VoiceChats` (`LocalVoiceChats`, provided by `:app` from `Calls`): the
   conversation's `VoiceChatBarSlot` at the top of its sheet and the info page's "Voice chat" pill.
+- **Recent calls**: `core:domain`'s `CallHistoryRepository` (`TdlibCallHistoryRepository`, `core:data`, no cache) pages
+  the call service messages of every private chat (`searchCallMessages`, by TDLib's offset, all or only missed),
+  deletes one for the user only (`deleteMessages` without `revoke`) and follows `updateNewMessage` with a `messageCall`
+  and permanent `updateDeleteMessages` while collected. `feature:calls`' `RecentCallsRoute` (`RecentCallsViewModel`,
+  `history/`, a destination of `:app`'s `NavHost`) lists them by day with the people from `UserRepository`, keeps the
+  filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call. Settings home
+  and the Contacts tab open it through `core:ui`'s `LocalRecentCallsLauncher`, which `PingogramApp` provides, as
+  "Send feedback" is opened.
 
 ## Home screen widget
 
