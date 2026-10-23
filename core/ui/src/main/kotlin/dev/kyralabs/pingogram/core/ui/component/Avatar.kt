@@ -119,6 +119,11 @@ fun Avatar(
         remember(colors, id, onSelection) {
             if (onSelection) colors.avatarPlaceholderColorsOnSelection() else colors.avatarPlaceholderColors(id)
         }
+    // The check's painter is built once the avatar is first selected: most never are, and a list would build one for
+    // each row it brings into view. Kept from then on, for the morph back.
+    val everSelected = remember { SelectionSeen() }
+    if (selected) everSelected.value = true
+    val check = if (everSelected.value) painterResource(R.drawable.ic_check) else null
     Box(
         modifier
             .size(size)
@@ -127,7 +132,7 @@ fun Avatar(
             .avatarSelection(
                 selected = selected,
                 avatarShape = MaterialShapes.Circle,
-                mark = SelectedMark(painterResource(R.drawable.ic_check), colors.primary, colors.onPrimary),
+                mark = SelectedMark(check, colors.primary, colors.onPrimary),
                 animationSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultSpatialSpec()),
             ).onlineIndicator(
                 online = isOnline,
@@ -141,12 +146,18 @@ fun Avatar(
             colors = placeholderColors,
             size = size,
             icon = placeholderIcon,
+            photoAlpha = photoAlpha,
             modifier = Modifier.matchParentSize().fadingOutAs(photoAlpha),
         )
         if (fileId != null && photoAlpha != null) {
             AvatarPhoto(fileId = fileId, size = size, alpha = photoAlpha, modifier = Modifier.matchParentSize())
         }
     }
+}
+
+/** Whether an avatar has been selected; a plain field, as nothing observes it. */
+private class SelectionSeen {
+    var value = false
 }
 
 /**
@@ -198,31 +209,56 @@ private fun AvatarPhoto(
     )
 }
 
+/**
+ * The placeholder's circle with the initials of [name], or [icon]. Behind a photo ([photoAlpha]) the initials are
+ * drawn by [lazyInitials], which lays them out only while the photo does not cover them yet.
+ */
+@Suppress("LongParameterList") // The name, its colors, size and icon, the photo fading in over it, the modifier.
 @Composable
 private fun AvatarPlaceholder(
     name: String,
     colors: AvatarColors,
     size: Dp,
     @DrawableRes icon: Int?,
+    photoAlpha: Animatable<Float, AnimationVector1D>?,
     modifier: Modifier,
 ) {
     val initials = remember(name) { avatarInitials(name) }
-    Box(modifier.background(colors.container, CircleShape), contentAlignment = Alignment.Center) {
-        if (icon == null && initials.isNotEmpty()) {
-            Text(
-                text = initials,
-                color = colors.content,
-                maxLines = 1,
-                softWrap = false,
-                style = rememberInitialsStyle(size),
-            )
+    val showsInitials = icon == null && initials.isNotEmpty()
+    // The photo's fade-in, where the initials sit behind a photo: lazyInitials draws them.
+    val behindPhoto = photoAlpha?.takeIf { showsInitials }
+    val background = modifier.background(colors.container, CircleShape)
+    Box(
+        if (behindPhoto != null) {
+            background.lazyInitials(initials, colors.content, rememberInitialsStyle(size), behindPhoto)
         } else {
-            Icon(
-                painter = painterResource(icon ?: R.drawable.ic_person_filled),
-                contentDescription = null,
-                modifier = Modifier.size(size * ICON_SIZE_RATIO),
-                tint = colors.content,
-            )
+            background
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            behindPhoto != null -> {
+                Unit
+            }
+
+            showsInitials -> {
+                Text(
+                    text = initials,
+                    color = colors.content,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = rememberInitialsStyle(size),
+                )
+            }
+
+            else -> {
+                Icon(
+                    painter = painterResource(icon ?: R.drawable.ic_person_filled),
+                    contentDescription = null,
+                    modifier = Modifier.size(size * ICON_SIZE_RATIO),
+                    tint = colors.content,
+                )
+            }
         }
     }
 }

@@ -323,6 +323,24 @@ regresses by more than 10%.
   The rings scroll away in the first frames, after which the row costs nothing, as `ChatListRecompositionTest` checks
   (a ring turning seen recomposes the row alone; scrolling past it recomposes nothing). Before the change, on a quieter
   machine: P50 1.2 ms, P90 9.3–9.5 ms, P99 11.6–13.9 ms.
+- Chat list scrolling (2026-10-23, after the v0.5.0 device run missed the P90 budget, 10.0 against 8 ms):
+  - **What the JVM shows.** `ChatListScrollCostTest` now gives four rows in five a profile photo, loaded by Coil through
+    a fake fetcher and kept in its memory cache, as on a phone. It also prints the mean, over 8 runs instead of 4. A JFR
+    profile of its frames: composing a row that comes into view takes about a fifth of the scroll's time, creating its
+    nodes a seventh, and the layout of its texts (name, preview, time, initials) about a quarter, all spread over many
+    small parts. Removing whole parts in trials (the `SwipeToDismissBox`, Material's clickable `ListItem` for its
+    plain one, the initials) saved too little each to see within the machine's noise (±1 ms at P90), and 7–15% all
+    together.
+  - **What changed.** The avatar lays out its initials only while they show (`lazyInitials`), so a photo from Coil's
+    memory cache saves a text layout. It also builds the selection check only once the avatar is first selected. A
+    row's swipe feedback starts its watch only while the row is swiped. Interleaved four times each: mean
+    3.66 → 3.44 ms (−6%), P90 12.8 → 11.6 ms (−9%), P99 19.2 → 17.5 ms (−9%).
+  - **What only a phone shows.** A row's resting container is now transparent. It was the sheet's own `surface`
+    drawn again under every row, a full extra layer of pixels in every scroll frame. A row being swiped draws its
+    container at once (`draggedContainer`). The JVM draws nothing, so this needs the device benchmark. On the
+    phone, frames that bring no new row already cost 6.0 ms at P50, against about 1.5 ms of composing and measuring on
+    the JVM: most of a phone's frame is drawing and the RenderThread, which only a Perfetto trace of the benchmark can
+    break down.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
