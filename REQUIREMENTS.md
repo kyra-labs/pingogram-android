@@ -211,7 +211,9 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Optional app passcode with biometric prompt; screen obscured in recents when enabled.
 - Network only to Telegram data centers (via TDLib) and user-requested links; no third-party
   network calls (the `gms` flavor's push service, FR-N3, is the one exception; `foss` has none). `networkSecurityConfig` with cleartext disabled.
-- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release.
+- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release. Logs and the last
+  crash stay on the device; "Send feedback" redacts them into a report the user reads and shares themselves
+  (`docs/TESTING_GUIDE.md`), never sent by the app.
 - Contacts sync (FR-P1, `docs/adr/0011-contacts-sync.md`, approved by the owner 2026-10-21) is opt-in and off by
   default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
   Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
@@ -234,6 +236,9 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - English source strings; RTL layouts verified (Arabic/Hebrew); per-app language selector;
   plurals via ICU; dates via `java.time` + `DateTimeFormatter` localized; numbers via
   `NumberFormat`. Telegram's own translations (`getLanguagePackStrings`) considered later.
+- Translations come from Hosted Weblate (owner decision 2026-10-22), never machine-translated into the repository; a
+  language ships once it covers 80% of the strings (`docs/TRANSLATING.md`). Pseudo-locales `en-XA` and `ar-XB` in debug
+  builds check long text and right to left.
 
 ### 6.5 Reliability
 
@@ -258,7 +263,8 @@ Every screen must satisfy this list before merge:
 - [ ] Foreground services declare `foregroundServiceType`
 - [ ] Per-app language, large-screen keyboard/mouse support, state restoration (rotation, process death)
 - [ ] Accessibility (§6.3), haptics via `HapticFeedbackType`, no custom vibration patterns > 50 ms
-- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `MissingTranslation` fatal
+- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `ExtraTranslation` fatal (`MissingTranslation`
+      informational: a language ships at 80% translated, `docs/adr/0020-translations-on-weblate.md`)
 - [ ] Performance budgets in `docs/PERFORMANCE.md` met for the screen
 - [ ] Android 16 Live Updates (`ProgressStyle` notification) for long uploads/downloads where available
 

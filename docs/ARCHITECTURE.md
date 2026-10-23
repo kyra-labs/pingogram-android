@@ -9,6 +9,7 @@
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
 │   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
+│   · feedback (the report testers share themselves)             │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
 │  :core:ui        — PingogramTheme (M3 Expressive), shared       │
@@ -68,10 +69,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
-- **Language** (FR-S1, §6.4): the languages Pingogram ships are those of `:app`'s `res/xml/locales_config.xml`, which
-  Android 13+ lists in its app language settings (`android:localeConfig`), Settings → Language lists on every version,
-  and the build packages resources for (`androidResources.localeFilters`, derived from the file in
-  `app/build.gradle.kts`, so libraries add no other languages). `core:domain`'s `AppLanguageRepository` is bound in
+- **Language** (FR-S1, §6.4): the languages Pingogram ships are English and every language its translations cover at
+  80% (`docs/TRANSLATING.md`, `docs/adr/0020-translations-on-weblate.md`). `build-logic`'s `pingogram.android.locales`
+  works them out from all modules' `strings.xml` and generates `:app`'s `xml/locales_config.xml` from them, which
+  Android 13+ lists in its app language settings (`android:localeConfig`) and Settings → Language lists on every
+  version, and the build packages resources for them only (`androidResources.localeFilters`, so libraries add no other
+  languages), plus the pseudo-locales `en-XA` and `ar-XB` that debug builds generate. `core:domain`'s `AppLanguageRepository` is bound in
   `:app` (`PlatformAppLanguageRepository`): from Android 13 it is Android's per-app language (`LocaleManager`), which
   Android applies by creating the activity again, read anew at each collection since Android's settings change it too.
   Before Android 13 the choice is kept in DataStore (`core:datastore`'s `DataStoreLanguagePreference`) and
@@ -705,6 +708,24 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - Goldens draw the real `RemoteViews` (`GlanceRemoteViews`) in an `AppWidgetHostView`, the only parent Android fills a
   widget's list in.
 
+## Feedback
+
+`docs/TESTING_GUIDE.md`, `CLAUDE.md` rule 10: nothing leaves the device unless the user shares it.
+
+- `core:data`'s `CrashRecorder`, made and installed by `PingogramApplication` before anything else (Hilt included),
+  chains Android's default uncaught exception handler: it writes the last crash (time, thread, the exception and its
+  causes with redacted messages, at most 40 frames each) to `filesDir/diagnostics/last_crash.txt`, then hands the crash
+  on. TDLib logs its errors (verbosity 1) to its rotating file in release builds too (`docs/TDLIB.md`).
+- `core:domain`'s `DiagnosticsRepository` (`AndroidDiagnosticsRepository`, `core:data`) reads them on the IO dispatcher
+  into a `DiagnosticReport`: `AppInfo` (version, version code, flavor, build type), the device, the crash and the last
+  200 lines of TDLib's log, every line through `Redaction` (TDLib's text and name fields, quoted strings, emails,
+  tokens, numbers of 7 digits or more).
+- `feature:feedback` (`FeedbackRoute`, pushed above Settings → About, whose row opens it through `core:ui`'s
+  `LocalFeedbackLauncher`, which `PingogramApp` provides) shows the report with the user's description
+  (`FeedbackViewModel`, the description in saved state), and on request shares its text (`ACTION_SEND`), copies it,
+  or opens a new GitHub issue from `.github/ISSUE_TEMPLATE/bug_report.yml` with its fields in the address (at most
+  8,000 characters, the log's oldest lines dropped first).
+
 ## Error handling
 
 - `TdResult<T> = Success(value) | Failure(TdError)`; repositories convert to domain errors:
@@ -719,7 +740,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `pingogram.android.hilt`, `pingogram.jvm.library`, `pingogram.android.lint`, `pingogram.ktlint`,
   `pingogram.android.licenses` (the open-source licenses list of `:app`), `pingogram.android.gms` (Firebase for
   `:app`'s `gms` flavor, the `foss` Google-free check),
-  `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`).
+  `pingogram.detekt`, `pingogram.tdlib` (the TDLib AAR for `:core:tdlib`, `docs/TDLIB.md`), `pingogram.ntgcalls` (the
+  call engine's AAR for `:feature:calls`). `:app` applies Gradle Play Publisher only for the optional upload to Google
+  Play, when the property `pingogram.play.serviceAccount` is given (`docs/PLAY_STORE.md` §7).
   `build-logic/detekt-rules` holds our detekt rules (`PingogramHardcodedToken`).
 - `gradle/libs.versions.toml` is the only place versions live. Compose BOM pins Compose.
 - `secrets.properties` (git-ignored) → `BuildConfig.TELEGRAM_API_ID` (int) /

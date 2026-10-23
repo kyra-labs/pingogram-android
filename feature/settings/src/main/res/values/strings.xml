@@ -90,7 +90,7 @@
     <string name="settings_color_theme_section_basic">Basic colors</string>
     <!-- The name of each theme, on its chip for screen readers and under "Theme" in Appearance. -->
     <string name="settings_color_theme_wallpaper">Wallpaper colors</string>
-    <string name="settings_color_theme_pingogram">Pingogram</string>
+    <string name="settings_color_theme_pingogram" translatable="false">Pingogram</string>
     <string name="settings_color_theme_blue">Blue</string>
     <string name="settings_color_theme_teal">Teal</string>
     <string name="settings_color_theme_green">Green</string>
@@ -108,7 +108,6 @@
     <!-- Sample content of the preview: a contact's name, the last message, its time, two messages and a button. -->
     <string name="settings_color_theme_sample_name">Ada Lovelace</string>
     <string name="settings_color_theme_sample_preview">See you at the ferry?</string>
-    <string name="settings_color_theme_sample_time">9:41</string>
     <string name="settings_color_theme_sample_incoming">Running ten minutes late</string>
     <string name="settings_color_theme_sample_outgoing">No rush, I saved you a seat</string>
     <string name="settings_color_theme_sample_button">Send</string>
@@ -413,7 +412,7 @@
 
     <!-- About -->
     <string name="settings_section_app">App</string>
-    <string name="settings_about_app_name">Pingogram</string>
+    <string name="settings_about_app_name" translatable="false">Pingogram</string>
     <!-- %1$s is the version, such as "0.3.0". -->
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_source_code">Source code</string>
@@ -427,6 +426,8 @@
          t.me links instead of the browser (docs/adr/0013-deep-links.md) -->
     <string name="settings_about_open_links">Open Telegram links</string>
     <string name="settings_about_open_links_summary">Let Pingogram open t.me links: turn on \"Open supported links\" in Android\'s settings</string>
+    <string name="settings_about_feedback">Send feedback or report a bug</string>
+    <string name="settings_about_feedback_summary">Prepares a report that you read and share yourself</string>
 
     <!-- Open-source licenses (FR-S1, About) -->
     <!-- Spoken by screen readers for the progress indicator while the list of libraries loads. -->
