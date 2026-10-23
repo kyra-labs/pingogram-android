@@ -14,6 +14,8 @@ import dev.kyralabs.pingogram.core.notifications.AvatarIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +77,10 @@ class RecentChatsWidgetUpdater
         /** Starts following what the widgets show; call once per process. */
         @OptIn(ExperimentalCoroutinesApi::class)
         fun start() {
+            // The first redraw of a process waits for the start to settle: Glance composes the widget in a worker,
+            // which starts WorkManager, and that would compete with the chat list's first page (docs/PERFORMANCE.md
+            // §2). The system shows the widget's last content meanwhile.
+            val started = scope.async { delay(START_UPDATE_DELAY) }
             scope.launch {
                 if (placed.value == null) placed.compareAndSet(null, widgets.hasWidgets())
                 placed
@@ -83,6 +89,7 @@ class RecentChatsWidgetUpdater
                     .flatMapLatest { if (it) contents() else emptyFlow() }
                     .collectLatest { content ->
                         mutableContent.value = content
+                        started.await()
                         widgets.updateAll()
                     }
             }
@@ -164,6 +171,9 @@ class RecentChatsWidgetUpdater
 
             /** How long the chats must stay as they are before the widgets are drawn again. */
             val UPDATE_DELAY = 1.seconds
+
+            /** How long after the process started the widgets are first drawn again. */
+            val START_UPDATE_DELAY = 5.seconds
 
             /** The avatars' size in the widget's rows ([WidgetTokens.avatar]), in dp. */
             const val AVATAR_SIZE_DP = 40f

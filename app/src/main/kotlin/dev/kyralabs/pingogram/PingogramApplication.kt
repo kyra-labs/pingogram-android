@@ -9,6 +9,7 @@ import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
@@ -16,8 +17,11 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -76,11 +80,18 @@ class PingogramApplication :
     @Inject
     lateinit var messageRepository: MessageRepository
 
+    /** Where work that must not hold up the first frame runs: the `Default` dispatcher. */
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onCreate() {
         // Keeps the last crash on the device for "Send feedback", which the user shares themselves; first, so a crash
         // while the app starts is kept too.
         CrashRecorder(this).install()
         super.onCreate()
+        // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
+        applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }
         // Creates the notification channels and follows TDLib's notifications, which it restores right after it starts.
         notificationRenderer.start()
         // Publishes the most recent chats as conversation shortcuts the share sheet lists, while logged in.

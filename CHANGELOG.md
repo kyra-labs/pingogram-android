@@ -13,6 +13,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
   unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 
+### Changed
+- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
+  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
+  widget a few seconds after the start instead of while the chats load.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added
