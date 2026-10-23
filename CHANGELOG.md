@@ -40,6 +40,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   sets in Settings → Stickers open the same way.
 - Android Auto (the Play services build): message notifications show in the car, are read aloud and take spoken
   replies; Wear OS watches show them with Reply and Mark as read, as before (`docs/ANDROID_AUTO.md`).
+- Send with Ctrl+Enter: Settings → Appearance → Chats can make Ctrl+Enter send a message from a hardware keyboard, Enter
+  then starting a new line.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

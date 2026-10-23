@@ -130,5 +130,7 @@ A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say wha
 
 ## 5. Decisions for the owner
 
-- **Ctrl+Enter to send (A2):** `docs/DESIGN_SYSTEM.md` §9 asks for it as a setting. A row in Settings → Chats (or Chat
-  appearance) is the proposal, with the composer's key handling in session A.
+- **Ctrl+Enter to send (A2):** `docs/DESIGN_SYSTEM.md` §9 asks for it as a setting. The setting is in (2026-10-23):
+  Appearance → Chats → "Send with Ctrl+Enter", a switch row under the Chat appearance row (`ComposerSettingsRepository`,
+  `DataStoreComposerSettingsRepository`); the composer's key handling (`ComposerField.isSendKey`, session A) reads it
+  next. Where the row lives is still the owner's to confirm.

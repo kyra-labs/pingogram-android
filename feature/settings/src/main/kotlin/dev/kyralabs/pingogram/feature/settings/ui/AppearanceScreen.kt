@@ -84,7 +84,7 @@ internal fun AppearanceRoute(
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
  * the contrast level; then under "Chats" a row that opens the Chat appearance page ([onOpenChatAppearance]: message
- * text size, bubble corners, wallpaper) with their summary.
+ * text size, bubble corners, wallpaper) with their summary, and "Send with Ctrl+Enter" for hardware keyboards.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -114,6 +114,7 @@ internal fun AppearanceScreen(
             is AppearanceUiState.Content -> {
                 AppearanceSettingsContent(
                     state.settings,
+                    state.sendWithCtrlEnter,
                     onEvent,
                     AppearancePages(onOpenColorTheme, onOpenChatAppearance),
                     dynamicColorAvailable,
@@ -132,9 +133,11 @@ private fun AppearanceLoading() {
     }
 }
 
+@Suppress("LongParameterList") // The settings, the send key, the events, the pages and what the device offers.
 @Composable
 private fun AppearanceSettingsContent(
     settings: AppearanceSettings,
+    sendWithCtrlEnter: Boolean,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
     dynamicColorAvailable: Boolean,
@@ -180,6 +183,15 @@ private fun AppearanceSettingsContent(
     }
     SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
         item { shapes -> ChatAppearanceItem(settings.chat, shapes, pages.onOpenChatAppearance) }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_send_with_ctrl_enter),
+                summary = stringResource(R.string.settings_send_with_ctrl_enter_summary),
+                checked = sendWithCtrlEnter,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetSendWithCtrlEnter(it)) },
+            )
+        }
     }
 }
 

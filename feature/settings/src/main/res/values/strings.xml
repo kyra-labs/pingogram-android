@@ -898,4 +898,7 @@
     <string name="sticker_set_not_found_title">Sticker set not found</string>
     <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
     <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
+    <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
+    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
+    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
 </resources>
