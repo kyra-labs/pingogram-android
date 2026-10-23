@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
@@ -187,6 +188,8 @@ class MainActivity : ComponentActivity() {
                         LocalUriHandler provides rememberLinkUriHandler(links, uiState),
                         // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
                         LocalCallStarter provides calls,
+                        // A chat's voice chat bar and its info page's voice chat row (feature:calls).
+                        LocalVoiceChats provides calls,
                     ) {
                         LockableApp(
                             locked = locked,

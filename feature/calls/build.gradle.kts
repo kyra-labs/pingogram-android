@@ -16,6 +16,8 @@ dependencies {
     // Android's Telecom as a self-managed calling app (docs/adr/0018-calls-and-telecom.md).
     implementation(libs.androidx.core.telecom)
 
+    // assertAccessible for the voice chat's screen.
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

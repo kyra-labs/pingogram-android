@@ -16,7 +16,11 @@ import dev.kyralabs.pingogram.feature.calls.CallTones
 import dev.kyralabs.pingogram.feature.calls.CallerNames
 import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.ui.GroupCallChat
+import dev.kyralabs.pingogram.feature.calls.ui.GroupCallChats
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,4 +102,14 @@ internal class RepositoryChatTitles
                 ?.title
                 ?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.voice_chat)
+    }
+
+/** [GroupCallChats] from [ChatRepository]. */
+internal class RepositoryGroupCallChats
+    @Inject
+    constructor(
+        private val chatRepository: ChatRepository,
+    ) : GroupCallChats {
+        override fun chat(chatId: Long): Flow<GroupCallChat?> =
+            chatRepository.chat(chatId).map { chat -> chat?.let { GroupCallChat(chatId, it.title, it.photo) } }
     }

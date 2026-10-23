@@ -10,6 +10,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Voice chats: when a group or channel has a voice chat, a bar at the top of the conversation shows it with how many
+  are in it, and "Join" opens it (so does "Voice chat" on the group's info page). You join muted; tap Mute to speak,
+  and the others see you unmuted. Everyone in it is listed, with who is speaking, who is muted and who raised their
+  hand; when an admin keeps you muted, "Raise hand" asks to speak. Leave from the screen or its notification.
+  Administrators start a voice chat with "Start voice chat" on the info page and can end it for everyone. Who is
+  speaking follows what Telegram reports and may lag a second or two.
+- Live streams: a channel's live stream opens the same way and plays full screen; leave the screen and it goes on in
+  picture-in-picture with Leave.
 - Video call buttons: the call button in a conversation's top bar, and the "Call" button on a profile, now open a
   small menu with "Voice call" and "Video call" where the other person's app takes video calls and your phone has a
   camera; elsewhere a tap calls at once, as before. Calling back from a call in the chat keeps its kind: a missed

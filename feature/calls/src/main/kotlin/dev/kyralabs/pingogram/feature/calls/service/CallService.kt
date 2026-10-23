@@ -20,11 +20,13 @@ import dev.kyralabs.pingogram.feature.calls.AudioRouteType
 import dev.kyralabs.pingogram.feature.calls.CallForeground
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
+import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -36,7 +38,8 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Keeps the app running while the user's call rings or goes on (`docs/adr/0018-calls-and-telecom.md`): a foreground
+ * Keeps the app running while the user's call rings or goes on, or the user is in a voice chat
+ * (`docs/adr/0018-calls-and-telecom.md`, `docs/adr/0023-group-voice-chats-and-live-streams.md`): a foreground
  * service of type `phoneCall`, `microphone` too once the user talks and `camera` while the camera sends
  * (`docs/adr/0019-video-and-group-calls-scope.md`), whose notification is the call's ([CallNotifications], same id). It
  * stops when the call ends.
@@ -47,6 +50,8 @@ import kotlin.time.Duration.Companion.seconds
 @AndroidEntryPoint
 class CallService : Service() {
     @Inject lateinit var callManager: CallManager
+
+    @Inject lateinit var groupCallManager: GroupCallManager
 
     @Inject lateinit var notifications: CallNotifications
 
@@ -66,7 +71,10 @@ class CallService : Service() {
                 .collect(::setProximity)
         }
         scope.launch {
-            callManager.call.first { it == null || it.phase is CallPhase.Ended }
+            // Over once neither a call nor a voice chat goes on.
+            combine(callManager.call, groupCallManager.call) { call, group ->
+                (call == null || call.phase is CallPhase.Ended) && group.isOver()
+            }.first { it }
             stop()
         }
         // The camera's type comes and goes with the camera: startForeground again with the types it needs.
@@ -98,12 +106,16 @@ class CallService : Service() {
      * notification is never shown.
      */
     private suspend fun promote() {
-        val call = callManager.call.value
-        if (call == null || call.phase is CallPhase.Ended) {
+        val call = callManager.call.value?.takeIf { it.phase !is CallPhase.Ended }
+        val group = groupCallManager.call.value?.takeIf { !it.isOver() }
+        if (call == null && group == null) {
             stop()
             return
         }
-        val notification = withTimeoutOrNull(BUILD_TIMEOUT) { notifications.build(call) }
+        val notification =
+            withTimeoutOrNull(BUILD_TIMEOUT) {
+                if (call != null) notifications.build(call) else group?.let { notifications.build(it) }
+            }
         if (notification == null) {
             stop()
             return

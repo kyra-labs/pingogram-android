@@ -432,7 +432,7 @@ class CallViewModelTest {
         )
 }
 
-private class FakeUserRepository : UserRepository {
+internal class FakeUserRepository : UserRepository {
     override val myUserId = MutableStateFlow<Long?>(1)
     private val userMap = MutableStateFlow<ImmutableMap<Long, User>>(persistentMapOf())
 
@@ -448,7 +448,7 @@ private class FakeUserRepository : UserRepository {
         userMap.value[id]?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
 }
 
-private fun user(
+internal fun user(
     id: Long,
     firstName: String,
     lastName: String,

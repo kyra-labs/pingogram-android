@@ -147,28 +147,6 @@ class CallActivity : ComponentActivity() {
         )
     }
 
-    @Composable
-    private fun CallTheme(
-        settings: AppearanceSettings,
-        content: @Composable () -> Unit,
-    ) {
-        val dark = settings.themeMode.isDark()
-        LaunchedEffect(dark) {
-            enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-            )
-        }
-        PingogramTheme(
-            themeMode = settings.themeMode,
-            dynamicColor = settings.dynamicColor,
-            palette = settings.palette,
-            contrast = settings.contrast,
-            amoled = settings.amoled,
-            content = content,
-        )
-    }
-
     /** Over the lock screen, turning the screen on: a call must be answerable without unlocking. */
     private fun showOverLockScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
