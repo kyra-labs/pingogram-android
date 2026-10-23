@@ -1,0 +1,21 @@
+<p>Pingogram is an open-source, third-party Telegram client, written from scratch in Kotlin and Jetpack Compose on top of TDLib, Telegram's official client library. Sign in with your Telegram account and keep all your chats; what changes is the interface, which follows Google's Material 3 Expressive design: Google Sans Flex type, expressive shapes and spring motion, color themes and dynamic color from your wallpaper, and layouts that adapt from phones to tablets and foldables.</p>
+
+<p>Pingogram is <b>not</b> affiliated with Telegram. It complies with the Telegram API Terms of Service and shows sponsored messages in channels as Telegram requires.</p>
+
+<p><b>What works today</b></p>
+<ul>
+<li>Sign-in with every login code type, two-step verification, registration, QR code login</li>
+<li>Chat list with folders, badges, typing and online status, drafts, swipe actions, multi-select and the archive</li>
+<li>Conversations with formatted text, replies, forwards, link previews, reactions, photos and albums, videos, GIFs, animated stickers, voice messages, music, files, polls, locations and contacts, and a media viewer</li>
+<li>Writing with formatting, silent and scheduled send, synced drafts, attachments, voice recording, an emoji and sticker panel, and send-as</li>
+<li>Notifications per chat with reply and mark as read</li>
+<li>End-to-end encrypted voice calls, on the lock screen too, with your headset, car and watch</li>
+<li>Contacts, profiles, groups and channels with their administration, creating groups and channels</li>
+<li>Secret chats, forum topics, comment threads and the pinned messages bar</li>
+<li>Search, Telegram links, QR codes, sharing from other apps, app shortcuts and a home screen widget of recent chats</li>
+<li>Settings: account, privacy, sessions, two-step verification, passcode lock with biometrics, notifications, color themes, data and storage, language</li>
+</ul>
+
+<p><b>Privacy</b>: no analytics, no ads, no trackers. Pingogram talks only to Telegram's servers, through TDLib, and to links you open. This build has no Google services: new messages arrive while Pingogram runs, and the optional "Keep connected" setting keeps them coming when it is closed.</p>
+
+<p>Pingogram is an early beta. Video calls, group calls and recording video messages are not there yet.</p>

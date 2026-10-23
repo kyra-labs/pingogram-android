@@ -100,7 +100,18 @@ the release workflow so the owner can install and test on a phone.
       baseline (`docs/PERFORMANCE.md` §9): the chat list's frame P90 10.4 ms against 8 ms, the conversation's late
       frames over 1%
 - [ ] Localization: at least 5 languages via Crowdin/Weblate (owner decision)
-- [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes
+- [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes.
+  - Done:
+    - the fastlane listing: texts, icon, feature graphic, screenshots;
+    - the notes in `docs/RELEASE.md`, with reproducibility checked on one machine and across checkout directories;
+    - unsigned release builds (`-Ppingogram.unsignedRelease=true`);
+    - a draft recipe for review (`docs/fdroid/dev.kyralabs.pingogram.yml`).
+  - Left for F-Droid's main repository, which builds from source:
+    - the Telegram API values in its public recipe (owner decision);
+    - TDLib's AAR packaged in the recipe;
+    - NTgCalls without prebuilt WebRTC, or an F-Droid build without calls;
+    - a check on another machine;
+    - the submission.
 - [ ] 7-day dogfood with ≥ 10 testers, crash-free ≥ 99.5%
 
 ## Backlog (unscheduled)

@@ -58,6 +58,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Conversations take them up in a coming update.
 - Pingogram can be translated on Hosted Weblate (docs/TRANSLATING.md). A language appears in Settings → Language and
   in Android's app languages once 80% of the app is translated; the rest shows in English.
+- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
+  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 
 ### Changed
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
