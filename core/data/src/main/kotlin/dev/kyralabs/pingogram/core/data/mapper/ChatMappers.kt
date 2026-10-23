@@ -39,6 +39,7 @@ internal fun TdApi.Chat.toChat(mutedScopes: Set<NotificationScope>): Chat? {
         permissions = permissions.toChatPermissions(),
         messageSender = messageSenderId?.toMessageSender(),
         replyMarkupMessageId = replyMarkupMessageId,
+        isTranslatable = isTranslatable,
     )
 }
 

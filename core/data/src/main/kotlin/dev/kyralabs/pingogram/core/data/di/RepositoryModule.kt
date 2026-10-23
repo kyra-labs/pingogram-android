@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
@@ -55,6 +56,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibSponsoredMessageReposito
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
@@ -79,6 +81,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
@@ -110,6 +113,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.TransferRepository
+import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -287,4 +291,10 @@ interface RepositoryModule {
 
     @Binds
     fun shareRepository(repository: TdlibShareRepository): ShareRepository
+
+    @Binds
+    fun translationRepository(repository: TdlibTranslationRepository): TranslationRepository
+
+    @Binds
+    fun deviceLanguageDetector(detector: AndroidDeviceLanguageDetector): DeviceLanguageDetector
 }

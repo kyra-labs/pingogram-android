@@ -14,6 +14,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   full screen with your own picture in a corner, where you can switch between the front and back cameras. A video call
   says "Incoming video call" and is answered with your camera on once Pingogram may use it; Pingogram asks for the
   camera the first time you turn it on. Your video goes to the other person only, end-to-end encrypted.
+- Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
+  Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
+  "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages
+  your phone finds in a language you don't read (your phone's languages count as read); the language is told on your
+  phone, without sending the text anywhere. Where Telegram suggests translating a whole chat (Telegram Premium), a bar
+  at the top offers "Translate to English": tap it to translate the messages on screen as you scroll, tap again for
+  the originals, or close it for that chat.
 - Search in a chat: the search button in a conversation's top bar searches its messages (a topic's or a thread's in
   those). The arrows below go through what it found, newest first, showing each message in the chat with the words
   you searched marked, and "3 of 17" says where you are. In groups you can search one member's messages, also

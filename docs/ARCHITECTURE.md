@@ -186,6 +186,31 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Message translation** (FR-C3, FR-C6): Telegram translates, nothing else sees a message. `core:domain`'s
+  `TranslationRepository` (`TdlibTranslationRepository`, `core:data`, no cache) sends `translateMessageText` (the
+  message by its ids, into one of the language codes td_api.tl lists, `targetLanguageOf` mapping a BCP 47 tag onto
+  them; Telegram keeps the formatting for Telegram Premium subscribers only), and its refusals (a flood wait, Premium
+  required) are shown, never worked around. Translations go into Pingogram's language (`AppLanguageRepository`), or
+  the system's first one while it follows the system; the user reads that language and the system's languages.
+  `DeviceLanguageDetector` (`AndroidDeviceLanguageDetector`, `core:data`) tells a text's language **on the device**:
+  Android's `TextClassificationManager` (`detectLanguage`, Android 10+, on the IO dispatcher; the classifier runs in the
+  app or the system's on-device text classification service), no library or model of its own, no text sent anywhere;
+  before Android 10 it cannot tell, so "Translate" is always offered and the bar never shows. `Chat.isTranslatable`
+  (`chat.is_translatable`, `updateChatIsTranslatable`, kept by `TdlibChatRepository`) is Telegram's suggestion to
+  translate a whole chat, which it makes for Telegram Premium subscribers only. `HiddenTranslateBarsRepository`
+  (`DataStoreHiddenTranslateBarsRepository`, the settings file) keeps the chats whose bar the user closed.
+  `feature:chat`'s `ChatTranslation` (a part of `ChatViewModel`, `translation/`, given them through
+  `TranslationRepositories`) offers "Translate" or "Show original" in a message's actions (`ChatMessageActions`'
+  `translationAction`, asked with its properties) where the device found no language the user reads, keeps the
+  translations in memory per message and language for the view model's life (dropped when the message's text
+  changes), and copies them into the bubbles they change only (`withTranslations`: the text replaced, the meta shown
+  with its label). The translate bar (`ChatUiState.translateBar`) shows where the chat is translatable, the device can
+  detect, the user did not close it, and most of the 10 newest incoming texts are in one language the user does not
+  read; turned on, it translates the messages on screen (`ChatEvent.MessagesVisible`, batched for 300 ms, at most four
+  requests at once, those that leave the screen no longer waited for), never the history around them. Whether it is
+  on, and the messages chosen or kept in the original, are in the saved state. A translated bubble that is the result
+  the search in the chat shows marks the query's words in the translation it shows (`withSearchMatch` after
+  `withTranslations`); words only its original has stay unmarked there, and "Show original" marks them.
 - **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
   cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
   the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its

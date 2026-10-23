@@ -81,6 +81,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchTopBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.rememberSearchBack
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
@@ -132,6 +133,9 @@ import kotlinx.collections.immutable.ImmutableSet
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
  *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ * - **Translation** (`REQUIREMENTS.md` FR-C3): where Telegram suggests translating the chat, the translate bar sits
+ *   below the pinned messages bar ([TranslateBarSlot]); translated bubbles show the translation with its label in the
+ *   meta, and "Translate" or "Show original" are among a message's actions.
  * - **Bots** (`REQUIREMENTS.md` FR-C5): the composer's bot button opens their commands or menu
  *   ([BotEvent.OpenMenu]), the commands that a command being typed starts show above the composer
  *   ([commandSuggestions], the view model's, kept apart from [state]), and a bot's empty chat shows what it does
@@ -286,6 +290,7 @@ private fun ChatScaffold(
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
             Column(Modifier.fillMaxSize()) {
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
+                TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
             }
         }

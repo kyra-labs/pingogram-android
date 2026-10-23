@@ -99,6 +99,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -232,6 +235,9 @@ import java.util.Locale
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
  *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
  *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
+ * - **Translation** ([ChatTranslation], `REQUIREMENTS.md` FR-C3): a message's "Translate" and "Show original", the
+ *   translations in place of the bubbles' texts (copied only into the bubbles they change), and the translate bar
+ *   ([ChatUiState.translateBar]) where Telegram suggests translating the chat, which translates the messages on screen.
  * - **Search in the chat** ([ChatSearch], `REQUIREMENTS.md` §5.9): the query, sender and results of the search, for
  *   its bars ([searchState], kept out of [uiState] like the forward sheet), the result shown in the list as a tapped
  *   quote's message, marking the query's words ([ChatItem.Bubble.searchMatch]), the members' sheet
@@ -296,6 +302,7 @@ class ChatViewModel internal constructor(
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
     inlineBotRepositories: InlineBotRepositories,
+    translationRepositories: TranslationRepositories,
     searchRepositories: ChatSearchRepositories,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
@@ -333,6 +340,7 @@ class ChatViewModel internal constructor(
         botInfoRepository: BotInfoRepository,
         botStartInbox: BotStartInbox,
         inlineBotRepositories: InlineBotRepositories,
+        translationRepositories: TranslationRepositories,
         searchRepositories: ChatSearchRepositories,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
@@ -367,6 +375,7 @@ class ChatViewModel internal constructor(
         botInfoRepository,
         botStartInbox,
         inlineBotRepositories,
+        translationRepositories,
         searchRepositories,
         AndroidChatLog,
         messageId,
@@ -625,6 +634,7 @@ class ChatViewModel internal constructor(
             onReport = { reporting.start(it) },
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
+            translationAction = { translation.actionFor(it) },
         )
 
     private val selection =
@@ -719,6 +729,23 @@ class ChatViewModel internal constructor(
             .onEach { if (sendFailures.failedSince(it) && isOpen) effectChannel.trySend(ChatEffect.SendFailed) }
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
+
+    private val translation =
+        ChatTranslation(
+            chatId = chatId,
+            repositories = translationRepositories,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            history = history,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
 
     /** Which messages the conversation shows, where its list shows them, and how far pages have loaded. */
     private val window =
@@ -900,6 +927,8 @@ class ChatViewModel internal constructor(
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
+            .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
+            .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
@@ -921,6 +950,7 @@ class ChatViewModel internal constructor(
             recorder.start()
             views.start()
             autoDownloads.start()
+            translation.start()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
@@ -964,6 +994,7 @@ class ChatViewModel internal constructor(
             is BotButtonEvent -> botButtons.onEvent(event)
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
+            is TranslationEvent -> translation.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -1057,13 +1088,15 @@ class ChatViewModel internal constructor(
     }
 
     /**
-     * The messages the list shows go to TDLib as viewed and move the pinned messages bar (`ChatPinnedMessages`); the
+     * The messages the list shows go to TDLib as viewed, move the pinned messages bar (`ChatPinnedMessages`) and are
+     * translated while the chat's translation is on (`ChatTranslation`); the
      * newest of them is kept in the [SavedStateHandle], which the conversation opens around after process death
      * ([ChatWindow]).
      */
     private fun onMessagesVisible(messageIds: Set<Long>) {
         views.setVisible(messageIds)
         pinned.setVisible(messageIds)
+        translation.setVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
         val messages =
             history.replayCache
