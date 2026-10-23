@@ -132,13 +132,13 @@ private fun LazyListScope.folders(
             onMove = { up -> onEvent(ChatFoldersEvent.Move(id, up)) },
             canMoveUp = index > 0,
             canMoveDown = index < order.lastIndex,
-            handle = Modifier.dragHandle(reorder, id),
             modifier =
                 Modifier
                     .settingsListRow(this, style, animatePlacement = !dragged)
                     .zIndex(if (dragged) 1f else 0f)
                     .graphicsLayer { translationY = if (dragged) reorder.offset else 0f }
                     .dragAfterLongPress(reorder, id),
+            handleModifier = Modifier.dragHandle(reorder, id),
         )
     }
     footer(FOOTER_YOURS, R.string.settings_chat_folders_footer, style)
@@ -185,9 +185,9 @@ private fun LazyListScope.footer(
 }
 
 /**
- * A folder: its icon, its name (user content) over what it includes, and a drag handle at the end ([handle] starts the
- * drag, 48 dp wide), in the list item's dragged shape while [dragged]. A tap opens its editor; screen readers move it with
- * "Move up" and "Move down" ([onMove]), where [canMoveUp] and [canMoveDown].
+ * A folder: its icon, its name (user content) over what it includes, and a drag handle at the end
+ * ([handleModifier] starts the drag, 48 dp wide), in the list item's dragged shape while [dragged]. A tap opens its
+ * editor; screen readers move it with "Move up" and "Move down" ([onMove]), where [canMoveUp] and [canMoveDown].
  */
 @Suppress("LongParameterList") // A row's content, its states and the two ways to move it.
 @Composable
@@ -199,8 +199,8 @@ private fun FolderRow(
     onMove: (up: Boolean) -> Unit,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
-    handle: Modifier,
     modifier: Modifier = Modifier,
+    handleModifier: Modifier = Modifier,
 ) {
     val moveUp = stringResource(R.string.settings_chat_folders_move_up)
     val moveDown = stringResource(R.string.settings_chat_folders_move_down)
@@ -234,7 +234,7 @@ private fun FolderRow(
         supportingContent = { Text(folderSummary(folder)) },
         trailingContent = {
             // Screen readers move the folder with the row's custom actions instead.
-            Box(modifier = handle.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = handleModifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.ic_drag_indicator), contentDescription = null)
             }
         },
