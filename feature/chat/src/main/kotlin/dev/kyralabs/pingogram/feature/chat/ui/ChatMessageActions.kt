@@ -41,8 +41,9 @@ import kotlinx.coroutines.launch
  *
  * - **Sheet** ([show]): TDLib's properties of the message ([MessageActionRepository.properties], from memory) and its
  *   available reactions, both asked at once; it opens once the properties are there, with the reactions if TDLib gave
- *   them, and only the actions TDLib allows ([actionsOf]). A failure is a snackbar instead. The pictures of its custom
- *   emoji follow once it is open.
+ *   them, and only the actions TDLib allows ([actionsOf]), with "Translate" or "Show original" where
+ *   [translationAction] offers one (asked at the same time). A failure is a snackbar instead. The pictures of its
+ *   custom emoji follow once it is open.
  * - **Reactions picker** (`REQUIREMENTS.md` FR-C7): every reaction TDLib offers by section, after the message's own
  *   reactions, where that shows more than the quick row and the bubble ([reactionPicker]). The sheet opens at it from a
  *   bubble's "+N" ([show] with `showsPicker`), and switches to it and back ([showPicker]).
@@ -74,6 +75,7 @@ internal class ChatMessageActions(
     private val onReport: (List<Long>) -> Unit = {},
     private val onSave: (List<Message>) -> Unit = {},
     private val onSelectionDeleted: () -> Unit = {},
+    private val translationAction: suspend (Message) -> MessageAction? = { null },
 ) {
     private val mutableSheet = MutableStateFlow<MessageActionsSheet?>(null)
     private val mutableDeleteDialog = MutableStateFlow<DeleteMessagesDialog?>(null)
@@ -102,9 +104,11 @@ internal class ChatMessageActions(
                 val message = context.history.messages.findById(messageId) ?: return@launch
                 val reactionsMessage = context.reactionsMessageOf(message)
                 val reactions = async { repository.availableReactions(chatId, reactionsMessage.id) }
+                val translate = async { translationAction(message) }
                 when (val properties = repository.properties(chatId, messageId)) {
                     is Outcome.Failure -> {
                         reactions.cancel()
+                        translate.cancel()
                         onEffect(ChatEffect.ShowError(properties.error))
                     }
 
@@ -117,7 +121,11 @@ internal class ChatMessageActions(
                                 messageId = messageId,
                                 reactionsMessageId = reactionsMessage.id,
                                 reactions = quick,
-                                actions = context.actionsOf(message, properties.value).toImmutableList(),
+                                actions =
+                                    context
+                                        .actionsOf(message, properties.value)
+                                        .withTranslation(translate.await())
+                                        .toImmutableList(),
                                 picker = picker,
                                 showsPicker = showsPicker && picker != null,
                             )
@@ -413,6 +421,16 @@ private fun ActionContext.laterActions(
         if (properties.canBeReported) add(MessageAction.Report)
         if (properties.canBeDeletedOnlyForSelf || properties.canBeDeletedForAllUsers) add(MessageAction.Delete)
     }
+
+/**
+ * The actions with [translation] ("Translate" or "Show original", `ChatTranslation`) after copying, or replying where
+ * the text cannot be copied, else first; as they were without one.
+ */
+private fun List<MessageAction>.withTranslation(translation: MessageAction?): List<MessageAction> {
+    if (translation == null) return this
+    val after = indexOfLast { it == MessageAction.Copy || it == MessageAction.Reply || it == MessageAction.Resend }
+    return toMutableList().apply { add(after + 1, translation) }
+}
 
 /** Unpinning a pinned [message], else pinning it, also for the user alone where that is possible. */
 private fun ActionContext.pinActions(message: Message): List<MessageAction> =

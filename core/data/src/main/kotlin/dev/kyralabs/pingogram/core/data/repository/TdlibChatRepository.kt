@@ -404,6 +404,10 @@ private fun chatSettingChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(replyMarkupMessageId = update.replyMarkupMessage?.id ?: 0) }
         }
 
+        is TdApi.UpdateChatIsTranslatable -> {
+            ChatChange(update.chatId) { it.copy(isTranslatable = update.isTranslatable) }
+        }
+
         else -> {
             null
         }

@@ -12,7 +12,9 @@ dependencies {
     // Plays voice messages and music from TDLib's local files (ui/player); see the catalog entry.
     implementation(libs.media3.exoplayer)
 
-    // ChatViewModel is tested against fakes of the domain repositories and a fake clock.
+    // ChatViewModel is tested against fakes of the domain repositories and a fake clock; core:testing's fakes of the
+    // app's language and the device's language detection among them.
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

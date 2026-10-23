@@ -97,6 +97,12 @@ enum class MessageAction {
     /** Copy its text or caption, as plain text. */
     Copy,
 
+    /** Show Telegram's translation of its text or caption in its bubble (`ChatTranslation`). */
+    Translate,
+
+    /** Show its own text again in place of the translation its bubble shows. */
+    ShowOriginal,
+
     /** Forward it to other chats, from the forward sheet. */
     Forward,
 
