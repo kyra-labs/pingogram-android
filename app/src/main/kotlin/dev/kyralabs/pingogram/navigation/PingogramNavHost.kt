@@ -271,6 +271,7 @@ private fun NavGraphBuilder.mainGraph(
         // "Export chat", from a profile or an info page (docs/adr/0021-chat-export.md).
         chatExportScreen(onBack = { navController.popBackStack() })
         chatInvite(navController)
+        chatFolderInvite(navController)
         mediaViewer(navController)
         // The viewer and nothing below it: a second close, e.g. a swipe while its exit plays, does nothing.
         storyViewerScreen(onClose = { navController.popBackStack<StoryViewerRoute>(inclusive = true) })

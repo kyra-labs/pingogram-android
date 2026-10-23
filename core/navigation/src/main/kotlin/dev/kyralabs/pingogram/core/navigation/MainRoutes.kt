@@ -55,6 +55,15 @@ data class ChatFolderEditRoute(
 )
 
 /**
+ * The sheet of a shared chat folder's link [inviteLink] (`t.me/addlist/…`), `:feature:settings`: a dialog destination
+ * above the screen the link was opened from.
+ */
+@Serializable
+data class ChatFolderInviteRoute(
+    val inviteLink: String,
+)
+
+/**
  * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast,
  * `:feature:settings`, pushed above the Settings tab.
  */
