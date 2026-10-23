@@ -11,14 +11,14 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
-import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
-import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
-import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

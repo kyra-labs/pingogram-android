@@ -138,7 +138,11 @@ class StickersViewModelTest {
 
             assertEquals(
                 listOf(3L, 1L, 2L),
-                client.sentOf<TdApi.ReorderInstalledStickerSets>().single().stickerSetIds.toList(),
+                client
+                    .sentOf<TdApi.ReorderInstalledStickerSets>()
+                    .single()
+                    .stickerSetIds
+                    .toList(),
             )
         }
 
@@ -235,7 +239,11 @@ class StickersViewModelTest {
             assertEquals(Triple(2L, true, false), Triple(install.setId, install.isInstalled, install.isArchived))
             assertEquals(
                 listOf(1L, 2L, 3L),
-                client.sentOf<TdApi.ReorderInstalledStickerSets>().single().stickerSetIds.toList(),
+                client
+                    .sentOf<TdApi.ReorderInstalledStickerSets>()
+                    .single()
+                    .stickerSetIds
+                    .toList(),
             )
         }
 

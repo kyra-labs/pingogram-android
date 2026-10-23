@@ -33,14 +33,16 @@ class TdlibStickerSetRepository
             }
 
         override fun trendingSets(): Flow<Outcome<List<StickerSetSummary>>> =
-            client.readOn({ changesInstalledSets(it) || it is TdApi.UpdateTrendingStickerSets && it.isRegular() }) {
+            client.readOn({ changesInstalledSets(it) || (it is TdApi.UpdateTrendingStickerSets && it.isRegular()) }) {
                 client.request(TdApi.GetTrendingStickerSets(TdApi.StickerTypeRegular(), 0, PAGE_SIZE)).map { result ->
                     result.sets.orEmpty().map { it.toStickerSetSummary() }
                 }
             }
 
         override fun stickerSet(setId: Long): Flow<Outcome<StickerSetDetails>> =
-            client.readOn({ changesInstalledSets(it) || it is TdApi.UpdateStickerSet && it.stickerSet?.id == setId }) {
+            client.readOn(
+                { changesInstalledSets(it) || (it is TdApi.UpdateStickerSet && it.stickerSet?.id == setId) },
+            ) {
                 client.request(TdApi.GetStickerSet(setId)).map { it.toDetails() }
             }
 
@@ -71,32 +73,32 @@ class TdlibStickerSetRepository
             archived: Boolean,
         ): Outcome<Unit> = client.request(TdApi.ChangeStickerSet(setId, installed, archived)).map { }
 
-        private fun changesInstalledSets(update: TdApi.Update): Boolean =
-            update is TdApi.UpdateInstalledStickerSets && update.stickerType is TdApi.StickerTypeRegular
-
-        private fun TdApi.UpdateTrendingStickerSets.isRegular() = stickerType is TdApi.StickerTypeRegular
-
-        private fun TdApi.StickerSet.toDetails(): StickerSetDetails {
-            val stickers = stickers.orEmpty().mapNotNull { it.toSticker() }
-            return StickerSetDetails(
-                set =
-                    StickerSetSummary(
-                        id = id,
-                        title = title.orEmpty(),
-                        size = stickers.size,
-                        cover = stickers.firstOrNull(),
-                        name = name.orEmpty(),
-                        isInstalled = isInstalled,
-                        isArchived = isArchived,
-                        isOfficial = isOfficial,
-                        isViewed = isViewed,
-                    ),
-                stickers = stickers,
-            )
-        }
-
         private companion object {
             /** The most sets TDLib returns at once from the archived and the trending lists. */
             const val PAGE_SIZE = 100
         }
     }
+
+private fun changesInstalledSets(update: TdApi.Update): Boolean =
+    update is TdApi.UpdateInstalledStickerSets && update.stickerType is TdApi.StickerTypeRegular
+
+private fun TdApi.UpdateTrendingStickerSets.isRegular() = stickerType is TdApi.StickerTypeRegular
+
+private fun TdApi.StickerSet.toDetails(): StickerSetDetails {
+    val stickers = stickers.orEmpty().mapNotNull { it.toSticker() }
+    return StickerSetDetails(
+        set =
+            StickerSetSummary(
+                id = id,
+                title = title.orEmpty(),
+                size = stickers.size,
+                cover = stickers.firstOrNull(),
+                name = name.orEmpty(),
+                isInstalled = isInstalled,
+                isArchived = isArchived,
+                isOfficial = isOfficial,
+                isViewed = isViewed,
+            ),
+        stickers = stickers,
+    )
+}

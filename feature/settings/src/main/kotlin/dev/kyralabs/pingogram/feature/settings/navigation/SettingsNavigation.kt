@@ -21,8 +21,6 @@ import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
-import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
-import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
@@ -39,6 +37,8 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
+import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
+import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
@@ -66,12 +66,12 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as Privacy
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountRoute as DeleteAccountScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationRoute as TwoStepVerificationScreenRoute
 
