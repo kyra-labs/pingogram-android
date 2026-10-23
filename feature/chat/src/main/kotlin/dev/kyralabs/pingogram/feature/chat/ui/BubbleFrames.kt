@@ -2,28 +2,41 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measured
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboardButtons
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
@@ -247,8 +260,8 @@ internal fun BareBubble(
 /**
  * The column of senders' avatars in a group chat: [avatar] beside the last bubble of a group (its bottom, not its
  * reaction badges'), else its space, and the gap to the bubble. Tapping the avatar of user [userId] opens their
- * profile ([ChatEvent.OpenProfile]), on a 48 dp touch target that moves nothing; screen readers get it as the bubble's
- * custom action.
+ * profile ([ChatEvent.OpenProfile], [openProfileTarget]), on a 48 dp touch target that moves nothing, with its state
+ * layer in the avatar's circle; screen readers get it as the bubble's custom action.
  */
 @Composable
 internal fun RowScope.SenderAvatarColumn(
@@ -266,23 +279,43 @@ internal fun RowScope.SenderAvatarColumn(
             modifier =
                 Modifier
                     .alignBy { it.measuredHeight }
-                    .then(
-                        if (userId != null) {
-                            Modifier.touchTarget(
-                                Modifier.clickable(interactionSource = null, indication = null) {
-                                    onEvent(ChatEvent.OpenProfile(userId))
-                                },
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
+                    .openProfileTarget(userId, CircleShape, onEvent),
             placeholderIcon = avatar.placeholderIcon,
         )
     } else {
         Spacer(Modifier.width(size))
     }
     Spacer(Modifier.width(MaterialTheme.spacing.small))
+}
+
+/**
+ * Opens the profile of user [userId] ([ChatEvent.OpenProfile]) when this sender's name or avatar is clicked, where
+ * there is a user (`docs/audit/accessibility.md` A4): a button ("Open profile") on a 48 dp touch target that moves
+ * nothing ([touchTarget]), focusable by the keyboard, with Material's pressed, hover and focus states clipped to
+ * [shape]. The label is read from the resources in the semantics block, only when something reads it.
+ */
+@Composable
+internal fun Modifier.openProfileTarget(
+    userId: Long?,
+    shape: Shape,
+    onEvent: (ChatEvent) -> Unit,
+): Modifier {
+    if (userId == null) return this
+    val interactions = remember { MutableInteractionSource() }
+    val resources = LocalResources.current
+    val open = remember(userId, onEvent) { { onEvent(ChatEvent.OpenProfile(userId)) } }
+    return touchTarget(
+        Modifier
+            .clickable(interactions, indication = null, onClick = open)
+            .semantics {
+                role = Role.Button
+                onClick(label = resources.getString(R.string.chat_open_profile)) {
+                    open()
+                    true
+                }
+            },
+    ).clip(shape)
+        .indication(interactions, ripple(focusRingShape = shape))
 }
 
 /**

@@ -80,6 +80,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   Both call [onBack]. With animations off (reduced motion), the springs snap.
  * - **States**: a [LoadingIndicator] while the first media loads, an error with "Try again", and "This media is no
  *   longer available"; the top bar's back button in each.
+ * - **Keyboard and mouse** (`docs/DESIGN_SYSTEM.md` §9): the pages take the focus as they show; Left and Right turn
+ *   them (mirrored in right-to-left layouts), Space plays or pauses a video ([pagesKeys]); +, − and 0 zoom the photo
+ *   and Esc closes the viewer wherever the focus is ([viewerKeys]); the wheel with Ctrl zooms around the pointer.
  * - **Accessibility**: each page says what it is ("Photo, 3 of 120, Ada Lovelace, Oct 18, 9:41 AM, caption"), and
  *   offers turning to the older and newer page, zooming in and out, and showing a spoiler as custom actions; a tap
  *   (double tap with TalkBack) shows or hides the chrome.
@@ -106,7 +109,7 @@ internal fun MediaViewerScreen(
         ImmersiveSystemBars(hidden = content != null && !chrome.visible)
         val zoom = remember { ZoomState() }
         val scrim = MaterialTheme.colorScheme.scrim
-        BoxWithConstraints(modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier.fillMaxSize().viewerKeys(zoom, zoomable = content?.current?.zooms == true, leave)) {
             val height = constraints.maxHeight.toFloat()
             Box(Modifier.matchParentSize().drawBehind { drawRect(scrim, alpha = 1f - dismiss.fraction(height)) })
             Scaffold(
@@ -305,7 +308,7 @@ private fun MediaPager(
     val scope = rememberCoroutineScope()
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pagesKeys(pagerState, content, zoom, onEvent),
         pageSpacing = MaterialTheme.spacing.large,
         userScrollEnabled = !zoomed,
         key = { index -> items[index].messageId },
@@ -435,8 +438,11 @@ private fun pageDescription(
     return parts.reduce { joined, part -> resources.getString(R.string.media_description_part, joined, part) }
 }
 
-/** How much one "Zoom in" from an accessibility service zooms, and one "Zoom out" undoes. */
-private const val ZOOM_STEP = 2f
+/** Whether the photo of this item zooms: a photo, not hidden by a spoiler. */
+internal val MediaItem.zooms: Boolean get() = media is ViewerMedia.Image && !isHidden
+
+/** How much one "Zoom in" from an accessibility service or the keyboard zooms, and one "Zoom out" undoes. */
+internal const val ZOOM_STEP = 2f
 
 @PingogramPreviews
 @PingogramVariantPreviews

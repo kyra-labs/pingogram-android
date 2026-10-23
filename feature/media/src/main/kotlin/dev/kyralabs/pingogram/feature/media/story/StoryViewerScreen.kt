@@ -56,6 +56,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * - **Leaving**: predictive back ([PredictiveBackDismiss]) shrinks the story towards 90% and fades the background with
  *   the gesture; a swipe down (or up) moves it with the finger, closing past a threshold or with a fling, else
  *   springing back ([DismissState]), the story paused meanwhile. Both call [onClose], once.
+ * - **Keyboard** ([storyKeys], `docs/DESIGN_SYSTEM.md` §9): Left and Right show the previous and next story
+ *   (mirrored in right-to-left layouts), Space pauses and resumes, Esc closes the viewer.
  * - **States**: a [DelayedLoadingIndicator] while the chats are not known.
  *
  * @param videoSurface draws the player's video in the current story; the route passes Media3's `PlayerSurface`,
@@ -90,7 +92,8 @@ internal fun StoryViewerScreen(
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
             ) { innerPadding ->
                 // No bars: the padding is nothing, but the snackbars' room once one shows.
-                DismissibleStories(dismiss, height, onClose, onEvent, Modifier.padding(innerPadding)) {
+                val keys = Modifier.storyKeys((state as? StoryViewerUiState.Content)?.isPaused == true, onEvent, leave)
+                DismissibleStories(dismiss, height, onClose, onEvent, Modifier.padding(innerPadding).then(keys)) {
                     when (state) {
                         StoryViewerUiState.Loading -> {
                             val loading = LocalResources.current.getString(R.string.story_viewer_loading)

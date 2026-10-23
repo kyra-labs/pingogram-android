@@ -640,7 +640,30 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
   isolated too where its text keeps the layout's direction (snackbars, dialogs, sign-in steps, search's "No results
   for …"). Text shown on its own is never isolated: that would hide its first letter from `userContent`.
 - Keyboard & mouse: focus order, `Tab` navigation, Enter to send (Ctrl+Enter configurable),
-  hover states on large screens.
+  hover states on large screens. What works now:
+  - **Focus**: keyboard focus shows Material 3 Expressive's inset focus ring (§2.3). A message row takes the focus
+    where the keyboard moves it, not by touch, and its ring follows the bubble's own shape (`bubbleKeys`,
+    `bubbleFocusRing`).
+  - **Message actions**: Enter, the Menu key, Shift+F10 or a right click open them in the floating menu (§6 "Message
+    actions"). The menu stays anchored to the lifted message, also for a right click, as message, reactions and menu
+    move as one. It takes the focus, the keyboard moving on to its first reaction, keeps the focus while it shows, and
+    Esc closes it, giving the focus back to the message. In selection mode, Enter selects or deselects.
+  - **Senders**: in groups, the sender's name and avatar are buttons ("Open profile") with Material's pressed, hover
+    and focus states, on the same 48 dp targets.
+  - **Conversation**: Ctrl+F opens the search in the chat. Esc leaves selection mode, or else closes the search. Tab
+    in the composer moves the focus on rather than typing a tab.
+  - **Chats list-detail** (expanded and wider): Tab goes through the list pane, then the conversation's top bar, its
+    messages (newest first, as the reverse list places them) and the composer. A chat opened from the list with Enter
+    gives its composer the focus, as Google Messages does on tablets; a chat without a composer leaves the focus on
+    the row. Esc in the conversation, with nothing in it to close, gives the focus back to the list at that row, and
+    the chat stays open.
+  - **Media viewer**: Left and Right turn the pages (mirrored in right-to-left layouts), +, − and 0 zoom the photo in,
+    out and back to fitted, the wheel with Ctrl zooms around the pointer, Space plays or pauses a video, Esc closes.
+  - **Stories viewer**: Left and Right show the previous and next story (mirrored in right-to-left layouts), Space
+    pauses and resumes, Esc closes.
+  - **Hover**: the chat list rows, the conversation's title, the pinned and translate bars, bot buttons and the media
+    viewer's toolbar use Material's clickables and buttons, which show the hover state.
+  - Not yet: Ctrl+Enter to send needs its setting (`docs/audit/accessibility.md` A2).
 - Reduced motion & reduced transparency respected; no flashing content > 3 Hz.
 - Run TalkBack + Accessibility Scanner before marking any screen done.
 

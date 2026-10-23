@@ -149,6 +149,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   bar's search button opens it; the search field ([searchQuery]) takes the top bar's place and the search's bar the
  *   composer's ([SearchTopBarSlot], [SearchBottomBarSlot]), with the result shown in the list as a tapped quote's
  *   message, its words marked. Back (predictive, the bar following the gesture) and the field's back button close it.
+ * - **Keyboard and mouse** (`docs/DESIGN_SYSTEM.md` §9): a bubble takes the keyboard's focus with its focus ring, and
+ *   Enter, the Menu key, Shift+F10 or a right click open its actions in the floating menu, which Esc closes; Ctrl+F
+ *   opens the search, and Esc leaves selection mode or the search ([conversationKeys]).
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -196,7 +199,7 @@ internal fun ChatScreen(
             onEvent(ChatEvent.OpenMention(target))
         }
     val lifted = liftedBubble(state, lift)
-    Box(modifier) {
+    Box(modifier.conversationKeys(state, searching = search != null, onEvent)) {
         ChatScaffold(
             state = state,
             onEvent = onEvent,

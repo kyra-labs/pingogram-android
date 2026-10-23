@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Keyboard and mouse on tablets, Chromebooks and DeX: press Tab to move through the chat list and the conversation,
+  and Enter on a chat to open it with the cursor in the message field; Esc goes back to the chat list without closing
+  the chat. On a message, Enter, the Menu key, Shift+F10 or a right click open its actions, and Esc closes them.
+  Ctrl+F searches the chat. In the media viewer, the arrow keys go to the previous and next photo or video, + and −
+  zoom (or Ctrl and the mouse wheel), 0 fits the photo again, Space plays or pauses a video and Esc closes it; in
+  stories, the arrow keys go back and forward, Space pauses and Esc closes. A sender's name and picture in groups now
+  show when the mouse is over them or they have the keyboard's focus.
 - Stories: the chats with stories show as rings at the top of the chat list, a coloured ring while there is something
   you haven't seen. Tap one to watch: photos stay for five seconds, videos play once (with a mute button), and the
   next story and the next chat's follow by themselves. Tap the right side for the next story, the left for the

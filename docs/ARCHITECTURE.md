@@ -369,7 +369,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatPane`; the navigator holds the open chat. With one pane (compact, medium) a tap still pushes
   `ChatRoute`, and the archive pushes it on every window. New chat (`NewChatRoute`, `feature:chats`) is pushed above
   the Chats tab on every window too; a contact's chat takes its place on the back stack, so back from the chat
-  returns to the chat list.
+  returns to the chat list. With a hardware keyboard (`:app`'s `PaneKeyboard`), the list pane is one focus group that
+  restores its last focused row; a chat opened from it in keyboard mode hands `ChatPane` `focusComposer`, which the
+  conversation passes to its composer's `ComposerFocusState` once; Esc that the conversation did not take gives the
+  focus back to the list (`docs/DESIGN_SYSTEM.md` §9).
 - Settings is a list-detail too (`SettingsListDetail`, `feature:settings`, composed by `settingsScreen` as the
   `SettingsRoute` destination): Settings home as the list, the navigator holding the open page by its name. With one
   pane a row pushes the page's route above the tab (`settingsPages`, every window narrower than expanded); with two
