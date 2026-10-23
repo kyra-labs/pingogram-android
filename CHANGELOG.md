@@ -10,6 +10,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
+  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
+
+### Changed
+- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
+  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
+  widget a few seconds after the start instead of while the chats load.
+
+## [0.5.0] - 2026-10-23
+
+### Added
 - Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
   switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
   bot keeps on screen come back whenever your phone's keyboard closes. A button can send its text, share your phone
@@ -728,7 +739,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3

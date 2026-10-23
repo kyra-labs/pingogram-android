@@ -213,6 +213,31 @@ class DefaultTdlibClientTest {
         }
 
     @Test
+    fun `the parameters are prepared at start, before TDLib asks for them, and sent once ready`() =
+        runTest {
+            startedClient()
+            val builtBeforeTdlibAsked = parametersProvider.built
+
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+            runCurrent()
+
+            assertEquals(1 to 1, builtBeforeTdlibAsked to parametersProvider.built)
+        }
+
+    @Test
+    fun `a retry with a new database key builds its parameters anew`() =
+        runTest {
+            startedClient()
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+            runCurrent()
+
+            tdlib.requests[0].respond(TdApiFixtures.error(401, "Wrong database encryption key"))
+            runCurrent()
+
+            assertEquals(2, parametersProvider.built)
+        }
+
+    @Test
     fun `a rejected database key discards the database and sends the parameters again, once`() =
         runTest {
             startedClient()
@@ -337,8 +362,12 @@ class DefaultTdlibClientTest {
     private class FakeParametersProvider : TdlibParametersProvider {
         val parameters = TdApi.SetTdlibParameters()
         var discarded = 0
+        var built = 0
 
-        override suspend fun parameters() = parameters
+        override suspend fun parameters(): TdApi.SetTdlibParameters {
+            built++
+            return parameters
+        }
 
         override suspend fun discardDatabase() {
             discarded++
