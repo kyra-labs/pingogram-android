@@ -48,7 +48,7 @@
 | `pingogram-X.Y.Z-x86_64.apk` | emulators / Chromebooks |
 | `pingogram-X.Y.Z-<abi>-gms.apk` | the same four for the `gms` flavor (push notifications through Firebase) |
 | `SHA256SUMS.txt` | checksums for all of the above |
-| `pingogram-X.Y.Z-fossRelease.aab`, `-gmsRelease.aab` | Play bundles (workflow artifact only, not attached to the release) |
+| `pingogram-X.Y.Z-fossRelease.aab`, `-gmsRelease.aab` | Play bundles (workflow artifact only, not attached to the release); the `gms` one also alone as `pingogram-X.Y.Z-play`, the one to upload to Play (`docs/PLAY_STORE.md` §7) |
 | `mapping.txt` | R8 mapping (workflow artifact, 90 days) |
 
 The per-ABI APKs come from ABI splits configured in `AndroidApplicationConventionPlugin`. AGP cannot
@@ -102,8 +102,9 @@ posted, so forks build as before.
 Branch from the tag (`git checkout -b hotfix/X.Y.Z+1 vX.Y.Z`), fix, PR to `main`, cherry-pick
 if `main` has diverged, tag from the hotfix branch.
 
-## Play Store (later)
+## Google Play
 
-The same workflow uploads the `.aab` as an artifact. When the owner is ready, add
-`r0adkll/upload-google-play` (or Gradle Play Publisher) behind a secret
-`PLAY_SERVICE_ACCOUNT_JSON`; keep GitHub as the canonical release channel.
+`docs/PLAY_STORE.md`: the Data safety form, the permission declarations, the listing, Play App Signing with the
+existing key, and the `gms` bundle each tag builds (the artifact `pingogram-X.Y.Z-play`). Its optional upload to the
+internal track (`release.yml`'s `upload-to-play` job, Gradle Play Publisher) is off unless the repository variable
+`PLAY_PUBLISH` is `true` and the secret `PLAY_SERVICE_ACCOUNT_JSON` is set. GitHub stays the canonical release channel.

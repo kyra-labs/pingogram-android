@@ -166,6 +166,13 @@ of it.
    have someone send you a message. A notification should appear within seconds. If none does, check the
    credentials of step 4 first: the app cannot tell, registration succeeds either way.
 
+## 8c. Google Play (optional)
+
+`docs/PLAY_STORE.md` is the checklist: the listing, the Data safety form and the permission declarations to fill in,
+Play App Signing with the release key of §3 (so GitHub and Play builds update each other), and where each release's
+bundle is (the workflow artifact `pingogram-X.Y.Z-play`). The automatic upload to the internal track stays off until
+you add the repository variable `PLAY_PUBLISH` = `true` and the secret `PLAY_SERVICE_ACCOUNT_JSON` (§7 there).
+
 ## 9. Decisions only you can make (tell Claude Code when ready)
 
 - Brand seed color and app icon artwork (a designer or an image you provide).
