@@ -14,7 +14,8 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the call screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): an incoming call, an outgoing one that
- * rings, connected, reconnecting muted on a Bluetooth headset, ended with an error, and the microphone's rationale;
+ * rings, connected, a video call (both videos, the user's only, the other person's paused), reconnecting muted on a
+ * Bluetooth headset, ended with an error, and the microphone's rationale;
  * light, dark, AMOLED, high contrast, right to left, 200% font scale, a phone in landscape and a 700 dp window. Brand
  * colors.
  */
@@ -70,6 +71,29 @@ class CallScreenshotTest {
     @Test
     @Config(fontScale = 2f)
     fun incomingFontScale200() = capture(CallPreviewStates.incoming)
+
+    @Test
+    fun videoLight() = capture(CallPreviewStates.video)
+
+    @Test
+    fun videoDark() = capture(CallPreviewStates.video, ThemeMode.Dark)
+
+    @Test
+    fun videoRtl() = capture(CallPreviewStates.video, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-xxhdpi")
+    fun videoLandscape() = capture(CallPreviewStates.video, ThemeMode.Dark)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun videoFontScale200() = capture(CallPreviewStates.video)
+
+    @Test
+    fun videoSelfOnlyLight() = capture(CallPreviewStates.videoSelfOnly)
+
+    @Test
+    fun videoPausedDark() = capture(CallPreviewStates.videoPaused, ThemeMode.Dark)
 
     @Test
     fun reconnectingDark() = capture(CallPreviewStates.reconnecting, ThemeMode.Dark)

@@ -29,7 +29,9 @@ your data. It applies to every build: the ones on GitHub and on Google Play.
 
 - Telegram's local database, encrypted with a key kept in the Android Keystore, and downloaded files.
 - Your Pingogram settings, the passcode (stored as a salted hash) and your recent emoji.
-- What the camera sees while you scan a QR code: it is decoded on the phone and dropped.
+- What the camera sees while you scan a QR code: it is decoded on the phone and dropped. In a video call, your camera's
+  picture goes to the person you are talking to only, end-to-end encrypted, while your camera is on; it is not
+  recorded or kept.
 - Diagnostic logs. "Send feedback" prepares a report on your phone (app version, device, Android version, the last
   crash, a log excerpt without message texts or phone numbers) that you can read and then share yourself, through
   Android's share sheet or a GitHub issue. Nothing is sent without you.

@@ -14,11 +14,12 @@
             android:launchMode="singleTask"
             android:taskAffinity="dev.kyralabs.pingogram.calls" />
 
-        <!-- Keeps the app running during a call: phoneCall while it rings, microphone too once the user talks. -->
+        <!-- Keeps the app running during a call: phoneCall while it rings, microphone too once the user talks, camera
+             while the user's camera sends video. -->
         <service
             android:name=".service.CallService"
             android:exported="false"
-            android:foregroundServiceType="phoneCall|microphone" />
+            android:foregroundServiceType="phoneCall|microphone|camera" />
 
         <!-- "Decline" and "Hang up" of the call's notification. -->
         <receiver

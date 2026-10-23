@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Video in calls: turn your camera on during a call with the new Camera button, and see the other person's video
+  full screen with your own picture in a corner, where you can switch between the front and back cameras. A video call
+  says "Incoming video call" and is answered with your camera on once Pingogram may use it; Pingogram asks for the
+  camera the first time you turn it on. Your video goes to the other person only, end-to-end encrypted.
 - Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
   Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
   "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages

@@ -37,10 +37,12 @@ import org.xmlpull.v1.XmlPullParser
  * (docs/adr/0004-push-delivery.md, `FirebaseMessagingManifestTest`; foss: `GoogleFreeManifestTest`).
  * ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION send the device's location from the attach menu (approved
  * 2026-10-20), in the foreground only: no background location, and location hardware is optional. CAMERA is the
- * in-app QR code scanner's only (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md), and no camera is
- * required to install. Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS
- * (self-managed Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL and FOREGROUND_SERVICE_MICROPHONE,
- * USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT (Bluetooth headsets' names),
+ * in-app QR code scanner's (approved 2026-10-21, docs/adr/0012-camerax-and-zxing-qr-scanner.md) and video calls'
+ * (approved for 1:1 video, docs/adr/0019-video-and-group-calls-scope.md), and no camera is required to install.
+ * Calls (approved 2026-10-22 for calls only, docs/adr/0018-calls-and-telecom.md): MANAGE_OWN_CALLS (self-managed
+ * Telecom), the call service's FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE and
+ * FOREGROUND_SERVICE_CAMERA, USE_FULL_SCREEN_INTENT (an incoming call over the lock screen), BLUETOOTH_CONNECT
+ * (Bluetooth headsets' names),
  * MODIFY_AUDIO_SETTINGS (the audio mode without Telecom) and WAKE_LOCK on every version (the proximity wake lock); the
  * call screen and the call service are private, Telecom optional.
  * WorkManager starts on demand, not through App Startup. The launcher icon is adaptive, with the monochrome layer of
@@ -81,12 +83,14 @@ class AppManifestTest {
                 // Contacts sync only, opt-in (docs/adr/0011-contacts-sync.md): read when the user turns it on, opens
                 // Contacts while it is on, or taps Sync now; never in the background.
                 Manifest.permission.READ_CONTACTS,
-                // The in-app QR code scanner only (docs/adr/0012-camerax-and-zxing-qr-scanner.md).
+                // The in-app QR code scanner (docs/adr/0012-camerax-and-zxing-qr-scanner.md) and video calls
+                // (docs/adr/0019-video-and-group-calls-scope.md).
                 Manifest.permission.CAMERA,
                 // Calls only (docs/adr/0018-calls-and-telecom.md).
                 Manifest.permission.MANAGE_OWN_CALLS,
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL,
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE,
+                Manifest.permission.FOREGROUND_SERVICE_CAMERA,
                 Manifest.permission.USE_FULL_SCREEN_INTENT,
                 Manifest.permission.BLUETOOTH_CONNECT,
                 Manifest.permission.MODIFY_AUDIO_SETTINGS,
@@ -119,12 +123,13 @@ class AppManifestTest {
                 Manifest.permission.ACCESS_NETWORK_STATE to "",
                 // Contacts sync's only permission, on every version.
                 Manifest.permission.READ_CONTACTS to "",
-                // The QR code scanner's only permission, on every version.
+                // The QR code scanner's and video calls', on every version.
                 Manifest.permission.CAMERA to "",
                 // Calls only, on every version (docs/adr/0018-calls-and-telecom.md).
                 Manifest.permission.MANAGE_OWN_CALLS to "",
                 Manifest.permission.FOREGROUND_SERVICE_PHONE_CALL to "",
                 Manifest.permission.FOREGROUND_SERVICE_MICROPHONE to "",
+                Manifest.permission.FOREGROUND_SERVICE_CAMERA to "",
                 Manifest.permission.USE_FULL_SCREEN_INTENT to "",
                 Manifest.permission.BLUETOOTH_CONNECT to "",
                 Manifest.permission.MODIFY_AUDIO_SETTINGS to "",
@@ -336,7 +341,7 @@ class AppManifestTest {
     }
 
     @Test
-    fun `the call screen, service and actions are private, the service of type phoneCall and microphone`() {
+    fun `the call screen, service and actions are private, the service of type phoneCall, microphone and camera`() {
         val manifest = mergedManifest()
 
         fun component(
@@ -355,7 +360,7 @@ class AppManifestTest {
                 it.androidAttribute("exported")
             },
         )
-        assertEquals("phoneCall|microphone", service.androidAttribute("foregroundServiceType"))
+        assertEquals("phoneCall|microphone|camera", service.androidAttribute("foregroundServiceType"))
         assertEquals("@style/Theme.Pingogram", activity.androidAttribute("theme"))
         assertEquals("false", telecom.androidAttribute("required"))
     }

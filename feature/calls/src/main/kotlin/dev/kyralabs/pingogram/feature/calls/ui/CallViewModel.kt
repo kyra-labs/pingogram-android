@@ -10,7 +10,9 @@ import dev.kyralabs.pingogram.feature.calls.ActiveCall
 import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
+import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,11 +35,15 @@ import javax.inject.Inject
  * ([CallActivity.ACTION_ANSWER]) or to show the call ([CallActivity.ACTION_SHOW]); both of the first need the
  * microphone, which the screen asks for first when it is missing ([MicrophoneAccess]).
  *
+ * Video (`docs/adr/0019-video-and-group-calls-scope.md`): the camera is asked for when the user turns it on
+ * ([CameraAccess], [CallEffect]), and a video call is answered with the camera on where it is allowed already.
+ *
  * The action is taken once per screen: [SavedStateHandle] remembers it was, so a rotation or a recreated process does
  * not call again.
  */
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("TooManyFunctions") // The screen's events, its two permission steps and the video sinks.
 class CallViewModel
     @Inject
     internal constructor(
@@ -44,6 +51,7 @@ class CallViewModel
         private val callManager: CallManager,
         private val userRepository: UserRepository,
         private val microphone: MicrophoneAccess,
+        private val camera: CameraAccess,
         private val clock: CallClock,
     ) : ViewModel() {
         private val action: String = savedStateHandle[CallActivity.EXTRA_ACTION] ?: CallActivity.ACTION_SHOW
@@ -54,6 +62,13 @@ class CallViewModel
 
         /** True once a call was shown here: its end closes the screen, while before it "Loading" waits for it. */
         private var sawCall = false
+
+        private val effectChannel = Channel<CallEffect>(Channel.BUFFERED)
+
+        /** The camera's permission request and the app's settings, each once. */
+        val effects: Flow<CallEffect> = effectChannel.receiveAsFlow()
+
+        private val hasCamera = camera.hasCamera()
 
         val uiState: StateFlow<CallUiState> =
             combine(callManager.call, permissionStep, person(), duration()) { call, step, person, duration ->
@@ -68,7 +83,7 @@ class CallViewModel
 
                     call != null -> {
                         sawCall = true
-                        call.toUiState(person ?: CallPerson(call.userId, "", null), duration)
+                        call.toUiState(person ?: CallPerson(call.userId, "", null), duration, hasCamera)
                     }
 
                     sawCall || savedStateHandle.get<Boolean>(
@@ -93,7 +108,7 @@ class CallViewModel
             when (event) {
                 CallEvent.Answer -> {
                     if (microphone.isGranted()) {
-                        viewModelScope.launch { callManager.answer() }
+                        viewModelScope.launch { answer() }
                     } else {
                         callManager.call.value?.let { askForMicrophone(it.userId, isAnswering = true) }
                     }
@@ -121,12 +136,62 @@ class CallViewModel
                     onMicrophoneResult(event)
                 }
 
+                CallEvent.ToggleCamera -> {
+                    toggleCamera()
+                }
+
+                CallEvent.SwitchCamera -> {
+                    viewModelScope.launch { callManager.switchCamera() }
+                }
+
+                is CallEvent.CameraResult -> {
+                    if (event.granted) {
+                        viewModelScope.launch { callManager.setCameraOn(true) }
+                    } else if (!event.canAskAgain) {
+                        savedStateHandle[KEY_CAMERA_REFUSED] = true
+                    }
+                }
+
                 CallEvent.DismissMicrophone -> {
                     val step = permissionStep.value ?: return
                     permissionStep.value = null
                     savedStateHandle[KEY_DONE] = true
                     if (step.isAnswering) viewModelScope.launch { callManager.hangUp() }
                 }
+            }
+        }
+
+        private var localSink: VideoFrameSink? = null
+        private var remoteSink: VideoFrameSink? = null
+
+        /**
+         * Where [slot]'s frames go while the screen draws them ([CallManager.setVideoSinks]), or null once it no
+         * longer does.
+         */
+        fun setVideoSink(
+            slot: CallVideoSlot,
+            sink: VideoFrameSink?,
+        ) {
+            if (slot == CallVideoSlot.Self) localSink = sink else remoteSink = sink
+            callManager.setVideoSinks(localSink, remoteSink)
+        }
+
+        override fun onCleared() {
+            callManager.setVideoSinks(null, null)
+        }
+
+        private fun toggleCamera() {
+            val call = callManager.call.value ?: return
+            when {
+                call.video.camera != null -> viewModelScope.launch { callManager.setCameraOn(false) }
+
+                camera.isGranted() -> viewModelScope.launch { callManager.setCameraOn(true) }
+
+                savedStateHandle.get<Boolean>(
+                    KEY_CAMERA_REFUSED,
+                ) == true -> effectChannel.trySend(CallEffect.OpenSettings)
+
+                else -> effectChannel.trySend(CallEffect.RequestCamera)
             }
         }
 
@@ -170,9 +235,11 @@ class CallViewModel
             callManager.startCall(userId)
         }
 
+        /** Answers, a video call with the camera on where it is allowed already (otherwise the user turns it on). */
         private suspend fun answer() {
             savedStateHandle[KEY_DONE] = true
-            callManager.answer()
+            val video = callManager.call.value?.videoOffered == true && hasCamera && camera.isGranted()
+            callManager.answer(withVideo = video)
         }
 
         /** The other person of the call (or of the permission step), as TDLib knows them. */
@@ -217,6 +284,7 @@ class CallViewModel
         private companion object {
             const val KEY_DONE = "call_action_done"
             const val KEY_REFUSED = "microphone_refused"
+            const val KEY_CAMERA_REFUSED = "camera_refused"
             const val STOP_TIMEOUT_MS = 5_000L
             const val MILLIS_PER_SECOND = 1_000L
         }
@@ -232,6 +300,7 @@ private fun displayName(user: User): String =
 private fun ActiveCall.toUiState(
     person: CallPerson,
     duration: String?,
+    hasCamera: Boolean,
 ): CallUiState.InCall =
     CallUiState.InCall(
         person = person,
@@ -274,7 +343,14 @@ private fun ActiveCall.toUiState(
         isOnHold = isOnHold,
         route = audio.route,
         routes = audio.available,
-        videoOffered = videoOffered,
+        isVideoCall = videoOffered,
+        video =
+            CallVideoUi(
+                camera = video.camera,
+                canSwitchCamera = video.canSwitchCamera,
+                remote = video.remote,
+                hasCamera = hasCamera,
+            ),
     )
 
 /** "0:07", "12:34", "1:02:03". */
