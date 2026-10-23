@@ -693,8 +693,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Engine**: `:feature:calls`' `CallEngine` (`NtgCallsEngine`: NTgCalls, the AAR `pingogram.ntgcalls` installs) takes
   TDLib's key (`skipExchange`), the servers and the other side's library versions, and opens the microphone and the
   speaker through Oboe. Its blocking Java API runs on one thread of its own; its library loads with the first call.
+  Video (`docs/adr/0019-video-and-group-calls-scope.md`): it lists the cameras, sends one (`CallSession.setCamera`,
+  720p), reports the other side's video (`remoteVideo`) and hands both sides' frames, packed I420, to the
+  `VideoFrameSink`s the call screen sets. It receives the other side's video only while there is such a sink.
 - **`CallManager`** (`:feature:calls`, started by `PingogramApplication` through `Calls` before TDLib) is the call's state
-  machine: one call at a time (another incoming one is declined), `ActiveCall` as its state, the engine started once
+  machine: one call at a time (another incoming one is declined), `ActiveCall` as its state (with `CallVideo`: the
+  camera sent, front or back, and the other side's video; the camera goes off while held), the engine started once
   TDLib says ready (with the data the other side sent before kept per call), Telecom (`CallSystem`:
   `TelecomCallSystem` on Jetpack's `core-telecom`, `AudioManagerCall` without Telecom) for routes, hold, mute and
   answering from headsets, the foreground service (`CallService`: `phoneCall`, `microphone` once talking, the proximity

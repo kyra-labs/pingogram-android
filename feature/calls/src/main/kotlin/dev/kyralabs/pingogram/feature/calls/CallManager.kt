@@ -10,9 +10,12 @@ import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
+import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.SystemCall
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallListener
@@ -51,6 +54,9 @@ import kotlin.time.Duration.Companion.seconds
  * Every change happens under [mutex], in the order TDLib's updates and the user's actions arrive. The engine's data
  * from the other side that comes before the engine runs (it may: TDLib passes it on as soon as the other side sends
  * it) is kept per call until the engine connects.
+ *
+ * Video (`docs/adr/0019-video-and-group-calls-scope.md`): the camera, which camera, and where the frames go are kept
+ * per call and given to the engine once it connects; the camera sends only from then on.
  */
 @Singleton
 @Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
@@ -92,17 +98,24 @@ class CallManager
         }
 
         /**
-         * Calls user [userId]. Does nothing while the user is in another call: the screen shows that one. A call that
-         * cannot be made ends at once with the reason ([CallEndReason.Failed]).
+         * Calls user [userId], [withVideo] with the front camera on. Does nothing while the user is in another call:
+         * the screen shows that one. A call that cannot be made ends at once with the reason ([CallEndReason.Failed]).
          */
-        suspend fun startCall(userId: Long) {
+        suspend fun startCall(
+            userId: Long,
+            withVideo: Boolean = false,
+        ) {
             val call =
                 mutex.withLock {
                     if (live != null) return
-                    Live(userId, isOutgoing = true, scope = callScope()).also { start(it) }
+                    Live(userId, isOutgoing = true, scope = callScope()).also {
+                        it.wantsCamera = withVideo
+                        start(it)
+                    }
                 }
+            if (withVideo) loadCameras(call)
             val protocol = protocolOrNull()
-            val result = protocol?.let { callRepository.startCall(userId, isVideo = false, protocol = it) }
+            val result = protocol?.let { callRepository.startCall(userId, isVideo = withVideo, protocol = it) }
             mutex.withLock {
                 if (live !== call) {
                     // Hung up and gone from the screen before Telegram created it: end it there too.
@@ -138,21 +151,23 @@ class CallManager
             }
         }
 
-        /** Answers the incoming call that rings. */
+        /** Answers the incoming call that rings, [withVideo] with the front camera on. */
         @Suppress("ReturnCount") // Guards under the lock: no call, no id yet, or nothing to answer.
-        suspend fun answer() {
+        suspend fun answer(withVideo: Boolean = false) {
             val call =
                 mutex.withLock {
                     val call = live ?: return
                     val callId = call.callId ?: return
                     if (call.isOutgoing || call.answered) return
                     call.answered = true
+                    call.wantsCamera = withVideo
                     call.phase = CallPhase.Connecting
                     foreground.start(withMicrophone = true)
                     call.system?.answer()
                     publish()
                     call to callId
                 }
+            if (withVideo) loadCameras(call.first)
             val protocol = protocolOrNull()
             val result = protocol?.let { callRepository.acceptCall(call.second, it) }
             if (result !is Outcome.Success) {
@@ -200,6 +215,38 @@ class CallManager
 
         fun selectRoute(route: AudioRoute) {
             live?.system?.selectRoute(route)
+        }
+
+        /** Turns the camera on (the one last used, the front one at first) or off. */
+        suspend fun setCameraOn(on: Boolean) {
+            val call = mutex.withLock { live?.takeIf { it.phase !is CallPhase.Ended } } ?: return
+            if (on) loadCameras(call)
+            mutex.withLock {
+                if (live !== call || call.wantsCamera == on) return
+                call.wantsCamera = on
+                applyCamera(call)
+            }
+        }
+
+        /** Sends the other camera: the back one after the front one, and back. */
+        suspend fun switchCamera() {
+            mutex.withLock {
+                val call = live ?: return
+                val next = call.cameras.firstOrNull { it.isFront != call.facingFront } ?: return
+                call.facingFront = next.isFront
+                applyCamera(call)
+            }
+        }
+
+        /**
+         * Where the call's frames go ([VideoFrameSink]: the self-view and the other side's video), or nowhere with
+         * null: the call screen sets them while it shows. Without a remote sink the other side's video is not received.
+         */
+        suspend fun setVideoSinks(
+            local: VideoFrameSink?,
+            remote: VideoFrameSink?,
+        ) {
+            mutex.withLock { live?.sinks?.value = VideoSinks(local, remote) }
         }
 
         // Transitions; all under the mutex.
@@ -287,7 +334,10 @@ class CallManager
             update: Call,
         ) {
             if (call.phase is CallPhase.Ended) return
-            if (update.isVideo) call.videoOffered = true
+            if (update.isVideo) {
+                call.videoOffered = true
+                call.hadVideo = true
+            }
             when (val state = update.state) {
                 is CallState.Pending -> {
                     if (call.isOutgoing) {
@@ -345,6 +395,12 @@ class CallManager
                     }
                 for (data in early) session.receiveSignalingData(data)
                 if (call.muted) session.setMuted(true)
+                // One collector each, so the engine gets the changes in order and the latest wins.
+                call.scope.launch { call.sinks.collect { session.setVideoSinks(it.local, it.remote) } }
+                call.scope.launch { call.camera.collect { session.setCamera(it) } }
+                call.scope.launch {
+                    session.remoteVideo.collect { video -> mutex.withLock { onRemoteVideo(call, video) } }
+                }
                 call.scope.launch {
                     session.signalingData.collect { data -> callRepository.sendSignalingData(callId, data) }
                 }
@@ -382,6 +438,38 @@ class CallManager
             publish()
         }
 
+        private fun onRemoteVideo(
+            call: Live,
+            video: RemoteVideo,
+        ) {
+            if (live !== call || call.remoteVideo == video) return
+            call.remoteVideo = video
+            if (video != RemoteVideo.Off) {
+                call.hadVideo = true
+                call.videoOffered = true
+            }
+            publish()
+        }
+
+        /** The camera [call] should send now, which the engine gets once it connects: none while held. */
+        private fun applyCamera(call: Live) {
+            if (call.wantsCamera) call.hadVideo = true
+            call.camera.value = call.sendingCamera()
+            publish()
+        }
+
+        /** Asks the engine for the device's cameras once per call. */
+        private suspend fun loadCameras(call: Live) {
+            if (call.camerasLoaded) return
+            val cameras = camerasOrEmpty()
+            mutex.withLock {
+                call.cameras = cameras
+                call.camerasLoaded = true
+                if (cameras.none { it.isFront }) call.facingFront = false
+                if (live === call) applyCamera(call)
+            }
+        }
+
         private fun onSignaling(data: CallSignalingData) {
             val call = live
             val session = call?.session
@@ -411,7 +499,7 @@ class CallManager
             if (call.onHold == onHold) return
             call.onHold = onHold
             call.session?.let { session -> call.scope.launch { session.setOnHold(onHold) } }
-            publish()
+            applyCamera(call)
         }
 
         private fun updateAudio(
@@ -453,7 +541,7 @@ class CallManager
                         callId,
                         isDisconnected,
                         duration,
-                        isVideo = false,
+                        isVideo = call.hadVideo,
                         connectionId = 0,
                     )
                 if (result is Outcome.Failure) {
@@ -515,6 +603,17 @@ class CallManager
                 null
             }
 
+        /** The device's cameras; none if the engine could not list them, and the call goes on without video. */
+        @Suppress("TooGenericExceptionCaught", "SwallowedException") // A failure only leaves the call without a camera.
+        private suspend fun camerasOrEmpty(): List<CallCamera> =
+            try {
+                engine.cameras()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                emptyList()
+            }
+
         private fun callScope() = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
 
         /** The call the user is in, as the manager keeps it. */
@@ -539,6 +638,25 @@ class CallManager
             var system: SystemCall? = null
             var session: CallSession? = null
 
+            /** The user wants the camera on (it sends once the engine connects, and not while held). */
+            var wantsCamera = false
+            var facingFront = true
+            var cameras: List<CallCamera> = emptyList()
+            var camerasLoaded = false
+            var remoteVideo = RemoteVideo.Off
+
+            /** Either side sent video, or the call was made as a video call: TDLib's `is_video` when it ends. */
+            var hadVideo = false
+            val camera = MutableStateFlow<CallCamera?>(null)
+            val sinks = MutableStateFlow(VideoSinks())
+
+            fun sendingCamera(): CallCamera? =
+                if (!wantsCamera || onHold) {
+                    null
+                } else {
+                    cameras.firstOrNull { it.isFront == facingFront } ?: cameras.firstOrNull()
+                }
+
             fun toActiveCall() =
                 ActiveCall(
                     userId = userId,
@@ -551,6 +669,14 @@ class CallManager
                     audio = audio,
                     connectedAtMillis = connectedAt,
                     videoOffered = videoOffered,
+                    video =
+                        CallVideo(
+                            camera =
+                                sendingCamera()?.let { if (it.isFront) CameraFacing.Front else CameraFacing.Back }
+                                    ?: if (wantsCamera && !camerasLoaded) CameraFacing.Front else null,
+                            canSwitchCamera = cameras.any { it.isFront } && cameras.any { !it.isFront },
+                            remote = remoteVideo,
+                        ),
                 )
         }
 
@@ -597,3 +723,8 @@ class CallManager
     }
 
 private fun CallState.isRinging() = this is CallState.Pending
+
+private data class VideoSinks(
+    val local: VideoFrameSink? = null,
+    val remote: VideoFrameSink? = null,
+)
