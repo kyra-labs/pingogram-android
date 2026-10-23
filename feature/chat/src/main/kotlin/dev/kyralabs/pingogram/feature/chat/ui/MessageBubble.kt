@@ -54,6 +54,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
@@ -220,9 +221,9 @@ internal fun BubbleRowContent(
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
- * [contentActions], [messageShortcuts], the buttons a bot attached ([botButtonActions]), a toggle per reaction but the
- * paid one, all reactions where the bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling
- * the [uploads] comes first, while there are some.
+ * [contentActions], [messageShortcuts], showing the original of a translated text, the buttons a bot attached
+ * ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
+ * selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -244,6 +245,17 @@ private fun bubbleActions(
     val fixed =
         listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble), threadAction(bubble)) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
+    val original =
+        if (bubble.translation is BubbleTranslation.Shown) {
+            listOf(
+                action(
+                    resources.getString(R.string.message_action_show_original),
+                    TranslationEvent.ShowOriginal(bubble.id),
+                ),
+            )
+        } else {
+            emptyList()
+        }
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)
@@ -261,7 +273,13 @@ private fun bubbleActions(
         } else {
             emptyList()
         }
-    return fixed.map { action(resources.getString(it.label), it.event) } + buttons + reactions + allReactions + select +
+    return fixed.map {
+        action(
+            resources.getString(it.label),
+            it.event,
+        )
+    } + original + buttons + reactions + allReactions +
+        select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 

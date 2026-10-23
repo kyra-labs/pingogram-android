@@ -6,10 +6,13 @@ import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -19,11 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -31,12 +36,15 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A self-destruct timer ("30s" after a timer icon), "edited", the time, and the state of an outgoing message, in
- * `labelSmall` with tabular figures; a failed message's state is its [NotSentLabel] instead. Shown where
- * [ChatItem.Bubble.showsTime] says.
+ * A translation's label ("Translated from Spanish" after the translate symbol, "Translating…" after a loading
+ * indicator), a self-destruct timer ("30s" after a timer icon), "edited", the time, and the state of an outgoing
+ * message, in `labelSmall` with tabular figures; a failed message's state is its [NotSentLabel] instead. Shown where
+ * [ChatItem.Bubble.showsTime] says, which a translated bubble always does.
  */
 @Composable
 internal fun BubbleMeta(
@@ -99,11 +107,40 @@ private fun MetaRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val style = MaterialTheme.typography.labelSmall
+        bubble.translation?.let { TranslationMark(it, color, style) }
         bubble.selfDestructSeconds?.let { SelfDestructTimer(it, color, style) }
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
         Text(bubble.time, color = color, maxLines = 1, style = style.userContent)
         bubble.status?.takeIf { it != OutgoingStatus.Failed }?.let { StatusIcon(it, statusTint(it)) }
     }
+}
+
+/**
+ * The translate symbol and "Translated from Spanish" in the meta's color, or a loading indicator and "Translating…"
+ * while Telegram translates; the label gives way first where the meta has no room for all of it. Screen readers hear
+ * it in the description.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun RowScope.TranslationMark(
+    translation: BubbleTranslation,
+    color: Color,
+    style: TextStyle,
+) {
+    val iconModifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall)
+    if (translation == BubbleTranslation.Translating) {
+        LoadingIndicator(modifier = iconModifier, color = color)
+    } else {
+        Icon(painterResource(R.drawable.ic_translate), contentDescription = null, modifier = iconModifier, tint = color)
+    }
+    Text(
+        text = translationLabel(LocalResources.current, translation, LocalConfiguration.current.locales[0]),
+        modifier = Modifier.weight(1f, fill = false),
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = style,
+    )
 }
 
 /** The timer icon and the timer in short ("30s"), in the meta's color; screen readers hear it in the description. */

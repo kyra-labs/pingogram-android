@@ -26,7 +26,6 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
@@ -42,6 +41,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -213,8 +213,8 @@ internal fun ChatEffects(
         effects.collect { effect ->
             val message =
                 when (effect) {
-                    is ChatEffect.ShowError -> {
-                        errorMessage(resources, effect.error, showErrorDetails)
+                    is ChatEffect.ShowError, is TranslationEffect -> {
+                        failureNotice(resources, effect, showErrorDetails)
                     }
 
                     is ChatEffect.OpenFile -> {

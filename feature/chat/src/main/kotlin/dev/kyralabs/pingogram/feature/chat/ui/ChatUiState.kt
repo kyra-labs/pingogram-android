@@ -19,6 +19,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -51,6 +53,8 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property pinnedBar the pinned messages bar over the messages (`REQUIREMENTS.md` FR-C9); null while there is none.
  * @property botIntro what a private chat's bot shows while the chat is empty (`REQUIREMENTS.md` FR-C5); null for other
  *   chats, and bots that show nothing.
+ * @property translateBar the translate bar over the messages (`REQUIREMENTS.md` FR-C3), below the pinned messages
+ *   bar; null while there is none.
  */
 @Immutable
 data class ChatUiState(
@@ -72,6 +76,7 @@ data class ChatUiState(
     val mediaDownloads: MediaDownloads = MediaDownloads(),
     val pinnedBar: PinnedBar? = null,
     val botIntro: BotIntro? = null,
+    val translateBar: TranslateBar? = null,
 )
 
 /**
@@ -268,6 +273,8 @@ sealed interface ChatItem {
      *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
      * @property keyboard the buttons a bot attached to the message, under the bubble; null for none. An album's are
      *   those of the item that has them.
+     * @property translation the translation [text] shows, with its label in the meta, or that one is on its way
+     *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
      */
@@ -300,6 +307,7 @@ sealed interface ChatItem {
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
         val keyboard: BotKeyboard? = null,
+        val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id

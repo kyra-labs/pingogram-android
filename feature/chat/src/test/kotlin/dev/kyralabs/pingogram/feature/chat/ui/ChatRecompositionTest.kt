@@ -11,11 +11,15 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -122,6 +126,21 @@ class ChatRecompositionTest {
 
         val newest = before.bubbles().first()
         state = before.replacing(newest.copy(showsTime = !newest.showsTime))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
+    }
+
+    @Test
+    fun `translating a bubble composes only that bubble`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        val translation = BubbleTranslation.Shown(FormattedText("Translated", persistentListOf()), "es")
+        state = before.withTranslations(persistentMapOf(newest.id to translation))
         repeat(SETTLE_FRAMES) { frame() }
 
         val functions = counter.recomposedOwnFunctions

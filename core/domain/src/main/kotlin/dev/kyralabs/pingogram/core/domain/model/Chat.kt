@@ -65,6 +65,11 @@ data class Chat(
      * removals itself.
      */
     val replyMarkupMessageId: Long = 0,
+    /**
+     * Telegram suggests translating the whole chat (td_api.tl `chat.is_translatable`): it is in another language than
+     * the user's, and the user has Telegram Premium. Single messages translate for everyone.
+     */
+    val isTranslatable: Boolean = false,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }
