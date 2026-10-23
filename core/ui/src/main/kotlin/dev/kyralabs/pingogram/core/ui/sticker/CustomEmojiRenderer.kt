@@ -182,7 +182,7 @@ internal suspend fun CustomEmojiRenderer.play(
 }
 
 /** The file of this sticker's still picture: itself if it is one, else its thumbnail if that is a picture. */
-private fun Sticker.stillPicture(): Int? =
+internal fun Sticker.stillPicture(): Int? =
     if (format == StickerFormat.Webp) {
         file.id
     } else {

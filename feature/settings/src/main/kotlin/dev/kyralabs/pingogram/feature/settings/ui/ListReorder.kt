@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.settings.ui.folders
+package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -18,36 +18,36 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 
-// Dragging the folders of the Chat folders page into a new order: the row follows the finger in its graphics layer,
-// and passes the rows it crosses, which slide into its place on the list's placement springs.
-
-/** The key of folder [id]'s row in the page's lazy list. */
-internal fun folderRowKey(id: Int): String = "$FOLDER_KEY_PREFIX$id"
-
-private const val FOLDER_KEY_PREFIX = "folder-"
+// Dragging the rows of a settings page's lazy list into a new order (chat folders, sticker sets): the row follows the
+// finger in its graphics layer, and passes the rows it crosses, which slide into its place on the list's placement
+// springs.
 
 /**
- * The order of the folders while one is dragged: [order] (the folders' ids, the dragged one where the finger has
- * taken it so far), the dragged folder ([draggedId]) and how far its row is from its place in the list ([offset],
- * read in the draw phase). [onDrop] gets the order the finger left, once it lifts.
+ * The order of a list's rows while one is dragged: [order] (the rows' ids, the dragged one where the finger has taken
+ * it so far), the dragged row ([draggedId]) and how far it is from its place in the list ([offset], read in the draw
+ * phase). The rows' keys in the lazy list are [rowKey] of their ids. [onDrop] gets the order the finger left, once it
+ * lifts.
  */
 @Stable
-internal class FolderReorderState(
+internal class ListReorderState<K : Any>(
     private val listState: LazyListState,
     private val haptics: HapticFeedback,
-    folderIds: List<Int>,
-    private val onDrop: (List<Int>) -> Unit,
+    ids: List<K>,
+    private val rowKey: (K) -> String,
+    private val onDrop: (List<K>) -> Unit,
 ) {
-    var order: List<Int> by mutableStateOf(folderIds)
+    var order: List<K> by mutableStateOf(ids)
         private set
 
-    var draggedId: Int? by mutableStateOf(null)
+    var draggedId: K? by mutableStateOf(null)
         private set
 
     var offset: Float by mutableFloatStateOf(0f)
         private set
 
-    fun start(id: Int) {
+    private val rowKeys get() = order.mapTo(HashSet(), rowKey)
+
+    fun start(id: K) {
         draggedId = id
         offset = 0f
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -58,23 +58,24 @@ internal class FolderReorderState(
         offset += delta
         val (dragged, target) = swapTarget(id) ?: return
         val from = order.indexOf(id)
-        val to = order.indexOfFirst { folderRowKey(it) == target.key }
+        val to = order.indexOfFirst { rowKey(it) == target.key }
         order = order.toMutableList().apply { add(to, removeAt(from)) }
         // The row takes the target's place in the next layout: keep it under the finger.
         offset += dragged.offset - target.offset
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
     }
 
-    /** The dragged folder [id]'s row and the folder row under its centre, if it passed over another one. */
-    private fun swapTarget(id: Int): Pair<LazyListItemInfo, LazyListItemInfo>? {
+    /** The dragged row [id] and the row of this list under its centre, if it passed over another one. */
+    private fun swapTarget(id: K): Pair<LazyListItemInfo, LazyListItemInfo>? {
         val items = listState.layoutInfo.visibleItemsInfo
-        val dragged = items.firstOrNull { it.key == folderRowKey(id) }
+        val dragged = items.firstOrNull { it.key == rowKey(id) }
         val center = dragged?.let { it.offset + offset + it.size / 2f }
+        val keys = rowKeys
         val target =
             center?.let {
                 items.firstOrNull { item ->
                     item.key != dragged.key &&
-                        (item.key as? String)?.startsWith(FOLDER_KEY_PREFIX) == true &&
+                        item.key in keys &&
                         center >= item.offset &&
                         center < item.offset + item.size
                 }
@@ -90,24 +91,26 @@ internal class FolderReorderState(
     }
 }
 
-/** A [FolderReorderState] for the folders [folderIds], begun anew whenever they change. */
+/** A [ListReorderState] for the rows [ids] (keyed [rowKey] in the list), begun anew whenever they change. */
 @Composable
-internal fun rememberFolderReorderState(
+internal fun <K : Any> rememberListReorderState(
     listState: LazyListState,
-    folderIds: List<Int>,
-    onDrop: (List<Int>) -> Unit,
-): FolderReorderState {
+    ids: List<K>,
+    rowKey: (K) -> String,
+    onDrop: (List<K>) -> Unit,
+): ListReorderState<K> {
     val haptics = LocalHapticFeedback.current
     val currentOnDrop by rememberUpdatedState(onDrop)
-    return remember(listState, haptics, folderIds) {
-        FolderReorderState(listState, haptics, folderIds) { currentOnDrop(it) }
+    val currentRowKey by rememberUpdatedState(rowKey)
+    return remember(listState, haptics, ids) {
+        ListReorderState(listState, haptics, ids, { currentRowKey(it) }) { currentOnDrop(it) }
     }
 }
 
-/** Drags folder [id]'s row after a long press anywhere on it. */
-internal fun Modifier.dragAfterLongPress(
-    state: FolderReorderState,
-    id: Int,
+/** Drags row [id] after a long press anywhere on it. */
+internal fun <K : Any> Modifier.dragAfterLongPress(
+    state: ListReorderState<K>,
+    id: K,
 ): Modifier =
     pointerInput(state, id) {
         detectDragGesturesAfterLongPress(
@@ -121,10 +124,10 @@ internal fun Modifier.dragAfterLongPress(
         )
     }
 
-/** Drags folder [id]'s row as soon as its handle moves. */
-internal fun Modifier.dragHandle(
-    state: FolderReorderState,
-    id: Int,
+/** Drags row [id] as soon as its handle moves. */
+internal fun <K : Any> Modifier.dragHandle(
+    state: ListReorderState<K>,
+    id: K,
 ): Modifier =
     pointerInput(state, id) {
         detectDragGestures(

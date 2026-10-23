@@ -832,4 +832,57 @@
     <string name="settings_chat_folder_icon_travel">Travel</string>
     <string name="settings_chat_folder_icon_light">Ideas</string>
     <string name="settings_chat_folder_icon_palette">Art</string>
+
+    <!-- Settings → Stickers (REQUIREMENTS.md FR-C5). -->
+    <string name="settings_stickers">Stickers</string>
+    <string name="settings_stickers_summary">Your sticker sets, trending and archived sets</string>
+    <string name="settings_stickers_loading">Loading sticker sets</string>
+    <string name="settings_stickers_trending">Trending stickers</string>
+    <string name="settings_stickers_trending_summary">Popular sets on Telegram</string>
+    <plurals name="settings_stickers_trending_new">
+        <item quantity="one">%1$s new set</item>
+        <item quantity="other">%1$s new sets</item>
+    </plurals>
+    <string name="settings_stickers_archived">Archived stickers</string>
+    <string name="settings_stickers_archived_summary">No archived sets</string>
+    <plurals name="settings_stickers_set_count">
+        <item quantity="one">%1$s set</item>
+        <item quantity="other">%1$s sets</item>
+    </plurals>
+    <plurals name="settings_stickers_sticker_count">
+        <item quantity="one">%1$s sticker</item>
+        <item quantity="other">%1$s stickers</item>
+    </plurals>
+    <string name="settings_stickers_section_yours">Your sticker sets</string>
+    <string name="settings_stickers_none">You have no sticker sets. Add some from Trending stickers.</string>
+    <string name="settings_stickers_footer">The sticker panel shows your sets in this order on all your devices. Drag a set to move it.</string>
+    <string name="settings_stickers_move_up">Move up</string>
+    <string name="settings_stickers_move_down">Move down</string>
+    <string name="settings_stickers_share">Share link</string>
+    <string name="settings_stickers_archive">Archive</string>
+    <string name="settings_stickers_remove">Remove</string>
+    <string name="settings_stickers_cancel">Cancel</string>
+    <string name="settings_stickers_undo">Undo</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_remove_title">Remove “%1$s”?</string>
+    <string name="settings_stickers_remove_text">The set leaves your sticker panel on all your devices. You can add it again from a sticker of it or its link.</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_archived_done">“%1$s” archived</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_removed_done">“%1$s” removed</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_done">“%1$s” added to your stickers</string>
+    <string name="settings_stickers_add">Add</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_add_named">Add %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_adding">Adding %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_named">%1$s added</string>
+    <string name="settings_stickers_trending_footer">Sets many people on Telegram add now. Added sets join your sticker panel.</string>
+    <string name="settings_stickers_archived_footer">Archived sets stay in your account without showing in the sticker panel. Add one to bring it back.</string>
+    <string name="settings_stickers_trending_empty_title">Nothing trending</string>
+    <string name="settings_stickers_trending_empty_body">Telegram has no trending sticker sets for you right now.</string>
+    <string name="settings_stickers_archived_empty_title">No archived sets</string>
+    <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
 </resources>

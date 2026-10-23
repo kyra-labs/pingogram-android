@@ -132,6 +132,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   registered in `:app`'s `NavHost`, `FolderInviteViewModel`), which checks the link (only reading) and adds the folder
   with the chats the user picked, joining them, only on "Add folder"; a folder the user has offers the chats added to
   it since.
+- **Sticker sets** (FR-C5, Settings → Stickers): the installed sets are `StickerRepository.installedSets` (the panel's
+  list, `getInstalledStickerSets` on `updateInstalledStickerSets`); `core:domain`'s `StickerSetRepository`
+  (`TdlibStickerSetRepository`, `core:data`, no cache: TDLib keeps the sets and announces their changes) reads the
+  archived sets (`getArchivedStickerSets`, the first 100) and the trending ones (`getTrendingStickerSets`, the first
+  page, again on `updateTrendingStickerSets`), both again whenever the installed sets change, and one set with its
+  stickers (`getStickerSet`, again on its `updateStickerSet`); it installs, archives and removes sets
+  (`changeStickerSet`), reorders the installed ones (`reorderInstalledStickerSets`), marks trending sets seen
+  (`viewTrendingStickerSets`) and finds a set by its link's name (`searchStickerSet`). `feature:settings`' Stickers page
+  (`StickersRoute`, `StickersViewModel`: a dragged order shown at once and taken back when Telegram refuses it, an
+  archived or removed set gone at once with "Undo", which installs it again at its place) opens Trending stickers and
+  Archived stickers (`StickerSetListRoute(archived)`, `StickerSetListViewModel`: "Add" per set, the trending sets shown
+  marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then).
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which
