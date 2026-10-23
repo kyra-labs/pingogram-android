@@ -241,12 +241,13 @@ class CallManager
         /**
          * Where the call's frames go ([VideoFrameSink]: the self-view and the other side's video), or nowhere with
          * null: the call screen sets them while it shows. Without a remote sink the other side's video is not received.
+         * Not suspending, so a screen that goes away can take them back at once.
          */
-        suspend fun setVideoSinks(
+        fun setVideoSinks(
             local: VideoFrameSink?,
             remote: VideoFrameSink?,
         ) {
-            mutex.withLock { live?.sinks?.value = VideoSinks(local, remote) }
+            live?.sinks?.value = VideoSinks(local, remote)
         }
 
         // Transitions; all under the mutex.

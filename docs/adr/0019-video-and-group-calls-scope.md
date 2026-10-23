@@ -81,3 +81,7 @@ What the code found at NTgCalls' pinned commit, where it differs from the readin
 - **The other side's video state** comes through `onRemoteSourceChange` (camera: active, paused, idling).
   - NTgCalls tells the other side "suspended" while the user is muted (its `MediaState.video_paused` is `paused ||
     muted`). How Telegram's apps show a muted user's video is checked on a device.
+- **The screen**: since 1:1 video shipped, an incoming video call rings as "Incoming video call" and is answered with
+  the camera on where the camera is allowed already; the "audio only" note is gone. `CAMERA` is asked for when the
+  user first turns the camera on, and the call service adds the `camera` foreground type while it sends. The renderer
+  is WebRTC's `EglRenderer` drawing into a `TextureView`, as a `SurfaceView` would not clip to the self-view's corners.

@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
 import dev.kyralabs.pingogram.feature.calls.CallManager
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.ENGINE_PROTOCOL
 import dev.kyralabs.pingogram.feature.calls.FakeCallClock
 import dev.kyralabs.pingogram.feature.calls.FakeCallEngine
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.feature.calls.FakeCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeCallSystem
 import dev.kyralabs.pingogram.feature.calls.FakeCallTones
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
+import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -40,6 +42,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.seconds
@@ -53,6 +57,7 @@ class CallViewModelTest {
     private val clock = FakeCallClock()
     private val users = FakeUserRepository()
     private var microphone = true
+    private val camera = FakeCameraAccess()
     private val created = mutableListOf<CallViewModel>()
 
     init {
@@ -83,7 +88,7 @@ class CallViewModelTest {
                     if (userId != null) put(CallActivity.EXTRA_USER_ID, userId)
                 },
             ),
-    ) = CallViewModel(handle, manager, users, { microphone }, clock).also { viewModel ->
+    ) = CallViewModel(handle, manager, users, { microphone }, camera, clock).also { viewModel ->
         created += viewModel
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -156,17 +161,127 @@ class CallViewModelTest {
         }
 
     @Test
-    fun `says a video call is audio only`() =
+    fun `an incoming video call says so, and is answered with the camera where it is allowed`() =
         runTest(dispatcher) {
+            camera.granted = true
             val manager = manager()
             repository.update(Call(3, 42, isOutgoing = false, isVideo = true, state = CallState.Pending(true, true)))
             runCurrent()
 
             val viewModel = viewModel(manager, CallActivity.ACTION_SHOW)
             runCurrent()
+            assertTrue(viewModel.inCall().isVideoCall)
 
-            assertTrue((viewModel.uiState.value as CallUiState.InCall).videoOffered)
+            viewModel.onEvent(CallEvent.Answer)
+            runCurrent()
+
+            assertEquals(CameraFacing.Front, viewModel.inCall().video.camera)
         }
+
+    @Test
+    fun `a video call is answered without the camera where it is not allowed yet`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            repository.update(Call(3, 42, isOutgoing = false, isVideo = true, state = CallState.Pending(true, true)))
+            runCurrent()
+            val viewModel = viewModel(manager, CallActivity.ACTION_SHOW)
+
+            viewModel.onEvent(CallEvent.Answer)
+            runCurrent()
+
+            assertEquals(listOf(3 to ENGINE_PROTOCOL), repository.accepted)
+            assertNull(viewModel.inCall().video.camera)
+        }
+
+    @Test
+    fun `turns the camera on and off where it is allowed`() =
+        runTest(dispatcher) {
+            camera.granted = true
+            val viewModel = viewModel(manager(), CallActivity.ACTION_START, userId = 42)
+            assertTrue(viewModel.inCall().video.hasCamera)
+
+            viewModel.onEvent(CallEvent.ToggleCamera)
+            runCurrent()
+            assertEquals(CameraFacing.Front, viewModel.inCall().video.camera)
+
+            viewModel.onEvent(CallEvent.SwitchCamera)
+            runCurrent()
+            assertEquals(CameraFacing.Back, viewModel.inCall().video.camera)
+
+            viewModel.onEvent(CallEvent.ToggleCamera)
+            runCurrent()
+            assertNull(viewModel.inCall().video.camera)
+        }
+
+    @Test
+    fun `asks for the camera, and turns it on once Android allows it`() =
+        runTest(dispatcher) {
+            val viewModel = viewModel(manager(), CallActivity.ACTION_START, userId = 42)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+
+            viewModel.onEvent(CallEvent.ToggleCamera)
+            runCurrent()
+            assertEquals(listOf<CallEffect>(CallEffect.RequestCamera), effects)
+            assertNull(viewModel.inCall().video.camera)
+
+            camera.granted = true
+            viewModel.onEvent(CallEvent.CameraResult(granted = true, canAskAgain = true))
+            runCurrent()
+
+            assertEquals(CameraFacing.Front, viewModel.inCall().video.camera)
+        }
+
+    @Test
+    fun `opens the settings once Android no longer asks for the camera, also after the screen is created again`() =
+        runTest(dispatcher) {
+            val handle =
+                SavedStateHandle(
+                    mapOf(CallActivity.EXTRA_ACTION to CallActivity.ACTION_START, CallActivity.EXTRA_USER_ID to 42L),
+                )
+            val manager = manager()
+            val viewModel = viewModel(manager, CallActivity.ACTION_START, handle = handle)
+            viewModel.onEvent(CallEvent.CameraResult(granted = false, canAskAgain = false))
+
+            val again = viewModel(manager, CallActivity.ACTION_START, handle = handle)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { again.effects.collect { effects += it } }
+            again.onEvent(CallEvent.ToggleCamera)
+            runCurrent()
+
+            assertEquals(listOf<CallEffect>(CallEffect.OpenSettings), effects)
+            assertEquals(1, repository.started.size)
+        }
+
+    @Test
+    fun `a device without a camera offers none`() =
+        runTest(dispatcher) {
+            camera.hasCamera = false
+            val viewModel = viewModel(manager(), CallActivity.ACTION_START, userId = 42)
+
+            assertFalse(viewModel.inCall().video.hasCamera)
+        }
+
+    @Test
+    fun `hands the screen's video sinks to the call, and takes them back when it goes`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            val viewModel = viewModel(manager, CallActivity.ACTION_START, userId = 42)
+            val ready = CallState.Ready(connection())
+            repository.update(Call(FakeCallRepository.STARTED_CALL_ID, 42, isOutgoing = true, isVideo = false, ready))
+            runCurrent()
+            val remote = VideoFrameSink { _, _, _, _ -> }
+
+            viewModel.setVideoSink(CallVideoSlot.Remote, remote)
+            runCurrent()
+            assertEquals(remote, engine.sessions.single().remoteSink)
+
+            viewModel.setVideoSink(CallVideoSlot.Remote, null)
+            runCurrent()
+            assertNull(engine.sessions.single().remoteSink)
+        }
+
+    private fun CallViewModel.inCall() = uiState.value as CallUiState.InCall
 
     @Test
     fun `declining from the permission step declines the call`() =
@@ -304,3 +419,12 @@ private fun user(
     type = UserType.Regular,
     haveAccess = true,
 )
+
+private class FakeCameraAccess : CameraAccess {
+    var hasCamera = true
+    var granted = false
+
+    override fun hasCamera() = hasCamera
+
+    override fun isGranted() = granted
+}

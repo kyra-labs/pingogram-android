@@ -710,7 +710,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Call screen**: `CallActivity` (its own task, over the lock screen, not exported) with `CallViewModel` (the call,
   the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
   buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
-  features as a callback (features do not depend on each other).
+  features as a callback (features do not depend on each other). Video (`docs/adr/0019-video-and-group-calls-scope.md`):
+  `CallScreen` takes the video as a slot (`CallVideo`, a placeholder in previews and goldens), which `CallActivity`
+  fills with `CallVideoView` (WebRTC's `EglRenderer` in a `TextureView`); each view hands its renderer to the call as a
+  `VideoFrameSink` while the screen is started (`CallViewModel.setVideoSink`), so a screen in the background draws and
+  receives nothing. The camera's permission is asked when it is turned on (`CameraAccess`, `CallEffect`), and the call
+  service adds the `camera` foreground type while the camera sends.
 
 ## Home screen widget
 
