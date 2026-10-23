@@ -23,6 +23,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   move its tab. Telegram's suggested folders can be added with one tap. Links to Telegram's folder settings open
   the page too.
 
+### Changed
+- The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
+  avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
+  swipe them.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

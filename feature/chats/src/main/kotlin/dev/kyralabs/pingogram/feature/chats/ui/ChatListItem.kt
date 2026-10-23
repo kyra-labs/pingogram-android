@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -99,11 +101,22 @@ internal fun ChatListItem(
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
     if (onClick != null) {
+        // A row being swiped covers what the swipe reveals from its first frame with its resting container, in the list
+        // item's selected shape (`large`): the list item's own container is transparent at rest and would fade in.
+        val draggedContainer =
+            if (dragged) {
+                val color = ListItemDefaults.colors().containerColor
+                val shape = ListItemDefaults.shapes().selectedShape
+                Modifier.drawBehind { drawOutline(shape.createOutline(size, layoutDirection, this), color) }
+            } else {
+                Modifier
+            }
         ListItem(
             onClick = onClick,
             modifier =
                 modifier
                     .padding(insets)
+                    .then(draggedContainer)
                     .semantics {
                         contentDescription = rowDescription(resources, item, title, preview.text)
                         if (open) this.selected = true
@@ -159,11 +172,16 @@ internal fun insetContentPadding(insets: PaddingValues): PaddingValues {
     )
 }
 
-/** The list item's colors, or its selected colors in place of its resting ones. */
+/**
+ * The list item's colors, or its selected colors in place of its resting ones. At rest its container is transparent:
+ * it would be the sheet's own `surface` under it, and every row would fill its area once more in every frame of a
+ * scroll. It fades in and out from the same color, so a row turning selected looks as it did over its opaque
+ * container. A row being swiped draws its container itself ([ChatListItem]), at once.
+ */
 @Composable
 private fun listItemColors(selected: Boolean): ListItemColors {
     val colors = ListItemDefaults.colors()
-    if (!selected) return colors
+    if (!selected) return colors.copy(containerColor = colors.containerColor.copy(alpha = 0f))
     return colors.copy(
         containerColor = colors.selectedContainerColor,
         contentColor = colors.selectedContentColor,

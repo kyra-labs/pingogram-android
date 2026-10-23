@@ -17,6 +17,7 @@ import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -95,16 +96,13 @@ internal fun ChatRow(
     // Changes only when a swipe starts or ends, not in every frame of it.
     val dragged by remember(state) { derivedStateOf { state.dismissDirection != SwipeToDismissBoxValue.Settled } }
     val resources = LocalResources.current
+    val iconSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
     SwipeToDismissBox(
         state = state,
-        backgroundContent = { SwipeBackground(state, start, end, iconScale) },
-        modifier =
-            modifier.swipeThresholdFeedback(
-                state = state,
-                positionalThreshold = threshold,
-                iconScale = iconScale,
-                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-            ),
+        backgroundContent = {
+            SwipeBackground(state, start, end, iconScale, SwipeFeedback(threshold, iconSpec))
+        },
+        modifier = modifier,
         gesturesEnabled = !selectionMode,
         onDismiss = rememberOnSwiped(state, item.id, start, end, onEvent),
     ) {
@@ -186,7 +184,8 @@ private fun rememberOnSwiped(
  * with `large` corners, with its icon and label at that side. Decorative: screen readers get the actions on the row.
  * The icons and labels are composed only while the row is away from its place: at rest nothing shows them, and every
  * row of a list would compose and lay out two of each, when a folder's rows replace another's or the list comes back
- * from another screen.
+ * from another screen. So is the threshold's [feedback] ([swipeThresholdFeedback]), whose watch would otherwise start
+ * with every row the list brings into view.
  */
 @Composable
 private fun SwipeBackground(
@@ -194,6 +193,7 @@ private fun SwipeBackground(
     start: ChatRowAction,
     end: ChatRowAction,
     iconScale: Animatable<Float, AnimationVector1D>,
+    feedback: SwipeFeedback,
 ) {
     val startColors = start.swipeColors()
     val endColors = end.swipeColors()
@@ -202,7 +202,14 @@ private fun SwipeBackground(
     Box(
         Modifier
             .fillMaxSize()
-            .padding(rowInsets())
+            // Measures the row's whole width, the distance of a full swipe, before the insets.
+            .then(
+                if (swiping) {
+                    Modifier.swipeThresholdFeedback(state, feedback.positionalThreshold, iconScale, feedback.iconSpec)
+                } else {
+                    Modifier
+                },
+            ).padding(rowInsets())
             .clearAndSetSemantics {}
             .drawBehind {
                 val color =
@@ -268,6 +275,13 @@ private fun Modifier.revealedBy(
     direction: SwipeToDismissBoxValue,
 ): Modifier = graphicsLayer { alpha = if (state.dismissDirection == direction) 1f else 0f }
 
+/** How a swipe's threshold is fed back: where it lies ([positionalThreshold]) and the spring its icon grows on. */
+@Immutable
+private data class SwipeFeedback(
+    val positionalThreshold: (Float) -> Float,
+    val iconSpec: FiniteAnimationSpec<Float>,
+)
+
 /** The colors behind a swipe: `secondaryContainer` for read and unread, `tertiaryContainer` for archive. */
 private class SwipeColors(
     val container: Color,
@@ -303,7 +317,8 @@ private val ChatRowAction.swipeLabel: Int
  * on [animationSpec], back to its resting size before it.
  *
  * A modifier node rather than an effect in every row (`docs/PERFORMANCE.md` §4): it watches the offset in its own
- * coroutine scope, without recomposing. While the row springs back after its action ran, the icon shrinks without a
+ * coroutine scope, without recomposing, and only while the row is away from its place ([SwipeBackground]); each swipe
+ * starts with the icon at its resting size. While the row springs back after its action ran, the icon shrinks without a
  * haptic. With animations turned off, Compose ends the spring at once.
  */
 private fun Modifier.swipeThresholdFeedback(
@@ -352,7 +367,11 @@ private class SwipeThresholdFeedbackNode(
         if (changed && isAttached) watch()
     }
 
-    override fun onAttach() = watch()
+    override fun onAttach() {
+        // A swipe that ended before the icon shrank back left it larger.
+        coroutineScope.launch { iconScale.snapTo(SWIPE_ICON_RESTING_SCALE) }
+        watch()
+    }
 
     override fun onRemeasured(size: IntSize) {
         width = size.width.toFloat()
