@@ -802,6 +802,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
   buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
   features as a callback (features do not depend on each other); `Calls.videoCall(userId)` calls with the camera on.
+  `Calls` is `core:ui`'s `CallStarter` (`LocalCallStarter`, provided by `MainActivity`), whose `canVideoCall(userId)`
+  (the device's camera, then `UserProfileRepository.fullInfo`'s `canBeCalled` and `supportsVideoCalls`) decides whether
+  `core:ui`'s `CallButtonMenu`, the call button of the conversation's top bar and the profile's "Call" pill, offers
+  "Video call": the one flow a composable collects there, once per screen, as the decision is the call module's and the
+  screens' view models stay as they are.
   Video (`docs/adr/0019-video-and-group-calls-scope.md`):
   `CallScreen` takes the video as a slot (`CallVideo`, a placeholder in previews and goldens), which `CallActivity`
   fills with `CallVideoView` (WebRTC's `EglRenderer` in a `TextureView`); each view hands its renderer to the call as a
