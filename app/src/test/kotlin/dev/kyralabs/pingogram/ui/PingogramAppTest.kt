@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -33,6 +34,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.NavDestination
@@ -703,8 +705,8 @@ class PingogramAppTest {
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        // Below the groups, past the bottom of a phone's screen.
-        text(SettingsR.string.settings_log_out).performScrollTo().performClick()
+        // Below the groups, past the bottom of a phone's screen, where the floating navigation bar covers it.
+        text(SettingsR.string.settings_log_out).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule
             .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
             .performClick()

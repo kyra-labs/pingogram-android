@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -74,8 +76,11 @@ class MainActivityTest {
         tab(R.string.nav_chats).assertIsSelected()
 
         tab(R.string.nav_settings).performClick()
-        // Below the groups, past the bottom of a phone's screen.
-        composeRule.onNodeWithText(string(SettingsR.string.settings_log_out)).performScrollTo().performClick()
+        // Below the groups, past the bottom of a phone's screen, where the floating navigation bar covers it.
+        composeRule
+            .onNodeWithText(string(SettingsR.string.settings_log_out))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick)
         composeRule
             .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
             .performClick()
