@@ -24,12 +24,29 @@ interface CallSystem {
 }
 
 data class SystemCallRequest(
-    /** The other person's name, which the system's UI, a car or a watch shows. */
+    /** The other person's name, or the voice chat's chat, which the system's UI, a car or a watch shows. */
     val displayName: String,
-    /** The other person, as an address the system can tell apart from others: `pingogram:user/<id>`. */
-    val userId: Long,
+    /**
+     * Who the call is with, as an address the system can tell apart from others: `pingogram:user/<id>` for a person,
+     * `pingogram:chat/<id>` for a voice chat.
+     */
+    val address: String,
     val isOutgoing: Boolean,
-)
+) {
+    companion object {
+        fun user(
+            displayName: String,
+            userId: Long,
+            isOutgoing: Boolean,
+        ) = SystemCallRequest(displayName, "pingogram:user/$userId", isOutgoing)
+
+        /** A voice chat the user joins: an outgoing call, as Telegram's apps tell Telecom. */
+        fun voiceChat(
+            displayName: String,
+            chatId: Long,
+        ) = SystemCallRequest(displayName, "pingogram:chat/$chatId", isOutgoing = true)
+    }
+}
 
 /** What the system asks of a call: someone answered or ended it elsewhere, or another call holds the line. */
 interface SystemCallListener {

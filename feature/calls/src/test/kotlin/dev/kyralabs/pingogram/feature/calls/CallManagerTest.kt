@@ -39,6 +39,7 @@ class CallManagerTest {
     private val tones = FakeCallTones()
     private val clock = FakeCallClock()
     private val network = FakeNetworkRepository()
+    private val line = CallLine()
 
     private fun TestScope.manager() =
         CallManager(
@@ -50,6 +51,7 @@ class CallManagerTest {
             clock,
             { "Ada" },
             { network },
+            line,
             backgroundScope,
         ).also {
             it.start()
@@ -90,7 +92,7 @@ class CallManagerTest {
             assertEquals(FakeCallRepository.STARTED_CALL_ID, active.callId)
             assertEquals(CallPhase.Ringing(reachedDevice = false), active.phase)
             assertEquals("start+mic", foreground.events.first())
-            assertEquals(SystemCallKind("Ada", 42, isOutgoing = true), system.calls.single().kind())
+            assertEquals(SystemCallKind("Ada", "pingogram:user/42", isOutgoing = true), system.calls.single().kind())
         }
 
     @Test
@@ -225,6 +227,37 @@ class CallManagerTest {
 
             assertEquals(listOf(9), repository.discarded.map { it.callId })
             assertEquals(FakeCallRepository.STARTED_CALL_ID, manager.call.value?.callId)
+        }
+
+    @Test
+    fun `an incoming call during a voice chat is declined, and no call starts`() =
+        runTest {
+            val manager = manager()
+            val voiceChat = Any()
+            line.take(voiceChat)
+
+            repository.update(call(CallState.Pending(isCreated = true, isReceived = true), id = 9, isOutgoing = false))
+            runCurrent()
+            manager.startCall(42)
+            runCurrent()
+
+            assertEquals(listOf(9), repository.discarded.map { it.callId })
+            assertNull(manager.call.value)
+        }
+
+    @Test
+    fun `a call holds the line until it ends`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            assertTrue(line.isBusy)
+
+            manager.hangUp()
+            runCurrent()
+            repository.update(call(CallState.Discarded(CallDiscardReason.HungUp, false)))
+            runCurrent()
+
+            assertFalse(line.isBusy)
         }
 
     @Test
@@ -685,8 +718,8 @@ class CallManagerTest {
 
 private data class SystemCallKind(
     val name: String,
-    val userId: Long,
+    val address: String,
     val isOutgoing: Boolean,
 )
 
-private fun FakeSystemCall.kind() = SystemCallKind(request.displayName, request.userId, request.isOutgoing)
+private fun FakeSystemCall.kind() = SystemCallKind(request.displayName, request.address, request.isOutgoing)

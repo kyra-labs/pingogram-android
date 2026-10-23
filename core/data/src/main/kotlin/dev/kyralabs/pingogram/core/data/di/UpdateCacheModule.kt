@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
@@ -75,6 +76,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun callCache(repository: TdlibCallRepository): TdlibUpdateCache
+
+    /** TDLib announces a chat's voice chat with the chat, and group calls and their participants only by updates. */
+    @Binds
+    @IntoSet
+    fun groupCallCache(repository: TdlibGroupCallRepository): TdlibUpdateCache
 
     @Binds
     @IntoSet
