@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui
+package dev.kyralabs.pingogram.core.ui.phone
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -42,26 +43,69 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.domain.model.Country
+import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
-import dev.kyralabs.pingogram.feature.auth.R
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.drop
-import dev.kyralabs.pingogram.core.ui.R as UiR
+
+/** A country in the phone number field and the country picker. */
+@Immutable
+data class CountryUiModel(
+    val isoCode: String,
+    val name: String,
+    val flagEmoji: String,
+    /** The main calling code, without `+`. */
+    val callingCode: String,
+)
+
+/**
+ * The open country picker: [countries] are the visible countries matching [query]; [selectedIsoCode] is the country
+ * of the phone number field, shown selected.
+ */
+@Immutable
+data class CountryPickerUiState(
+    val query: String,
+    val countries: ImmutableList<CountryUiModel>,
+    val selectedIsoCode: String? = null,
+)
+
+fun Country.toUiModel() = CountryUiModel(isoCode, name, flagEmoji, callingCodes.firstOrNull().orEmpty())
+
+/** The listed countries matching a picker query: by name, English name, ISO code or calling code. */
+fun List<Country>.matching(query: String): ImmutableList<CountryUiModel> =
+    query.trim().removePrefix("+").let { term ->
+        asSequence()
+            .filter { !it.isHidden }
+            .filter { country ->
+                term.isEmpty() ||
+                    country.name.contains(term, ignoreCase = true) ||
+                    country.englishName.contains(term, ignoreCase = true) ||
+                    country.isoCode.equals(term, ignoreCase = true) ||
+                    country.callingCodes.any { it.startsWith(term) }
+            }.map { it.toUiModel() }
+            .toImmutableList()
+    }
 
 /**
  * The searchable country list (FR-A2) in a full-height [ModalBottomSheet] (`docs/DESIGN_SYSTEM.md` §6): the search
  * bar's input field on its container, then the countries, the one of the phone number field selected and scrolled
- * into view. The sheet handles back and dismissal itself.
+ * into view. The sheet handles back and dismissal itself ([onDismiss]); a typed query goes to [onQueryChange], a
+ * picked country's ISO code to [onSelect].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CountryPickerSheet(
+fun CountryPickerSheet(
     state: CountryPickerUiState,
-    onEvent: (AuthEvent) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onSelect: (isoCode: String) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
     ModalBottomSheet(
-        onDismissRequest = { onEvent(AuthEvent.CloseCountryPicker) },
+        onDismissRequest = onDismiss,
         sheetState =
             rememberBottomSheetState(
                 SheetValue.Hidden,
@@ -70,11 +114,11 @@ internal fun CountryPickerSheet(
     ) {
         Column(modifier = Modifier.padding(horizontal = spacing.windowMarginCompact)) {
             Text(
-                text = stringResource(R.string.auth_country_choose),
+                text = stringResource(R.string.phone_country_choose),
                 style = MaterialTheme.typography.titleLargeEmphasized,
                 modifier = Modifier.semantics { heading() },
             )
-            CountrySearchField(query = state.query, onQueryChange = { onEvent(AuthEvent.CountryQueryChanged(it)) })
+            CountrySearchField(query = state.query, onQueryChange = onQueryChange)
         }
         val motion = MaterialTheme.motionScheme
         val listState =
@@ -87,7 +131,7 @@ internal fun CountryPickerSheet(
                 CountryItem(
                     country = country,
                     selected = country.isoCode == state.selectedIsoCode,
-                    onClick = { onEvent(AuthEvent.CountrySelected(country.isoCode)) },
+                    onClick = { onSelect(country.isoCode) },
                     // Filtering moves rows: placement on the default spatial spring, fades on the effects springs (§5).
                     modifier =
                         Modifier.animateItem(
@@ -100,7 +144,7 @@ internal fun CountryPickerSheet(
             if (state.countries.isEmpty()) {
                 item(contentType = CONTENT_TYPE_EMPTY) {
                     Text(
-                        text = stringResource(R.string.auth_country_none),
+                        text = stringResource(R.string.phone_country_none),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(spacing.windowMarginCompact),
@@ -134,15 +178,15 @@ private fun CountrySearchField(
             searchBarState = rememberSearchBarState(),
             onSearch = { keyboard?.hide() },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.auth_country_search)) },
-            leadingIcon = { Icon(painterResource(UiR.drawable.ic_search), contentDescription = null) },
+            placeholder = { Text(stringResource(R.string.phone_country_search)) },
+            leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
             trailingIcon =
                 if (text.text.isNotEmpty()) {
                     {
                         IconButton(onClick = { text.clearText() }, shapes = IconButtonDefaults.shapes()) {
                             Icon(
-                                painter = painterResource(UiR.drawable.ic_close),
-                                contentDescription = stringResource(R.string.auth_country_search_clear),
+                                painter = painterResource(R.drawable.ic_close),
+                                contentDescription = stringResource(R.string.phone_country_search_clear),
                             )
                         }
                     }

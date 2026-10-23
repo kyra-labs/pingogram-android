@@ -16,6 +16,9 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
+import dev.kyralabs.pingogram.core.ui.time.timeLeft
+import dev.kyralabs.pingogram.core.ui.time.wholeSecondsRoundedUp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -191,40 +194,12 @@ class AuthViewModel internal constructor(
     }
 
     private fun onCallingCodeChanged(input: String) {
-        val digits = input.filter(Char::isDigit)
-        // More digits than any calling code: a whole international number was typed or pasted here.
-        val isWholeNumber = digits.length > MAX_CALLING_CODE_DIGITS
-        val split = if (isWholeNumber) splitInternationalNumber(digits, model.phone.countries) else null
-        updatePhone { phone ->
-            val callingCode = split?.first ?: digits.take(MAX_CALLING_CODE_DIGITS)
-            phone.copy(
-                callingCode = callingCode,
-                number = (split?.second ?: phone.number).take(MAX_PHONE_NUMBER_DIGITS - callingCode.length),
-                countryIso = countryForCallingCode(callingCode, phone.country, phone.countries)?.isoCode,
-                error = null,
-                isCountryDetected = true,
-            )
-        }
+        updatePhone { it.withCallingCodeInput(input) }
         requestPhoneNumberInfo()
     }
 
     private fun onPhoneNumberChanged(input: String) {
-        val digits = input.filter(Char::isDigit)
-        val isInternational = input.trimStart().startsWith('+')
-        val split = if (isInternational) splitInternationalNumber(digits, model.phone.countries) else null
-        updatePhone { phone ->
-            if (split != null) {
-                phone.copy(
-                    callingCode = split.first,
-                    number = split.second,
-                    countryIso = countryForCallingCode(split.first, phone.country, phone.countries)?.isoCode,
-                    error = null,
-                    isCountryDetected = true,
-                )
-            } else {
-                phone.copy(number = digits.take(MAX_PHONE_NUMBER_DIGITS - phone.callingCode.length), error = null)
-            }
-        }
+        updatePhone { it.withNumberInput(input) }
         requestPhoneNumberInfo()
     }
 
@@ -238,25 +213,14 @@ class AuthViewModel internal constructor(
     }
 
     private fun onCountrySelected(isoCode: String) {
-        val country = model.phone.countries.find { it.isoCode == isoCode } ?: return
-        val callingCode = country.callingCodes.firstOrNull().orEmpty()
-        updatePhone {
-            it.copy(
-                countryIso = isoCode,
-                callingCode = callingCode,
-                number = it.number.take(MAX_PHONE_NUMBER_DIGITS - callingCode.length),
-                isPickerOpen = false,
-                pickerQuery = "",
-                error = null,
-                isCountryDetected = true,
-            )
-        }
+        if (model.phone.countries.none { it.isoCode == isoCode }) return
+        updatePhone { it.withCountry(isoCode) }
         requestPhoneNumberInfo()
     }
 
     private fun submitPhoneNumber() {
         val phone = model.phone
-        if (!isPlausiblePhoneNumber(phone.callingCode, phone.number)) {
+        if (!phone.isPlausible) {
             updatePhone { it.copy(error = DomainError.PhoneNumberInvalid) }
             return
         }
@@ -319,21 +283,11 @@ class AuthViewModel internal constructor(
      * out, but never over what the user typed or picked.
      */
     private fun detectCountry() {
-        val phone = model.phone
-        val wanted = !phone.isCountryDetected && phone.callingCode.isEmpty() && phone.countries.isNotEmpty()
-        if (!wanted || countryDetectionJob?.isActive == true) return
+        if (!model.phone.wantsDetectedCountry || countryDetectionJob?.isActive == true) return
         countryDetectionJob =
             viewModelScope.launch {
                 val isoCode = countryRepository.currentCountryCode().getOrNull() ?: return@launch
-                updatePhone { current ->
-                    val country = current.countries.find { it.isoCode.equals(isoCode, ignoreCase = true) }
-                    if (country == null || current.callingCode.isNotEmpty()) {
-                        current.copy(isCountryDetected = true)
-                    } else {
-                        val callingCode = country.callingCodes.firstOrNull().orEmpty()
-                        current.copy(isCountryDetected = true, countryIso = country.isoCode, callingCode = callingCode)
-                    }
-                }
+                updatePhone { it.withDetectedCountry(isoCode) }
                 requestPhoneNumberInfo()
             }
     }
@@ -724,7 +678,8 @@ class AuthViewModel internal constructor(
         savedStateHandle.saveAuthModel(model)
     }
 
-    private fun updatePhone(transform: (PhoneForm) -> PhoneForm) = update { it.copy(phone = transform(it.phone)) }
+    private fun updatePhone(transform: (PhoneNumberForm) -> PhoneNumberForm) =
+        update { it.copy(phone = transform(it.phone)) }
 
     private fun updateCode(transform: (CodeForm) -> CodeForm) = update { it.copy(code = transform(it.code)) }
 

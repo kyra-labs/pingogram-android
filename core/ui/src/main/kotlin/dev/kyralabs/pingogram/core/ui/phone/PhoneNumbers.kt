@@ -1,18 +1,24 @@
-package dev.kyralabs.pingogram.feature.auth.ui
+package dev.kyralabs.pingogram.core.ui.phone
 
+// Phone number entry, shared by sign-in and changing the number in Settings (`REQUIREMENTS.md` FR-A2, FR-S1).
+
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import dev.kyralabs.pingogram.core.domain.model.Country
 
 /** E.164: at most 15 digits, calling code included. */
-internal const val MAX_PHONE_NUMBER_DIGITS = 15
+const val MAX_PHONE_NUMBER_DIGITS = 15
 
 /** The shortest numbers in use: a 3-digit calling code and a 4-digit subscriber number (e.g. Niue, +683). */
-internal const val MIN_PHONE_NUMBER_DIGITS = 7
+const val MIN_PHONE_NUMBER_DIGITS = 7
 
 /** Calling codes have up to 3 digits; Telegram lists some with a regional prefix, e.g. `1684`. */
-internal const val MAX_CALLING_CODE_DIGITS = 4
+const val MAX_CALLING_CODE_DIGITS = 4
 
 /** Whether a calling code and a national number can form a valid E.164 number. */
-internal fun isPlausiblePhoneNumber(
+fun isPlausiblePhoneNumber(
     callingCode: String,
     number: String,
 ): Boolean =
@@ -22,7 +28,7 @@ internal fun isPlausiblePhoneNumber(
  * Splits the digits of an international number into calling code and national number, by the longest calling code
  * of [countries] it starts with; null if none matches.
  */
-internal fun splitInternationalNumber(
+fun splitInternationalNumber(
     digits: String,
     countries: List<Country>,
 ): Pair<String, String>? =
@@ -34,7 +40,7 @@ internal fun splitInternationalNumber(
         ?.let { code -> code to digits.removePrefix(code).take(MAX_PHONE_NUMBER_DIGITS - code.length) }
 
 /** [current] if it has [callingCode], otherwise the first listed country that has it. */
-internal fun countryForCallingCode(
+fun countryForCallingCode(
     callingCode: String,
     current: Country?,
     countries: List<Country>,
@@ -49,7 +55,7 @@ internal fun countryForCallingCode(
  * The grouping of TDLib's formatted national number (`7911 12- ---`): every digit or `-` becomes a `-` slot, other
  * characters are separators. Null when it has no slots.
  */
-internal fun numberFormatOf(formattedNumber: String): String? =
+fun numberFormatOf(formattedNumber: String): String? =
     formattedNumber
         .map { if (it.isDigit() || it == '-') '-' else it }
         .joinToString("")
@@ -57,7 +63,7 @@ internal fun numberFormatOf(formattedNumber: String): String? =
         .takeIf { '-' in it }
 
 /** A national number laid out by a number format, and where each digit ended up. */
-internal class FormattedNumber(
+class FormattedNumber(
     val text: String,
     /** The index in [text] of each digit of the number. */
     val digitPositions: IntArray,
@@ -74,7 +80,7 @@ internal class FormattedNumber(
  * Lays out [digits] by [format] ([numberFormatOf]): separators go between digits, never after the last one, and
  * digits beyond the format are appended as they are.
  */
-internal fun formatNationalNumber(
+fun formatNationalNumber(
     digits: String,
     format: String?,
 ): FormattedNumber {
@@ -98,8 +104,18 @@ internal fun formatNationalNumber(
     return FormattedNumber(text.toString(), positions)
 }
 
-/** A loose check before asking Telegram: one `@` with something on both sides, and no spaces. */
-internal fun isPlausibleEmailAddress(address: String): Boolean {
-    val at = address.indexOf('@')
-    return at > 0 && at == address.lastIndexOf('@') && at < address.lastIndex && address.none { it.isWhitespace() }
+/** Shows the national number grouped by TDLib's format ([numberFormatOf]) while the state keeps digits only. */
+data class PhoneNumberVisualTransformation(
+    private val format: String?,
+) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val formatted = formatNationalNumber(text.text, format)
+        val offsets =
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int) = formatted.transformedOffset(offset)
+
+                override fun transformedToOriginal(offset: Int) = formatted.originalOffset(offset)
+            }
+        return TransformedText(AnnotatedString(formatted.text), offsets)
+    }
 }

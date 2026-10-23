@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui.components
+package dev.kyralabs.pingogram.core.ui.time
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

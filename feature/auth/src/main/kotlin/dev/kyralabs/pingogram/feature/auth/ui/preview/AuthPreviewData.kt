@@ -5,13 +5,13 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.codeLength
+import dev.kyralabs.pingogram.core.ui.phone.CountryPickerUiState
+import dev.kyralabs.pingogram.core.ui.phone.CountryUiModel
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.feature.auth.ui.AuthAction
 import dev.kyralabs.pingogram.feature.auth.ui.AuthScreen
 import dev.kyralabs.pingogram.feature.auth.ui.AuthStepUiState
 import dev.kyralabs.pingogram.feature.auth.ui.AuthUiState
-import dev.kyralabs.pingogram.feature.auth.ui.CountryPickerUiState
-import dev.kyralabs.pingogram.feature.auth.ui.CountryUiModel
 import dev.kyralabs.pingogram.feature.auth.ui.EmailResetUiState
 import kotlinx.collections.immutable.persistentListOf
 
