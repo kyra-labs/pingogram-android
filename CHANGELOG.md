@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
 ### Added
 - Keyboard and mouse on tablets, Chromebooks and DeX: press Tab to move through the chat list and the conversation,
   and Enter on a chat to open it with the cursor in the message field; Esc goes back to the chat list without closing
@@ -54,16 +56,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   chats the encryption key now opens from the self-destruct timer's sheet, as the top bar holds search and the timer.
 - A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
   unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
-
-### Changed
-- Tapping the title of Saved Messages opens your own profile, with its shared media and "Export chat".
-- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
-  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
-  widget a few seconds after the start instead of while the chats load.
-
-## [0.5.0] - 2026-10-23
-
-### Added
 - Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
   switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
   bot keeps on screen come back whenever your phone's keyboard closes. A button can send its text, share your phone
@@ -104,8 +96,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Four emojis show when the call is end-to-end encrypted: if the other person sees the same ones, nobody is listening
   in. Calls work with your headset's buttons, your car and your watch, and a phone call puts a Pingogram call on hold.
   Pingogram asks for the microphone before your first call, and on Android 12 and later for your Bluetooth headsets.
-- Someone who calls you with video reaches you as a voice call: Pingogram has no video calls yet, and the call screen
-  says you're talking with audio only.
 - Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
   "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
@@ -121,6 +111,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   in Android's app languages once 80% of the app is translated; the rest shows in English.
 
 ### Changed
+- Tapping the title of Saved Messages opens your own profile, with its shared media and "Export chat".
+- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
+  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
+  widget a few seconds after the start instead of while the chats load.
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
   scrolling, and flinging back, has less to do in each frame.
 
