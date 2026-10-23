@@ -366,6 +366,10 @@ private fun ChatScreenBottomBar(
                     onEvent(ChatEvent.SendSticker(sticker))
                     onSent(SendOptions())
                 },
+                onSendAnimation = { animation ->
+                    onEvent(ChatEvent.SendAnimation(animation))
+                    onSent(SendOptions())
+                },
                 onJoin = { onEvent(ChatEvent.JoinChat) },
                 bots = bots,
                 inline = inline,

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -47,6 +48,7 @@ class FakeAttachmentRepository : AttachmentRepository {
 
     /** The sticker, options and reply of every [sendSticker] call. */
     val sentStickers = mutableListOf<Triple<Sticker, SendOptions, Long?>>()
+    val sentAnimations = mutableListOf<Triple<Animation, SendOptions, Long?>>()
     var onSendSticker: suspend (Sticker) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     val sentPolls = mutableListOf<SentPoll>()
@@ -121,6 +123,16 @@ class FakeAttachmentRepository : AttachmentRepository {
     ): Outcome<Unit> {
         sentStickers += Triple(sticker, options, replyToMessageId)
         return onSendSticker(sticker)
+    }
+
+    override suspend fun sendAnimation(
+        chatId: Long,
+        animation: Animation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> {
+        sentAnimations += Triple(animation, options, replyToMessageId)
+        return Outcome.Success(Unit)
     }
 
     override suspend fun sendPoll(

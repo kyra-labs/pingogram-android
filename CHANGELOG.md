@@ -46,6 +46,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   replies; Wear OS watches show them with Reply and Mark as read, as before (`docs/ANDROID_AUTO.md`).
 - Send with Ctrl+Enter: Settings → Appearance → Chats can make Ctrl+Enter send a message from a hardware keyboard, Enter
   then starting a new line.
+- GIFs in the sticker panel: a third tab shows your saved GIFs and searches GIFs as you type, through the bot
+  Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

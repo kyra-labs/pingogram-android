@@ -664,6 +664,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`ChatEvent.SendSticker` → `ChatAttachments` → `AttachmentRepository.sendSticker`), so it takes the composer's reply
   along. The panel takes the keyboard's place (`ComposerPanelState`, `PanelArea`): it takes the keyboard's last height
   and stays until the keyboard is fully up, read from the IME insets in the layout phase, so switching moves nothing.
+  The GIF tab (`PanelGifs`, a part of `EmojiPanelViewModel`, which takes the chat's id for it) reads
+  `SavedGifRepository` (`TdlibSavedGifRepository`, `core:data`, no cache: `getSavedAnimations`, read again on
+  `updateSavedAnimations`; `removeSavedAnimation`) and searches through the bot Telegram names for it (the option
+  `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
+  first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
+  `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
+  stays above it instead of giving way.
 - Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
   DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
   Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`

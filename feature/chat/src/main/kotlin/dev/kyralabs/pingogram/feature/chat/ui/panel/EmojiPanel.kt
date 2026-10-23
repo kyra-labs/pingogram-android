@@ -62,6 +62,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
@@ -80,17 +81,19 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The emoji and sticker panel (`REQUIREMENTS.md` FR-C5, `docs/DESIGN_SYSTEM.md` §6), in the keyboard's place below the
- * composer, on the composer's `surfaceContainer`: the open tab's content, and below it the tabs (Emoji, Stickers) as a
- * connected [ButtonGroupDefaults] pair of [ToggleButton]s, with the backspace key at the end on the emoji tab. The tab
- * stays across rotations ([initialTab] first); without stickers ([showStickers] false, while editing a message) only
- * emoji show.
+ * composer, on the composer's `surfaceContainer`: the open tab's content, and below it the tabs (Emoji, Stickers,
+ * GIFs) as a connected [ButtonGroupDefaults] group of [ToggleButton]s, with the backspace key at the end on the emoji
+ * tab. The tab stays across rotations ([initialTab] first); without stickers and GIFs ([showStickers] false, while
+ * editing) only emoji show.
  *
  * - **Emoji** ([EmojiTabContent]): a row of category buttons over a grid in sections, recent emoji first. Tapping one
  *   puts it into the text ([onEmoji]) with a keyboard tap haptic.
  * - **Stickers** ([StickerTabContent]): a row of sections (favorites, recent, each set by its picture) over a grid of
  *   stickers; tapping one sends it ([onSticker]).
+ * - **GIFs** ([GifTabContent]): the saved GIFs, or a search's, as stills; tapping one sends it ([onGif]). Whether its
+ *   search field has the focus goes to [onSearchFocus], so the panel can stay above the keyboard.
  */
-@Suppress("LongParameterList") // What it shows, and where emoji, the backspace, stickers and loads go.
+@Suppress("LongParameterList") // What it shows, and where emoji, the backspace, stickers, GIFs and loads go.
 @Composable
 internal fun EmojiPanel(
     state: EmojiPanelUiState,
@@ -99,6 +102,8 @@ internal fun EmojiPanel(
     onSticker: (Sticker) -> Unit,
     onEvent: (EmojiPanelEvent) -> Unit,
     modifier: Modifier = Modifier,
+    onGif: (Animation) -> Unit = {},
+    onSearchFocus: (Boolean) -> Unit = {},
     showStickers: Boolean = true,
     initialTab: PanelTab = PanelTab.Emoji,
 ) {
@@ -109,6 +114,7 @@ internal fun EmojiPanel(
             when (shownTab) {
                 PanelTab.Emoji -> EmojiTabContent(state.emoji, onEmoji)
                 PanelTab.Stickers -> StickerTabContent(state.stickers, onSticker, onEvent)
+                PanelTab.Gifs -> GifTabContent(state.gifs, onGif, onEvent, onSearchFocus)
             }
         }
         PanelTabBar(shownTab, onSelect = { tab = it }, showStickers = showStickers, onBackspace = onBackspace)
@@ -119,6 +125,7 @@ internal fun EmojiPanel(
 internal enum class PanelTab {
     Emoji,
     Stickers,
+    Gifs,
 }
 
 /**
@@ -188,6 +195,7 @@ private val PanelTab.label: Int
         when (this) {
             PanelTab.Emoji -> R.string.panel_tab_emoji
             PanelTab.Stickers -> R.string.panel_tab_stickers
+            PanelTab.Gifs -> R.string.panel_tab_gifs
         }
 
 /**

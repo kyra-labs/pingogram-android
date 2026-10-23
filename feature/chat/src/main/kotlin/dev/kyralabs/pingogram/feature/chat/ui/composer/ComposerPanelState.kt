@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
@@ -19,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -36,8 +38,10 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.ui.theme.sizes
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanel
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
@@ -54,6 +58,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - [showKeyboard] asks for the keyboard back: the panel stays until the keyboard is fully up ([ComposerPanelEffects]),
  *   then leaves with nothing to see, the keyboard in its place.
  * - [close] removes it at once: back, a recording, selection mode, a composer that goes away.
+ * - While a field of its own has the focus ([searching]: the GIF tab's search), the keyboard comes up below it and the
+ *   panel stays, above the keyboard ([PanelArea]), instead of giving way to it.
  *
  * The same place shows a bot's keyboard ([content] [PanelContent.BotKeyboard], `BotReplyKeyboardPanel`), which back
  * closes unless the bot keeps it on screen ([closesOnBack] false).
@@ -77,6 +83,9 @@ internal class ComposerPanelState(
 
     var keyboardHeight by mutableIntStateOf(keyboardHeight)
         internal set
+
+    /** A field inside the open panel has the focus, so the keyboard types into the panel and does not replace it. */
+    var searching by mutableStateOf(false)
 
     /** The keyboard was asked for and the panel waits for it to be up. */
     var awaitsKeyboard by mutableStateOf(false)
@@ -102,6 +111,7 @@ internal class ComposerPanelState(
     fun close() {
         isOpen = false
         awaitsKeyboard = false
+        searching = false
     }
 
     companion object {
@@ -163,9 +173,15 @@ internal fun PanelButton(
     }
 }
 
+/** Where the panel's stickers ([onSticker]) and GIFs ([onAnimation]) go: sent into the conversation. */
+internal class PanelSends(
+    val onSticker: (Sticker) -> Unit,
+    val onAnimation: (Animation) -> Unit,
+)
+
 /**
  * The emoji and sticker panel ([EmojiPanel], showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its
- * emoji go into [text] at the cursor, its stickers to [onSendSticker] (shown only with [showStickers]), and what it
+ * emoji go into [text] at the cursor, its stickers and GIFs to [sends] (shown only with [showStickers]), and what it
  * loads goes to [onPanelEvent].
  */
 @Suppress("LongParameterList") // The panel's state and place, the text it types into, and where its events go.
@@ -175,7 +191,7 @@ internal fun ComposerEmojiPanel(
     panel: EmojiPanelUiState,
     text: ComposerText,
     onPanelEvent: (EmojiPanelEvent) -> Unit,
-    onSendSticker: (Sticker) -> Unit,
+    sends: PanelSends,
     showStickers: Boolean,
 ) {
     PanelArea(panelState) {
@@ -186,7 +202,9 @@ internal fun ComposerEmojiPanel(
                 onPanelEvent(EmojiPanelEvent.EmojiPicked(emoji))
             },
             onBackspace = text::deleteBackward,
-            onSticker = onSendSticker,
+            onSticker = sends.onSticker,
+            onGif = sends.onAnimation,
+            onSearchFocus = { panelState.searching = it },
             onEvent = onPanelEvent,
             modifier = Modifier.fillMaxSize(),
             showStickers = showStickers,
@@ -206,17 +224,39 @@ internal fun PanelArea(
     content: @Composable () -> Unit,
 ) {
     val bottom = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
-    val insets = if (panel.isOpen) bottom.union(WindowInsets(bottom = panelHeight(panel))) else bottom
+    val insets =
+        when {
+            !panel.isOpen -> bottom
+            panel.searching -> bottom.add(WindowInsets(bottom = searchBandHeight())).union(panelInsets(panel))
+            else -> bottom.union(panelInsets(panel))
+        }
     Box(Modifier.fillMaxWidth().windowInsetsBottomHeight(insets)) {
         if (panel.isOpen) {
-            Box(
-                Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
-            ) {
+            // Searching, the keyboard comes up below the panel's own field: the content stays above it.
+            val below = if (panel.searching) bottom else WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
+            Box(Modifier.fillMaxSize().windowInsetsPadding(below)) {
                 content()
             }
         }
     }
 }
+
+@Composable
+private fun panelInsets(panel: ComposerPanelState): WindowInsets = WindowInsets(bottom = panelHeight(panel))
+
+/**
+ * What a search inside the panel keeps above the keyboard, in pixels: its field and a row of results (the GIF tab's
+ * search bar, `sizes.sharedMediaCell`), with their padding.
+ */
+@Composable
+private fun searchBandHeight(): Int =
+    with(LocalDensity.current) {
+        (
+            SearchBarDefaults.InputFieldHeight +
+                MaterialTheme.sizes.sharedMediaCell +
+                MaterialTheme.spacing.small * 2
+        ).roundToPx()
+    }
 
 /**
  * How tall the open panel is, in pixels, from the bottom of the window: the keyboard's last height, or, before the
@@ -249,9 +289,11 @@ internal fun ComposerPanelEffects(
     val imeTarget = WindowInsets.imeAnimationTarget
     val density = LocalDensity.current
     LaunchedEffect(panel, ime, imeTarget, density) {
-        snapshotFlow { ime.getBottom(density) to imeTarget.getBottom(density) }.collect { (height, target) ->
-            // Fully up: the animation reached its target. Not on the way down, when the target is 0.
-            if (height > 0 && height == target) {
+        val keyboard = snapshotFlow { Triple(ime.getBottom(density), imeTarget.getBottom(density), panel.searching) }
+        keyboard.collect { (height, target, searching) ->
+            // Fully up: the animation reached its target. Not on the way down, when the target is 0. A keyboard that
+            // types into the panel's own field is not taller than the panel's place and does not replace it.
+            if (height > 0 && height == target && !searching) {
                 panel.keyboardHeight = height
                 if (panel.isOpen) panel.close()
             }

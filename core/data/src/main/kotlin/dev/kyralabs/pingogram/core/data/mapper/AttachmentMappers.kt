@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
@@ -98,6 +99,15 @@ internal fun DeviceLocation.toInputMessageLocation(): TdApi.InputMessageLocation
 
 /** td_api.tl `location.horizontal_accuracy`: 0–1500 m. */
 private const val MAX_HORIZONTAL_ACCURACY = 1500.0
+
+/** `inputMessageAnimation` of a GIF TDLib knows by its file id, without a caption. */
+internal fun Animation.toInputMessageAnimation(): TdApi.InputMessageAnimation =
+    TdApi.InputMessageAnimation(
+        TdApi.InputAnimation(TdApi.InputFileId(file.id), null, intArrayOf(), duration, width, height),
+        TdApi.FormattedText("", emptyArray()),
+        false,
+        false,
+    )
 
 /**
  * `inputMessageSticker` of a sticker TDLib already knows (from a sticker set, the recent or the favorite ones): its

@@ -109,7 +109,10 @@ internal fun ConversationRoute(
             it.create(chatId, messageId, topic)
         },
     locationViewModel: ShareLocationViewModel = hiltViewModel(key = "location-$chatId"),
-    panelViewModel: EmojiPanelViewModel = hiltViewModel(key = "emoji-panel-$chatId"),
+    panelViewModel: EmojiPanelViewModel =
+        hiltViewModel<EmojiPanelViewModel, EmojiPanelViewModel.Factory>(key = "emoji-panel-$chatId") {
+            it.create(chatId)
+        },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
