@@ -14,6 +14,8 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
  *   after the formatted word.
  * - Text that replaces a part of an entity takes its formatting: an autocorrected word stays bold.
  * - A replacement that only overlaps an entity cuts it back to the part that stays; one that covers it removes it.
+ * - A custom emoji is whole or gone: an edit inside it or over a part of it removes it, as half an emoji, or one with
+ *   text typed into it, is no custom emoji.
  */
 internal fun List<TextEntity>.afterReplace(
     start: Int,
@@ -21,23 +23,45 @@ internal fun List<TextEntity>.afterReplace(
     length: Int,
 ): List<TextEntity> {
     val delta = length - (end - start)
-    return mapNotNull { entity ->
-        val entityStart = entity.offset
-        val entityEnd = entity.offset + entity.length
-        val (newStart, newEnd) =
-            when {
-                start == end && start <= entityStart -> entityStart + delta to entityEnd + delta
-                start == end && start < entityEnd -> entityStart to entityEnd + delta
-                end <= entityStart && start < end -> entityStart + delta to entityEnd + delta
-                start >= entityEnd -> entityStart to entityEnd
-                entityStart <= start && end <= entityEnd -> entityStart to entityEnd + delta
-                start < entityStart && end < entityEnd -> start + length to entityEnd + delta
-                entityStart < start -> entityStart to start
-                else -> return@mapNotNull null
-            }
-        entity.copy(offset = newStart, length = newEnd - newStart).takeIf { it.length > 0 }
-    }.sortedForText()
+    return withoutCutCustomEmoji(start, end)
+        .mapNotNull { entity ->
+            val entityStart = entity.offset
+            val entityEnd = entity.offset + entity.length
+            val (newStart, newEnd) =
+                when {
+                    start == end && start <= entityStart -> entityStart + delta to entityEnd + delta
+                    start == end && start < entityEnd -> entityStart to entityEnd + delta
+                    end <= entityStart && start < end -> entityStart + delta to entityEnd + delta
+                    start >= entityEnd -> entityStart to entityEnd
+                    entityStart <= start && end <= entityEnd -> entityStart to entityEnd + delta
+                    start < entityStart && end < entityEnd -> start + length to entityEnd + delta
+                    entityStart < start -> entityStart to start
+                    else -> return@mapNotNull null
+                }
+            entity.copy(offset = newStart, length = newEnd - newStart).takeIf { it.length > 0 }
+        }.sortedForText()
 }
+
+/**
+ * These entities without the custom emoji whose inside replacing [start] until [end] changes: an insertion within
+ * one, or a replacement that overlaps it.
+ */
+private fun List<TextEntity>.withoutCutCustomEmoji(
+    start: Int,
+    end: Int,
+): List<TextEntity> =
+    filterNot { entity ->
+        val entityEnd = entity.offset + entity.length
+        val cut =
+            if (start ==
+                end
+            ) {
+                start in (entity.offset + 1)..<entityEnd
+            } else {
+                start < entityEnd && end > entity.offset
+            }
+        entity.type is TextEntityType.CustomEmoji && cut
+    }
 
 /**
  * These entities, made for [old], after the text became [new] without the composer seeing the edit (an undo, a

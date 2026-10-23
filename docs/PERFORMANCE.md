@@ -119,6 +119,21 @@ regresses by more than 10%.
   animating items at ≤ 30 fps; pause everything off-screen (a frame not drawn within 250 ms) and when the window
   loses focus; a new frame invalidates only the sticker's own layer; GIF/WebP via Coil's animated decoder with
   frame-rate cap 30 fps.
+- Custom emoji (`docs/adr/0022-custom-emoji-rendering.md`) go through the same pipeline: animated ones are decoded,
+  cached (first frames by sticker and size) and played by `AnimatedStickers`, and each custom emoji that plays counts
+  as one of the 8 animating items, sharing them with stickers (the same id twice in one text is one); still ones come
+  from Coil's memory cache at the emoji's size, also kept by the screen's `CustomEmojiRenderer` (128 bitmaps, the same
+  objects) so a text scrolling in shows them in its first frame. Nothing composes or lays out for them: the text keeps
+  its fallback emoji and its cached layout, `Modifier.customEmoji` finds the glyph boxes in it once per layout, clips
+  them out and draws the pictures in the text's own graphics layer, syncing its pictures when the text is placed or
+  the loaded custom emoji change (`observeReads`), not in composition; loading one recomposes no bubble
+  (`ChatRecompositionTest`). Only the ids of messages on screen are requested, at most every 100 ms while scrolling
+  (`ChatCustomEmoji`). Scroll cost on the JVM (`ChatScrollCostTest`, a third of 2,000 messages with two still custom
+  emoji, their pictures shown against the same texts with their fallback emoji only, three alternating pairs,
+  2026-10-23, the shared 4-core machine): P50 1.00–1.17 ms against 1.15–1.29 ms, P90 4.5–5.2 ms against 5.1–5.6 ms,
+  P99 7.5–8.7 ms against 8.7–9.6 ms, within the machine's noise. Syncing on every placement (`onPlaced`, every frame
+  of a scroll) had cost 11% at P90; the modifier syncs when the text is measured instead. Robolectric does not draw,
+  so the clip and the pictures' draw are measured on a phone only.
 - Composition tracing enabled in benchmark builds; compiler metrics (`-P …reportsDestination`)
   reviewed in PRs that touch `feature:chat`; any unstable class in UI state is a build error
   (custom `compose_compiler_config.conf` stability file).

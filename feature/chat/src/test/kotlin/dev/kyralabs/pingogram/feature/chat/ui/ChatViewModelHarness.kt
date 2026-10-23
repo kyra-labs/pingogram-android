@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
@@ -88,6 +89,7 @@ abstract class ChatViewModelHarness {
     protected val hiddenTranslateBars = FakeHiddenTranslateBarsRepository()
     internal val chatSearch = FakeChatSearchRepository()
     internal val groupMembers = FakeGroupInfoRepository()
+    protected val customEmoji = FakeCustomEmojiRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -150,6 +152,7 @@ abstract class ChatViewModelHarness {
                 translationRepositories =
                     TranslationRepositories(translations, languageDetector, appLanguage, hiddenTranslateBars),
                 searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
+                customEmojiRepository = customEmoji,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

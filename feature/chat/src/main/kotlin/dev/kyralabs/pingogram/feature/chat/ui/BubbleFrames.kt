@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.AlignmentLine
@@ -32,6 +33,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
+import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
+import dev.kyralabs.pingogram.core.ui.text.customEmoji
+import dev.kyralabs.pingogram.core.ui.text.customEmojiText
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -209,7 +214,8 @@ internal fun WithFooter(
 
 /**
  * Emoji only: the 1 to 3 emoji in `displaySmall`, without a bubble, the sender's name above them in group chats, the
- * time and state below them where [ChatItem.Bubble.showsTime] says.
+ * time and state below them where [ChatItem.Bubble.showsTime] says. Custom emoji show their pictures that large over
+ * their fallback emoji ([customEmoji]), repainted in `onSurface` where they take the text's color.
  */
 @Composable
 internal fun EmojiBubble(
@@ -224,11 +230,26 @@ internal fun EmojiBubble(
         horizontalAlignment = if (bubble.isOutgoing) Alignment.End else Alignment.Start,
     ) {
         BubbleHeader(bubble, colors, onEvent)
-        Text(
-            text = bubble.text.text,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.displaySmall,
-        )
+        val renderer = LocalCustomEmoji.current?.takeIf { bubble.text.entities.isNotEmpty() }
+        if (renderer == null) {
+            Text(
+                text = bubble.text.text,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.displaySmall,
+            )
+        } else {
+            val text = remember(bubble.text) { bubble.text.customEmojiText() }
+            val layout = remember { TextBlocksLayout() }
+            val color = MaterialTheme.colorScheme.onSurface
+            val tint = remember(color) { ColorProducer { color } }
+            Text(
+                text = text,
+                modifier = Modifier.customEmoji(renderer, layout, tint),
+                color = color,
+                style = MaterialTheme.typography.displaySmall,
+                onTextLayout = layout.onTextLayout,
+            )
+        }
         if (bubble.showsTime) SurfaceMeta(bubble)
     }
 }

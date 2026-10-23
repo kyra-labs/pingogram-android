@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
@@ -117,6 +118,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                         FakeHiddenTranslateBarsRepository(),
                     ),
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
+                customEmojiRepository = FakeCustomEmojiRepository(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

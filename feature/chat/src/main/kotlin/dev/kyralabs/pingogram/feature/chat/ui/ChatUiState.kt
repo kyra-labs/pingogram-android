@@ -263,8 +263,8 @@ sealed interface ChatItem {
      *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
      *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
      *   older pages bring in more of the album.
-     * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
-     *   link preview, reply or forward: shown large, without a bubble.
+     * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
+     *   without other formatting, link preview, reply or forward: shown large, without a bubble.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
      *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
@@ -468,7 +468,7 @@ sealed interface ReactionLabel {
         val emoji: String,
     ) : ReactionLabel
 
-    /** Custom emoji [customEmojiId], drawn as a placeholder until custom emoji are rendered. */
+    /** Custom emoji [customEmojiId], drawn as a placeholder until its picture is there. */
     data class CustomEmoji(
         val customEmojiId: Long,
     ) : ReactionLabel

@@ -10,6 +10,7 @@ import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,6 +27,9 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
+import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
@@ -72,7 +76,8 @@ import java.util.Locale
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), a secret chat's timer and
  * key ([SecretChatBottomSheet]), the bots' commands (`BotCommandsBottomSheet`), and the members whose messages the
- * search in the chat finds (`SearchSenderSheet`). While a secret chat is open, the
+ * search in the chat finds (`SearchSenderSheet`). Custom emoji draw through a [CustomEmojiRenderer]
+ * ([LocalCustomEmoji]) that follows the view model's. While a secret chat is open, the
  * window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
@@ -80,7 +85,12 @@ import java.util.Locale
  * navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's text field
  * takes the focus once it shows.
  */
-@Suppress("LongParameterList") // The chat and where in it, what it opens elsewhere, and its view models.
+@Suppress(
+    "LongParameterList", // The chat and where in it, what it opens elsewhere, and its view models.
+    // Wires the view models' state, effects and sheets in one place, the screen and its sheets in the provider of
+    // the custom emoji they draw.
+    "LongMethod",
+)
 @Composable
 internal fun ConversationRoute(
     chatId: Long,
@@ -134,29 +144,33 @@ internal fun ConversationRoute(
             launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
         },
     )
-    ChatScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        onBack = onBack,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        jumpState = jumpState,
-        composerText = viewModel.composerText,
-        composerFocus = composerFocus,
-        attach = attach,
-        recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
-        reportComment = viewModel.reportComment,
-        emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
-        onEmojiPanelEvent = panelViewModel::onEvent,
-        onOpenProfile = onOpenProfile,
-        onOpenChatInfo = onOpenChatInfo,
-        commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-        inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-        search = viewModel.searchState.collectAsStateWithLifecycle().value,
-        searchQuery = viewModel.searchQuery,
-        botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-    )
-    ChatSheets(viewModel)
+    // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
+    val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+        ChatScreen(
+            state = state,
+            onEvent = viewModel::onEvent,
+            onBack = onBack,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            jumpState = jumpState,
+            composerText = viewModel.composerText,
+            composerFocus = composerFocus,
+            attach = attach,
+            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+            reportComment = viewModel.reportComment,
+            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+            onEmojiPanelEvent = panelViewModel::onEvent,
+            onOpenProfile = onOpenProfile,
+            onOpenChatInfo = onOpenChatInfo,
+            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+            search = viewModel.searchState.collectAsStateWithLifecycle().value,
+            searchQuery = viewModel.searchQuery,
+            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+        )
+        ChatSheets(viewModel)
+    }
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
     SecureWindow(secure = state.header?.secret != null)
 }

@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibCustomEmojiRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
@@ -81,6 +82,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
@@ -302,4 +304,7 @@ interface RepositoryModule {
 
     @Binds
     fun deviceLanguageDetector(detector: AndroidDeviceLanguageDetector): DeviceLanguageDetector
+
+    @Binds
+    fun customEmojiRepository(repository: TdlibCustomEmojiRepository): CustomEmojiRepository
 }

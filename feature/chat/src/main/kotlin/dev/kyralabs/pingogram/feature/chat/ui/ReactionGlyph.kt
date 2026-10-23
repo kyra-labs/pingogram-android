@@ -13,14 +13,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiImage
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.feature.chat.ui.content.TdlibImage
 import dev.kyralabs.pingogram.feature.chat.ui.content.fadingOutAs
 import dev.kyralabs.pingogram.feature.chat.ui.content.rememberImageAlpha
 
 /**
- * A reaction's emoji in [style]; the star of the paid reaction; for a custom emoji its picture, TDLib file
- * [customEmojiPicture], as large as an emoji of [style], or, without one or until it fades in, a dot of
- * [customEmojiSize] in [placeholderColor]. Custom emoji are not animated: that comes with the sticker renderer.
+ * A reaction's emoji in [style]; the star of the paid reaction; for a custom emoji its picture as large as an emoji of
+ * [style]: TDLib file [customEmojiPicture] where the caller has it, still, else through the screen's
+ * [LocalCustomEmoji], animated as in texts and in [contentColor] where it takes the text's color; without either, or
+ * until it shows, a dot of [customEmojiSize] in [placeholderColor].
  */
 @Composable
 internal fun ReactionGlyph(
@@ -29,6 +32,7 @@ internal fun ReactionGlyph(
     customEmojiSize: Dp,
     placeholderColor: ColorProducer,
     customEmojiPicture: Int? = null,
+    contentColor: ColorProducer = placeholderColor,
 ) {
     when (label) {
         is ReactionLabel.Emoji -> {
@@ -40,10 +44,26 @@ internal fun ReactionGlyph(
         }
 
         is ReactionLabel.CustomEmoji -> {
-            if (customEmojiPicture == null) {
-                CustomEmojiPlaceholder(customEmojiSize, placeholderColor)
-            } else {
-                CustomEmojiPicture(customEmojiPicture, style, customEmojiSize, placeholderColor)
+            val renderer = LocalCustomEmoji.current
+            when {
+                customEmojiPicture != null -> {
+                    CustomEmojiPicture(customEmojiPicture, style, customEmojiSize, placeholderColor)
+                }
+
+                renderer != null -> {
+                    val side = with(LocalDensity.current) { style.fontSize.toDp() }
+                    CustomEmojiImage(
+                        renderer = renderer,
+                        customEmojiId = label.customEmojiId,
+                        tint = contentColor,
+                        modifier = Modifier.size(side),
+                        placeholder = { drawCircle(placeholderColor(), radius = customEmojiSize.toPx() / 2) },
+                    )
+                }
+
+                else -> {
+                    CustomEmojiPlaceholder(customEmojiSize, placeholderColor)
+                }
             }
         }
     }

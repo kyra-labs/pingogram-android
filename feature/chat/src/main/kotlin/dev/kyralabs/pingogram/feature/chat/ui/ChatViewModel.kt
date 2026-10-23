@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -33,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -180,6 +182,8 @@ import java.util.Locale
  * - **Automatic download** ([ChatAutoDownloads], `docs/PERFORMANCE.md` §7): under the rules of the current network
  *   ([AutoDownloadPolicy]), the files of the messages on screen download by themselves, and photos download in their
  *   bubbles or wait for a tap on their download button ([ChatUiState.mediaDownloads]).
+ * - **Custom emoji** ([ChatCustomEmoji]): those of the messages on screen and of the composer's text are loaded, for
+ *   the bubbles, reactions and composer to draw ([customEmoji], kept out of [uiState] like the forward sheet).
  * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
@@ -304,6 +308,7 @@ class ChatViewModel internal constructor(
     inlineBotRepositories: InlineBotRepositories,
     translationRepositories: TranslationRepositories,
     searchRepositories: ChatSearchRepositories,
+    customEmojiRepository: CustomEmojiRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -342,6 +347,7 @@ class ChatViewModel internal constructor(
         inlineBotRepositories: InlineBotRepositories,
         translationRepositories: TranslationRepositories,
         searchRepositories: ChatSearchRepositories,
+        customEmojiRepository: CustomEmojiRepository,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -377,6 +383,7 @@ class ChatViewModel internal constructor(
         inlineBotRepositories,
         translationRepositories,
         searchRepositories,
+        customEmojiRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -436,6 +443,14 @@ class ChatViewModel internal constructor(
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
 
     private val autoDownloads = ChatAutoDownloads(fileRepository, files, autoDownloadPolicy.rules, viewModelScope)
+
+    private val customEmojis = ChatCustomEmoji(customEmojiRepository, viewModelScope)
+
+    /**
+     * The custom emoji loaded so far, which the bubbles and the composer draw ([ChatCustomEmoji]); kept out of
+     * [uiState], so a newly loaded one recomposes nothing.
+     */
+    val customEmoji: StateFlow<ImmutableMap<Long, CustomEmoji>> get() = customEmojis.customEmoji
 
     private val views = MessageViews(chatId, thread.chats(chatRepository), viewModelScope, log)
 
@@ -950,6 +965,7 @@ class ChatViewModel internal constructor(
             recorder.start()
             views.start()
             autoDownloads.start()
+            customEmojis.start(composer.text)
             translation.start()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
@@ -1088,8 +1104,9 @@ class ChatViewModel internal constructor(
     }
 
     /**
-     * The messages the list shows go to TDLib as viewed, move the pinned messages bar (`ChatPinnedMessages`) and are
-     * translated while the chat's translation is on (`ChatTranslation`); the
+     * The messages the list shows go to TDLib as viewed, move the pinned messages bar (`ChatPinnedMessages`), are
+     * translated while the chat's translation is on (`ChatTranslation`) and have their custom emoji loaded
+     * ([ChatCustomEmoji]); the
      * newest of them is kept in the [SavedStateHandle], which the conversation opens around after process death
      * ([ChatWindow]).
      */
@@ -1103,7 +1120,9 @@ class ChatViewModel internal constructor(
                 .firstOrNull()
                 ?.messages
                 .orEmpty()
-        autoDownloads.setVisible(messages.filter { it.id in messageIds }.map { it.content })
+        val shown = messages.filter { it.id in messageIds }
+        autoDownloads.setVisible(shown.map { it.content })
+        customEmojis.setVisible(shown)
     }
 
     /** Finds the chat again if that failed, and opens again or loads the pages that failed ([ChatWindow.retry]). */
