@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android Auto shows Pingogram's conversation notifications, reads them aloud and takes voice replies
+     (docs/ANDROID_AUTO.md). Notifications only: Pingogram has no screen of its own in the car. -->
+<automotiveApp>
+    <uses name="notification" />
+</automotiveApp>
