@@ -35,6 +35,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   video call keeps it going in picture-in-picture, with Hang up. On mobile data, when roaming or with Data Saver your
   camera sends a smaller picture, and so it does after the connection was lost once in the call. (Video call buttons
   in conversations and profiles come next; until then, turn the camera on during a call.)
+- Custom emoji: messages show the custom emoji people send, animated ones playing, in place of the regular emoji they
+  stand for, which shows until the picture is there and is what you copy or hear with a screen reader. A message of
+  only one to three custom emoji shows them large; single-color ones take the text's color. Reactions show theirs too,
+  and so does the text field when you edit a message or open a draft that has some. Pingogram loads only those on
+  screen, and offers no custom emoji of its own to add.
 - Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
   Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
   "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages

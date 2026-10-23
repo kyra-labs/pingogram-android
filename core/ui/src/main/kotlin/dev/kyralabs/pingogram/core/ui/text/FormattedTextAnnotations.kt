@@ -30,8 +30,10 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
  *   without a scheme, `mailto:`, `tel:`), which `Text` opens with `LocalUriHandler` unless [onLinkClick] handles them.
  * - **Mentions** (`@username`) and mention names (a user without a username) are colored and, with [onMentionClick],
  *   [LinkAnnotation.Clickable]s whose tag names who they mention ([mentionTarget]): the profile opens from them.
- *   Hashtags, cashtags, bot commands and media timestamps are colored; tapping them does nothing yet. Custom emoji
- *   show the regular emoji the text holds for them; dates stay as written.
+ *   Hashtags, cashtags, bot commands and media timestamps are colored; tapping them does nothing yet. Dates stay as
+ *   written.
+ * - **Custom emoji** keep the regular emoji the text holds for them, marked with [CUSTOM_EMOJI_TAG] annotations (their
+ *   ids), over which [customEmoji] draws their pictures.
  * - **Spoilers** are hidden as blocks of [FormattedTextStyles.spoilerColor] until [spoilersRevealed]; tapping a hidden
  *   one calls [onSpoilerClick] (a [LinkAnnotation.Clickable] tagged [SPOILER_TAG]), and links inside it stay inert.
  * - **Blocks**: with [drawsBlocks], code, pre blocks and hidden spoilers get no span background. They are marked with
@@ -72,6 +74,7 @@ fun FormattedText.toAnnotatedString(
                     addLink(LinkAnnotation.Url(url, linkStyles, onLinkClick), range.start, range.end)
                 }
                 if (shown) addMention(range, text, mentionStyles, onMentionClick)
+                addCustomEmoji(range.type, range.start, range.end)
             }
             addDecorations(ranges)
             // Last, so that a hidden spoiler covers every other style within it.

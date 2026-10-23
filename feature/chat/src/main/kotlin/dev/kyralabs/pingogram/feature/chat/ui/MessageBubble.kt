@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -36,7 +37,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
+import dev.kyralabs.pingogram.core.ui.text.customEmoji
+import dev.kyralabs.pingogram.core.ui.text.hasCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.hasTextBlocks
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
@@ -487,8 +491,10 @@ internal fun BubbleHeader(
  * `MaterialTheme.chatStyle`) with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
  * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
- * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its layout is kept in
- * [textLayout], for the bubble's layout to put the meta after its last line.
+ * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its custom emoji show
+ * their pictures over their fallback emoji ([customEmoji], from [LocalCustomEmoji]), drawn in the draw phase too, in
+ * the text's color where they take it. Its layout is kept in [textLayout], for the bubble's layout to put the meta
+ * after its last line.
  */
 @Composable
 private fun BubbleText(
@@ -512,7 +518,9 @@ private fun BubbleText(
         } else {
             remember(formatted, match, matchContent) { formatted.withMatches(match, matchContent) }
         }
-    if (text.hasTextBlocks()) {
+    val customEmoji = LocalCustomEmoji.current?.takeIf { text.hasCustomEmoji() }
+    val hasBlocks = text.hasTextBlocks()
+    if (hasBlocks || customEmoji != null) {
         val blocks = remember { TextBlocksLayout() }
         val onLayout =
             remember(blocks, textLayout) {
@@ -521,9 +529,10 @@ private fun BubbleText(
                     textLayout.result = result
                 }
             }
-        Text(
-            text = text,
-            modifier =
+        val content = style.colors.content
+        val tint = remember(content) { ColorProducer { content } }
+        val blocksModifier =
+            if (hasBlocks) {
                 Modifier.textBlocks(
                     layout = blocks,
                     codeColor = style.text.codeBackground,
@@ -531,8 +540,15 @@ private fun BubbleText(
                     shape = MaterialTheme.shapes.small,
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
                     matchColor = MaterialTheme.colorScheme.tertiary,
-                ),
-            color = style.colors.content,
+                )
+            } else {
+                Modifier
+            }
+        Text(
+            text = text,
+            // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
+            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint),
+            color = content,
             style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
         )

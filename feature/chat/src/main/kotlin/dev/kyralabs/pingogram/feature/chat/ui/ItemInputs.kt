@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageOrigin
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.ui.text.UiText
 
@@ -145,12 +146,13 @@ private fun memberIdsOf(content: MessageContent): List<Long> =
     }
 
 /**
- * Whether the message shows large, without a bubble: a text of only a few emoji ([isEmojiOnly]), without formatting,
- * link preview, reply or forward, which a bubble would have to hold.
+ * Whether the message shows large, without a bubble: a text of only a few emoji ([isEmojiOnly]), regular or custom
+ * ones, without other formatting, link preview, reply or forward, which a bubble would have to hold.
  */
 internal fun ItemInputs.showsLargeEmoji(
     content: MessageContent,
     text: FormattedText,
 ): Boolean =
-    content is MessageContent.Text && content.linkPreview == null && text.entities.isEmpty() && reply == null &&
+    content is MessageContent.Text && content.linkPreview == null && reply == null &&
+        text.entities.all { it.type is TextEntityType.CustomEmoji } &&
         message.forwardInfo == null && isEmojiOnly(text.text)

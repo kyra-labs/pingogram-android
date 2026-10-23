@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.Animation
+import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -77,6 +78,14 @@ internal fun TdApi.Sticker.toSticker(): Sticker? {
         thumbnail = thumbnail?.toThumbnail(),
         file = sticker.toFileRef(),
     )
+}
+
+/**
+ * This sticker as a [CustomEmoji]; null for a sticker of another kind, and one in a format added by a newer TDLib.
+ */
+internal fun TdApi.Sticker.toCustomEmoji(): CustomEmoji? {
+    val type = fullType as? TdApi.StickerFullTypeCustomEmoji ?: return null
+    return toSticker()?.let { CustomEmoji(type.customEmojiId, it, type.needsRepainting) }
 }
 
 internal fun TdApi.VideoNote.toVideoNote() =

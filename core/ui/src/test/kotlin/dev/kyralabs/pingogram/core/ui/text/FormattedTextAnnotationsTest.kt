@@ -220,6 +220,16 @@ class FormattedTextAnnotationsTest {
         assertTrue(annotated.links().isEmpty())
     }
 
+    @Test
+    fun `a custom emoji keeps its emoji, marked with its id for its picture`() {
+        val annotated = annotate("Hi 😀", "😀" to TextEntityType.CustomEmoji(customEmojiId = 42))
+
+        assertEquals("Hi 😀", annotated.text)
+        val marks = annotated.getStringAnnotations(CUSTOM_EMOJI_TAG, 0, annotated.length)
+        assertEquals(listOf(Triple("42", 3, 5)), marks.map { Triple(it.item, it.start, it.end) })
+        assertTrue(annotated.hasCustomEmoji())
+    }
+
     // Links
 
     @Test
