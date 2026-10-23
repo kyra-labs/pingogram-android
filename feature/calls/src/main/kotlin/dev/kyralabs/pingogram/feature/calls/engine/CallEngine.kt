@@ -49,10 +49,13 @@ interface CallSession {
     suspend fun setOnHold(onHold: Boolean)
 
     /**
-     * Sends [camera]'s video, or no video for null. The other side's engine learns it at once, as it learns the mute.
-     * Switching cameras is a new [camera]; NTgCalls opens it and closes the old one.
+     * Sends [camera]'s video at [quality], or no video for null. The other side's engine learns it at once, as it
+     * learns the mute. Switching cameras, or the quality, opens the camera again; NTgCalls closes the old one.
      */
-    suspend fun setCamera(camera: CallCamera?)
+    suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality = VideoQuality.High,
+    )
 
     /** Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. */
     val remoteVideo: StateFlow<RemoteVideo>
@@ -90,6 +93,26 @@ data class CallCamera(
     val isFront: Boolean,
     val metadata: String,
 )
+
+/**
+ * The most the camera sends: its size and frame rate. WebRTC lowers both by itself when the connection cannot carry
+ * them; this is the ceiling, chosen from the network (`CallManager`).
+ */
+@Suppress("MagicNumber") // The sizes and frame rates are the values themselves.
+enum class VideoQuality(
+    val width: Int,
+    val height: Int,
+    val fps: Int,
+) {
+    /** 720p at 30 frames a second, what Telegram's apps send. */
+    High(1280, 720, 30),
+
+    /** 480p at 24: mobile data, or a call whose connection was lost once. */
+    Medium(854, 480, 24),
+
+    /** 360p at 15: roaming, or Data Saver on. */
+    Low(640, 360, 15),
+}
 
 /** The other side's video. */
 enum class RemoteVideo {

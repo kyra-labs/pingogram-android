@@ -3,15 +3,23 @@ package dev.kyralabs.pingogram.feature.calls.ui
 import android.Manifest
 import android.app.KeyguardManager
 import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.Rect
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Rational
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -21,6 +29,8 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -30,6 +40,8 @@ import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
+import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -41,17 +53,34 @@ import javax.inject.Inject
  * (its full-screen intent, "Answer", a tap) and from Telecom.
  *
  * It closes itself once the call ended and was shown ([CallUiState.Closed]); back leaves it while the call goes on,
- * which the call's notification brings back.
+ * which the call's notification brings back. A video call goes on in picture-in-picture instead
+ * (`docs/adr/0019-video-and-group-calls-scope.md`): when the user leaves it (Home, back, "Back to the app"), its video
+ * keeps showing in a small window with "Hang up", which a tap brings back to full screen.
  */
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Android's callbacks and the window's: lock screen, picture-in-picture, settings, chat.
 class CallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
 
     private val viewModel: CallViewModel by viewModels()
 
+    private var inPictureInPicture by mutableStateOf(false)
+
+    /** Back during a video call: picture-in-picture, where the device allows it, instead of leaving. */
+    private val backToPictureInPicture =
+        object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                if (!enterPictureInPicture()) {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showOverLockScreen()
+        onBackPressedDispatcher.addCallback(this, backToPictureInPicture)
         val appearance =
             appearanceRepository.appearance.stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), null)
         setContent {
@@ -82,6 +111,8 @@ class CallActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
+            val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
+            LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->
                 CallTheme(appearanceSettings) {
                     CallScreen(
@@ -92,6 +123,7 @@ class CallActivity : ComponentActivity() {
                         onOpenSettings = ::openAppSettings,
                         onMessage = ::declineAndMessage,
                         video = video,
+                        pictureInPicture = inPictureInPicture,
                     )
                 }
             }
@@ -151,8 +183,79 @@ class CallActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    /** Back to the app while the call goes on: unlocking first if the screen is locked. */
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        inPictureInPicture = isInPictureInPictureMode
+    }
+
+    /** Leaving with Home: a video call goes on in picture-in-picture (Android 12+ enters it by itself). */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && videoShows()) enterPictureInPicture()
+    }
+
+    private fun videoShows() = (viewModel.uiState.value as? CallUiState.InCall)?.video?.shows == true
+
+    private fun canPictureInPicture() = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
+    /**
+     * The picture-in-picture window: the video's portrait shape, "Hang up" as its action, and on Android 12+ entered
+     * by itself on Home while [videoShows].
+     */
+    private fun pictureInPictureParams(videoShows: Boolean): PictureInPictureParams {
+        val hangUp =
+            RemoteAction(
+                Icon.createWithResource(this, R.drawable.ic_call_end_filled),
+                getString(R.string.call_hang_up),
+                getString(R.string.call_hang_up),
+                CallActionReceiver.pendingIntent(this, CallActionReceiver.ACTION_HANG_UP),
+            )
+        return PictureInPictureParams
+            .Builder()
+            .setAspectRatio(PICTURE_IN_PICTURE_SHAPE)
+            .setSourceRectHint(videoBounds())
+            .setActions(listOf(hangUp))
+            .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(videoShows) }
+            .build()
+    }
+
+    /**
+     * Where the video is, for the window's animation into picture-in-picture: it fills the window, so the window's
+     * middle in the picture-in-picture shape.
+     */
+    private fun videoBounds(): Rect {
+        val width = window.decorView.width
+        val height = window.decorView.height
+        val fitted = minOf(height, width * PICTURE_IN_PICTURE_SHAPE.denominator / PICTURE_IN_PICTURE_SHAPE.numerator)
+        val top = (height - fitted) / 2
+        return Rect(0, top, width, top + fitted)
+    }
+
+    private fun updatePictureInPicture(videoShows: Boolean) {
+        backToPictureInPicture.isEnabled = videoShows && canPictureInPicture()
+        if (canPictureInPicture()) setPictureInPictureParams(pictureInPictureParams(videoShows))
+    }
+
+    /** Enters picture-in-picture; false where the device or the user's settings do not allow it. */
+    private fun enterPictureInPicture(): Boolean =
+        canPictureInPicture() &&
+            try {
+                enterPictureInPictureMode(pictureInPictureParams(videoShows = true))
+            } catch (
+                @Suppress("SwallowedException") e: IllegalStateException, // Turned off for the app in the settings.
+            ) {
+                false
+            }
+
+    /**
+     * Back to the app while the call goes on: unlocking first if the screen is locked. A video call keeps showing in
+     * picture-in-picture.
+     */
     private fun minimize() {
+        if (videoShows() && enterPictureInPicture()) return
         val open = packageManager.getLaunchIntentForPackage(packageName)
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard.isKeyguardLocked) {
@@ -189,6 +292,9 @@ class CallActivity : ComponentActivity() {
     }
 
     companion object {
+        /** A phone's portrait video, which most calls send. */
+        private val PICTURE_IN_PICTURE_SHAPE = Rational(9, 16)
+
         const val EXTRA_ACTION = "action"
         const val EXTRA_USER_ID = "user_id"
 
