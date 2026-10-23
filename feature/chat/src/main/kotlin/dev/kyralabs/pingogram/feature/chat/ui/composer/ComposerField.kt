@@ -30,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -44,6 +46,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -68,7 +71,8 @@ import kotlin.math.roundToInt
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
  * address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command suggestions'
  * arrows, Enter and Tab). [hint] shows after the text in the placeholder's color, an inline bot's placeholder after
- * "@gif " ([InlineHint]). The attach preview's caption and the forward sheet's comment are one too.
+ * "@gif " ([InlineHint]). Tab and Shift+Tab move the focus on ([tabKey]). The attach preview's caption and the
+ * forward sheet's comment are one too.
  */
 @Composable
 internal fun ComposerField(
@@ -85,6 +89,7 @@ internal fun ComposerField(
     hint: String? = null,
 ) {
     val labels = rememberFormattingLabels()
+    val focusManager = LocalFocusManager.current
     val textLayout = remember { TextLayoutHolder() }
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
     // onFocusChanged also reports the first state, unfocused: only changes are news.
@@ -111,8 +116,9 @@ internal fun ComposerField(
                             focus.isFocused = state.isFocused
                             onFocusChanged(state.isFocused)
                         }
-                    }.onPreviewKeyEvent { event -> onKeyEvent(event) || fieldKey(event, text, onSend, onLink) }
-                    .appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
+                    }.onPreviewKeyEvent { event ->
+                        onKeyEvent(event) || fieldKey(event, text, onSend, onLink) || tabKey(event, focusManager)
+                    }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                     .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
@@ -282,6 +288,23 @@ private fun fieldKey(
 ): Boolean {
     if (!event.isSendKey()) return formattingShortcut(event, text, onLink)
     onSend()
+    return true
+}
+
+/**
+ * Tab and Shift+Tab move the focus on to the next or previous control, as they do from Android's text fields, rather
+ * than typing a tab: a message has no use for one, and the keyboard would be stuck in the field
+ * (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). True if handled.
+ */
+private fun tabKey(
+    event: KeyEvent,
+    focusManager: FocusManager,
+): Boolean {
+    val withModifier = event.isCtrlPressed || event.isAltPressed || event.isMetaPressed
+    if (event.key != Key.Tab || withModifier) return false
+    if (event.type == KeyEventType.KeyDown) {
+        focusManager.moveFocus(if (event.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+    }
     return true
 }
 

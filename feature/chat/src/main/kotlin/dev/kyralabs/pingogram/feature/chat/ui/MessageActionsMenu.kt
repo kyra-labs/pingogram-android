@@ -121,7 +121,8 @@ internal fun MessageActionsMenu(
     val alignEnd = isOutgoing
     val endIsRight = LocalLayoutDirection.current == LayoutDirection.Ltr
     val originX = if (alignEnd == endIsRight) 1f else 0f
-    Box(modifier.fillMaxSize()) {
+    val focus = rememberMenuFocus(lift)
+    Box(modifier.fillMaxSize().menuFocus(focus) { close(ChatEvent.DismissMessageActions) }) {
         Scrim(
             contentDescription = stringResource(R.string.message_actions_close),
             onClick = { close(ChatEvent.DismissMessageActions) },

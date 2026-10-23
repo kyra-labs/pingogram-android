@@ -127,6 +127,16 @@ class ComposerTest {
     }
 
     @Test
+    fun `Tab types no tab, as it moves the focus on`() {
+        val text = setComposer()
+        field().performTextInput("Hi")
+
+        field().performKeyInput { pressKey(Key.Tab) }
+
+        assertEquals("Hi", text.state.text.toString())
+    }
+
+    @Test
     fun `Enter with nothing to send sends nothing`() {
         setComposer()
 

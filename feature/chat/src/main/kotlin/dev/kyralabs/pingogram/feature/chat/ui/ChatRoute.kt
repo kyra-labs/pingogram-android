@@ -77,7 +77,8 @@ import java.util.Locale
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
- * navigates with.
+ * navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's text field
+ * takes the focus once it shows.
  */
 @Suppress("LongParameterList") // The chat and where in it, what it opens elsewhere, and its view models.
 @Composable
@@ -92,6 +93,7 @@ internal fun ConversationRoute(
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    focusComposer: Boolean = false,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -103,7 +105,7 @@ internal fun ConversationRoute(
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
-    val composerFocus = rememberComposerFocusState()
+    val composerFocus = rememberComposerFocusState(requestAtStart = focusComposer)
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)

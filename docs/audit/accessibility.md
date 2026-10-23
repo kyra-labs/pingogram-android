@@ -88,12 +88,14 @@ The chat screens already do well on several points:
 - no hard-coded English in spoken strings;
 - animations follow reduced motion.
 
+A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say what was done.
+
 | # | Where | Finding | Rule | Suggested fix |
 |---|---|---|---|---|
-| A1 | `feature/chat/…/ui/MessageBubble.kt` (`bubbleGestures`, `LongPress.kt`) | A message's actions open by touch or TalkBack only: no keyboard focus, no key, no right-click | §9 keyboard & mouse | Focusable rows; actions on Enter, Shift+F10, the Menu key and a secondary-button press |
+| A1 | `feature/chat/…/ui/MessageBubble.kt` (`bubbleGestures`, `LongPress.kt`) | A message's actions open by touch or TalkBack only: no keyboard focus, no key, no right-click | §9 keyboard & mouse | **Done.** The row is focusable where the keyboard moves the focus (`bubbleKeys`), with the theme's focus ring in the bubble's shape. Enter, Shift+F10, the Menu key and a right click open the floating menu, which takes the focus and closes on Esc, giving the focus back. Tests: `MessageKeysTest` |
 | A2 | `feature/chat/…/ui/composer/ComposerField.kt` (`isSendKey`) | Enter sends and Ctrl+Enter is refused. There is no "Ctrl+Enter to send" setting, which §9 asks for | §9 keyboard | A send-key preference. In Ctrl+Enter mode, Enter inserts a line break (owner decision: where the setting lives, §5) |
-| A3 | `feature/media/…/ui/MediaViewerScreen.kt`, `MediaPage.kt` | No keys: arrows do not turn pages, +/− do not zoom, Esc does not close | §9 keyboard & mouse | `onKeyEvent`: Left/Right (mirrored in RTL), +/−, Esc |
-| A4 | `MessageBubble.kt` (sender name), `BubbleFrames.kt` (sender avatar) | `clickable(indication = null)`: no focus or hover state, no role or click label | §9 focus, hover | A ripple, `Role.Button`, `onClickLabel` "Open profile" |
+| A3 | `feature/media/…/ui/MediaViewerScreen.kt`, `MediaPage.kt` | No keys: arrows do not turn pages, +/− do not zoom, Esc does not close | §9 keyboard & mouse | **Done.** Left/Right (mirrored in RTL), +/= and −, 0 to fit, Ctrl and the wheel, Space for a video, Esc (`MediaViewerKeys.kt`). The stories viewer has Left/Right, Space and Esc (`StoryViewerKeys.kt`). Tests: `MediaViewerKeysTest`, `StoryViewerKeysTest` |
+| A4 | `MessageBubble.kt` (sender name), `BubbleFrames.kt` (sender avatar) | `clickable(indication = null)`: no focus or hover state, no role or click label | §9 focus, hover | **Done.** `openProfileTarget`: a button with Material's pressed, hover and focus states clipped to the name or the circle, `Role.Button` and "Open profile" as its click label, on the same 48 dp target. Tests: `MessageKeysTest` |
 | A5 | `feature/chat/…/ui/BubbleDescription.kt` | The bubble's description and its reactions are joined with `", "` | `docs/TRANSLATING.md` | `spokenList` (`core:ui`) |
 | A6 | `feature/chats/…/ui/ChatListItemDescription.kt`, `ArchiveRow.kt`, `SearchRows.kt` | The same for chat rows, the archive row and search results (and `" "` between sender and text) | `docs/TRANSLATING.md` | `spokenList`; a string resource for sender and text |
 | A7 | `JumpToBottomButton.kt`, `bot/CommandRows.kt`, `topics/TopicRow.kt`, `location/ShareLocationSheet.kt` (`". "`) | The same | `docs/TRANSLATING.md` | `spokenList`, or a string resource for the location's sentence |
@@ -122,8 +124,9 @@ The chat screens already do well on several points:
    (dynamic) colors, which `ThemeContrastTest` cannot.
 3. **Font size and display size at their largest** (Android's settings): Settings, a profile with a long "last seen"
    status, Add contact, the widget.
-4. **Switch Access** or a keyboard on a tablet: Tab and Enter through Settings and sign-in. Finding A1 covers the
-   conversation.
+4. **Switch Access** or a keyboard on a tablet: Tab and Enter through Settings and sign-in, and through the chat
+   list, the conversation and the media viewer (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse" lists what should
+   work).
 
 ## 5. Decisions for the owner
 

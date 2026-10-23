@@ -83,7 +83,12 @@ fun NavGraphBuilder.chatScreen(
  * post's comments) shows in the pane, in place of what opened it, on Material's shared axis X ([PaneThreads]); back,
  * and its top bar's back button, return to it. They are saved with the pane, so they survive rotation and process
  * death.
+ *
+ * With [focusComposer] (the chat was opened from the list with a hardware keyboard, `docs/DESIGN_SYSTEM.md` §9), the
+ * composer's text field takes the focus once it shows, as Google Messages does on tablets; a chat without a composer
+ * leaves the focus where it was.
  */
+@Suppress("LongParameterList") // The chat and where in it, what it opens elsewhere, and the composer's focus.
 @Composable
 fun ChatPane(
     chatId: Long,
@@ -94,6 +99,7 @@ fun ChatPane(
     messageId: Long? = null,
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    focusComposer: Boolean = false,
 ) {
     key(chatId, messageId) {
         var threads by rememberSaveable(stateSaver = PaneThreads.Saver) { mutableStateOf(PaneThreads()) }
@@ -123,6 +129,7 @@ fun ChatPane(
                     onOpenThread = { opened, topic -> threads = threads.pushed(PaneThread(opened, topic)) },
                     onOpenProfile = onOpenProfile,
                     onOpenChatInfo = onOpenChatInfo,
+                    focusComposer = focusComposer && top == null,
                 )
             }
         }

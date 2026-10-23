@@ -53,18 +53,40 @@ internal class MessageLiftState(
     /** How far the floating menu shows, 0 to 1. Read in the draw phase only. */
     var visibility by mutableFloatStateOf(0f)
 
-    /** Lifts message [messageId] from [bounds], its row in the window, where the floating menu suits the window. */
+    /**
+     * Whether the floating menu takes the focus as it opens, so that Esc closes it and the keyboard moves through it:
+     * when a key or a mouse's secondary button asked for it ([lift]), not a touch, which leaves the keyboard alone.
+     */
+    var takesFocus: Boolean = false
+        private set
+
+    /** Gives the focus back to the message whose key opened the menu, once the menu is gone ([clear]). */
+    private var returnFocus: (() -> Unit)? = null
+
+    /**
+     * Lifts message [messageId] from [bounds], its row in the window, where the floating menu suits the window. A key
+     * or a mouse asked for it if [takesFocus]; [returnFocus], where a key did, gives the focus back to the message.
+     */
     fun lift(
         messageId: Long,
         bounds: Rect?,
+        takesFocus: Boolean = false,
+        returnFocus: (() -> Unit)? = null,
     ) {
-        anchor = bounds?.takeIf { canLift() }?.let { LiftAnchor(messageId, it) }
+        val lifted = bounds?.takeIf { canLift() }?.let { LiftAnchor(messageId, it) }
+        anchor = lifted
+        this.takesFocus = lifted != null && takesFocus
+        this.returnFocus = returnFocus.takeIf { lifted != null }
     }
 
-    /** The menu is gone: nothing lifted, nothing blurred. */
+    /** The menu is gone: nothing lifted, nothing blurred, and the focus back where a key had it. */
     fun clear() {
         anchor = null
         visibility = 0f
+        takesFocus = false
+        val back = returnFocus
+        returnFocus = null
+        back?.invoke()
     }
 
     private fun canLift(): Boolean {

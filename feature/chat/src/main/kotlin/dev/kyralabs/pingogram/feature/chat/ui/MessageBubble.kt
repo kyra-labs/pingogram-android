@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -98,6 +98,11 @@ import kotlin.math.max
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic, lifting the message for its floating menu
  *   ([MessageLiftState]) where that suits; whatever was pressed inside does not take it as a tap. Screen readers' long
  *   click opens the actions sheet.
+ * - **Keyboard and mouse** ([bubbleKeys], `docs/DESIGN_SYSTEM.md` §9): the row takes the keyboard's focus, and the
+ *   bubble shows the theme's focus ring in its shape ([bubbleFocusRing]); Enter, the Menu key and Shift+F10 open the
+ *   actions as a long press does, and so does a mouse's secondary button ([onLongPress]); the floating menu then takes
+ *   the focus, and gives it back to the row as it closes. The sender's name and avatar are buttons of their own
+ *   ([openProfileTarget]), with Material's pressed, hover and focus states.
  * - **Swipe to reply** ([swipeToReply]): where the user can reply ([canBeRepliedTo]) and outside selection mode, the
  *   bubble follows a horizontal swipe toward the end in the layout phase, revealing a reply icon drawn behind it;
  *   released past `sizes.swipeReplyDistance`, it replies ([ChatEvent.Reply]) with a `TextHandleMove` haptic at the
@@ -133,6 +138,7 @@ internal fun MessageBubbleRow(
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
+    val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe =
@@ -148,6 +154,7 @@ internal fun MessageBubbleRow(
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
+                .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
                     contentDescription = bubbleDescription(strings, bubble)
                     if (selection != null) {
@@ -181,6 +188,7 @@ internal fun MessageBubbleRow(
             uploads = uploads,
             isSelected = isSelected,
             modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
+            focus = focus,
         )
     }
 }
@@ -188,6 +196,7 @@ internal fun MessageBubbleRow(
 /**
  * The bubble of a row, at the end for outgoing messages and at the start for incoming ones, beside the sender's avatar
  * in group chats; the list's rows and the message lifted for its floating menu ([MessageActionsMenu]) both show it.
+ * While the row has the keyboard's focus ([focus], the list's rows only), the bubble shows its focus ring.
  */
 @Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
@@ -200,6 +209,7 @@ internal fun BubbleRowContent(
     uploads: ImmutableMap<Long, MessageUpload>,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
+    focus: MutableInteractionSource? = null,
 ) {
     Row(
         modifier = modifier,
@@ -216,6 +226,7 @@ internal fun BubbleRowContent(
             uploads = uploads,
             isSelected = isSelected,
             modifier = Modifier.alignBy { it.bubbleBottom() },
+            focus = focus,
         )
     }
 }
@@ -295,6 +306,7 @@ private fun MessageBubble(
     uploads: ImmutableMap<Long, MessageUpload>,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
+    focus: MutableInteractionSource? = null,
 ) {
     val style = resources.theme.styleOf(bubble.isOutgoing, isSelected)
     val position = bubble.position
@@ -302,7 +314,10 @@ private fun MessageBubble(
     val sizes = MaterialTheme.sizes
     val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
     val bare = bubble.isEmojiOnly || (bubble.album == null && bubble.content.isBare)
-    val frame: @Composable (Modifier) -> Unit = { modifier ->
+    val bareShape = MaterialTheme.shapes.large
+    val frame: @Composable (Modifier) -> Unit = { outer ->
+        // The focus ring in the frame's shape: the bubble's, or around content without a bubble.
+        val modifier = outer.bubbleFocusRing(focus, if (bare) bareShape else shape)
         when {
             bubble.isEmojiOnly -> {
                 EmojiBubble(bubble, style.colors, onEvent, modifier)
@@ -439,21 +454,11 @@ internal fun BubbleHeader(
     onEvent: (ChatEvent) -> Unit,
 ) {
     if (bubble.showsSenderName) {
-        val userId = bubble.senderUserId
         Text(
             text = bubble.sender.resolve(),
-            // Its touch target reaches past the line, without moving what is around it; the bubble's own semantics
-            // offer the profile to screen readers.
-            modifier =
-                if (userId != null) {
-                    Modifier.touchTarget(
-                        Modifier.clickable(interactionSource = null, indication = null) {
-                            onEvent(ChatEvent.OpenProfile(userId))
-                        },
-                    )
-                } else {
-                    Modifier
-                },
+            // Its touch target reaches past the line, without moving what is around it; in the list, the bubble's own
+            // semantics offer the profile to screen readers.
+            modifier = Modifier.openProfileTarget(bubble.senderUserId, MaterialTheme.shapes.extraSmall, onEvent),
             color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
