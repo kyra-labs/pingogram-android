@@ -7,7 +7,10 @@ import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
+import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
+import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
@@ -373,6 +376,245 @@ class CallManagerTest {
 
             assertTrue(engine.sessions.single().onHold)
             assertTrue(manager.call.value!!.isOnHold)
+        }
+
+    @Test
+    fun `a video call is made as one and sends the front camera once connected`() =
+        runTest {
+            val manager = manager()
+
+            backgroundScope.launchNow { manager.startCall(42, withVideo = true) }
+            repository.update(call(CallState.Pending(isCreated = true, isReceived = false)))
+            runCurrent()
+            assertEquals(listOf(true), repository.startedVideo)
+            assertEquals(CallVideo(CameraFacing.Front, canSwitchCamera = true), manager.call.value?.video)
+
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+
+            assertEquals(
+                FRONT_CAMERA,
+                engine.sessions
+                    .single()
+                    .cameras
+                    .last(),
+            )
+        }
+
+    @Test
+    fun `turns the camera on and off, and switches between front and back`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            val session = engine.sessions.single()
+            assertEquals(listOf<CallCamera?>(null), session.cameras)
+            assertEquals(CallVideo(), manager.call.value?.video)
+
+            manager.setCameraOn(true)
+            runCurrent()
+            assertEquals(FRONT_CAMERA, session.cameras.last())
+            assertEquals(
+                CameraFacing.Front,
+                manager.call.value
+                    ?.video
+                    ?.camera,
+            )
+
+            manager.switchCamera()
+            runCurrent()
+            assertEquals(BACK_CAMERA, session.cameras.last())
+            assertEquals(
+                CameraFacing.Back,
+                manager.call.value
+                    ?.video
+                    ?.camera,
+            )
+
+            manager.setCameraOn(false)
+            runCurrent()
+            assertNull(session.cameras.last())
+            assertNull(
+                manager.call.value
+                    ?.video
+                    ?.camera,
+            )
+
+            // On again: the camera last used.
+            manager.setCameraOn(true)
+            runCurrent()
+            assertEquals(BACK_CAMERA, session.cameras.last())
+        }
+
+    @Test
+    fun `a device with one camera sends it and cannot switch`() =
+        runTest {
+            engine.cameras = listOf(BACK_CAMERA)
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+
+            manager.setCameraOn(true)
+            runCurrent()
+            assertEquals(CallVideo(CameraFacing.Back, canSwitchCamera = false), manager.call.value?.video)
+        }
+
+    @Test
+    fun `a device without a camera keeps it off`() =
+        runTest {
+            engine.cameras = emptyList()
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+
+            manager.setCameraOn(true)
+            runCurrent()
+
+            assertEquals(CallVideo(), manager.call.value?.video)
+        }
+
+    @Test
+    fun `holding the call stops the camera until it is taken back`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            manager.setCameraOn(true)
+            runCurrent()
+            val session = engine.sessions.single()
+            session.state.value = CallMediaState.Connected
+            runCurrent()
+
+            manager.setOnHold(true)
+            runCurrent()
+            assertNull(session.cameras.last())
+            assertNull(
+                manager.call.value
+                    ?.video
+                    ?.camera,
+            )
+
+            manager.setOnHold(false)
+            runCurrent()
+            assertEquals(FRONT_CAMERA, session.cameras.last())
+        }
+
+    @Test
+    fun `follows the other side's video and hangs up as a video call`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            val session = engine.sessions.single()
+
+            session.remoteVideo.value = RemoteVideo.Active
+            runCurrent()
+            assertEquals(
+                RemoteVideo.Active,
+                manager.call.value
+                    ?.video
+                    ?.remote,
+            )
+            assertTrue(manager.call.value!!.videoOffered)
+
+            session.remoteVideo.value = RemoteVideo.Paused
+            runCurrent()
+            assertEquals(
+                RemoteVideo.Paused,
+                manager.call.value
+                    ?.video
+                    ?.remote,
+            )
+
+            manager.hangUp()
+            runCurrent()
+            assertEquals(listOf(true), repository.discardedVideo)
+        }
+
+    @Test
+    fun `a voice call hangs up as one`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+
+            manager.hangUp()
+            runCurrent()
+
+            assertEquals(listOf(false), repository.startedVideo)
+            assertEquals(listOf(false), repository.discardedVideo)
+        }
+
+    @Test
+    fun `hands the frame sinks to the engine, also those set before it connected`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            val local = VideoFrameSink { _, _, _, _ -> }
+            val remote = VideoFrameSink { _, _, _, _ -> }
+
+            manager.setVideoSinks(local, remote)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            val session = engine.sessions.single()
+            assertEquals(local, session.localSink)
+            assertEquals(remote, session.remoteSink)
+
+            manager.setVideoSinks(null, null)
+            runCurrent()
+            assertNull(session.localSink)
+            assertNull(session.remoteSink)
+        }
+
+    @Test
+    fun `answering with video sends the front camera`() =
+        runTest {
+            val manager = manager()
+            repository.update(call(CallState.Pending(isCreated = true, isReceived = true), id = 3, isOutgoing = false))
+            runCurrent()
+
+            manager.answer(withVideo = true)
+            repository.update(call(CallState.Ready(connection), id = 3, isOutgoing = false))
+            runCurrent()
+
+            assertEquals(
+                FRONT_CAMERA,
+                engine.sessions
+                    .single()
+                    .cameras
+                    .last(),
+            )
+        }
+
+    @Test
+    fun `an engine that cannot list cameras leaves the camera off`() =
+        runTest {
+            val manager = manager()
+            callOut(manager)
+            repository.update(call(CallState.Ready(connection)))
+            runCurrent()
+            engine.failsToLoad = true
+
+            manager.setCameraOn(true)
+            runCurrent()
+
+            assertNull(
+                engine.sessions
+                    .single()
+                    .cameras
+                    .last(),
+            )
+            assertNull(
+                manager.call.value
+                    ?.video
+                    ?.camera,
+            )
         }
 }
 

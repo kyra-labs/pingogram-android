@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.calls
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -30,7 +31,23 @@ data class ActiveCall(
      * (`docs/adr/0019-video-and-group-calls-scope.md`).
      */
     val videoOffered: Boolean = false,
+    val video: CallVideo = CallVideo(),
 )
+
+/** The call's video (`docs/adr/0019-video-and-group-calls-scope.md`): what the user sends and what comes. */
+@Immutable
+data class CallVideo(
+    /** The camera the user sends, or null with the camera off (and while the call is held). */
+    val camera: CameraFacing? = null,
+    /** The device has a front and a back camera. */
+    val canSwitchCamera: Boolean = false,
+    val remote: RemoteVideo = RemoteVideo.Off,
+)
+
+enum class CameraFacing {
+    Front,
+    Back,
+}
 
 /** Where an [ActiveCall] is, as the user sees it. */
 @Immutable

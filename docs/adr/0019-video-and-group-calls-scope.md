@@ -61,3 +61,23 @@ M5 ships voice calls (`REQUIREMENTS.md` FR-V1, ADR 0015, ADR 0018). FR-V2 (video
 - M5 closes with voice calls; FR-V2's 1:1 video moves from "Later" to the next calls work, group voice chats after it.
 - The APK keeps NTgCalls' video and group code (upstream's build, ADR 0015), so neither needs a new engine build.
 - The video frame path is the one performance risk; it gets a device measurement before the feature ships.
+
+## Implementation notes (1:1 video, 2026-10-23)
+
+What the code found at NTgCalls' pinned commit, where it differs from the reading above:
+
+- **Cameras**: `getMediaDevices().camera`, each with JSON metadata (`{"id": "1", "is_front": true}`). The capture size
+  is fixed: NTgCalls scales every camera frame to the `VideoDescription`'s width and height. Pingogram sends 1280 × 720
+  at 30 frames a second, landscape as cameras capture, and each frame carries its rotation.
+- **Self-view**: the camera's own frames come through `onFrames(CAPTURE, CAMERA, …)` too, so the self-view and the other
+  side's video are drawn the same way. Before the engine connects there are no frames, so a video call shows no
+  self-view while it rings yet.
+- **Receiving**: NTgCalls scales the other side's frames to a fixed size whatever their shape, which would stretch them.
+  So they come at the size they are sent (`VideoDescription` 0 × 0 at 0 fps, "as sent"; Telegram's apps send at most
+  720p), and the screen scales them.
+  - Playback sources negotiate receiving video again whenever they change. So a session receives video only while a
+    sink takes it (`CallSession.setVideoSinks`), and a call nobody watches pays nothing for frames.
+- **Renderer**: the AAR has no `TextureViewRenderer`. WebRTC's `SurfaceViewRenderer` is what it bundles.
+- **The other side's video state** comes through `onRemoteSourceChange` (camera: active, paused, idling).
+  - NTgCalls tells the other side "suspended" while the user is muted (its `MediaState.video_paused` is `paused ||
+    muted`). How Telegram's apps show a muted user's video is checked on a device.
