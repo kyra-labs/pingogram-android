@@ -91,7 +91,15 @@ class FakeChatRepository : ChatRepository {
     override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
         unreadCounts.map { it[list] ?: UnreadChatCount.None }.distinctUntilChanged()
 
-    override fun chat(id: Long): Flow<Chat?> = unused()
+    /** A chat of any list, as [setChats] put it. */
+    override fun chat(id: Long): Flow<Chat?> =
+        chats
+            .map { lists ->
+                lists.values
+                    .asSequence()
+                    .flatten()
+                    .firstOrNull { it.id == id }
+            }.distinctUntilChanged()
 
     /** A chat of any list, as the repository keeps them in memory; [DomainError.NotFound] otherwise. */
     override suspend fun privateChat(userId: Long): Outcome<Chat> = unused()

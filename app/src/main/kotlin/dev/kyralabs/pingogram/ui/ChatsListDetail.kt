@@ -103,6 +103,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   rotation and process death.
  * - **New chat**: the list's "New chat" button, at the bottom end of the list pane, opens [onOpenNewChat], pushed
  *   above the whole layout as the archive is.
+ * - **Stories**: a story ring above the chats opens [onOpenStory], the stories viewer full screen above the whole
+ *   layout, as the media viewer is.
  * - **Search** ([search], `docs/DESIGN_SYSTEM.md` §6 "Global search"): docked, it takes the list pane's place
  *   ([SearchPane]), growing out of the search button ([SearchOrList]). With two panes a chat it found shows in the
  *   detail pane as a tapped one does, and a message opens its conversation there at the message; with one pane (a
@@ -125,6 +127,7 @@ internal fun ChatsListDetail(
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenChatInfo: (chatId: Long) -> Unit = {},
     onEditContact: (userId: Long) -> Unit = {},
+    onOpenStory: (chatId: Long) -> Unit = {},
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
 ) {
@@ -171,6 +174,7 @@ internal fun ChatsListDetail(
                             onOpenArchive = onOpenArchive,
                             onOpenChat = opener::openChat,
                             onOpenNewChat = onOpenNewChat,
+                            onOpenStory = onOpenStory,
                             openChatId = shownChatId,
                         )
                     }

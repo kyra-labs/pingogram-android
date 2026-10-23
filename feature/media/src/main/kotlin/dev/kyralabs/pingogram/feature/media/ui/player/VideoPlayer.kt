@@ -39,6 +39,12 @@ interface VideoPlayer {
 
     fun seekTo(positionMillis: Long)
 
+    /**
+     * Silences what plays, or gives it its sound back, without stopping it: the stories viewer's mute button. Players
+     * that only play GIFs ignore it.
+     */
+    fun setMuted(muted: Boolean) {}
+
     /** Stops and empties the player; it can [play] again. */
     fun stop()
 
