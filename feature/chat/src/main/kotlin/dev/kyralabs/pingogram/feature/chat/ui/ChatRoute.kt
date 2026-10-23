@@ -71,7 +71,8 @@ import java.util.Locale
  * ([EmojiPanelViewModel]), whose stickers the conversation sends. The forward sheet
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), a secret chat's timer and
- * key ([SecretChatBottomSheet]), and the bots' commands (`BotCommandsBottomSheet`). While a secret chat is open, the
+ * key ([SecretChatBottomSheet]), the bots' commands (`BotCommandsBottomSheet`), and the members whose messages the
+ * search in the chat finds (`SearchSenderSheet`). While a secret chat is open, the
  * window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
@@ -99,8 +100,6 @@ internal fun ConversationRoute(
     panelViewModel: EmojiPanelViewModel = hiltViewModel(key = "emoji-panel-$chatId"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
-    val emojiPanel by panelViewModel.uiState.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
@@ -143,14 +142,16 @@ internal fun ConversationRoute(
         composerText = viewModel.composerText,
         composerFocus = composerFocus,
         attach = attach,
-        recording = recording,
+        recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
         reportComment = viewModel.reportComment,
-        emojiPanel = emojiPanel,
+        emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
         onEmojiPanelEvent = panelViewModel::onEvent,
         onOpenProfile = onOpenProfile,
         onOpenChatInfo = onOpenChatInfo,
         commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
         inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+        search = viewModel.searchState.collectAsStateWithLifecycle().value,
+        searchQuery = viewModel.searchQuery,
         botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
     )
     ChatSheets(viewModel)
@@ -222,7 +223,7 @@ internal fun ChatEffects(
 
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
-                    ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported,
+                    ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -350,6 +351,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.PinnedHidden -> R.string.pinned_hidden
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
+        ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable

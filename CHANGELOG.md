@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Search in a chat: the search button in a conversation's top bar searches its messages (a topic's or a thread's in
+  those). The arrows below go through what it found, newest first, showing each message in the chat with the words
+  you searched marked, and "3 of 17" says where you are. In groups you can search one member's messages, also
+  without typing anything, and the calendar jumps to the first message of any day. Back closes search. In secret
+  chats the encryption key now opens from the self-destruct timer's sheet, as the top bar holds search and the timer.
 - A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
   unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 

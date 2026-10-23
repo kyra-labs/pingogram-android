@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.ui.text.hasTextBlocks
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
@@ -460,7 +461,9 @@ internal fun BubbleHeader(
 /**
  * The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
- * draw phase. Its layout is kept in [textLayout], for the bubble's layout to put the meta after its last line.
+ * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
+ * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its layout is kept in
+ * [textLayout], for the bubble's layout to put the meta after its last line.
  */
 @Composable
 private fun BubbleText(
@@ -472,7 +475,18 @@ private fun BubbleText(
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
-    val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
+    val formatted =
+        resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
+    val match = bubble.searchMatch
+    val matchContent = MaterialTheme.colorScheme.onTertiary
+    val text =
+        if (match ==
+            null
+        ) {
+            formatted
+        } else {
+            remember(formatted, match, matchContent) { formatted.withMatches(match, matchContent) }
+        }
     if (text.hasTextBlocks()) {
         val blocks = remember { TextBlocksLayout() }
         val onLayout =
@@ -491,6 +505,7 @@ private fun BubbleText(
                     spoilerColor = style.text.spoilerColor,
                     shape = MaterialTheme.shapes.small,
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
+                    matchColor = MaterialTheme.colorScheme.tertiary,
                 ),
             color = style.colors.content,
             style = MaterialTheme.typography.bodyLarge.userContent,

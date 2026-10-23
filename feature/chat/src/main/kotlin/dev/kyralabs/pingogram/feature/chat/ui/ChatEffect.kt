@@ -83,6 +83,9 @@ sealed interface ChatEffect {
     /** An inline bot's result is a game, which Pingogram cannot play yet: a snackbar says so, nothing is sent. */
     data object GamesUnsupported : ChatEffect
 
+    /** A day picked to jump to has no messages on it or before it (the chat starts later): a snackbar says so. */
+    data object NoMessagesForDay : ChatEffect
+
     /**
      * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
      * the channel's discussion group for a post's comments.

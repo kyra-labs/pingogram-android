@@ -53,13 +53,15 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The conversation's small [TopAppBar] (`docs/DESIGN_SYSTEM.md` §6): back, then the chat's avatar and a two-line
  * title, its name in `titleMediumEmphasized` over the subtitle in `bodySmall`: `onSurfaceVariant`, or `primary` with
- * pulsing [TypingDots] while someone is typing or doing something else in the chat. A private chat with a person has a
- * call button ([ChatHeader.callUserId], through [LocalCallStarter]; search in the chat comes in M6, and Material allows
- * two actions at most). In a private or secret chat the
+ * pulsing [TypingDots] while someone is typing or doing something else in the chat. Every chat has a search button
+ * ([onSearch], `REQUIREMENTS.md` §5.9), and a private chat with a person a call button after it
+ * ([ChatHeader.callUserId], through [LocalCallStarter]): Material allows two actions at most. In a private or secret
+ * chat the
  * title opens the other user's profile through [onOpenProfile] (`REQUIREMENTS.md` FR-P2), its state layer over the
  * title; in a group or channel it opens the chat's info page through [onOpenChatInfo] (FR-P3). A secret chat
- * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and two actions ([SecretChatActions]): its
- * self-destruct timer, with the timer on a badge, and its encryption key, both through [onSecretChatEvent]. It sits on
+ * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and its self-destruct timer after the
+ * search button, with the timer on a badge, through [onSecretChatEvent] ([SecretChatActions]); its encryption key opens
+ * from the timer's sheet, as two actions are all Material allows (without search, the key's button follows). It sits on
  * the screen's `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in
  * the detail pane beside the chat list, which has nothing to go back to.
  *
@@ -80,6 +82,7 @@ internal fun ChatTopBar(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onSecretChatEvent: (SecretChatEvent) -> Unit = {},
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    onSearch: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
@@ -121,16 +124,7 @@ internal fun ChatTopBar(
                 }
             }
         },
-        actions = {
-            val secret = header?.secret
-            val callUserId = header?.callUserId
-            val calls = LocalCallStarter.current
-            when {
-                selectedCount != null -> Unit
-                secret != null -> SecretChatActions(secret, onSecretChatEvent)
-                callUserId != null && calls != null -> CallAction { calls.call(callUserId) }
-            }
-        },
+        actions = { if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent) },
         expandedHeight = titleHeight(),
         colors =
             TopAppBarDefaults.topAppBarColors(
@@ -140,9 +134,12 @@ internal fun ChatTopBar(
     )
 }
 
-/** The default height, or the height of the two lines of the title with some room when they need more. */
+/**
+ * The default height, or the height of the two lines of the title with some room when they need more; also the search
+ * field's, which takes the bar's place.
+ */
 @Composable
-private fun titleHeight(): Dp {
+internal fun titleHeight(): Dp {
     val typography = MaterialTheme.typography
     val lines =
         with(LocalDensity.current) {
@@ -248,63 +245,6 @@ private fun SecretChatLock() {
         modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
         tint = MaterialTheme.colorScheme.primary,
     )
-}
-
-/**
- * The self-destruct timer and the encryption key of a secret chat, as filled tonal icon buttons with the expressive
- * press shapes (`docs/DESIGN_SYSTEM.md` §6, at most two). A timer that is on shows in short on a `primary` badge
- * ("30s"); the timer cannot change before the chat is ready or after it ended, and is disabled then.
- */
-@Composable
-private fun SecretChatActions(
-    secret: SecretChatHeader,
-    onEvent: (SecretChatEvent) -> Unit,
-) {
-    val resources = LocalResources.current
-    val seconds = secret.selfDestructSeconds
-    val timerLabel =
-        if (seconds > 0) {
-            stringResource(R.string.secret_timer_button, selfDestructText(resources, seconds))
-        } else {
-            stringResource(R.string.secret_timer_button_off)
-        }
-    // The badge over the button's top end, inside its touch target, so it never covers the next button; not inside
-    // the button, which clips its content to its shape.
-    Box {
-        FilledTonalIconButton(
-            onClick = { onEvent(SecretChatEvent.OpenTimer) },
-            enabled = secret.canSetTimer,
-            shapes = IconButtonDefaults.shapes(),
-        ) {
-            Icon(painter = painterResource(UiR.drawable.ic_timer), contentDescription = timerLabel)
-        }
-        if (seconds > 0) {
-            Badge(
-                modifier = Modifier.align(Alignment.TopEnd),
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Text(selfDestructShortText(resources, seconds), maxLines = 1)
-            }
-        }
-    }
-    FilledTonalIconButton(onClick = { onEvent(SecretChatEvent.OpenKey) }, shapes = IconButtonDefaults.shapes()) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_key),
-            contentDescription = stringResource(R.string.secret_key_button),
-        )
-    }
-}
-
-/** Calls the other side of a private chat (`REQUIREMENTS.md` FR-V1), a filled tonal icon button as the others. */
-@Composable
-private fun CallAction(onCall: () -> Unit) {
-    FilledTonalIconButton(onClick = onCall, shapes = IconButtonDefaults.shapes()) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_call_filled),
-            contentDescription = stringResource(R.string.chat_call),
-        )
-    }
 }
 
 /** The status in `onSurfaceVariant`, or what someone is doing in `primary` after the [TypingDots]. */

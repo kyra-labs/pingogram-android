@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -42,6 +44,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.SecretChatEvent
 import dev.kyralabs.pingogram.feature.chat.ui.insetContentPadding
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SecretChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.sheetRowInsets
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The sheets of a secret chat's top bar (`REQUIREMENTS.md` FR-E1), a [ModalBottomSheet] each: the self-destruct timer
@@ -72,7 +75,8 @@ internal fun SecretChatBottomSheet(
  * as a single choice of list items inset like the chat list's rows, the chosen one in the list item's selected
  * container (`secondaryContainer`, `large`, `docs/DESIGN_SYSTEM.md` §4). While a new timer goes to TDLib
  * ([SecretChatSheet.Timer.isChanging]) it shows chosen with a wavy progress indicator under the title, as the send-as
- * picker does; the view model closes the sheet once it is set.
+ * picker does; the view model closes the sheet once it is set. Last, "Encryption key" ([EncryptionKeyRow]) opens the
+ * key's sheet in its place.
  */
 @Composable
 private fun TimerContent(
@@ -107,7 +111,29 @@ private fun TimerContent(
                     Text(selfDestructText(resources, option.seconds))
                 }
             }
+            item(
+                key = KEY_ROW,
+                contentType = KEY_ROW,
+            ) { EncryptionKeyRow(onClick = { onEvent(SecretChatEvent.OpenKey) }) }
         }
+    }
+}
+
+/**
+ * "Encryption key" with the key symbol after the timers: the top bar holds the timer and search, two actions, so the
+ * key's sheet opens from here, taking this sheet's place.
+ */
+@Composable
+private fun EncryptionKeyRow(onClick: () -> Unit) {
+    val insets = sheetRowInsets()
+    ListItem(
+        onClick = onClick,
+        modifier = Modifier.padding(insets),
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        contentPadding = insetContentPadding(insets),
+        leadingContent = { Icon(painter = painterResource(UiR.drawable.ic_key), contentDescription = null) },
+    ) {
+        Text(stringResource(R.string.secret_key_title))
     }
 }
 
@@ -197,6 +223,8 @@ private fun SheetTitle(
 }
 
 private const val CONTENT_TYPE_TIMER = "timer"
+
+private const val KEY_ROW = "key"
 
 @PingogramPreviews
 @Composable

@@ -1,10 +1,10 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.R
-import dev.kyralabs.pingogram.feature.chats.ui.MatchHighlight
 import dev.kyralabs.pingogram.feature.chats.ui.MessageSection
 import dev.kyralabs.pingogram.feature.chats.ui.SearchChatItem
 import dev.kyralabs.pingogram.feature.chats.ui.SearchContent

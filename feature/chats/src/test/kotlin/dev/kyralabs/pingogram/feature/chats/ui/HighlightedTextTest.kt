@@ -2,45 +2,14 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.PREVIEW_MAX_LENGTH
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** The highlight of a query's words in search results ([MatchHighlight]), the snippet around a match, and its spans. */
-class MatchHighlightTest {
-    @Test
-    fun `every word of the query is matched wherever it occurs, whatever its case`() {
-        val highlight = MatchHighlight.of("  ada  LOVE ")
-
-        assertEquals(listOf("ada", "LOVE"), highlight.terms)
-        assertEquals(listOf(0..2, 4..7, 13..15), highlight.ranges("Ada Lovelace ADA"))
-    }
-
-    @Test
-    fun `overlapping and adjacent matches are merged`() {
-        assertEquals(listOf(0..3), MatchHighlight.of("ab bcd").ranges("abcd e"))
-        assertEquals(listOf(0..3), MatchHighlight.of("ab cd").ranges("abcd"))
-    }
-
-    @Test
-    fun `a word repeated in another case is matched once`() {
-        assertEquals(listOf("ada"), MatchHighlight.of("ada ADA").terms)
-    }
-
-    @Test
-    fun `no match, and no words, highlight nothing`() {
-        assertTrue(MatchHighlight.of("grace").ranges("Ada Lovelace").isEmpty())
-        assertTrue(MatchHighlight.None.ranges("Ada").isEmpty())
-        assertNull(MatchHighlight.None.firstMatch("Ada"))
-    }
-
-    @Test
-    fun `the first match is the earliest of any word`() {
-        assertEquals(4, MatchHighlight.of("lace love").firstMatch("Ada Lovelace"))
-    }
-
+/** The snippet of a search result around the match of a query's words ([MatchHighlight]), and the match's spans. */
+class HighlightedTextTest {
     @Test
     fun `a match near the start keeps the whole text, as one line`() {
         assertEquals("Ada wrote the notes", matchSnippet("Ada wrote\nthe notes", MatchHighlight.of("notes")))
