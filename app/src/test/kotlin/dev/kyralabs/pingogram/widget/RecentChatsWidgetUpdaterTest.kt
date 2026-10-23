@@ -140,9 +140,25 @@ class RecentChatsWidgetUpdaterTest {
     }
 
     private fun TestScope.settle() {
-        advanceTimeBy(RecentChatsWidgetUpdater.UPDATE_DELAY + 1.seconds)
+        advanceTimeBy(RecentChatsWidgetUpdater.START_UPDATE_DELAY + 1.seconds)
         runCurrent()
     }
+
+    @Test
+    fun `the first redraw of a process waits for the start to settle, the content is there at once`() =
+        runTest {
+            val widgets = FakeWidgets(present = true)
+            val updater = updater(widgets)
+            chats()
+            advanceTimeBy(RecentChatsWidgetUpdater.UPDATE_DELAY + 1.seconds)
+            runCurrent()
+            val updatesBefore = widgets.updates
+
+            settle()
+
+            assertTrue(updater.content.value is RecentChatsContent.Chats)
+            assertEquals(0 to 1, updatesBefore to widgets.updates)
+        }
 
     @Test
     fun `shows the most recent chats with their avatars once a widget is placed`() =

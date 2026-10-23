@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
@@ -267,6 +268,8 @@ sealed interface ChatItem {
      *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
      * @property keyboard the buttons a bot attached to the message, under the bubble; null for none. An album's are
      *   those of the item that has them.
+     * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
+     *   §5.9); null for every other bubble, and while there is no search.
      */
     data class Bubble(
         val id: Long,
@@ -297,6 +300,7 @@ sealed interface ChatItem {
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
         val keyboard: BotKeyboard? = null,
+        val searchMatch: MatchHighlight? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

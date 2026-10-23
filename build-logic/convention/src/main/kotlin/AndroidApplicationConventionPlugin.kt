@@ -1,6 +1,9 @@
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.ApplicationVariant
 import com.android.build.api.variant.FilterConfiguration
+import dev.kyralabs.pingogram.buildlogic.ApkSizeCheckTask
 import dev.kyralabs.pingogram.buildlogic.PingogramAndroid
 import dev.kyralabs.pingogram.buildlogic.PingogramVersion
 import dev.kyralabs.pingogram.buildlogic.ReleaseSigning
@@ -11,6 +14,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.register
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -69,14 +73,32 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                         output.versionCode.set(version.versionCode(abi))
                     }
                 }
+                // The APK size budget (docs/PERFORMANCE.md §1) of the variants built as releases are: minified.
+                onVariants(selector().all()) { variant ->
+                    if (variant.isMinifyEnabled) registerApkSizeCheck(variant)
+                }
             }
         }
     }
 }
 
+/** `check<Variant>ApkSize` ([ApkSizeCheckTask]) on [variant]'s APKs. */
+private fun Project.registerApkSizeCheck(variant: ApplicationVariant) {
+    val name = variant.name.replaceFirstChar(Char::uppercaseChar)
+    tasks.register<ApkSizeCheckTask>("check${name}ApkSize") {
+        group = "verification"
+        description = "Fails when an APK of ${variant.name} is over the size budget of docs/PERFORMANCE.md."
+        variantName.set(variant.name)
+        apkDirectory.set(variant.artifacts.get(SingleArtifact.APK))
+        builtArtifactsLoader.set(variant.artifacts.getBuiltArtifactsLoader())
+        report.set(layout.buildDirectory.file("reports/apk-size/${variant.name}.txt"))
+    }
+}
+
 /**
  * Debug builds use the committed `app/debug.keystore` so every contributor gets the same signature;
- * release builds use [ReleaseSigning] or, when it is not configured, fail before any task runs.
+ * release builds use [ReleaseSigning] or, when it is not configured, fail before any task runs, unless the build asks
+ * for unsigned release APKs with `-Ppingogram.unsignedRelease=true`.
  */
 private fun Project.configureSigning(android: ApplicationExtension) {
     android.signingConfigs.getByName("debug") {
@@ -106,7 +128,11 @@ private fun Project.configureSigning(android: ApplicationExtension) {
         }
 
         is ReleaseSigning.Resolution.Missing -> {
-            failReleasePackaging(resolution.message)
+            // F-Droid builds release APKs without the owner's key and signs them itself, and a reproducibility check
+            // compares an unsigned build with a signed release (docs/RELEASE.md, "F-Droid and IzzyOnDroid").
+            if (providers.gradleProperty(UNSIGNED_RELEASE_PROPERTY).orNull != "true") {
+                failReleasePackaging(resolution.message)
+            }
         }
     }
 
@@ -137,6 +163,9 @@ private fun Project.failReleasePackaging(message: String) {
         if (requested.isNotEmpty()) throw GradleException("Cannot run ${requested.joinToString()}. $message")
     }
 }
+
+/** The Gradle property that lets release variants package without a signing config: unsigned APKs. */
+private const val UNSIGNED_RELEASE_PROPERTY = "pingogram.unsignedRelease"
 
 /** ABIs that dependencies may ship native code for, but TDLib (and so the app) does not support. */
 private val UNSUPPORTED_ABIS = listOf("x86", "riscv64")

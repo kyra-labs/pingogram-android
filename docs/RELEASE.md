@@ -104,6 +104,65 @@ posted, so forks build as before.
 Branch from the tag (`git checkout -b hotfix/X.Y.Z+1 vX.Y.Z`), fix, PR to `main`, cherry-pick
 if `main` has diverged, tag from the hotfix branch.
 
+## F-Droid and IzzyOnDroid
+
+Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` (F-Droid's
+[descriptions and graphics](https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/)):
+`title.txt` (≤ 50 characters), `short_description.txt` (≤ 80), `full_description.txt` (≤ 4000, simple HTML),
+`changelogs/<versionCode>.txt` (≤ 500) and `images/` (`icon.png` 512 px, `featureGraphic.png` 1024 × 500,
+`phoneScreenshots/`, `tenInchScreenshots/`). They describe the `foss` flavor, the one these stores ship; Google Play's listing, for `gms`, is in
+`docs/PLAY_STORE.md` §4.
+
+- **Each release** adds `changelogs/<versionCode>.txt` with the universal APK's version code (`MAJOR * 1_000_000 +
+  MINOR * 10_000 + PATCH * 100`, e.g. `40000.txt` for 0.4.0), a short summary of the CHANGELOG section, in the
+  `chore(release)` pull request. Stores install the universal APK or build it; per-ABI version codes (…01–…03) have
+  no changelog of their own.
+- **Images**: `tools/fastlane/images.sh` renders the icon and the feature graphic from `art/` with headless Chromium
+  (`CHROMIUM=…` if it is not on the PATH) and copies the light screenshots of `docs/screenshots/`, which
+  `tools/readme/screenshots.sh` makes from the goldens; run both after re-recording the goldens they use.
+- **IzzyOnDroid** ships the APKs of the GitHub releases as they are, signed by the owner, and reads this metadata: it
+  needs nothing else from the repository.
+- **F-Droid's main repository** builds from source with its own key. `docs/fdroid/dev.kyralabs.pingogram.yml` drafts
+  its recipe for review, in fdroiddata's format; it is not submitted. The build side is ready:
+  - `-Ppingogram.unsignedRelease=true` packages release APKs without a signing config (`*-release-unsigned.apk`);
+    every other build still fails without one;
+  - `-Ppingogram.tdlib.aar=…` takes a TDLib built from source instead of the release asset (`docs/TDLIB.md`).
+
+  Still open, in the recipe as TODOs:
+  - **Telegram API values.** They would sit in clear text in the public recipe (owner decision).
+  - **TDLib.** Its AAR has to be packaged in the recipe as `.github/workflows/tdlib.yml` does.
+  - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Either WebRTC is
+    built from source too, or F-Droid's build leaves calls out.
+
+## Reproducible builds
+
+A build is reproducible when the same commit, built again, gives the same APK apart from its signature, which lets a
+store (F-Droid's "reproducible builds", IzzyOnDroid's checks) verify that a signed release came from this source.
+
+- **Pinned inputs**: the Gradle wrapper with its checksum (`distributionSha256Sum`), every dependency at an exact
+  version (`gradle/libs.versions.toml`), JDK 17 (Temurin in CI), the TDLib AAR by commit and SHA-256 (`docs/TDLIB.md`),
+  and the generated color themes, checked by CI against their generator. No build time, host name or random value
+  goes into the APK; `BuildConfig` holds the version and the Telegram API values from `secrets.properties`, which a
+  verifying build must use too.
+- **Checked** (2026-10-22): two clean builds of `fossBenchmarkRelease` (R8 and resource shrinking as in `release`, the
+  same commit and checkout, `:app:clean` and `--no-build-cache` in between) gave the same 1,258 entries, byte for byte,
+  in the same order with the same zip layout; only the APK signing block differed. To repeat it:
+
+  ```bash
+  ./gradlew :app:assembleFossBenchmarkRelease
+  cp app/build/outputs/apk/foss/benchmarkRelease/app-foss-arm64-v8a-benchmarkRelease.apk /tmp/first.apk
+  ./gradlew :app:clean && ./gradlew :app:assembleFossBenchmarkRelease --no-build-cache
+  # compare every entry, then the bytes before the APK signing block (e.g. with diffoscope or apksigcopier compare)
+  ```
+
+- **Checked across directories** (2026-10-22): the same commit in two checkouts at different paths
+  (`git worktree add`, the second one level deeper), each built cleanly with `--no-build-cache`. The arm64-v8a and
+  universal APKs gave the same 1,276 and 1,288 entries, byte for byte, in the same order. Paths do not reach the APK.
+- **Not checked yet**:
+  - a build on another machine or JDK build;
+  - an unsigned `release` (`-Ppingogram.unsignedRelease=true`) compared with a signed GitHub release
+    (`apksigcopier compare`). That one needs the release's Telegram API values.
+
 ## Google Play
 
 `docs/PLAY_STORE.md`: the Data safety form, the permission declarations, the listing, Play App Signing with the

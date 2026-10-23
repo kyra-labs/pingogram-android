@@ -510,6 +510,39 @@
     <!-- %1$s is the inline query that goes into the chat's composer, e.g. "@gif cats". -->
     <string name="bot_chats_query">%1$s goes into the chat you pick. Nothing is sent until you send it.</string>
     <string name="bot_chats_none">No chats where this bot can be used</string>
+    <!-- Search in the chat (REQUIREMENTS.md §5.9). -->
+    <string name="search_open">Search in chat</string>
+    <string name="search_placeholder">Search</string>
+    <string name="search_close">Close search</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_older">Older result</string>
+    <string name="search_newer">Newer result</string>
+    <!-- %1$d is the result shown (1 for the newest), %2$d how many were found. -->
+    <string name="search_position">%1$d of %2$d</string>
+    <!-- As search_position, where there are more results than counted so far. -->
+    <string name="search_position_more">%1$d of %2$d+</string>
+    <string name="search_no_results">No results</string>
+    <string name="search_searching">Searching…</string>
+    <string name="search_failed">Couldn\'t search</string>
+    <string name="search_retry">Try again</string>
+    <string name="search_by_sender">Search by sender</string>
+    <string name="search_jump_to_date">Jump to date</string>
+    <!-- %1$s is the member whose messages search finds, e.g. "Ada Lovelace". -->
+    <string name="search_sender_chip">Messages from %1$s</string>
+    <!-- The sender chip's close button. -->
+    <string name="search_sender_remove">Search messages from everyone</string>
+    <string name="search_sender_title">Search messages from</string>
+    <string name="search_sender_search">Search members</string>
+    <string name="search_sender_none">No members found</string>
+    <string name="search_sender_error">Couldn\'t load the members</string>
+    <string name="search_sender_owner">Owner</string>
+    <string name="search_sender_admin">Admin</string>
+    <string name="search_date_title">Jump to date</string>
+    <string name="search_date_go">Go</string>
+    <string name="search_date_cancel">Cancel</string>
+    <string name="search_no_messages_for_day">No messages on this day or before it</string>
+    <!-- Screen readers hear this in the description of the message the search shows. -->
+    <string name="chat_bubble_search_match">matches your search</string>
     <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
     <string name="bot_keyboard_show">Show bot keyboard</string>
     <string name="bot_keyboard_hide">Show keyboard</string>

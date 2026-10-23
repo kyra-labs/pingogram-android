@@ -186,6 +186,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
+  cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
+  the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
+  offset, words only), as message ids, and finds the message to show for a day (`getChatMessageByDate` before the day,
+  then the next newer one with `getChatHistory`; `getChatMessageCalendar` counts only one kind of message, so it cannot
+  say which days have any). `feature:chat`'s `ChatSearch` (a part of `ChatViewModel`, `search/`, given both it and
+  `GroupInfoRepository` for a group's members through `ChatSearchRepositories`) searches the field's text 300 ms after
+  the last edit, the newest query cancelling the search still running, and shows each result in the list as a reply
+  quote's jump does (`ChatWindow.showMessage`); the next page loads near the last loaded result. Its state
+  (`searchState`, the members' sheet) is kept out of `ChatUiState`, except for the one bubble of the result shown,
+  copied with the words to mark (`ChatItem.Bubble.searchMatch`, `withSearchMatch`), which `core:ui`'s `withMatches`
+  turns into blocks `textBlocks` draws, so no other bubble composes again. Whether search is open, the query, the
+  sender and the result shown are kept in the saved state; after process death it searches again at that result
+  without moving the list. `core:ui`'s `MatchHighlight` (the query's words and where a text has them) is shared with
+  global search.
 - **Bots** (FR-C5): `core:domain`'s `BotInfoRepository` (`TdlibBotInfoRepository`, `core:data`, no cache: TDLib keeps
   the full info and reports its changes) gives a conversation its `ChatBots`: `getChat` says what the chat is; a
   private chat whose user is a bot (`getUser`) follows `getUserFullInfo` and `updateUserFullInfo` (`bot_info`: the
