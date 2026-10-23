@@ -48,6 +48,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibPhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
@@ -111,6 +112,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
@@ -256,6 +258,9 @@ interface RepositoryModule {
 
     @Binds
     fun accountRepository(repository: TdlibAccountRepository): AccountRepository
+
+    @Binds
+    fun phoneNumberChangeRepository(repository: TdlibPhoneNumberChangeRepository): PhoneNumberChangeRepository
 
     @Binds
     fun twoStepVerificationRepository(repository: TdlibTwoStepVerificationRepository): TwoStepVerificationRepository

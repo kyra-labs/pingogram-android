@@ -691,6 +691,24 @@
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
 
+    <!-- Changing the account's phone number (FR-S1), a page above Edit profile. %1$s: a phone number. -->
+    <string name="settings_change_number_title">Change number</string>
+    <string name="settings_change_number_current">Your number is %1$s.</string>
+    <string name="settings_change_number_intro">Your account, chats, contacts and media stay as they are and move to the new number. Telegram sends a code to the new number to check that it\'s yours. Who can see your number stays as your privacy settings say.</string>
+    <string name="settings_change_number_start">Change number</string>
+    <string name="settings_change_number_new">Enter your new number. Telegram sends it a code.</string>
+    <string name="settings_change_number_next">Next</string>
+    <string name="settings_change_number_wrong_number">Wrong number?</string>
+    <string name="settings_change_number_busy">Waiting for Telegram</string>
+    <string name="settings_change_number_done_title">Number changed</string>
+    <string name="settings_change_number_done_text">Your number is now %1$s.</string>
+    <string name="settings_change_number_done">Done</string>
+    <!-- Edit profile's phone number group: its header, and the button that opens Change number. -->
+    <string name="settings_section_profile_phone">Phone number</string>
+    <string name="settings_edit_profile_change_number">Change</string>
+    <!-- The same button for screen readers: %1$s the phone number. -->
+    <string name="settings_edit_profile_change_number_label">Change number %1$s</string>
+
     <!-- Delete account (Google Play's account deletion policy, docs/PLAY_STORE.md), a page of Privacy and security -->
     <string name="settings_section_account">Account</string>
     <string name="settings_delete_account">Delete account</string>

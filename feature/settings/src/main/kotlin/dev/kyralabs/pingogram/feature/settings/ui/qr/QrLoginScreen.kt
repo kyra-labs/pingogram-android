@@ -208,7 +208,7 @@ private fun DoneStep(
 /** [icon] on a `MaterialShapes.Cookie9Sided` of `primaryContainer`, decorative, as the badges of auth steps. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun StepBadge(icon: Int) {
+internal fun StepBadge(icon: Int) {
     val badgeSize = MaterialTheme.sizes.headlineBadge
     val colors = MaterialTheme.colorScheme
     Box(

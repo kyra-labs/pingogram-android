@@ -275,7 +275,7 @@ internal object SettingsPreviewData {
     /** The profile as TDLib has it, nothing changed yet; the avatar shows its placeholder, as in [account]. */
     val editProfile =
         EditProfileUiState.Content(
-            account = ProfileAccount(userId = account.userId, name = account.name, photo = null),
+            account = ProfileAccount(account.userId, account.name, photo = null, phoneNumber = "447911123456"),
             saved = savedProfile,
         )
 

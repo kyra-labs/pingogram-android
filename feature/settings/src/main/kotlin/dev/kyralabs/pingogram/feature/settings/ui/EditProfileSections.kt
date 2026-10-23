@@ -134,7 +134,7 @@ internal fun BioSection(
  * `spacing.small` apart beside their supporting text.
  */
 @Composable
-private fun FieldGroup(
+internal fun FieldGroup(
     title: String,
     footer: String? = null,
     content: @Composable ColumnScope.() -> Unit,
