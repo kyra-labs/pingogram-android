@@ -141,8 +141,15 @@ class ReplyMarkupMappersTest {
             keyboard.rows[0].map(KeyboardButton::type),
         )
         assertEquals(
-            listOf(true, true, false, true, "Choose"),
-            listOf(keyboard.persistent, keyboard.resize, keyboard.oneTime, keyboard.personal, keyboard.placeholder),
+            listOf(true, true, false, true, "Choose", true),
+            listOf(
+                keyboard.persistent,
+                keyboard.resize,
+                keyboard.oneTime,
+                keyboard.personal,
+                keyboard.placeholder,
+                keyboard.forceReply,
+            ),
         )
     }
 
@@ -255,7 +262,7 @@ class ReplyMarkupMappersTest {
             true,
             false,
             true,
-            false,
+            true,
             "Choose",
         )
     }

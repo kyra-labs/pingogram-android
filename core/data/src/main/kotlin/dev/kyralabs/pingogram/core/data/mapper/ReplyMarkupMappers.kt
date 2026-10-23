@@ -36,6 +36,7 @@ internal fun TdApi.ReplyMarkup.toReplyMarkup(): ReplyMarkup? =
                     persistent = isPersistent,
                     personal = isPersonal,
                     placeholder = inputFieldPlaceholder.orEmpty(),
+                    forceReply = forceReply,
                 )
             }
         }

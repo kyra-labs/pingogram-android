@@ -510,4 +510,33 @@
     <!-- %1$s is the inline query that goes into the chat's composer, e.g. "@gif cats". -->
     <string name="bot_chats_query">%1$s goes into the chat you pick. Nothing is sent until you send it.</string>
     <string name="bot_chats_none">No chats where this bot can be used</string>
+    <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
+    <string name="bot_keyboard_show">Show bot keyboard</string>
+    <string name="bot_keyboard_hide">Show keyboard</string>
+    <string name="bot_keyboard_pane">Bot keyboard</string>
+    <!-- %1$s is the bot, e.g. "@shop_bot". -->
+    <string name="bot_phone_title">Share your phone number with %1$s?</string>
+    <!-- %1$s is the bot, %2$s the user's own phone number, e.g. "+44 7911 123456". -->
+    <string name="bot_phone_text">%1$s will get your phone number, %2$s, and your name as a contact in this chat.</string>
+    <string name="bot_phone_share">Share</string>
+    <plurals name="bot_share_users_title">
+        <item quantity="one">Choose a person</item>
+        <item quantity="other">Choose up to %1$d people</item>
+    </plurals>
+    <string name="bot_share_group_title">Choose a group</string>
+    <string name="bot_share_channel_title">Choose a channel</string>
+    <!-- %1$s is the bot, e.g. "@shop_bot". -->
+    <string name="bot_share_users_note">%1$s gets the people you choose, with their names, usernames and photos as far as they show them.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_chat_note">%1$s gets the chat you choose, with its title, username and photo.</string>
+    <string name="bot_share_rights_note">Only chats where you\'re an admin are shown. Telegram checks the admin rights the bot asks for when you share.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_bot_admin_note">If %1$s isn\'t an admin there, sharing makes it one, with the rights it asks for.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_bot_member_note">If %1$s isn\'t in the chat, sharing adds it.</string>
+    <string name="bot_share_no_users">No one here matches what the bot asks for</string>
+    <string name="bot_share_no_chats">None of your chats matches what the bot asks for</string>
+    <string name="bot_share">Share</string>
+    <string name="poll_quiz_required">The bot asks for a quiz</string>
+    <string name="poll_regular_required">The bot asks for a poll without a correct answer</string>
 </resources>

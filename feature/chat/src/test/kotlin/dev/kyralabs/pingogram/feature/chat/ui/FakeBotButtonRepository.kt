@@ -24,6 +24,15 @@ class FakeBotButtonRepository : BotButtonRepository {
     /** The button and whether the bot may write, of every [loginUrl] call. */
     val loggedIn = mutableListOf<Pair<Long, Boolean>>()
 
+    /** The message, button and users of every [shareUsers] call. */
+    val sharedUsers = mutableListOf<Triple<Long, Int, List<Long>>>()
+
+    /** The message, button and chat of every [shareChat] call. */
+    val sharedChats = mutableListOf<Triple<Long, Int, Long>>()
+
+    /** The answer to [shareUsers] and [shareChat]. */
+    var onShare: suspend () -> Outcome<Unit> = { Outcome.Success(Unit) }
+
     override suspend fun answer(
         chatId: Long,
         messageId: Long,
@@ -55,7 +64,11 @@ class FakeBotButtonRepository : BotButtonRepository {
         buttonId: Int,
         userIds: ImmutableList<Long>,
         onlyCheck: Boolean,
-    ): Outcome<Unit> = Outcome.Success(Unit)
+    ): Outcome<Unit> {
+        check(!onlyCheck) { "Pingogram never only checks" }
+        sharedUsers += Triple(messageId, buttonId, userIds.toList())
+        return onShare()
+    }
 
     override suspend fun shareChat(
         chatId: Long,
@@ -63,5 +76,9 @@ class FakeBotButtonRepository : BotButtonRepository {
         buttonId: Int,
         sharedChatId: Long,
         onlyCheck: Boolean,
-    ): Outcome<Unit> = Outcome.Success(Unit)
+    ): Outcome<Unit> {
+        check(!onlyCheck) { "Pingogram never only checks" }
+        sharedChats += Triple(messageId, buttonId, sharedChatId)
+        return onShare()
+    }
 }

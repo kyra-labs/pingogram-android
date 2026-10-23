@@ -52,7 +52,5 @@ private fun Lint.configure() {
             "AndroidGradlePluginVersion",
             "GradleDependency",
             "NewerVersionAvailable",
-            // TEMPORARY: the owner supplies the launcher icon (ROADMAP M0). Remove this line when it lands.
-            "MissingApplicationIcon",
         )
 }

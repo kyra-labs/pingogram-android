@@ -10,6 +10,19 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
+  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
+
+## [0.5.0] - 2026-10-23
+
+### Added
+- Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
+  switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
+  bot keeps on screen come back whenever your phone's keyboard closes. A button can send its text, share your phone
+  number (after you agree), your location (through the usual location sheet), a new poll or quiz, people you pick or
+  one of your groups or channels (Pingogram shows only those the bot allows and says what the bot gets). When a bot
+  asks for a reply, the field starts replying to its message with the bot's hint. Mini App buttons say that Pingogram
+  can't open them yet.
 - Send feedback: Settings → About → "Send feedback or report a bug" prepares a report on your phone (the app's version,
   your phone and Android version, the last crash and the end of the connection log, with messages, names and phone
   numbers taken out) that you read first and then share with an app you choose or open as a GitHub issue. Pingogram
@@ -58,14 +71,14 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Conversations take them up in a coming update.
 - Pingogram can be translated on Hosted Weblate (docs/TRANSLATING.md). A language appears in Settings → Language and
   in Android's app languages once 80% of the app is translated; the rest shows in English.
-- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
-  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 
 ### Changed
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
   scrolling, and flinging back, has less to do in each frame.
 
 ### Fixed
+- Unencrypted web traffic is now refused on Android 8 and 9 too, as later versions already did. Pingogram never
+  used any; this makes sure no part of it can.
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
   oldest. The bar now also follows the chat as you scroll: it shows the pinned message just above what is on screen,
@@ -721,7 +734,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3
