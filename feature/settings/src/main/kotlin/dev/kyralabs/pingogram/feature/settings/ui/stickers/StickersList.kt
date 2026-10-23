@@ -192,9 +192,9 @@ private fun LazyListScope.sets(
 
 /**
  * An installed set: its cover, its title (user content) over how many stickers it has, and a drag handle at the end
- * ([handleModifier] starts the drag), in the list item's dragged shape while [dragged]. A tap opens its menu (Share
- * link, Archive; Remove in `error`); screen readers get the menu's items and "Move up" / "Move down" as custom
- * actions.
+ * ([handleModifier] starts the drag), in the list item's dragged shape while [dragged]. A tap opens its menu (Show
+ * stickers, Share link, Archive; Remove in `error`); screen readers get the menu's items and "Move up" / "Move down"
+ * as custom actions.
  */
 @Suppress("LongParameterList") // A row's content, its states, its menu and the two ways to move it.
 @Composable
@@ -212,6 +212,7 @@ private fun InstalledSetRow(
     var menuOpen by remember { mutableStateOf(false) }
     val labels =
         RowLabels(
+            show = stringResource(R.string.settings_stickers_show),
             moveUp = stringResource(R.string.settings_stickers_move_up),
             moveDown = stringResource(R.string.settings_stickers_move_down),
             share = stringResource(R.string.settings_stickers_share),
@@ -243,7 +244,7 @@ private fun InstalledSetRow(
     }
 }
 
-/** A set's menu: Share link and Archive, then Remove in `error` in a group of its own. */
+/** A set's menu: Show stickers, Share link and Archive, then Remove in `error` in a group of its own. */
 @Composable
 private fun SetMenu(
     open: Boolean,
@@ -254,6 +255,7 @@ private fun SetMenu(
     DropdownMenuPopup(expanded = open, onDismissRequest = onDismiss) {
         val everyday =
             listOf(
+                R.string.settings_stickers_show to actions.onOpen,
                 R.string.settings_stickers_share to actions.onShare,
                 R.string.settings_stickers_archive to actions.onArchive,
             )
@@ -285,6 +287,7 @@ private fun SetMenu(
 
 /** The strings of a row's custom actions, read in composition and used where the semantics are read. */
 private class RowLabels(
+    val show: String,
     val moveUp: String,
     val moveDown: String,
     val share: String,
@@ -311,6 +314,7 @@ private fun rowActions(
     return buildList {
         if (canMoveUp) add(action(labels.moveUp) { onMove(true) })
         if (canMoveDown) add(action(labels.moveDown) { onMove(false) })
+        add(action(labels.show) { actions.onOpen(set) })
         add(action(labels.share) { actions.onShare(set) })
         add(action(labels.archive) { actions.onArchive(set) })
         add(action(labels.remove) { actions.onRemove(set) })

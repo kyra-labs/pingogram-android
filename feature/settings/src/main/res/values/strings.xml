@@ -885,4 +885,17 @@
     <string name="settings_stickers_trending_empty_body">Telegram has no trending sticker sets for you right now.</string>
     <string name="settings_stickers_archived_empty_title">No archived sets</string>
     <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
+    <string name="settings_stickers_show">Show stickers</string>
+
+    <!-- The sheet of a sticker set (a t.me/addstickers link, or a set in Settings → Stickers). -->
+    <string name="sticker_set_add">Add stickers</string>
+    <string name="sticker_set_remove">Remove</string>
+    <string name="sticker_set_share">Share</string>
+    <string name="sticker_set_close">Close</string>
+    <string name="sticker_set_try_again">Try again</string>
+    <string name="sticker_set_adding">Adding the stickers</string>
+    <string name="sticker_set_removing">Removing the stickers</string>
+    <string name="sticker_set_not_found_title">Sticker set not found</string>
+    <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
+    <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
 </resources>

@@ -500,6 +500,7 @@ class TdlibLinkRepositoryTest {
                     TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionQrCode("")),
                     LinkTarget.MyQrCode,
                 ),
+                Arguments.of(TdApi.InternalLinkTypeStickerSet("garden", false), LinkTarget.StickerSet("garden")),
             )
 
         @JvmStatic
@@ -509,7 +510,7 @@ class TdlibLinkRepositoryTest {
                 TdApi.InternalLinkTypeLanguagePack(),
                 TdApi.InternalLinkTypeTheme(),
                 TdApi.InternalLinkTypeBackground(),
-                TdApi.InternalLinkTypeStickerSet(),
+                TdApi.InternalLinkTypeStickerSet("hearts", true),
                 TdApi.InternalLinkTypeWebApp(),
                 TdApi.InternalLinkTypeInvoice(),
                 TdApi.InternalLinkTypePassportDataRequest(),
