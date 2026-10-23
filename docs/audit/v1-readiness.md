@@ -28,8 +28,10 @@ What blocks 1.0, in order:
 2. **The 7-day dogfood** with at least 10 testers, at least 99.5% crash-free (§6.5, §9.4). "Send feedback" and `docs/TESTING_GUIDE.md` are ready. Owner.
 3. **Localization**: Weblate is set up (#152) but no language is translated yet, where M6 asks for at least 5 (§6.4).
    Owner: the owner (translators), then B.
-4. **Accessibility evidence** (§6.3): `AccessibilityChecks` in Compose UI tests, and 200% font goldens in contacts,
-   profile, media, scanner and core:ui. Owner A.
+4. **Accessibility evidence** (§6.3): #154 added the checks (`assertAccessible()`) to settings, profile, contacts,
+   sign-in and the app shell (`docs/audit/accessibility.md`); the chat screens still need them and the fixes A1–A15
+   listed there, and contacts, profile, media, scanner and core:ui still need 200% font goldens. Owner A (chat
+   screens), B (the rest).
 5. **Benchmark thresholds in CI** (§9.3) and a nightly run. Owner: owner plus R; needs a device in CI (Firebase Test Lab) or the owner's phone.
 6. **Account deletion in the app** (Google Play, `docs/PLAY_STORE.md` §8). Owner B; not a §6/§7 item, but Play
    requires it for the `gms` listing.
@@ -67,8 +69,8 @@ What blocks 1.0, in order:
 |---|---|---|---|
 | 48 dp targets, content descriptions, roles, merged message semantics | Pass | Compose tests across features; `minimumInteractiveComponentSize` | — |
 | Contrast ≥ 4.5:1 / 3:1 in all contrast levels | Pass | `ThemePalettesTest` | — |
-| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, settings and app. Contacts, profile, media, scanner and core:ui have none | A |
-| `AccessibilityChecks` in Compose UI tests (`docs/TESTING.md`) | **Fail** | Not enabled anywhere | A |
+| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, settings and app. Contacts, profile, media, scanner and core:ui have none; #154 fixed what it cut at 200% in profile and contacts (F2, F8, F15) | A, B |
+| `AccessibilityChecks` in Compose UI tests (`docs/TESTING.md`) | **Fail** (partly) | Google's framework does not run under Robolectric; #154 added our own `assertAccessible()` (names, 48 dp targets) to settings, profile, contacts, sign-in and the app shell. The chat screens have none yet (`docs/audit/accessibility.md` §3) | A |
 | Reduced motion | Pass | `isReducedMotion()`, shape morphs snap | — |
 | TalkBack and Accessibility Scanner pass on every screen | Needs device | `docs/DESIGN_SYSTEM.md` §9 asks for a manual run before "done" | Owner / testers |
 

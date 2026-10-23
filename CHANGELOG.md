@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
 ### Added
 - Send feedback: Settings → About → "Send feedback or report a bug" prepares a report on your phone (the app's version,
   your phone and Android version, the last crash and the end of the connection log, with messages, names and phone
@@ -721,7 +723,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3
