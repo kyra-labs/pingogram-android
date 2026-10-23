@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
+import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -71,6 +72,10 @@ class PingogramApplication :
     @Inject
     lateinit var imageLoader: dagger.Lazy<ImageLoader>
 
+    /** Its history of chats nobody looks at goes when Android asks for memory back ([onTrimMemory]). */
+    @Inject
+    lateinit var messageRepository: MessageRepository
+
     override fun onCreate() {
         // Keeps the last crash on the device for "Send feedback", which the user shares themselves; first, so a crash
         // while the app starts is kept too.
@@ -94,6 +99,16 @@ class PingogramApplication :
         // Creates the TDLib client and sends its parameters on a background dispatcher, so TDLib is ready by the
         // first frame (docs/PERFORMANCE.md §2); returns immediately.
         tdlibClient.start()
+    }
+
+    /**
+     * Once the app's screens are out of sight, and whenever Android runs short of memory after that, the history of the
+     * chats no screen shows is dropped (docs/PERFORMANCE.md §3); TDLib's database gives it back at once when a chat
+     * opens again. Coil trims its own memory cache.
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_UI_HIDDEN) messageRepository.trimMemory()
     }
 
     /**

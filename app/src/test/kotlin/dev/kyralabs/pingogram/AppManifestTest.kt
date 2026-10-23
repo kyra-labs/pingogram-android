@@ -250,6 +250,13 @@ class AppManifestTest {
     }
 
     @Test
+    fun `no cleartext traffic, on Android 8 too`() {
+        val application = mergedManifest().elements("application").single()
+
+        assertEquals("@xml/network_security_config", application.androidAttribute("networkSecurityConfig"))
+    }
+
+    @Test
     fun `Telegram links open in the main activity, without App Links verification`() {
         val activity =
             mergedManifest()
