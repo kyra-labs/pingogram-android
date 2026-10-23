@@ -58,6 +58,7 @@ import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.ScrollToTopOnReselect
 import dev.kyralabs.pingogram.core.ui.component.screenContentWindowInsets
 import dev.kyralabs.pingogram.core.ui.component.sidesOnly
@@ -119,7 +120,7 @@ internal fun ContactsScreen(
         modifier = modifier,
         // The top bar's container; the content sits on a sheet below it (ContentSheet).
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        topBar = { ContactsTopBar(onOpenMyQrCode, onScanQrCode) },
+        topBar = { ContactsTopBar(onOpenMyQrCode, onScanQrCode, LocalRecentCallsLauncher.current) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = screenContentWindowInsets(),
     ) { innerPadding ->
@@ -137,14 +138,16 @@ internal fun ContactsScreen(
 }
 
 /**
- * The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's, with two
- * `FilledTonalIconButton` actions, each with its tooltip (`REQUIREMENTS.md` FR-P5): the user's own QR code
- * ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode]).
+ * The small top bar, its title at the window margin (`docs/DESIGN_SYSTEM.md` §7), as the Chats tab's, with its
+ * `FilledTonalIconButton` actions, each with its tooltip: Recent calls ([onOpenRecentCalls], where the app provides
+ * it, `:feature:calls`), the user's own QR code ([onOpenMyQrCode]) and the QR code scanner ([onScanQrCode],
+ * `REQUIREMENTS.md` FR-P5).
  */
 @Composable
 private fun ContactsTopBar(
     onOpenMyQrCode: () -> Unit,
     onScanQrCode: () -> Unit,
+    onOpenRecentCalls: (() -> Unit)?,
 ) {
     TopAppBar(
         title = {
@@ -157,6 +160,9 @@ private fun ContactsTopBar(
             )
         },
         actions = {
+            onOpenRecentCalls?.let {
+                TopBarAction(UiR.drawable.ic_history, stringResource(R.string.contacts_recent_calls), it)
+            }
             TopBarAction(UiR.drawable.ic_qr_code, stringResource(R.string.contacts_my_qr_code), onOpenMyQrCode)
             TopBarAction(UiR.drawable.ic_qr_code_scanner, stringResource(R.string.contacts_scan_qr_code), onScanQrCode)
         },

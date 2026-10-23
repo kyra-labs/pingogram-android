@@ -458,3 +458,10 @@ data object MyQrCodeRoute
  */
 @Serializable
 data object FeedbackRoute
+
+/**
+ * Recent calls (`docs/ARCHITECTURE.md`, Calls), `:feature:calls`: the user's one-to-one calls, newest first, to call
+ * back; pushed above the screen it is opened from (Settings home, the Contacts tab).
+ */
+@Serializable
+data object RecentCallsRoute

@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Recent calls: Settings and the Contacts tab open a list of your calls, newest first and by day, all of them or only
+  the missed ones, with who it was, whether it was a voice or a video call, incoming, outgoing, missed or declined, and
+  how long it lasted. Tap a call to call back the same way; hold it to delete it from your call history (the other
+  person keeps theirs).
 - Voice chats: when a group or channel has a voice chat, a bar at the top of the conversation shows it with how many
   are in it, and "Join" opens it (so does "Voice chat" on the group's info page). You join muted; tap Mute to speak,
   and the others see you unmuted. Everyone in it is listed, with who is speaking, who is muted and who raised their

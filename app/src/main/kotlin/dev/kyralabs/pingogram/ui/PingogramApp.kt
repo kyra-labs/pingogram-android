@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.TabReselection
@@ -48,6 +49,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.ui.AuthProgressScreen
+import dev.kyralabs.pingogram.feature.calls.navigation.navigateToRecentCalls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.rememberGlobalSearchState
@@ -153,6 +155,7 @@ fun PingogramApp(
     val searchOpen by rememberSearchOpen(navController, search)
     val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
+    val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
@@ -168,6 +171,7 @@ fun PingogramApp(
                         LocalNavigationBarVisibility provides navigationBarVisibility,
                         LocalTabReselection provides tabReselection,
                         LocalFeedbackLauncher provides openFeedback,
+                        LocalRecentCallsLauncher provides openRecentCalls,
                     ) {
                         AppContent(uiState, search) {
                             PingogramNavHost(
