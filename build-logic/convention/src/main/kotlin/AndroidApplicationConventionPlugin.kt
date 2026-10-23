@@ -1,6 +1,9 @@
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import com.android.build.api.variant.ApplicationVariant
 import com.android.build.api.variant.FilterConfiguration
+import dev.kyralabs.pingogram.buildlogic.ApkSizeCheckTask
 import dev.kyralabs.pingogram.buildlogic.PingogramAndroid
 import dev.kyralabs.pingogram.buildlogic.PingogramVersion
 import dev.kyralabs.pingogram.buildlogic.ReleaseSigning
@@ -11,6 +14,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.register
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -69,8 +73,25 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                         output.versionCode.set(version.versionCode(abi))
                     }
                 }
+                // The APK size budget (docs/PERFORMANCE.md §1) of the variants built as releases are: minified.
+                onVariants(selector().all()) { variant ->
+                    if (variant.isMinifyEnabled) registerApkSizeCheck(variant)
+                }
             }
         }
+    }
+}
+
+/** `check<Variant>ApkSize` ([ApkSizeCheckTask]) on [variant]'s APKs. */
+private fun Project.registerApkSizeCheck(variant: ApplicationVariant) {
+    val name = variant.name.replaceFirstChar(Char::uppercaseChar)
+    tasks.register<ApkSizeCheckTask>("check${name}ApkSize") {
+        group = "verification"
+        description = "Fails when an APK of ${variant.name} is over the size budget of docs/PERFORMANCE.md."
+        variantName.set(variant.name)
+        apkDirectory.set(variant.artifacts.get(SingleArtifact.APK))
+        builtArtifactsLoader.set(variant.artifacts.getBuiltArtifactsLoader())
+        report.set(layout.buildDirectory.file("reports/apk-size/${variant.name}.txt"))
     }
 }
 
