@@ -11,6 +11,7 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -73,7 +74,8 @@ class MainActivityTest {
         tab(R.string.nav_chats).assertIsSelected()
 
         tab(R.string.nav_settings).performClick()
-        composeRule.onNodeWithText(string(SettingsR.string.settings_log_out)).performClick()
+        // Below the groups, past the bottom of a phone's screen.
+        composeRule.onNodeWithText(string(SettingsR.string.settings_log_out)).performScrollTo().performClick()
         composeRule
             .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
             .performClick()

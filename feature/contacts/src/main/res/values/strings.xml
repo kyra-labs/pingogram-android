@@ -113,6 +113,7 @@
     <string name="contacts_invite_section">Invite to Telegram</string>
     <!-- For screen readers; %1$s is the contact's name. -->
     <string name="contacts_invite_person">Invite %1$s to Telegram</string>
+    <string name="contacts_recent_calls">Recent calls</string>
     <string name="contacts_my_qr_code">Your QR code</string>
     <string name="contacts_scan_qr_code">Scan QR code</string>
 </resources>

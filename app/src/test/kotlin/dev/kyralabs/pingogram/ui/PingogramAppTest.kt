@@ -703,7 +703,8 @@ class PingogramAppTest {
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        text(SettingsR.string.settings_log_out).performClick()
+        // Below the groups, past the bottom of a phone's screen.
+        text(SettingsR.string.settings_log_out).performScrollTo().performClick()
         composeRule
             .onNode(hasText(string(SettingsR.string.settings_log_out_dialog_confirm)) and hasAnyAncestor(isDialog()))
             .performClick()

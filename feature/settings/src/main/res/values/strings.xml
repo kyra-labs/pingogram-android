@@ -20,6 +20,8 @@
     <string name="settings_profile_saved">Profile saved</string>
 
     <!-- Settings home -->
+    <string name="settings_recent_calls">Recent calls</string>
+    <string name="settings_recent_calls_summary">Missed, incoming and outgoing calls</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
     <string name="settings_language">Language</string>
