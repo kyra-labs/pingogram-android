@@ -27,8 +27,10 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.ttlText
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Privacy and security page: hoists [PrivacySecurityViewModel] and, for "Sync contacts",
@@ -77,7 +79,8 @@ internal fun PrivacySecurityRoute(
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
- *   the passcode lock is on, each opening its page.
+ *   the passcode lock is on, each opening its page;
+ * - Account: "Delete account", with how long the account may stay unused, opening its page.
  */
 @Suppress("LongParameterList") // The page's state and events, and contacts sync's.
 @Composable
@@ -110,6 +113,7 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
                 SecuritySection(state, onOpen)
+                AccountSection(state, onOpen)
             }
         }
     }
@@ -211,6 +215,25 @@ private fun SecuritySection(
                 icon = R.drawable.ic_pin,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
+            )
+        }
+    }
+}
+
+/** "Delete account", opening its page, with how long the account may stay unused before Telegram deletes it. */
+@Composable
+private fun AccountSection(
+    state: PrivacySecurityUiState.Content,
+    onOpen: (PrivacySecurityPage) -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_account)) {
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_delete_account),
+                summary = stringResource(R.string.settings_delete_account_summary, ttlText(state.accountTtlDays)),
+                icon = UiR.drawable.ic_delete,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
             )
         }
     }

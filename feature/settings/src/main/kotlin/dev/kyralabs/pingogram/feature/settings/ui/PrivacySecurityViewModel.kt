@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.TwoStepVerificationState
+import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
@@ -33,8 +34,9 @@ import javax.inject.Inject
 
 /**
  * The Privacy and security page (`REQUIREMENTS.md` FR-S1): the main choice of every privacy setting, how many users and
- * chats are blocked, how many sessions the account has, whether 2-step verification is on, and whether the passcode
- * lock is on, which follows its settings as they change ([PasscodeRepository]).
+ * chats are blocked, how many sessions the account has, whether 2-step verification is on, whether the passcode
+ * lock is on, which follows its settings as they change ([PasscodeRepository]), and how long the account may stay
+ * unused before Telegram deletes it ([AccountRepository]), shown on "Delete account".
  *
  * Everything loads at once when the page opens; if anything fails, the page shows why and offers to try again. TDLib's
  * changes of the privacy settings apply as they come, made here or elsewhere, so the page shows a choice made on a
@@ -50,6 +52,7 @@ class PrivacySecurityViewModel
         private val sessionRepository: SessionRepository,
         private val twoStepVerificationRepository: TwoStepVerificationRepository,
         private val passcodeRepository: PasscodeRepository,
+        private val accountRepository: AccountRepository,
         private val timeFormats: SettingsTimeFormats,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<PrivacySecurityUiState>(PrivacySecurityUiState.Loading)
@@ -144,8 +147,10 @@ class PrivacySecurityViewModel
                 val blocked = async { blockListRepository.blockedSenders(offset = 0, limit = 1) }
                 val sessions = async { sessionRepository.activeSessions() }
                 val password = async { twoStepVerificationRepository.state() }
+                val accountTtl = async { accountRepository.accountTtl() }
                 val loadedRules = rules.mapValues { it.value.await() }
-                val outcomes = loadedRules.values + listOf(blocked.await(), sessions.await(), password.await())
+                val outcomes =
+                    loadedRules.values + listOf(blocked.await(), sessions.await(), password.await(), accountTtl.await())
                 val error = outcomes.firstNotNullOfOrNull { (it as? Outcome.Failure)?.error }
                 if (error != null) {
                     Outcome.Failure(error)
@@ -156,6 +161,7 @@ class PrivacySecurityViewModel
                             blocked = blocked.await().value(),
                             sessions = sessions.await().value(),
                             password = password.await().value(),
+                            accountTtlDays = accountTtl.await().value(),
                         ),
                     )
                 }
@@ -166,11 +172,13 @@ class PrivacySecurityViewModel
             blocked: BlockedSendersPage,
             sessions: ActiveSessions,
             password: TwoStepVerificationState,
+            accountTtlDays: Int,
         ) = PrivacySecurityUiState.Content(
             rules = rules.toImmutableMap(),
             blockedCount = blocked.totalCount,
             sessionCount = sessions.sessions.size,
             twoStepVerification = password.summary(),
+            accountTtlDays = accountTtlDays,
         )
 
         private fun TwoStepVerificationState.summary(): TwoStepVerificationSummary {

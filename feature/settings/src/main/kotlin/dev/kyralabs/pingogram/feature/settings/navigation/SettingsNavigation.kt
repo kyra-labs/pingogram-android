@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
+import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
@@ -58,6 +59,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as Open
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountRoute as DeleteAccountScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
@@ -112,7 +114,7 @@ private fun NavGraphBuilder.appearancePages(
  * Appearance, [NotificationExceptionsRoute] above Notifications,
  * [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute] and
- * [PasscodeLockRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
+ * [PasscodeLockRoute] and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
  * [onBack] leaves each of them; Edit profile leaves with [onProfileSaved] once it saved, which the app implements with
  * [popBackStackAfterProfileSaved], and a flow of 2-step verification with [onTwoStepVerificationDone] once it is done,
@@ -187,6 +189,7 @@ fun NavGraphBuilder.settingsPages(
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
     }
     settingsPage<SetPasscodeRoute> { SetPasscodeScreenRoute(onSaved = onBack, onBack = onBack) }
+    settingsPage<DeleteAccountRoute> { DeleteAccountScreenRoute(onBack = onBack) }
     twoStepVerificationPages(onOpen, onBack, onTwoStepVerificationDone)
 }
 
@@ -298,6 +301,7 @@ private val PrivacySecurityPage.route: Any
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
             PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
+            PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute
         }
 
 private val NotificationSettingsPage.route: Any
