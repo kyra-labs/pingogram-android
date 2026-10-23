@@ -4,6 +4,8 @@ import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallServer
 import dev.kyralabs.pingogram.core.domain.model.CallServerType
 import io.github.pytgcalls.ConnectionState
+import io.github.pytgcalls.VideoRotation
+import io.github.pytgcalls.media.StreamStatus
 import io.github.pytgcalls.p2p.Protocol
 import io.github.pytgcalls.p2p.RTCServer
 import kotlinx.collections.immutable.toImmutableList
@@ -51,4 +53,22 @@ internal fun ConnectionState?.toMediaState(): CallMediaState =
         ConnectionState.FAILED, ConnectionState.TIMEOUT -> CallMediaState.Failed
         ConnectionState.CLOSED -> CallMediaState.Closed
         ConnectionState.CONNECTING, null -> CallMediaState.Connecting
+    }
+
+/** The other side's camera, as its engine reports it; idling is no video. */
+internal fun StreamStatus?.toRemoteVideo(): RemoteVideo =
+    when (this) {
+        StreamStatus.ACTIVE -> RemoteVideo.Active
+        StreamStatus.PAUSED -> RemoteVideo.Paused
+        StreamStatus.IDLING, null -> RemoteVideo.Off
+    }
+
+/** A frame's rotation in degrees clockwise, as WebRTC's `VideoFrame` takes it. */
+@Suppress("MagicNumber") // Degrees.
+internal fun VideoRotation?.toDegrees(): Int =
+    when (this) {
+        VideoRotation.VIDEO_ROTATION_90 -> 90
+        VideoRotation.VIDEO_ROTATION_180 -> 180
+        VideoRotation.VIDEO_ROTATION_270 -> 270
+        VideoRotation.VIDEO_ROTATION_0, null -> 0
     }

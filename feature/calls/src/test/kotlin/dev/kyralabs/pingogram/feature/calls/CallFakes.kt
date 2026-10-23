@@ -6,9 +6,12 @@ import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
+import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
+import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.SystemCall
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallListener
@@ -29,6 +32,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
+val FRONT_CAMERA = CallCamera(id = "1", isFront = true, metadata = "{\"id\":\"1\",\"is_front\":true}")
+val BACK_CAMERA = CallCamera(id = "0", isFront = false, metadata = "{\"id\":\"0\",\"is_front\":false}")
+
 val ENGINE_PROTOCOL = CallProtocol(true, true, 65, 92, persistentListOf("13.0.0", "12.0.0"))
 
 /** TDLib's calls as a test scripts them: [calls] holds what `updateCall` announced. */
@@ -46,6 +52,10 @@ class FakeCallRepository : CallRepository {
     val started = mutableListOf<Pair<Long, CallProtocol>>()
     val accepted = mutableListOf<Pair<Int, CallProtocol>>()
     val discarded = mutableListOf<Discard>()
+
+    /** `is_video` of each createCall and discardCall, in order. */
+    val startedVideo = mutableListOf<Boolean>()
+    val discardedVideo = mutableListOf<Boolean>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
 
     data class Discard(
@@ -71,6 +81,7 @@ class FakeCallRepository : CallRepository {
         protocol: CallProtocol,
     ): Outcome<Int> {
         started += userId to protocol
+        startedVideo += isVideo
         startGate?.await()
         return startResult
     }
@@ -91,6 +102,7 @@ class FakeCallRepository : CallRepository {
         connectionId: Long,
     ): Outcome<Unit> {
         discarded += Discard(callId, isDisconnected, duration)
+        discardedVideo += isVideo
         return discardResult
     }
 
@@ -112,10 +124,16 @@ private fun Map<Int, Call>.toImmutable(): ImmutableMap<Int, Call> = persistentMa
 class FakeCallEngine : CallEngine {
     var failsToLoad = false
     val sessions = mutableListOf<FakeCallSession>()
+    var cameras = listOf(FRONT_CAMERA, BACK_CAMERA)
 
     override suspend fun protocol(): CallProtocol {
         if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
         return ENGINE_PROTOCOL
+    }
+
+    override suspend fun cameras(): List<CallCamera> {
+        if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        return cameras
     }
 
     override suspend fun connect(
@@ -138,6 +156,24 @@ class FakeCallSession(
     var muted = false
     var onHold = false
     var closed = false
+
+    /** Every camera the session was told to send, in order (null: none). */
+    val cameras = mutableListOf<CallCamera?>()
+    var localSink: VideoFrameSink? = null
+    var remoteSink: VideoFrameSink? = null
+    override val remoteVideo = MutableStateFlow(RemoteVideo.Off)
+
+    override suspend fun setCamera(camera: CallCamera?) {
+        cameras += camera
+    }
+
+    override suspend fun setVideoSinks(
+        local: VideoFrameSink?,
+        remote: VideoFrameSink?,
+    ) {
+        localSink = local
+        remoteSink = remote
+    }
 
     fun send(data: ByteArray) {
         outgoing.trySend(data)
