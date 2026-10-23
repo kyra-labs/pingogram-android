@@ -140,6 +140,10 @@ light or dark theme.</sub>
 - **Profiles, groups and channels:** user profiles with their shared media; group and channel info
   with members, admins and their rights, permissions and slow mode, invite links, photo, name and
   description, leaving and deleting, as far as your rights allow; creating groups and channels.
+- **Bots:** command menus and suggestions, the buttons bots put under their messages, bot keyboards, inline bots
+  ("@gif cats") and a Start button for bots you have not used yet. Mini Apps, games and payments are not there yet.
+- **Voice calls:** end-to-end encrypted, with the four emojis to compare; they ring like phone calls, on the lock
+  screen too, and work with your headset, car and watch.
 - **Inside chats:** secret chats (end-to-end encrypted, on this phone only, with a self-destruct
   timer and the encryption key to compare), forum topics, comment threads under channel posts and
   a pinned messages bar.
@@ -155,9 +159,12 @@ light or dark theme.</sub>
   groups and channels from invite links, and see a channel's boosts.
 - **Settings:** your account and profile (photo, name, username, bio), privacy, blocked users,
   active sessions, two-step verification (set, change, recover), passcode lock with fingerprint
-  or face, notifications, appearance (system, light or dark theme, AMOLED black, dynamic color,
-  contrast), data and storage (usage, clear cache, automatic download per network), language and
-  about with the open-source licenses.
+  or face, notifications, appearance (system, light or dark theme, AMOLED black, contrast, your wallpaper's colors
+  or one of 13 color themes; message text size, bubble corners and a chat wallpaper), data and storage (usage, clear
+  cache, automatic download per network), language and about with the open-source licenses. "Send feedback or
+  report a bug" prepares a report on your phone that you read and share yourself.
+- **On the home screen:** a widget of your recent chats, and shortcuts on the app's icon for New chat, Search and
+  Saved Messages.
 - **Built the Android way:** a floating navigation bar on phones and a navigation rail with a
   list-detail layout on larger screens, edge-to-edge, predictive back, and layouts that hold up
   at 200% font size and with TalkBack.
@@ -165,7 +172,7 @@ light or dark theme.</sub>
 ### Permissions
 
 Pingogram asks for each permission only when you use what needs it, and says why first:
-notifications (Android 13+), the microphone for voice messages, the location you send, your
+notifications (Android 13+), the microphone for voice messages and calls, the location you send, your
 contacts only if you turn on contacts sync, and the camera only for the QR code scanner. The
 scanner reads codes on your phone: nothing the camera sees is kept or sent, only the Telegram
 link a code holds is opened through TDLib. There are no analytics, ads or trackers.
@@ -173,7 +180,8 @@ link a code holds is opened through TDLib. There are no analytics, ads or tracke
 ### Not yet
 
 - Recording video messages; creating and editing forum topics
-- Voice and video calls
+- Video calls (a video call reaches you as a voice call) and group calls, planned next
+  ([ADR 0019](docs/adr/0019-video-and-group-calls-scope.md))
 
 The [roadmap](docs/ROADMAP.md) lists the milestones towards 1.0, which also aims for faster
 start-up and smoother scrolling than the official app on the same device
