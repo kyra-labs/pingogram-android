@@ -87,8 +87,11 @@ the release workflow so the owner can install and test on a phone.
 
 ## M5.1 — Video and group calls (after `v0.5.0`)
 
-- [ ] 1:1 video calls: camera, self-view, switch camera, camera on and off, picture-in-picture, lower resolutions on
-      weak connections; the frame path measured on a device (`docs/adr/0019-video-and-group-calls-scope.md`)
+- [x] 1:1 video calls (`docs/adr/0019-video-and-group-calls-scope.md`): camera, self-view, switch camera, camera on
+      and off, picture-in-picture, lower resolutions on mobile data, roaming, Data Saver and weak connections
+- [ ] Video call buttons in the conversation's top bar and the profile (`Calls.videoCall(userId)`; the chat screens'
+      and the profile's owners)
+- [ ] The video frame path measured on a device (CPU and memory during a 720p call, `docs/PERFORMANCE.md`)
 - [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
 - [ ] Live streams: watching
 

@@ -26,7 +26,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   says "Incoming video call" and is answered with your camera on once Pingogram may use it; Pingogram asks for the
   camera the first time you turn it on. Your video goes to the other person only, end-to-end encrypted. Leaving a
   video call keeps it going in picture-in-picture, with Hang up. On mobile data, when roaming or with Data Saver your
-  camera sends a smaller picture, and so it does after the connection was lost once in the call.
+  camera sends a smaller picture, and so it does after the connection was lost once in the call. (Video call buttons
+  in conversations and profiles come next; until then, turn the camera on during a call.)
 - Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
   Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
   "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages

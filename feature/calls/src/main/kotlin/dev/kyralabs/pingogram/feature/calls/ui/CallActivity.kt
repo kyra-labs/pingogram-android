@@ -298,6 +298,9 @@ class CallActivity : ComponentActivity() {
         const val EXTRA_ACTION = "action"
         const val EXTRA_USER_ID = "user_id"
 
+        /** With [ACTION_START]: call with the camera on. */
+        const val EXTRA_VIDEO = "video"
+
         /** Shows the user's call. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW"
 
@@ -307,12 +310,18 @@ class CallActivity : ComponentActivity() {
         /** Calls [EXTRA_USER_ID]. */
         const val ACTION_START = "dev.kyralabs.pingogram.calls.START"
 
-        /** Calls user [userId]: the call buttons of the conversation and the profile, and "Call back". */
+        /**
+         * Calls user [userId], [video] with the camera on: the call buttons of the conversation and the profile, and
+         * "Call back".
+         */
         fun startCall(
             context: Context,
             userId: Long,
+            video: Boolean = false,
         ) {
-            context.startActivity(intent(context, ACTION_START).putExtra(EXTRA_USER_ID, userId))
+            context.startActivity(
+                intent(context, ACTION_START).putExtra(EXTRA_USER_ID, userId).putExtra(EXTRA_VIDEO, video),
+            )
         }
 
         internal fun pendingIntent(
