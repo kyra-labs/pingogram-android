@@ -27,7 +27,7 @@ area in depth.
 | 1 | Sign in, chat list | Sign in with your number (and 2-step verification password), or with a QR code from another device. Scroll a long chat list; folders, the archive, pinning, muting, swiping to archive or mark read; search for chats, people and messages |
 | 2 | Conversations | Long chats with photos, videos, stickers, voice messages and polls; replies, forwards, reactions, editing and deleting; the unread divider and "jump to bottom"; sending text with formatting, photos, files, your location, voice messages (hold the microphone), stickers and emoji |
 | 3 | Notifications | Notifications with Pingogram in the background and closed (`gms`) or with "Keep connected" (`foss`); replying and marking read from the notification; muted chats stay quiet |
-| 4 | Calls | Voice calls with a friend on another Telegram app: calling, answering (slide), declining, "Message" instead of answering, speaker, Bluetooth, mute, hold, the four emojis matching on both phones, a weak network (walk away from Wi-Fi), a call while the phone is locked |
+| 4 | Calls | Voice calls with a friend on another Telegram app: calling, answering (slide), declining, "Message" instead of answering, speaker, Bluetooth, mute, hold, the four emojis matching on both phones, a weak network (walk away from Wi-Fi), a call while the phone is locked. Video: turn the camera on during a call, switch cameras, answer a video call from the other app, leave the call with Home (picture-in-picture) and come back, a video call on mobile data |
 | 5 | Groups and channels | Creating a group or a channel, inviting people, admin rights and permissions, invite links, forum topics, comments under channel posts, joining by a link or a QR code |
 | 6 | Contacts, profiles, secret chats | Adding and editing contacts, contact sync (opt-in), profiles and their shared media, starting a secret chat and its self-destruct timer, comparing its encryption key |
 | 7 | Settings and the device | Appearance (dark, AMOLED, color themes, contrast), font size at 200% in Android's settings, TalkBack, landscape, a tablet or foldable if you have one, the passcode lock, sharing into Pingogram from other apps, opening `t.me` links |
@@ -66,6 +66,6 @@ chat with yourself (Saved Messages) or of a test group is best.
 - Pingogram follows Telegram's terms for apps: it shows sponsored messages in channels, and it has no features for
   automation or mass messaging. Do not script it or send many messages in a row while testing; Telegram may limit your
   account.
-- Some things are not there yet and need no report: video calls (a video call from someone rings as a voice call),
-  group voice chats, stories, Mini Apps, payments, in-chat search, chat export.
+- Some things are not there yet and need no report: a video call button in chats and profiles (turn the camera on
+  during a call instead), group voice chats, stories, Mini Apps, payments, in-chat search, chat export.
 - A crash-free week counts too: say so in the testers' group at the end, with how much you used it.
