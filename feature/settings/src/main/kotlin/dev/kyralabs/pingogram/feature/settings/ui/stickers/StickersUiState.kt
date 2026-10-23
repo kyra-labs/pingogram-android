@@ -45,8 +45,9 @@ data class StickerSetItem(
     override fun toString() = "StickerSetItem(id=$id, count=$count, installed=$isInstalled, busy=$isBusy)"
 }
 
-/** What a set's menu asks for: its link shared, or the set archived or (after a question) removed. */
+/** What a set's menu asks for: its stickers shown, its link shared, or the set archived or (after a question) removed. */
 internal class StickerSetActions(
+    val onOpen: (StickerSetItem) -> Unit,
     val onShare: (StickerSetItem) -> Unit,
     val onArchive: (StickerSetItem) -> Unit,
     val onRemove: (StickerSetItem) -> Unit,

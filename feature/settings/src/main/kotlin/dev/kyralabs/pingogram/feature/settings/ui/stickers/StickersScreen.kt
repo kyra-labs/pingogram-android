@@ -47,11 +47,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * Settings → Stickers: hoists [StickersViewModel], shows what it did and its failures in snackbars (archiving and
  * removing with "Undo") and shares a set's link through Android's share sheet. [onOpenList] opens Trending stickers
- * (false) or Archived stickers (true); [onBack] leaves the page.
+ * (false) or Archived stickers (true), [onOpenSet] a set's sheet; [onBack] leaves the page.
  */
 @Composable
 internal fun StickersRoute(
     onOpenList: (archived: Boolean) -> Unit,
+    onOpenSet: (setId: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StickersViewModel = hiltViewModel(),
@@ -96,6 +97,7 @@ internal fun StickersRoute(
         onEvent = viewModel::onEvent,
         onOpenList = onOpenList,
         onShare = { context.shareStickerSet(it.name) },
+        onOpenSet = onOpenSet,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -105,8 +107,8 @@ internal fun StickersRoute(
 /**
  * Stickers (`REQUIREMENTS.md` FR-C5): Trending stickers and Archived stickers, then the user's sticker sets in the
  * order the sticker panel shows them, each with its cover, title and count, moved by dragging its handle or after a
- * long press (screen readers: "Move up", "Move down"); a tap opens its menu: Share link, Archive, Remove (asked
- * first with an `AlertDialog`).
+ * long press (screen readers: "Move up", "Move down"); a tap opens its menu: Show stickers ([onOpenSet]), Share link,
+ * Archive, Remove (asked first with an `AlertDialog`).
  */
 @Suppress("LongParameterList") // A page's state, its events, its ways out, and its hoisted states.
 @Composable
@@ -117,13 +119,15 @@ internal fun StickersScreen(
     onShare: (StickerSetItem) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSet: (setId: Long) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
 ) {
     var removing by rememberSaveable { mutableStateOf<Long?>(null) }
     val actions =
-        remember(onEvent, onShare) {
+        remember(onEvent, onShare, onOpenSet) {
             StickerSetActions(
+                onOpen = { onOpenSet(it.id) },
                 onShare = onShare,
                 onArchive = { onEvent(StickersEvent.Archive(it.id)) },
                 onRemove = { removing = it.id },
@@ -202,7 +206,7 @@ private fun RemoveSetDialog(
 }
 
 /** Hands set [name]'s link (`t.me/addstickers/<name>`) to Android's share sheet; nothing where no app takes it. */
-private fun Context.shareStickerSet(name: String) {
+internal fun Context.shareStickerSet(name: String) {
     val send =
         Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "https://t.me/addstickers/$name")
     try {

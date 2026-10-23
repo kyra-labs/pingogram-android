@@ -143,7 +143,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`StickersRoute`, `StickersViewModel`: a dragged order shown at once and taken back when Telegram refuses it, an
   archived or removed set gone at once with "Undo", which installs it again at its place) opens Trending stickers and
   Archived stickers (`StickerSetListRoute(archived)`, `StickerSetListViewModel`: "Add" per set, the trending sets shown
-  marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then).
+  marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then;
+  animated TGS ones through the app's `AnimatedStickers` where asked). A set's sheet (`StickerSetRoute(setId, name)`, a
+  dialog destination of `settingsPages`, so it is in `:app`'s `NavHost` and the Settings detail pane's alike,
+  `StickerSetSheetViewModel`: a link's name found first, the set read again on its changes, "Add stickers" / "Remove"
+  only on a tap) opens from a set's row and from `t.me/addstickers/<name>` links (`LinkTarget.StickerSet`).
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which

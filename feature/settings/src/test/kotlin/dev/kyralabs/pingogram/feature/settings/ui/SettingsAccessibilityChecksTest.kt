@@ -16,9 +16,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStat
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -120,6 +122,18 @@ class SettingsAccessibilityChecksTest {
     fun trendingStickers() =
         check {
             StickerSetListScreen(archived = false, state = StickersPreviewStates.trending, onEvent = {}, onBack = {})
+        }
+
+    @Test
+    fun stickerSet() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
+        }
+
+    @Test
+    fun stickerSetNotFound() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notFound, onEvent = {}, onShare = {}, onClose = {})
         }
 
     @Test

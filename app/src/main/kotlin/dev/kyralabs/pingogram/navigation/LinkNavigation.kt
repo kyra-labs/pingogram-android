@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
+import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 
 /**
  * Hands [link], a Telegram link another app opened Pingogram with, to [onOpen] once the main graph shows, after
@@ -67,7 +68,8 @@ internal fun OpenLinkEffect(
  * - **Contacts** and **Settings** switch tabs, a page of Settings is pushed above its tab; **Edit profile** and **New
  *   chat** are pushed; **search** opens with [onOpenSearch], docked or full screen as the window wants.
  * - An **invitation** opens the join sheet above the screen (`ChatInviteRoute`, a dialog destination), a **shared
- *   folder** its sheet (`ChatFolderInviteRoute`, also a dialog destination); a **QR code
+ *   folder** its sheet (`ChatFolderInviteRoute`, also a dialog destination), a **sticker set** its sheet
+ *   (`StickerSetRoute`, a dialog destination of the settings pages' graph); a **QR code
  *   login** the page that asks before logging the device in (`QrLoginRoute`); a **boost** link the chat's boosts
  *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`). Each of them changes nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
@@ -93,6 +95,7 @@ internal fun NavHostController.openLinkTarget(
         LinkTarget.Search -> onOpenSearch()
         is LinkTarget.ChatInvite -> navigate(ChatInviteRoute(target.inviteLink)) { launchSingleTop = true }
         is LinkTarget.ChatFolderInvite -> navigate(ChatFolderInviteRoute(target.inviteLink)) { launchSingleTop = true }
+        is LinkTarget.StickerSet -> navigate(StickerSetRoute(name = target.name)) { launchSingleTop = true }
         is LinkTarget.QrCodeLogin -> navigate(QrLoginRoute(target.link)) { launchSingleTop = true }
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }

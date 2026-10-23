@@ -65,6 +65,16 @@ data class StickerSetListRoute(
 )
 
 /**
+ * The sheet of sticker set [setId], or of the set named [name] (`t.me/addstickers/<name>`) when the id is 0,
+ * `:feature:settings`: a dialog destination above the screen it was opened from.
+ */
+@Serializable
+data class StickerSetRoute(
+    val setId: Long = 0,
+    val name: String? = null,
+)
+
+/**
  * The sheet of a shared chat folder's link [inviteLink] (`t.me/addlist/…`), `:feature:settings`: a dialog destination
  * above the screen the link was opened from.
  */

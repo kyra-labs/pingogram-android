@@ -20,21 +20,26 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 
 /**
  * A sticker set's picture in a list (Settings → Stickers): [sticker], still, fitted into a square of [size], its
  * picture (the sticker itself if it is a still, else its thumbnail if that is a picture) loaded by Coil at that size
  * over its emoji, which stands in until it shows and where there is none. Without a sticker, a tonal `small`-rounded
- * square in `surfaceContainerHigh`. Decorative: the row names the set.
+ * square in `surfaceContainerHigh`. Decorative: the row names the set. With [animate], an animated (TGS) sticker plays
+ * through the app's [AnimatedStickers] ([LocalAnimatedStickers], none in previews), within its limit of stickers
+ * playing at once; its first frame replaces the picture.
  */
 @Composable
 fun StickerCover(
     sticker: Sticker?,
     size: Dp,
     modifier: Modifier = Modifier,
+    animate: Boolean = false,
 ) {
     val picture = sticker?.stillPicture()
+    val animated = LocalAnimatedStickers.current?.takeIf { animate && sticker?.format == StickerFormat.Tgs }
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
         when {
             sticker == null -> {
@@ -48,8 +53,19 @@ fun StickerCover(
             else -> {
                 // The emoji until the picture shows: stickers are transparent, so it would show through.
                 var pictureShown by remember(picture) { mutableStateOf(false) }
-                if (!pictureShown && sticker.emoji.isNotBlank()) CoverEmoji(sticker.emoji, size)
-                if (picture != null) CoverPicture(picture, size) { pictureShown = true }
+                var animationShown by remember(sticker.file.id) { mutableStateOf(false) }
+                if (!animationShown) {
+                    if (!pictureShown && sticker.emoji.isNotBlank()) CoverEmoji(sticker.emoji, size)
+                    if (picture != null) CoverPicture(picture, size) { pictureShown = true }
+                }
+                if (animated != null) {
+                    AnimatedSticker(
+                        stickers = animated,
+                        fileId = sticker.file.id,
+                        modifier = Modifier.size(size),
+                        onFirstFrame = { animationShown = true },
+                    )
+                }
             }
         }
     }

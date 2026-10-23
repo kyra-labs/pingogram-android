@@ -66,11 +66,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Trending stickers ([archived] false) or Archived stickers: hoists [StickerSetListViewModel] and shows what it did
- * and its failures in snackbars; [onBack] leaves the page.
+ * and its failures in snackbars; a tapped set opens its sheet ([onOpenSet]); [onBack] leaves the page.
  */
 @Composable
 internal fun StickerSetListRoute(
     archived: Boolean,
+    onOpenSet: (setId: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StickerSetListViewModel = hiltViewModel(),
@@ -100,6 +101,7 @@ internal fun StickerSetListRoute(
         onEvent = viewModel::onEvent,
         onBack = onBack,
         modifier = modifier,
+        onOpenSet = onOpenSet,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -117,6 +119,7 @@ internal fun StickerSetListScreen(
     onEvent: (StickerSetListEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSet: (setId: Long) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
 ) {
@@ -147,7 +150,7 @@ internal fun StickerSetListScreen(
                     if (state.sets.isEmpty()) {
                         StickerSetListEmpty(archived, Modifier.padding(contentPadding))
                     } else {
-                        StickerSetList(archived, state, onEvent, listState, contentPadding)
+                        StickerSetList(archived, state, onEvent, onOpenSet, listState, contentPadding)
                     }
                 }
             }
@@ -160,6 +163,7 @@ private fun StickerSetList(
     archived: Boolean,
     state: StickerSetListUiState.Content,
     onEvent: (StickerSetListEvent) -> Unit,
+    onOpenSet: (setId: Long) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
@@ -184,6 +188,7 @@ private fun StickerSetList(
                 set = set,
                 shapes = ListItemDefaults.segmentedShapes(index, state.sets.size),
                 onAdd = { onEvent(StickerSetListEvent.Add(set.id)) },
+                onOpen = { onOpenSet(set.id) },
                 modifier = Modifier.settingsListRow(this, style),
             )
         }
@@ -193,16 +198,21 @@ private fun StickerSetList(
     }
 }
 
-/** A set the user may add: "Add" (named with the set for screen readers), progress while adding, then a check. */
+/**
+ * A set the user may add, which a tap opens ([onOpen]): "Add" (named with the set for screen readers), progress while
+ * adding, then a check.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AvailableSetRow(
     set: StickerSetItem,
     shapes: ListItemShapes,
     onAdd: () -> Unit,
+    onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SegmentedListItem(
+        onClick = onOpen,
         shapes = shapes,
         modifier = modifier,
         leadingContent = { StickerCover(set.cover, MaterialTheme.sizes.leadingIconContainer) },

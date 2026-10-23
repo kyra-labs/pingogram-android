@@ -28,6 +28,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   handle, or touch and hold it, to move it; tap it to share its link, archive it or remove it, with "Undo" right
   after. Trending stickers shows the sets popular on Telegram and Archived stickers the ones you archived, each with
   "Add".
+- Sticker set links: a sticker set's link (`t.me/addstickers/…`) shows its stickers, to add the set with one tap; the
+  sets in Settings → Stickers open the same way.
 
 ## [0.5.0] - 2026-10-23
 

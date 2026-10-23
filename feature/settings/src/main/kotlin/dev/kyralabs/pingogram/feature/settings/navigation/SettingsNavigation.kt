@@ -9,6 +9,7 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
@@ -38,13 +39,17 @@ import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
+import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
+import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
+import dev.kyralabs.pingogram.core.ui.component.SheetDialogProperties
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetSheetRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationResult
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
@@ -132,10 +137,23 @@ private fun NavGraphBuilder.stickerPages(
     onBack: () -> Unit,
 ) {
     settingsPage<StickersRoute> {
-        StickersScreenRoute(onOpenList = { onOpen(StickerSetListRoute(archived = it)) }, onBack = onBack)
+        StickersScreenRoute(
+            onOpenList = { onOpen(StickerSetListRoute(archived = it)) },
+            onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
+            onBack = onBack,
+        )
     }
     settingsPage<StickerSetListRoute> { entry ->
-        StickerSetListScreenRoute(archived = entry.toRoute<StickerSetListRoute>().archived, onBack = onBack)
+        StickerSetListScreenRoute(
+            archived = entry.toRoute<StickerSetListRoute>().archived,
+            onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
+            onBack = onBack,
+        )
+    }
+    // A dialog destination, so the page below stays visible under the sheet's scrim; links open it too.
+    dialog<StickerSetRoute>(dialogProperties = SheetDialogProperties) {
+        NoDialogWindowDim()
+        StickerSetSheetRoute(onClose = onBack)
     }
 }
 
@@ -143,8 +161,8 @@ private fun NavGraphBuilder.stickerPages(
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
  * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute]
- * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] above
- * Stickers, [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute] above Data and storage,
+ * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the
+ * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
