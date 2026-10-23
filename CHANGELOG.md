@@ -9,6 +9,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-23
+
 ### Added
 - Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
   switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
@@ -728,7 +730,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the emphasized type styles, the increased shape sizes) are internal.
 - Backups and device transfer are disabled for all app data.
 
-[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kyra-labs/pingogram-android/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.3...v0.3.0
 [0.3.0-beta.3]: https://github.com/kyra-labs/pingogram-android/compare/v0.3.0-beta.2...v0.3.0-beta.3
