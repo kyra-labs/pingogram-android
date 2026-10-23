@@ -81,7 +81,7 @@ class CallViewModelTest {
             FakeCallTones(),
             clock,
             { "Ada" },
-            FakeNetworkRepository(),
+            { FakeNetworkRepository() },
             backgroundScope,
         ).also { it.start() }
 

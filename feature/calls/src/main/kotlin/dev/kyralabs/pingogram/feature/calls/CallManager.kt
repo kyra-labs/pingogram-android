@@ -77,7 +77,9 @@ class CallManager
         private val tones: CallTones,
         private val clock: CallClock,
         private val names: CallerNames,
-        private val network: NetworkRepository,
+        // Lazy: the repository asks Android for the network when it is made, which the first call does off the main
+        // thread, not the activities that inject this at their start (`docs/PERFORMANCE.md` §2).
+        private val network: dagger.Lazy<NetworkRepository>,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val mutableCall = MutableStateFlow<ActiveCall?>(null)
@@ -312,7 +314,7 @@ class CallManager
                     if (call.phase is CallPhase.Connected) system.setActive()
                     call.scope.launch { system.audio.collect { audio -> mutex.withLock { updateAudio(call, audio) } } }
                     call.scope.launch {
-                        network.networkStatus.collect { status -> mutex.withLock { onNetwork(call, status) } }
+                        network.get().networkStatus.collect { status -> mutex.withLock { onNetwork(call, status) } }
                     }
                     // The system's mute (a headset's button, the system UI) after the value it starts with.
                     call.scope.launch {
