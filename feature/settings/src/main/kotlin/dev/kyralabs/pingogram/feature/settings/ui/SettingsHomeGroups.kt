@@ -45,7 +45,7 @@ internal fun PageGroups(
     }
 }
 
-/** General: Appearance, Notifications, Data and storage, Language. */
+/** General: Appearance, Chat folders, Notifications, Data and storage, Language. */
 @Composable
 private fun GeneralGroup(
     onOpenPage: (SettingsPage) -> Unit,
@@ -60,6 +60,16 @@ private fun GeneralGroup(
                 shapes = shapes,
                 selected = selection?.let { it.openPage == SettingsPage.Appearance },
                 onClick = { onOpenPage(SettingsPage.Appearance) },
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_chat_folders),
+                summary = stringResource(R.string.settings_chat_folders_summary),
+                icon = R.drawable.ic_folder,
+                shapes = shapes,
+                selected = selection?.let { it.openPage == SettingsPage.ChatFolders },
+                onClick = { onOpenPage(SettingsPage.ChatFolders) },
             )
         }
         item { shapes ->

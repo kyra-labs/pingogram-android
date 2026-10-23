@@ -115,6 +115,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **Chat folders** (FR-L3): `ChatRepository` keeps the folders TDLib announces (`updateChatFolders`: the tabs above
+  the chat list and the main list's place among them). `core:domain`'s `ChatFolderRepository` (`TdlibChatFolderRepository`,
+  `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as
+  `ChatFolderSettings`), creates, edits, deletes (`deleteChatFolder`, its chats kept) and reorders folders
+  (`reorderChatFolders`, the main list kept in its place), lists Telegram's suggestions (`getRecommendedChatFolders`),
+  and holds the requests of shared folders (their invite links, `checkChatFolderInviteLink`,
+  `addChatFolderByInviteLink`) for the screens that come next. A folder that includes nothing is refused before
+  TDLib (`DomainError.ChatFolderEmpty`). `feature:settings`' Chat folders page (`ChatFoldersRoute`,
+  `ChatFoldersViewModel`: each folder read again whenever the folders change, a dragged order shown at once and taken
+  back when Telegram refuses it) opens the editor (`ChatFolderEditRoute(folderId)`, `ChatFolderEditViewModel`: the
+  draft in saved state; what it does not show, the pinned chats, the tag's color and a title's custom emoji, kept
+  from the folder as Telegram has it; the picker's chats from the main list, filtered on the device).
+  `tg://settings/folders` opens the page.
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which
@@ -162,6 +175,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
   pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
   leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
+- **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
+  (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
+  the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
+  reason and the 2-step verification password, waiting as long as authentication requests). TDLib then closes the
+  session by itself (`LoggingOut`, `Closed`), which the app handles as a logout. `feature:settings`' `DeleteAccountRoute`
+  (`DeleteAccountViewModel`, above Privacy and security, which shows the period on its row) offers Telegram's periods
+  (1 to 24 months, and one another app set) and deletes behind a destructive `AlertDialog`; what is typed stays in the
+  page. The web page Play asks for is `docs/website/delete-account.md`.
 - **Secret chats** (FR-E1): TDLib does all of the cryptography and accepts the secret chats other users start by itself
   (td_api.tl has no function for it). `SecretChatRepository` (`core:domain`, `TdlibSecretChatRepository` in `core:data`,
   a `TdlibUpdateCache`: TDLib announces each secret chat once with `updateSecretChat`, before its chat) keeps every
@@ -794,6 +815,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
   buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
   features as a callback (features do not depend on each other); `Calls.videoCall(userId)` calls with the camera on.
+  `Calls` is `core:ui`'s `CallStarter` (`LocalCallStarter`, provided by `MainActivity`), whose `canVideoCall(userId)`
+  (the device's camera, then `UserProfileRepository.fullInfo`'s `canBeCalled` and `supportsVideoCalls`) decides whether
+  `core:ui`'s `CallButtonMenu`, the call button of the conversation's top bar and the profile's "Call" pill, offers
+  "Video call": the one flow a composable collects there, once per screen, as the decision is the call module's and the
+  screens' view models stay as they are.
   Video (`docs/adr/0019-video-and-group-calls-scope.md`):
   `CallScreen` takes the video as a slot (`CallVideo`, a placeholder in previews and goldens), which `CallActivity`
   fills with `CallVideoView` (WebRTC's `EglRenderer` in a `TextureView`); each view hands its renderer to the call as a

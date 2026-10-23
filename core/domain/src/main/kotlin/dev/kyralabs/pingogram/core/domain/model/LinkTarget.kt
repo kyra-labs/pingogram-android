@@ -130,6 +130,7 @@ sealed interface LinkTarget {
 /** The pages of Settings that a `tg://settings/…` link can open. */
 enum class SettingsPage {
     Appearance,
+    ChatFolders,
     DataAndStorage,
     ActiveSessions,
     Language,

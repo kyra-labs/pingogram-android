@@ -477,6 +477,10 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.Settings(SettingsPage.Appearance),
                 ),
                 Arguments.of(
+                    TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionChatFolders("")),
+                    LinkTarget.Settings(SettingsPage.ChatFolders),
+                ),
+                Arguments.of(
                     TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionDevices()),
                     LinkTarget.Settings(SettingsPage.ActiveSessions),
                 ),

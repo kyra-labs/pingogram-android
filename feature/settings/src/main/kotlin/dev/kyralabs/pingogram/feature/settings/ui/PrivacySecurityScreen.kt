@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
 
@@ -77,7 +78,8 @@ internal fun PrivacySecurityRoute(
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
- *   the passcode lock is on, each opening its page.
+ *   the passcode lock is on, each opening its page;
+ * - Account: "Delete account", with how long the account may stay unused, opening its page.
  */
 @Suppress("LongParameterList") // The page's state and events, and contacts sync's.
 @Composable
@@ -110,6 +112,10 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
                 SecuritySection(state, onOpen)
+                DeleteAccountGroup(
+                    accountTtlDays = state.accountTtlDays,
+                    onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
+                )
             }
         }
     }

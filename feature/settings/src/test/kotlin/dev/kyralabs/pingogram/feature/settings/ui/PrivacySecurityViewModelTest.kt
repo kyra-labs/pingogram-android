@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
@@ -48,6 +49,7 @@ class PrivacySecurityViewModelTest {
         answerBlocked(totalCount = 3)
         answerSessions(count = 4)
         answerPassword(passwordState())
+        client.on(TdApi.GetAccountTtl::class, TdResult.Success(TdApi.AccountTtl(365)))
     }
 
     @AfterEach
@@ -63,6 +65,7 @@ class PrivacySecurityViewModelTest {
             TdlibSessionRepository(client),
             TdlibTwoStepVerificationRepository(client),
             passcodes,
+            TdlibAccountRepository(client),
             testTimeFormats(),
         ).also { runCurrent() }
 
@@ -106,6 +109,12 @@ class PrivacySecurityViewModelTest {
     private val PrivacySecurityViewModel.content get() = state as PrivacySecurityUiState.Content
 
     private val everybody = PrivacyRules(PrivacyChoice.Everybody)
+
+    @Test
+    fun `shows how long the account may stay unused`() =
+        runTest {
+            assertEquals(365, viewModel().content.accountTtlDays)
+        }
 
     @Test
     fun `is loading until everything is loaded`() =

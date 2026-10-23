@@ -326,6 +326,8 @@ sealed interface ChatItem {
         override val date: UiText,
         /** The other user of a call that ended, in a private chat: tapping it calls back (`REQUIREMENTS.md` FR-V1). */
         val callUserId: Long? = null,
+        /** The call was a video call: calling back calls with the camera on. */
+        val callIsVideo: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = id
 

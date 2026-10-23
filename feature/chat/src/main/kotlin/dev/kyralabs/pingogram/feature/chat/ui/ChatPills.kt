@@ -74,8 +74,8 @@ internal fun DateSeparatorRow(
 
 /**
  * A service message ("Alice joined the group"), centred in a pill. Long texts wrap within the width of a bubble, the
- * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped
- * ([onCallBack]), with the call symbol after its text.
+ * shape's corners rounding the lines. A call in a private chat ([ChatItem.Service.callUserId]) calls back when tapped,
+ * a video call with the camera on ([ChatItem.Service.callIsVideo]), with the call symbol after its text.
  */
 @Composable
 internal fun ServiceMessageRow(
@@ -98,7 +98,10 @@ internal fun ServiceMessageRow(
                             Modifier.clickable(
                                 onClickLabel = stringResource(R.string.chat_call_back),
                                 role = Role.Button,
-                                onClick = { calls.call(callUserId) },
+                                // Back the way it was: a video call with the camera on.
+                                onClick = {
+                                    if (item.callIsVideo) calls.videoCall(callUserId) else calls.call(callUserId)
+                                },
                             )
                         } else {
                             Modifier
