@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
@@ -18,6 +19,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -50,6 +53,8 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property pinnedBar the pinned messages bar over the messages (`REQUIREMENTS.md` FR-C9); null while there is none.
  * @property botIntro what a private chat's bot shows while the chat is empty (`REQUIREMENTS.md` FR-C5); null for other
  *   chats, and bots that show nothing.
+ * @property translateBar the translate bar over the messages (`REQUIREMENTS.md` FR-C3), below the pinned messages
+ *   bar; null while there is none.
  */
 @Immutable
 data class ChatUiState(
@@ -71,6 +76,7 @@ data class ChatUiState(
     val mediaDownloads: MediaDownloads = MediaDownloads(),
     val pinnedBar: PinnedBar? = null,
     val botIntro: BotIntro? = null,
+    val translateBar: TranslateBar? = null,
 )
 
 /**
@@ -104,8 +110,9 @@ data class MessagePlayback(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
- * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat; null
- *   for groups, channels and Saved Messages.
+ * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat, the
+ *   user themselves in Saved Messages (their profile holds its shared media and "Export chat"); null for groups and
+ *   channels.
  * @property opensChatInfo the title opens the chat's info page: basic groups, supergroups and channels.
  * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
  *   chats.
@@ -256,8 +263,8 @@ sealed interface ChatItem {
      *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
      *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
      *   older pages bring in more of the album.
-     * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
-     *   link preview, reply or forward: shown large, without a bubble.
+     * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
+     *   without other formatting, link preview, reply or forward: shown large, without a bubble.
      * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
      *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
      * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
@@ -267,6 +274,10 @@ sealed interface ChatItem {
      *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
      * @property keyboard the buttons a bot attached to the message, under the bubble; null for none. An album's are
      *   those of the item that has them.
+     * @property translation the translation [text] shows, with its label in the meta, or that one is on its way
+     *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
+     * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
+     *   §5.9); null for every other bubble, and while there is no search.
      */
     data class Bubble(
         val id: Long,
@@ -297,6 +308,8 @@ sealed interface ChatItem {
         val selfDestructSeconds: Int? = null,
         val thread: ThreadLink? = null,
         val keyboard: BotKeyboard? = null,
+        val translation: BubbleTranslation? = null,
+        val searchMatch: MatchHighlight? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -455,7 +468,7 @@ sealed interface ReactionLabel {
         val emoji: String,
     ) : ReactionLabel
 
-    /** Custom emoji [customEmojiId], drawn as a placeholder until custom emoji are rendered. */
+    /** Custom emoji [customEmojiId], drawn as a placeholder until its picture is there. */
     data class CustomEmoji(
         val customEmojiId: Long,
     ) : ReactionLabel

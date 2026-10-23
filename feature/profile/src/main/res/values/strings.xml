@@ -70,6 +70,8 @@
     <string name="profile_block">Block user</string>
     <string name="profile_unblock">Unblock user</string>
     <string name="profile_report">Report</string>
+    <!-- Opens the export page of the chat (Export chat): its history into a folder the user picks. -->
+    <string name="profile_export_chat">Export chat</string>
 
     <!-- Block confirmation. %1$s is the person's name. -->
     <string name="profile_block_title">Block %1$s?</string>

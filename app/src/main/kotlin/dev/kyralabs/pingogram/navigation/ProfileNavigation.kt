@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ProfileRoute
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
@@ -21,7 +22,8 @@ import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
  * mention named, a file at its message) opens in the Chats tab's detail pane on expanded and wider windows
  * ([besideList], [navigateToChat]) and is pushed above the profile on others, so back returns to the profile. Another
  * profile and a photo, video or GIF in the media viewer are pushed above it. "Add to contacts" and "Edit contact" push
- * the contact editor (`EditContactRoute`, `feature:contacts`) above it.
+ * the contact editor (`EditContactRoute`, `feature:contacts`) above it, "Export chat" the export page
+ * (`ChatExportRoute`, `feature:chat`).
  */
 internal fun NavGraphBuilder.profile(
     navController: NavHostController,
@@ -36,6 +38,7 @@ internal fun NavGraphBuilder.profile(
             navController.navigateToChat(chatId, messageId, besideList = besideList.value)
         },
         onEditContact = { userId -> navController.navigateToEditContact(userId) },
+        onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
     )
 }
 

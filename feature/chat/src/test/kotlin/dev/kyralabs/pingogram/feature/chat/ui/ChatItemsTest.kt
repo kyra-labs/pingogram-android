@@ -659,6 +659,31 @@ class ChatItemsTest : ChatViewModelHarness() {
         }
 
     @Test
+    fun `a text of a few custom emoji shows large too, as does one mixed with regular emoji`() =
+        runTest {
+            val custom =
+                FormattedText(
+                    "🎉🎉",
+                    persistentListOf(
+                        TextEntity(0, 2, TextEntityType.CustomEmoji(1)),
+                        TextEntity(2, 2, TextEntityType.CustomEmoji(2)),
+                    ),
+                )
+            val mixed = FormattedText("🎉🚀", persistentListOf(TextEntity(0, 2, TextEntityType.CustomEmoji(1))))
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        message(1, content = MessageContent.Text(custom, null)),
+                        message(2, content = MessageContent.Text(mixed, null)),
+                    ),
+                )
+
+            assertTrue(viewModel.bubble(1).isEmojiOnly)
+            assertTrue(viewModel.bubble(2).isEmojiOnly)
+        }
+
+    @Test
     fun `a text with words, or too many emoji, keeps its bubble`() =
         runTest {
             val viewModel =

@@ -100,6 +100,8 @@ data class ProfileInfo(
  * @property isBlocked the user is blocked; null where blocking does not apply (oneself) or the full info is not known.
  * @property isChangingBlock blocking or unblocking was asked for, and TDLib has not answered yet.
  * @property canReport the account can be reported; not one's own.
+ * @property exportChatId the private chat "Export chat" exports (Saved Messages on one's own profile); null until it is
+ *   known, or where its content may not be saved.
  * @property callUserId the user "Call" calls (`REQUIREMENTS.md` FR-V1): a person, not oneself, whose privacy settings
  *   allow it; null otherwise.
  */
@@ -115,6 +117,7 @@ data class ProfileActions(
     val isChangingBlock: Boolean = false,
     val canReport: Boolean = false,
     val callUserId: Long? = null,
+    val exportChatId: Long? = null,
 )
 
 /** What the contact row does. */

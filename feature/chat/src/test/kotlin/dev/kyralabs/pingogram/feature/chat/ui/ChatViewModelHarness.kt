@@ -8,7 +8,11 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
+import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
@@ -16,7 +20,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
 import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -73,6 +81,15 @@ abstract class ChatViewModelHarness {
     protected val inlineBots = FakeInlineBotRepository()
     internal val deviceLocation = FakeDeviceLocationRepository()
     protected val locationConsent = InlineLocationConsent()
+    protected val translations = FakeTranslationRepository()
+
+    /** Texts are in English, the user's language, unless a test says otherwise. */
+    protected val languageDetector = FakeDeviceLanguageDetector(default = LanguageDetection.Detected("en"))
+    protected val appLanguage = FakeAppLanguageRepository()
+    protected val hiddenTranslateBars = FakeHiddenTranslateBarsRepository()
+    internal val chatSearch = FakeChatSearchRepository()
+    internal val groupMembers = FakeGroupInfoRepository()
+    protected val customEmoji = FakeCustomEmojiRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -132,6 +149,10 @@ abstract class ChatViewModelHarness {
                 botInfoRepository = bots,
                 botStartInbox = botStarts,
                 inlineBotRepositories = InlineBotRepositories(inlineBots, deviceLocation, locationConsent, botStarts),
+                translationRepositories =
+                    TranslationRepositories(translations, languageDetector, appLanguage, hiddenTranslateBars),
+                searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
+                customEmojiRepository = customEmoji,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

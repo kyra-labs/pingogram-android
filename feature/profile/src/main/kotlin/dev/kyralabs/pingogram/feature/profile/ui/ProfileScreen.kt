@@ -87,7 +87,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * looked up a delayed loading indicator shows; a user that cannot be found or read shows why, with "Try again".
  *
  * [onBack] is the top bar's back button; null hides it. [onEditContact], where the app has a contact editor, is what
- * "Add to contacts" or "Edit contact" opens; without it the row is left out.
+ * "Add to contacts" or "Edit contact" opens; without it the row is left out. [onExportChat], where the app has the
+ * export page, is what "Export chat" opens; without it that row is left out too.
  */
 @Suppress("LongParameterList") // The states, where their events go, and the app's navigation.
 @Composable
@@ -100,12 +101,13 @@ internal fun ProfileScreen(
     mediaActions: SharedMediaActions,
     modifier: Modifier = Modifier,
     onEditContact: (() -> Unit)? = null,
+    onExportChat: (() -> Unit)? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     twoPanes: Boolean = rememberTwoPanes(),
     gridState: LazyGridState = rememberLazyGridState(),
 ) {
     val page =
-        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact)
+        ProfilePageParts(state, media, onEvent, onMediaEvent, mediaActions, onEditContact, onExportChat)
     if (twoPanes) {
         ProfilePanes(page, onBack, snackbarHostState, modifier, gridState)
     } else {
@@ -121,6 +123,7 @@ internal class ProfilePageParts(
     val onMediaEvent: (SharedMediaEvent) -> Unit,
     val mediaActions: SharedMediaActions,
     val onEditContact: (() -> Unit)?,
+    val onExportChat: (() -> Unit)? = null,
 )
 
 /** Whether the window has room for the supporting pane beside the profile: expanded and wider. */
@@ -258,7 +261,10 @@ private fun LazyGridScope.profileItems(
     }
     val actions = state.actions
     val hasMore =
-        (actions.contact != null && page.onEditContact != null) || actions.isBlocked != null || actions.canReport
+        (actions.contact != null && page.onEditContact != null) ||
+            page.onExportChat != null ||
+            actions.isBlocked != null ||
+            actions.canReport
     if (hasMore) {
         fullWidth(key = MORE, inset = inset) {
             ProfileMoreGroup(
@@ -266,6 +272,7 @@ private fun LazyGridScope.profileItems(
                 onEvent = page.onEvent,
                 modifier = Modifier.padding(top = MaterialTheme.spacing.extraLarge),
                 onEditContact = page.onEditContact,
+                onExportChat = page.onExportChat,
             )
         }
     }

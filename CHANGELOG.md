@@ -9,18 +9,53 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
-### Added
-- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
-  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
-
-### Changed
-- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
-  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
-  widget a few seconds after the start instead of while the chats load.
-
 ## [0.5.0] - 2026-10-23
 
 ### Added
+- Keyboard and mouse on tablets, Chromebooks and DeX: press Tab to move through the chat list and the conversation,
+  and Enter on a chat to open it with the cursor in the message field; Esc goes back to the chat list without closing
+  the chat. On a message, Enter, the Menu key, Shift+F10 or a right click open its actions, and Esc closes them.
+  Ctrl+F searches the chat. In the media viewer, the arrow keys go to the previous and next photo or video, + and −
+  zoom (or Ctrl and the mouse wheel), 0 fits the photo again, Space plays or pauses a video and Esc closes it; in
+  stories, the arrow keys go back and forward, Space pauses and Esc closes. A sender's name and picture in groups now
+  show when the mouse is over them or they have the keyboard's focus.
+- Stories: the chats with stories show as rings at the top of the chat list, a coloured ring while there is something
+  you haven't seen. Tap one to watch: photos stay for five seconds, videos play once (with a mute button), and the
+  next story and the next chat's follow by themselves. Tap the right side for the next story, the left for the
+  previous one, hold to pause, swipe sideways to another chat and down to close. You can react with an emoji, and
+  reply privately to people's stories. Stories you watch are marked as seen, as in Telegram's apps; Pingogram has no
+  way to watch them unseen, and doesn't post or save stories.
+- Chat export: "Export chat" on a profile or a group's or channel's info page (Saved Messages: on your own profile)
+  writes the chat's history into a folder you choose, as a page to read in any browser (HTML) or as data (JSON), with
+  the photos, videos, voice messages and files you pick up to a size you set, and all messages or those from a day
+  on. It goes on in the background with a notification you can cancel it from; a cancelled export leaves nothing
+  behind. Nothing is uploaded. Secret chats and chats whose owner turned off saving can't be exported.
+- Video in calls: turn your camera on during a call with the new Camera button, and see the other person's video
+  full screen with your own picture in a corner, where you can switch between the front and back cameras. A video call
+  says "Incoming video call" and is answered with your camera on once Pingogram may use it; Pingogram asks for the
+  camera the first time you turn it on. Your video goes to the other person only, end-to-end encrypted. Leaving a
+  video call keeps it going in picture-in-picture, with Hang up. On mobile data, when roaming or with Data Saver your
+  camera sends a smaller picture, and so it does after the connection was lost once in the call. (Video call buttons
+  in conversations and profiles come next; until then, turn the camera on during a call.)
+- Custom emoji: messages show the custom emoji people send, animated ones playing, in place of the regular emoji they
+  stand for, which shows until the picture is there and is what you copy or hear with a screen reader. A message of
+  only one to three custom emoji shows them large; single-color ones take the text's color. Reactions show theirs too,
+  and so does the text field when you edit a message or open a draft that has some. Pingogram loads only those on
+  screen, and offers no custom emoji of its own to add.
+- Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
+  Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
+  "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages
+  your phone finds in a language you don't read (your phone's languages count as read); the language is told on your
+  phone, without sending the text anywhere. Where Telegram suggests translating a whole chat (Telegram Premium), a bar
+  at the top offers "Translate to English": tap it to translate the messages on screen as you scroll, tap again for
+  the originals, or close it for that chat.
+- Search in a chat: the search button in a conversation's top bar searches its messages (a topic's or a thread's in
+  those). The arrows below go through what it found, newest first, showing each message in the chat with the words
+  you searched marked, and "3 of 17" says where you are. In groups you can search one member's messages, also
+  without typing anything, and the calendar jumps to the first message of any day. Back closes search. In secret
+  chats the encryption key now opens from the self-destruct timer's sheet, as the top bar holds search and the timer.
+- A store listing for F-Droid clients and IzzyOnDroid (descriptions, icon, feature graphic and screenshots), and
+  unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 - Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
   switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
   bot keeps on screen come back whenever your phone's keyboard closes. A button can send its text, share your phone
@@ -61,8 +96,6 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Four emojis show when the call is end-to-end encrypted: if the other person sees the same ones, nobody is listening
   in. Calls work with your headset's buttons, your car and your watch, and a phone call puts a Pingogram call on hold.
   Pingogram asks for the microphone before your first call, and on Android 12 and later for your Bluetooth headsets.
-- Someone who calls you with video reaches you as a voice call: Pingogram has no video calls yet, and the call screen
-  says you're talking with audio only.
 - Incoming calls now ring in their own "Calls" notification channel with your ringtone; the call you are in shows in
   "Ongoing calls".
 - Color themes: Settings → Appearance → Theme lets you pick your wallpaper's colors, Pingogram's blue or one of twelve
@@ -73,11 +106,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
 - Chat appearance (Settings → Appearance → Chat appearance): message text size from 85% to 130%, how round message
   bubbles are, and a wallpaper behind the messages, a tint or a gradient in your theme's colors, with a live preview.
-  Conversations take them up in a coming update.
+  Every conversation shows them.
 - Pingogram can be translated on Hosted Weblate (docs/TRANSLATING.md). A language appears in Settings → Language and
   in Android's app languages once 80% of the app is translated; the rest shows in English.
 
 ### Changed
+- Tapping the title of Saved Messages opens your own profile, with its shared media and "Export chat".
+- Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
+  its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
+  widget a few seconds after the start instead of while the chats load.
 - The chat list and conversations prepare the rows just ahead while you scroll and keep those you just passed, so
   scrolling, and flinging back, has less to do in each frame.
 

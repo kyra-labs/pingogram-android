@@ -25,8 +25,13 @@ internal class ComposerFocusState {
     }
 }
 
+/**
+ * The composer's [ComposerFocusState]; with [requestAtStart] (a chat opened from the list with a hardware keyboard),
+ * already asked once, so the field takes the focus as soon as it shows.
+ */
 @Composable
-internal fun rememberComposerFocusState(): ComposerFocusState = remember { ComposerFocusState() }
+internal fun rememberComposerFocusState(requestAtStart: Boolean = false): ComposerFocusState =
+    remember { ComposerFocusState().apply { if (requestAtStart) request() } }
 
 /** A focus requester for the text field, which takes the focus each time [focus] is asked for it (none at first). */
 @Composable

@@ -119,6 +119,21 @@ regresses by more than 10%.
   animating items at ≤ 30 fps; pause everything off-screen (a frame not drawn within 250 ms) and when the window
   loses focus; a new frame invalidates only the sticker's own layer; GIF/WebP via Coil's animated decoder with
   frame-rate cap 30 fps.
+- Custom emoji (`docs/adr/0022-custom-emoji-rendering.md`) go through the same pipeline: animated ones are decoded,
+  cached (first frames by sticker and size) and played by `AnimatedStickers`, and each custom emoji that plays counts
+  as one of the 8 animating items, sharing them with stickers (the same id twice in one text is one); still ones come
+  from Coil's memory cache at the emoji's size, also kept by the screen's `CustomEmojiRenderer` (128 bitmaps, the same
+  objects) so a text scrolling in shows them in its first frame. Nothing composes or lays out for them: the text keeps
+  its fallback emoji and its cached layout, `Modifier.customEmoji` finds the glyph boxes in it once per layout, clips
+  them out and draws the pictures in the text's own graphics layer, syncing its pictures when the text is placed or
+  the loaded custom emoji change (`observeReads`), not in composition; loading one recomposes no bubble
+  (`ChatRecompositionTest`). Only the ids of messages on screen are requested, at most every 100 ms while scrolling
+  (`ChatCustomEmoji`). Scroll cost on the JVM (`ChatScrollCostTest`, a third of 2,000 messages with two still custom
+  emoji, their pictures shown against the same texts with their fallback emoji only, three alternating pairs,
+  2026-10-23, the shared 4-core machine): P50 1.00–1.17 ms against 1.15–1.29 ms, P90 4.5–5.2 ms against 5.1–5.6 ms,
+  P99 7.5–8.7 ms against 8.7–9.6 ms, within the machine's noise. Syncing on every placement (`onPlaced`, every frame
+  of a scroll) had cost 11% at P90; the modifier syncs when the text is measured instead. Robolectric does not draw,
+  so the clip and the pictures' draw are measured on a phone only.
 - Composition tracing enabled in benchmark builds; compiler metrics (`-P …reportsDestination`)
   reviewed in PRs that touch `feature:chat`; any unstable class in UI state is a build error
   (custom `compose_compiler_config.conf` stability file).
@@ -255,6 +270,23 @@ regresses by more than 10%.
   Startup has ample room. Both lists drop more than 10% of their frames at 120 Hz: the chat list misses its P90, the
   conversation its jank rate. The profile helps startup (−27% cold) but not scrolling, whose code the JIT compiles
   within a run.
+- v0.5.0 (2026-10-23, same phone and method, with the profile regenerated in #175: 72,428 baseline / 71,664 startup
+  rules). Late frames: share of frames with `frameOverrunMs` > 0; stutter: > 16 ms late.
+
+  | Benchmark | Profile | None | Change vs 2026-10-22 (profile) |
+  |---|---|---|---|
+  | Cold start, `timeToFullDisplay` (`timeToInitialDisplay`) | 517 ms (372 ms) | 752 ms (487 ms) | +6% (none +13%) |
+  | Warm start, `timeToFullDisplay` (`timeToInitialDisplay`) | 171 ms (100 ms) | 226 ms (130 ms) | +26% (none +30%) |
+  | Chat list scroll, `frameDurationCpuMs` P50 / P90 / P99 | 6.0 / 10.0 / 14.4 ms | 6.4 / 9.6 / 13.0 ms | about the same |
+  | Chat list scroll, `frameOverrunMs` P90 / P99; late; stutter | 4.7 / 11.0 ms; 65%; 0.36% | 3.9 / 8.7 ms; 76%; 0.34% | about the same |
+  | Conversation scroll, `frameDurationCpuMs` P50 / P90 / P99 | 5.9 / 8.5 / 11.7 ms | 4.7 / 7.6 / 11.5 ms | P99 −26% |
+  | Conversation scroll, `frameOverrunMs` P90 / P99; late; stutter | 2.5 / 6.0 ms; 59%; 0.05% | 1.5 / 9.0 ms; 37%; 0% | P90 −71% |
+
+  Startup stays far inside its budget but grew past the 10% regression line, warm start most: M4–M6 added work to
+  the start (calls, themes, stories, the passcode check); to be traced. The conversation now meets its CPU budget and
+  rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
+  its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
+  under ~10% may be thermal.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.
@@ -285,6 +317,12 @@ regresses by more than 10%.
   same machine only. First numbers (2026-10-22, the shared 4-core build machine, default state): chat list P50 1.2 ms,
   P90 10.2 ms, P99 13.2 ms (a frame that brings in a row: its composition 14%, its nodes 11%, its measuring 20%, mostly
   the layout of its five texts, of the scroll's time); conversation P50 1.1 ms, P90 4.8 ms, P99 8.7 ms.
+- Story rings (2026-10-23, the same machine under other agents' builds, so only runs side by side compare):
+  `ChatListScrollCostTest` with the rings row as the list's first item and without it, interleaved three times each:
+  without P50 1.30 ms, P90 9.9–10.0 ms, P99 13.3–17.0 ms; with P50 1.38–1.46 ms, P90 10.0–11.1 ms, P99 12.5–15.9 ms.
+  The rings scroll away in the first frames, after which the row costs nothing, as `ChatListRecompositionTest` checks
+  (a ring turning seen recomposes the row alone; scrolling past it recomposes nothing). Before the change, on a quieter
+  machine: P50 1.2 ms, P90 9.3–9.5 ms, P99 11.6–13.9 ms.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.

@@ -87,8 +87,11 @@ the release workflow so the owner can install and test on a phone.
 
 ## M5.1 — Video and group calls (after `v0.5.0`)
 
-- [ ] 1:1 video calls: camera, self-view, switch camera, camera on and off, picture-in-picture, lower resolutions on
-      weak connections; the frame path measured on a device (`docs/adr/0019-video-and-group-calls-scope.md`)
+- [x] 1:1 video calls (`docs/adr/0019-video-and-group-calls-scope.md`): camera, self-view, switch camera, camera on
+      and off, picture-in-picture, lower resolutions on mobile data, roaming, Data Saver and weak connections
+- [ ] Video call buttons in the conversation's top bar and the profile (`Calls.videoCall(userId)`; the chat screens'
+      and the profile's owners)
+- [ ] The video frame path measured on a device (CPU and memory during a 720p call, `docs/PERFORMANCE.md`)
 - [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
 - [ ] Live streams: watching
 
@@ -97,14 +100,16 @@ the release workflow so the owner can install and test on a phone.
 What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readiness.md`.
 
 - [x] Glance widget of recent chats (#144), app shortcuts
-- [ ] Stories viewer (read-only), in-chat search, chat export, tablet list-detail polish
+- [x] Stories viewer (read-only, #169), in-chat search (#164), chat export (#166), tablet list-detail polish (#171:
+      keyboard and mouse in the chat list, the conversation and the viewers); also message translation (#165), custom
+      emoji (#172) and the conversation taking the Chat appearance settings (#170)
 - [ ] Accessibility audit on every screen: done outside the chat screens (#154, `docs/audit/accessibility.md`); the
       chat screens' findings A1–A15 and checks, 200% goldens in every module, then TalkBack and Accessibility Scanner
       on a device
 - [ ] Performance budget verified (`REQUIREMENTS.md` §6.1); the APK size budget is checked by every pull request
       (`ci.yml`) and every release (`release.yml`). Scrolling misses its budget in the first baseline (`docs/PERFORMANCE.md` §9): the chat list's
       frame P90 10.4 ms against 8 ms, the conversation's late frames over 1%; #150 lowered the cost on the JVM, and
-      the owner's phone measures it again
+      the owner's phone measures it again. No `OpenChatBenchmark` or `openChat` trace yet (open a chat ≤ 150 ms)
 - [ ] Benchmark thresholds in CI (a device in CI, or the owner's phone before each release)
 - [ ] Localization: at least 5 languages. The pipeline is in (Hosted Weblate, #152, `docs/TRANSLATING.md`); no
       language is translated yet

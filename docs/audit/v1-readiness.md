@@ -29,8 +29,8 @@ What blocks 1.0, in order:
 3. **Localization**: Weblate is set up (#152) but no language is translated yet, where M6 asks for at least 5 (§6.4).
    Owner: the owner (translators), then B.
 4. **Accessibility evidence** (§6.3): #154 added the checks (`assertAccessible()`) to settings, profile, contacts,
-   sign-in and the app shell (`docs/audit/accessibility.md`); the chat screens still need them and the fixes A1–A15
-   listed there, and contacts, profile, media, scanner and core:ui still need 200% font goldens. Owner A (chat
+   sign-in and the app shell (`docs/audit/accessibility.md`); the chat screens still need them and the fixes A2 and
+   A5–A15 listed there (A1, A3 and A4, keyboard and mouse, are done in #171), and contacts, profile, media, scanner and core:ui still need 200% font goldens. Owner A (chat
    screens), B (the rest).
 5. **Benchmark thresholds in CI** (§9.3) and a nightly run. Owner: owner plus R; needs a device in CI (Firebase Test Lab) or the owner's phone.
 6. **Account deletion in the app** (Google Play, `docs/PLAY_STORE.md` §8). Owner B; not a §6/§7 item, but Play

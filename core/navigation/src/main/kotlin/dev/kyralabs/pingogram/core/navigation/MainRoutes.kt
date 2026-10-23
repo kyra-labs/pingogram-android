@@ -254,6 +254,18 @@ data class MediaViewerRoute(
 )
 
 /**
+ * The full-screen stories viewer, read only (`docs/ROADMAP.md` M6), `:feature:media`, opened on the active stories of
+ * chat [chatId] from the rings above the chat list: at story [storyId], or without one at the first the user has not
+ * seen. Swiping sideways moves to the other chats of the stories list. Like the media viewer, it is pushed above
+ * everything, without the navigation bar or rail.
+ */
+@Serializable
+data class StoryViewerRoute(
+    val chatId: Long,
+    val storyId: Int? = null,
+)
+
+/**
  * The forward sheet (`REQUIREMENTS.md` FR-C6) for messages [messageIds] of chat [fromChatId], `:feature:chat`: a
  * dialog destination above the screen it is opened from, which stays visible below the sheet. The media viewer opens
  * it for its current item; the conversation shows the same sheet in place, for its own messages.
@@ -272,6 +284,16 @@ data class ForwardRoute(
 @Serializable
 data class ShareRoute(
     val shareId: Long,
+)
+
+/**
+ * Exporting the history of chat [chatId] (`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`), `:feature:chat`: a
+ * settings-style page pushed above the profile or the info page it is opened from, with the shared axis on X, where the
+ * user picks the format, the media, the dates and the folder, then follows the export running in the background.
+ */
+@Serializable
+data class ChatExportRoute(
+    val chatId: Long,
 )
 
 /**

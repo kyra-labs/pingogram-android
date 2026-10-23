@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -33,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -82,6 +84,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
+import dev.kyralabs.pingogram.feature.chat.ui.search.SenderSheet
+import dev.kyralabs.pingogram.feature.chat.ui.search.withSearchMatch
 import dev.kyralabs.pingogram.feature.chat.ui.secret.ChatSecretChat
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.ChatSendAs
@@ -94,6 +101,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.ThreadState
 import dev.kyralabs.pingogram.feature.chat.ui.thread.composer
 import dev.kyralabs.pingogram.feature.chat.ui.thread.header
 import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
+import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
@@ -172,6 +182,8 @@ import java.util.Locale
  * - **Automatic download** ([ChatAutoDownloads], `docs/PERFORMANCE.md` §7): under the rules of the current network
  *   ([AutoDownloadPolicy]), the files of the messages on screen download by themselves, and photos download in their
  *   bubbles or wait for a tap on their download button ([ChatUiState.mediaDownloads]).
+ * - **Custom emoji** ([ChatCustomEmoji]): those of the messages on screen and of the composer's text are loaded, for
+ *   the bubbles, reactions and composer to draw ([customEmoji], kept out of [uiState] like the forward sheet).
  * - **Playback** ([ChatPlayback]): voice messages and songs play one at a time on the [AudioPlayer], downloading their
  *   file first if needed, into [ChatUiState.playback]; the position moves in snapshot state, so it re-emits nothing.
  *   Stopping the screen pauses, and the player is released with the view model.
@@ -227,6 +239,13 @@ import java.util.Locale
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
  *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
  *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
+ * - **Translation** ([ChatTranslation], `REQUIREMENTS.md` FR-C3): a message's "Translate" and "Show original", the
+ *   translations in place of the bubbles' texts (copied only into the bubbles they change), and the translate bar
+ *   ([ChatUiState.translateBar]) where Telegram suggests translating the chat, which translates the messages on screen.
+ * - **Search in the chat** ([ChatSearch], `REQUIREMENTS.md` §5.9): the query, sender and results of the search, for
+ *   its bars ([searchState], kept out of [uiState] like the forward sheet), the result shown in the list as a tapped
+ *   quote's message, marking the query's words ([ChatItem.Bubble.searchMatch]), the members' sheet
+ *   ([searchSenderSheet]) and the jump to a day.
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -287,6 +306,9 @@ class ChatViewModel internal constructor(
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
     inlineBotRepositories: InlineBotRepositories,
+    translationRepositories: TranslationRepositories,
+    searchRepositories: ChatSearchRepositories,
+    customEmojiRepository: CustomEmojiRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -323,6 +345,9 @@ class ChatViewModel internal constructor(
         botInfoRepository: BotInfoRepository,
         botStartInbox: BotStartInbox,
         inlineBotRepositories: InlineBotRepositories,
+        translationRepositories: TranslationRepositories,
+        searchRepositories: ChatSearchRepositories,
+        customEmojiRepository: CustomEmojiRepository,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -356,6 +381,9 @@ class ChatViewModel internal constructor(
         botInfoRepository,
         botStartInbox,
         inlineBotRepositories,
+        translationRepositories,
+        searchRepositories,
+        customEmojiRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -415,6 +443,14 @@ class ChatViewModel internal constructor(
     private val files = ChatFiles(fileRepository, viewModelScope) { effectChannel.trySend(ChatEffect.ShowError(it)) }
 
     private val autoDownloads = ChatAutoDownloads(fileRepository, files, autoDownloadPolicy.rules, viewModelScope)
+
+    private val customEmojis = ChatCustomEmoji(customEmojiRepository, viewModelScope)
+
+    /**
+     * The custom emoji loaded so far, which the bubbles and the composer draw ([ChatCustomEmoji]); kept out of
+     * [uiState], so a newly loaded one recomposes nothing.
+     */
+    val customEmoji: StateFlow<ImmutableMap<Long, CustomEmoji>> get() = customEmojis.customEmoji
 
     private val views = MessageViews(chatId, thread.chats(chatRepository), viewModelScope, log)
 
@@ -613,6 +649,7 @@ class ChatViewModel internal constructor(
             onReport = { reporting.start(it) },
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
+            translationAction = { translation.actionFor(it) },
         )
 
     private val selection =
@@ -707,6 +744,23 @@ class ChatViewModel internal constructor(
             .onEach { if (sendFailures.failedSince(it) && isOpen) effectChannel.trySend(ChatEffect.SendFailed) }
             .flowOn(dispatcher)
             .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
+
+    private val translation =
+        ChatTranslation(
+            chatId = chatId,
+            repositories = translationRepositories,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            history = history,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
 
     /** Which messages the conversation shows, where its list shows them, and how far pages have loaded. */
     private val window =
@@ -829,6 +883,33 @@ class ChatViewModel internal constructor(
     /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
     val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
 
+    private val search =
+        ChatSearch(
+            chatId = chatId,
+            topic = topic,
+            repositories = searchRepositories,
+            users = userRepository,
+            chats = chatRepository,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            zone = clock::zone,
+            onShow = window::showMessage,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The search in the chat while it is open, for its bars; null while it is closed. Kept out of [uiState]. */
+    val searchState: StateFlow<ChatSearchUiState?> get() = search.state
+
+    /** The text of the search field; kept across process death. */
+    val searchQuery: TextFieldState get() = search.query
+
+    /** The sheet of the members whose messages search can be limited to; null while it is closed. */
+    val searchSenderSheet: StateFlow<SenderSheet?> get() = search.senderSheet
+
+    /** The text of the members' sheet's search field. */
+    val searchSenderQuery: TextFieldState get() = search.senderQuery
+
     /**
      * What shows over the conversation: the composer's mode, with the message its bar shows fetched when it is not
      * loaded, the actions sheet, the delete confirmation, the attach preview and the poll form.
@@ -861,6 +942,9 @@ class ChatViewModel internal constructor(
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
+            .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
+            .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
+            .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -876,10 +960,13 @@ class ChatViewModel internal constructor(
             attachments.start()
             shares.start()
             bots.start()
+            search.start()
             botKeyboard.start()
             recorder.start()
             views.start()
             autoDownloads.start()
+            customEmojis.start(composer.text)
+            translation.start()
             window.open()
             sponsored.start(chat.mapNotNull { (it as? ChatLookup.Found)?.chat }, userRepository.users)
         }
@@ -921,7 +1008,9 @@ class ChatViewModel internal constructor(
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
             is BotButtonEvent -> botButtons.onEvent(event)
+            is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
+            is TranslationEvent -> translation.onEvent(event)
             else -> onMessageEvent(event)
         }
     }
@@ -1015,20 +1104,25 @@ class ChatViewModel internal constructor(
     }
 
     /**
-     * The messages the list shows go to TDLib as viewed and move the pinned messages bar (`ChatPinnedMessages`); the
+     * The messages the list shows go to TDLib as viewed, move the pinned messages bar (`ChatPinnedMessages`), are
+     * translated while the chat's translation is on (`ChatTranslation`) and have their custom emoji loaded
+     * ([ChatCustomEmoji]); the
      * newest of them is kept in the [SavedStateHandle], which the conversation opens around after process death
      * ([ChatWindow]).
      */
     private fun onMessagesVisible(messageIds: Set<Long>) {
         views.setVisible(messageIds)
         pinned.setVisible(messageIds)
+        translation.setVisible(messageIds)
         messageIds.maxOrNull()?.let { savedStateHandle[ChatWindow.KEY_SHOWN_MESSAGE] = it }
         val messages =
             history.replayCache
                 .firstOrNull()
                 ?.messages
                 .orEmpty()
-        autoDownloads.setVisible(messages.filter { it.id in messageIds }.map { it.content })
+        val shown = messages.filter { it.id in messageIds }
+        autoDownloads.setVisible(shown.map { it.content })
+        customEmojis.setVisible(shown)
     }
 
     /** Finds the chat again if that failed, and opens again or loads the pages that failed ([ChatWindow.retry]). */

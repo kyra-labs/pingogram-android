@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +43,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
@@ -54,6 +57,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -116,7 +120,9 @@ import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.AudioRouteType
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -141,14 +147,48 @@ fun CallScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onMessage: (userId: Long) -> Unit = {},
+    video: CallVideo = PlaceholderVideo,
+    pictureInPicture: Boolean = false,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceContainer) {
         when (state) {
-            CallUiState.Loading, CallUiState.Closed -> Unit
-            is CallUiState.NeedsMicrophone -> MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
-            is CallUiState.InCall -> InCall(state, onEvent, onMinimize, onMessage)
+            CallUiState.Loading, CallUiState.Closed -> {
+                Unit
+            }
+
+            is CallUiState.NeedsMicrophone -> {
+                MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
+            }
+
+            is CallUiState.InCall -> {
+                if (pictureInPicture) {
+                    PictureInPicture(state, video)
+                } else if (state.video.shows) {
+                    VideoInCall(state, onEvent, onMinimize, video)
+                } else {
+                    InCall(state, onEvent, onMinimize, onMessage)
+                }
+            }
         }
     }
+}
+
+/** Which video a [CallVideo] draws: the other person's, or the user's own camera (the self-view). */
+enum class CallVideoSlot { Remote, Self }
+
+/**
+ * Draws a call's video in its bounds, filling them: the call activity's renderer ([CallVideoView]), a tonal
+ * placeholder in previews and screenshot tests, which cannot draw with OpenGL.
+ */
+typealias CallVideo = @Composable (slot: CallVideoSlot, mirror: Boolean, modifier: Modifier) -> Unit
+
+private val PlaceholderVideo: CallVideo = { slot, _, modifier ->
+    val color =
+        when (slot) {
+            CallVideoSlot.Remote -> MaterialTheme.colorScheme.surfaceContainerHighest
+            CallVideoSlot.Self -> MaterialTheme.colorScheme.secondaryContainer
+        }
+    Box(modifier.background(color))
 }
 
 @Composable
@@ -159,20 +199,12 @@ private fun InCall(
     onMessage: (userId: Long) -> Unit,
 ) {
     CallLayout(
-        top = {
-            IconButton(onClick = onMinimize) {
-                Icon(
-                    painterResource(UiR.drawable.ic_keyboard_arrow_down),
-                    contentDescription = stringResource(R.string.call_minimize),
-                )
-            }
-        },
+        top = { MinimizeButton(onMinimize) },
         header = {
             CallHeader(
                 name = state.person.name,
                 status = { CallStatus(state) },
                 subtitle = {
-                    if (state.videoOffered) AudioOnlyNote()
                     AnimatedVisibility(
                         visible = state.emojis.isNotEmpty(),
                         enter =
@@ -296,19 +328,239 @@ private fun CallHeader(
     }
 }
 
-/** The other person wants video, which Pingogram does not have yet (`docs/adr/0019-video-and-group-calls-scope.md`). */
+/**
+ * A video call (`docs/adr/0019-video-and-group-calls-scope.md`): the other person's video fills the window (the user's
+ * own camera while theirs is off), the call's stage and the name on a [pingogramColors] media overlay pill at the top,
+ * the self-view in a `large`-rounded card at the end above the controls, with "Switch camera" on it, and the same
+ * controls panel at the bottom (at the end in a window of compact height).
+ */
 @Composable
-private fun AudioOnlyNote() {
-    Text(
-        stringResource(R.string.call_audio_only),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier =
+private fun VideoInCall(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+    onMinimize: () -> Unit,
+    video: CallVideo,
+) {
+    val remote = state.video.remote != RemoteVideo.Off
+    val front = state.video.camera == CameraFacing.Front
+    val name = state.person.name.ifBlank { stringResource(R.string.call_someone) }
+    val remoteDescription = stringResource(R.string.call_remote_video, name)
+    val selfDescription = stringResource(R.string.call_self_view)
+    Box(Modifier.fillMaxSize()) {
+        video(
+            if (remote) CallVideoSlot.Remote else CallVideoSlot.Self,
+            !remote && front,
             Modifier
-                .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
-                .padding(bottom = MaterialTheme.spacing.medium),
-    )
+                .fillMaxSize()
+                .semantics { contentDescription = if (remote) remoteDescription else selfDescription },
+        )
+        if (state.video.remote == RemoteVideo.Paused) {
+            OverlayPill(Modifier.align(Alignment.Center)) {
+                Text(stringResource(R.string.call_video_paused), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        VideoOverlay(state, onEvent, onMinimize, video, name)
+    }
+}
+
+/** Over the video: the header at the top, the self-view and the controls at the bottom (at the end in landscape). */
+@Composable
+private fun VideoOverlay(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+    onMinimize: () -> Unit,
+    video: CallVideo,
+    name: String,
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compactHeight = maxHeight < MaterialTheme.sizes.messageMenuMinWindowHeight
+        val selfView: @Composable (Modifier) -> Unit = { modifier ->
+            if (state.video.remote != RemoteVideo.Off && state.video.camera != null) {
+                SelfView(
+                    mirror = state.video.camera == CameraFacing.Front,
+                    canSwitch = state.video.canSwitchCamera,
+                    landscape = compactHeight,
+                    video = video,
+                    onSwitch = { onEvent(CallEvent.SwitchCamera) },
+                    modifier = modifier.width(minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION),
+                )
+            }
+        }
+        val top: @Composable () -> Unit = {
+            Box(Modifier.fillMaxWidth()) { MinimizeButton(onMinimize, overlay = true) }
+            VideoHeader(state, name)
+        }
+        if (compactHeight) {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(MaterialTheme.spacing.large),
+            ) {
+                Column(Modifier.weight(1f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    top()
+                    Spacer(Modifier.weight(1f))
+                    selfView(Modifier.align(Alignment.End))
+                }
+                Spacer(Modifier.width(MaterialTheme.spacing.large))
+                Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    CallControlsPanel(state, docked = false, onEvent)
+                }
+            }
+        } else {
+            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    Modifier
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(TOP_SIDES))
+                        .padding(horizontal = MaterialTheme.spacing.large),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) { top() }
+                Spacer(Modifier.weight(1f))
+                selfView(
+                    Modifier
+                        .align(Alignment.End)
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                        .padding(MaterialTheme.spacing.large),
+                )
+                Box(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
+                    CallControlsPanel(state, docked = true, onEvent)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The call in picture-in-picture: only its video (the other person's, the user's own while theirs is off), or the
+ * avatar once neither camera sends; the window's own controls hang up and return to the screen.
+ */
+@Composable
+private fun PictureInPicture(
+    state: CallUiState.InCall,
+    video: CallVideo,
+) {
+    val remote = state.video.remote != RemoteVideo.Off
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (state.video.shows) {
+            video(
+                if (remote) CallVideoSlot.Remote else CallVideoSlot.Self,
+                !remote && state.video.camera == CameraFacing.Front,
+                Modifier.fillMaxSize(),
+            )
+        } else {
+            CallAvatar(state.person, minOf(maxWidth, maxHeight) * AVATAR_WIDTH_FRACTION, ringing = false, large = true)
+        }
+    }
+}
+
+/** The stage and the name over the video, on a media overlay pill, with the key's emojis below once agreed. */
+@Composable
+private fun VideoHeader(
+    state: CallUiState.InCall,
+    name: String,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        OverlayPill {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CallStatus(state, color = MaterialTheme.pingogramColors.onMediaOverlay)
+                Text(
+                    name,
+                    style = MaterialTheme.typography.titleLarge.userContent,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
+        }
+        if (state.emojis.isNotEmpty()) {
+            Spacer(Modifier.height(MaterialTheme.spacing.small))
+            KeyEmojis(state.emojis, state.person.name)
+        }
+    }
+}
+
+/** Text on the video: the media overlay's colors in a `large`-rounded pill. */
+@Composable
+private fun OverlayPill(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.pingogramColors.mediaOverlay,
+        contentColor = MaterialTheme.pingogramColors.onMediaOverlay,
+        shape = MaterialTheme.shapes.large,
+        modifier = modifier,
+    ) {
+        Box(Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
+            content()
+        }
+    }
+}
+
+/**
+ * The user's own camera in a `large`-rounded card, 3:4 (4:3 in landscape), mirrored for the front camera as a mirror
+ * shows; "Switch camera" at its bottom end where the device has a front and a back camera.
+ */
+@Composable
+private fun SelfView(
+    mirror: Boolean,
+    canSwitch: Boolean,
+    landscape: Boolean,
+    video: CallVideo,
+    onSwitch: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.call_self_view)
+    Box(
+        modifier
+            .aspectRatio(if (landscape) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT)
+            .clip(MaterialTheme.shapes.large),
+    ) {
+        video(CallVideoSlot.Self, mirror, Modifier.fillMaxSize().semantics { contentDescription = description })
+        if (canSwitch) {
+            FilledTonalIconButton(
+                onClick = onSwitch,
+                shapes = IconButtonDefaults.shapes(),
+                colors =
+                    IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.pingogramColors.mediaOverlay,
+                        contentColor = MaterialTheme.pingogramColors.onMediaOverlay,
+                    ),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(MaterialTheme.spacing.extraSmall),
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_cameraswitch),
+                    contentDescription = stringResource(R.string.call_switch_camera),
+                )
+            }
+        }
+    }
+}
+
+/** "Back to the app": the screen's top start; over video in the media overlay's colors. */
+@Composable
+private fun MinimizeButton(
+    onMinimize: () -> Unit,
+    overlay: Boolean = false,
+) {
+    IconButton(
+        onClick = onMinimize,
+        colors =
+            if (overlay) {
+                IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.pingogramColors.mediaOverlay,
+                    contentColor = MaterialTheme.pingogramColors.onMediaOverlay,
+                )
+            } else {
+                IconButtonDefaults.iconButtonColors()
+            },
+    ) {
+        Icon(
+            painterResource(UiR.drawable.ic_keyboard_arrow_down),
+            contentDescription = stringResource(R.string.call_minimize),
+        )
+    }
 }
 
 /**
@@ -423,7 +675,10 @@ private fun rememberRingTurn(ringing: Boolean): () -> Float {
 
 /** The call's stage, or its timer and the connection's quality once connected; a polite live region. */
 @Composable
-private fun CallStatus(state: CallUiState.InCall) {
+private fun CallStatus(
+    state: CallUiState.InCall,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
     val stage = state.stage
     Row(
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -436,7 +691,7 @@ private fun CallStatus(state: CallUiState.InCall) {
                     if (weak) R.drawable.ic_signal_cellular_alt_1_bar else R.drawable.ic_signal_cellular_alt,
                 ),
                 contentDescription = stringResource(if (weak) R.string.call_signal_weak else R.string.call_signal_good),
-                tint = if (weak) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (weak) MaterialTheme.colorScheme.error else color,
                 modifier = Modifier.size(MaterialTheme.sizes.inlineIcon),
             )
             Spacer(Modifier.size(MaterialTheme.spacing.small))
@@ -445,12 +700,12 @@ private fun CallStatus(state: CallUiState.InCall) {
             when {
                 stage == CallStage.Connected && state.isOnHold -> stringResource(R.string.call_status_on_hold)
                 stage == CallStage.Connected -> state.duration.orEmpty()
-                else -> stageText(stage, state.isOutgoing)
+                else -> stageText(stage, state.isOutgoing, state.isVideoCall)
             }
         Text(
             text,
             style = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = color,
             textAlign = TextAlign.Center,
         )
     }
@@ -460,6 +715,7 @@ private fun CallStatus(state: CallUiState.InCall) {
 private fun stageText(
     stage: CallStage,
     isOutgoing: Boolean,
+    isVideo: Boolean,
 ): String =
     when (stage) {
         CallStage.Requesting -> {
@@ -468,7 +724,11 @@ private fun stageText(
 
         CallStage.Ringing -> {
             stringResource(
-                if (isOutgoing) R.string.call_status_calling else R.string.call_status_incoming,
+                when {
+                    isOutgoing -> R.string.call_status_calling
+                    isVideo -> R.string.call_status_incoming_video
+                    else -> R.string.call_status_incoming
+                },
             )
         }
 
@@ -840,6 +1100,21 @@ private fun CallControlsPanel(
                     ) { onEvent(CallEvent.ToggleMute) }
                 }
                 RouteButton(state.route, state.routes, onEvent)
+                if (state.video.hasCamera) {
+                    LabeledButton(R.string.call_camera) {
+                        Toggle(
+                            checked = state.video.camera != null,
+                            icon =
+                                if (state.video.camera != null) {
+                                    R.drawable.ic_videocam_filled
+                                } else {
+                                    R.drawable.ic_videocam_off_filled
+                                },
+                            label = R.string.call_camera,
+                            enabled = !state.isOnHold,
+                        ) { onEvent(CallEvent.ToggleCamera) }
+                    }
+                }
                 LabeledButton(R.string.call_hold) {
                     Toggle(
                         checked = state.isOnHold,
@@ -1104,6 +1379,11 @@ private val TOP_SIDES = WindowInsetsSides.Top + WindowInsetsSides.Horizontal
 
 private fun CallStage.isRinging() =
     this == CallStage.Requesting || this == CallStage.Ringing || this == CallStage.RingingThere
+
+/** The self-view's width against the window's shorter side, and its shape (portrait; landscape in landscape). */
+private const val SELF_VIEW_FRACTION = 0.3f
+private const val SELF_VIEW_ASPECT = 3f / 4f
+private const val SELF_VIEW_ASPECT_LANDSCAPE = 4f / 3f
 
 /** The avatar's largest width against the window's, as the system's dialer shows an incoming caller. */
 private const val AVATAR_WIDTH_FRACTION = 0.6f

@@ -21,7 +21,8 @@ import java.io.File
 
 /**
  * Plays animated (TGS) stickers in the conversation and the sticker panel (`REQUIREMENTS.md` FR-C4, FR-C5;
- * `docs/PERFORMANCE.md` §4), one instance per process, which `:app` provides through [LocalAnimatedStickers]:
+ * `docs/PERFORMANCE.md` §4), and animated custom emoji in texts ([CustomEmojiRenderer]), one instance per process,
+ * which `:app` provides through [LocalAnimatedStickers]:
  *
  * - **Files**: a sticker's file is downloaded from TDLib at visible priority when it first shows ([files]), then
  *   decoded by [decoder] on [renderDispatcher]; decoded animations stay in an LRU of [MAX_DECODED], by file id.
@@ -30,7 +31,8 @@ import java.io.File
  *   once and still. A whole animation is not kept: a 72 dp panel sticker at 30 frames per second would take about
  *   17 MB for 3 seconds. Playing ones render their frames ahead of time on [renderDispatcher] instead, into two bitmaps
  *   of their own (`AnimatedSticker`).
- * - **At most [maxAnimating] play at once** ([slots]); the others show their first frame until one stops. They play at
+ * - **At most [maxAnimating] play at once** ([slots]), stickers and custom emoji alike (each custom emoji that plays
+ *   counts as one); the others show their first frame until one stops. They play at
  *   most [MAX_FRAMES_PER_SECOND] frames per second, only while on screen and while the window has the focus, and not at
  *   all with animations off (or [animate] false, as in previews and screenshots).
  *
@@ -86,6 +88,16 @@ class AnimatedStickers(
         firstFrames.put(key, bitmap)
         return bitmap
     }
+
+    /** The first frame of file [fileId] at [width] × [height] pixels if the frame cache holds it; never waits. */
+    internal fun cachedFirstFrame(
+        fileId: Int,
+        width: Int,
+        height: Int,
+    ): Bitmap? = firstFrames[FrameKey(fileId, width, height)]
+
+    /** How many first frames the frame cache holds, of every sticker and size; for tests. */
+    internal val firstFrameCount: Int get() = firstFrames.snapshot().size
 
     /** Forgets every animation and frame: TDLib closed, and the next instance reuses file ids for other files. */
     fun clear() {

@@ -3,13 +3,17 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNode
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.node.DelegatingNode
@@ -23,33 +27,48 @@ import androidx.compose.ui.unit.toSize
  * timeout, with where this element is in the window (unclipped, so a row half under the top bar keeps its full
  * height), and then consumes the rest of the gesture. It watches the pointer before the content does (the initial
  * pass), so it works over buttons, media and links, which then see the release consumed and take no tap; a scroll or a
- * swipe that starts first cancels it. A [Modifier.Node], so the element's place is read only when a long press needs
- * it, never while the list scrolls.
+ * swipe that starts first cancels it. A mouse's secondary button (a right click) calls [onSecondaryClick] at once, the
+ * same way, and the content sees none of it (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). A [Modifier.Node], so
+ * the element's place is read only when a long press or a right click needs it, never while the list scrolls.
  */
-internal fun Modifier.onLongPress(onLongPress: (Rect) -> Unit): Modifier = this then LongPressElement(onLongPress)
+internal fun Modifier.onLongPress(
+    onLongPress: (Rect) -> Unit,
+    onSecondaryClick: (Rect) -> Unit = onLongPress,
+): Modifier = this then LongPressElement(onLongPress, onSecondaryClick)
 
 private class LongPressElement(
     private val onLongPress: (Rect) -> Unit,
+    private val onSecondaryClick: (Rect) -> Unit,
 ) : ModifierNodeElement<LongPressNode>() {
-    override fun create() = LongPressNode(onLongPress)
+    override fun create() = LongPressNode(onLongPress, onSecondaryClick)
 
     override fun update(node: LongPressNode) {
         node.onLongPress = onLongPress
+        node.onSecondaryClick = onSecondaryClick
     }
 
-    override fun equals(other: Any?): Boolean = other is LongPressElement && other.onLongPress === onLongPress
+    override fun equals(other: Any?): Boolean =
+        other is LongPressElement &&
+            other.onLongPress === onLongPress &&
+            other.onSecondaryClick === onSecondaryClick
 
-    override fun hashCode(): Int = onLongPress.hashCode()
+    override fun hashCode(): Int = 31 * onLongPress.hashCode() + onSecondaryClick.hashCode()
 }
 
 private class LongPressNode(
     var onLongPress: (Rect) -> Unit,
+    var onSecondaryClick: (Rect) -> Unit,
 ) : DelegatingNode() {
     init {
         delegate(
             SuspendingPointerInputModifierNode {
                 awaitEachGesture {
-                    if (awaitLongPress()) {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (currentEvent.buttons.isSecondaryPressed) {
+                        down.consume()
+                        onSecondaryClick(windowBounds())
+                        consumeUntilUp()
+                    } else if (awaitLongPress(down)) {
                         onLongPress(windowBounds())
                         consumeUntilUp()
                     }
@@ -72,35 +91,56 @@ private class LongPressNode(
 internal fun Modifier.bubbleGestures(
     selecting: Boolean,
     toggle: () -> Unit,
-    showActions: (Rect?) -> Unit,
+    showActions: ActionsOpener,
     swipe: SwipeToReplyState?,
     isRtl: Boolean,
 ): Modifier =
     when {
         selecting -> onSelectionTap(toggle)
-        swipe != null -> onLongPress(showActions).swipeToReply(swipe, isRtl)
-        else -> onLongPress(showActions)
+        swipe != null -> onLongPress(showActions, showActions.onSecondaryClick).swipeToReply(swipe, isRtl)
+        else -> onLongPress(showActions, showActions.onSecondaryClick)
     }
 
 /**
  * Opens the actions of message [messageId] with a long-press haptic ([ChatEvent.ShowMessageActions]). Called with the
  * row's place in the window by a long press, it lifts the message there for its floating menu where [lift] allows
- * ([MessageLiftState.lift]); called without one (screen readers' long click), the actions open in their sheet.
+ * ([MessageLiftState.lift]); called without one (screen readers' long click), the actions open in their sheet. A
+ * mouse's secondary button ([onSecondaryClick]) and a key ([open] with the focus to give back) lift it the same way,
+ * and the menu takes the focus, so that Esc closes it.
  */
+@Stable
+internal class ActionsOpener(
+    private val messageId: Long,
+    private val onEvent: (ChatEvent) -> Unit,
+    private val haptics: HapticFeedback,
+    private val lift: MessageLiftState,
+) : (Rect?) -> Unit {
+    /** A right click: lifted as by a long press, the menu taking the focus. */
+    val onSecondaryClick: (Rect) -> Unit = { bounds -> open(bounds, takesFocus = true) }
+
+    override fun invoke(bounds: Rect?) = open(bounds, takesFocus = false)
+
+    /** Opens the actions from [bounds]; the menu takes the focus if [takesFocus] and gives it back by [returnFocus]. */
+    fun open(
+        bounds: Rect?,
+        takesFocus: Boolean,
+        returnFocus: (() -> Unit)? = null,
+    ) {
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        lift.lift(messageId, bounds, takesFocus, returnFocus)
+        onEvent(ChatEvent.ShowMessageActions(messageId))
+    }
+}
+
+/** The [ActionsOpener] of message [messageId], for its row. */
 @Composable
 internal fun rememberActionsOpener(
     messageId: Long,
     onEvent: (ChatEvent) -> Unit,
     lift: MessageLiftState,
-): (Rect?) -> Unit {
+): ActionsOpener {
     val haptics = LocalHapticFeedback.current
-    return remember(messageId, onEvent, haptics, lift) {
-        { bounds ->
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            lift.lift(messageId, bounds)
-            onEvent(ChatEvent.ShowMessageActions(messageId))
-        }
-    }
+    return remember(messageId, onEvent, haptics, lift) { ActionsOpener(messageId, onEvent, haptics, lift) }
 }
 
 /**
@@ -140,11 +180,10 @@ internal fun Modifier.onSelectionTap(onToggle: () -> Unit): Modifier =
     }
 
 /**
- * Whether the pointer that goes down next stays down, alone and within the touch slop, for the long-press timeout.
+ * Whether the pointer that went [down] stays down, alone and within the touch slop, for the long-press timeout.
  * Watches the initial pass and consumes nothing.
  */
-private suspend fun AwaitPointerEventScope.awaitLongPress(): Boolean {
-    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+private suspend fun AwaitPointerEventScope.awaitLongPress(down: PointerInputChange): Boolean {
     val ended =
         withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
             do {

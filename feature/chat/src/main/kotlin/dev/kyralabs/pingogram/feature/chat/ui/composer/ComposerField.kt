@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import android.view.KeyEvent.FLAG_SOFT_KEYBOARD
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
@@ -30,8 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -44,6 +49,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -51,6 +57,11 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
+import dev.kyralabs.pingogram.core.ui.text.CustomEmojiField
+import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
+import dev.kyralabs.pingogram.core.ui.text.customEmoji
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -68,7 +79,9 @@ import kotlin.math.roundToInt
  * one. The selection menu, Ctrl+B/I/U/K and screen readers' actions format the selected text; "Link" asks for an
  * address ([onLink]). [onKeyEvent] sees every key first and takes those it handles (the bot command suggestions'
  * arrows, Enter and Tab). [hint] shows after the text in the placeholder's color, an inline bot's placeholder after
- * "@gif " ([InlineHint]). The attach preview's caption and the forward sheet's comment are one too.
+ * "@gif " ([InlineHint]). Tab and Shift+Tab move the focus on ([tabKey]). Custom emoji in the text (a draft's, an
+ * edited message's) show their pictures over their fallback emoji, as in bubbles. The attach preview's caption and the
+ * forward sheet's comment are one too.
  */
 @Composable
 internal fun ComposerField(
@@ -85,7 +98,10 @@ internal fun ComposerField(
     hint: String? = null,
 ) {
     val labels = rememberFormattingLabels()
+    val focusManager = LocalFocusManager.current
     val textLayout = remember { TextLayoutHolder() }
+    val scrollState = rememberScrollState()
+    val customEmoji = rememberFieldCustomEmoji(text, scrollState)
     val hasSelection by remember(text) { derivedStateOf { !text.state.selection.collapsed } }
     // onFocusChanged also reports the first state, unfocused: only changes are news.
     val focus = remember { FocusReport() }
@@ -111,8 +127,9 @@ internal fun ComposerField(
                             focus.isFocused = state.isFocused
                             onFocusChanged(state.isFocused)
                         }
-                    }.onPreviewKeyEvent { event -> onKeyEvent(event) || fieldKey(event, text, onSend, onLink) }
-                    .appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
+                    }.onPreviewKeyEvent { event ->
+                        onKeyEvent(event) || fieldKey(event, text, onSend, onLink) || tabKey(event, focusManager)
+                    }.appendTextContextMenuComponents { formattingItems(text, labels, onLink) }
                     .semantics { if (hasSelection) customActions = formattingActions(text, labels, onLink) },
             textStyle = textStyle,
             inputTransformation = text.inputTransformation,
@@ -121,7 +138,8 @@ internal fun ComposerField(
             lineLimits = LINE_LIMITS,
             interactionSource = interactionSource,
             cursorBrush = SolidColor(colors.cursorColor),
-            onTextLayout = { getResult -> textLayout.result = getResult() },
+            scrollState = scrollState,
+            onTextLayout = { getResult -> textLayout.update(getResult(), customEmoji) },
             decorator =
                 pillDecorator(
                     text = text,
@@ -132,6 +150,7 @@ internal fun ComposerField(
                     icons = PillIcons(leadingIcons, trailingIcons),
                     focused = focused,
                     hint = hint?.let { InlineHintText(it, textLayout) },
+                    customEmoji = customEmoji,
                 ),
         )
     }
@@ -155,6 +174,7 @@ private fun pillDecorator(
     icons: PillIcons,
     focused: Boolean,
     hint: InlineHintText?,
+    customEmoji: FieldCustomEmoji?,
 ): TextFieldDecorator {
     val leadingIconColor = if (focused) colors.focusedLeadingIconColor else colors.unfocusedLeadingIconColor
     val shape = MaterialTheme.shapes.extraLarge
@@ -196,7 +216,9 @@ private fun pillDecorator(
                 }
                 Box(Modifier.weight(1f)) {
                     material.Decoration {
-                        Box {
+                        val emojiModifier =
+                            customEmoji?.let { Modifier.customEmoji(it.renderer, it.layout, it.tint, it.field) }
+                        Box(emojiModifier ?: Modifier) {
                             innerTextField()
                             hint?.let { InlineHint(it) }
                         }
@@ -210,10 +232,49 @@ private fun pillDecorator(
     }
 }
 
+/**
+ * The custom emoji of the field's text (a draft's, a message being edited), drawn over their fallback emoji from the
+ * field's layout as bubbles draw theirs ([customEmoji]), with the text's entities and the field's scroll; null where
+ * the screen draws no custom emoji ([LocalCustomEmoji]).
+ */
+@Composable
+private fun rememberFieldCustomEmoji(
+    text: ComposerText,
+    scrollState: ScrollState,
+): FieldCustomEmoji? {
+    val renderer = LocalCustomEmoji.current ?: return null
+    val color = MaterialTheme.colorScheme.onSurface
+    return remember(renderer, text, scrollState, color) {
+        FieldCustomEmoji(
+            renderer = renderer,
+            layout = TextBlocksLayout(),
+            tint = { color },
+            field = CustomEmojiField(entities = { text.content.entities }, scrollOffset = { scrollState.value }),
+        )
+    }
+}
+
+/** What the field's [customEmoji] modifier draws with. */
+private class FieldCustomEmoji(
+    val renderer: CustomEmojiRenderer,
+    val layout: TextBlocksLayout,
+    val tint: ColorProducer,
+    val field: CustomEmojiField,
+)
+
 /** The text field's latest text layout, for what is drawn after its text ([InlineHint]). */
 @Stable
 private class TextLayoutHolder {
     var result by mutableStateOf<TextLayoutResult?>(null)
+
+    /** Keeps the field's new layout [result], for [customEmoji] too. */
+    fun update(
+        result: TextLayoutResult?,
+        customEmoji: FieldCustomEmoji?,
+    ) {
+        this.result = result
+        if (result != null) customEmoji?.layout?.onTextLayout(result)
+    }
 }
 
 /** A hint ([text]) drawn after the text of the field whose layout [layout] holds. */
@@ -282,6 +343,23 @@ private fun fieldKey(
 ): Boolean {
     if (!event.isSendKey()) return formattingShortcut(event, text, onLink)
     onSend()
+    return true
+}
+
+/**
+ * Tab and Shift+Tab move the focus on to the next or previous control, as they do from Android's text fields, rather
+ * than typing a tab: a message has no use for one, and the keyboard would be stuck in the field
+ * (`docs/DESIGN_SYSTEM.md` §9 "Keyboard & mouse"). True if handled.
+ */
+private fun tabKey(
+    event: KeyEvent,
+    focusManager: FocusManager,
+): Boolean {
+    val withModifier = event.isCtrlPressed || event.isAltPressed || event.isMetaPressed
+    if (event.key != Key.Tab || withModifier) return false
+    if (event.type == KeyEventType.KeyDown) {
+        focusManager.moveFocus(if (event.isShiftPressed) FocusDirection.Previous else FocusDirection.Next)
+    }
     return true
 }
 

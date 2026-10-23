@@ -208,9 +208,10 @@ internal fun ViewerBottomBar(
  * it shows all of it, scrolling within about [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and tapping again shows
  * less.
  * It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts collapsed.
+ * The stories viewer shows its captions with it too.
  */
 @Composable
-private fun ExpandableCaption(
+internal fun ExpandableCaption(
     caption: FormattedText,
     key: Long,
     modifier: Modifier = Modifier,

@@ -103,6 +103,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   rotation and process death.
  * - **New chat**: the list's "New chat" button, at the bottom end of the list pane, opens [onOpenNewChat], pushed
  *   above the whole layout as the archive is.
+ * - **Stories**: a story ring above the chats opens [onOpenStory], the stories viewer full screen above the whole
+ *   layout, as the media viewer is.
  * - **Search** ([search], `docs/DESIGN_SYSTEM.md` §6 "Global search"): docked, it takes the list pane's place
  *   ([SearchPane]), growing out of the search button ([SearchOrList]). With two panes a chat it found shows in the
  *   detail pane as a tapped one does, and a message opens its conversation there at the message; with one pane (a
@@ -111,6 +113,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   then search.
  * - **Motion**: the scaffold's pane motion; panes that stay change their bounds on the slow spatial spring, as large
  *   layout changes do (§5).
+ * - **Keyboard** ([PaneKeyboard], `docs/DESIGN_SYSTEM.md` §9): Tab moves from the list pane to the conversation (its
+ *   top bar, messages, composer) and back. A chat opened from the list with a hardware keyboard gives its composer the
+ *   focus, as Google Messages does on tablets; Esc in the conversation, with nothing in it to close, gives the focus
+ *   back to the list, at the row it left, and the chat stays open.
  */
 @Suppress("LongMethod") // The scaffold's three panes, its drag handles and what opens in them.
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -125,6 +131,7 @@ internal fun ChatsListDetail(
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenChatInfo: (chatId: Long) -> Unit = {},
     onEditContact: (userId: Long) -> Unit = {},
+    onOpenStory: (chatId: Long) -> Unit = {},
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
 ) {
@@ -155,6 +162,7 @@ internal fun ChatsListDetail(
         if (shownChatId != null) lastChatId = shownChatId
         if (shownExtra != null) lastExtra = shownExtra
     }
+    val keyboard = rememberPaneKeyboard()
     val boundsSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntRect>()
     val paneExpansionState = rememberPaneExpansionState(keyProvider = value, anchors = ListPaneExpansionAnchors)
     val extraWidth = rememberExtraPaneWidth()
@@ -166,13 +174,24 @@ internal fun ChatsListDetail(
                     boundsAnimationSpec = boundsSpec,
                     modifier = Modifier.paneContainer(twoPanes, last = false),
                 ) {
-                    SearchOrList(search, opener, twoPanes, !navigator.canNavigateBack(BACK_BEHAVIOR)) {
-                        ChatListPane(
-                            onOpenArchive = onOpenArchive,
-                            onOpenChat = opener::openChat,
-                            onOpenNewChat = onOpenNewChat,
-                            openChatId = shownChatId,
-                        )
+                    Box(Modifier.listPaneFocus(keyboard)) {
+                        SearchOrList(
+                            search = search,
+                            onOpenChat = { keyboard.opening(it, twoPanes) { opener.openChat(it) } },
+                            onOpenMessage = { chatId, messageId ->
+                                keyboard.opening(chatId, twoPanes) { opener.openMessage(chatId, messageId) }
+                            },
+                            twoPanes = twoPanes,
+                            searchBackEnabled = !navigator.canNavigateBack(BACK_BEHAVIOR),
+                        ) {
+                            ChatListPane(
+                                onOpenArchive = onOpenArchive,
+                                onOpenChat = { keyboard.opening(it, twoPanes) { opener.openChat(it) } },
+                                onOpenNewChat = onOpenNewChat,
+                                onOpenStory = onOpenStory,
+                                openChatId = shownChatId,
+                            )
+                        }
                     }
                 }
             },
@@ -192,6 +211,8 @@ internal fun ChatsListDetail(
                             onOpenProfile = opener::openProfile,
                             onOpenChatInfo = opener::openChatInfo,
                             onBack = backUnless(listVisible && shownChatId != null, opener::closeChat),
+                            modifier = Modifier.escapeToList(keyboard, enabled = listVisible),
+                            focusComposer = keyboard.focusesComposerOf(chatId),
                         )
                     } else {
                         NoChatSelected()
@@ -287,12 +308,15 @@ private fun backUnless(
  * The list pane's content: the chat [list], or docked search ([SearchPane]) while [search] is docked, crossfading on
  * the effects springs. Search gets this crossfade's animated visibility scope, so the search button grows into it; the
  * list keeps the destination's, which its "New chat" button grows out of. With [twoPanes] search sits in the pane's
- * rounded container; system back closes it while [searchBackEnabled]. Its results open through [opener].
+ * rounded container; system back closes it while [searchBackEnabled]. Its results open through [onOpenChat] and
+ * [onOpenMessage].
  */
+@Suppress("LongParameterList") // Search, where its results open, the panes, back, and the list.
 @Composable
 private fun SearchOrList(
     search: GlobalSearchState,
-    opener: PaneOpener,
+    onOpenChat: (chatId: Long) -> Unit,
+    onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     twoPanes: Boolean,
     searchBackEnabled: Boolean,
     list: @Composable () -> Unit,
@@ -309,8 +333,8 @@ private fun SearchOrList(
             ProvideNavAnimatedVisibilityScope(this) {
                 SearchPane(
                     state = search,
-                    onOpenChat = opener::openChat,
-                    onOpenMessage = opener::openMessage,
+                    onOpenChat = onOpenChat,
+                    onOpenMessage = onOpenMessage,
                     shape = if (twoPanes) MaterialTheme.shapes.extraLarge else FullBleedShape,
                     backEnabled = searchBackEnabled,
                 )

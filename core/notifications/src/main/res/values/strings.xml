@@ -16,7 +16,7 @@
     <string name="notification_channel_other">Other</string>
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
     <string name="notification_channel_transfers">Transfers</string>
-    <string name="notification_channel_transfers_description">Progress of the files you send and download</string>
+    <string name="notification_channel_transfers_description">Progress of the files you send and download, and of chat exports</string>
 
     <!-- Notification texts. -->
     <!-- Shown instead of a message when the chat's settings hide message previews. -->
@@ -59,4 +59,38 @@
     <string name="transfer_percent">%d%%</string>
     <!-- Cancels every transfer: downloads stop, messages being sent are deleted. -->
     <string name="transfer_cancel">Cancel</string>
+    <!-- The notifications of a chat export (Export chat): while it runs, then once it ended. -->
+    <!-- %1$s is the chat's name. -->
+    <string name="chat_export_notification_title">Exporting %1$s</string>
+    <plurals name="chat_export_notification_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <!-- Telegram asked to wait before the next messages; %d is the seconds. -->
+    <string name="chat_export_notification_waiting">Waiting %d s for Telegram</string>
+    <!-- Stops the export and deletes what it wrote. -->
+    <string name="chat_export_notification_cancel">Cancel</string>
+    <string name="chat_export_notification_done">%1$s exported</string>
+    <string name="chat_export_notification_failed">Couldn\'t export %1$s</string>
+
+    <!-- The words of an exported chat's HTML page (messages.html), in the app's language. -->
+    <!-- %1$s is the date and time. -->
+    <string name="chat_export_file_exported_on">Exported from Pingogram on %1$s</string>
+    <plurals name="chat_export_file_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <!-- %1$s is the original sender's name. -->
+    <string name="chat_export_file_forwarded_from">Forwarded from %1$s</string>
+    <!-- A link to the message replied to, further up the page. -->
+    <string name="chat_export_file_in_reply_to">In reply to this message</string>
+    <string name="chat_export_file_reply_not_exported">In reply to a message not in this export</string>
+    <!-- After a message's time, when it was edited. -->
+    <string name="chat_export_file_edited">edited</string>
+    <!-- %1$s is what the file is: Photo, Video, Voice message… -->
+    <string name="chat_export_file_not_exported">%1$s not exported</string>
+    <string name="chat_export_file_too_large">%1$s not exported: larger than the size limit</string>
+    <string name="chat_export_file_self_destructing">%1$s not exported: it self-destructs once viewed</string>
+    <string name="chat_export_file_unavailable">%1$s not exported: no longer available</string>
+    <string name="chat_export_file_no_messages">No messages</string>
 </resources>

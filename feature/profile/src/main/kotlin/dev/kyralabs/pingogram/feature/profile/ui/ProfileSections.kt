@@ -298,8 +298,9 @@ private fun PhoneRow(
 
 /**
  * What else can be done with the account, segmented rows without icons: "Add to contacts" or "Edit contact" (only with
- * [onEditContact], the app's contact editor), "Block user" in `error` (after a confirmation) or
- * "Unblock user", and "Report" in `error`, which opens the report sheet. Rows that do not apply are left out.
+ * [onEditContact], the app's contact editor), "Export chat" (only with [onExportChat], the app's export page),
+ * "Block user" in `error` (after a confirmation) or "Unblock user", and "Report" in `error`, which opens the report
+ * sheet. Rows that do not apply are left out.
  */
 @Composable
 internal fun ProfileMoreGroup(
@@ -307,6 +308,7 @@ internal fun ProfileMoreGroup(
     onEvent: (ProfileEvent) -> Unit,
     modifier: Modifier = Modifier,
     onEditContact: (() -> Unit)? = null,
+    onExportChat: (() -> Unit)? = null,
 ) {
     val error = MaterialTheme.colorScheme.error
     val rows = mutableListOf<ProfileRow>()
@@ -314,6 +316,10 @@ internal fun ProfileMoreGroup(
     if (contact != null && onEditContact != null) {
         val label = if (contact == ContactAction.Edit) R.string.profile_edit_contact else R.string.profile_add_contact
         rows += ProfileRow("contact") { ActionRow(stringResource(label), it, onClick = onEditContact) }
+    }
+    if (onExportChat != null) {
+        rows +=
+            ProfileRow("export") { ActionRow(stringResource(R.string.profile_export_chat), it, onClick = onExportChat) }
     }
     actions.isBlocked?.let { isBlocked ->
         rows +=

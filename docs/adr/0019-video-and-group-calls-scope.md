@@ -81,3 +81,12 @@ What the code found at NTgCalls' pinned commit, where it differs from the readin
 - **The other side's video state** comes through `onRemoteSourceChange` (camera: active, paused, idling).
   - NTgCalls tells the other side "suspended" while the user is muted (its `MediaState.video_paused` is `paused ||
     muted`). How Telegram's apps show a muted user's video is checked on a device.
+- **The screen**: since 1:1 video shipped, an incoming video call rings as "Incoming video call" and is answered with
+  the camera on where the camera is allowed already; the "audio only" note is gone. `CAMERA` is asked for when the
+  user first turns the camera on, and the call service adds the `camera` foreground type while it sends. The renderer
+  is WebRTC's `EglRenderer` drawing into a `TextureView`, as a `SurfaceView` would not clip to the self-view's corners.
+- **Picture-in-picture and bandwidth**: leaving a video call keeps its video in picture-in-picture, with "Hang up".
+  NTgCalls exposes no bitrate control; WebRTC's congestion control lowers the sent resolution and frame rate by itself.
+  So Pingogram sets the ceiling, the camera's capture size, from the network: 720p at 30 fps on Wi-Fi, 480p at 24 on
+  mobile data or once the call's connection was lost, 360p at 15 when roaming or with Data Saver. Each change opens
+  the camera again, which happens only when the network changes.

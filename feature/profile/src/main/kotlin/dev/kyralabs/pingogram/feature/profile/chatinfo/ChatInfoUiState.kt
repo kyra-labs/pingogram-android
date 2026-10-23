@@ -66,6 +66,7 @@ data class ChatLink(
  * @property canDelete the user owns the group or channel and can delete it for everyone.
  * @property canClearHistory the history can be cleared for the user: groups, not channels.
  * @property isBusy leaving, deleting or clearing was asked for, and TDLib has not answered yet.
+ * @property canExport the history can be exported: not where saving the chat's content is turned off.
  */
 @Immutable
 data class ChatInfoActions(
@@ -74,6 +75,7 @@ data class ChatInfoActions(
     val canDelete: Boolean = false,
     val canClearHistory: Boolean = false,
     val isBusy: Boolean = false,
+    val canExport: Boolean = false,
 )
 
 /**
@@ -227,13 +229,13 @@ sealed interface ChatInfoEvent {
         val filter: MemberFilter,
     ) : ChatInfoEvent
 
-    /** Open one of the administrators' pages. */
+    /** Open one of the pages the info page leads to. */
     data class Open(
         val page: ChatInfoPage,
     ) : ChatInfoEvent
 }
 
-/** The pages the info page opens for administrators. */
+/** The pages the info page opens: those for administrators, and the export for anyone. */
 enum class ChatInfoPage {
     EditInfo,
     Permissions,
@@ -241,6 +243,9 @@ enum class ChatInfoPage {
 
     /** The boosts of a channel or supergroup, read only (`REQUIREMENTS.md` FR-P5). */
     Boosts,
+
+    /** Exporting the chat's history (`docs/adr/0021-chat-export.md`), `:feature:chat`'s page. */
+    Export,
 }
 
 /** One-off side effects of [ChatInfoViewModel], handled once by its route. */

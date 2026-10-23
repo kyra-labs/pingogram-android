@@ -10,6 +10,7 @@ import android.os.Build
 import android.text.format.DateFormat
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,7 +27,9 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.SecureWindow
 import dev.kyralabs.pingogram.core.ui.file.ExternalFileResult
 import dev.kyralabs.pingogram.core.ui.file.viewTdlibFile
-import dev.kyralabs.pingogram.core.ui.text.errorMessage
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
+import dev.kyralabs.pingogram.core.ui.sticker.rememberCustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachLaunchers
@@ -42,6 +45,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -71,14 +75,22 @@ import java.util.Locale
  * ([EmojiPanelViewModel]), whose stickers the conversation sends. The forward sheet
  * ([ForwardBottomSheet]) shows over the screen while the view model has one; the snackbar after forwarding to one other
  * chat opens it through [onOpenChat]. So does the send-as picker ([SendAsBottomSheet]), a secret chat's timer and
- * key ([SecretChatBottomSheet]), and the bots' commands (`BotCommandsBottomSheet`). While a secret chat is open, the
+ * key ([SecretChatBottomSheet]), the bots' commands (`BotCommandsBottomSheet`), and the members whose messages the
+ * search in the chat finds (`SearchSenderSheet`). Custom emoji draw through a [CustomEmojiRenderer]
+ * ([LocalCustomEmoji]) that follows the view model's. While a secret chat is open, the
  * window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
- * navigates with.
+ * navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's text field
+ * takes the focus once it shows.
  */
-@Suppress("LongParameterList") // The chat and where in it, what it opens elsewhere, and its view models.
+@Suppress(
+    "LongParameterList", // The chat and where in it, what it opens elsewhere, and its view models.
+    // Wires the view models' state, effects and sheets in one place, the screen and its sheets in the provider of
+    // the custom emoji they draw.
+    "LongMethod",
+)
 @Composable
 internal fun ConversationRoute(
     chatId: Long,
@@ -91,6 +103,7 @@ internal fun ConversationRoute(
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
+    focusComposer: Boolean = false,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -99,12 +112,10 @@ internal fun ConversationRoute(
     panelViewModel: EmojiPanelViewModel = hiltViewModel(key = "emoji-panel-$chatId"),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val recording by viewModel.voiceRecording.collectAsStateWithLifecycle()
-    val emojiPanel by panelViewModel.uiState.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
-    val composerFocus = rememberComposerFocusState()
+    val composerFocus = rememberComposerFocusState(requestAtStart = focusComposer)
     val currentOnOpenMedia by rememberUpdatedState(onOpenMedia)
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
@@ -133,27 +144,33 @@ internal fun ConversationRoute(
             launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
         },
     )
-    ChatScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        onBack = onBack,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        jumpState = jumpState,
-        composerText = viewModel.composerText,
-        composerFocus = composerFocus,
-        attach = attach,
-        recording = recording,
-        reportComment = viewModel.reportComment,
-        emojiPanel = emojiPanel,
-        onEmojiPanelEvent = panelViewModel::onEvent,
-        onOpenProfile = onOpenProfile,
-        onOpenChatInfo = onOpenChatInfo,
-        commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
-        inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
-        botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
-    )
-    ChatSheets(viewModel)
+    // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
+    val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
+    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+        ChatScreen(
+            state = state,
+            onEvent = viewModel::onEvent,
+            onBack = onBack,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            jumpState = jumpState,
+            composerText = viewModel.composerText,
+            composerFocus = composerFocus,
+            attach = attach,
+            recording = viewModel.voiceRecording.collectAsStateWithLifecycle().value,
+            reportComment = viewModel.reportComment,
+            emojiPanel = panelViewModel.uiState.collectAsStateWithLifecycle().value,
+            onEmojiPanelEvent = panelViewModel::onEvent,
+            onOpenProfile = onOpenProfile,
+            onOpenChatInfo = onOpenChatInfo,
+            commandSuggestions = viewModel.commandSuggestions.collectAsStateWithLifecycle().value,
+            inlineResults = viewModel.inlineResults.collectAsStateWithLifecycle().value,
+            search = viewModel.searchState.collectAsStateWithLifecycle().value,
+            searchQuery = viewModel.searchQuery,
+            botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+        )
+        ChatSheets(viewModel)
+    }
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).
     SecureWindow(secure = state.header?.secret != null)
 }
@@ -212,8 +229,8 @@ internal fun ChatEffects(
         effects.collect { effect ->
             val message =
                 when (effect) {
-                    is ChatEffect.ShowError -> {
-                        errorMessage(resources, effect.error, showErrorDetails)
+                    is ChatEffect.ShowError, is TranslationEffect -> {
+                        failureNotice(resources, effect, showErrorDetails)
                     }
 
                     is ChatEffect.OpenFile -> {
@@ -222,7 +239,7 @@ internal fun ChatEffects(
 
                     ChatEffect.PlaybackFailed, ChatEffect.MessageUnavailable, ChatEffect.ActionUnavailable,
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
-                    ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported,
+                    ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
                     is ChatEffect.SponsoredNotice,
                     is VoiceEffect,
                     -> {
@@ -350,6 +367,7 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.PinnedHidden -> R.string.pinned_hidden
         ChatEffect.MiniAppsUnsupported -> R.string.bot_mini_apps_unsupported
         ChatEffect.GamesUnsupported -> R.string.inline_games_unsupported
+        ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
         else -> R.string.chat_message_unavailable

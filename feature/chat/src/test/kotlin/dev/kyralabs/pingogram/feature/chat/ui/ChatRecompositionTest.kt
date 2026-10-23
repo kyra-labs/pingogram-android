@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,12 +12,19 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -130,6 +138,21 @@ class ChatRecompositionTest {
     }
 
     @Test
+    fun `translating a bubble composes only that bubble`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        val translation = BubbleTranslation.Shown(FormattedText("Translated", persistentListOf()), "es")
+        state = before.withTranslations(persistentMapOf(newest.id to translation))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
+    }
+
+    @Test
     fun `someone starting to type composes the top bar's title and none of the bubbles`() {
         val before = messages(MESSAGES)
         setScreen(before)
@@ -156,13 +179,31 @@ class ChatRecompositionTest {
         assertNotEquals(emptyList<String>(), counter.recomposedOwnFunctions.filter { it.isItemFunction() })
     }
 
-    private fun setScreen(initial: ChatUiState) {
+    @Test
+    fun `loading custom emoji composes none of the bubbles that show them`() {
+        val renderer = testCustomEmojiRenderer(known = emptyMap())
+        setScreen(messages(MESSAGES, customEmoji = true), renderer)
+
+        renderer.emoji = CustomEmojiFakes.all.toImmutableMap()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // The pictures load and draw in the bubbles' draw phase: nothing composes again.
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filterNot { it.startsWith(SCREEN_LAMBDA) })
+    }
+
+    private fun setScreen(
+        initial: ChatUiState,
+        customEmoji: CustomEmojiRenderer? = null,
+    ) {
         state = initial
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 if (shown) {
                     listState = rememberLazyListState()
-                    ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
+                    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+                        ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
+                    }
                 }
             }
         }
@@ -183,11 +224,18 @@ class ChatRecompositionTest {
     private fun String.isItemFunction(): Boolean =
         ITEM_FILES.any { "ui.$it." in this || "ui.content.$it." in this } && FLOATING_PILL !in this
 
-    /** [count] messages, newest first, in runs of incoming and outgoing ones, some with reactions or replies. */
-    private fun messages(count: Int): ChatUiState {
+    /**
+     * [count] messages, newest first, in runs of incoming and outgoing ones, some with reactions or replies; with
+     * [customEmoji], every third has a custom emoji in its text and every fifth a custom emoji reaction.
+     */
+    private fun messages(
+        count: Int,
+        customEmoji: Boolean = false,
+    ): ChatUiState {
         val items =
             (count downTo 1).map { id ->
-                bubble(id.toLong(), outgoing = id / RUN % 2 == 0)
+                val bubble = bubble(id.toLong(), outgoing = id / RUN % 2 == 0)
+                if (customEmoji) bubble.withCustomEmoji() else bubble
             }
         return ChatUiState(
             header = ChatPreviewData.privateChat.header,
@@ -208,6 +256,17 @@ class ChatRecompositionTest {
             sender = UiText.Plain("Ada"),
             reply = if (id % 7 == 0L) quoteOf(id - 1) else null,
             reactions = if (id % 5 == 0L) ChatPreviewData.reactions(thumbsUp, heart) else persistentListOf(),
+        )
+
+    private fun ChatItem.Bubble.withCustomEmoji(): ChatItem.Bubble =
+        copy(
+            text = if (id % 3 == 0L) CustomEmojiFakes.text("${text.text} ⭐", "⭐" to CustomEmojiFakes.STAR) else text,
+            reactions =
+                if (id % 5 == 0L) {
+                    ChatPreviewData.reactions(ReactionChip(ReactionLabel.CustomEmoji(CustomEmojiFakes.LEAF), 1, false))
+                } else {
+                    reactions
+                },
         )
 
     private fun quoteOf(id: Long) = ReplyQuote(UiText.Plain("Ada"), senderId = 2, UiText.Plain("Message $id"), id)

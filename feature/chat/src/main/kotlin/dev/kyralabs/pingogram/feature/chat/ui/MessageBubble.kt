@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.content.res.Resources
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -36,12 +37,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FileState
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.TextBlocksLayout
+import dev.kyralabs.pingogram.core.ui.text.customEmoji
+import dev.kyralabs.pingogram.core.ui.text.hasCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.hasTextBlocks
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.textBlocks
 import dev.kyralabs.pingogram.core.ui.text.userContent
+import dev.kyralabs.pingogram.core.ui.text.withMatches
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
+import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.messageBubble
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -53,6 +59,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlin.math.max
@@ -95,6 +102,11 @@ import kotlin.math.max
  *   ([ChatEvent.ShowMessageActions]) with a long-press haptic, lifting the message for its floating menu
  *   ([MessageLiftState]) where that suits; whatever was pressed inside does not take it as a tap. Screen readers' long
  *   click opens the actions sheet.
+ * - **Keyboard and mouse** ([bubbleKeys], `docs/DESIGN_SYSTEM.md` §9): the row takes the keyboard's focus, and the
+ *   bubble shows the theme's focus ring in its shape ([bubbleFocusRing]); Enter, the Menu key and Shift+F10 open the
+ *   actions as a long press does, and so does a mouse's secondary button ([onLongPress]); the floating menu then takes
+ *   the focus, and gives it back to the row as it closes. The sender's name and avatar are buttons of their own
+ *   ([openProfileTarget]), with Material's pressed, hover and focus states.
  * - **Swipe to reply** ([swipeToReply]): where the user can reply ([canBeRepliedTo]) and outside selection mode, the
  *   bubble follows a horizontal swipe toward the end in the layout phase, revealing a reply icon drawn behind it;
  *   released past `sizes.swipeReplyDistance`, it replies ([ChatEvent.Reply]) with a `TextHandleMove` haptic at the
@@ -130,6 +142,7 @@ internal fun MessageBubbleRow(
     val highlightColor = MaterialTheme.colorScheme.secondaryContainer
     val highlightShape = MaterialTheme.shapes.medium
     val showActions = rememberActionsOpener(bubble.id, onEvent, resources.lift)
+    val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
     val swipe =
@@ -145,6 +158,7 @@ internal fun MessageBubbleRow(
                 .fillMaxWidth()
                 .jumpHighlight(resources.jump, bubble, highlightColor, highlightShape)
                 .bubbleGestures(selecting = selection != null, toggle, showActions, swipe, isRtl)
+                .bubbleKeys(focus, selecting = selection != null, toggle, showActions)
                 .clearAndSetSemantics {
                     contentDescription = bubbleDescription(strings, bubble)
                     if (selection != null) {
@@ -178,6 +192,7 @@ internal fun MessageBubbleRow(
             uploads = uploads,
             isSelected = isSelected,
             modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
+            focus = focus,
         )
     }
 }
@@ -185,6 +200,7 @@ internal fun MessageBubbleRow(
 /**
  * The bubble of a row, at the end for outgoing messages and at the start for incoming ones, beside the sender's avatar
  * in group chats; the list's rows and the message lifted for its floating menu ([MessageActionsMenu]) both show it.
+ * While the row has the keyboard's focus ([focus], the list's rows only), the bubble shows its focus ring.
  */
 @Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
@@ -197,6 +213,7 @@ internal fun BubbleRowContent(
     uploads: ImmutableMap<Long, MessageUpload>,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
+    focus: MutableInteractionSource? = null,
 ) {
     Row(
         modifier = modifier,
@@ -213,15 +230,16 @@ internal fun BubbleRowContent(
             uploads = uploads,
             isSelected = isSelected,
             modifier = Modifier.alignBy { it.bubbleBottom() },
+            focus = focus,
         )
     }
 }
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
- * [contentActions], [messageShortcuts], the buttons a bot attached ([botButtonActions]), a toggle per reaction but the
- * paid one, all reactions where the bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling
- * the [uploads] comes first, while there are some.
+ * [contentActions], [messageShortcuts], showing the original of a translated text, the buttons a bot attached
+ * ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
+ * selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -243,6 +261,17 @@ private fun bubbleActions(
     val fixed =
         listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble), threadAction(bubble)) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
+    val original =
+        if (bubble.translation is BubbleTranslation.Shown) {
+            listOf(
+                action(
+                    resources.getString(R.string.message_action_show_original),
+                    TranslationEvent.ShowOriginal(bubble.id),
+                ),
+            )
+        } else {
+            emptyList()
+        }
     val buttons =
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)
@@ -260,7 +289,13 @@ private fun bubbleActions(
         } else {
             emptyList()
         }
-    return fixed.map { action(resources.getString(it.label), it.event) } + buttons + reactions + allReactions + select +
+    return fixed.map {
+        action(
+            resources.getString(it.label),
+            it.event,
+        )
+    } + original + buttons + reactions + allReactions +
+        select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }
 
@@ -275,6 +310,7 @@ private fun MessageBubble(
     uploads: ImmutableMap<Long, MessageUpload>,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
+    focus: MutableInteractionSource? = null,
 ) {
     val style = resources.theme.styleOf(bubble.isOutgoing, isSelected)
     val position = bubble.position
@@ -282,7 +318,10 @@ private fun MessageBubble(
     val sizes = MaterialTheme.sizes
     val bubbleModifier = modifier.maxWidthFraction(sizes.bubbleMaxWidthFraction, sizes.bubbleMaxWidth)
     val bare = bubble.isEmojiOnly || (bubble.album == null && bubble.content.isBare)
-    val frame: @Composable (Modifier) -> Unit = { modifier ->
+    val bareShape = MaterialTheme.shapes.large
+    val frame: @Composable (Modifier) -> Unit = { outer ->
+        // The focus ring in the frame's shape: the bubble's, or around content without a bubble.
+        val modifier = outer.bubbleFocusRing(focus, if (bare) bareShape else shape)
         when {
             bubble.isEmojiOnly -> {
                 EmojiBubble(bubble, style.colors, onEvent, modifier)
@@ -419,21 +458,11 @@ internal fun BubbleHeader(
     onEvent: (ChatEvent) -> Unit,
 ) {
     if (bubble.showsSenderName) {
-        val userId = bubble.senderUserId
         Text(
             text = bubble.sender.resolve(),
-            // Its touch target reaches past the line, without moving what is around it; the bubble's own semantics
-            // offer the profile to screen readers.
-            modifier =
-                if (userId != null) {
-                    Modifier.touchTarget(
-                        Modifier.clickable(interactionSource = null, indication = null) {
-                            onEvent(ChatEvent.OpenProfile(userId))
-                        },
-                    )
-                } else {
-                    Modifier
-                },
+            // Its touch target reaches past the line, without moving what is around it; in the list, the bubble's own
+            // semantics offer the profile to screen readers.
+            modifier = Modifier.openProfileTarget(bubble.senderUserId, MaterialTheme.shapes.extraSmall, onEvent),
             color = MaterialTheme.colorScheme.senderNameColor(bubble.senderId),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -458,9 +487,14 @@ internal fun BubbleHeader(
 }
 
 /**
- * The text or caption in `bodyLarge` with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
+ * The text or caption in the message text style (`bodyLarge` at the size chosen in Chat appearance,
+ * `MaterialTheme.chatStyle`) with its entities ([AnnotatedTextCache]); tapping a spoiler reveals it. Its code,
  * code blocks and hidden spoilers are rounded `small` blocks drawn behind it from its layout ([textBlocks]), in the
- * draw phase. Its layout is kept in [textLayout], for the bubble's layout to put the meta after its last line.
+ * draw phase; so are the words the search in the chat marks in the result it shows ([ChatItem.Bubble.searchMatch]),
+ * on `tertiary` in `onTertiary`, which changes no glyph's width, so the bubble keeps its size. Its custom emoji show
+ * their pictures over their fallback emoji ([customEmoji], from [LocalCustomEmoji]), drawn in the draw phase too, in
+ * the text's color where they take it. Its layout is kept in [textLayout], for the bubble's layout to put the meta
+ * after its last line.
  */
 @Composable
 private fun BubbleText(
@@ -472,8 +506,21 @@ private fun BubbleText(
 ) {
     val onSpoilerClick =
         remember(bubble.id, onEvent) { LinkInteractionListener { onEvent(ChatEvent.RevealSpoilers(bubble.id)) } }
-    val text = resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
-    if (text.hasTextBlocks()) {
+    val formatted =
+        resources.texts.get(bubble, style.text, onSpoilerClick, resources.onLinkClick, resources.onMentionClick)
+    val match = bubble.searchMatch
+    val matchContent = MaterialTheme.colorScheme.onTertiary
+    val text =
+        if (match ==
+            null
+        ) {
+            formatted
+        } else {
+            remember(formatted, match, matchContent) { formatted.withMatches(match, matchContent) }
+        }
+    val customEmoji = LocalCustomEmoji.current?.takeIf { text.hasCustomEmoji() }
+    val hasBlocks = text.hasTextBlocks()
+    if (hasBlocks || customEmoji != null) {
         val blocks = remember { TextBlocksLayout() }
         val onLayout =
             remember(blocks, textLayout) {
@@ -482,25 +529,34 @@ private fun BubbleText(
                     textLayout.result = result
                 }
             }
-        Text(
-            text = text,
-            modifier =
+        val content = style.colors.content
+        val tint = remember(content) { ColorProducer { content } }
+        val blocksModifier =
+            if (hasBlocks) {
                 Modifier.textBlocks(
                     layout = blocks,
                     codeColor = style.text.codeBackground,
                     spoilerColor = style.text.spoilerColor,
                     shape = MaterialTheme.shapes.small,
                     horizontalPadding = MaterialTheme.sizes.textBlockPadding,
-                ),
-            color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge.userContent,
+                    matchColor = MaterialTheme.colorScheme.tertiary,
+                )
+            } else {
+                Modifier
+            }
+        Text(
+            text = text,
+            // Behind the text the blocks, then the custom emoji over it, in a layer of their own.
+            modifier = blocksModifier.customEmoji(customEmoji, blocks, tint),
+            color = content,
+            style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = onLayout,
         )
     } else {
         Text(
             text = text,
             color = style.colors.content,
-            style = MaterialTheme.typography.bodyLarge.userContent,
+            style = MaterialTheme.chatStyle.messageText.userContent,
             onTextLayout = { textLayout.result = it },
         )
     }

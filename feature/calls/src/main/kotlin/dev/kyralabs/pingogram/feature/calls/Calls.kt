@@ -26,4 +26,11 @@ class Calls
 
         /** Opens the call screen, which asks for the microphone if needed, then calls user [userId]. */
         fun call(userId: Long) = CallActivity.startCall(context, userId)
+
+        /**
+         * Opens the call screen and calls user [userId] with the camera on: a video call
+         * (`docs/adr/0019-video-and-group-calls-scope.md`). Without the camera's permission yet, it calls and asks for
+         * the camera, which turns on once allowed.
+         */
+        fun videoCall(userId: Long) = CallActivity.startCall(context, userId, video = true)
     }

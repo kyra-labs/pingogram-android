@@ -258,7 +258,7 @@ private fun LazyGridScope.chatInfoItems(
             ChatAdministrationGroup(administration, onEvent)
         }
     }
-    if (state.actions.canClearHistory || state.actions.canDelete) {
+    if (state.actions.canExport || state.actions.canClearHistory || state.actions.canDelete) {
         fullWidth(key = MORE, inset = inset, gapAbove = true) { ChatInfoMoreGroup(state.actions, state.kind, onEvent) }
     }
 }

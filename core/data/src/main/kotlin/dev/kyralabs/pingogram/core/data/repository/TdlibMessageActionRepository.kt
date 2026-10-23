@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
+import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -284,12 +285,4 @@ private fun TdApi.ReportChatResult.toChatReportResult(): ChatReportResult =
         else -> {
             ChatReportResult.MessagesRequired
         }
-    }
-
-/** Null for the paid reaction, which has its own functions. */
-private fun ReactionType.toTdReactionType(): TdApi.ReactionType? =
-    when (this) {
-        is ReactionType.Emoji -> TdApi.ReactionTypeEmoji(emoji)
-        is ReactionType.CustomEmoji -> TdApi.ReactionTypeCustomEmoji(customEmojiId)
-        ReactionType.Paid -> null
     }

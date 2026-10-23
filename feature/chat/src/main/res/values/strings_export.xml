@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Export chat (REQUIREMENTS.md §5.9): a page that writes a chat's history into a folder the user picks. -->
+    <string name="chat_export_title">Export chat</string>
+    <string name="chat_export_back">Back</string>
+    <!-- Under the chat's name, at the top of the page. -->
+    <string name="chat_export_intro">The export goes only into the folder you choose. Nothing is uploaded.</string>
+
+    <string name="chat_export_section_format">Format</string>
+    <string name="chat_export_format_html">HTML</string>
+    <string name="chat_export_format_json">JSON</string>
+    <string name="chat_export_format_html_summary">One page to read in any browser</string>
+    <string name="chat_export_format_json_summary">Every message with its details, for programs</string>
+
+    <string name="chat_export_section_media">Media</string>
+    <string name="chat_export_media_photos">Photos</string>
+    <string name="chat_export_media_videos">Videos</string>
+    <string name="chat_export_media_videos_summary">Videos, GIFs and video messages</string>
+    <string name="chat_export_media_voice">Voice messages</string>
+    <string name="chat_export_media_files">Files</string>
+    <string name="chat_export_media_files_summary">Documents and music</string>
+    <string name="chat_export_size_limit">Largest file</string>
+    <!-- %1$s is a size, e.g. "50 MB". -->
+    <string name="chat_export_size_up_to">Up to %1$s</string>
+    <string name="chat_export_size_any">Any size</string>
+    <string name="chat_export_media_footer">Media you leave out is named in the export, without its file.</string>
+
+    <string name="chat_export_section_messages">Messages</string>
+    <string name="chat_export_all_messages">All messages</string>
+    <string name="chat_export_since">From a date</string>
+    <!-- %1$s is a date, e.g. "Oct 1, 2026". -->
+    <string name="chat_export_since_date">From %1$s</string>
+    <string name="chat_export_since_choose">Choose a date</string>
+    <string name="chat_export_since_dialog">Export messages from</string>
+    <string name="chat_export_date_cancel">Cancel</string>
+    <string name="chat_export_date_ok">OK</string>
+
+    <string name="chat_export_section_folder">Folder</string>
+    <string name="chat_export_folder_none">No folder chosen</string>
+    <string name="chat_export_folder_checking">Checking the folder…</string>
+    <string name="chat_export_folder_summary">A new folder is made in it for this export</string>
+    <string name="chat_export_folder_choose">Choose</string>
+    <string name="chat_export_folder_change">Change</string>
+    <!-- For screen readers, the button beside the folder. -->
+    <string name="chat_export_folder_choose_description">Choose folder</string>
+    <string name="chat_export_folder_change_description">Change folder</string>
+    <string name="chat_export_start">Export</string>
+
+    <!-- While the export runs. %1$s is the chat's name. -->
+    <string name="chat_export_running">Exporting %1$s</string>
+    <plurals name="chat_export_messages_read">
+        <item quantity="one">%s message so far</item>
+        <item quantity="other">%s messages so far</item>
+    </plurals>
+    <!-- %d is the seconds Telegram asked to wait. -->
+    <string name="chat_export_flood_wait">Telegram asked to wait %d s</string>
+    <string name="chat_export_running_note">You can leave this page: the export goes on in the background, with a notification. Cancelling deletes what it wrote.</string>
+    <string name="chat_export_cancel">Cancel export</string>
+    <string name="chat_export_cancelled">Export cancelled</string>
+
+    <!-- Once it is done. -->
+    <string name="chat_export_done_title">Chat exported</string>
+    <!-- Each a line of its own below "Chat exported". -->
+    <plurals name="chat_export_done_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <plurals name="chat_export_done_media">
+        <item quantity="one">%s file copied</item>
+        <item quantity="other">%s files copied</item>
+    </plurals>
+    <plurals name="chat_export_done_skipped">
+        <item quantity="one">%s file left out, named in the export</item>
+        <item quantity="other">%s files left out, named in the export</item>
+    </plurals>
+    <string name="chat_export_open_folder">Open folder</string>
+    <string name="chat_export_no_folder_app">No app on this phone opens folders</string>
+    <string name="chat_export_again">Export again</string>
+
+    <!-- When it failed. -->
+    <string name="chat_export_failed_title">Couldn\'t export the chat</string>
+    <string name="chat_export_folder_unavailable">The folder is gone, or Pingogram may no longer write to it. Choose another folder.</string>
+    <string name="chat_export_storage_full">The storage is full. Free some space, or leave out some media.</string>
+    <string name="chat_export_try_again">Try again</string>
+    <string name="chat_export_folder_unusable">This folder can\'t be used. Choose another one.</string>
+
+    <!-- When the chat cannot be exported. -->
+    <string name="chat_export_not_allowed_title">This chat can\'t be exported</string>
+    <string name="chat_export_secret_chat">Secret chat messages stay on this device and in the chat: they can\'t be forwarded or exported.</string>
+    <string name="chat_export_protected">Saving content from this chat is turned off by its owner.</string>
+    <string name="chat_export_error_title">Couldn\'t open the chat</string>
+</resources>

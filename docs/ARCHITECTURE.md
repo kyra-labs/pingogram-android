@@ -100,8 +100,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   conversations a `ChatStyle` (`MaterialTheme.chatStyle`, `core:ui`): the scaled message text with its optical size
   re-derived, the bubble shapes with the chosen corners, and the wallpaper as a `Brush` (null for none), rebuilt as
   the scheme cross-fades. `feature:settings`' Chat appearance page (`ChatAppearanceRoute`, `ChatAppearanceViewModel`)
-  sets it, with a preview drawn from that same style. The conversation (`feature:chat`'s `BubbleTheme`, the
-  conversation's sheet) does not read it yet: wiring it in is the conversation owner's change.
+  sets it, with a preview drawn from that same style. The conversation draws with it too: `feature:chat`'s
+  `BubbleTheme` takes its bubble shapes, `BubbleText` its message text (texts and captions; the composer, link previews
+  and sponsored messages keep their own styles), and the conversation's sheet paints its wallpaper behind the bars and
+  the messages, in the draw phase.
 - **Passcode lock** (FR-S1, `docs/adr/0005-passcode-lock.md`): `PasscodeRepository` (`core:domain`,
   `DataStorePasscodeRepository` in `core:datastore`) keeps the settings and the passcode as a salted PBKDF2 hash in the
   settings file; `AppLockRepository` (`DefaultAppLockRepository`, `core:data`) is the lock's state machine over those
@@ -174,6 +176,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecureWindow` (requests counted in `SecureWindowRequests`, `LocalSecureWindow`), which `ChatRoute` does for a secret
   chat and `MediaViewerRoute` for its media; `MainActivity` keeps `FLAG_SECURE` while the lock or any screen needs it, in
   its one `SecureWindowEffect`, so neither clears the flag the other set.
+- **Stories** (M6, read only): `core:domain`'s `StoryRepository` (`TdlibStoryRepository`, `core:data`, a
+  `TdlibUpdateCache`: TDLib announces each chat's active stories only with `updateChatActiveStories`) keeps every chat's
+  `ActiveStories` (list, `order`, `max_read_story_id`, story ids and dates) for the session and lists those of a
+  `StoryList` in TDLib's order (by `order`, then chat id, both descending). The first chats of the main list load once
+  per session (`loadActiveStories`, which answers 404 once all are loaded), more as the rings' row nears its end; a chat
+  not announced is asked for with `getChatActiveStories`. A story is `getStory`, then its `updateStory` and
+  `updateStoryDeleted` while collected; viewing is `openStory` / `closeStory`, reactions `setStoryReaction` (emoji
+  only, those `getStoryAvailableReactions` offers without Premium), replies a text message to the poster's private chat
+  replying to the story (`inputMessageReplyToStory`). `activateStoryStealthMode` is never sent: every story shown is
+  marked viewed. Areas, privacy settings, interactions, saving and posting are left out. `feature:chats` draws the rings
+  as the chat list's first row (`StoryRingsViewModel`, `StoryRingsRow`, passed to `ChatListScreen` as its `stories`
+  slot, which the route gives only while there are rings and whose state the row reads in its own composition, so the
+  rings changing recomposes nothing else). A ring opens `StoryViewerRoute(chatId, storyId?)` of `core:navigation`, a
+  full-screen destination of `feature:media` (beside the media viewer, whose video player, images, caption and
+  swipe-to-close it reuses; a module of its own would have needed copies of them, as features do not share code):
+  `StoryViewerViewModel` pages through the main list's chats as they were when it opened, from the chat's first unseen
+  story, keeps the chats, the one shown and its story in its saved state, and plays each story through `StoryTimeline`
+  (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
+  phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
+  priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then
@@ -186,6 +208,46 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Message translation** (FR-C3, FR-C6): Telegram translates, nothing else sees a message. `core:domain`'s
+  `TranslationRepository` (`TdlibTranslationRepository`, `core:data`, no cache) sends `translateMessageText` (the
+  message by its ids, into one of the language codes td_api.tl lists, `targetLanguageOf` mapping a BCP 47 tag onto
+  them; Telegram keeps the formatting for Telegram Premium subscribers only), and its refusals (a flood wait, Premium
+  required) are shown, never worked around. Translations go into Pingogram's language (`AppLanguageRepository`), or
+  the system's first one while it follows the system; the user reads that language and the system's languages.
+  `DeviceLanguageDetector` (`AndroidDeviceLanguageDetector`, `core:data`) tells a text's language **on the device**:
+  Android's `TextClassificationManager` (`detectLanguage`, Android 10+, on the IO dispatcher; the classifier runs in the
+  app or the system's on-device text classification service), no library or model of its own, no text sent anywhere;
+  before Android 10 it cannot tell, so "Translate" is always offered and the bar never shows. `Chat.isTranslatable`
+  (`chat.is_translatable`, `updateChatIsTranslatable`, kept by `TdlibChatRepository`) is Telegram's suggestion to
+  translate a whole chat, which it makes for Telegram Premium subscribers only. `HiddenTranslateBarsRepository`
+  (`DataStoreHiddenTranslateBarsRepository`, the settings file) keeps the chats whose bar the user closed.
+  `feature:chat`'s `ChatTranslation` (a part of `ChatViewModel`, `translation/`, given them through
+  `TranslationRepositories`) offers "Translate" or "Show original" in a message's actions (`ChatMessageActions`'
+  `translationAction`, asked with its properties) where the device found no language the user reads, keeps the
+  translations in memory per message and language for the view model's life (dropped when the message's text
+  changes), and copies them into the bubbles they change only (`withTranslations`: the text replaced, the meta shown
+  with its label). The translate bar (`ChatUiState.translateBar`) shows where the chat is translatable, the device can
+  detect, the user did not close it, and most of the 10 newest incoming texts are in one language the user does not
+  read; turned on, it translates the messages on screen (`ChatEvent.MessagesVisible`, batched for 300 ms, at most four
+  requests at once, those that leave the screen no longer waited for), never the history around them. Whether it is
+  on, and the messages chosen or kept in the original, are in the saved state. A translated bubble that is the result
+  the search in the chat shows marks the query's words in the translation it shows (`withSearchMatch` after
+  `withTranslations`); words only its original has stay unmarked there, and "Show original" marks them.
+- **Search in a chat** (§5.9): `core:domain`'s `ChatSearchRepository` (`TdlibChatSearchRepository`, `core:data`, no
+  cache) pages a chat's messages that a `ChatSearchQuery` finds (`searchChatMessages` with the words, the sender and
+  the topic, by `next_from_message_id`; a secret chat's, which only the device has, with `searchSecretMessages`, by its
+  offset, words only), as message ids, and finds the message to show for a day (`getChatMessageByDate` before the day,
+  then the next newer one with `getChatHistory`; `getChatMessageCalendar` counts only one kind of message, so it cannot
+  say which days have any). `feature:chat`'s `ChatSearch` (a part of `ChatViewModel`, `search/`, given both it and
+  `GroupInfoRepository` for a group's members through `ChatSearchRepositories`) searches the field's text 300 ms after
+  the last edit, the newest query cancelling the search still running, and shows each result in the list as a reply
+  quote's jump does (`ChatWindow.showMessage`); the next page loads near the last loaded result. Its state
+  (`searchState`, the members' sheet) is kept out of `ChatUiState`, except for the one bubble of the result shown,
+  copied with the words to mark (`ChatItem.Bubble.searchMatch`, `withSearchMatch`), which `core:ui`'s `withMatches`
+  turns into blocks `textBlocks` draws, so no other bubble composes again. Whether search is open, the query, the
+  sender and the result shown are kept in the saved state; after process death it searches again at that result
+  without moving the list. `core:ui`'s `MatchHighlight` (the query's words and where a text has them) is shared with
+  global search.
 - **Bots** (FR-C5): `core:domain`'s `BotInfoRepository` (`TdlibBotInfoRepository`, `core:data`, no cache: TDLib keeps
   the full info and reports its changes) gives a conversation its `ChatBots`: `getChat` says what the chat is; a
   private chat whose user is a bot (`getUser`) follows `getUserFullInfo` and `updateUserFullInfo` (`bot_info`: the
@@ -307,7 +369,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `ChatPane`; the navigator holds the open chat. With one pane (compact, medium) a tap still pushes
   `ChatRoute`, and the archive pushes it on every window. New chat (`NewChatRoute`, `feature:chats`) is pushed above
   the Chats tab on every window too; a contact's chat takes its place on the back stack, so back from the chat
-  returns to the chat list.
+  returns to the chat list. With a hardware keyboard (`:app`'s `PaneKeyboard`), the list pane is one focus group that
+  restores its last focused row; a chat opened from it in keyboard mode hands `ChatPane` `focusComposer`, which the
+  conversation passes to its composer's `ComposerFocusState` once; Esc that the conversation did not take gives the
+  focus back to the list (`docs/DESIGN_SYSTEM.md` §9).
 - Settings is a list-detail too (`SettingsListDetail`, `feature:settings`, composed by `settingsScreen` as the
   `SettingsRoute` destination): Settings home as the list, the navigator holding the open page by its name. With one
   pane a row pushes the page's route above the tab (`settingsPages`, every window narrower than expanded); with two
@@ -529,6 +594,24 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   for Android behind `StickerAnimationDecoder` (the seam for rlottie later), and renders frames on two background
   threads; `AnimatedSticker` (a `Modifier.Node` in its own layer) draws them in bubbles and the sticker panel. WebM
   stickers show their thumbnail.
+- Custom emoji (`docs/adr/0022-custom-emoji-rendering.md`): `core:domain`'s `CustomEmojiRepository`
+  (`TdlibCustomEmojiRepository`, `core:data`, an `UpdateStore` emptied when TDLib closes, no `TdlibUpdateCache`: no
+  update announces custom emoji) keeps every `CustomEmoji` (its sticker, whether it takes the text's color) that
+  `getCustomEmojiStickers` returned, by id, asking only for ids it has not asked for (deduplicated across callers, at
+  most 200 a request, a cancelled caller's ids asked for again next time). `feature:chat`'s `ChatCustomEmoji` (a part
+  of `ChatViewModel`) hands it the ids of the texts, captions and reactions of the messages on screen
+  (`ChatEvent.MessagesVisible`) and of the composer's text, at most every 100 ms, never the history's, and exposes what
+  is loaded as `ChatViewModel.customEmoji`, outside `ChatUiState`. `ConversationRoute` hands it to `core:ui`'s
+  `CustomEmojiRenderer` (`rememberCustomEmojiRenderer`, `LocalCustomEmoji`: snapshot state read only by the drawing
+  nodes' coroutines and draw phase), with the app's `AnimatedStickers` for TGS ones and Coil (`CoilCustomEmojiStills`)
+  for WebP pictures and WebM thumbnails. `toAnnotatedString` marks custom emoji with `CUSTOM_EMOJI_TAG` annotations,
+  and `Modifier.customEmoji` (bubble texts, emoji-only messages, the composer's field through `CustomEmojiField`) finds
+  their glyph boxes in the cached `TextLayoutResult`, clips them out of the text once a picture is there and draws it
+  in their place, keeping a picture per id (`CustomEmojiFrames`, shared with reactions' `CustomEmojiImage`) whose
+  frames redraw only the text's own layer; TGS ones play with the stickers' `StickerPlayer`, under the same slots.
+  The fallback emoji stays in the text, for copying and screen readers, and shows until the picture does. Pingogram
+  offers no custom emoji to add (Telegram Premium); a draft's or an edited message's keep their entities, which an
+  edit inside them removes (`EntityEdits`).
 - Emoji and sticker panel (`feature:chat` `panel/`, FR-C5): `EmojiPanelViewModel` (keyed by the chat like
   `ShareLocationViewModel`, loading only once the panel first opens) reads `EmojiCatalogRepository`
   (`AndroidEmojiCatalogRepository`, `core:data`: the bundled `res/raw/emoji_catalog.txt` generated by `tools/emoji` from
@@ -710,7 +793,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - **Call screen**: `CallActivity` (its own task, over the lock screen, not exported) with `CallViewModel` (the call,
   the other person, the timer; the microphone's permission step in the `SavedStateHandle`) and `CallScreen`. The call
   buttons (conversation, profile) and "Call back" reach it through `Calls.call(userId)`, which `:app` hands to the
-  features as a callback (features do not depend on each other).
+  features as a callback (features do not depend on each other); `Calls.videoCall(userId)` calls with the camera on.
+  Video (`docs/adr/0019-video-and-group-calls-scope.md`):
+  `CallScreen` takes the video as a slot (`CallVideo`, a placeholder in previews and goldens), which `CallActivity`
+  fills with `CallVideoView` (WebRTC's `EglRenderer` in a `TextureView`); each view hands its renderer to the call as a
+  `VideoFrameSink` while the screen is started (`CallViewModel.setVideoSink`), so a screen in the background draws and
+  receives nothing. The camera's permission is asked when it is turned on (`CameraAccess`, `CallEffect`), and the call
+  service adds the `camera` foreground type while the camera sends. A video call goes on in picture-in-picture when
+  the user leaves it (`CallActivity`: auto-enter on Android 12+, `onUserLeaveHint` before, back and "Back to the app";
+  "Hang up" as its `RemoteAction`), the screen showing only the video there. The most the camera sends
+  (`VideoQuality`) follows `NetworkRepository`: 720p on Wi-Fi, 480p on mobile data and after the connection was lost
+  once, 360p roaming or with Data Saver.
 
 ## Home screen widget
 
@@ -728,6 +821,40 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   goes. Rows open their chat with `NotificationIntents.openChat`; "New chat" sends `tg://new` to `MainActivity`.
 - Goldens draw the real `RemoteViews` (`GlanceRemoteViews`) in an `AppWidgetHostView`, the only parent Android fills a
   widget's list in.
+
+## Chat export
+
+`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`. Nothing is uploaded: only TDLib is asked, for the chat's
+messages and their files, and the output goes only to the folder the user picked; logs hold no message text, names or
+folder.
+
+- **Entry**: the profile's "More" group (`feature:profile`'s `profileScreen(onExportChat)`, the private chat's id,
+  Saved Messages on one's own profile, which the Saved Messages title opens) and the info page's last group
+  (`ChatInfoPage.Export`), where the chat lets its content be saved. Both push `feature:chat`'s
+  `ChatExportRoute(chatId)` (`chatExportScreen`, registered in `:app`'s `NavHost` and in the extra pane's).
+- **The page** (`feature:chat` `export/`, `ChatExportViewModel`): `core:domain`'s `ChatExportRepository` says whether
+  the chat may be exported (not secret chats, not chats with protected content); the form (format, media kinds, the
+  size limit, the day to start from, the folder) lives in the `SavedStateHandle`. The folder comes from the Storage
+  Access Framework's picker (`OpenDocumentTree`, no permission); `ExportFolderRepository`
+  (`AndroidExportFolderRepository`, `core:data`) persists its grant and reads its name, and gives the grant back when
+  another is picked or the page closes without exporting. "Export" hands the options to `ChatExportJobs`, whose job
+  then holds the folder; the page follows it (`job(chatId)`) to its result.
+- **The job**: `core:notifications`' `WorkManagerChatExportJobs` runs `ChatExportWorker` as unique work per chat
+  (`chat_export_<id>`, expedited, kept while one runs) in WorkManager's `dataSync` foreground service, as the user's
+  transfers run, with `ChatExportNotificationBuilder`'s notification in the "Transfers" channel ("Exporting Ada", the
+  progress, "Cancel" through `WorkManager.createCancelPendingIntent`) and a note once it ended. Its options are its
+  input data, its progress WorkManager's progress data, its result or error its output (`ChatExportInput.kt`). It
+  waits for TDLib to log in after a restart, and gives the folder's grant back at the end.
+- **The export**: `core:data`'s `DocumentChatExporter` (behind `core:domain`'s `ChatExporter`) reads the history
+  through `TdlibChatExportRepository` (`getChatHistory`, `only_local` false, 100 a page, newest first, a `FLOOD_WAIT`
+  waited out for the seconds asked; names with `getUser` / `getChat`, once per export; files with `downloadFile` at
+  priority 1, synchronous, one at a time, cancelled in TDLib with the export), maps each message to `ExportMessage`
+  (`core:domain`: service texts and summaries worded by `ResourceExportTexts`, `core:ui`'s previews), copies the
+  chosen media into `media/` and writes each page to a temporary file in the cache (`ExportRecords.kt`). Then it
+  writes `messages.html` (`HtmlExportWriter`: self-contained, no script) or `messages.json` (`JsonExportWriter`, the
+  ADR's schema) from the last page to the first, each reversed, so it never holds more than a page. All writing goes
+  through `DocumentTree` (`AndroidDocumentTree` on `DocumentsContract`, an in-memory folder in tests). Cancelled or
+  failed, it deletes its folder and its temporary files.
 
 ## Feedback
 

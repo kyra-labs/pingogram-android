@@ -72,4 +72,31 @@
     <string name="media_delete_for_everyone">Delete for everyone</string>
     <string name="media_delete_confirm">Delete</string>
     <string name="media_delete_cancel">Cancel</string>
+    <!-- The stories viewer. -->
+    <string name="story_viewer_title">Stories</string>
+    <string name="story_viewer_loading">Loading stories</string>
+    <!-- Read by screen readers as each story shows: "Story 2 of 5 by Ada". -->
+    <string name="story_a11y_position">Story %1$d of %2$d by %3$s</string>
+    <string name="story_next">Next story</string>
+    <string name="story_previous">Previous story</string>
+    <string name="story_pause">Pause</string>
+    <string name="story_resume">Resume</string>
+    <string name="story_close">Close</string>
+    <string name="story_mute">Mute</string>
+    <string name="story_unmute">Unmute</string>
+    <!-- How long ago a story was posted, in its first minute; later "12m", "3h" in the language's narrow units. -->
+    <string name="story_age_now">now</string>
+    <string name="story_reply_placeholder">Reply privately…</string>
+    <string name="story_send">Send reply</string>
+    <string name="story_reply_sent">Reply sent</string>
+    <string name="story_react">React</string>
+    <!-- %1$s is the emoji the user reacted with. -->
+    <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>
+    <string name="story_playback_failed">This video can\'t be played</string>
+    <string name="story_live_title">Live stream</string>
+    <string name="story_live_body">Pingogram can\'t join live streams from stories yet.</string>
+    <string name="story_unsupported_title">Can\'t show this story</string>
+    <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
+    <string name="story_unavailable_title">Story unavailable</string>
+    <string name="story_unavailable_body">This story was deleted or has expired.</string>
 </resources>

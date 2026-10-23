@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -76,7 +78,12 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
+import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
+import dev.kyralabs.pingogram.feature.chat.ui.search.SearchTopBarSlot
+import dev.kyralabs.pingogram.feature.chat.ui.search.rememberSearchBack
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
@@ -128,6 +135,9 @@ import kotlinx.collections.immutable.ImmutableSet
  * - **Pinned messages** (`REQUIREMENTS.md` FR-C9): their bar sits at the top of the sheet, above the messages
  *   ([PinnedBarSlot]); a tap shows its message in the list and moves on to the next older one, and its list button
  *   opens the sheet of them all (`PinnedMessagesSheet`, shown by the route).
+ * - **Translation** (`REQUIREMENTS.md` FR-C3): where Telegram suggests translating the chat, the translate bar sits
+ *   below the pinned messages bar ([TranslateBarSlot]); translated bubbles show the translation with its label in the
+ *   meta, and "Translate" or "Show original" are among a message's actions.
  * - **Bots** (`REQUIREMENTS.md` FR-C5): the composer's bot button opens their commands or menu
  *   ([BotEvent.OpenMenu]), the commands that a command being typed starts show above the composer
  *   ([commandSuggestions], the view model's, kept apart from [state]), and a bot's empty chat shows what it does
@@ -135,6 +145,13 @@ import kotlinx.collections.immutable.ImmutableSet
  *   bot's results show above the composer ([inlineResults], the view model's, kept apart from [state]); sending one
  *   scrolls to the newest message. A bot's keyboard ([botReply], the view model's too) shows in the system keyboard's
  *   place, with a toggle in the composer's pill, and gives way to the inline results.
+ * - **Search in the chat** (`REQUIREMENTS.md` §5.9, [search], the view model's, kept apart from [state]): the top
+ *   bar's search button opens it; the search field ([searchQuery]) takes the top bar's place and the search's bar the
+ *   composer's ([SearchTopBarSlot], [SearchBottomBarSlot]), with the result shown in the list as a tapped quote's
+ *   message, its words marked. Back (predictive, the bar following the gesture) and the field's back button close it.
+ * - **Keyboard and mouse** (`docs/DESIGN_SYSTEM.md` §9): a bubble takes the keyboard's focus with its focus ring, and
+ *   Enter, the Menu key, Shift+F10 or a right click open its actions in the floating menu, which Esc closes; Ctrl+F
+ *   opens the search, and Esc leaves selection mode or the search ([conversationKeys]).
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -165,6 +182,8 @@ internal fun ChatScreen(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     commandSuggestions: CommandSuggestions? = null,
     inlineResults: InlineBotUiState? = null,
+    search: ChatSearchUiState? = null,
+    searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
 ) {
     val content = state.content
@@ -180,7 +199,7 @@ internal fun ChatScreen(
             onEvent(ChatEvent.OpenMention(target))
         }
     val lifted = liftedBubble(state, lift)
-    Box(modifier) {
+    Box(modifier.conversationKeys(state, searching = search != null, onEvent)) {
         ChatScaffold(
             state = state,
             onEvent = onEvent,
@@ -190,9 +209,12 @@ internal fun ChatScreen(
             bubbleResources = bubbleResources,
             onOpenProfile = onOpenProfile,
             onOpenChatInfo = onOpenChatInfo,
+            search = search,
+            searchQuery = searchQuery,
             bottomBar = {
                 ChatScreenBottomBar(
                     state = state,
+                    search = search,
                     recording = recording,
                     composerText = composerText,
                     composerFocus = composerFocus,
@@ -226,7 +248,7 @@ internal fun ChatScreen(
  * The screen's [Scaffold]: the top bar (with the selection's count), the [bottomBar], the [jumpButton] and the
  * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu.
  */
-@Suppress("LongParameterList") // The state, back, its list and snackbars, what the bubbles share, and the two slots.
+@Suppress("LongParameterList") // The state, back, its list and snackbars, what the bubbles share, search, the slots.
 @Composable
 private fun ChatScaffold(
     state: ChatUiState,
@@ -237,6 +259,8 @@ private fun ChatScaffold(
     bubbleResources: BubbleResources,
     onOpenProfile: ((userId: Long) -> Unit)?,
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
+    search: ChatSearchUiState?,
+    searchQuery: TextFieldState,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -245,15 +269,23 @@ private fun ChatScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
-            ChatTopBar(
-                header = state.header,
-                onBack = onBack,
-                selectedCount = selection?.messageIds?.size,
-                onClearSelection = { onEvent(SelectionEvent.Clear) },
-                onOpenProfile = onOpenProfile,
-                onSecretChatEvent = onEvent,
-                onOpenChatInfo = onOpenChatInfo,
-            )
+            SearchTopBarSlot(
+                searching = search != null && selection == null,
+                query = searchQuery,
+                height = titleHeight(),
+                onClose = { onEvent(ChatSearchEvent.Close) },
+            ) {
+                ChatTopBar(
+                    header = state.header,
+                    onBack = onBack,
+                    selectedCount = selection?.messageIds?.size,
+                    onClearSelection = { onEvent(SelectionEvent.Clear) },
+                    onOpenProfile = onOpenProfile,
+                    onSecretChatEvent = onEvent,
+                    onOpenChatInfo = onOpenChatInfo,
+                    onSearch = { onEvent(ChatSearchEvent.Open) },
+                )
+            }
         },
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -261,8 +293,11 @@ private fun ChatScaffold(
         floatingActionButton = jumpButton,
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            Column(Modifier.fillMaxSize()) {
+            // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
+            val wallpaper = MaterialTheme.chatStyle.wallpaper
+            Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
+                TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
             }
         }
@@ -277,10 +312,11 @@ private fun ChatScaffold(
  * command sent from the [commandSuggestions] reports through [onSent] too, and so do a result of the
  * [inlineResults] and a button of the bot's keyboard ([botReply]) that sends its text.
  */
-@Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
+@Suppress("LongParameterList") // The state, search, the recording, the composer's text and focus, the panel, buttons.
 @Composable
 private fun ChatScreenBottomBar(
     state: ChatUiState,
+    search: ChatSearchUiState?,
     recording: VoiceRecordingUiState?,
     composerText: ComposerText,
     composerFocus: ComposerFocusState,
@@ -294,61 +330,44 @@ private fun ChatScreenBottomBar(
     botReply: BotReplyUiState,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
-    val bots =
-        remember(commandSuggestions, botReply, onEvent, onSent) {
-            BotInput(
-                suggestions = commandSuggestions,
-                reply = botReply,
-                onKeyboardPress = keyboardPresses(botReply, onEvent, onSent),
-                onSendCommand = { command ->
-                    onEvent(BotEvent.SendCommand(command))
-                    onSent(SendOptions())
-                },
-                onInsertCommand = { onEvent(BotEvent.InsertCommand(it)) },
-                onMenu = { onEvent(BotEvent.OpenMenu) },
-                onStart = { onEvent(BotEvent.Start) },
-            )
-        }
-    val canSchedule = (state.composer as? ComposerUiState.Available)?.canSchedule == true
-    val inline =
-        remember(inlineResults, canSchedule, onEvent, onSent) {
-            InlineBotInput(inlineResults, canSchedule) { event ->
-                onEvent(event)
-                if (event is InlineBotEvent.Send) onSent(event.options)
-            }
-        }
+    val bots = rememberBotInput(commandSuggestions, botReply, onEvent, onSent)
+    val inline = rememberInlineInput(inlineResults, state.composer, onEvent, onSent)
+    // Not while selecting: selection mode shows over search, and back leaves it first.
+    val searchBack = rememberSearchBack(open = search != null, selecting = state.selection != null, onEvent)
     SelectionBottomBar(
         actions = state.selection?.actions,
         backProgress = selectionBack,
         onAction = { onEvent(SelectionEvent.Act(it)) },
     ) {
-        val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
-        ChatBottomBar(
-            composer = state.composer,
-            text = composerText,
-            onSend = { options ->
-                onEvent(ChatEvent.Send(options))
-                if (!editing) onSent(options)
-            },
-            onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
-            focus = composerFocus,
-            onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
-            onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
-            onAttach = { onAttach(null) },
-            onGallery = { onAttach(AttachOption.Gallery) },
-            recording = recording,
-            onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
-            onSendAs = { onEvent(SendAsEvent.Open) },
-            panel = emojiPanel,
-            onPanelEvent = onEmojiPanelEvent,
-            onSendSticker = { sticker ->
-                onEvent(ChatEvent.SendSticker(sticker))
-                onSent(SendOptions())
-            },
-            onJoin = { onEvent(ChatEvent.JoinChat) },
-            bots = bots,
-            inline = inline,
-        )
+        SearchBottomBarSlot(search, onEvent, { searchBack.value }) {
+            val editing = (state.composer as? ComposerUiState.Available)?.bar is ComposerBar.Edit
+            ChatBottomBar(
+                composer = state.composer,
+                text = composerText,
+                onSend = { options ->
+                    onEvent(ChatEvent.Send(options))
+                    if (!editing) onSent(options)
+                },
+                onFocusChanged = { onEvent(ChatEvent.ComposerFocusChanged(it)) },
+                focus = composerFocus,
+                onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
+                onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+                onAttach = { onAttach(null) },
+                onGallery = { onAttach(AttachOption.Gallery) },
+                recording = recording,
+                onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
+                onSendAs = { onEvent(SendAsEvent.Open) },
+                panel = emojiPanel,
+                onPanelEvent = onEmojiPanelEvent,
+                onSendSticker = { sticker ->
+                    onEvent(ChatEvent.SendSticker(sticker))
+                    onSent(SendOptions())
+                },
+                onJoin = { onEvent(ChatEvent.JoinChat) },
+                bots = bots,
+                inline = inline,
+            )
+        }
     }
 }
 

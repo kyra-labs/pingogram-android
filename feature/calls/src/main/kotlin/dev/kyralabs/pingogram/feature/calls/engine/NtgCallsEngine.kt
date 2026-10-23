@@ -46,7 +46,8 @@ import javax.inject.Singleton
  * `VoiceCommunication`), so Android's echo canceller and noise suppressor work on them, and Telecom's routing
  * (earpiece, speaker, Bluetooth, wired headset) applies.
  *
- * Video (`docs/adr/0019-video-and-group-calls-scope.md`): NTgCalls opens the camera itself (Camera2 through WebRTC) and
+ * Video (`docs/adr/0019-video-and-group-calls-scope.md`): NTgCalls opens the camera itself (Camera2 through WebRTC), at
+ * the size of the [VideoQuality] asked for, landscape as cameras capture (each frame carries its rotation), and
  * hands every frame, its own camera's and the other side's, to `onFrames` as a packed I420 array, which goes to the
  * session's [VideoFrameSink]s as it is. The other side's video comes at the size it is sent (at most 720p from
  * Telegram's apps): NTgCalls would scale it to a fixed size whatever its shape, so the screen scales it instead.
@@ -150,8 +151,8 @@ class NtgCallsEngine
                 ?.metadata
                 .orEmpty()
 
-        private fun CallCamera.toVideoSource() =
-            VideoDescription(MediaSource.DEVICE, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS, metadata, true)
+        private fun CallCamera.toVideoSource(quality: VideoQuality) =
+            VideoDescription(MediaSource.DEVICE, quality.width, quality.height, quality.fps, metadata, true)
 
         // CallSession's members, and what NTgCalls' callbacks hand each session.
         @Suppress("TooManyFunctions")
@@ -178,6 +179,8 @@ class NtgCallsEngine
 
             @Volatile private var camera: CallCamera? = null
 
+            @Volatile private var quality = VideoQuality.High
+
             @Volatile private var muted = false
 
             @Volatile private var onHold = false
@@ -202,7 +205,7 @@ class NtgCallsEngine
             }
 
             /** The microphone, and the camera while one sends. */
-            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(), null)
+            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
 
             /**
              * The speaker, and the other side's video while a sink takes it: NTgCalls negotiates receiving video again
@@ -210,9 +213,13 @@ class NtgCallsEngine
              */
             fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { remoteSink != null }, null)
 
-            override suspend fun setCamera(camera: CallCamera?) {
-                if (this.camera == camera) return
+            override suspend fun setCamera(
+                camera: CallCamera?,
+                quality: VideoQuality,
+            ) {
+                if (this.camera == camera && (camera == null || this.quality == quality)) return
                 this.camera = camera
+                this.quality = quality
                 engineCall("set the camera") { calls().setStreamSources(id, StreamMode.CAPTURE, capture()) }
             }
 
@@ -286,14 +293,6 @@ class NtgCallsEngine
             /** WebRTC's own rate; Oboe resamples from the device's where they differ. */
             const val SAMPLE_RATE = 48_000
             const val CHANNELS = 1
-
-            /**
-             * What the camera sends: 720p at 30 frames a second, landscape as cameras capture (each frame carries its
-             * rotation), what Telegram's apps send.
-             */
-            const val CAMERA_WIDTH = 1280
-            const val CAMERA_HEIGHT = 720
-            const val CAMERA_FPS = 30
 
             /** The other side's video, as it comes: width, height and frame rate 0 are NTgCalls' "as sent". */
             val REMOTE_VIDEO = VideoDescription(MediaSource.EXTERNAL, 0, 0, 0, "", true)
