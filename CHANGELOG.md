@@ -104,7 +104,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   chat. It updates when your chats change, never on a timer, and shows no chats while a passcode lock is set.
 - Chat appearance (Settings → Appearance → Chat appearance): message text size from 85% to 130%, how round message
   bubbles are, and a wallpaper behind the messages, a tint or a gradient in your theme's colors, with a live preview.
-  Conversations take them up in a coming update.
+  Every conversation shows them.
 - Pingogram can be translated on Hosted Weblate (docs/TRANSLATING.md). A language appears in Settings → Language and
   in Android's app languages once 80% of the app is translated; the rest shows in English.
 

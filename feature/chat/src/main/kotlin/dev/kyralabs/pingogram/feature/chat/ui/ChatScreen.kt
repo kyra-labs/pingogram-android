@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.chatStyle
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -288,7 +290,9 @@ private fun ChatScaffold(
         floatingActionButton = jumpButton,
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            Column(Modifier.fillMaxSize()) {
+            // The wallpaper chosen in Chat appearance, drawn in the draw phase behind the bars and the messages.
+            val wallpaper = MaterialTheme.chatStyle.wallpaper
+            Column(if (wallpaper != null) Modifier.fillMaxSize().background(wallpaper) else Modifier.fillMaxSize()) {
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
                 Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
