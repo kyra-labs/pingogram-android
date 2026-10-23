@@ -38,6 +38,25 @@ regresses by more than 10%.
   `android.enableR8.fullMode=true`; keep rules minimal and documented.
 - TDLib: create the client on a background thread immediately; send `SetTdlibParameters` before
   the first frame; `getChats(limit = 20)` first, then `loadChats` in pages of 50 while idle.
+- On the way to the first frame and the first login step (review of 2026-10-22, all off the main thread unless said):
+  - `DefaultTdlibClient` builds TDLib's parameters while TDLib's library loads and its client starts. The database
+    key's Keystore unwrap takes most of that time, and the two used to run one after the other.
+  - `PingogramApplication` parses Google Sans Flex and makes the typefaces of every style on `Default`
+    (`warmUpGoogleSansFlex`). The first frame used to make them while it measured its text.
+  - `TdlibNetworkTypeReporter` creates the network repository where it collects, on `Default`. Its binder calls used
+    to run on the main thread in `Application.onCreate`.
+  - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
+    Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads.
+- Still open from that review, each to be measured with a Perfetto trace of `benchmarkRelease` before changing it:
+  - **Notifications at a cold start.** TDLib restores the active notifications at every start, and
+    `NotificationRenderer` posts them all again, conversation shortcuts included. It should skip what the system
+    still shows. `ShareTargetShortcuts` does the same 5 s later.
+  - **The emoji font.** `androidx.emoji2`'s initializer, which Compose brings, loads it from Play services about
+    500 ms after the first frame. Every paragraph is then laid out again. Removing it would change how new emoji
+    draw on older Android versions.
+  - **Firebase in `gms`.** `FirebaseInitProvider` runs before `Application.onCreate` on the main thread.
+  - **Field injection.** It builds about 40 objects in `Application.onCreate`, the calls stack included. They could
+    be `dagger.Lazy` and started from one background coroutine.
 
 ## 3. TDLib usage patterns
 

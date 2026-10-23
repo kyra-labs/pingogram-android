@@ -5,7 +5,10 @@ import android.content.res.Configuration
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.AndroidFont
+import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
@@ -102,3 +105,61 @@ internal object GoogleSansFlexTypefaces : AndroidFont.TypefaceLoader {
     private const val MIN_WEIGHT = 1f
     private const val MAX_WEIGHT = 1000f
 }
+
+/**
+ * Makes the upright typefaces of every style of [pingogramTypography] (the system's "Bold text" adjustment included,
+ * standard contrast) ahead of the first text, on the caller's thread: `PingogramApplication` calls it on a background
+ * dispatcher at start, so the first frame finds the font file parsed and its typefaces made
+ * ([GoogleSansFlexTypefaces]) instead of making them while it measures (`docs/PERFORMANCE.md` §2). A style it misses,
+ * or the high-contrast grade, is made when first used, as before.
+ */
+fun warmUpGoogleSansFlex(context: Context) {
+    val adjustment =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.resources.configuration.fontWeightAdjustment
+                .takeIf { it != Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED } ?: 0
+        } else {
+            0
+        }
+    pingogramTypography(fontWeightAdjustment = adjustment)
+        .styles()
+        .mapNotNull { it.fontFamily as? FontListFontFamily }
+        .flatMap { it.fonts }
+        .filterIsInstance<GoogleSansFlexFont>()
+        .filter { it.style == FontStyle.Normal }
+        .forEach { GoogleSansFlexTypefaces.loadBlocking(context, it) }
+}
+
+private fun Typography.styles(): List<TextStyle> =
+    listOf(
+        displayLarge,
+        displayMedium,
+        displaySmall,
+        headlineLarge,
+        headlineMedium,
+        headlineSmall,
+        titleLarge,
+        titleMedium,
+        titleSmall,
+        bodyLarge,
+        bodyMedium,
+        bodySmall,
+        labelLarge,
+        labelMedium,
+        labelSmall,
+        displayLargeEmphasized,
+        displayMediumEmphasized,
+        displaySmallEmphasized,
+        headlineLargeEmphasized,
+        headlineMediumEmphasized,
+        headlineSmallEmphasized,
+        titleLargeEmphasized,
+        titleMediumEmphasized,
+        titleSmallEmphasized,
+        bodyLargeEmphasized,
+        bodyMediumEmphasized,
+        bodySmallEmphasized,
+        labelLargeEmphasized,
+        labelMediumEmphasized,
+        labelSmallEmphasized,
+    )

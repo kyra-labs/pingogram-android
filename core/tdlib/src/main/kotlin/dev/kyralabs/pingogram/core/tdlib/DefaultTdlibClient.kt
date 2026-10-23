@@ -7,7 +7,9 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -77,8 +80,16 @@ class DefaultTdlibClient internal constructor(
     /** The current TDLib instance: null until [start] created it, replaced after `AuthorizationStateClosed`. */
     private val session = MutableStateFlow<Session?>(null)
 
+    /**
+     * The first session's parameters, prepared while TDLib's library loads and its client starts (the database key's
+     * Keystore unwrap among them), as both lie on the way to the first login step, which the splash screen and the chat
+     * list wait for (`docs/PERFORMANCE.md` §2). Taken once; later sessions and a retry with a new key build their own.
+     */
+    private val preparedParameters = AtomicReference<Deferred<TdApi.SetTdlibParameters>?>(null)
+
     override fun start() {
         if (!started.compareAndSet(false, true)) return
+        preparedParameters.set(scope.async { parametersProvider.parameters() })
         scope.launch { pumpUpdates() }
         scope.launch {
             configureLogging()
@@ -155,7 +166,8 @@ class DefaultTdlibClient internal constructor(
 
     private suspend fun sendParameters() {
         val session = session.value ?: return
-        val result = session.send(parametersProvider.parameters())
+        val parameters = preparedParameters.getAndSet(null)?.await() ?: parametersProvider.parameters()
+        val result = session.send(parameters)
         if (result !is TdResult.Failure) return
         val error = result.error
         if (error.code == WRONG_DATABASE_KEY && session.databaseDiscarded.compareAndSet(false, true)) {

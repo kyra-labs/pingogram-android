@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,11 +48,13 @@ class TdlibNetworkTypeReporter internal constructor(
     @Inject
     constructor(
         client: TdlibClient,
-        networks: AndroidNetworkRepository,
+        networks: dagger.Lazy<AndroidNetworkRepository>,
         @ApplicationScope scope: CoroutineScope,
     ) : this(
         client,
-        networks.defaultNetwork,
+        // Created where the flow is collected, on the scope's dispatcher: the repository asks Android for the network
+        // and registers its callbacks as it is created, binder calls that would otherwise run in Application.onCreate.
+        flow { emitAll(networks.get().defaultNetwork) },
         ProcessLifecycleOwner
             .get()
             .lifecycle.currentStateFlow
