@@ -9,6 +9,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+- Video call buttons: the call button in a conversation's top bar, and the "Call" button on a profile, now open a
+  small menu with "Voice call" and "Video call" where the other person's app takes video calls and your phone has a
+  camera; elsewhere a tap calls at once, as before. Calling back from a call in the chat keeps its kind: a missed
+  video call calls back with your camera on.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

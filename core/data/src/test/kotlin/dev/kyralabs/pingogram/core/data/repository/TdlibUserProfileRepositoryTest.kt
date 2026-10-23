@@ -80,6 +80,24 @@ class TdlibUserProfileRepositoryTest {
         }
 
     @Test
+    fun `whether the user can be called, and with video, comes from the full info`() =
+        runTest {
+            val info =
+                fullInfo().also {
+                    it.canBeCalled = true
+                    it.supportsVideoCalls = true
+                }
+            client.on(TdApi.GetUserFullInfo::class, TdResult.Success(info))
+
+            repository.fullInfo(42).test {
+                val mapped = (awaitItem() as Outcome.Success).value
+                assertEquals(true, mapped.canBeCalled)
+                assertEquals(true, mapped.supportsVideoCalls)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `a bot's description comes from its bot info`() =
         runTest {
             val bot = TdApi.BotInfo().also { it.description = "Finds stickers" }

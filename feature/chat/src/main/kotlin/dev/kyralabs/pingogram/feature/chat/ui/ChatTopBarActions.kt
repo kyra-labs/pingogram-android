@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import dev.kyralabs.pingogram.core.ui.component.CallButtonMenu
+import dev.kyralabs.pingogram.core.ui.component.CallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
@@ -38,7 +40,7 @@ internal fun ChatActions(
     onSearch?.let { SearchAction(it) }
     when {
         secret != null -> SecretChatActions(secret, onSecretChatEvent, showsKey = onSearch == null)
-        callUserId != null && calls != null -> CallAction { calls.call(callUserId) }
+        callUserId != null && calls != null -> CallAction(callUserId, calls)
     }
 }
 
@@ -102,13 +104,21 @@ private fun SearchAction(onSearch: () -> Unit) {
     }
 }
 
-/** Calls the other side of a private chat (`REQUIREMENTS.md` FR-V1), a filled tonal icon button as the others. */
+/**
+ * Calls the other side of a private chat (`REQUIREMENTS.md` FR-V1), a filled tonal icon button as the others: a voice
+ * call at once, or a menu of a voice and a video call where the user can get a video call ([CallButtonMenu]).
+ */
 @Composable
-private fun CallAction(onCall: () -> Unit) {
-    FilledTonalIconButton(onClick = onCall, shapes = IconButtonDefaults.shapes()) {
-        Icon(
-            painter = painterResource(UiR.drawable.ic_call_filled),
-            contentDescription = stringResource(R.string.chat_call),
-        )
+private fun CallAction(
+    userId: Long,
+    calls: CallStarter,
+) {
+    CallButtonMenu(userId = userId, calls = calls) { onClick, modifier ->
+        FilledTonalIconButton(onClick = onClick, modifier = modifier, shapes = IconButtonDefaults.shapes()) {
+            Icon(
+                painter = painterResource(UiR.drawable.ic_call_filled),
+                contentDescription = stringResource(R.string.chat_call),
+            )
+        }
     }
 }

@@ -76,4 +76,5 @@ private fun TdApi.UserFullInfo.toUserFullInfo(): UserFullInfo =
         botDescription = botInfo?.description?.takeIf { it.isNotBlank() },
         groupsInCommon = groupInCommonCount.coerceAtLeast(0),
         canBeCalled = canBeCalled,
+        supportsVideoCalls = supportsVideoCalls,
     )
