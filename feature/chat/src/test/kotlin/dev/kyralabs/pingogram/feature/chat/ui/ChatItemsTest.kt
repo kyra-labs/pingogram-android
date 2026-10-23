@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardInfo
 import dev.kyralabs.pingogram.core.domain.model.InteractionInfo
@@ -156,6 +157,25 @@ class ChatItemsTest : ChatViewModelHarness() {
                 ),
                 service.text,
             )
+        }
+
+    @Test
+    fun `a call in a private chat calls back, a video call with the camera`() =
+        runTest {
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        service(1, ServiceAction.Call(false, 60, CallDiscardReason.Unknown), chatId = PRIVATE_CHAT),
+                        service(2, ServiceAction.Call(true, 0, CallDiscardReason.Missed), chatId = PRIVATE_CHAT),
+                    ),
+                )
+
+            val calls = viewModel.items.filterIsInstance<ChatItem.Service>().associateBy { it.id }
+            assertEquals(PRIVATE_CHAT, calls.getValue(1L).callUserId)
+            assertFalse(calls.getValue(1L).callIsVideo)
+            assertEquals(PRIVATE_CHAT, calls.getValue(2L).callUserId)
+            assertTrue(calls.getValue(2L).callIsVideo)
         }
 
     // Dates

@@ -15,6 +15,7 @@ import kotlinx.collections.immutable.ImmutableList
  * @property botDescription what a bot says about itself, for its profile; null for users who are no bots.
  * @property groupsInCommon how many groups and channels the current user shares with the user.
  * @property canBeCalled the user's privacy settings let the current user call them (td_api.tl `can_be_called`).
+ * @property supportsVideoCalls the user's app takes video calls (td_api.tl `supports_video_calls`).
  */
 data class UserFullInfo(
     val bio: FormattedText,
@@ -23,6 +24,7 @@ data class UserFullInfo(
     val botDescription: String?,
     val groupsInCommon: Int,
     val canBeCalled: Boolean = false,
+    val supportsVideoCalls: Boolean = false,
 ) {
     override fun toString() = "UserFullInfo(isBlocked=$isBlocked, groupsInCommon=$groupsInCommon, …)"
 }

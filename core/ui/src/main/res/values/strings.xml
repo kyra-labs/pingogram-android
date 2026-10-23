@@ -49,6 +49,9 @@
     <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
     <string name="error_chat_full">This group is full.</string>
     <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
+    <!-- The call button's menu (CallButtonMenu), and the same as screen readers' custom actions. -->
+    <string name="call_voice">Voice call</string>
+    <string name="call_video">Video call</string>
     <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
     <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
 

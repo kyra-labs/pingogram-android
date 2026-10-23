@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Video call buttons: the call button in a conversation's top bar, and the "Call" button on a profile, now open a
+  small menu with "Voice call" and "Video call" where the other person's app takes video calls and your phone has a
+  camera; elsewhere a tap calls at once, as before. Calling back from a call in the chat keeps its kind: a missed
+  video call calls back with your camera on.
 - Delete account: Settings → Privacy and security → Delete account deletes your Telegram account, after your 2-step
   verification password where you set one and a confirmation, and signs out. The same page sets how long your account
   may stay unused before Telegram deletes it (1 to 24 months).

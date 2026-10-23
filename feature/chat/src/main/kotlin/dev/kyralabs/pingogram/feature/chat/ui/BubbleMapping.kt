@@ -35,6 +35,7 @@ internal fun ItemInputs.toItem(): ChatItem {
             date,
             // A private chat's id is its user's (td_api.tl `chatTypePrivate`).
             callUserId = message.chatId.takeIf { content.action is ServiceAction.Call && kind == ChatKind.Private },
+            callIsVideo = (content.action as? ServiceAction.Call)?.isVideo == true,
         )
     } else {
         toBubble(content)

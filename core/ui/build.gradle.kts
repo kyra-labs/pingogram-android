@@ -17,6 +17,9 @@ dependencies {
     // PredictiveBackHandler, for leaving selection mode with back (component/SelectionBack.kt). Already in the app and
     // in the features that show selection mode.
     implementation(libs.androidx.activity.compose)
+    // collectAsStateWithLifecycle, for whether a call button offers video (component/CallButtonMenu.kt). Already in the
+    // app through every feature.
+    implementation(libs.androidx.lifecycle.runtime.compose)
     // The list-detail layouts' shared pane parts (ListDetailPanes.kt).
     implementation(libs.androidx.compose.material3.adaptive.layout)
     implementation(libs.androidx.compose.material3.adaptive.navigation)

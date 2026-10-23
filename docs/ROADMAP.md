@@ -89,8 +89,8 @@ the release workflow so the owner can install and test on a phone.
 
 - [x] 1:1 video calls (`docs/adr/0019-video-and-group-calls-scope.md`): camera, self-view, switch camera, camera on
       and off, picture-in-picture, lower resolutions on mobile data, roaming, Data Saver and weak connections
-- [ ] Video call buttons in the conversation's top bar and the profile (`Calls.videoCall(userId)`; the chat screens'
-      and the profile's owners)
+- [x] Video call buttons in the conversation's top bar and the profile: one call button with a voice and video menu
+      (owner, 2026-10-23), and "Call back" keeping the call's kind
 - [ ] The video frame path measured on a device (CPU and memory during a 720p call, `docs/PERFORMANCE.md`)
 - [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
 - [ ] Live streams: watching
