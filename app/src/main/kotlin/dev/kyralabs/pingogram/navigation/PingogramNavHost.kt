@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
@@ -263,6 +264,8 @@ private fun NavGraphBuilder.mainGraph(
         )
         profile(navController, besideList)
         chatInfo(navController, besideList)
+        // "Export chat", from a profile or an info page (docs/adr/0021-chat-export.md).
+        chatExportScreen(onBack = { navController.popBackStack() })
         chatInvite(navController)
         mediaViewer(navController)
         share(navController)

@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Chat export: "Export chat" on a profile or a group's or channel's info page (Saved Messages: on your own profile)
+  writes the chat's history into a folder you choose, as a page to read in any browser (HTML) or as data (JSON), with
+  the photos, videos, voice messages and files you pick up to a size you set, and all messages or those from a day
+  on. It goes on in the background with a notification you can cancel it from; a cancelled export leaves nothing
+  behind. Nothing is uploaded. Secret chats and chats whose owner turned off saving can't be exported.
 - Message translation: hold a message and tap "Translate" to read it in Pingogram's language (or your phone's, while
   Pingogram follows it). Telegram translates it, nothing else sees it; the message shows the translation with
   "Translated from …" next to its time, and "Show original" brings its text back. "Translate" is offered for messages
@@ -26,6 +31,7 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   unsigned release builds for stores that sign builds themselves (docs/RELEASE.md).
 
 ### Changed
+- Tapping the title of Saved Messages opens your own profile, with its shared media and "Export chat".
 - Pingogram reaches its chats sooner after a cold start: it prepares TDLib's database key while TDLib starts, loads
   its font before the first frame needs it, checks the network off the main thread, and redraws the home screen
   widget a few seconds after the start instead of while the chats load.

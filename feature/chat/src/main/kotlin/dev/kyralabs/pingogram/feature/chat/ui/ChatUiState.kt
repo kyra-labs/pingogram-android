@@ -110,8 +110,9 @@ data class MessagePlayback(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
- * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat; null
- *   for groups, channels and Saved Messages.
+ * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat, the
+ *   user themselves in Saved Messages (their profile holds its shared media and "Export chat"); null for groups and
+ *   channels.
  * @property opensChatInfo the title opens the chat's info page: basic groups, supergroups and channels.
  * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
  *   chats.

@@ -224,6 +224,8 @@ class ProfileViewModelTest {
                 assertEquals(ContactAction.Edit, contact)
                 assertEquals(false, isBlocked)
                 assertTrue(canReport)
+                // "Export chat" exports the private chat.
+                assertEquals(ada.id, exportChatId)
             }
         }
 
@@ -306,6 +308,8 @@ class ProfileViewModelTest {
                 assertFalse(canReport)
                 assertFalse(canStartSecretChat)
                 assertNull(contact)
+                // Saved Messages.
+                assertEquals(ada.id, exportChatId)
             }
         }
 

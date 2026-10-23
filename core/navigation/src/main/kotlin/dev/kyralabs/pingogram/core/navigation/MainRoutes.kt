@@ -275,6 +275,16 @@ data class ShareRoute(
 )
 
 /**
+ * Exporting the history of chat [chatId] (`REQUIREMENTS.md` §5.9, `docs/adr/0021-chat-export.md`), `:feature:chat`: a
+ * settings-style page pushed above the profile or the info page it is opened from, with the shared axis on X, where the
+ * user picks the format, the media, the dates and the folder, then follows the export running in the background.
+ */
+@Serializable
+data class ChatExportRoute(
+    val chatId: Long,
+)
+
+/**
  * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
  * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
  * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a

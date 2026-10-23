@@ -15,8 +15,8 @@
 
         <!-- WorkManager's foreground service runs TransfersWorker while the files the user sends and downloads are on
              their way (REQUIREMENTS.md FR-N4): type dataSync on Android 14+, which needs FOREGROUND_SERVICE_DATA_SYNC
-             (app manifest). Before Android 12 it also runs the notification actions' expedited work, without a
-             type of its own. -->
+             (app manifest), and ChatExportWorker while a chat export the user started runs (docs/adr/0021). Before
+             Android 12 it also runs the notification actions' expedited work, without a type of its own. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"

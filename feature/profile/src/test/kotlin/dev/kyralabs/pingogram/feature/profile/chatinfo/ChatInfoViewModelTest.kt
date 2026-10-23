@@ -119,6 +119,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 }
                 assertTrue(actions.canLeave && actions.canClearHistory)
                 assertFalse(actions.canDelete)
+                assertTrue(actions.canExport)
             }
             val preview = client.sentOf<TdApi.GetSupergroupMembers>().single()
             assertInstanceOf(TdApi.SupergroupMembersFilterRecent::class.java, preview.filter)

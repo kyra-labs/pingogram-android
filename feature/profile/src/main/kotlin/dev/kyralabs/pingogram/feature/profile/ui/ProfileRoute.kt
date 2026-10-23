@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
  * [onOpenChat] (the private chat, a secret chat, a group a mention named), other profiles through [onOpenProfile]; the
  * shared media's photos, videos and GIFs open in the media viewer through [onOpenMedia], its files, songs and voice
  * messages in the chat at their message through [onOpenMessage], and its links in the browser. The app navigates with
- * these, as features do not know each other. [onEditContact], where given, opens the contact editor for the user.
+ * these, as features do not know each other. [onEditContact], where given, opens the contact editor for the user;
+ * [onExportChat], where given, the export page of the private chat (`docs/adr/0021-chat-export.md`).
  * Errors and what was done are snackbars; copied text goes to the clipboard (with a snackbar before Android 13, which
  * confirms copies itself), a phone number to the dialer (`ACTION_DIAL`, no permission), a username's link to the
  * system's share sheet. The dialogs and the report sheet show over the screen while the view model has one.
@@ -49,6 +50,7 @@ internal fun ProfileRoute(
     onOpenMessage: (chatId: Long, messageId: Long) -> Unit,
     modifier: Modifier = Modifier,
     onEditContact: ((userId: Long) -> Unit)? = null,
+    onExportChat: ((chatId: Long) -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +70,7 @@ internal fun ProfileRoute(
         }
     ProfileEffects(viewModel.effects, snackbarHostState, onOpenChat, onOpenProfile)
     val userId = (state as? ProfileUiState.Content)?.header?.userId
+    val exportChatId = (state as? ProfileUiState.Content)?.actions?.exportChatId
     ProfileScreen(
         state = state,
         media = media,
@@ -77,6 +80,7 @@ internal fun ProfileRoute(
         mediaActions = mediaActions,
         modifier = modifier,
         onEditContact = if (onEditContact != null && userId != null) ({ onEditContact(userId) }) else null,
+        onExportChat = if (onExportChat != null && exportChatId != null) ({ onExportChat(exportChatId) }) else null,
         snackbarHostState = snackbarHostState,
     )
     ProfileDialogs((state as? ProfileUiState.Content)?.dialog, viewModel::onEvent)

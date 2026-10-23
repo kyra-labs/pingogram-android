@@ -20,6 +20,8 @@ import dev.kyralabs.pingogram.core.ui.theme.predictiveBackPopExit
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXEnter
 import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.LocalSharedTransitionScope
+import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToChatExport
 import dev.kyralabs.pingogram.feature.profile.navigation.chatInfoScreens
 import dev.kyralabs.pingogram.feature.profile.navigation.popBackStackAfterGroupChange
 import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
@@ -27,9 +29,9 @@ import dev.kyralabs.pingogram.feature.profile.navigation.profileScreen
 /**
  * The Chats tab's extra pane on extra-large windows (`docs/DESIGN_SYSTEM.md` §7): [content]'s profile or info page
  * beside the conversation, with the pages it opens above it in a `NavHost` of its own (another profile from a mention
- * or a member, the members, permissions and invite links of a group), sliding on the shared axis on X and leaving with
- * the predictive back gesture, as pushed pages do; as Settings' detail pane does. Back from the first page, and its
- * back button, close the pane ([ExtraPaneNavigation.onClose]).
+ * or a member, the members, permissions and invite links of a group, the export page), sliding on the shared axis on
+ * X and leaving with the predictive back gesture, as pushed pages do; as Settings' detail pane does. Back from the
+ * first page, and its back button, close the pane ([ExtraPaneNavigation.onClose]).
  *
  * Laid out as the window it is ([PaneAsWindow]), so the pages show their one-pane layouts at the pane's width. Each
  * page gets its view models from a store of the pane's own ([rememberViewModelStoreOwner]), which survives rotation
@@ -104,6 +106,7 @@ private fun ExtraPaneNavHost(
             onOpenMedia = navigation.onOpenMedia,
             onOpenMessage = navigation.onOpenMessage,
             onEditContact = navigation.onEditContact,
+            onExportChat = { chatId -> navController.navigateToChatExport(chatId) },
         )
         chatInfoScreens(
             onOpen = { route -> navController.navigate(route) { launchSingleTop = true } },
@@ -115,6 +118,8 @@ private fun ExtraPaneNavHost(
             onOpenMessage = navigation.onOpenMessage,
             onSaved = { navController.popBackStackAfterGroupChange() },
         )
+        // "Export chat" of the pane's profile or info page, in the pane too.
+        chatExportScreen(onBack = back)
     }
 }
 
