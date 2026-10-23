@@ -105,6 +105,11 @@ APKs once they ship, and the budgets of `docs/PERFORMANCE.md` §1 are set from t
 `docs/PERFORMANCE.md` §1 and §8, `REQUIREMENTS.md` §1.1 G3 and §6.1, build-logic's `ApkSize` and `release.yml`'s "Check
 APK sizes"); the result is added below.
 
+Measured on 2026-10-23 with the voice chat screen and live streams (#183, `fossBenchmarkRelease`): arm64-v8a 48.2 MB
+(+0.4 MB), universal 121.1 MB (+0.4 MB), armeabi-v7a 39.4 MB, x86_64 55.4 MB. The budgets are now arm64-v8a 50 MB, kept
+(1.8 MB above the measurement), and universal 123 MB, down from 125 MB (1.9 MB above it). `gms` APKs are 0.2 MB larger than
+`foss` ones (v0.5.0's release assets), which leaves them about 1.6 MB.
+
 ## Consequences
 
 - FR-V2's group voice chats and watching live streams ship without a new engine build.
