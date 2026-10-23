@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -44,8 +45,9 @@ import kotlinx.coroutines.launch
  * without a query Saved Messages first (created on the device if needed), then the main chat list in TDLib's order,
  * as far as it is loaded, whose next page [loadMore] loads; with a query ([setQuery]), the chats
  * [SearchRepository.searchChats] finds once it has not changed for [DEBOUNCE_MILLIS], the previous search cancelled.
- * Either way only the chats the sheet's filter lets through, each once, as [ForwardTarget]s. Runs in [scope], the
- * view model's.
+ * Either way only the chats the sheet's filter lets through, each once, as [ForwardTarget]s. [withContacts] adds the
+ * private chats of the user's contacts after them ([SearchRepository.contacts], [SearchRepository.searchContacts]),
+ * for a picker of people (a bot's keyboard button that asks for users). Runs in [scope], the view model's.
  */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 internal class ChatTargets(
@@ -54,6 +56,7 @@ internal class ChatTargets(
     private val users: UserRepository,
     private val groups: GroupRepository,
     private val scope: CoroutineScope,
+    private val withContacts: Boolean = false,
 ) {
     private val query = MutableStateFlow("")
     private val pages = MutableStateFlow(PageLoad())
@@ -81,7 +84,11 @@ internal class ChatTargets(
      * The targets as the query and the chats change: those [canReceive] lets through, given the user's [WriteAccess]
      * to each ([writeAccess]) and the other user of a private or secret chat (null for other chats, or while unknown).
      */
-    fun targets(canReceive: (chat: Chat, access: WriteAccess, user: User?) -> Boolean): Flow<TargetList> {
+    fun targets(canReceive: (chat: Chat, access: WriteAccess, user: User?) -> Boolean): Flow<TargetList> =
+        candidates { canReceive(it.chat, it.access, it.user) }
+
+    /** The targets as [targets] gives them, of the candidates [canReceive] lets through, with their group if any. */
+    fun candidates(canReceive: (TargetCandidate) -> Boolean): Flow<TargetList> {
         val found =
             query
                 .map { it.trim() }
@@ -102,9 +109,24 @@ internal class ChatTargets(
 
     /** Saved Messages, then the main chat list without it, in TDLib's order. */
     private fun mainChats(): Flow<Found> =
-        combine(chats.chatList(ChatListType.Main), savedMessages()) { list, saved ->
+        combine(
+            chats.chatList(ChatListType.Main),
+            savedMessages(),
+            contacts { search.contacts() },
+        ) { list, saved, people ->
             val ordered = if (saved == null) list else listOf(saved) + list.filter { it.id != saved.id }
-            Found(ordered, isSearch = false)
+            Found(ordered + people, isSearch = false)
+        }
+
+    /** With [withContacts], the contacts' private chats [find] gives, none until then and on a failure; else none. */
+    private fun contacts(find: suspend () -> Outcome<List<Chat>>): Flow<List<Chat>> =
+        if (withContacts) {
+            flow {
+                emit(emptyList())
+                (find() as? Outcome.Success)?.let { emit(it.value) }
+            }
+        } else {
+            flowOf(emptyList())
         }
 
     /**
@@ -127,10 +149,14 @@ internal class ChatTargets(
     private fun searchChats(text: String): Flow<Found> =
         search
             .searchChats(text)
-            .map { result ->
-                when (result) {
-                    is Outcome.Success -> Found(result.value, isSearch = true)
-                    is Outcome.Failure -> Found(emptyList(), isSearch = true, error = result.error)
+            .combine(contacts { search.searchContacts(text) }) { result, people ->
+                when {
+                    result is Outcome.Success -> Found(result.value + people, isSearch = true)
+
+                    // A failed search still shows the contacts it found.
+                    people.isNotEmpty() -> Found(people, isSearch = true)
+
+                    else -> Found(emptyList(), isSearch = true, error = (result as Outcome.Failure).error)
                 }
             }.onStart { emit(Found(emptyList(), isSearch = true, isLoading = true)) }
 
@@ -158,14 +184,26 @@ internal class ChatTargets(
         /** [chats] that [canReceive] lets through, as targets, in their order and each once. */
         fun targetsOf(
             chats: List<Chat>,
-            canReceive: (Chat, WriteAccess, User?) -> Boolean,
+            canReceive: (TargetCandidate) -> Boolean,
         ): ImmutableList<ForwardTarget> {
             if (chats.isEmpty()) return persistentListOf()
             return chats
                 .distinctBy { it.id }
-                .filter { canReceive(it, accessTo(it), it.userId?.let(users::get)) }
+                .filter { canReceive(candidateOf(it)) }
                 .map(::targetOf)
                 .toImmutableList()
+        }
+
+        private fun candidateOf(chat: Chat): TargetCandidate {
+            val type = chat.type
+            return TargetCandidate(
+                chat = chat,
+                access = accessTo(chat),
+                user = chat.userId?.let(users::get),
+                basicGroup = (type as? ChatType.BasicGroup)?.let { basicGroups[it.basicGroupId] },
+                supergroup = (type as? ChatType.Supergroup)?.let { supergroups[it.supergroupId] },
+                isSavedMessages = type is ChatType.Private && chat.userId == myUserId,
+            )
         }
 
         /** Whether the user can send messages in [chat]. */
@@ -206,6 +244,20 @@ internal class ChatTargets(
         const val DEBOUNCE_MILLIS = 300L
     }
 }
+
+/**
+ * A chat a picking sheet may offer, with what deciding takes: the user's [access] to it, the other [user] of a private
+ * or secret chat, the [basicGroup] or [supergroup] of a group or channel (each null for other chats, or while
+ * unknown), and whether it is the user's Saved Messages.
+ */
+internal class TargetCandidate(
+    val chat: Chat,
+    val access: WriteAccess,
+    val user: User?,
+    val basicGroup: BasicGroup?,
+    val supergroup: Supergroup?,
+    val isSavedMessages: Boolean,
+)
 
 /**
  * The chats a picking sheet shows ([ChatTargets.targets]): [targets] in their order; [isSearching] while they are what

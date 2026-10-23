@@ -70,4 +70,7 @@ enum class UnsupportedButton {
 
     /** A switch-inline button whose chat a Telegram link names. */
     InlineLink,
+
+    /** A keyboard button that creates a bot managed by the chat's bot. */
+    ManagedBot,
 }

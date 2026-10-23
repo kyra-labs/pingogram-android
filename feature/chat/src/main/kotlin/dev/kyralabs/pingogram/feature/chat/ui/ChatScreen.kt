@@ -56,6 +56,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachSheets
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntroArea
 import dev.kyralabs.pingogram.feature.chat.ui.bot.CommandSuggestions
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotReplyUiState
+import dev.kyralabs.pingogram.feature.chat.ui.bots.keyboardPresses
 import dev.kyralabs.pingogram.feature.chat.ui.composer.BotInput
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatBottomBar
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerBar
@@ -131,7 +133,8 @@ import kotlinx.collections.immutable.ImmutableSet
  *   ([commandSuggestions], the view model's, kept apart from [state]), and a bot's empty chat shows what it does
  *   ([BotIntroArea]) with "Start" in the composer's place. While the field holds an inline query ("@gif cats"), the
  *   bot's results show above the composer ([inlineResults], the view model's, kept apart from [state]); sending one
- *   scrolls to the newest message.
+ *   scrolls to the newest message. A bot's keyboard ([botReply], the view model's too) shows in the system keyboard's
+ *   place, with a toggle in the composer's pill, and gives way to the inline results.
  * - **Sponsored messages** of channels and bots (`REQUIREMENTS.md` §2) are cards among the messages
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
@@ -162,6 +165,7 @@ internal fun ChatScreen(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     commandSuggestions: CommandSuggestions? = null,
     inlineResults: InlineBotUiState? = null,
+    botReply: BotReplyUiState = BotReplyUiState(),
 ) {
     val content = state.content
     val selection = state.selection
@@ -199,6 +203,7 @@ internal fun ChatScreen(
                     onEmojiPanelEvent = onEmojiPanelEvent,
                     commandSuggestions = commandSuggestions,
                     inlineResults = inlineResults,
+                    botReply = botReply,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             jumpButton = {
@@ -269,8 +274,8 @@ private fun ChatScaffold(
  * ([SelectionBottomBar]), which shrinks with the predictive back gesture's [selectionBack]. Sending reports through
  * [onSent], except an edit, whose message stays where it is; so does sending the voice message being [recording].
  * [onAttach] gets the option the composer's gallery button picks at once, or null for its "+", the attach menu. A
- * command sent from the [commandSuggestions] reports through [onSent] too, and so does a result of the
- * [inlineResults].
+ * command sent from the [commandSuggestions] reports through [onSent] too, and so do a result of the
+ * [inlineResults] and a button of the bot's keyboard ([botReply]) that sends its text.
  */
 @Suppress("LongParameterList") // The state, the recording, the composer's text and focus, the panel, its buttons.
 @Composable
@@ -286,12 +291,15 @@ private fun ChatScreenBottomBar(
     onEmojiPanelEvent: (EmojiPanelEvent) -> Unit,
     commandSuggestions: CommandSuggestions?,
     inlineResults: InlineBotUiState?,
+    botReply: BotReplyUiState,
     onAttach: (option: AttachOption?) -> Unit,
 ) {
     val bots =
-        remember(commandSuggestions, onEvent, onSent) {
+        remember(commandSuggestions, botReply, onEvent, onSent) {
             BotInput(
                 suggestions = commandSuggestions,
+                reply = botReply,
+                onKeyboardPress = keyboardPresses(botReply, onEvent, onSent),
                 onSendCommand = { command ->
                     onEvent(BotEvent.SendCommand(command))
                     onSent(SendOptions())

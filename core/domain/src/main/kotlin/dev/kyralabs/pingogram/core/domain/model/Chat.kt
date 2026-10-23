@@ -58,6 +58,13 @@ data class Chat(
      * user, a channel they own, or the group itself for an anonymous admin. Null where the user cannot choose.
      */
     val messageSender: MessageSender? = null,
+    /**
+     * The message whose reply markup is in effect in the chat for the current user (td_api.tl
+     * `chat.reply_markup_message_id`, `updateChatReplyMarkup`): a bot's keyboard (`ReplyMarkup.ShowKeyboard`) or its
+     * request for a reply (`ReplyMarkup.ForceReply`); 0 for none. TDLib applies the markups' personal flags and
+     * removals itself.
+     */
+    val replyMarkupMessageId: Long = 0,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

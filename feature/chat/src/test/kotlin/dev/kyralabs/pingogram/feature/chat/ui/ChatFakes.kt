@@ -596,9 +596,13 @@ class FakeSearchRepository : SearchRepository {
         return onSearchChats(query)
     }
 
-    override suspend fun searchContacts(query: String): Outcome<ImmutableList<Chat>> = unused()
+    /** The contacts' private chats: none by default. */
+    var contactChats: List<Chat> = emptyList()
 
-    override suspend fun contacts(): Outcome<ImmutableList<Chat>> = unused()
+    override suspend fun searchContacts(query: String): Outcome<ImmutableList<Chat>> =
+        Outcome.Success(contactChats.filter { it.title.contains(query, ignoreCase = true) }.toImmutableList())
+
+    override suspend fun contacts(): Outcome<ImmutableList<Chat>> = Outcome.Success(contactChats.toImmutableList())
 
     override suspend fun searchPublicChats(query: String): Outcome<ImmutableList<Chat>> = unused()
 

@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Bot keyboards: a bot's keyboard now shows in place of your phone's keyboard, with a button in the message field to
+  switch between the two. Keyboards that are meant to be used once put themselves away after a tap, and keyboards a
+  bot keeps on screen come back whenever your phone's keyboard closes. A button can send its text, share your phone
+  number (after you agree), your location (through the usual location sheet), a new poll or quiz, people you pick or
+  one of your groups or channels (Pingogram shows only those the bot allows and says what the bot gets). When a bot
+  asks for a reply, the field starts replying to its message with the bot's hint. Mini App buttons say that Pingogram
+  can't open them yet.
 - Send feedback: Settings → About → "Send feedback or report a bug" prepares a report on your phone (the app's version,
   your phone and Android version, the last crash and the end of the connection log, with messages, names and phone
   numbers taken out) that you read first and then share with an app you choose or open as a GitHub issue. Pingogram

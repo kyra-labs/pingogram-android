@@ -205,7 +205,14 @@ internal class ChatAttachments(
         scope.launch { report(repository.sendSticker(chatId, sticker, options, replyTo), options, replyTo) }
     }
 
-    fun openPoll() = setPollOpen(true)
+    /**
+     * Opens the poll form; for a bot's keyboard button, requiring a quiz ([requiredQuiz] true) or a regular poll
+     * (false), else the user's choice.
+     */
+    fun openPoll(requiredQuiz: Boolean? = null) {
+        poll.require(requiredQuiz)
+        setPollOpen(true)
+    }
 
     /** Closes the poll form, emptying it. */
     fun dismissPoll() {

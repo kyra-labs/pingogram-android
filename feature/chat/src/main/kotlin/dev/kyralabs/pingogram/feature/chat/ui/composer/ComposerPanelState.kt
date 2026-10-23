@@ -54,13 +54,25 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - [showKeyboard] asks for the keyboard back: the panel stays until the keyboard is fully up ([ComposerPanelEffects]),
  *   then leaves with nothing to see, the keyboard in its place.
  * - [close] removes it at once: back, a recording, selection mode, a composer that goes away.
+ *
+ * The same place shows a bot's keyboard ([content] [PanelContent.BotKeyboard], `BotReplyKeyboardPanel`), which back
+ * closes unless the bot keeps it on screen ([closesOnBack] false).
  */
 @Stable
 internal class ComposerPanelState(
     open: Boolean = false,
     keyboardHeight: Int = 0,
+    content: PanelContent = PanelContent.Emoji,
 ) {
     var isOpen by mutableStateOf(open)
+        private set
+
+    /** What the panel shows while open. */
+    var content by mutableStateOf(content)
+        private set
+
+    /** Whether back closes the open panel. */
+    var closesOnBack by mutableStateOf(true)
         private set
 
     var keyboardHeight by mutableIntStateOf(keyboardHeight)
@@ -70,10 +82,18 @@ internal class ComposerPanelState(
     var awaitsKeyboard by mutableStateOf(false)
         private set
 
-    fun open() {
+    fun open(
+        content: PanelContent = PanelContent.Emoji,
+        closesOnBack: Boolean = true,
+    ) {
         isOpen = true
         awaitsKeyboard = false
+        this.content = content
+        this.closesOnBack = closesOnBack
     }
+
+    /** Whether the open panel shows [content]. */
+    fun shows(content: PanelContent): Boolean = isOpen && this.content == content
 
     fun showKeyboard() {
         if (isOpen) awaitsKeyboard = true
@@ -87,10 +107,25 @@ internal class ComposerPanelState(
     companion object {
         val Saver =
             listSaver<ComposerPanelState, Int>(
-                save = { listOf(if (it.isOpen) 1 else 0, it.keyboardHeight) },
-                restore = { ComposerPanelState(open = it[0] == 1, keyboardHeight = it[1]) },
+                save = { listOf(if (it.isOpen) 1 else 0, it.keyboardHeight, it.content.ordinal) },
+                restore = {
+                    ComposerPanelState(
+                        // The emoji panel only: a bot's keyboard opens again by its own rules.
+                        open = it[0] == 1 && it[2] == PanelContent.Emoji.ordinal,
+                        keyboardHeight = it[1],
+                    )
+                },
             )
     }
+}
+
+/** What the panel in the keyboard's place shows. */
+internal enum class PanelContent {
+    /** The emoji and sticker panel. */
+    Emoji,
+
+    /** A bot's keyboard. */
+    BotKeyboard,
 }
 
 @Composable
@@ -109,7 +144,7 @@ internal fun PanelButton(
     val keyboard = LocalSoftwareKeyboardController.current
     IconButton(
         onClick = {
-            if (panel.isOpen) {
+            if (panel.shows(PanelContent.Emoji)) {
                 panel.showKeyboard()
                 focusRequester.requestFocus()
                 keyboard?.show()
@@ -120,7 +155,7 @@ internal fun PanelButton(
         },
         shapes = IconButtonDefaults.shapes(),
     ) {
-        if (panel.isOpen) {
+        if (panel.shows(PanelContent.Emoji)) {
             Icon(painterResource(UiR.drawable.ic_keyboard), stringResource(R.string.panel_keyboard))
         } else {
             Icon(painterResource(UiR.drawable.ic_mood), stringResource(R.string.panel_open))
@@ -189,7 +224,7 @@ internal fun PanelArea(
  * (a phone in landscape keeps room for the messages).
  */
 @Composable
-private fun panelHeight(panel: ComposerPanelState): Int {
+internal fun panelHeight(panel: ComposerPanelState): Int {
     val density = LocalDensity.current
     val navigationBar = WindowInsets.navigationBars.getBottom(density)
     val default = with(density) { MaterialTheme.sizes.inputPanelHeight.roundToPx() } + navigationBar
@@ -231,7 +266,7 @@ internal fun ComposerPanelEffects(
     if (!enabled && panel.isOpen) {
         LaunchedEffect(panel) { panel.close() }
     }
-    BackHandler(enabled = panel.isOpen) { panel.close() }
+    BackHandler(enabled = panel.isOpen && panel.closesOnBack) { panel.close() }
 }
 
 /** The most of the window the panel takes. */
