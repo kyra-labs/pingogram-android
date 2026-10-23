@@ -1,19 +1,15 @@
-package dev.kyralabs.pingogram.feature.chats.ui
+package dev.kyralabs.pingogram.core.ui.text
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 /**
- * The words of a search query ([terms]) that a result's text shows highlighted (`REQUIREMENTS.md` FR-L6): each word the
- * query has, wherever the text contains it, without regard to case. The row applies it to its text as resolved, since
- * a message's preview may come from resources ("Photo · …").
+ * The words of a search query ([terms]) that a result's text shows highlighted: each word the query has, wherever the
+ * text contains it, without regard to case. Global search (`REQUIREMENTS.md` FR-L6) applies it to a row's text as
+ * resolved, since a message's preview may come from resources ("Photo · …"); the search in a chat (§5.9) to the text
+ * of the message it shows.
  */
 @Immutable
 data class MatchHighlight(
@@ -63,21 +59,3 @@ data class MatchHighlight(
         private val WHITESPACE = Regex("""\s+""")
     }
 }
-
-/** [label] ("Ada:") in [labelColor], then [text] with every match of [highlight] in [match]. */
-internal fun highlighted(
-    label: String?,
-    text: String,
-    highlight: MatchHighlight,
-    labelColor: Color,
-    match: SpanStyle,
-): AnnotatedString =
-    buildAnnotatedString {
-        if (label != null) {
-            withStyle(SpanStyle(color = labelColor)) { append(label) }
-            append(' ')
-        }
-        val start = length
-        append(text)
-        highlight.ranges(text).forEach { range -> addStyle(match, start + range.first, start + range.last + 1) }
-    }

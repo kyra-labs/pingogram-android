@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes

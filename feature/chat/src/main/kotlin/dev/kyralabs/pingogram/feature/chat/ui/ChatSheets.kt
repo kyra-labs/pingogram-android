@@ -11,14 +11,15 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.SwitchInlineChatsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
+import dev.kyralabs.pingogram.feature.chat.ui.search.SearchSenderSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
 
 /**
  * The sheets [viewModel] shows over the conversation: forwarding, send-as, a secret chat's timer and key, the pinned
  * messages, the bots' commands, what follows a tap on a bot's button (its alert or question, the chat picker of an
- * inline query) or on a button of a bot's keyboard (the phone number question, the users or chat picker), and whether
- * to share the location with an inline bot.
+ * inline query) or on a button of a bot's keyboard (the phone number question, the users or chat picker), whether to
+ * share the location with an inline bot, and the members whose messages the search in the chat finds.
  */
 @Composable
 internal fun ChatSheets(viewModel: ChatViewModel) {
@@ -42,4 +43,6 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     keyboardShareSheet?.let { KeyboardShareBottomSheet(it, viewModel::onEvent) }
     val inlineLocationSheet by viewModel.inlineLocationSheet.collectAsStateWithLifecycle()
     inlineLocationSheet?.let { InlineLocationBottomSheet(it, viewModel::onEvent) }
+    val searchSenderSheet by viewModel.searchSenderSheet.collectAsStateWithLifecycle()
+    searchSenderSheet?.let { SearchSenderSheet(it, viewModel.searchSenderQuery, viewModel::onEvent) }
 }

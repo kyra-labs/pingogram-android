@@ -82,6 +82,11 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
+import dev.kyralabs.pingogram.feature.chat.ui.search.SenderSheet
+import dev.kyralabs.pingogram.feature.chat.ui.search.withSearchMatch
 import dev.kyralabs.pingogram.feature.chat.ui.secret.ChatSecretChat
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.ChatSendAs
@@ -227,6 +232,10 @@ import java.util.Locale
  * - **Pinned messages** ([ChatPinnedMessages], `REQUIREMENTS.md` FR-C9): the bar over the messages
  *   ([ChatUiState.pinnedBar]), cycling through them as its taps show each in the list, closing (unpinning or hiding),
  *   and the sheet of them all ([pinnedSheet], kept out of [uiState] like the forward sheet).
+ * - **Search in the chat** ([ChatSearch], `REQUIREMENTS.md` §5.9): the query, sender and results of the search, for
+ *   its bars ([searchState], kept out of [uiState] like the forward sheet), the result shown in the list as a tapped
+ *   quote's message, marking the query's words ([ChatItem.Bubble.searchMatch]), the members' sheet
+ *   ([searchSenderSheet]) and the jump to a day.
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -287,6 +296,7 @@ class ChatViewModel internal constructor(
     botInfoRepository: BotInfoRepository,
     botStartInbox: BotStartInbox,
     inlineBotRepositories: InlineBotRepositories,
+    searchRepositories: ChatSearchRepositories,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -323,6 +333,7 @@ class ChatViewModel internal constructor(
         botInfoRepository: BotInfoRepository,
         botStartInbox: BotStartInbox,
         inlineBotRepositories: InlineBotRepositories,
+        searchRepositories: ChatSearchRepositories,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -356,6 +367,7 @@ class ChatViewModel internal constructor(
         botInfoRepository,
         botStartInbox,
         inlineBotRepositories,
+        searchRepositories,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -829,6 +841,33 @@ class ChatViewModel internal constructor(
     /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
     val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
 
+    private val search =
+        ChatSearch(
+            chatId = chatId,
+            topic = topic,
+            repositories = searchRepositories,
+            users = userRepository,
+            chats = chatRepository,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            zone = clock::zone,
+            onShow = window::showMessage,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The search in the chat while it is open, for its bars; null while it is closed. Kept out of [uiState]. */
+    val searchState: StateFlow<ChatSearchUiState?> get() = search.state
+
+    /** The text of the search field; kept across process death. */
+    val searchQuery: TextFieldState get() = search.query
+
+    /** The sheet of the members whose messages search can be limited to; null while it is closed. */
+    val searchSenderSheet: StateFlow<SenderSheet?> get() = search.senderSheet
+
+    /** The text of the members' sheet's search field. */
+    val searchSenderQuery: TextFieldState get() = search.senderQuery
+
     /**
      * What shows over the conversation: the composer's mode, with the message its bar shows fetched when it is not
      * loaded, the actions sheet, the delete confirmation, the attach preview and the poll form.
@@ -861,6 +900,7 @@ class ChatViewModel internal constructor(
             .combine(joining.isJoining) { state, isJoining -> state.withJoining(isJoining) }
             .combine(pinned.bar) { state, bar -> state.copy(pinnedBar = bar) }
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
+            .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -876,6 +916,7 @@ class ChatViewModel internal constructor(
             attachments.start()
             shares.start()
             bots.start()
+            search.start()
             botKeyboard.start()
             recorder.start()
             views.start()
@@ -921,6 +962,7 @@ class ChatViewModel internal constructor(
             is SecretChatEvent -> secret.onEvent(event)
             is PinnedEvent -> pinned.onEvent(event)
             is BotButtonEvent -> botButtons.onEvent(event)
+            is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             else -> onMessageEvent(event)
         }
