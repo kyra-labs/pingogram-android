@@ -14,14 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -40,13 +38,13 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The Chats tab's top bar with the folder tabs ([ChatListTopBar]), or the archive's ([ArchiveTopBar]). */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatListScreenTopBar(
     state: ChatListUiState,
@@ -73,18 +71,15 @@ internal fun ChatListScreenTopBar(
 
 /**
  * The top bar of the Chats tab, the connection pill and the folder tabs below it, on the screen's `surfaceContainer`
- * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2). Collapsing the bar as the list scrolls only relayouts it: the
- * bar reads its scroll state in the layout and draw phases.
- *
- * The connection pill ([ConnectionPill]) sits below the bar, not in its subtitle slot: the flexible bar composes its
- * subtitle twice, in its collapsed row and in its expanded area, and cross-fades the two while it collapses, which
- * showed two pills at once mid-scroll. Below the bar there is only one, which stays in view with the bar collapsed.
+ * above the list's sheet (`docs/DESIGN_SYSTEM.md` §2.2, §6): a small, pinned [TopAppBar] (56 dp,
+ * `sizes.denseTopAppBar`) with `titleLargeEmphasized`, as dense lists get, so the first chat starts high on the
+ * screen (§7). The connection pill ([ConnectionPill]) sits below the bar. The title, the pill and the tabs keep the
+ * window margin ([windowMargin]): on medium and wider windows they line up with the rows' content.
  *
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
  * lists, which would drop the selection, waits until the selection is done.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatListTopBar(
     state: ChatListUiState,
@@ -93,30 +88,40 @@ internal fun ChatListTopBar(
     onClearSelection: () -> Unit,
 ) {
     val selectedCount = state.selection?.chatIds?.size
+    // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
+    val margin = windowMargin()
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
-            MediumFlexibleTopAppBar(
-                title = { ChatListTitle(selectedCount) },
+            TopAppBar(
+                // The bar insets its title by the compact margin itself.
+                modifier = Modifier.padding(horizontal = margin - MaterialTheme.spacing.windowMarginCompact),
+                title = {
+                    SelectionTitle(
+                        title = stringResource(R.string.chat_list_title),
+                        selectedCount = selectedCount,
+                        style = MaterialTheme.typography.titleLargeEmphasized,
+                    )
+                },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                         scrolledContainerColor = Color.Transparent,
                     ),
+                // A dense list's bar (§7): 56 dp rather than Material's 64 dp.
+                expandedHeight = MaterialTheme.sizes.denseTopAppBar,
                 scrollBehavior = scrollBehavior,
             )
-            // In line with the title, which the bar insets by 16 dp, and with the tabs.
-            ConnectionPill(
-                connection = state.connection,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact),
-            )
+            // In line with the title and with the tabs.
+            ConnectionPill(connection = state.connection, modifier = Modifier.padding(horizontal = margin))
             if (state.folderTabs.isNotEmpty()) {
                 FolderTabs(
                     tabs = state.folderTabs,
                     selectedFolderId = state.selectedFolderId,
                     onSelect = onSelectFolder,
                     enabled = selectedCount == null,
+                    margin = margin,
                 )
             }
         }
@@ -124,28 +129,10 @@ internal fun ChatListTopBar(
 }
 
 /**
- * "Pingogram", or "3 selected" in selection mode ([selectedCount]), in the emphasized variant of the style the bar
- * sets: `headlineMedium` while expanded, `titleLarge` collapsed (`docs/DESIGN_SYSTEM.md` §3.3). The bar composes the
- * title once for each state.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ChatListTitle(selectedCount: Int?) {
-    val typography = MaterialTheme.typography
-    val collapsed = LocalTextStyle.current.fontSize == typography.titleLarge.fontSize
-    SelectionTitle(
-        title = stringResource(R.string.chat_list_title),
-        selectedCount = selectedCount,
-        style = if (collapsed) typography.titleLargeEmphasized else typography.headlineMediumEmphasized,
-    )
-}
-
-/**
  * The archive's top bar (`REQUIREMENTS.md` FR-L9): a small [TopAppBar] with back and "Archived chats", on the screen's
  * `surfaceContainer` above the list's sheet. In selection mode it shows how many chats are selected, with a button
  * that clears the selection in place of back.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ArchiveTopBar(
     selectedCount: Int?,
@@ -165,7 +152,7 @@ internal fun ArchiveTopBar(
             if (selectedCount != null) {
                 ClearSelectionButton(onClearSelection)
             } else {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                     Icon(
                         painter = painterResource(UiR.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.chat_list_archive_back),
@@ -178,6 +165,7 @@ internal fun ArchiveTopBar(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
             ),
+        expandedHeight = MaterialTheme.sizes.denseTopAppBar,
         scrollBehavior = scrollBehavior,
     )
 }
@@ -226,7 +214,7 @@ private fun SelectionTitle(
 /** Leaves selection mode, in the top bar's navigation slot. */
 @Composable
 private fun ClearSelectionButton(onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
         Icon(
             painter = painterResource(UiR.drawable.ic_close),
             contentDescription = stringResource(R.string.chat_list_clear_selection),

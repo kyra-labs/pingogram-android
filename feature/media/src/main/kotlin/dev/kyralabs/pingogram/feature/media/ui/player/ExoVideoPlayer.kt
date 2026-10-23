@@ -32,6 +32,9 @@ internal class ExoVideoPlayer
         /** The kind the player is set up for. */
         private var kind: VideoKind? = null
 
+        /** Whether a video plays silenced ([setMuted]); GIFs are always silent. */
+        private var isMuted = false
+
         override var listener: VideoPlayer.Listener? = null
 
         private val playerListener =
@@ -75,6 +78,7 @@ internal class ExoVideoPlayer
                 player.setUp(kind)
                 this.kind = kind
             }
+            if (kind == VideoKind.Video) player.volume = if (isMuted) 0f else 1f
             player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))))
             player.prepare()
             player.play()
@@ -92,6 +96,11 @@ internal class ExoVideoPlayer
 
         override fun seekTo(positionMillis: Long) {
             player?.seekTo(positionMillis)
+        }
+
+        override fun setMuted(muted: Boolean) {
+            isMuted = muted
+            if (kind == VideoKind.Video) player?.volume = if (muted) 0f else 1f
         }
 
         override fun stop() {

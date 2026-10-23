@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import dev.kyralabs.pingogram.core.ui.theme.PingogramSpacing
@@ -239,3 +240,20 @@ private fun utcDate(utcMillis: Long): LocalDate = Instant.ofEpochMilli(utcMillis
 
 /** How far ahead a message can be scheduled: Telegram allows up to 367 days (td_api.tl). */
 private const val MAX_DAYS_AHEAD = 365L
+
+/** [LinkDialog] for the [selection] of [text]: its link, which it sets or removes; [onDone] once closed. */
+@Composable
+internal fun TextLinkDialog(
+    text: ComposerText,
+    selection: TextRange,
+    onDone: () -> Unit,
+) {
+    LinkDialog(
+        currentUrl = text.linkAt(selection),
+        onDismiss = onDone,
+        onConfirm = { url ->
+            text.setLink(url, selection)
+            onDone()
+        },
+    )
+}

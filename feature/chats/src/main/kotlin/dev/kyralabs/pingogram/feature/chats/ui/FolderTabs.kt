@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonGroup
@@ -26,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,6 +34,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import dev.kyralabs.pingogram.core.ui.component.fadingEdges
+import dev.kyralabs.pingogram.core.ui.component.rememberTabScroll
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -48,6 +52,7 @@ import kotlinx.collections.immutable.ImmutableList
  * @param selectedFolderId the folder shown; null for "All chats".
  * @param onSelect called with the folder's id, or null for "All chats".
  * @param enabled false disables every tab, e.g. in selection mode.
+ * @param margin the window margin before the first tab and after the last (`docs/DESIGN_SYSTEM.md` §7).
  */
 @Composable
 internal fun FolderTabs(
@@ -56,11 +61,12 @@ internal fun FolderTabs(
     onSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    margin: Dp = MaterialTheme.spacing.windowMarginCompact,
 ) {
     if (tabs.size > MAX_CONNECTED_TABS) {
-        FolderTabRow(tabs, selectedFolderId, onSelect, enabled, modifier)
+        FolderTabRow(tabs, selectedFolderId, onSelect, enabled, margin, modifier)
     } else {
-        FolderButtonGroup(tabs, selectedFolderId, onSelect, enabled, modifier)
+        FolderButtonGroup(tabs, selectedFolderId, onSelect, enabled, margin, modifier)
     }
 }
 
@@ -75,6 +81,9 @@ internal fun FolderTabs(
  * maximum width). A press shares the width out anew without changing its sum, so the scroll stays put. Each tab still
  * has a menu entry, should the group overflow after all. With animations off (reduced motion) the press and the
  * shapes change at once.
+ *
+ * The selected tab is always in view ([rememberTabScroll]), and the row fades out at an edge it can scroll past
+ * ([fadingEdges]), so a tab is never cut by the window's edge without a hint that more follow.
  */
 @Composable
 private fun FolderButtonGroup(
@@ -82,24 +91,26 @@ private fun FolderButtonGroup(
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
     enabled: Boolean,
+    margin: Dp,
     modifier: Modifier = Modifier,
 ) {
     // The bar is surfaceContainer, the default unchecked container: the next step of the ladder keeps the tabs apart.
     val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
     val labels = tabs.map { it.label() }
     val descriptions = tabs.map { tabDescription(it) }
+    val scroll =
+        rememberTabScroll(tabs.size, selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }, margin)
     ButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
         modifier =
             modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
+                .fadingEdges(scroll.state)
+                .horizontalScroll(scroll.state)
                 .selectableGroup()
-                .padding(
-                    horizontal = MaterialTheme.spacing.windowMarginCompact,
-                    vertical = MaterialTheme.spacing.small,
-                ),
+                // A 48 dp row: the buttons' touch targets, 4 dp above and below their 40 dp containers.
+                .padding(horizontal = margin),
         horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -118,7 +129,10 @@ private fun FolderButtonGroup(
                         shapes = connectedShapes(index, tabs.lastIndex),
                         colors = colors,
                         interactionSource = interactionSource,
-                        modifier = Modifier.animateWidth(interactionSource),
+                        modifier =
+                            Modifier
+                                .animateWidth(interactionSource)
+                                .onPlaced { scroll.buttonBounds[index] = it.boundsInParent() },
                     )
                 },
                 menuContent = { menu ->
@@ -203,6 +217,7 @@ private fun FolderTabRow(
     selectedFolderId: Int?,
     onSelect: (Int?) -> Unit,
     enabled: Boolean,
+    margin: Dp,
     modifier: Modifier = Modifier,
 ) {
     val selectedIndex = tabs.indexOfFirst { it.folderId == selectedFolderId }.coerceAtLeast(0)
@@ -210,7 +225,7 @@ private fun FolderTabRow(
         selectedTabIndex = selectedIndex,
         modifier = modifier,
         containerColor = Color.Transparent,
-        edgePadding = MaterialTheme.spacing.windowMarginCompact,
+        edgePadding = margin,
     ) {
         tabs.forEachIndexed { index, tab ->
             val description = tabDescription(tab)

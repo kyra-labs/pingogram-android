@@ -3,7 +3,6 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import android.icu.text.ListFormatter
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
@@ -34,7 +34,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * For screen readers it is one node: "Archived chats, Ada, Grace and Alan, 2 unread chats".
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ArchiveRow(
     entry: ArchiveEntry,
@@ -65,7 +64,7 @@ internal fun ArchiveRow(
                 photo = null,
                 name = title,
                 id = ARCHIVE_AVATAR_ID,
-                size = MaterialTheme.sizes.avatarMedium,
+                size = MaterialTheme.sizes.avatarRow,
                 placeholderIcon = UiR.drawable.ic_archive,
             )
         },
@@ -85,7 +84,7 @@ internal fun ArchiveRow(
                 color = colors.onSurfaceVariant,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
         },
     ) {
@@ -116,10 +115,10 @@ private fun archiveSummary(entry: ArchiveEntry): String {
 }
 
 /**
- * The avatar placeholder's id: it picks the neutral `surfaceVariant` color pair, the seventh of the avatar colors
- * (`docs/DESIGN_SYSTEM.md` §2.2), so the archive does not look like one of the chats.
+ * The avatar placeholder's id: it picks the neutral `surfaceContainerHighest` color pair, the fourth of the avatar
+ * colors (`docs/DESIGN_SYSTEM.md` §2.2), so the archive does not look like one of the chats.
  */
-private const val ARCHIVE_AVATAR_ID = 6L
+private const val ARCHIVE_AVATAR_ID = 3L
 
 @PingogramPreviews
 @Composable

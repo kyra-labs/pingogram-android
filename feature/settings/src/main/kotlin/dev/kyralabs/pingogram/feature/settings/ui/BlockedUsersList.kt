@@ -5,48 +5,47 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
+import dev.kyralabs.pingogram.core.ui.component.windowMargin
+import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import java.text.NumberFormat
-import dev.kyralabs.pingogram.core.ui.R as UiR
 
 // The list of the Blocked users page: its rows, one segmented group, and loading more as its end comes near.
 
@@ -60,7 +59,12 @@ internal fun BlockedUsersList(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val spacing = MaterialTheme.spacing
-    val style = RowStyle(MaterialTheme.sizes.contentMaxWidth, spacing.windowMarginCompact, MaterialTheme.motionScheme)
+    val style =
+        SettingsListRowStyle(
+            MaterialTheme.sizes.contentMaxWidth,
+            windowMargin(),
+            MaterialTheme.motionScheme,
+        )
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -84,7 +88,7 @@ internal fun BlockedUsersList(
                         state.totalCount,
                         numbers.format(state.totalCount),
                     ),
-                modifier = Modifier.row(this, style),
+                modifier = Modifier.settingsListRow(this, style),
             )
         }
         itemsIndexed(state.items, key = { _, item -> item.key }, contentType = { _, _ -> ROW }) { index, item ->
@@ -92,7 +96,7 @@ internal fun BlockedUsersList(
                 item = item,
                 shapes = ListItemDefaults.segmentedShapes(index, state.items.size),
                 onUnblock = { onEvent(BlockedUsersEvent.Unblock(item.sender)) },
-                modifier = Modifier.row(this, style),
+                modifier = Modifier.settingsListRow(this, style),
             )
         }
         more(state.more, style, onRetry = { onEvent(BlockedUsersEvent.LoadMore) })
@@ -110,19 +114,22 @@ internal fun BlockedUsersList(
  */
 private fun LazyListScope.more(
     more: MoreBlockedSenders,
-    style: RowStyle,
+    style: SettingsListRowStyle,
     onRetry: () -> Unit,
 ) {
     when (more) {
         MoreBlockedSenders.Loading -> {
             item(key = MORE, contentType = MORE) {
-                SettingsLoading(stringResource(R.string.settings_blocked_users_loading), Modifier.row(this, style))
+                SettingsLoading(
+                    stringResource(R.string.settings_blocked_users_loading),
+                    Modifier.settingsListRow(this, style),
+                )
             }
         }
 
         is MoreBlockedSenders.Failed -> {
             item(key = MORE, contentType = MORE) {
-                SettingsError(more.error, onRetry = onRetry, modifier = Modifier.row(this, style))
+                SettingsError(more.error, onRetry = onRetry, modifier = Modifier.settingsListRow(this, style))
             }
         }
 
@@ -155,8 +162,9 @@ private fun LoadMoreEffect(
 }
 
 /**
- * A blocked user or chat, a row of the list's segmented group ([shapes]): its avatar, name and detail, and a button
- * that unblocks it, or progress while it does.
+ * A blocked user or chat, a row of the list's segmented group ([shapes]): its avatar, name and detail (the username, or
+ * the phone number formatted for its country), and an "Unblock" text button whose shape morphs when pressed, or
+ * progress while it unblocks. Screen readers hear the button with the name ("Unblock Ada Lovelace").
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -184,42 +192,45 @@ private fun BlockedSenderRow(
                 val unblocking = stringResource(R.string.settings_unblocking, name)
                 LoadingIndicator(Modifier.semantics { contentDescription = unblocking })
             } else {
-                IconButton(onClick = onUnblock) {
-                    Icon(
-                        painter = painterResource(UiR.drawable.ic_close),
-                        contentDescription = stringResource(R.string.settings_unblock, name),
-                    )
+                val unblock = stringResource(R.string.settings_unblock, name)
+                TextButton(
+                    onClick = onUnblock,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier.semantics { contentDescription = unblock },
+                ) {
+                    Text(stringResource(R.string.settings_unblock_button))
                 }
             }
         },
-        supportingContent = item.detail?.let { detail -> { Text(detail.resolve()) } },
+        supportingContent = blockedSenderDetail(item),
+        colors = settingsRowColors(),
     ) {
-        Text(name)
+        Text(text = name, style = LocalTextStyle.current.userContent)
     }
 }
 
-/** How rows are laid out and animated: at most [maxWidth] wide with [margin]s, on the [motionScheme]'s springs. */
-private class RowStyle(
-    val maxWidth: Dp,
-    val margin: Dp,
-    val motionScheme: MotionScheme,
-)
+/** The row's detail: the username as user content, or the phone number formatted, left to right in any layout. */
+private fun blockedSenderDetail(item: BlockedSenderItem): (@Composable () -> Unit)? {
+    val detail = item.detail
+    val phoneNumber = item.phoneNumber
+    return when {
+        detail != null -> {
+            { Text(text = detail.resolve(), style = LocalTextStyle.current.userContent) }
+        }
 
-/** A row of the list: as wide as the settings pages' column, with their margins, sliding on the motion scheme. */
-private fun Modifier.row(
-    scope: LazyItemScope,
-    style: RowStyle,
-): Modifier =
-    with(scope) {
-        this@row
-            .animateItem(
-                fadeInSpec = style.motionScheme.defaultEffectsSpec(),
-                placementSpec = style.motionScheme.defaultSpatialSpec(),
-                fadeOutSpec = style.motionScheme.fastEffectsSpec(),
-            ).widthIn(max = style.maxWidth)
-            .fillMaxWidth()
-            .padding(horizontal = style.margin)
+        phoneNumber != null -> {
+            {
+                val country = LocalConfiguration.current.locales[0].country
+                val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
+                Text(text = formatted, style = LocalTextStyle.current.numericContent)
+            }
+        }
+
+        else -> {
+            null
+        }
     }
+}
 
 private const val HEADER = "header"
 private const val ROW = "row"

@@ -8,7 +8,11 @@ plugins {
     alias(libs.plugins.android.lint) apply false
     alias(libs.plugins.android.test) apply false
     alias(libs.plugins.androidx.baselineprofile) apply false
+    // Applied by pingogram.android.gms to :app only when google-services.json exists (docs/adr/0004-push-delivery.md).
+    alias(libs.plugins.google.services) apply false
     alias(libs.plugins.hilt) apply false
+    // Applied by :app only for the optional upload to Google Play (docs/PLAY_STORE.md §7).
+    alias(libs.plugins.play.publisher) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.serialization) apply false

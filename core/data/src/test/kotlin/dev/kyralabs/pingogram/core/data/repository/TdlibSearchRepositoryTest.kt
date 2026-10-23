@@ -4,6 +4,8 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
+import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
+import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -44,7 +46,7 @@ class TdlibSearchRepositoryTest {
         }
 
     private fun TestScope.repository(): TdlibSearchRepository {
-        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
         return TdlibSearchRepository(client, chats)
     }
 
@@ -179,6 +181,36 @@ class TdlibSearchRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository().searchContacts("gr"))
         }
 
+    @Test
+    fun `all contacts are their private chats, sorted by name, without the ones that cannot be read`() =
+        runTest {
+            client.on(TdApi.GetContacts::class) { TdResult.Success(TdApi.Users(4, longArrayOf(7, 8, 9, UNKNOWN_CHAT))) }
+            client.on(TdApi.CreatePrivateChat::class) { request ->
+                TdResult.Success(chat(id = request.userId, type = TdApi.ChatTypePrivate(request.userId)))
+            }
+            val names = mapOf(7L to "Grace", 8L to "ada", 9L to "Bea")
+            client.on(TdApi.GetChat::class) { request ->
+                names[request.chatId]?.let { TdResult.Success(chat(id = request.chatId, title = it)) }
+                    ?: failure(400, "Chat not found")
+            }
+
+            val contacts = repository().contacts()
+
+            assertEquals(listOf(8L, 9L, 7L), contacts.ids())
+            assertEquals(
+                listOf(7L, 8L, 9L, UNKNOWN_CHAT),
+                client.sentOf<TdApi.CreatePrivateChat>().map { it.userId }.sorted(),
+            )
+        }
+
+    @Test
+    fun `failing to read the contacts reports its error`() =
+        runTest {
+            client.on(TdApi.GetContacts::class, failure(429, "Too Many Requests: retry after 3"))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(3)), repository().contacts())
+        }
+
     // Public chats
 
     @Test
@@ -188,7 +220,8 @@ class TdlibSearchRepositoryTest {
 
             assertEquals(listOf(30L, 31L), repository().searchPublicChats("@news").ids())
             val search = client.sentOf<TdApi.SearchPublicChats>().single()
-            assertEquals("@news", search.query)
+            // The @ is left out (publicChatQuery), as TDLib looks up the username itself.
+            assertEquals("news", search.query)
             assertNull(search.typeFilter)
         }
 
@@ -265,6 +298,43 @@ class TdlibSearchRepositoryTest {
         }
 
     @Test
+    fun `photos and videos, and links, are searched with TDLib's filters`() =
+        runTest {
+            client.on(TdApi.SearchMessages::class) {
+                TdResult.Success(TdApi.FoundMessages(1, arrayOf(message(id = 7, chatId = 1)), ""))
+            }
+            val repository = repository()
+
+            val media = repository.searchMessages("cat", offset = null, MessageSearchFilter.PhotoAndVideo).page()
+            repository.searchMessages("cat", offset = null, MessageSearchFilter.Url)
+
+            assertEquals(listOf(7L), media.messages.map { it.message.id })
+            val (photos, links) = client.sentOf<TdApi.SearchMessages>()
+            assertTrue(photos.filter is TdApi.SearchMessagesFilterPhotoAndVideo)
+            assertEquals("cat", photos.query)
+            assertTrue(links.filter is TdApi.SearchMessagesFilterUrl)
+        }
+
+    @Test
+    fun `a blank query finds every photo and video, or every link, but no messages without a filter`() =
+        runTest {
+            client.on(TdApi.SearchMessages::class) {
+                TdResult.Success(TdApi.FoundMessages(1, arrayOf(message(id = 7, chatId = 1)), "o"))
+            }
+            val repository = repository()
+
+            val media = repository.searchMessages(" ", offset = null, MessageSearchFilter.PhotoAndVideo).page()
+            val links = repository.searchMessages("", offset = "o", MessageSearchFilter.Url).page()
+            val all = repository.searchMessages("", offset = null, MessageSearchFilter.All).page()
+
+            assertEquals(listOf(7L), media.messages.map { it.message.id })
+            assertEquals(listOf(7L), links.messages.map { it.message.id })
+            assertTrue(all.messages.isEmpty())
+            assertEquals(listOf("", ""), client.sentOf<TdApi.SearchMessages>().map { it.query })
+            assertEquals("o", client.sentOf<TdApi.SearchMessages>().last().offset)
+        }
+
+    @Test
     fun `a failed page reports its error`() =
         runTest {
             client.on(TdApi.SearchMessages::class, failure(429, "Too Many Requests: retry after 3"))
@@ -332,7 +402,64 @@ class TdlibSearchRepositoryTest {
             assertEquals(emptyList<Long>(), repository().topPeople().ids())
         }
 
+    // A username
+
+    @Test
+    fun `a username of a user is theirs, with their private chat`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, TdResult.Success(chat(id = 42, type = TdApi.ChatTypePrivate(42))))
+
+            assertEquals(Outcome.Success(UsernameOwner.User(userId = 42, chatId = 42)), repository().publicChat("@ada"))
+            assertEquals("ada", client.sentOf<TdApi.SearchPublicChat>().single().username)
+        }
+
+    @Test
+    fun `a username of a group or channel is the chat's`() =
+        runTest {
+            client.on(
+                TdApi.SearchPublicChat::class,
+                TdResult.Success(chat(id = -100, type = TdApi.ChatTypeSupergroup(5, true))),
+            )
+
+            assertEquals(Outcome.Success(UsernameOwner.Chat(-100)), repository().publicChat("news"))
+        }
+
+    @Test
+    fun `a username nobody has is not found`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, failure(400, "USERNAME_NOT_OCCUPIED"))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat("nobody"))
+
+            client.on(TdApi.SearchPublicChat::class, failure(400, "USERNAME_INVALID"))
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat("x"))
+        }
+
+    @Test
+    fun `a blank username is not found, without asking TDLib`() =
+        runTest {
+            assertEquals(Outcome.Failure(DomainError.NotFound), repository().publicChat(" @"))
+            assertTrue(client.sent.isEmpty())
+        }
+
+    @Test
+    fun `a username lookup keeps other errors`() =
+        runTest {
+            client.on(TdApi.SearchPublicChat::class, failure(429, "Too Many Requests: retry after 5"))
+
+            assertEquals(Outcome.Failure(DomainError.FloodWait(5)), repository().publicChat("ada"))
+        }
+
     private companion object {
         const val UNKNOWN_CHAT = 404L
+    }
+
+    @Test
+    fun `a typed username or t_me link searches public chats for the username`() {
+        assertEquals("rustberlin", publicChatQuery(" @rustberlin "))
+        assertEquals("rustberlin", publicChatQuery("https://t.me/rustberlin"))
+        assertEquals("rustberlin", publicChatQuery("t.me/rustberlin/"))
+        assertEquals("Rust_Berlin", publicChatQuery("telegram.me/Rust_Berlin"))
+        assertEquals("rust berlin", publicChatQuery("rust berlin"))
+        assertEquals("t.me/+abcdef", publicChatQuery("t.me/+abcdef"))
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -57,6 +58,7 @@ internal fun DeleteChatDialog(
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(forEveryone) },
+                shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(
@@ -75,7 +77,7 @@ internal fun DeleteChatDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
                 Text(
                     text = stringResource(R.string.chat_list_cancel),
                     style = MaterialTheme.typography.labelLargeEmphasized,
@@ -130,26 +132,26 @@ private class DeleteDialogTexts(
 private fun deleteDialogTexts(dialog: DeleteDialog): DeleteDialogTexts =
     when (dialog) {
         is DeleteDialog.Single -> {
-            val name = dialog.title.resolve()
+            val name = dialog.title.resolve().bidiIsolated()
             when (dialog.kind) {
                 DeleteKind.DeleteChat -> {
                     DeleteDialogTexts(
                         stringResource(R.string.chat_list_delete_title),
-                        stringResource(R.string.chat_list_delete_body, name),
+                        stringResource(R.string.chat_list_delete_body, name).bidiIsolated(),
                     )
                 }
 
                 DeleteKind.LeaveGroup -> {
                     DeleteDialogTexts(
                         stringResource(R.string.chat_list_leave_group_title),
-                        stringResource(R.string.chat_list_leave_body, name),
+                        stringResource(R.string.chat_list_leave_body, name).bidiIsolated(),
                     )
                 }
 
                 DeleteKind.LeaveChannel -> {
                     DeleteDialogTexts(
                         stringResource(R.string.chat_list_leave_channel_title),
-                        stringResource(R.string.chat_list_leave_body, name),
+                        stringResource(R.string.chat_list_leave_body, name).bidiIsolated(),
                     )
                 }
             }
@@ -169,10 +171,21 @@ private fun deleteDialogTexts(dialog: DeleteDialog): DeleteDialogTexts =
 @ReadOnlyComposable
 private fun forEveryoneLabel(dialog: DeleteDialog.Single): String? =
     when (dialog.forEveryone) {
-        DeleteForEveryone.OtherUser -> stringResource(R.string.chat_list_delete_for_user, dialog.title.resolve())
-        DeleteForEveryone.AllMembers -> stringResource(R.string.chat_list_delete_for_members)
-        DeleteForEveryone.AllSubscribers -> stringResource(R.string.chat_list_delete_for_subscribers)
-        null -> null
+        DeleteForEveryone.OtherUser -> {
+            stringResource(R.string.chat_list_delete_for_user, dialog.title.resolve().bidiIsolated()).bidiIsolated()
+        }
+
+        DeleteForEveryone.AllMembers -> {
+            stringResource(R.string.chat_list_delete_for_members)
+        }
+
+        DeleteForEveryone.AllSubscribers -> {
+            stringResource(R.string.chat_list_delete_for_subscribers)
+        }
+
+        null -> {
+            null
+        }
     }
 
 @PingogramPreviews

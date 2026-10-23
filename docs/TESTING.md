@@ -36,7 +36,10 @@
     need JDK 21 and the build uses JDK 17. A test that needs a newer API sets
     `@Config(sdk = [...])` and must run on JDK 21.
 - Accessibility assertions: `assertHasClickAction`, `assertContentDescriptionEquals` on icon
-  buttons; `AccessibilityChecks` enabled in Compose UI tests.
+  buttons, and `assertAccessible()` (`core:testing`) on every screen's content: each control has a name and a 48 dp
+  touch target, in every window (`<Module>AccessibilityChecksTest`, `docs/audit/accessibility.md`). Google's
+  Accessibility Test Framework (`ui-test-junit4-accessibility`) turns itself off under Robolectric, so it is not used;
+  Accessibility Scanner on a device covers the rest. Color contrast of every theme: `ThemeContrastTest` (`core:ui`).
 - Test names in backticks describing behaviour. One assertion concept per test.
 
 ## Static analysis
@@ -53,8 +56,8 @@ saying why.
 - `PingogramHardcodedToken` (`build-logic/detekt-rules`) fails `:feature:*` production code that uses
   literal colors, `sp`/`dp` values (except `0.dp`), corner shapes or animation specs instead of the
   `MaterialTheme` tokens (`docs/DESIGN_SYSTEM.md` §1). Test sources and `core`/`app` are not checked.
-- Android Lint: every warning is an error; `NewApi`, `UnusedResources` and `MissingTranslation` are
-  fatal. Checks that do not fit the project are disabled, each with its reason, in
+- Android Lint: every warning is an error; `NewApi`, `UnusedResources` and `ExtraTranslation` are
+  fatal, `MissingTranslation` informational (a language ships at 80% translated, `docs/TRANSLATING.md`). Checks that do not fit the project are disabled, each with its reason, in
   `AndroidLintConventionPlugin`.
 
 ## Test DC accounts

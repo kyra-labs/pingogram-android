@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import android.text.format.Formatter
+import androidx.annotation.DrawableRes
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -16,6 +17,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -28,10 +31,12 @@ import java.text.NumberFormat
 
 /**
  * The Data and storage page: hoists [DataStorageViewModel] and shows its results in snackbars: how much clearing the
- * cache freed, or why it failed. [onBack] leaves the page.
+ * cache freed, or why it failed. A network's automatic download row calls [onOpenAutoDownload]; [onBack] leaves the
+ * page.
  */
 @Composable
 internal fun DataStorageRoute(
+    onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DataStorageViewModel = hiltViewModel(),
@@ -67,6 +72,7 @@ internal fun DataStorageRoute(
     DataStorageScreen(
         state = state,
         onEvent = viewModel::onEvent,
+        onOpenAutoDownload = onOpenAutoDownload,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -74,14 +80,16 @@ internal fun DataStorageRoute(
 }
 
 /**
- * Data and storage (`REQUIREMENTS.md` FR-S1): how much space Pingogram's downloaded files and databases take, as
- * TDLib reports it, and "Clear cache", which deletes the downloaded files after a destructive confirmation
- * ([ClearCacheDialog]) and shows progress while it runs.
+ * Data and storage (`REQUIREMENTS.md` FR-S1): what downloads by itself on mobile data, Wi-Fi and roaming, each a row
+ * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
+ * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
+ * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs.
  */
 @Composable
 internal fun DataStorageScreen(
     state: DataStorageUiState,
     onEvent: (DataStorageEvent) -> Unit,
+    onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -92,7 +100,13 @@ internal fun DataStorageScreen(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     ) {
-        SettingsGroup(title = stringResource(R.string.settings_section_storage_usage)) {
+        state.autoDownload?.let { settings ->
+            AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
+        }
+        SettingsGroup(
+            title = stringResource(R.string.settings_section_storage_usage),
+            iconTone = SettingsIconTone.Secondary,
+        ) {
             when (val usage = state.usage) {
                 StorageUsageState.Loading -> {
                     item { shapes ->
@@ -116,7 +130,7 @@ internal fun DataStorageScreen(
                 }
             }
         }
-        SettingsGroup(title = stringResource(R.string.settings_section_cache)) {
+        SettingsGroup(title = stringResource(R.string.settings_section_cache), iconTone = SettingsIconTone.Tertiary) {
             item { shapes ->
                 ClearCacheItem(
                     isClearing = state.isClearingCache,
@@ -183,19 +197,30 @@ private fun DatabaseItem(
 @PingogramPreviews
 @Composable
 private fun DataStorageScreenPreview() {
-    PingogramPreview { DataStorageScreen(state = SettingsPreviewData.storage, onEvent = {}, onBack = {}) }
+    PingogramPreview {
+        DataStorageScreen(state = SettingsPreviewData.storage, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+    }
 }
 
 @PingogramPreviews
 @Composable
 private fun DataStorageScreenLoadingPreview() {
-    PingogramPreview { DataStorageScreen(state = DataStorageUiState(), onEvent = {}, onBack = {}) }
+    PingogramPreview {
+        DataStorageScreen(
+            state = DataStorageUiState(),
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onBack = {},
+        )
+    }
 }
 
 @PingogramPreviews
 @Composable
 private fun DataStorageScreenErrorPreview() {
-    PingogramPreview { DataStorageScreen(state = SettingsPreviewData.storageError, onEvent = {}, onBack = {}) }
+    PingogramPreview {
+        DataStorageScreen(state = SettingsPreviewData.storageError, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+    }
 }
 
 @PingogramPreviews
@@ -205,6 +230,7 @@ private fun DataStorageScreenDialogPreview() {
         DataStorageScreen(
             state = SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true),
             onEvent = {},
+            onOpenAutoDownload = {},
             onBack = {},
         )
     }
@@ -214,6 +240,7 @@ private fun DataStorageScreenDialogPreview() {
 @Composable
 private fun DataStorageScreenClearingPreview() {
     PingogramPreview {
-        DataStorageScreen(state = SettingsPreviewData.storage.copy(isClearingCache = true), onEvent = {}, onBack = {})
+        DataStorageScreen(state = SettingsPreviewData.storage.copy(isClearingCache = true), onEvent = {
+        }, onOpenAutoDownload = {}, onBack = {})
     }
 }

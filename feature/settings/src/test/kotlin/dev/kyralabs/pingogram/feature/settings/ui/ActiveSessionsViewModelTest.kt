@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
@@ -111,10 +112,11 @@ class ActiveSessionsViewModelTest {
             session(3, deviceType = TdApi.SessionDeviceTypeMac(), deviceModel = "MacBook Pro"),
         )
 
+    /** "[first] · [second]" as the view model joins them: each isolated (`bidiIsolated`). */
     private fun parts(
-        first: Any,
-        second: Any,
-    ) = UiText.resource(R.string.settings_session_parts, first, second)
+        first: UiText,
+        second: UiText,
+    ) = UiText.resource(R.string.settings_session_parts, first.bidiIsolated(), second.bidiIsolated())
 
     private val ActiveSessionsViewModel.state get() = uiState.value
 
@@ -184,6 +186,22 @@ class ActiveSessionsViewModelTest {
                 ),
                 loaded.others,
             )
+        }
+
+    @Test
+    fun `a Hebrew location stays isolated before the time`() =
+        runTest {
+            answerSessions(session(3, location = "תל אביב, ישראל"))
+
+            val activity =
+                viewModel()
+                    .loaded.others
+                    .single()
+                    .activity as UiText.Resource
+
+            // Its own direction in first-strong isolates: it never swaps places with the English time after it.
+            assertEquals(R.string.settings_session_parts, activity.id)
+            assertEquals(UiText.Plain("\u2068תל אביב, ישראל\u2069"), activity.args.first())
         }
 
     @Test

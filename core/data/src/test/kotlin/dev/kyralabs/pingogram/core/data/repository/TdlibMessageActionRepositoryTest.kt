@@ -3,9 +3,15 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOption
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -15,8 +21,10 @@ import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
@@ -25,7 +33,7 @@ import org.junit.jupiter.api.Test
 /**
  * The requests [TdlibMessageActionRepository] sends for the message actions (`REQUIREMENTS.md` FR-C6, FR-C7), and how
  * it maps TDLib's answers: properties, available reactions without Premium-only or paid ones, reactions, edits, delete
- * for oneself or everyone, pins with their options, and resending.
+ * for oneself or everyone, pins with their options, resending, forwarding with a comment and options, and reporting.
  */
 class TdlibMessageActionRepositoryTest {
     private val client = FakeTdlibClient()
@@ -54,6 +62,10 @@ class TdlibMessageActionRepositoryTest {
                         canBeDeletedOnlyForSelf = true
                         canBeDeletedForAllUsers = false
                         canBeSaved = true
+                        canBeForwarded = true
+                        canBeCopied = true
+                        canBeCopiedToSecretChat = false
+                        canReportChat = true
                         customEmojiIds = longArrayOf()
                     }
                 client.on(TdApi.GetMessageProperties::class, TdResult.Success(properties))
@@ -71,6 +83,10 @@ class TdlibMessageActionRepositoryTest {
                             canBeDeletedOnlyForSelf = true,
                             canBeDeletedForAllUsers = false,
                             canBeSaved = true,
+                            canBeForwarded = true,
+                            canBeCopied = true,
+                            canBeCopiedToSecretChat = false,
+                            canBeReported = true,
                         ),
                     ),
                     result,
@@ -78,7 +94,7 @@ class TdlibMessageActionRepositoryTest {
             }
 
         @Test
-        fun `protected content cannot be saved, nor copied`() =
+        fun `protected content cannot be saved, copied nor forwarded`() =
             runTest {
                 val properties =
                     TdApi.MessageProperties().apply {
@@ -91,6 +107,7 @@ class TdlibMessageActionRepositoryTest {
                 val result = repository.properties(CHAT, MESSAGE) as Outcome.Success
 
                 assertEquals(false, result.value.canBeSaved)
+                assertEquals(false, result.value.canBeForwarded)
             }
 
         @Test
@@ -104,8 +121,11 @@ class TdlibMessageActionRepositoryTest {
 
     @Nested
     inner class Reactions {
-        private fun available(vararg top: TdApi.AvailableReaction) =
-            TdApi.AvailableReactions(arrayOf(*top), emptyArray(), emptyArray(), false, false, null)
+        private fun available(
+            vararg top: TdApi.AvailableReaction,
+            recent: Array<TdApi.AvailableReaction> = emptyArray(),
+            popular: Array<TdApi.AvailableReaction> = emptyArray(),
+        ) = TdApi.AvailableReactions(arrayOf(*top), recent, popular, true, false, null)
 
         private fun emoji(
             emoji: String,
@@ -164,6 +184,107 @@ class TdlibMessageActionRepositoryTest {
                 val result = repository.availableReactions(CHAT, MESSAGE)
 
                 assertEquals(Outcome.Success(AvailableReactions(persistentListOf(ReactionType.Emoji("👍")))), result)
+            }
+
+        @Test
+        fun `the recent and popular reactions follow, each reaction in its first list only`() =
+            runTest {
+                client.on(
+                    TdApi.GetMessageAvailableReactions::class,
+                    TdResult.Success(
+                        available(
+                            emoji("👍"),
+                            recent =
+                                arrayOf(
+                                    emoji("🔥"),
+                                    emoji("👍"),
+                                    TdApi.AvailableReaction(TdApi.ReactionTypeCustomEmoji(5), false),
+                                ),
+                            popular = arrayOf(emoji("🔥"), emoji("🎉"), emoji("🤩", needsPremium = true)),
+                        ),
+                    ),
+                )
+
+                val result = repository.availableReactions(CHAT, MESSAGE)
+
+                assertEquals(
+                    Outcome.Success(
+                        AvailableReactions(
+                            top = persistentListOf(ReactionType.Emoji("👍")),
+                            recent = persistentListOf(ReactionType.Emoji("🔥"), ReactionType.CustomEmoji(5)),
+                            popular = persistentListOf(ReactionType.Emoji("🎉")),
+                        ),
+                    ),
+                    result,
+                )
+            }
+
+        @Test
+        fun `reactions off give no reactions`() =
+            runTest {
+                val off =
+                    TdApi.AvailableReactions(
+                        emptyArray(),
+                        emptyArray(),
+                        emptyArray(),
+                        false,
+                        false,
+                        TdApi.ReactionUnavailabilityReasonGuest(),
+                    )
+                client.on(TdApi.GetMessageAvailableReactions::class, TdResult.Success(off))
+
+                assertEquals(
+                    Outcome.Success(AvailableReactions(persistentListOf())),
+                    repository.availableReactions(CHAT, MESSAGE),
+                )
+            }
+
+        @Test
+        fun `custom emoji stickers come by their custom emoji id`() =
+            runTest {
+                val still =
+                    TdApiFixtures.sticker(emoji = "😎", file = TdApiFixtures.file(id = 60)).apply {
+                        fullType = TdApi.StickerFullTypeCustomEmoji(5, false)
+                    }
+                val animated =
+                    TdApiFixtures.sticker(format = TdApi.StickerFormatTgs(), file = TdApiFixtures.file(id = 61)).apply {
+                        fullType = TdApi.StickerFullTypeCustomEmoji(6, false)
+                    }
+                // Not a custom emoji: left out.
+                val regular = TdApiFixtures.sticker(file = TdApiFixtures.file(id = 62))
+                client.on(
+                    TdApi.GetCustomEmojiStickers::class,
+                    TdResult.Success(TdApi.Stickers(arrayOf(still, animated, regular))),
+                )
+
+                val result = repository.customEmojiStickers(listOf(5, 6, 5)) as Outcome.Success
+
+                assertEquals(
+                    listOf(5L, 6L),
+                    client
+                        .sentOf<TdApi.GetCustomEmojiStickers>()
+                        .single()
+                        .customEmojiIds
+                        .toList(),
+                )
+                assertEquals(setOf(5L, 6L), result.value.keys)
+                assertEquals(
+                    60,
+                    result.value
+                        .getValue(5)
+                        .file.id,
+                )
+                assertEquals(StickerFormat.Tgs, result.value.getValue(6).format)
+            }
+
+        @Test
+        fun `no custom emoji asks TDLib nothing`() =
+            runTest {
+                assertEquals(
+                    Outcome.Success(persistentMapOf<Long, Sticker>()),
+                    repository.customEmojiStickers(emptyList()),
+                )
+                assertEquals(emptyList<TdApi.Function<*>>(), client.sent)
             }
 
         @Test
@@ -398,8 +519,172 @@ class TdlibMessageActionRepositoryTest {
             }
     }
 
+    @Nested
+    inner class Forwarding {
+        private fun answerForwards(vararg forwarded: TdApi.Message?) {
+            client.on(TdApi.ForwardMessages::class, TdResult.Success(messages(*forwarded)))
+            client.on(TdApi.SendMessage::class, TdResult.Success(message(id = 1, chatId = TARGET)))
+        }
+
+        @Test
+        fun `forwards the messages in increasing order to the chat itself, sent now`() =
+            runTest {
+                answerForwards(message(id = 1, chatId = TARGET), message(id = 2, chatId = TARGET))
+
+                val result = repository.forward(CHAT, listOf(MESSAGE + 1, MESSAGE), TARGET, null, ForwardOptions())
+
+                assertEquals(Outcome.Success(Unit), result)
+                val request = client.sentOf<TdApi.ForwardMessages>().single()
+                assertEquals(
+                    listOf<Any?>(TARGET, null, CHAT, listOf(MESSAGE, MESSAGE + 1), false, false),
+                    listOf(
+                        request.chatId,
+                        request.topicId,
+                        request.fromChatId,
+                        request.messageIds.toList(),
+                        request.sendCopy,
+                        request.removeCaption,
+                    ),
+                )
+                assertEquals(
+                    listOf(false, null),
+                    listOf(request.options.disableNotification, request.options.schedulingState),
+                )
+                assertTrue(client.sentOf<TdApi.SendMessage>().isEmpty())
+            }
+
+        @Test
+        fun `hiding the sender's name sends copies, hiding captions leaves them out`() =
+            runTest {
+                answerForwards(message(id = 1, chatId = TARGET))
+
+                repository.forward(CHAT, listOf(MESSAGE), TARGET, null, ForwardOptions(hideSenderName = true))
+                repository.forward(CHAT, listOf(MESSAGE), TARGET, null, ForwardOptions(true, hideCaptions = true))
+                // TDLib keeps the captions of forwards: without copies, hiding them asks for nothing.
+                repository.forward(CHAT, listOf(MESSAGE), TARGET, null, ForwardOptions(hideCaptions = true))
+
+                assertEquals(
+                    listOf(true to false, true to true, false to false),
+                    client.sentOf<TdApi.ForwardMessages>().map { it.sendCopy to it.removeCaption },
+                )
+            }
+
+        @Test
+        fun `the comment goes first, as a text that keeps the target's draft`() =
+            runTest {
+                answerForwards(message(id = 1, chatId = TARGET))
+                val comment = FormattedText("Look", persistentListOf(TextEntity(0, 4, TextEntityType.Bold)))
+
+                repository.forward(CHAT, listOf(MESSAGE), TARGET, comment, ForwardOptions())
+
+                assertEquals(listOf("SendMessage", "ForwardMessages"), client.sent.map { it.javaClass.simpleName })
+                val send = client.sentOf<TdApi.SendMessage>().single()
+                val content = send.inputMessageContent as TdApi.InputMessageText
+                assertEquals(
+                    listOf<Any>(TARGET, "Look", 1, false),
+                    listOf(send.chatId, content.text.text, content.text.entities.size, content.clearDraft),
+                )
+            }
+
+        @Test
+        fun `a comment TDLib refuses forwards nothing`() =
+            runTest {
+                client.on(TdApi.SendMessage::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 12")))
+
+                val comment = FormattedText("Hi", persistentListOf())
+                val result = repository.forward(CHAT, listOf(MESSAGE), TARGET, comment, ForwardOptions())
+
+                assertEquals(Outcome.Failure(DomainError.FloodWait(12)), result)
+                assertTrue(client.sentOf<TdApi.ForwardMessages>().isEmpty())
+            }
+
+        @Test
+        fun `a message TDLib does not forward fails as not allowed`() =
+            runTest {
+                answerForwards(message(id = 1, chatId = TARGET), null)
+
+                val result = repository.forward(CHAT, listOf(MESSAGE, MESSAGE + 1), TARGET, null, ForwardOptions())
+
+                assertEquals(Outcome.Failure(DomainError.SendingNotAllowed), result)
+            }
+
+        @Test
+        fun `a refused forward reports TDLib's error`() =
+            runTest {
+                client.on(TdApi.ForwardMessages::class, TdResult.Failure(TdError(420, "FLOOD_WAIT_30")))
+
+                val result = repository.forward(CHAT, listOf(MESSAGE), TARGET, null, ForwardOptions())
+
+                assertEquals(Outcome.Failure(DomainError.FloodWait(30)), result)
+            }
+    }
+
+    @Nested
+    inner class Reporting {
+        @Test
+        fun `the first report sends an empty option and the messages, a chosen option its id and the comment`() =
+            runTest {
+                client.on(TdApi.ReportChat::class, TdResult.Success(TdApi.ReportChatResultOk()))
+
+                repository.report(CHAT, listOf(MESSAGE, MESSAGE + 1), ReportOptionId.Initial)
+                repository.report(CHAT, listOf(MESSAGE), ReportOptionId(byteArrayOf(7, 8)), "It is spam")
+
+                val requests = client.sentOf<TdApi.ReportChat>()
+                assertEquals(listOf(CHAT, CHAT), requests.map { it.chatId })
+                assertEquals(
+                    listOf(listOf(MESSAGE, MESSAGE + 1), listOf(MESSAGE)),
+                    requests.map { it.messageIds.toList() },
+                )
+                assertArrayEquals(ByteArray(0), requests[0].optionId)
+                assertArrayEquals(byteArrayOf(7, 8), requests[1].optionId)
+                assertEquals(listOf("", "It is spam"), requests.map { it.text })
+            }
+
+        @Test
+        fun `each report result maps`() =
+            runTest {
+                val options =
+                    arrayOf(TdApi.ReportOption(byteArrayOf(1), "Spam"), TdApi.ReportOption(byteArrayOf(2), "Violence"))
+                val answers =
+                    listOf(
+                        TdApi.ReportChatResultOk() to ChatReportResult.Reported,
+                        TdApi.ReportChatResultOptionRequired("Why?", options) to
+                            ChatReportResult.OptionRequired(
+                                "Why?",
+                                persistentListOf(
+                                    ReportOption(ReportOptionId(byteArrayOf(1)), "Spam"),
+                                    ReportOption(ReportOptionId(byteArrayOf(2)), "Violence"),
+                                ),
+                            ),
+                        TdApi.ReportChatResultTextRequired(byteArrayOf(3), true) to
+                            ChatReportResult.TextRequired(ReportOptionId(byteArrayOf(3)), isOptional = true),
+                        TdApi.ReportChatResultMessagesRequired() to ChatReportResult.MessagesRequired,
+                    )
+
+                for ((answer, expected) in answers) {
+                    client.on(TdApi.ReportChat::class, TdResult.Success(answer))
+
+                    assertEquals(
+                        Outcome.Success(expected),
+                        repository.report(CHAT, listOf(MESSAGE), ReportOptionId.Initial),
+                    )
+                }
+            }
+
+        @Test
+        fun `a refused report fails with its error`() =
+            runTest {
+                client.on(TdApi.ReportChat::class, TdResult.Failure(TdError(420, "FLOOD_WAIT_30")))
+
+                val result = repository.report(CHAT, listOf(MESSAGE), ReportOptionId.Initial)
+
+                assertEquals(Outcome.Failure(DomainError.FloodWait(30)), result)
+            }
+    }
+
     private companion object {
         const val CHAT = 100L
         const val MESSAGE = 10L
+        const val TARGET = 200L
     }
 }

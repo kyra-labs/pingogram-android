@@ -32,6 +32,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -215,7 +216,11 @@ private fun EditProfileConfirmation(
                 UiR.drawable.ic_alternate_email to
                     DestructiveDialogTexts(
                         title = stringResource(R.string.settings_remove_username_dialog_title),
-                        text = stringResource(R.string.settings_remove_username_dialog_text, content.saved.username),
+                        text =
+                            stringResource(
+                                R.string.settings_remove_username_dialog_text,
+                                content.saved.username.bidiIsolated(),
+                            ).bidiIsolated(),
                         confirm = stringResource(R.string.settings_remove_username_dialog_confirm),
                     )
             }

@@ -27,6 +27,8 @@ import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.media.ui.DeleteConfirmation
+import dev.kyralabs.pingogram.feature.media.ui.DeleteScope
 import dev.kyralabs.pingogram.feature.media.ui.MediaAction
 import dev.kyralabs.pingogram.feature.media.ui.MediaActions
 import dev.kyralabs.pingogram.feature.media.ui.MediaCount
@@ -129,10 +131,20 @@ internal object MediaPreviewData {
     val downloading: MediaViewerUiState.Content =
         photo.copy(files = persistentMapOf(11 to FileState.Downloading(96_000, 240_000, isActive = true)))
 
-    /** The photo in a chat that lets its content leave Telegram: Share and Save in the bottom app bar. */
+    /** The photo in a chat that lets its content leave Telegram: Share and Save in the toolbar, Copy in its menu. */
     val withActions: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = true))
 
-    /** The photo in a chat that protects its content: no Share, no Save. */
+    /** The photo the user may also forward and delete: Forward, Share, Save and Delete in the toolbar. */
+    val allActions: MediaViewerUiState.Content =
+        photo.copy(actions = MediaActions(canForward = true, canSave = true, canDelete = true))
+
+    /** Delete tapped on a photo the user may delete for everyone too: the confirmation with its check box. */
+    val deleteConfirmation: MediaViewerUiState.Content =
+        allActions.copy(
+            actions = allActions.actions.copy(deleteConfirmation = DeleteConfirmation(PHOTO, DeleteScope.Choice)),
+        )
+
+    /** The photo in a chat that protects its content: no Share, no Save, no Copy. */
     val protectedContent: MediaViewerUiState.Content = photo.copy(actions = MediaActions(canSave = false))
 
     /** Share tapped while the full size downloads: the button shows the download's progress. */
@@ -197,6 +209,18 @@ internal fun PreviewImages(
 internal class MediaViewerPreviewStates : PreviewParameterProvider<MediaViewerUiState> {
     override val values: Sequence<MediaViewerUiState> =
         with(MediaPreviewData) {
-            sequenceOf(photo, withActions, sharing, video, downloading, spoiler, loading, error, unavailable)
+            sequenceOf(
+                photo,
+                withActions,
+                allActions,
+                deleteConfirmation,
+                sharing,
+                video,
+                downloading,
+                spoiler,
+                loading,
+                error,
+                unavailable,
+            )
         }
 }

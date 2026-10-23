@@ -2,50 +2,52 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.senderNameColor
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
 
-// The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2:
-// tonal blocks of the bubble's side), and the reaction badges on its corner (chosen reactions in secondaryContainer).
+// The blocks inside a bubble besides its text, the reply quote and the link preview (docs/DESIGN_SYSTEM.md §2.2, §4:
+// tonal cards in the block tone of the bubble's side), and the reaction badges on its corner (chosen reactions in
+// secondaryContainer).
 
 /**
- * The replied message: a tonal block with a bar in the sender's color, the name over one line of its text. With
- * [onOpen] it is a button that shows the replied message, with its state layer clipped to the block. Inside a bubble,
- * screen readers reach it as the bubble's custom action instead ([replyAction]).
+ * The replied message: a tonal card, the name in the sender's color over one line of its text. With [onOpen] it is a
+ * button that shows the replied message, with its state layer clipped to the card. Inside a bubble, screen readers
+ * reach it as the bubble's custom action instead ([replyAction]).
  */
 @Composable
 internal fun ReplyQuoteBlock(
@@ -58,14 +60,14 @@ internal fun ReplyQuoteBlock(
     val openLabel = stringResource(R.string.chat_reply_open)
     val clickable =
         onOpen?.let { Modifier.clickable(onClickLabel = openLabel, role = Role.Button, onClick = it) } ?: Modifier
-    QuoteBlock(colors.block, accent, clickable) {
+    BlockCard(colors.block, clickable) {
         reply.sender?.let { sender ->
             Text(
                 text = sender.resolve(),
                 color = accent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
         Text(
@@ -73,26 +75,26 @@ internal fun ReplyQuoteBlock(
             color = colors.blockContent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.userContent,
         )
     }
 }
 
-/** The link's site name in `primary`, its title, and a few lines of its description, on a tonal block. */
+/** The link's site name in `primary`, its title, and a few lines of its description, on a tonal card. */
 @Composable
 internal fun LinkPreviewBlock(
     preview: LinkPreviewCard,
     colors: BubbleColors,
 ) {
     val primary = MaterialTheme.colorScheme.primary
-    QuoteBlock(colors.block, primary) {
+    BlockCard(colors.block) {
         if (preview.siteName.isNotBlank()) {
             Text(
                 text = preview.siteName,
                 color = primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
         if (preview.title.isNotBlank()) {
@@ -101,7 +103,7 @@ internal fun LinkPreviewBlock(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = LINK_TITLE_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall.userContent,
             )
         }
         if (preview.description.isNotBlank()) {
@@ -110,18 +112,18 @@ internal fun LinkPreviewBlock(
                 color = colors.blockContent,
                 maxLines = LINK_DESCRIPTION_MAX_LINES,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.userContent,
             )
         }
     }
 }
 
 /**
- * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows
- * them on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's actions
- * ([onMore]). With [onToggle], tapping a badge adds or takes back the user's reaction (not the paid star reaction,
- * which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen readers reach them as
- * the bubble's custom actions instead.
+ * The reactions of [bubble] as small round badges side by side, as Google's Material 3 Expressive messaging shows them
+ * on a bubble's corner: up to [MAX_REACTION_BADGES], then "+N" for the rest, which opens the message's reactions picker
+ * ([onMore]), where all of them show. With [onToggle], tapping a badge adds or takes back the user's reaction (not the
+ * paid star reaction, which is changed elsewhere); [toggles] crossfades it meanwhile. Inside a bubble's row, screen
+ * readers reach them as the bubble's custom actions instead.
  */
 @Composable
 internal fun ReactionBadges(
@@ -154,7 +156,8 @@ internal fun ReactionBadges(
 /**
  * A reaction's emoji, with its count when more than one person added it, on a round `surfaceContainerHighest` badge,
  * or `secondaryContainer` when the user chose it too: [chosenFraction] blends them, read in the draw phase. A button
- * if [onClick] is not null.
+ * if [onClick] is not null. A custom emoji shows its picture, and until it does a tonal dot: the content color as a
+ * tint of the badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark.
  */
 @Composable
 private fun ReactionBadge(
@@ -170,7 +173,8 @@ private fun ReactionBadge(
             reaction.label,
             MaterialTheme.typography.titleMedium,
             MaterialTheme.sizes.inlineIconSmall,
-            content,
+            { lerp(container(), content(), CUSTOM_EMOJI_TINT) },
+            contentColor = { content() },
         )
         if (reaction.count > 1) {
             BasicText(
@@ -182,7 +186,7 @@ private fun ReactionBadge(
     }
 }
 
-/** "+N": the reactions beyond the badges shown, which opens the message's actions ([onClick]). */
+/** "+N": the reactions beyond the badges shown, which opens the message's reactions picker ([onClick]). */
 @Composable
 private fun MoreReactionsBadge(
     count: Int,
@@ -201,7 +205,8 @@ private fun MoreReactionsBadge(
 /**
  * A reaction badge's frame: a circle at least [reactionBadge][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
  * wide, a pill when its content is wider, in [container], with a ring in the conversation's `surface` that sets it off
- * from the bubble it overlaps; a button with its state layer clipped to the circle if [onClick] is not null.
+ * from the bubble it overlaps. A button if [onClick] is not null: its touch target is 48 dp tall without the badge
+ * taking more room ([touchTarget]), its state layer clipped to the circle.
  */
 @Composable
 private fun BadgeFrame(
@@ -210,15 +215,20 @@ private fun BadgeFrame(
     content: @Composable RowScope.() -> Unit,
 ) {
     val sizes = MaterialTheme.sizes
-    val clickable = onClick?.let { Modifier.clickable(role = Role.Button, onClick = it) } ?: Modifier
+    val interactions = remember { MutableInteractionSource() }
+    val target =
+        onClick?.let {
+            Modifier.touchTarget(Modifier.clickable(interactions, indication = null, role = Role.Button, onClick = it))
+        } ?: Modifier
+    val stateLayer = if (onClick != null) Modifier.indication(interactions, ripple()) else Modifier
     Row(
         modifier =
-            Modifier
+            target
                 .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
                 .background(MaterialTheme.colorScheme.surface, CircleShape)
                 .padding(sizes.reactionBadgeRing)
                 .clip(CircleShape)
-                .then(clickable)
+                .then(stateLayer)
                 .drawBehind { drawRect(container()) }
                 .padding(horizontal = MaterialTheme.spacing.extraSmall),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall, Alignment.CenterHorizontally),
@@ -228,72 +238,29 @@ private fun BadgeFrame(
 }
 
 /**
- * A reaction's emoji in [style]; the star of the paid reaction; for a custom emoji, until custom emoji are drawn, a
- * dot of [customEmojiSize] in [placeholderColor].
+ * A card inside a bubble, as Google's Material 3 Expressive messaging shows quotes and previews: [container] in the
+ * medium shape, without a bar; [modifier] goes inside the clip, so a click's state layer keeps the shape.
  */
 @Composable
-internal fun ReactionGlyph(
-    label: ReactionLabel,
-    style: TextStyle,
-    customEmojiSize: Dp,
-    placeholderColor: ColorProducer,
-) {
-    when (label) {
-        is ReactionLabel.Emoji -> Text(label.emoji, style = style)
-        ReactionLabel.Paid -> Text(PAID_REACTION_EMOJI, style = style)
-        is ReactionLabel.CustomEmoji -> CustomEmojiPlaceholder(customEmojiSize, placeholderColor)
-    }
-}
-
-/** Where a custom emoji goes until custom emoji are drawn: a dot of the emoji's size, its color read when drawn. */
-@Composable
-private fun CustomEmojiPlaceholder(
-    size: Dp,
-    color: ColorProducer,
-) {
-    Spacer(
-        Modifier
-            .size(size)
-            .drawBehind { drawCircle(color()) },
-    )
-}
-
-/**
- * A block inside a bubble: [container] in the small shape, with a bar of [accent] along its start edge; [modifier]
- * goes inside the clip, so a click's state layer keeps the shape.
- */
-@Composable
-private fun QuoteBlock(
+private fun BlockCard(
     container: Color,
-    accent: Color,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val barWidth = MaterialTheme.sizes.quoteBarWidth
     val spacing = MaterialTheme.spacing
     Column(
         modifier =
             Modifier
-                .clip(MaterialTheme.shapes.small)
+                .clip(MaterialTheme.shapes.medium)
                 .then(modifier)
                 .background(container)
-                .leadingBar(accent, barWidth)
-                .padding(start = barWidth + spacing.small, end = spacing.small)
-                .padding(vertical = spacing.extraSmall),
+                .padding(horizontal = spacing.medium, vertical = spacing.small),
         content = content,
     )
 }
 
-/** A bar of [color], [width] wide, along the start edge; drawn, not laid out. */
-private fun Modifier.leadingBar(
-    color: Color,
-    width: Dp,
-): Modifier =
-    drawBehind {
-        val barWidth = width.toPx()
-        val x = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - barWidth
-        drawRect(color, topLeft = Offset(x, 0f), size = Size(barWidth, size.height))
-    }
+/** How strongly a custom emoji's placeholder tints its badge with the content color: Material's disabled opacity. */
+private const val CUSTOM_EMOJI_TINT = 0.38f
 
 /** How many reaction badges a bubble shows before "+N". */
 internal const val MAX_REACTION_BADGES = 3
@@ -301,5 +268,17 @@ internal const val MAX_REACTION_BADGES = 3
 private const val LINK_TITLE_MAX_LINES = 2
 private const val LINK_DESCRIPTION_MAX_LINES = 3
 
-/** The paid star reaction of channels. */
-private const val PAID_REACTION_EMOJI = "⭐"
+/**
+ * The corners media shows in a bubble of this shape: the bubble's own, except square at the top below a header
+ * ([hasHeader]) and at the bottom above a caption, link preview or reactions ([hasFooter]).
+ */
+internal fun CornerBasedShape.mediaCorners(
+    hasHeader: Boolean,
+    hasFooter: Boolean,
+): CornerBasedShape =
+    copy(
+        topStart = if (hasHeader) ZeroCornerSize else topStart,
+        topEnd = if (hasHeader) ZeroCornerSize else topEnd,
+        bottomEnd = if (hasFooter) ZeroCornerSize else bottomEnd,
+        bottomStart = if (hasFooter) ZeroCornerSize else bottomStart,
+    )

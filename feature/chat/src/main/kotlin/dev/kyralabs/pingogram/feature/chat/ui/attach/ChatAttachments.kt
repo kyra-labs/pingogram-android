@@ -6,11 +6,14 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.followedBy
 import dev.kyralabs.pingogram.feature.chat.ui.composer.restoredText
 import dev.kyralabs.pingogram.feature.chat.ui.composer.savedEntities
 import kotlinx.collections.immutable.PersistentList
@@ -25,15 +28,18 @@ import kotlinx.coroutines.launch
 
 /**
  * What the composer's attach menu does (`REQUIREMENTS.md` FR-C5), for `ChatViewModel`: picked photos, videos and files
- * in a preview before they are sent, a photo from the camera, a contact, a poll, and cancelling uploads.
+ * in a preview before they are sent, a photo from the camera, a contact, the device's location, a poll, and cancelling
+ * uploads.
  *
  * - **Preview** ([preview]): picked items show at once, each being prepared ([AttachmentRepository.prepare]) one after
  *   the other, then ready; an item that fails is dropped with a snackbar. Items can be removed; closing the preview
  *   ([dismissPreview]) stops what is being prepared and deletes the copies. More picked from the same kind of picker
  *   join the preview; from the other kind, they replace it. [caption] is its caption, with the composer's formatting.
- * - **Sending** ([sendPreview], [sendContact], [sendPoll]) closes what was open at once, takes the composer's reply
- *   along ([ReplyHandoff]), and sends; a refusal gives the reply back with a snackbar ([ChatEffect.ShowError]), a
- *   scheduled message is confirmed ([ChatEffect.MessageScheduled]). A refused poll opens again as it was.
+ * - **Sending** ([sendPreview], [sendContact], [sendLocation], [sendSticker], [sendPoll]) closes what was open at
+ *   once, takes the composer's reply along ([ReplyHandoff]), and sends; a refusal gives the reply back with a snackbar
+ *   ([ChatEffect.ShowError]), a scheduled message is confirmed ([ChatEffect.MessageScheduled]). A refused poll opens
+ *   again as it was.
+ * - **Shared files** ([addShared], direct share) join the preview like picked ones, their text as its caption.
  * - **Camera** ([takePhoto]): a new file for the camera app ([ChatEffect.LaunchCamera]), whose photo joins the preview
  *   ([photoTaken]); not taken, the file is deleted.
  * - **Process death**: the preview's ready attachments, the caption, the poll form and the camera's file are kept in
@@ -94,6 +100,21 @@ internal class ChatAttachments(
 
     /** Files from the document picker, by their URIs. */
     fun pickFiles(uris: List<String>) = pick(uris, AttachmentKind.Document)
+
+    /**
+     * Files shared into the chat (`REQUIREMENTS.md` FR-N2, direct share), by their URIs, read with the grant they came
+     * with: they join the preview as [kind] says, as picked ones do, [text] becoming its caption after what it holds.
+     */
+    fun addShared(
+        uris: List<String>,
+        kind: AttachmentKind,
+        text: FormattedText,
+    ) {
+        pick(uris, kind)
+        if (text.text.isBlank() || mutablePreview.value == null) return
+        val current = caption.content
+        caption.setContent(if (current.text.isBlank()) text else current.followedBy(text))
+    }
 
     /** Asks the camera app for a photo, into a new file of the app's cache. */
     fun takePhoto() {
@@ -168,7 +189,30 @@ internal class ChatAttachments(
         }
     }
 
-    fun openPoll() = setPollOpen(true)
+    /** Sends [location], the device's, as [options] say, with the composer's reply. */
+    fun sendLocation(
+        location: DeviceLocation,
+        options: SendOptions,
+    ) {
+        val replyTo = replies.takeReply()
+        scope.launch { report(repository.sendLocation(chatId, location, options, replyTo), options, replyTo) }
+    }
+
+    /** Sends [sticker], tapped in the composer's sticker panel, at once, with the composer's reply. */
+    fun sendSticker(sticker: Sticker) {
+        val replyTo = replies.takeReply()
+        val options = SendOptions()
+        scope.launch { report(repository.sendSticker(chatId, sticker, options, replyTo), options, replyTo) }
+    }
+
+    /**
+     * Opens the poll form; for a bot's keyboard button, requiring a quiz ([requiredQuiz] true) or a regular poll
+     * (false), else the user's choice.
+     */
+    fun openPoll(requiredQuiz: Boolean? = null) {
+        poll.require(requiredQuiz)
+        setPollOpen(true)
+    }
 
     /** Closes the poll form, emptying it. */
     fun dismissPoll() {

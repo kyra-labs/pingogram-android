@@ -14,7 +14,8 @@ import javax.inject.Singleton
  * `cacheDir`, which is never backed up:
  *
  * - `uploads/`: one directory per picked file, holding its copy (a document under its original name, which TDLib sends
- *   as the file's name), the photo made from it, or a video's thumbnail. An attachment is deleted with its directory.
+ *   as the file's name), the photo made from it, or a video's thumbnail; or per recorded voice message. An attachment
+ *   is deleted with its directory.
  * - `camera/`: the files the camera app writes photos into, which `:app`'s `FileProvider` serves
  *   (`res/xml/file_paths.xml`, `cache-path` "camera").
  *
@@ -34,7 +35,7 @@ class UploadFiles internal constructor(
 
     private val camera: File get() = File(cacheDir(), CAMERA)
 
-    /** A new, empty directory in `uploads/` for one picked file. */
+    /** A new, empty directory in `uploads/` for one picked file, or one recorded voice message. */
     fun newUploadDirectory(): File =
         File(uploads, UUID.randomUUID().toString()).also { directory ->
             if (!directory.mkdirs()) throw IOException("Cannot create an upload directory")

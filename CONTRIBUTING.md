@@ -26,7 +26,8 @@ rules apply to humans and AI assistants.
 1. Open or pick an issue; comment that you are working on it.
 2. Branch from `main`: `feat/<area>-<short-name>`, `fix/<area>-<short-name>`.
 3. Follow Conventional Commits and sign off every commit (`git commit -s`), which certifies
-   the [Developer Certificate of Origin](https://developercertificate.org/).
+   the [Developer Certificate of Origin](https://developercertificate.org/). Contributions are licensed under
+   GPL-3.0-or-later with the additional permission in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md).
 4. Run `./gradlew check` locally; add/updates tests; update `CHANGELOG.md` under `Unreleased`.
 5. Open a PR using the template. Keep it small; one concern per PR. Screenshots/recordings for
    UI changes (light + dark).

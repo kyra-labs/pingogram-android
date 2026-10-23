@@ -11,7 +11,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,14 +26,17 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 
 // What settings pages show while something loads, after it failed, and before something destructive.
 
-/** Something loading: a [LoadingIndicator] that screen readers announce as [description]. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/**
+ * Something loading: a [DelayedLoadingIndicator], which shows only if loading takes a moment (`docs/DESIGN_SYSTEM.md`
+ * §5), and that screen readers announce as [description].
+ */
 @Composable
 internal fun SettingsLoading(
     description: String,
@@ -47,7 +49,7 @@ internal fun SettingsLoading(
                 .padding(MaterialTheme.spacing.extraLarge),
         contentAlignment = Alignment.Center,
     ) {
-        LoadingIndicator(Modifier.semantics { contentDescription = description })
+        DelayedLoadingIndicator(Modifier.semantics { contentDescription = description })
     }
 }
 
@@ -73,11 +75,8 @@ internal fun SettingsError(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
-        FilledTonalButton(onClick = onRetry) {
-            Text(
-                text = stringResource(R.string.settings_retry),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
+        FilledTonalButton(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
+            Text(stringResource(R.string.settings_retry))
         }
     }
 }
@@ -107,14 +106,15 @@ internal fun DestructiveDialog(
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
+                shapes = ButtonDefaults.shapes(),
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
-                Text(text = texts.confirm, style = MaterialTheme.typography.labelLargeEmphasized)
+                Text(texts.confirm)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = dismiss, style = MaterialTheme.typography.labelLargeEmphasized)
+            TextButton(onClick = onDismiss, shapes = ButtonDefaults.shapes()) {
+                Text(dismiss)
             }
         },
         icon = icon?.let { { Icon(painter = painterResource(it), contentDescription = null) } },

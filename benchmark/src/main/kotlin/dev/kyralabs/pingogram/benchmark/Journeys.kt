@@ -42,6 +42,11 @@ internal fun MacrobenchmarkScope.openSavedMessages(): UiObject2 {
         ?: error("Saved Messages did not open within $TIMEOUT_MS ms.")
 }
 
+/** The open conversation's messages, found afresh: a list found in an earlier block may be stale. */
+internal fun MacrobenchmarkScope.messageList(): UiObject2 =
+    device.wait(Until.findObject(By.res(MESSAGE_LIST)), TIMEOUT_MS)
+        ?: error("No conversation open after $TIMEOUT_MS ms.")
+
 /** Flings the conversation [list] up to older messages, loading them on the way, and back down. */
 internal fun MacrobenchmarkScope.scrollConversation(list: UiObject2) {
     fling(list, Direction.UP)

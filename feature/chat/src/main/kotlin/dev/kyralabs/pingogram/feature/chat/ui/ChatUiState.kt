@@ -8,15 +8,24 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.attach.PollSheet
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotIntro
+import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
+import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 
 /**
  * Everything the conversation screen shows (`REQUIREMENTS.md` FR-C1–C3, FR-C5, FR-C8): the header, the messages and
@@ -36,6 +45,16 @@ import kotlinx.collections.immutable.persistentMapOf
  *   of an album by its own); messages not being sent are missing.
  * @property attachPreview the picked photos, videos or files before they are sent; null while there is no preview.
  * @property poll the form of a new poll; null while it is closed.
+ * @property sponsoredSheet "About this ad" of a sponsored message, with its report flow; null while it is closed.
+ * @property selection selection mode: the selected messages and the toolbar's actions; null outside it.
+ * @property report the sheet that reports messages; null while it is closed.
+ * @property mediaDownloads whether the photos in the bubbles download by themselves on the current network, and the
+ *   ones the user asked to download meanwhile.
+ * @property pinnedBar the pinned messages bar over the messages (`REQUIREMENTS.md` FR-C9); null while there is none.
+ * @property botIntro what a private chat's bot shows while the chat is empty (`REQUIREMENTS.md` FR-C5); null for other
+ *   chats, and bots that show nothing.
+ * @property translateBar the translate bar over the messages (`REQUIREMENTS.md` FR-C3), below the pinned messages
+ *   bar; null while there is none.
  */
 @Immutable
 data class ChatUiState(
@@ -51,6 +70,24 @@ data class ChatUiState(
     val uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
     val attachPreview: AttachPreview? = null,
     val poll: PollSheet? = null,
+    val sponsoredSheet: SponsoredSheet? = null,
+    val selection: MessageSelection? = null,
+    val report: ReportSheet? = null,
+    val mediaDownloads: MediaDownloads = MediaDownloads(),
+    val pinnedBar: PinnedBar? = null,
+    val botIntro: BotIntro? = null,
+    val translateBar: TranslateBar? = null,
+)
+
+/**
+ * How the photos in the bubbles download (`docs/PERFORMANCE.md` §7): by themselves while the automatic download rules
+ * of the current network allow [photos]; otherwise each shows a download button, and those in [requested] (by file id)
+ * a download in progress, until they show.
+ */
+@Immutable
+data class MediaDownloads(
+    val photos: Boolean = true,
+    val requested: ImmutableSet<Int> = persistentSetOf(),
 )
 
 /**
@@ -73,6 +110,14 @@ data class MessagePlayback(
  * @property placeholderIcon a Material Symbol on the avatar placeholder instead of initials: the bookmark of Saved
  *   Messages, the person of a deleted account.
  * @property subtitle the second line; null shows none (Saved Messages, a deleted account).
+ * @property profileUserId the user whose profile the title opens: the other side of a private or secret chat, the
+ *   user themselves in Saved Messages (their profile holds its shared media and "Export chat"); null for groups and
+ *   channels.
+ * @property opensChatInfo the title opens the chat's info page: basic groups, supergroups and channels.
+ * @property secret a secret chat's lock, state and self-destruct timer (`REQUIREMENTS.md` FR-E1); null for other
+ *   chats.
+ * @property callUserId the user the call button calls (`REQUIREMENTS.md` FR-V1): the other side of a private chat with
+ *   a person; null for bots, deleted accounts, Saved Messages, secret chats and groups.
  */
 @Immutable
 data class ChatHeader(
@@ -81,8 +126,12 @@ data class ChatHeader(
     val photo: ProfilePhoto?,
     @param:DrawableRes val placeholderIcon: Int?,
     val subtitle: ChatSubtitle?,
+    val profileUserId: Long? = null,
+    val secret: SecretChatHeader? = null,
+    val opensChatInfo: Boolean = false,
+    val callUserId: Long? = null,
 ) {
-    override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, …)"
+    override fun toString() = "ChatHeader(chatId=$chatId, subtitle=$subtitle, secret=$secret, …)"
 }
 
 /** The second line of the top bar. */
@@ -187,15 +236,20 @@ sealed interface ChatItem {
 
     /**
      * A message in a bubble. Grouped messages (same sender, a few minutes apart, the same day) share a stack: the
-     * name on the first, the avatar on the last ([position]).
+     * name on the first, the avatar, the time and the state on the last ([position]).
      *
      * @property sender who sent it, for screen readers ("You" for outgoing messages); shown as the name on the first
      *   bubble of a group in group chats ([showsSenderName]).
      * @property senderId the sender's user or chat id, which colors its name and picks its avatar placeholder.
      * @property avatar the sender's avatar beside the last bubble of a group; null elsewhere.
      * @property hasAvatarColumn the bubble leaves room for an avatar: incoming messages in group chats.
-     * @property time when it was sent, formatted for the list.
-     * @property status where an outgoing message is; null for incoming ones and in channels.
+     * @property time when it was sent, formatted for the list; screen readers always hear it.
+     * @property showsTime the time and the state show: on the last bubble of a group and on a message alone, as Google
+     *   Messages shows them, and on a bubble whose time was tapped to show ([ChatEvent.ToggleTime]).
+     * @property status where an outgoing message is; null for incoming ones. In channels and Saved Messages, where
+     *   nobody else reads them, only while it is sent or when sending failed.
+     * @property canResend sending failed and TDLib can send it again (an album: one of its items): its "Not sent" label
+     *   offers to retry ([ChatEvent.Resend]).
      * @property forwardedFrom "Forwarded from X"; null if it was not forwarded.
      * @property reply the quote of the message it replies to; null if it replies to nothing.
      * @property content what the message shows, for [MessageContentBody].
@@ -209,8 +263,21 @@ sealed interface ChatItem {
      *   The bubble is then the album's: [id] is the message whose caption it shows (the newest message when none has
      *   one), the time, state and reactions are the newest message's, and its [key] is the album's, so it stays as
      *   older pages bring in more of the album.
-     * @property isEmojiOnly the message is a text of 1 to 3 emoji and nothing else ([isEmojiOnly]), without formatting,
-     *   link preview, reply or forward: shown large, without a bubble.
+     * @property isEmojiOnly the message is a text of 1 to 3 emoji, regular or custom, and nothing else ([isEmojiOnly]),
+     *   without other formatting, link preview, reply or forward: shown large, without a bubble.
+     * @property senderUserId the user who sent an incoming message in a group chat, whose profile their avatar and name
+     *   open ([ChatEvent.OpenProfile]); null for other messages, and for senders that are chats.
+     * @property selfDestructSeconds how long after it was read the message deletes itself (a secret chat's timer when
+     *   it was sent), shown with the time; null if it does not. TDLib gives no update as the time runs down once it is
+     *   read, so the bubble shows the timer itself, not a countdown.
+     * @property thread the link to the message's thread under the bubble (`REQUIREMENTS.md` FR-C9): a channel post's
+     *   comments, or the replies to a group's message once there are any; null for other messages, and in the thread.
+     * @property keyboard the buttons a bot attached to the message, under the bubble; null for none. An album's are
+     *   those of the item that has them.
+     * @property translation the translation [text] shows, with its label in the meta, or that one is on its way
+     *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
+     * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
+     *   §5.9); null for every other bubble, and while there is no search.
      */
     data class Bubble(
         val id: Long,
@@ -235,6 +302,14 @@ sealed interface ChatItem {
         override val date: UiText,
         val album: MessageAlbum? = null,
         val isEmojiOnly: Boolean = false,
+        val showsTime: Boolean = true,
+        val canResend: Boolean = false,
+        val senderUserId: Long? = null,
+        val selfDestructSeconds: Int? = null,
+        val thread: ThreadLink? = null,
+        val keyboard: BotKeyboard? = null,
+        val translation: BubbleTranslation? = null,
+        val searchMatch: MatchHighlight? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
@@ -249,6 +324,8 @@ sealed interface ChatItem {
         val id: Long,
         val text: UiText,
         override val date: UiText,
+        /** The other user of a call that ended, in a private chat: tapping it calls back (`REQUIREMENTS.md` FR-V1). */
+        val callUserId: Long? = null,
     ) : ChatItem {
         override val key: Any get() = id
 
@@ -268,6 +345,17 @@ sealed interface ChatItem {
         override val date: UiText,
     ) : ChatItem {
         override val key: Any get() = UNREAD_DIVIDER_KEY
+    }
+
+    /**
+     * A sponsored message of a channel or bot (`REQUIREMENTS.md` §2), a card among the messages, never one of them:
+     * after the newest message, or after the one it was placed below ([withSponsored]). [date] is that message's.
+     */
+    data class Sponsored(
+        val card: SponsoredCard,
+        override val date: UiText,
+    ) : ChatItem {
+        override val key: Any get() = sponsoredKey(card.id)
     }
 
     companion object {
@@ -317,7 +405,7 @@ enum class OutgoingStatus {
     /** On its way to Telegram: a clock. */
     Pending,
 
-    /** Sending failed: an error icon. */
+    /** Sending failed: a "Not sent" label under the bubble. */
     Failed,
 
     /** Telegram has it; nobody read it yet: one check. */
@@ -344,6 +432,17 @@ data class ReplyQuote(
     override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, …)"
 }
 
+/**
+ * The button under a bubble that opens the thread of message [messageId]: "12 comments" ([isComments], a channel post;
+ * "Leave a comment" while [count] is 0) or "3 replies".
+ */
+@Immutable
+data class ThreadLink(
+    val messageId: Long,
+    val count: Int,
+    val isComments: Boolean,
+)
+
 /** The preview of a link in a message's text; each text may be empty. */
 @Immutable
 data class LinkPreviewCard(
@@ -369,7 +468,7 @@ sealed interface ReactionLabel {
         val emoji: String,
     ) : ReactionLabel
 
-    /** Custom emoji [customEmojiId], drawn as a placeholder until custom emoji are rendered. */
+    /** Custom emoji [customEmojiId], drawn as a placeholder until its picture is there. */
     data class CustomEmoji(
         val customEmojiId: Long,
     ) : ReactionLabel

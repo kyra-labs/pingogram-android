@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pingogram's own "put into the field" arrow, pointing to the start and up as the fill-in arrow of search
+     suggestions does, drawn to match Material Symbols Rounded (wght 400, opsz 24, FILL 0) on its 960 grid; mirrored
+     in right-to-left layouts. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:autoMirrored="true"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:pathData="M720,720L280,280M280,600V280H600"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="80"
+        android:strokeColor="@android:color/white" />
+</vector>

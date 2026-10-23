@@ -5,9 +5,14 @@ keystore.properties
 *.keystore
 !app/debug.keystore
 keystore.b64
+# Firebase configuration of the gms flavor (docs/OWNER_SETUP.md §8b), and any service-account key by mistake
+google-services.json
+*firebase-adminsdk*.json
 
 # TDLib binaries (downloaded by Gradle)
 core/tdlib/libs/
+# The call engine AAR, downloaded by pingogram.ntgcalls (docs/adr/0015-call-media-engine.md).
+feature/calls/libs/
 *.aar
 !gradle/wrapper/*
 

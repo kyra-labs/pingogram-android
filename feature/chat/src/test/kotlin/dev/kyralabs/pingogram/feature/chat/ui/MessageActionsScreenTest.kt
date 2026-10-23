@@ -35,10 +35,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The message actions on the conversation screen (`REQUIREMENTS.md` FR-C6, FR-C7): the long press and its screen
- * reader equivalent, the sheet's actions and quick reactions, the delete confirmation's check box, the reply and edit
- * bars, the reaction badges, and the custom actions every bubble offers screen readers. The screen is stateless: these
- * check its events.
+ * The message actions on the conversation screen (`REQUIREMENTS.md` FR-C6, FR-C7): the long press and its screen reader
+ * equivalent, the sheet's actions, quick reactions and reactions picker, the delete confirmation's check box, the reply
+ * and edit bars, the reaction badges, and the custom actions every bubble offers screen readers. The screen is
+ * stateless: these check its events.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -73,6 +73,7 @@ class MessageActionsScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `a long press on a photo opens its actions instead of the viewer`() {
         setScreen(ChatPreviewData.mediaPhotos)
 
@@ -86,6 +87,7 @@ class MessageActionsScreenTest {
     }
 
     @Test
+    @Config(qualifiers = COMPACT_TALL)
     fun `a tap on a photo still opens it`() {
         setScreen(ChatPreviewData.mediaPhotos)
 
@@ -159,6 +161,62 @@ class MessageActionsScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(ChatEvent.ToggleReaction(24, ReactionLabel.Emoji("🔥")), events.last())
+    }
+
+    @Test
+    fun `the button after the quick reactions opens the picker`() {
+        setScreen(ChatPreviewData.ownActionsSheet)
+
+        composeRule.onNodeWithContentDescription(string(R.string.message_reactions_more)).performClick()
+
+        assertEquals(ChatEvent.ExpandReactions, events.last())
+    }
+
+    @Test
+    fun `a reaction of the picker goes to the message`() {
+        setScreen(ChatPreviewData.reactionPickerSheet)
+
+        composeRule.onNodeWithContentDescription(string(R.string.message_reaction_add, "😍")).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(ChatEvent.ToggleReaction(24, ReactionLabel.Emoji("😍")), events.last())
+    }
+
+    @Test
+    fun `a reaction on the message, in the picker, says how often it was added and toggles`() {
+        setScreen(ChatPreviewData.reactionPickerSheet)
+        val chip = string(R.string.message_reaction_remove, "🔥")
+        val label =
+            RuntimeEnvironment.getApplication().resources.getQuantityString(
+                R.plurals.message_reaction_count,
+                5,
+                chip,
+                5,
+            )
+
+        composeRule.onNodeWithContentDescription(label).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(ChatEvent.ToggleReaction(24, ReactionLabel.Emoji("🔥")), events.last())
+    }
+
+    @Test
+    fun `the picker's back button returns to the actions`() {
+        setScreen(ChatPreviewData.reactionPickerSheet)
+
+        composeRule.onNodeWithText(string(R.string.message_action_reply)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(string(R.string.reaction_picker_back)).performClick()
+
+        assertEquals(ChatEvent.CollapseReactions, events.last())
+    }
+
+    @Test
+    fun `screen readers open all reactions where the bubble shows more than its badges`() {
+        setScreen(chatWithReaction())
+
+        performCustomAction("Ada, 9:41 AM: Hi", string(R.string.message_reactions_all))
+
+        assertEquals(listOf(ChatEvent.ShowAllReactions(5)), events.filterIsInstance<ChatEvent.ShowAllReactions>())
     }
 
     @Test
@@ -273,7 +331,7 @@ class MessageActionsScreenTest {
 
         val actions = customActionsOf(ADA_LAST)
 
-        assertEquals(listOf(string(R.string.message_actions)), actions)
+        assertEquals(listOf(string(R.string.selection_start), string(R.string.message_actions)), actions)
     }
 
     @Test

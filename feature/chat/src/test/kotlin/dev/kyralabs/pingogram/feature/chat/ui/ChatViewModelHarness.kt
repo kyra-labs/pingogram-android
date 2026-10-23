@@ -8,9 +8,23 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
+import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
+import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ME
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.NOW
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
+import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,8 +44,9 @@ import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
 /**
- * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories and of
- * the player, a fake wall clock at [NOW] in UTC, fixed English time patterns and a log that keeps what it is told.
+ * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories, of
+ * the player and of the voice recorder (whose clock is the test's), a fake wall clock at [NOW] in UTC, fixed English
+ * time patterns and a log that keeps what it is told.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatViewModelHarness {
@@ -39,13 +54,42 @@ abstract class ChatViewModelHarness {
     protected val messages = FakeMessageRepository()
     protected val messageActions = FakeMessageActionRepository()
     protected val attachments = FakeAttachmentRepository()
+    protected val voiceNotes = FakeVoiceNoteRepository()
+    protected val sendAs = FakeSendAsRepository()
+    protected val secretChats = FakeSecretChatRepository()
+    protected val sponsored = FakeSponsoredMessageRepository()
     protected val users = FakeUserRepository().apply { myUserId.value = ME }
     protected val groups = FakeGroupRepository()
     protected val actions = FakeChatActionRepository()
     protected val files = FakeFileRepository()
+    protected val search = FakeSearchRepository()
+    protected val sharedStorage = FakeSharedStorageRepository()
     protected val clock = FakeWallClock(NOW)
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
+    internal val recorder = FakeVoiceRecorder()
+    protected val autoDownloads = FakeAutoDownloadPolicy()
+    protected val joins = FakeChatJoinRepository()
+    protected val pinnedMessages = FakePinnedMessageRepository()
+    protected val hiddenPins = FakeHiddenPinsRepository()
+    protected val forumTopics = FakeForumTopicRepository()
+    protected val threads = FakeMessageThreadRepository()
+    protected val shareInbox = ShareInbox()
+    protected val botButtons = FakeBotButtonRepository()
+    protected val bots = FakeBotInfoRepository()
+    protected val botStarts = BotStartInbox()
+    protected val inlineBots = FakeInlineBotRepository()
+    internal val deviceLocation = FakeDeviceLocationRepository()
+    protected val locationConsent = InlineLocationConsent()
+    protected val translations = FakeTranslationRepository()
+
+    /** Texts are in English, the user's language, unless a test says otherwise. */
+    protected val languageDetector = FakeDeviceLanguageDetector(default = LanguageDetection.Detected("en"))
+    protected val appLanguage = FakeAppLanguageRepository()
+    protected val hiddenTranslateBars = FakeHiddenTranslateBarsRepository()
+    internal val chatSearch = FakeChatSearchRepository()
+    internal val groupMembers = FakeGroupInfoRepository()
+    protected val customEmoji = FakeCustomEmojiRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -63,31 +107,56 @@ abstract class ChatViewModelHarness {
         Dispatchers.resetMain()
     }
 
-    /** A view model of [chatId], opened at [messageId] if not null, whose state is collected, as by the screen. */
+    /**
+     * A view model of [chatId] (of its forum topic or message thread [topic], if not null), opened at [messageId] if
+     * not null, whose state is collected, as by the screen.
+     */
     protected fun TestScope.viewModel(
         chatId: Long = ChatFixtures.PRIVATE_CHAT,
         handle: SavedStateHandle = savedState,
         messageId: Long? = null,
+        topic: MessageTopic? = null,
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
                 chatId = chatId,
                 savedStateHandle = handle,
                 chatRepository = chats,
-                messageRepository = messages,
+                messages = messages,
                 messageActionRepository = messageActions,
+                sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,
                 fileRepository = files,
+                searchRepository = search,
+                sharedStorageRepository = sharedStorage,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 locale = { Locale.US },
                 audioPlayer = player,
+                voiceRecorder = recorder,
+                voiceNoteRepository = voiceNotes,
+                sendAsRepository = sendAs,
+                secretChatRepository = secretChats,
+                autoDownloadPolicy = autoDownloads,
+                chatJoinRepository = joins,
+                threadRepositories = ThreadRepositories(pinnedMessages, hiddenPins, forumTopics, threads),
+                shareInbox = shareInbox,
+                botButtonRepository = botButtons,
+                botInfoRepository = bots,
+                botStartInbox = botStarts,
+                inlineBotRepositories = InlineBotRepositories(inlineBots, deviceLocation, locationConsent, botStarts),
+                translationRepositories =
+                    TranslationRepositories(translations, languageDetector, appLanguage, hiddenTranslateBars),
+                searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
+                customEmojiRepository = customEmoji,
                 log = { logged += it },
                 initialMessageId = messageId,
+                recordingClock = { testScheduler.currentTime },
+                topic = topic,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
@@ -157,7 +226,10 @@ abstract class ChatViewModelHarness {
 
     protected val ChatViewModel.subtitle get() = state.header?.subtitle
 
-    /** The items as short descriptions, newest first: `m<id>`, `s<id>` for service messages, dates and the divider. */
+    /**
+     * The items as short descriptions, newest first: `m<id>`, `s<id>` for service messages, dates, the divider and
+     * `ad<id>` for sponsored messages.
+     */
     protected fun ChatViewModel.outline(): List<String> =
         items.map { item ->
             when (item) {
@@ -165,6 +237,7 @@ abstract class ChatViewModelHarness {
                 is ChatItem.Service -> "s${item.id}"
                 is ChatItem.DateSeparator -> "date:${LocalDate.ofEpochDay(item.epochDay)}"
                 is ChatItem.UnreadDivider -> "unread"
+                is ChatItem.Sponsored -> "ad${item.card.id}"
             }
         }
 

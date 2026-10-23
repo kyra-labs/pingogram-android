@@ -2,8 +2,11 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.model.BubbleCorners
+import dev.kyralabs.pingogram.core.domain.model.ChatWallpaper
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.model.ThemePalette
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -23,9 +26,24 @@ interface AppearanceRepository {
     /** Saves whether dynamic color is on; fails as [setThemeMode] does. */
     suspend fun setDynamicColor(enabled: Boolean): Outcome<Unit>
 
+    /**
+     * Saves [palette] as the color theme and turns dynamic color off, in one write, so the theme never shows the one
+     * without the other; fails as [setThemeMode] does.
+     */
+    suspend fun setPalette(palette: ThemePalette): Outcome<Unit>
+
     /** Saves [contrast]; fails as [setThemeMode] does. */
     suspend fun setContrast(contrast: Contrast): Outcome<Unit>
 
     /** Saves whether AMOLED black is on; fails as [setThemeMode] does. */
     suspend fun setAmoled(enabled: Boolean): Outcome<Unit>
+
+    /** Saves message text's [scale] (`ChatAppearance.textScaleOf` puts it on a step); fails as [setThemeMode] does. */
+    suspend fun setChatTextScale(scale: Float): Outcome<Unit>
+
+    /** Saves the bubbles' [corners]; fails as [setThemeMode] does. */
+    suspend fun setBubbleCorners(corners: BubbleCorners): Outcome<Unit>
+
+    /** Saves the conversation's [wallpaper]; fails as [setThemeMode] does. */
+    suspend fun setChatWallpaper(wallpaper: ChatWallpaper): Outcome<Unit>
 }

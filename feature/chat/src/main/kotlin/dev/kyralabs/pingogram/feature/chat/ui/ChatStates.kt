@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -29,7 +30,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The loading indicator while older or newer messages load ([isLoading]), or [errorText] with a retry when they could
  * not be loaded ([error]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PagesState(
     isLoading: Boolean,
@@ -49,11 +49,11 @@ internal fun PagesState(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            TextButton(onClick = onRetry) {
+            TextButton(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.chat_retry), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         } else {
-            LoadingIndicator()
+            DelayedLoadingIndicator()
         }
     }
 }
@@ -78,7 +78,7 @@ internal fun ChatError(
     modifier: Modifier = Modifier,
 ) {
     EmptyState(
-        illustration = MaterialShapes.Burst,
+        illustration = MaterialShapes.Cookie4Sided,
         icon = UiR.drawable.ic_error,
         title = stringResource(R.string.chat_error_title),
         body = errorText(content.error),
@@ -86,7 +86,7 @@ internal fun ChatError(
         containerColor = MaterialTheme.colorScheme.errorContainer,
         iconColor = MaterialTheme.colorScheme.onErrorContainer,
         action = {
-            Button(onClick = onRetry) {
+            Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.chat_retry), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         },

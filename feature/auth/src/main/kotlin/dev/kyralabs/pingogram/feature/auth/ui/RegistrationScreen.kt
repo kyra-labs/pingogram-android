@@ -16,6 +16,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -46,8 +47,10 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** FR-A5: a new account's first and last name, and accepting Telegram's terms of service. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RegistrationScreen(
     state: AuthStepUiState.Registration,
@@ -58,9 +61,12 @@ fun RegistrationScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_registration_title),
+        badgeShape = MaterialShapes.Clover8Leaf,
+        badgeIcon = UiR.drawable.ic_person_filled,
         description = stringResource(R.string.auth_registration_description),
+        isError = state.firstNameError != null || state.lastNameError != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_create_account),
                 onClick = { onEvent(AuthEvent.SubmitRegistration) },
@@ -152,7 +158,7 @@ private fun TermsAcceptance(
 }
 
 /** Telegram's terms of service in a sheet, with the minimum age; accepting checks the box. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TermsOfServiceSheet(
     text: String,

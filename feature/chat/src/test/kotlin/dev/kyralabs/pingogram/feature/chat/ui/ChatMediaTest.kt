@@ -102,7 +102,7 @@ class ChatMediaTest : ChatViewModelHarness() {
 
             send(viewModel, ChatEvent.DownloadFile(documentFile), ChatEvent.CancelDownload(documentFile))
 
-            assertEquals(listOf("download:$documentFile:Visible", "cancel:$documentFile"), files.calls)
+            assertEquals(listOf("download:$documentFile:Requested", "cancel:$documentFile"), files.calls)
         }
 
     @Test

@@ -1,15 +1,16 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
@@ -30,10 +31,12 @@ import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.domain.model.characterCount
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 
-// The fields of the Edit profile page, each in a row of its group under its header, below the photo
+// The fields of the Edit profile page, rounded tonal fields directly on the page under their headers, below the photo
 // (ProfilePhotoEditor).
 
 /** The first name, required, and the last name, each in a row and counting its characters up to Telegram's 64. */
@@ -42,35 +45,27 @@ internal fun NameSection(
     state: EditProfileUiState.Content,
     onEvent: (EditProfileEvent) -> Unit,
 ) {
-    SettingsGroup(title = stringResource(R.string.settings_section_profile_name)) {
-        item { shapes ->
-            FieldSegment(shapes) {
-                ProfileTextField(
-                    value = state.fields.firstName,
-                    onValueChange = { onEvent(EditProfileEvent.FirstNameChanged(it)) },
-                    label = stringResource(R.string.settings_profile_first_name),
-                    enabled = !state.isSaving,
-                    message = state.firstNameProblem?.let { fieldProblemMessage(it, ProfileLimits.NAME_LENGTH_MAX) },
-                    counter = counter(state.fields.firstName, ProfileLimits.NAME_LENGTH_MAX),
-                    keyboardOptions = nameKeyboard,
-                    contentType = ContentType.PersonFirstName,
-                )
-            }
-        }
-        item { shapes ->
-            FieldSegment(shapes) {
-                ProfileTextField(
-                    value = state.fields.lastName,
-                    onValueChange = { onEvent(EditProfileEvent.LastNameChanged(it)) },
-                    label = stringResource(R.string.settings_profile_last_name),
-                    enabled = !state.isSaving,
-                    message = state.lastNameProblem?.let { fieldProblemMessage(it, ProfileLimits.NAME_LENGTH_MAX) },
-                    counter = counter(state.fields.lastName, ProfileLimits.NAME_LENGTH_MAX),
-                    keyboardOptions = nameKeyboard,
-                    contentType = ContentType.PersonLastName,
-                )
-            }
-        }
+    FieldGroup(title = stringResource(R.string.settings_section_profile_name)) {
+        ProfileTextField(
+            value = state.fields.firstName,
+            onValueChange = { onEvent(EditProfileEvent.FirstNameChanged(it)) },
+            label = stringResource(R.string.settings_profile_first_name),
+            enabled = !state.isSaving,
+            message = state.firstNameProblem?.let { fieldProblemMessage(it, ProfileLimits.NAME_LENGTH_MAX) },
+            counter = counter(state.fields.firstName, ProfileLimits.NAME_LENGTH_MAX),
+            keyboardOptions = nameKeyboard,
+            contentType = ContentType.PersonFirstName,
+        )
+        ProfileTextField(
+            value = state.fields.lastName,
+            onValueChange = { onEvent(EditProfileEvent.LastNameChanged(it)) },
+            label = stringResource(R.string.settings_profile_last_name),
+            enabled = !state.isSaving,
+            message = state.lastNameProblem?.let { fieldProblemMessage(it, ProfileLimits.NAME_LENGTH_MAX) },
+            counter = counter(state.fields.lastName, ProfileLimits.NAME_LENGTH_MAX),
+            keyboardOptions = nameKeyboard,
+            contentType = ContentType.PersonLastName,
+        )
     }
 }
 
@@ -83,30 +78,26 @@ internal fun UsernameSection(
     state: EditProfileUiState.Content,
     onEvent: (EditProfileEvent) -> Unit,
 ) {
-    SettingsGroup(
+    FieldGroup(
         title = stringResource(R.string.settings_section_profile_username),
         footer = stringResource(R.string.settings_profile_username_note),
     ) {
-        item { shapes ->
-            FieldSegment(shapes) {
-                ProfileTextField(
-                    value = state.fields.username,
-                    onValueChange = { onEvent(EditProfileEvent.UsernameChanged(it)) },
-                    label = stringResource(R.string.settings_profile_username),
-                    enabled = !state.isSaving,
-                    message = usernameMessage(state.usernameStatus, state.fields.username),
-                    prefix = "@",
-                    keyboardOptions =
-                        KeyboardOptions(
-                            capitalization = KeyboardCapitalization.None,
-                            autoCorrectEnabled = false,
-                            keyboardType = KeyboardType.Ascii,
-                            imeAction = ImeAction.Next,
-                        ),
-                    announcesMessage = true,
-                )
-            }
-        }
+        ProfileTextField(
+            value = state.fields.username,
+            onValueChange = { onEvent(EditProfileEvent.UsernameChanged(it)) },
+            label = stringResource(R.string.settings_profile_username),
+            enabled = !state.isSaving,
+            message = usernameMessage(state.usernameStatus, state.fields.username),
+            prefix = "@",
+            keyboardOptions =
+                KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Ascii,
+                    imeAction = ImeAction.Next,
+                ),
+            announcesMessage = true,
+        )
     }
 }
 
@@ -119,47 +110,39 @@ internal fun BioSection(
     state: EditProfileUiState.Content,
     onEvent: (EditProfileEvent) -> Unit,
 ) {
-    SettingsGroup(
+    FieldGroup(
         title = stringResource(R.string.settings_section_profile_bio),
         footer = stringResource(R.string.settings_profile_bio_note),
     ) {
-        item { shapes ->
-            FieldSegment(shapes) {
-                ProfileTextField(
-                    value = state.fields.bio,
-                    onValueChange = { onEvent(EditProfileEvent.BioChanged(it)) },
-                    label = stringResource(R.string.settings_profile_bio),
-                    enabled = !state.isSaving,
-                    message = state.bioProblem?.let { fieldProblemMessage(it, state.bioLengthMax) },
-                    counter = counter(state.fields.bio, state.bioLengthMax),
-                    singleLine = false,
-                    keyboardOptions =
-                        KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                )
-            }
-        }
+        ProfileTextField(
+            value = state.fields.bio,
+            onValueChange = { onEvent(EditProfileEvent.BioChanged(it)) },
+            label = stringResource(R.string.settings_profile_bio),
+            enabled = !state.isSaving,
+            message = state.bioProblem?.let { fieldProblemMessage(it, state.bioLengthMax) },
+            counter = counter(state.fields.bio, state.bioLengthMax),
+            singleLine = false,
+            keyboardOptions =
+                KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+        )
     }
 }
 
 /**
- * A text field's row in its group ([shapes]): the field in a [SettingsSegment], padded like a list item's content,
- * with a little less at the top, where the outlined field's label already leaves room above its outline.
+ * Fields under their [title] (a [SettingsSectionHeader]) with a [footer] note below them, directly on the page, without
+ * a segment around them (`docs/DESIGN_SYSTEM.md` §6, "Text fields": one rounded tonal style, never a box in a box),
+ * `spacing.small` apart beside their supporting text.
  */
 @Composable
-private fun FieldSegment(
-    shapes: ListItemShapes,
-    content: @Composable () -> Unit,
+private fun FieldGroup(
+    title: String,
+    footer: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val spacing = MaterialTheme.spacing
-    SettingsSegment(shapes) {
-        Box(
-            Modifier.padding(
-                start = spacing.large,
-                end = spacing.large,
-                top = spacing.small,
-                bottom = spacing.medium,
-            ),
-        ) { content() }
+    Column {
+        SettingsSectionHeader(title)
+        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small), content = content)
+        if (footer != null) SettingsFooter(footer)
     }
 }
 
@@ -172,8 +155,10 @@ internal data class FieldMessage(
 )
 
 /**
- * An M3 [OutlinedTextField] as wide as the page, with [message] and [counter] below it. An error message is reported
- * as the field's error to screen readers; with [announcesMessage], any message is announced as it changes.
+ * An M3 [TextField] in the rounded tonal style (`TextFieldDefaults.roundedShape`, `tonalColors()`), as the composer's
+ * and 2-step verification's, as wide as the page, with [message] and [counter] below it. An error message is reported
+ * as the field's error to screen readers; with [announcesMessage], any message is announced as it changes. What is
+ * typed takes its own direction ([userContent]): a Latin name stays left to right in a right-to-left layout.
  */
 @Composable
 private fun ProfileTextField(
@@ -191,7 +176,7 @@ private fun ProfileTextField(
     announcesMessage: Boolean = false,
 ) {
     val isError = message?.isError == true
-    OutlinedTextField(
+    TextField(
         value = value,
         onValueChange = onValueChange,
         modifier =
@@ -214,6 +199,9 @@ private fun ProfileTextField(
         keyboardOptions = keyboardOptions,
         singleLine = singleLine,
         minLines = if (singleLine) 1 else BIO_MIN_LINES,
+        textStyle = LocalTextStyle.current.userContent,
+        shape = TextFieldDefaults.roundedShape,
+        colors = TextFieldDefaults.tonalColors(),
     )
 }
 
@@ -304,7 +292,9 @@ private fun usernameMessage(
             when (status.result) {
                 UsernameCheck.Available -> {
                     FieldMessage(
-                        text = stringResource(R.string.settings_profile_username_available, username),
+                        text =
+                            stringResource(R.string.settings_profile_username_available, username.bidiIsolated())
+                                .bidiIsolated(),
                         isError = false,
                         color = MaterialTheme.colorScheme.primary,
                     )

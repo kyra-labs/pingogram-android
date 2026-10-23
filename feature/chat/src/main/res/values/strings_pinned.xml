@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The pinned messages bar over the conversation and the sheet that lists them (REQUIREMENTS.md FR-C9). -->
+<resources>
+    <!-- The bar's label over the pinned message. %1$d is its place counted from the newest, %2$d how many there are. -->
+    <string name="pinned_message">Pinned message</string>
+    <string name="pinned_message_of">Pinned message %1$d of %2$d</string>
+
+    <!-- What tapping the bar does, for screen readers. -->
+    <string name="pinned_show">Show in chat</string>
+
+    <!-- The bar's buttons. -->
+    <string name="pinned_list">All pinned messages</string>
+    <string name="pinned_unpin">Unpin message</string>
+    <string name="pinned_hide">Hide pinned messages</string>
+
+    <!-- The snackbar once the bar was hidden by someone who may not unpin. -->
+    <string name="pinned_hidden">Pinned messages hidden. They come back when a new message is pinned.</string>
+
+    <!-- The sheet of every pinned message. -->
+    <string name="pinned_sheet_title">Pinned messages</string>
+</resources>

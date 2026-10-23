@@ -53,6 +53,23 @@ data class Chat(
      * restricts everything in the read-only service chats).
      */
     val permissions: ChatPermissions,
+    /**
+     * Who new messages in the chat are sent as, which the user can change (send-as, `REQUIREMENTS.md` FR-C5): the
+     * user, a channel they own, or the group itself for an anonymous admin. Null where the user cannot choose.
+     */
+    val messageSender: MessageSender? = null,
+    /**
+     * The message whose reply markup is in effect in the chat for the current user (td_api.tl
+     * `chat.reply_markup_message_id`, `updateChatReplyMarkup`): a bot's keyboard (`ReplyMarkup.ShowKeyboard`) or its
+     * request for a reply (`ReplyMarkup.ForceReply`); 0 for none. TDLib applies the markups' personal flags and
+     * removals itself.
+     */
+    val replyMarkupMessageId: Long = 0,
+    /**
+     * Telegram suggests translating the whole chat (td_api.tl `chat.is_translatable`): it is in another language than
+     * the user's, and the user has Telegram Premium. Single messages translate for everyone.
+     */
+    val isTranslatable: Boolean = false,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

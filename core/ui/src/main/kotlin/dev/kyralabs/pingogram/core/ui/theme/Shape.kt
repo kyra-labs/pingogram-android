@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.toPath
@@ -24,6 +23,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
+import dev.kyralabs.pingogram.core.ui.transition.isReducedMotion
+import dev.kyralabs.pingogram.core.ui.transition.snapWhenReducedMotion
 
 /** The Material 3 Expressive shape scale (`docs/DESIGN_SYSTEM.md` §4). "Full" is `CircleShape`. */
 val PingogramShapes =
@@ -38,33 +39,13 @@ val PingogramShapes =
         extraExtraLarge = RoundedCornerShape(48.dp),
     )
 
-// Six shapes against seven avatar color pairs: the counts are coprime, so 42 distinct combinations.
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-private val AvatarPlaceholderPolygons =
-    listOf(
-        MaterialShapes.Cookie9Sided,
-        MaterialShapes.Clover8Leaf,
-        MaterialShapes.Sunny,
-        MaterialShapes.Pill,
-        MaterialShapes.Cookie6Sided,
-        MaterialShapes.Clover4Leaf,
-    )
-
-/**
- * The [MaterialShapes] polygon for an avatar placeholder (§4), chosen by [id] (a TDLib user or chat
- * id, which can be negative). Turn it into a [Shape] with `toShape()` or [rememberMorphShape].
- */
-fun avatarPlaceholderPolygon(id: Long): RoundedPolygon =
-    AvatarPlaceholderPolygons[id.mod(AvatarPlaceholderPolygons.size)]
-
 /**
  * A [Shape] that morphs from [start] to [end] while [morphed] is true and back when it is false
  * (§4: FAB press, toggles, selected avatar, record button). The morph is a spatial spring from
  * `MaterialTheme.motionScheme` by default. Progress is read when the outline is created, so the
- * animation invalidates drawing only, never composition. With animations turned off in the system
- * settings, Compose finishes the spring immediately, which skips the morph.
+ * animation invalidates drawing only, never composition. With reduced motion (animations turned off in
+ * the system settings, [isReducedMotion]) the shape snaps to its end instead of morphing (§5).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun rememberMorphShape(
     start: RoundedPolygon,
@@ -73,7 +54,7 @@ fun rememberMorphShape(
     animationSpec: FiniteAnimationSpec<Float> = MaterialTheme.motionScheme.defaultSpatialSpec(),
 ): Shape {
     val progress = remember { Animatable(if (morphed) 1f else 0f) }
-    val spec by rememberUpdatedState(animationSpec)
+    val spec by rememberUpdatedState(snapWhenReducedMotion(animationSpec))
     LaunchedEffect(morphed) { progress.animateTo(if (morphed) 1f else 0f, spec) }
     return remember(start, end) { MorphShape(Morph(start, end)) { progress.value } }
 }

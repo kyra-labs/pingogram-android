@@ -9,10 +9,9 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.performSemanticsAction
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.media.ui.preview.MediaPreviewData
 import dev.kyralabs.pingogram.feature.media.ui.preview.PreviewImages
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,10 +21,10 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the media viewer (`docs/TESTING.md`), light and dark on a compact phone and light on an expanded window:
  * a photo with its chrome and caption, a video with its controls, a photo still downloading, the chrome hidden, the
- * error, and the bottom app bar: Share and Save, Share waiting for the download, and none in a chat that protects its
- * content. The viewer is dark in either theme, so light and dark differ only where the app's theme shows through
- * (none here). Inspection mode, so Coil shows solid colors for the images ([PreviewImages]) instead of loading TDLib
- * files; the downloading photo stays loading.
+ * error, and the floating toolbar: Share, Save and More; with Delete too, and its confirmation; Share waiting for the
+ * download; and More alone in a chat that protects its content. The viewer is dark in either theme, so light and dark
+ * differ only where the app's theme shows through (none here). Inspection mode, so Coil shows solid colors for the
+ * images ([PreviewImages]) instead of loading TDLib files; the downloading photo stays loading.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -39,24 +38,43 @@ class MediaViewerScreenshotTest(
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun light() = capture("light", ThemeMode.Light)
+    fun light() = capture(ScreenshotVariant.Light)
 
     @Test
-    fun dark() = capture("dark", ThemeMode.Dark)
+    fun dark() = capture(ScreenshotVariant.Dark)
 
     @Test
     @Config(qualifiers = EXPANDED)
-    fun expanded() = capture("expanded", ThemeMode.Light)
+    fun expanded() = capture(ScreenshotVariant.Light, goldenName = "expanded")
+
+    @Test
+    fun amoled() = captureAudit(ScreenshotVariant.Amoled)
+
+    @Test
+    fun highContrast() = captureAudit(ScreenshotVariant.HighContrast)
+
+    @Test
+    fun rtl() = captureAudit(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun medium() = captureAudit(ScreenshotVariant.Medium)
+
+    /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
+    private fun captureAudit(variant: ScreenshotVariant) {
+        assumeTrue(stateName == "photo")
+        capture(variant)
+    }
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
-        variant: String,
-        themeMode: ThemeMode,
+        variant: ScreenshotVariant,
+        goldenName: String = variant.goldenName,
     ) {
         val shot = SHOTS.getValue(stateName)
         composeRule.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+                ScreenshotTheme(variant) {
                     PreviewImages(loading = shot.imagesLoading) {
                         MediaViewerScreen(state = shot.state, onEvent = {}, onBack = {})
                     }
@@ -70,7 +88,7 @@ class MediaViewerScreenshotTest(
                 .performSemanticsAction(SemanticsActions.OnClick)
             composeRule.waitForIdle()
         }
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$variant"))
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$goldenName"))
     }
 
     /** A state to capture, with its images loading or not, and its chrome shown or hidden. */
@@ -89,6 +107,8 @@ class MediaViewerScreenshotTest(
                 "chromeHidden" to Shot(MediaPreviewData.photo, hideChrome = true),
                 "error" to Shot(MediaPreviewData.error),
                 "actions" to Shot(MediaPreviewData.withActions),
+                "allActions" to Shot(MediaPreviewData.allActions),
+                "deleteConfirmation" to Shot(MediaPreviewData.deleteConfirmation),
                 "sharing" to Shot(MediaPreviewData.sharing, imagesLoading = true),
                 "protectedContent" to Shot(MediaPreviewData.protectedContent),
             )

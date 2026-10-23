@@ -126,18 +126,21 @@ internal object ContentPreviewData {
         }
     }.toImmutableList()
 
-    fun sticker(format: StickerFormat) =
-        MessageContent.Sticker(
-            Sticker(
-                setId = 1,
-                width = STICKER_SIDE,
-                height = STICKER_SIDE,
-                emoji = "🦆",
-                format = format,
-                thumbnail = null,
-                file = FileRef(STICKER_FILE_ID + format.ordinal, 0),
-            ),
-        )
+    /** A sticker of [format] for [emoji]; its file draws as a round shape in previews ([isPreviewSticker]). */
+    fun sticker(
+        format: StickerFormat,
+        emoji: String = "🦆",
+    ) = MessageContent.Sticker(
+        Sticker(
+            setId = 1,
+            width = STICKER_SIDE,
+            height = STICKER_SIDE,
+            emoji = emoji,
+            format = format,
+            thumbnail = null,
+            file = FileRef(STICKER_FILE_ID + format.ordinal, 0),
+        ),
+    )
 
     fun voiceNote(isListened: Boolean) =
         MessageContent.VoiceNote(
@@ -355,3 +358,6 @@ private const val SUN_X = 0.7f
 private const val SUN_Y = 0.35f
 private const val SUN_RADIUS = 0.22f
 private const val JPEG_QUALITY = 80
+
+/** Whether TDLib file [fileId] is the file of a [ContentPreviewData.sticker]. */
+internal fun isPreviewSticker(fileId: Int): Boolean = fileId - STICKER_FILE_ID in StickerFormat.entries.indices

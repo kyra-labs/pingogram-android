@@ -3,11 +3,12 @@ package dev.kyralabs.pingogram.feature.auth.ui
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.stringResource
@@ -16,6 +17,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.feature.auth.R
@@ -23,11 +25,14 @@ import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.EmailOtpCode
 import dev.kyralabs.pingogram.feature.auth.ui.components.fieldError
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** FR-A7: the email address Telegram requires for this account. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EmailAddressScreen(
     state: AuthStepUiState.EmailAddress,
@@ -41,9 +46,12 @@ fun EmailAddressScreen(
             stringResource(
                 if (state.isChangingAddress) R.string.auth_email_change_title else R.string.auth_email_title,
             ),
+        badgeShape = MaterialShapes.Puffy,
+        badgeIcon = UiR.drawable.ic_alternate_email,
         description = stringResource(R.string.auth_email_description),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitEmailAddress) },
@@ -77,6 +85,7 @@ fun EmailAddressScreen(
 }
 
 /** FR-A7: the code sent to the email address; resend, another address, or resetting the address. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EmailCodeScreen(
     state: AuthStepUiState.EmailCode,
@@ -87,19 +96,25 @@ fun EmailCodeScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_email_code_title),
-        description = stringResource(R.string.auth_email_code_description, state.emailAddressPattern),
+        badgeShape = MaterialShapes.Flower,
+        badgeIcon = UiR.drawable.ic_alternate_email,
+        description =
+            stringResource(R.string.auth_email_code_description, state.emailAddressPattern.bidiIsolated())
+                .bidiIsolated(),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitEmailCode) },
                 enabled = canSubmit && state.code.isNotEmpty(),
                 inProgress = pendingAction == AuthAction.SubmitEmailCode,
             )
+        },
+        secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_email_change),
                 onClick = { onEvent(AuthEvent.ChangeEmailAddress) },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         },
     ) {
@@ -109,6 +124,7 @@ fun EmailCodeScreen(
             label = stringResource(R.string.auth_code_label),
             error = state.error?.let { errorText(it) },
             onDone = { onEvent(AuthEvent.SubmitEmailCode) },
+            contentType = EmailOtpCode,
         )
         if (state.canResendCode) {
             AuthTextButton(

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
+import android.content.res.Resources
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,12 +18,12 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -61,7 +62,9 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
+import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
 import java.util.Locale
@@ -72,7 +75,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * theme's `scrim`, translucent) that fades into the media: back, the sender and the date as a two-line title, and
  * "3 of 120" ([position]) at the end. Before the media is there, [item] is null and only back shows.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ViewerTopBar(
     item: MediaItem?,
@@ -85,7 +87,7 @@ internal fun ViewerTopBar(
         title = { if (item != null) ViewerTitle(item) },
         modifier = modifier.background(Brush.verticalGradient(listOf(overlay, Color.Transparent))),
         navigationIcon = {
-            IconButton(onClick = onBack) {
+            IconButton(onClick = onBack, shapes = IconButtonDefaults.shapes()) {
                 Icon(
                     painter = painterResource(UiR.drawable.ic_arrow_back),
                     contentDescription = stringResource(R.string.media_back),
@@ -118,20 +120,19 @@ private fun ViewerTitle(item: MediaItem) {
             text = item.sender.resolve(),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.userContent,
         )
         Text(
             text = item.date,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall.userContent,
         )
     }
 }
 
 /** The default height, or the height of the two lines of the title with some room when they need more. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun titleHeight(): Dp {
     val typography = MaterialTheme.typography
@@ -145,11 +146,17 @@ private fun titleHeight(): Dp {
 internal fun positionText(position: MediaPosition): String =
     stringResource(R.string.media_position, position.number, position.total)
 
+/** "3 of 120", in the digits of the current language, outside composition. */
+internal fun positionText(
+    resources: Resources,
+    position: MediaPosition,
+): String = resources.getString(R.string.media_position, position.number, position.total)
+
 /**
  * The bottom of the viewer's chrome, over a gradient of `mediaOverlay` rising from the bottom: the current item's
- * caption ([ExpandableCaption]), a video's controls ([VideoControls]) once it is in the player, and [actions] below
- * them: the slot of the bottom app bar's actions (Share and Save, `ViewerActions`). Nothing at all when there is
- * nothing to show.
+ * caption ([ExpandableCaption]) and a video's controls ([VideoControls]) once it is in the player, at most
+ * `contentMaxWidth` wide and centered on wide windows, and [actions] below them, centered: the slot of the floating
+ * toolbar (`ViewerToolbar`). Nothing at all when there is nothing to show.
  */
 @Composable
 internal fun ViewerBottomBar(
@@ -162,6 +169,7 @@ internal fun ViewerBottomBar(
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
     if (item.caption.text.isEmpty() && controls == null && actions == null) return
     val overlay = MaterialTheme.pingogramColors.mediaOverlay
+    val maxWidth = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)
     Column(
         modifier =
             modifier
@@ -171,14 +179,15 @@ internal fun ViewerBottomBar(
                     WindowInsets.navigationBars.union(
                         WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
                     ),
-                ).padding(top = MaterialTheme.spacing.extraLarge, bottom = MaterialTheme.spacing.medium),
+                ).padding(top = MaterialTheme.spacing.extraLarge, bottom = FloatingToolbarDefaults.ScreenOffset),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (item.caption.text.isNotEmpty()) {
             ExpandableCaption(
                 caption = item.caption,
                 key = item.messageId,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.windowMarginCompact).then(maxWidth),
             )
         }
         val media = item.media
@@ -187,7 +196,7 @@ internal fun ViewerBottomBar(
                 playback = controls,
                 durationSeconds = media.video.duration,
                 onEvent = onEvent,
-                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small),
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small).then(maxWidth),
             )
         }
         actions?.invoke()
@@ -199,9 +208,10 @@ internal fun ViewerBottomBar(
  * it shows all of it, scrolling within about [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and tapping again shows
  * less.
  * It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts collapsed.
+ * The stories viewer shows its captions with it too.
  */
 @Composable
-private fun ExpandableCaption(
+internal fun ExpandableCaption(
     caption: FormattedText,
     key: Long,
     modifier: Modifier = Modifier,
@@ -230,7 +240,7 @@ private fun ExpandableCaption(
                 .clickable(onClickLabel = label) { expanded = !expanded },
         maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_LINES,
         overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.userContent,
     )
 }
 
@@ -240,7 +250,6 @@ private fun ExpandableCaption(
  * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
  * there. The times recompose only when the second changes.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VideoControls(
     playback: VideoPlayback,

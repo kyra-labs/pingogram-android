@@ -7,6 +7,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -17,6 +18,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.chats.R
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsEvent
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsRow
+import dev.kyralabs.pingogram.feature.chats.ui.stories.StoryRingsViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -24,21 +28,50 @@ import kotlinx.coroutines.launch
 /**
  * The Chats tab: hoists its [ChatListViewModel], and reports the app fully drawn once the chat list shows its chats or
  * that there are none, for the startup benchmark's `timeToFullDisplay` (`docs/PERFORMANCE.md` §1–2). Tapping a row
- * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive. [openChatId] is the chat whose conversation
- * shows beside the list, on expanded windows.
+ * calls [onOpenChat] with its chat; [onOpenArchive] opens the archive, and the "New chat" buttons [onOpenNewChat].
+ * [openChatId] is the chat whose conversation shows beside the list, on expanded windows. Above the list, the
+ * request to allow notifications ([NotificationPromptHost]), on Android 13+ until answered. The list's first row holds
+ * the story rings ([StoryRingsRow] of [storyRings]) while there are any; a ring calls [onOpenStory] with its chat. The
+ * route reads only whether there are rings, so the rings changing recomposes the row alone.
  */
 @Composable
 internal fun ChatListRoute(
     onOpenArchive: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onOpenNewChat: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
     viewModel: ChatListViewModel =
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Chats) },
+    storyRings: StoryRingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     ReportDrawnWhen { state.content is ChatListContent.Content || state.content is ChatListContent.Empty }
-    ChatListDestination(state, viewModel, onOpenArchive, onOpenChat, onBack = {}, modifier, openChatId)
+    val rings = storyRings.uiState.collectAsStateWithLifecycle()
+    val hasStories by remember(rings) { derivedStateOf { rings.value.rings.isNotEmpty() } }
+    val currentOnOpenStory by rememberUpdatedState(onOpenStory)
+    // Reads the rings in the row's own composition, not here.
+    val stories: @Composable (Modifier) -> Unit =
+        remember(storyRings, rings) {
+            { rowModifier ->
+                StoryRingsRow(
+                    rings = rings.value.rings,
+                    onOpen = { currentOnOpenStory(it) },
+                    onNearEnd = { storyRings.onEvent(StoryRingsEvent.NearEnd) },
+                    modifier = rowModifier,
+                )
+            }
+        }
+    ChatListDestination(
+        state = state,
+        viewModel = viewModel,
+        navigation = ChatListNavigation(onOpenArchive, onOpenChat, onOpenNewChat, onBack = {}),
+        modifier = modifier,
+        openChatId = openChatId,
+        header = { NotificationPromptHost() },
+        stories = stories.takeIf { hasStories },
+    )
 }
 
 /**
@@ -54,47 +87,61 @@ internal fun ArchivedChatsRoute(
         hiltViewModel<ChatListViewModel, ChatListViewModel.Factory> { it.create(ChatListKind.Archive) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ChatListDestination(state, viewModel, onOpenArchive = {}, onOpenChat, onBack = onBack, modifier = modifier)
+    ChatListDestination(
+        state = state,
+        viewModel = viewModel,
+        navigation = ChatListNavigation(onOpenArchive = {}, onOpenChat, onOpenNewChat = {}, onBack = onBack),
+        modifier = modifier,
+    )
 }
+
+/** Where a chat list leads: the archive, a chat, the New chat screen, and back. */
+private class ChatListNavigation(
+    val onOpenArchive: () -> Unit,
+    val onOpenChat: (chatId: Long) -> Unit,
+    val onOpenNewChat: () -> Unit,
+    val onBack: () -> Unit,
+)
 
 @Composable
 private fun ChatListDestination(
     state: ChatListUiState,
     viewModel: ChatListViewModel,
-    onOpenArchive: () -> Unit,
-    onOpenChat: (chatId: Long) -> Unit,
-    onBack: () -> Unit,
+    navigation: ChatListNavigation,
     modifier: Modifier = Modifier,
     openChatId: Long? = null,
+    header: @Composable () -> Unit = {},
+    stories: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    ChatListEffects(viewModel.effects, snackbarHostState, onOpenArchive, onOpenChat, onEvent = viewModel::onEvent)
+    ChatListEffects(viewModel.effects, snackbarHostState, navigation, onEvent = viewModel::onEvent)
     ChatListScreen(
         state = state,
         onEvent = viewModel::onEvent,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
-        onBack = onBack,
+        onBack = navigation.onBack,
         openChatId = openChatId,
+        header = header,
+        stories = stories,
     )
 }
 
 /**
  * Handles [effects]: snackbars, the newest replacing the one shown (archiving chat after chat keeps one "Undo", for
- * the last), and opening the archive or a chat. A snackbar with "Undo" stays long, so there is time to reach it.
+ * the last), and opening the archive, a chat or the New chat screen ([navigation]). A snackbar with "Undo" stays long,
+ * so there is time to reach it.
  */
 @Composable
 private fun ChatListEffects(
     effects: Flow<ChatListEffect>,
     snackbarHostState: SnackbarHostState,
-    onOpenArchive: () -> Unit,
-    onOpenChat: (chatId: Long) -> Unit,
+    navigation: ChatListNavigation,
     onEvent: (ChatListEvent) -> Unit,
 ) {
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
-    val currentOnOpenArchive by rememberUpdatedState(onOpenArchive)
-    val currentOnOpenChat by rememberUpdatedState(onOpenChat)
+    val currentNavigation by rememberUpdatedState(navigation)
     val currentOnEvent by rememberUpdatedState(onEvent)
     LaunchedEffect(effects) {
         var snackbar: Job? = null
@@ -113,12 +160,17 @@ private fun ChatListEffects(
 
                 ChatListEffect.OpenArchive -> {
                     message = ""
-                    currentOnOpenArchive()
+                    currentNavigation.onOpenArchive()
+                }
+
+                ChatListEffect.OpenNewChat -> {
+                    message = ""
+                    currentNavigation.onOpenNewChat()
                 }
 
                 is ChatListEffect.OpenChat -> {
                     message = ""
-                    currentOnOpenChat(effect.chatId)
+                    currentNavigation.onOpenChat(effect.chatId)
                 }
             }
             if (message.isNotEmpty()) {

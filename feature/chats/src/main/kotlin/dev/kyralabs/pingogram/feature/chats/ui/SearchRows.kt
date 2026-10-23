@@ -9,13 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -31,16 +33,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -49,18 +50,19 @@ import kotlinx.collections.immutable.ImmutableList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A chat, contact, public chat or recent chat in search (`docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the small
- * avatar, the name with the chat list's badges ([ChatTitle]), and the username or member count below, on the search
- * bar's container. A recent chat has a button that removes it ([onRemove]). Screen readers hear the row as one
+ * A chat or contact in a plain list, as the New chat screen lists contacts (`docs/DESIGN_SYSTEM.md` §6): an M3
+ * [ListItem] with the small avatar, the name with the chat list's badges ([ChatTitle]), and the username or member
+ * count below, on whatever [containerColor] the row lies on. Search shows the same rows in segmented groups
+ * ([SearchChatSegment]). A recent chat has a button that removes it ([onRemove]). Screen readers hear the row as one
  * ([chatDescription]), and the remove button on its own.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SearchChatRow(
     item: SearchChatItem,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onRemove: (() -> Unit)? = null,
+    containerColor: Color = rowContainerColor,
 ) {
     val title = item.title.resolve()
     val subtitle = item.subtitle?.resolve()
@@ -68,55 +70,98 @@ internal fun SearchChatRow(
     ListItem(
         onClick = onClick,
         modifier = modifier.semantics { contentDescription = description },
-        leadingContent = {
-            Avatar(
-                photo = item.photo,
-                name = title,
-                id = item.id,
-                size = MaterialTheme.sizes.avatarSmall,
-                isOnline = item.isOnline,
-                placeholderIcon = item.placeholderIcon,
-                onlineRingColor = rowContainerColor,
-            )
-        },
-        trailingContent =
-            onRemove?.let { remove ->
-                {
-                    IconButton(onClick = remove) {
-                        Icon(
-                            painter = painterResource(UiR.drawable.ic_close),
-                            contentDescription = stringResource(R.string.search_remove_recent, title),
-                        )
-                    }
-                }
-            },
-        supportingContent =
-            subtitle?.let { text ->
-                {
-                    Text(
-                        text = text,
-                        modifier = Modifier.clearAndSetSemantics {},
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            },
+        leadingContent = { ChatAvatar(item, title, containerColor) },
+        trailingContent = onRemove?.let { remove -> { RemoveRecentButton(title, remove) } },
+        supportingContent = subtitle?.let { text -> { ChatSubtitle(text) } },
         colors = rowColors(),
         content = { ChatTitle(title, item.isSecret, item.badge, item.isMuted, isUnread = false) },
     )
 }
 
 /**
- * A message in search: its chat's small avatar and name, the date at the end, and two lines of the message after its
- * sender in a group, the query's words highlighted ([highlight]) in `primary`. Screen readers hear "Chat, Sender:
- * text, date".
+ * A chat, contact, public chat or recent chat in search's results (`docs/DESIGN_SYSTEM.md` §6, "Global search"): what
+ * [SearchChatRow] shows, as a [SegmentedListItem] of its section's group, its corners from its place there ([shapes]),
+ * on the segmented list item's container. Screen readers hear it as one, and the remove button ([onRemove]) on its
+ * own.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun SearchChatSegment(
+    item: SearchChatItem,
+    shapes: ListItemShapes,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRemove: (() -> Unit)? = null,
+) {
+    val title = item.title.resolve()
+    val subtitle = item.subtitle?.resolve()
+    val description = chatDescription(item, title, subtitle)
+    val colors = ListItemDefaults.segmentedColors()
+    SegmentedListItem(
+        onClick = onClick,
+        shapes = shapes,
+        modifier = modifier.semantics { contentDescription = description },
+        leadingContent = { ChatAvatar(item, title, colors.containerColor) },
+        trailingContent = onRemove?.let { remove -> { RemoveRecentButton(title, remove) } },
+        supportingContent = subtitle?.let { text -> { ChatSubtitle(text) } },
+        colors = colors,
+        content = { ChatTitle(title, item.isSecret, item.badge, item.isMuted, isUnread = false) },
+    )
+}
+
+/** A chat's small avatar, its online dot ringed in [ringColor], the color the row lies on. */
+@Composable
+private fun ChatAvatar(
+    item: SearchChatItem,
+    title: String,
+    ringColor: Color,
+) {
+    Avatar(
+        photo = item.photo,
+        name = title,
+        id = item.id,
+        size = MaterialTheme.sizes.avatarSmall,
+        isOnline = item.isOnline,
+        placeholderIcon = item.placeholderIcon,
+        onlineRingColor = ringColor,
+    )
+}
+
+/** The button that takes the recent chat [title] out of the recent chats. */
+@Composable
+private fun RemoveRecentButton(
+    title: String,
+    onRemove: () -> Unit,
+) {
+    IconButton(onClick = onRemove, shapes = IconButtonDefaults.shapes()) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_close),
+            contentDescription = stringResource(R.string.search_remove_recent, title),
+        )
+    }
+}
+
+/** A chat's second line, which screen readers hear with the row. */
+@Composable
+private fun ChatSubtitle(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.clearAndSetSemantics {},
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+        style = MaterialTheme.typography.bodyMedium.userContent,
+    )
+}
+
+/**
+ * A message in search, a [SegmentedListItem] of the messages' group ([shapes]): its chat's small avatar and name, the
+ * date at the end, and two lines of the message after its sender in a group, the query's words highlighted
+ * ([highlight]) in `primary`. Screen readers hear "Chat, Sender: text, date".
+ */
 @Composable
 internal fun SearchMessageRow(
     item: SearchMessageItem,
     highlight: MatchHighlight,
+    shapes: ListItemShapes,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -135,8 +180,10 @@ internal fun SearchMessageRow(
             listOfNotNull(sender, text).joinToString(" "),
             item.date,
         ).joinToString(", ")
-    ListItem(
+    val itemColors = ListItemDefaults.segmentedColors()
+    SegmentedListItem(
         onClick = onClick,
+        shapes = shapes,
         modifier = modifier.semantics { contentDescription = description },
         leadingContent = {
             Avatar(
@@ -145,7 +192,7 @@ internal fun SearchMessageRow(
                 id = item.chatId,
                 size = MaterialTheme.sizes.avatarSmall,
                 placeholderIcon = item.placeholderIcon,
-                onlineRingColor = rowContainerColor,
+                onlineRingColor = itemColors.containerColor,
             )
         },
         trailingContent = {
@@ -154,7 +201,7 @@ internal fun SearchMessageRow(
                 modifier = Modifier.clearAndSetSemantics {},
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.userContent,
             )
         },
         supportingContent = {
@@ -163,73 +210,12 @@ internal fun SearchMessageRow(
                 modifier = Modifier.clearAndSetSemantics {},
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 2,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.userContent,
             )
         },
-        colors = rowColors(),
+        colors = itemColors,
         content = { ChatTitle(chatTitle, isSecret = false, badge = item.badge, isMuted = false, isUnread = false) },
     )
-}
-
-/**
- * The people the user writes to most, side by side: each an avatar over the name, opening the chat with them
- * ([onOpen]); a button for screen readers, named by the person.
- */
-@Composable
-internal fun TopPeople(
-    people: ImmutableList<SearchChatItem>,
-    onOpen: (chatId: Long) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val spacing = MaterialTheme.spacing
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = spacing.small, vertical = spacing.extraSmall),
-        horizontalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-    ) {
-        items(people, key = { it.id }) { person -> Person(person, onClick = { onOpen(person.id) }) }
-    }
-}
-
-@Composable
-private fun Person(
-    item: SearchChatItem,
-    onClick: () -> Unit,
-) {
-    val spacing = MaterialTheme.spacing
-    val sizes = MaterialTheme.sizes
-    val title = item.title.resolve()
-    val description = chatDescription(item, title, subtitle = null)
-    Column(
-        modifier =
-            Modifier
-                .width(sizes.avatarMedium + spacing.extraLarge)
-                .clip(MaterialTheme.shapes.large)
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(vertical = spacing.small)
-                .clearAndSetSemantics { contentDescription = description },
-        verticalArrangement = Arrangement.spacedBy(spacing.extraSmall),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Avatar(
-            photo = item.photo,
-            name = title,
-            id = item.id,
-            size = sizes.avatarMedium,
-            isOnline = item.isOnline,
-            placeholderIcon = item.placeholderIcon,
-            onlineRingColor = rowContainerColor,
-        )
-        Text(
-            text = title,
-            modifier = Modifier.padding(horizontal = spacing.extraSmall),
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
-            style = MaterialTheme.typography.labelMedium,
-        )
-    }
 }
 
 /** The list item's colors on the search bar's container instead of its own. */
@@ -238,24 +224,6 @@ private fun rowColors(): ListItemColors {
     val colors = ListItemDefaults.colors()
     return colors.copy(containerColor = Color.Transparent, contentColor = colors.contentColor)
 }
-
-/** [label] ("Ada:") in [labelColor], then [text] with every match of [highlight] in [match]. */
-internal fun highlighted(
-    label: String?,
-    text: String,
-    highlight: MatchHighlight,
-    labelColor: Color,
-    match: SpanStyle,
-): AnnotatedString =
-    buildAnnotatedString {
-        if (label != null) {
-            withStyle(SpanStyle(color = labelColor)) { append(label) }
-            append(' ')
-        }
-        val start = length
-        append(text)
-        highlight.ranges(text).forEach { range -> addStyle(match, start + range.first, start + range.last + 1) }
-    }
 
 /**
  * What screen readers say for a chat in search (`docs/DESIGN_SYSTEM.md` §9): "Ada Lovelace, Verified, Online, Muted,
@@ -290,8 +258,13 @@ private fun SearchRowsPreview() {
     PingogramPreview {
         Column {
             SearchChatRow(SearchPreviewData.chats.first(), onClick = {})
-            SearchChatRow(SearchPreviewData.chats.last(), onClick = {}, onRemove = {})
-            SearchMessageRow(SearchPreviewData.messages.first(), SearchPreviewData.highlight, onClick = {})
+            SearchChatSegment(SearchPreviewData.chats.last(), ListItemDefaults.segmentedShapes(0, 2), {}, onRemove = {})
+            SearchMessageRow(
+                item = SearchPreviewData.messages.first(),
+                highlight = SearchPreviewData.highlight,
+                shapes = ListItemDefaults.segmentedShapes(1, 2),
+                onClick = {},
+            )
         }
     }
 }

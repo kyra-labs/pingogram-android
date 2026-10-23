@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.auth.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -24,23 +26,29 @@ import dev.kyralabs.pingogram.core.ui.theme.spacing
 
 /** How the login screens use the window (`docs/DESIGN_SYSTEM.md` §7). */
 internal enum class AuthWindowLayout {
-    /** A phone in portrait: content scrolls, and the actions stay at the bottom above the keyboard. */
+    /** A phone in portrait: header and content scroll, and the actions stay at the bottom above the keyboard. */
     PinnedActions,
 
     /**
-     * Medium and wider windows, landscape, and large font scales: one column of comfortable width, centered, with the
-     * actions after the content. At 150% font scale and more, pinned actions would leave little room for the content.
+     * A compact-width window at 150% font scale and more: header, content and actions in one centered column that
+     * scrolls as a whole. Pinned actions would leave little room for the content there.
      */
     Centered,
+
+    /**
+     * Medium and wider windows, which include phones in landscape (compact height): the header in a pane at the start,
+     * the form with its actions in one at the end, so the primary action stays in view.
+     */
+    TwoPane,
 }
 
 @Composable
 internal fun authWindowLayout(): AuthWindowLayout {
     val isLargeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
-    return if (isCompactWidthWindow() && !isCompactHeightWindow() && !isLargeFont) {
-        AuthWindowLayout.PinnedActions
-    } else {
-        AuthWindowLayout.Centered
+    return when {
+        !isCompactWidthWindow() -> AuthWindowLayout.TwoPane
+        isLargeFont -> AuthWindowLayout.Centered
+        else -> AuthWindowLayout.PinnedActions
     }
 }
 
@@ -66,20 +74,28 @@ internal fun authHorizontalMargin(): Dp =
 private const val LARGE_FONT_SCALE = 1.5f
 
 /**
- * The adaptive frame of every login screen (`docs/DESIGN_SYSTEM.md` §7). On a phone in portrait
- * ([AuthWindowLayout.PinnedActions]) [content] scrolls and [actions] stay at the bottom, above the keyboard. On medium
- * and wider windows, in landscape and at large font scales ([AuthWindowLayout.Centered]), content and actions form one
- * column, at most `contentMaxWidth` wide and centered in the window, that scrolls as a whole when it does not fit.
+ * The adaptive frame of every login screen (`docs/DESIGN_SYSTEM.md` §7):
+ * - on a phone in portrait ([AuthWindowLayout.PinnedActions]) [header] and [content] scroll in one column, and
+ *   [actions] stay at the bottom, above the keyboard;
+ * - on medium and wider windows, phones in landscape included ([AuthWindowLayout.TwoPane]), [header] is a pane at the
+ *   start and [content] one at the end with [actions] right below it, side by side in the middle of the window. Each
+ *   pane scrolls on its own, and when [content] does not fit it scrolls above [actions], which stay at the bottom of
+ *   the window: the primary action is always in view;
+ * - on compact windows at large font scales ([AuthWindowLayout.Centered]) everything forms one column, at most
+ *   `contentMaxWidth` wide, that scrolls as a whole.
+ *
  * Nothing has a fixed height, so text never clips.
  *
- * @param centerVertically center [content] vertically when it is shorter than the space for it; the centered layout
- *   always does.
+ * @param horizontalAlignment how [header], [content] and [actions] align their children.
+ * @param centerVertically center [header] and [content] vertically when they are shorter than the space for them (in
+ *   two panes: center the panes on each other); the centered layout always does.
  */
 @Composable
 internal fun AuthPaneLayout(
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     centerVertically: Boolean = false,
+    header: @Composable ColumnScope.() -> Unit = {},
     actions: @Composable ColumnScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -93,11 +109,13 @@ internal fun AuthPaneLayout(
                     horizontalMargin = margin,
                     centerVertically = centerVertically,
                     horizontalAlignment = horizontalAlignment,
-                    content = content,
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = margin, vertical = spacing.large),
-                    verticalArrangement = Arrangement.spacedBy(spacing.small),
+                ) {
+                    header()
+                    content()
+                }
+                ActionsColumn(
+                    modifier = Modifier.padding(horizontal = margin, vertical = spacing.large),
+                    horizontalAlignment = horizontalAlignment,
                     content = actions,
                 )
             }
@@ -115,16 +133,100 @@ internal fun AuthPaneLayout(
                     verticalArrangement = Arrangement.spacedBy(spacing.large),
                     horizontalAlignment = horizontalAlignment,
                 ) {
+                    header()
                     content()
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(top = spacing.small),
-                        verticalArrangement = Arrangement.spacedBy(spacing.small),
+                    ActionsColumn(
+                        modifier = Modifier.padding(top = spacing.small),
+                        horizontalAlignment = horizontalAlignment,
                         content = actions,
                     )
                 }
             }
         }
+
+        AuthWindowLayout.TwoPane -> {
+            TwoPanes(
+                modifier = modifier.padding(horizontal = margin),
+                horizontalAlignment = horizontalAlignment,
+                centerVertically = centerVertically,
+                header = header,
+                actions = actions,
+                content = content,
+            )
+        }
     }
+}
+
+/**
+ * [header] at the start, [content] with [actions] at the end, side by side in the middle of the window. Each pane is
+ * as tall as its content, at most as tall as the window; the end pane's [content] scrolls above [actions] when it does
+ * not fit, so the actions never leave the window.
+ */
+@Composable
+private fun TwoPanes(
+    horizontalAlignment: Alignment.Horizontal,
+    centerVertically: Boolean,
+    header: @Composable ColumnScope.() -> Unit,
+    actions: @Composable ColumnScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    val paneGap = spacing.extraLarge
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth * 2 + paneGap).fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(paneGap),
+            verticalAlignment = if (centerVertically) Alignment.CenterVertically else Alignment.Top,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = spacing.large),
+                verticalArrangement = Arrangement.spacedBy(spacing.large),
+                horizontalAlignment = horizontalAlignment,
+                content = header,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                // Only as tall as the form, so the actions follow it; at most what the actions leave, then it scrolls.
+                Column(
+                    modifier =
+                        Modifier
+                            .weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = spacing.large),
+                    verticalArrangement = Arrangement.spacedBy(spacing.large),
+                    horizontalAlignment = horizontalAlignment,
+                    content = content,
+                )
+                ActionsColumn(
+                    modifier = Modifier.padding(vertical = spacing.large),
+                    horizontalAlignment = horizontalAlignment,
+                    content = actions,
+                )
+            }
+        }
+    }
+}
+
+/** A step's actions, one above the other. */
+@Composable
+private fun ActionsColumn(
+    modifier: Modifier,
+    horizontalAlignment: Alignment.Horizontal,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
 }
 
 /** A column that scrolls when its content is taller than the viewport and can center it when it is shorter. */

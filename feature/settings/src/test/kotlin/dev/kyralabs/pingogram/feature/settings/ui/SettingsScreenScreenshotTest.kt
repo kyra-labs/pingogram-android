@@ -11,8 +11,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Settings screen: with the account, before TDLib has announced it, on an expanded window, with AMOLED black, and
- * with the log out confirmation; screen captures, so the dialog's window shows. The account's card on its own:
+ * The Settings screen: with the account, before TDLib has announced it, on an expanded window, with AMOLED black, high
+ * contrast, right to left and on a medium window (`docs/DESIGN_SYSTEM.md` §12), and with the log out confirmation;
+ * screen captures, so the dialog's window shows. The account's card on its own:
  * [AccountCardScreenshotTest].
  */
 @RunWith(RobolectricTestRunner::class)
@@ -55,6 +56,21 @@ class SettingsScreenScreenshotTest {
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() = capture("fontScale200", ThemeMode.Light, SettingsPreviewData.content)
+
+    @Test
+    fun highContrast() = captureAudit(ScreenshotVariant.HighContrast)
+
+    @Test
+    fun rtl() = captureAudit(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun medium() = captureAudit(ScreenshotVariant.Medium)
+
+    private fun captureAudit(variant: ScreenshotVariant) =
+        composeRule.captureScreen(javaClass, variant.goldenName, variant) {
+            SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {})
+        }
 
     private fun capture(
         name: String,

@@ -9,8 +9,10 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.PREVIEW_MAX_LENGTH
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.contentKindText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
@@ -110,7 +112,7 @@ private fun FoundMessage.sender(sources: SearchRowSources): UiText? {
     return when {
         !chat.isGroup || message.isChannelPost || message.content is MessageContent.Service -> null
         message.isOutgoing -> UiText.resource(UiR.string.preview_sender_you)
-        sender is MessageSender.User -> sources.users[sender.userId]?.shortName()
+        sender is MessageSender.User -> sources.users[sender.userId]?.shortName()?.bidiIsolated()
         else -> null
     }
 }
@@ -134,7 +136,7 @@ private fun FoundMessage.preview(
             UiText.resource(
                 UiR.string.preview_with_text,
                 contentKindText(content),
-                UiText.Plain(matchSnippet(caption, highlight)),
+                UiText.Plain(matchSnippet(caption, highlight).bidiIsolated()),
             )
         }
 

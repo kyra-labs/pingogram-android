@@ -4,25 +4,35 @@ import androidx.media3.common.Player
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
+import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageProperties
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
+import dev.kyralabs.pingogram.core.domain.model.SharedFile
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
-import dev.kyralabs.pingogram.feature.media.ui.files.GalleryItem
-import dev.kyralabs.pingogram.feature.media.ui.files.MediaFileActions
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -207,6 +217,8 @@ class FakeChatRepository : ChatRepository {
 
     override fun chat(id: Long): Flow<Chat?> = chats.map { it[id] }.distinctUntilChanged()
 
+    override suspend fun privateChat(userId: Long): Outcome<Chat> = unused()
+
     override suspend fun getChat(id: Long): Outcome<Chat> = unused()
 
     override fun chatList(list: ChatListType): Flow<ImmutableList<Chat>> = unused()
@@ -256,6 +268,7 @@ class FakeChatRepository : ChatRepository {
     override suspend fun viewMessages(
         chatId: Long,
         messageIds: List<Long>,
+        topic: MessageTopic?,
     ): Outcome<Unit> = unused()
 }
 
@@ -303,7 +316,7 @@ internal class FakeVideoPlayer : VideoPlayer {
 
     override var durationMillis: Long? = null
 
-    /** `play:<path>:<kind>`, `pause`, `resume`, `seek:<position>`, `stop` and `release`, in order. */
+    /** `play:<path>:<kind>`, `pause`, `resume`, `seek:<position>`, `stop`, `muted:<muted>` and `release`, in order. */
     val calls = mutableListOf<String>()
 
     override fun play(
@@ -331,6 +344,10 @@ internal class FakeVideoPlayer : VideoPlayer {
         calls += "stop"
     }
 
+    override fun setMuted(muted: Boolean) {
+        calls += "muted:$muted"
+    }
+
     override fun release() {
         calls += "release"
     }
@@ -348,16 +365,131 @@ internal class FakeVideoPlayer : VideoPlayer {
  * Saving into a gallery that does what tests say: [needsPermission] as on Android 8–9 without the permission, and
  * [onSave] answering each copy, which goes to [saved] first.
  */
-class FakeMediaFileActions : MediaFileActions {
+class FakeSharedStorageRepository : SharedStorageRepository {
     var needsPermission = false
-    var onSave: suspend (GalleryItem) -> Boolean = { true }
-    val saved = mutableListOf<GalleryItem>()
+    var onSave: suspend (SharedFile) -> Boolean = { true }
+    val saved = mutableListOf<SharedFile>()
 
     override fun needsStoragePermission(): Boolean = needsPermission
 
-    override suspend fun saveToGallery(item: GalleryItem): Boolean {
-        saved += item
-        return onSave(item)
+    override suspend fun saveToGallery(file: SharedFile): Boolean {
+        saved += file
+        return onSave(file)
+    }
+
+    override suspend fun saveToDownloads(file: SharedFile): Boolean = unused()
+}
+
+/**
+ * What the user may do with a message, [onProperties]'s answer (delete for themselves and for everyone unless a test
+ * says otherwise), the messages asked about going to [propertyChecks]; deletions go to [deleted] and are answered by
+ * [onDelete]. The rest is not used by the viewer.
+ */
+class FakeMessageActionRepository : MessageActionRepository {
+    var onProperties: suspend (Long) -> Outcome<MessageProperties> = { Outcome.Success(properties()) }
+    var onDelete: suspend (Long) -> Outcome<Unit> = { Outcome.Success(Unit) }
+    val propertyChecks = mutableListOf<Long>()
+
+    /** `<message id>:<for everyone>`, in order. */
+    val deleted = mutableListOf<String>()
+
+    override suspend fun properties(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<MessageProperties> {
+        propertyChecks += messageId
+        return onProperties(messageId)
+    }
+
+    override suspend fun delete(
+        chatId: Long,
+        messageIds: List<Long>,
+        forEveryone: Boolean,
+    ): Outcome<Unit> {
+        val messageId = messageIds.single()
+        deleted += "$messageId:$forEveryone"
+        return onDelete(messageId)
+    }
+
+    override suspend fun availableReactions(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<AvailableReactions> = unused()
+
+    override suspend fun customEmojiStickers(customEmojiIds: List<Long>): Outcome<ImmutableMap<Long, Sticker>> =
+        unused()
+
+    override suspend fun addReaction(
+        chatId: Long,
+        messageId: Long,
+        reaction: ReactionType,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun removeReaction(
+        chatId: Long,
+        messageId: Long,
+        reaction: ReactionType,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun editText(
+        chatId: Long,
+        messageId: Long,
+        text: FormattedText,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun editCaption(
+        chatId: Long,
+        messageId: Long,
+        caption: FormattedText,
+        showCaptionAboveMedia: Boolean,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun pin(
+        chatId: Long,
+        messageId: Long,
+        onlyForSelf: Boolean,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun unpin(
+        chatId: Long,
+        messageId: Long,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun resend(
+        chatId: Long,
+        messageIds: List<Long>,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun forward(
+        fromChatId: Long,
+        messageIds: List<Long>,
+        toChatId: Long,
+        comment: FormattedText?,
+        options: ForwardOptions,
+    ): Outcome<Unit> = unused()
+
+    override suspend fun report(
+        chatId: Long,
+        messageIds: List<Long>,
+        option: ReportOptionId,
+        text: String,
+    ): Outcome<ChatReportResult> = unused()
+
+    companion object {
+        /** Message properties that allow deleting as said, and nothing else the viewer reads. */
+        fun properties(
+            forSelf: Boolean = true,
+            forEveryone: Boolean = true,
+            forward: Boolean = false,
+        ) = MessageProperties(
+            canBeReplied = false,
+            canBeEdited = false,
+            canBePinned = false,
+            canBeDeletedOnlyForSelf = forSelf,
+            canBeDeletedForAllUsers = forEveryone,
+            canBeSaved = true,
+            canBeForwarded = forward,
+        )
     }
 }
 

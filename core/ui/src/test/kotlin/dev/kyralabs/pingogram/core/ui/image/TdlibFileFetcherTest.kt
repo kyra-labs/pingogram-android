@@ -128,6 +128,25 @@ class TdlibFileFetcherTest {
             assertEquals(emptyList<Int>(), files.cancelledDownloads)
         }
 
+    @Test
+    fun `without download, waits for a download started elsewhere, through a cancelled one, and asks for nothing`() =
+        runTest {
+            files.state.value = FileState.NotDownloaded(SIZE, canBeDownloaded = true)
+            val waiting = TdlibFileFetcher(TdlibFileImage(FILE_ID, download = false), files)
+
+            val result = async { waiting.fetch() }
+            runCurrent()
+            files.state.value = FileState.Downloading(downloadedSize = SIZE / 4, size = SIZE, isActive = true)
+            runCurrent()
+            files.state.value = FileState.Downloading(downloadedSize = SIZE / 4, size = SIZE, isActive = false)
+            runCurrent()
+            assertFalse(result.isCompleted)
+            files.state.value = FileState.Downloaded(PATH, SIZE)
+
+            assertEquals(PATH.toPath(), (result.await() as SourceFetchResult).source.file())
+            assertEquals(emptyList<Pair<Int, DownloadPriority>>(), files.downloads)
+        }
+
     private suspend fun fetchError(): TdlibFileImageException =
         assertInstanceOf(TdlibFileImageException::class.java, runCatching { fetcher.fetch() }.exceptionOrNull())
 

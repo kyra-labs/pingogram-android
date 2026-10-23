@@ -1,14 +1,29 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTouchHeightIsEqualTo
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -28,8 +43,9 @@ import org.robolectric.annotation.Config
 
 /**
  * The reaction badges on a bubble's corner ([ReactionBadges]): tapping one toggles its reaction, the count shows past
- * one, three show and then "+N", which opens the actions, the paid star is no button; and on a bubble in the
- * conversation, screen readers still toggle each reaction through the bubble's custom actions.
+ * one, three show and then "+N", which opens the actions, the paid star is no button, each button a 48 dp touch target
+ * on a 28 dp badge; and on a bubble in the conversation, screen readers still toggle each reaction through the bubble's
+ * custom actions.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -106,6 +122,44 @@ class ReactionBadgesTest {
     }
 
     @Test
+    fun `a badge is a 48 dp touch target and a button, and takes no more room than its 28 dp look`() {
+        val emoji = listOf("👍", "😂", "🔥", "🎉")
+        setBadges(
+            *emoji.map { ReactionChip(ReactionLabel.Emoji(it), 2, isChosen = false) }.toTypedArray(),
+            modifier = Modifier.testTag(BADGES),
+        )
+
+        for (node in listOf(composeRule.onNodeWithText("👍"), composeRule.onNodeWithText("+1"))) {
+            node
+                .assertTouchHeightIsEqualTo(MIN_TOUCH_TARGET)
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+                .assertHasClickAction()
+            val touchWidth =
+                with(composeRule.density) {
+                    node
+                        .fetchSemanticsNode()
+                        .touchBoundsInRoot.width
+                        .toDp()
+                }
+            assertTrue("$touchWidth", touchWidth >= MIN_TOUCH_TARGET - ROUNDING)
+        }
+        composeRule.onNodeWithTag(BADGES).assertHeightIsEqualTo(BADGE)
+    }
+
+    @Test
+    fun `a touch just below a badge, outside its look, toggles its reaction`() {
+        val fire = ReactionChip(ReactionLabel.Emoji("🔥"), 5, isChosen = true)
+        setBadges(fire, modifier = Modifier.testTag(BADGES))
+
+        composeRule.onNodeWithTag(BADGES).performTouchInput {
+            // Past the badge's bottom edge by a few dp: inside its 48 dp target, not on its 28 dp circle.
+            click(Offset(centerX, height + BELOW_BADGE.toPx()))
+        }
+
+        assertEquals(listOf(fire), toggled)
+    }
+
+    @Test
     fun `the paid star reaction is no button`() {
         setBadges(ReactionChip(ReactionLabel.Paid, 12, isChosen = false))
 
@@ -132,15 +186,22 @@ class ReactionBadgesTest {
         )
     }
 
-    private fun setBadges(vararg chips: ReactionChip) {
+    private fun setBadges(
+        vararg chips: ReactionChip,
+        modifier: Modifier = Modifier,
+    ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                ReactionBadges(
-                    bubble = bubble(chips.toList()),
-                    toggles = rememberReactionToggleState(),
-                    onToggle = { toggled += it },
-                    onMore = { moreOpened++ },
-                )
+                // Room around the badges, where their touch targets reach past them.
+                Box(Modifier.padding(BADGE)) {
+                    ReactionBadges(
+                        bubble = bubble(chips.toList()),
+                        toggles = rememberReactionToggleState(),
+                        onToggle = { toggled += it },
+                        onMore = { moreOpened++ },
+                        modifier = modifier,
+                    )
+                }
             }
         }
         composeRule.waitForIdle()
@@ -177,6 +238,22 @@ class ReactionBadgesTest {
         id: Int,
         vararg args: Any,
     ): String = RuntimeEnvironment.getApplication().getString(id, *args)
+
+    private companion object {
+        const val BADGES = "badges"
+
+        /** Material's minimum touch target. */
+        val MIN_TOUCH_TARGET = 48.dp
+
+        /** A reaction badge's diameter with one emoji ([dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]). */
+        val BADGE = 28.dp
+
+        /** What rounding to pixels may take off a size. */
+        val ROUNDING = 0.5.dp
+
+        /** Less than the (48 - 28) / 2 dp the touch target reaches below a badge. */
+        val BELOW_BADGE = 6.dp
+    }
 
     /** A node offering the custom accessibility action [label]. */
     private fun hasCustomAction(label: String) =

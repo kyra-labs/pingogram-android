@@ -64,7 +64,12 @@ internal fun contentPreviewText(content: MessageContent): UiText =
 private fun withCaption(
     kind: UiText,
     caption: FormattedText,
-): UiText = if (caption.text.isBlank()) kind else UiText.resource(R.string.preview_with_text, kind, previewOf(caption))
+): UiText =
+    if (caption.text.isBlank()) {
+        kind
+    } else {
+        UiText.resource(R.string.preview_with_text, kind, previewOf(caption).bidiIsolated())
+    }
 
 /** "[kind] · [text]", or [kind] alone when [text] is blank. */
 private fun labelled(
@@ -74,7 +79,8 @@ private fun labelled(
     if (text.isBlank()) {
         UiText.resource(kind)
     } else {
-        UiText.resource(R.string.preview_with_text, UiText.resource(kind), UiText.Plain(previewLine(text)))
+        val isolated = UiText.Plain(previewLine(text).bidiIsolated())
+        UiText.resource(R.string.preview_with_text, UiText.resource(kind), isolated)
     }
 
 /** "😀 Sticker" with the emoji the sticker stands for. */
@@ -89,7 +95,11 @@ private fun stickerText(emoji: String): UiText =
 private fun audioName(audio: Audio): UiText =
     when {
         audio.title.isNotBlank() && audio.performer.isNotBlank() -> {
-            UiText.resource(R.string.preview_audio_performer_title, audio.performer, audio.title)
+            UiText.resource(
+                R.string.preview_audio_performer_title,
+                audio.performer.bidiIsolated(),
+                audio.title.bidiIsolated(),
+            )
         }
 
         audio.title.isNotBlank() -> {

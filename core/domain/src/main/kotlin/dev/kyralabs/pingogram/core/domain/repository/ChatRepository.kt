@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,13 @@ interface ChatRepository {
      * that gets no answer in time fails with `DomainError.Network`.
      */
     suspend fun getChat(id: Long): Outcome<Chat>
+
+    /**
+     * The private chat with user [userId], which TDLib creates on the device if the user never had one, e.g. the
+     * current user's Saved Messages before anything was saved. TDLib answers from memory for a user it knows; it then
+     * announces the chat, which [chat] follows. `DomainError.NotFound` for a user TDLib does not know.
+     */
+    suspend fun privateChat(userId: Long): Outcome<Chat>
 
     /** The user's chat folders in their order, then every change; empty without folders. */
     val folders: Flow<ImmutableList<ChatFolder>>
@@ -123,11 +131,13 @@ interface ChatRepository {
     /**
      * Tells TDLib that messages [messageIds] of chat [chatId] are on screen in its conversation, which must be open
      * ([openChat]): TDLib marks incoming ones read, counts views in channels, and updates the chat's unread counts.
-     * Report each message once per time the conversation shows it, a batch at a time (`docs/PERFORMANCE.md` §3).
+     * Report each message once per time the conversation shows it, a batch at a time (`docs/PERFORMANCE.md` §3). In a
+     * conversation of a forum topic or message thread, [topic] says so, which reads them there.
      */
     suspend fun viewMessages(
         chatId: Long,
         messageIds: List<Long>,
+        topic: MessageTopic? = null,
     ): Outcome<Unit>
 
     companion object {

@@ -540,6 +540,7 @@ object TdApiFixtures {
         canBeDeletedOnlyForSelf: Boolean = true,
         canBeDeletedForAllUsers: Boolean = true,
         permissions: TdApi.ChatPermissions = TdApi.ChatPermissions().apply { canSendBasicMessages = true },
+        messageSenderId: TdApi.MessageSender? = null,
     ) = TdApi.Chat().also {
         it.id = id
         it.type = type
@@ -561,6 +562,7 @@ object TdApiFixtures {
         it.canBeDeletedOnlyForSelf = canBeDeletedOnlyForSelf
         it.canBeDeletedForAllUsers = canBeDeletedForAllUsers
         it.permissions = permissions
+        it.messageSenderId = messageSenderId
         it.profileAccentColorId = -1
         it.clientData = ""
     }

@@ -26,6 +26,7 @@ ktlint {
 dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.compose.gradlePlugin)
+    compileOnly(libs.google.services.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.ktlint.gradlePlugin)
@@ -38,6 +39,12 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // SpdxLicensesTest and OpenSourceLicensesTest read the repository's config/licenses (relative to this project,
+    // the tests' working directory), so a change there runs them again.
+    inputs
+        .dir("../../config/licenses")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+        .withPropertyName("licensesConfig")
 }
 
 tasks {
@@ -64,6 +71,14 @@ gradlePlugin {
             id = libs.plugins.pingogram.android.feature.pluginId
             implementationClass = "AndroidFeatureConventionPlugin"
         }
+        register("androidGms") {
+            id = libs.plugins.pingogram.android.gms.pluginId
+            implementationClass = "AndroidGmsConventionPlugin"
+        }
+        register("androidLocales") {
+            id = libs.plugins.pingogram.android.locales.pluginId
+            implementationClass = "AndroidLocalesConventionPlugin"
+        }
         register("androidHilt") {
             id = libs.plugins.pingogram.android.hilt.pluginId
             implementationClass = "AndroidHiltConventionPlugin"
@@ -71,6 +86,10 @@ gradlePlugin {
         register("androidLibrary") {
             id = libs.plugins.pingogram.android.library.pluginId
             implementationClass = "AndroidLibraryConventionPlugin"
+        }
+        register("androidLicenses") {
+            id = libs.plugins.pingogram.android.licenses.pluginId
+            implementationClass = "AndroidLicensesConventionPlugin"
         }
         register("androidLint") {
             id = libs.plugins.pingogram.android.lint.pluginId
@@ -99,6 +118,10 @@ gradlePlugin {
         register("tdlib") {
             id = libs.plugins.pingogram.tdlib.pluginId
             implementationClass = "TdlibConventionPlugin"
+        }
+        register("ntgcalls") {
+            id = libs.plugins.pingogram.ntgcalls.pluginId
+            implementationClass = "NtgcallsConventionPlugin"
         }
     }
 }

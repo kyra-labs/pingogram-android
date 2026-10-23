@@ -4,13 +4,16 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 
 /**
  * What the composer's attach menu sends (`REQUIREMENTS.md` FR-C5): photos, videos and files the user picked, a photo
- * from the camera, a contact and a poll; and cancelling an upload in progress.
+ * from the camera, the device's location, a contact and a poll, and the sticker panel's stickers; and cancelling an
+ * upload in progress.
  *
  * Picked files are prepared first ([prepare]): copied into the app's private cache, where they stay readable after the
  * picker's read grant ends, and made ready for TDLib. Each copy then belongs to the caller until it is sent ([send]),
@@ -18,7 +21,9 @@ import dev.kyralabs.pingogram.core.domain.model.SendOptions
  *
  * Every send fails with `DomainError.FloodWait`, `DomainError.Network` for a request that gets no answer in time,
  * `DomainError.FileTooLarge`, `DomainError.SendingNotAllowed`, or another `DomainError` when TDLib refuses it.
+ * One function per kind of attachment (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 interface AttachmentRepository {
     /**
      * Copies the file at [uri] (a `content://` URI a picker returned) into the app's cache and prepares it as [kind]
@@ -73,6 +78,28 @@ interface AttachmentRepository {
     suspend fun sendContact(
         chatId: Long,
         contact: Contact,
+        options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Sends [location], the device's, to chat [chatId] as [options] say, replying to [replyToMessageId] if it is not
+     * null: a point, not a live location, with its accuracy as far as Telegram takes it (up to 1.5 km).
+     */
+    suspend fun sendLocation(
+        chatId: Long,
+        location: DeviceLocation,
+        options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Sends [sticker], picked in the composer's sticker panel, to chat [chatId] as [options] say, replying to
+     * [replyToMessageId] if it is not null. Telegram then puts it first among the recent stickers.
+     */
+    suspend fun sendSticker(
+        chatId: Long,
+        sticker: Sticker,
         options: SendOptions = SendOptions(),
         replyToMessageId: Long? = null,
     ): Outcome<Unit>

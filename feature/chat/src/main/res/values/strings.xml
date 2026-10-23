@@ -2,24 +2,10 @@
 <resources>
     <!-- Conversation top bar (ChatTopBar) -->
     <string name="chat_back">Back</string>
-    <!-- Under a user's name: what Telegram tells about when they were last online. -->
-    <string name="chat_subtitle_online">online</string>
-    <string name="chat_subtitle_last_seen_just_now">last seen just now</string>
-    <plurals name="chat_subtitle_last_seen_minutes">
-        <item quantity="one">last seen %d minute ago</item>
-        <item quantity="other">last seen %d minutes ago</item>
-    </plurals>
-    <!-- %1$s is a time of day, "9:41 AM". -->
-    <string name="chat_subtitle_last_seen_today">last seen today at %1$s</string>
-    <!-- %1$s is a time of day, "9:41 AM". -->
-    <string name="chat_subtitle_last_seen_yesterday">last seen yesterday at %1$s</string>
-    <!-- %1$s is a date, "Mar 17" or "3/17/2024". -->
-    <string name="chat_subtitle_last_seen_date">last seen %1$s</string>
-    <!-- The user's privacy settings hide when they were last online; Telegram tells roughly. -->
-    <string name="chat_subtitle_last_seen_recently">last seen recently</string>
-    <string name="chat_subtitle_last_seen_week">last seen within a week</string>
-    <string name="chat_subtitle_last_seen_month">last seen within a month</string>
-    <string name="chat_subtitle_last_seen_long_ago">last seen a long time ago</string>
+    <!-- What tapping the title of a private chat does, spoken by screen readers ("double-tap to open profile"). -->
+    <string name="chat_open_profile">Open profile</string>
+    <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
+    <string name="chat_open_info">Open info</string>
     <string name="chat_subtitle_bot">bot</string>
     <plurals name="chat_subtitle_members">
         <item quantity="one">%,d member</item>
@@ -60,6 +46,8 @@
     <string name="chat_not_found_title">Chat not found</string>
     <string name="chat_not_found_body">This chat doesn\'t exist, or you no longer have access to it.</string>
     <string name="chat_retry">Try again</string>
+    <!-- The sender before a message's preview in a list: the pinned messages bar, a forum's topics. %1$s is the name. -->
+    <string name="preview_sender_label">%1$s:</string>
     <!-- Above the oldest loaded message when older ones could not be loaded. -->
     <string name="chat_older_error">Older messages couldn\'t be loaded</string>
     <!-- Below the newest loaded message when newer ones could not be loaded. -->
@@ -71,6 +59,10 @@
     <string name="chat_unread_badge_overflow">%1$d+</string>
     <!-- On a bubble's corner after its first reaction badges: %1$d more kinds of reaction. -->
     <string name="chat_reactions_more">+%1$d</string>
+    <!-- Under a bubble whose message could not be sent; tapping it sends the message again. -->
+    <string name="chat_not_sent_retry">Not sent · Tap to retry</string>
+    <!-- Under a bubble whose message could not be sent and cannot be sent again. -->
+    <string name="chat_not_sent">Not sent</string>
 
     <!-- Screen readers: a message bubble read as one ("Alice, 9:41 AM: Hello, read"). -->
     <!-- %1$s is the sender, %2$s the time, %3$s the content, %4$s the state of an outgoing message. -->
@@ -99,13 +91,19 @@
     <!-- The hint in the empty text field. -->
     <string name="composer_placeholder">Message</string>
     <string name="composer_send">Send</string>
-    <!-- The button that opens the menu of other ways to send. -->
-    <string name="composer_send_options">More send options</string>
     <string name="composer_send_silently">Send without sound</string>
+    <!-- The button at the end of the empty message field that opens the system photo picker. -->
+    <string name="composer_gallery">Send photos or videos</string>
     <string name="composer_schedule">Schedule message</string>
     <!-- Instead of the composer, where the user may not write. -->
     <string name="composer_restricted">You can\'t send messages in this chat</string>
     <string name="composer_not_member">You\'re not a member of this group</string>
+    <!-- In the composer's place in a public group or channel the user is not in (REQUIREMENTS.md FR-P5). -->
+    <string name="composer_join_group">Join group</string>
+    <string name="composer_join_channel">Join channel</string>
+    <string name="composer_request_to_join">Request to join</string>
+    <string name="composer_join_request_sent">Request sent. You can join once an admin accepts it.</string>
+    <string name="composer_join_refused">You can\'t join this chat from Pingogram.</string>
     <!-- Formatting of selected text, in the text selection menu. -->
     <string name="composer_format_bold">Bold</string>
     <string name="composer_format_italic">Italic</string>
@@ -138,11 +136,110 @@
     <!-- What tapping the reply or edit bar does, for screen readers: scroll to its message. -->
     <string name="composer_bar_show">Show message</string>
 
+    <!-- Send-as (FR-C5): the composer's avatar of who new messages go out as, for screen readers. -->
+    <string name="send_as_button">Send as %1$s</string>
+    <string name="send_as_title">Send messages as</string>
+    <string name="send_as_account">Your account</string>
+    <string name="send_as_channel">Channel</string>
+    <string name="send_as_anonymous">Anonymous admin</string>
+    <string name="send_as_group">Group</string>
+    <!-- A sender only Telegram Premium users can choose. Informational only, never an offer. -->
+    <string name="send_as_needs_premium">Needs Telegram Premium</string>
+
+    <!-- Bots (REQUIREMENTS.md FR-C5): commands, the menu button, Start and the empty chat. -->
+    <string name="bot_commands_button">Bot commands</string>
+    <string name="bot_mini_app_button">%1$s, Mini App</string>
+    <string name="bot_mini_apps_unsupported">Pingogram can\'t open Mini Apps yet</string>
+    <string name="bot_commands_title">Commands</string>
+    <string name="bot_commands_search">Search commands</string>
+    <string name="bot_commands_none_found">No commands found</string>
+    <string name="bot_command_insert">Insert %1$s</string>
+    <plurals name="bot_command_suggestions">
+        <item quantity="one">%d command</item>
+        <item quantity="other">%d commands</item>
+    </plurals>
+    <string name="bot_start">Start</string>
+    <!-- Inline bots ("@gif cats"): results above the composer. -->
+    <string name="inline_result_send">Send</string>
+    <string name="inline_result_article">Article</string>
+    <string name="inline_result_venue">Place</string>
+    <string name="inline_results_empty">No results</string>
+    <string name="inline_results_failed">Results didn\'t load</string>
+    <string name="inline_results_retry">Try again</string>
+    <plurals name="inline_results_title">
+        <item quantity="one">%1$s, %2$d result</item>
+        <item quantity="other">%1$s, %2$d results</item>
+    </plurals>
+    <string name="inline_games_unsupported">Pingogram can\'t play games yet</string>
+    <string name="inline_location_title">Share your location with %1$s?</string>
+    <string name="inline_location_body">%1$s asks where you are to show results nearby. Your location goes to this bot with what you type to it, and to no one else. Pingogram asks again after it restarts.</string>
+    <string name="inline_location_share">Share location</string>
+    <string name="bot_intro_title">What can this bot do?</string>
+
+    <!-- The emoji and sticker panel, which takes the keyboard's place below the composer -->
+    <!-- The button at the start of the text field that opens the panel, for screen readers. -->
+    <string name="panel_open">Emoji and stickers</string>
+    <!-- The same button while the panel shows: it brings the keyboard back. -->
+    <string name="panel_keyboard">Show keyboard</string>
+    <!-- The panel's tabs. -->
+    <string name="panel_tab_emoji">Emoji</string>
+    <string name="panel_tab_stickers">Stickers</string>
+    <!-- The panel's backspace key, which deletes the character before the cursor. -->
+    <string name="panel_backspace">Delete</string>
+    <!-- The emoji the user picked last, first in the emoji tab. -->
+    <string name="panel_emoji_recent">Recent</string>
+    <!-- Unicode's emoji groups, as section titles and for screen readers on the category buttons. -->
+    <string name="panel_emoji_smileys">Smileys and emotions</string>
+    <string name="panel_emoji_people">People</string>
+    <string name="panel_emoji_animals">Animals and nature</string>
+    <string name="panel_emoji_food">Food and drink</string>
+    <string name="panel_emoji_travel">Travel and places</string>
+    <string name="panel_emoji_activities">Activities</string>
+    <string name="panel_emoji_objects">Objects</string>
+    <string name="panel_emoji_symbols">Symbols</string>
+    <string name="panel_emoji_flags">Flags</string>
+    <!-- Sticker sections: the user's favorite stickers, and those they sent last. -->
+    <string name="panel_stickers_favorites">Favorites</string>
+    <string name="panel_stickers_recent">Recently used</string>
+    <!-- The stickers tab when the account has no stickers at all. -->
+    <string name="panel_stickers_empty_title">No stickers yet</string>
+    <string name="panel_stickers_empty_body">Sticker sets you add in Telegram show here.</string>
+    <!-- The stickers tab when they could not be loaded. -->
+    <string name="panel_stickers_error_title">Couldn\'t load stickers</string>
+    <string name="panel_stickers_retry">Try again</string>
+    <!-- What tapping a sticker does, for screen readers. -->
+    <string name="panel_sticker_send">Send</string>
+    <!-- Voice messages (the composer's microphone, in the send button's place while the field is empty) -->
+    <!-- The microphone, for screen readers, which record without holding it. -->
+    <string name="voice_record">Record voice message</string>
+    <!-- What activating the microphone does, for screen readers. -->
+    <string name="voice_record_action">Record</string>
+    <!-- While holding the microphone: slide toward the start to throw the recording away. -->
+    <string name="voice_slide_to_cancel">Slide to cancel</string>
+    <!-- The lock beside it, for screen readers: slide up to record hands-free. -->
+    <string name="voice_slide_to_lock">Slide up to keep recording</string>
+    <!-- The buttons of a recording that goes on hands-free. -->
+    <string name="voice_send">Send voice message</string>
+    <string name="voice_delete">Delete recording</string>
+    <string name="voice_pause">Pause recording</string>
+    <string name="voice_resume">Resume recording</string>
+    <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
+    <string name="voice_permission_rationale">Voice messages need access to your microphone</string>
+    <string name="voice_permission_allow">Allow</string>
+    <!-- Snackbar after the microphone permission was refused, with an action that opens the app's settings. -->
+    <string name="voice_permission_denied">Allow the microphone in Settings to record voice messages</string>
+    <string name="voice_permission_settings">Settings</string>
+    <!-- Snackbar after a tap on the microphone, or a recording too short to send. -->
+    <string name="voice_hold_to_record">Hold to record, release to send</string>
+    <!-- Snackbar when the microphone cannot be used, or the recording cannot be finished. -->
+    <string name="voice_recording_failed">Couldn\'t record. Another app may be using the microphone.</string>
+
     <!-- Attach menu (the composer's attach button) -->
     <string name="attach">Attach</string>
     <string name="attach_gallery">Gallery</string>
     <string name="attach_camera">Camera</string>
     <string name="attach_file">File</string>
+    <string name="attach_location">Location</string>
     <string name="attach_contact">Contact</string>
     <string name="attach_poll">Poll</string>
     <!-- The button of the attach menu that shows the options that do not fit. -->
@@ -182,6 +279,43 @@
     <!-- The button over a photo, video or file being sent that stops sending it. -->
     <string name="attach_cancel_upload">Cancel upload</string>
 
+    <!-- The sheet that sends the device's location (the attach menu's "Location") -->
+    <string name="location_title">Send location</string>
+    <!-- Before Android asks for the location permission. -->
+    <string name="location_permission_body">Pingogram uses your location only to send it in this chat, and only while this sheet is open.</string>
+    <string name="location_permission_continue">Continue</string>
+    <!-- After the user refused the permission for good: it can only be allowed in the system settings. -->
+    <string name="location_permission_denied_body">To send your location, allow Pingogram to use it in the app\'s settings.</string>
+    <string name="location_permission_settings">Open settings</string>
+    <string name="location_not_now">Not now</string>
+    <string name="location_searching">Finding your location…</string>
+    <!-- Under a location found while a more accurate one is still being looked for. -->
+    <string name="location_refining">Improving accuracy…</string>
+    <!-- %1$s is a distance with its unit, "12 m" or "1.5 km". -->
+    <string name="location_accuracy">Accurate to %1$s</string>
+    <!-- The user allowed only an approximate location (Android 12 and later), which is what is sent. -->
+    <string name="location_approximate">Approximate location</string>
+    <string name="location_use_precise">Use precise location</string>
+    <string name="location_open_in_maps">Open in maps</string>
+    <string name="location_not_found_title">Your location wasn\'t found</string>
+    <string name="location_not_found_body">Make sure location is on, or move closer to a window, then try again.</string>
+    <string name="location_try_again">Try again</string>
+    <!-- Coordinates: %1$s is the angle in degrees without its sign, "48.85837". -->
+    <string name="location_north">%1$s° N</string>
+    <string name="location_south">%1$s° S</string>
+    <string name="location_east">%1$s° E</string>
+    <string name="location_west">%1$s° W</string>
+    <!-- %1$s is the latitude, %2$s the longitude, as above. -->
+    <string name="location_coordinates">%1$s, %2$s</string>
+    <!-- Screen readers: the coordinates. %1$s and %2$s are the angles in degrees without their signs. -->
+    <string name="location_north_spoken">%1$s degrees north</string>
+    <string name="location_south_spoken">%1$s degrees south</string>
+    <string name="location_east_spoken">%1$s degrees east</string>
+    <string name="location_west_spoken">%1$s degrees west</string>
+    <!-- Snackbar when the device's location is off, with an action that opens the location settings. -->
+    <string name="location_off">Location is turned off</string>
+    <string name="location_off_settings">Settings</string>
+
     <!-- The form of a new poll -->
     <string name="poll_title">New poll</string>
     <string name="poll_question">Question</string>
@@ -204,10 +338,14 @@
     <!-- Message actions (the sheet a long press opens) -->
     <!-- What a long press on a message does, for screen readers; also their action that opens the sheet. -->
     <string name="message_actions">Message actions</string>
+    <!-- The dimmed background behind a long-pressed message and its menu, for screen readers: tapping it closes them. -->
+    <string name="message_actions_close">Close message actions</string>
     <!-- Sends a message that failed to send again. -->
     <string name="message_action_resend">Send again</string>
     <string name="message_action_reply">Reply</string>
     <string name="message_action_copy">Copy text</string>
+    <!-- Opens the forward sheet, to send the message on to other chats. -->
+    <string name="message_action_forward">Forward</string>
     <string name="message_action_edit">Edit</string>
     <string name="message_action_pin">Pin</string>
     <!-- Pins a message of a private chat for the user alone; the other person does not see it pinned. -->
@@ -217,6 +355,25 @@
     <!-- Screen readers: what a quick reaction or a reaction under a message does; %1$s is the emoji. -->
     <string name="message_reaction_add">React with %1$s</string>
     <string name="message_reaction_remove">Remove reaction %1$s</string>
+    <!-- Screen readers: how often a reaction on the message was added, after what tapping it does. -->
+    <plurals name="message_reaction_count">
+        <item quantity="one">%1$s, %2$d reaction</item>
+        <item quantity="other">%1$s, %2$d reactions</item>
+    </plurals>
+    <!-- The button at the end of the quick reactions that opens every reaction (the reactions picker). -->
+    <string name="message_reactions_more">More reactions</string>
+    <!-- Screen readers: opens every reaction of a message, as its "+N" badge does. -->
+    <string name="message_reactions_all">All reactions</string>
+    <!-- The title of the reactions picker in the message actions sheet. -->
+    <string name="reaction_picker_title">Reactions</string>
+    <!-- The reactions picker's back button: back to the quick reactions and the message actions. -->
+    <string name="reaction_picker_back">Back to message actions</string>
+    <!-- Reactions picker sections: the reactions already on the message, those most used in the chat, those the user
+         used recently, and those most used on Telegram. -->
+    <string name="reaction_picker_on_message">On this message</string>
+    <string name="reaction_picker_top">Frequently used</string>
+    <string name="reaction_picker_recent">Recently used</string>
+    <string name="reaction_picker_popular">Popular</string>
     <!-- The label of a copied message text on the clipboard. -->
     <string name="message_copy_label">Message text</string>
     <!-- A snackbar after copying a message's text, before Android 13, which confirms copies itself. -->
@@ -240,4 +397,179 @@
     <string name="message_delete_for_everyone">Delete for everyone</string>
     <string name="message_delete_confirm">Delete</string>
     <string name="message_delete_cancel">Cancel</string>
+
+    <!-- The forward sheet: the chats a message can be forwarded to -->
+    <!-- Its title when one message (or an album as one) is forwarded. -->
+    <string name="forward_title">Forward to</string>
+    <!-- Its title for several messages: %d is how many. -->
+    <plurals name="forward_title_many">
+        <item quantity="one">Forward %d message to</item>
+        <item quantity="other">Forward %d messages to</item>
+    </plurals>
+    <!-- Below the title once chats are picked: %d is how many. -->
+    <plurals name="forward_selected">
+        <item quantity="one">%d chat selected</item>
+        <item quantity="other">%d chats selected</item>
+    </plurals>
+    <string name="forward_search">Search chats</string>
+    <string name="forward_search_clear">Clear search</string>
+    <!-- When the user can send messages in none of their chats. -->
+    <string name="forward_no_chats">No chats to forward to</string>
+    <!-- When the search finds no chat the messages can go to. -->
+    <string name="forward_nothing_found">No chats found</string>
+    <!-- The switch that sends copies, without "Forwarded from". -->
+    <string name="forward_hide_sender">Hide sender\'s name</string>
+    <!-- The switch that leaves the captions of photos, videos and files out. -->
+    <string name="forward_hide_captions">Hide captions</string>
+    <!-- The field for a message sent before the forwarded ones. -->
+    <string name="forward_comment">Add a comment</string>
+    <string name="forward_send">Send</string>
+    <!-- Screen readers: the send button, with %d the number of chats picked. -->
+    <plurals name="forward_send_description">
+        <item quantity="one">Send to %d chat</item>
+        <item quantity="other">Send to %d chats</item>
+    </plurals>
+    <!-- Snackbars after forwarding: to %d chats, to the one chat named %1$s, and the action that opens it. -->
+    <plurals name="forward_done">
+        <item quantity="one">Forwarded to %d chat</item>
+        <item quantity="other">Forwarded to %d chats</item>
+    </plurals>
+    <string name="forward_done_to">Forwarded to %1$s</string>
+    <string name="forward_open_chat">Open</string>
+    <!-- A snackbar when forwarding to some of the chats failed: %1$d is how many, %2$s says why. -->
+    <plurals name="forward_failed_some">
+        <item quantity="one">Not forwarded to %1$d chat. %2$s</item>
+        <item quantity="other">Not forwarded to %1$d chats. %2$s</item>
+    </plurals>
+
+    <!-- The share sheet: the chats what another app shared (or a t.me/share link) can go to -->
+    <string name="share_title">Send to</string>
+    <!-- Below the title, what is shared: %d photos and videos, or %d files. -->
+    <plurals name="share_media">
+        <item quantity="one">%d photo or video</item>
+        <item quantity="other">%d photos and videos</item>
+    </plurals>
+    <plurals name="share_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+    <!-- Screen readers: the shared text shown below the title, %1$s. -->
+    <string name="share_text_description">Shared text: %1$s</string>
+    <!-- When the user can send messages in none of their chats. -->
+    <string name="share_no_chats">No chats to send to</string>
+    <!-- With one chat picked: opens it with the shared text or files in its composer, where the user sends them. -->
+    <string name="share_open_chat">Open chat</string>
+    <!-- Below the button with one chat picked. -->
+    <string name="share_open_chat_hint">You can check it and add to it before you send it</string>
+    <!-- The field for a message sent before the shared one to several chats. -->
+    <string name="share_comment">Add a comment</string>
+    <string name="share_send">Send</string>
+    <!-- Snackbars after sending to several chats: to %d chats; or, when some refused, %1$d of %2$d and %3$s why. -->
+    <plurals name="share_done">
+        <item quantity="one">Sent to %d chat</item>
+        <item quantity="other">Sent to %d chats</item>
+    </plurals>
+    <plurals name="share_failed_some">
+        <item quantity="one">Not sent to %1$d of %2$d chats. %3$s</item>
+        <item quantity="other">Not sent to %1$d of %2$d chats. %3$s</item>
+    </plurals>
+    <!-- The conversation's call button (REQUIREMENTS.md FR-V1). -->
+    <string name="chat_call">Call</string>
+    <!-- What tapping a call's service message does, for screen readers. -->
+    <string name="chat_call_back">Call back</string>
+
+    <!-- Bots' buttons under messages (docs/DESIGN_SYSTEM.md §6 "Bot buttons"). %1$s is the button's text. -->
+    <string name="bot_button_link_action">%1$s, opens a link</string>
+    <string name="bot_button_inline_action">%1$s, starts an inline query</string>
+    <plurals name="bot_buttons_count">
+        <item quantity="one">%d button</item>
+        <item quantity="other">%d buttons</item>
+    </plurals>
+    <string name="bot_unsupported_mini_app">Pingogram can\'t open Mini Apps yet</string>
+    <string name="bot_unsupported_game">Pingogram can\'t open games yet</string>
+    <string name="bot_unsupported_payment">Pingogram can\'t make payments yet</string>
+    <string name="bot_unsupported_inline_link">Pingogram can\'t open this button yet</string>
+    <string name="bot_alert_ok">OK</string>
+    <string name="bot_link_title">Open this link?</string>
+    <string name="bot_link_open">Open</string>
+    <string name="bot_dialog_cancel">Cancel</string>
+    <!-- %1$s is the site's domain, e.g. "example.org". -->
+    <string name="bot_login_title">Open %1$s?</string>
+    <!-- %1$s is the bot ("@examplebot"), %2$s the site's domain. -->
+    <string name="bot_login_text">%1$s can log you in to %2$s with your Telegram account: your name, username and photo.</string>
+    <!-- %1$s is the user's own name. -->
+    <string name="bot_login_as">Log in as %1$s</string>
+    <!-- %1$s is the bot ("@examplebot"). -->
+    <string name="bot_login_write">Allow %1$s to send me messages</string>
+    <string name="bot_password_title">Enter your password</string>
+    <!-- %1$s is the bot ("@examplebot"). -->
+    <string name="bot_password_text">%1$s asks for your 2-step verification password to confirm this action.</string>
+    <string name="bot_password_label">Password</string>
+    <string name="bot_password_confirm">Confirm</string>
+    <string name="bot_chats_title">Choose a chat</string>
+    <!-- %1$s is the inline query that goes into the chat's composer, e.g. "@gif cats". -->
+    <string name="bot_chats_query">%1$s goes into the chat you pick. Nothing is sent until you send it.</string>
+    <string name="bot_chats_none">No chats where this bot can be used</string>
+    <!-- Search in the chat (REQUIREMENTS.md §5.9). -->
+    <string name="search_open">Search in chat</string>
+    <string name="search_placeholder">Search</string>
+    <string name="search_close">Close search</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_older">Older result</string>
+    <string name="search_newer">Newer result</string>
+    <!-- %1$d is the result shown (1 for the newest), %2$d how many were found. -->
+    <string name="search_position">%1$d of %2$d</string>
+    <!-- As search_position, where there are more results than counted so far. -->
+    <string name="search_position_more">%1$d of %2$d+</string>
+    <string name="search_no_results">No results</string>
+    <string name="search_searching">Searching…</string>
+    <string name="search_failed">Couldn\'t search</string>
+    <string name="search_retry">Try again</string>
+    <string name="search_by_sender">Search by sender</string>
+    <string name="search_jump_to_date">Jump to date</string>
+    <!-- %1$s is the member whose messages search finds, e.g. "Ada Lovelace". -->
+    <string name="search_sender_chip">Messages from %1$s</string>
+    <!-- The sender chip's close button. -->
+    <string name="search_sender_remove">Search messages from everyone</string>
+    <string name="search_sender_title">Search messages from</string>
+    <string name="search_sender_search">Search members</string>
+    <string name="search_sender_none">No members found</string>
+    <string name="search_sender_error">Couldn\'t load the members</string>
+    <string name="search_sender_owner">Owner</string>
+    <string name="search_sender_admin">Admin</string>
+    <string name="search_date_title">Jump to date</string>
+    <string name="search_date_go">Go</string>
+    <string name="search_date_cancel">Cancel</string>
+    <string name="search_no_messages_for_day">No messages on this day or before it</string>
+    <!-- Screen readers hear this in the description of the message the search shows. -->
+    <string name="chat_bubble_search_match">matches your search</string>
+    <string name="bot_unsupported_managed_bot">Pingogram can\'t create bots yet</string>
+    <string name="bot_keyboard_show">Show bot keyboard</string>
+    <string name="bot_keyboard_hide">Show keyboard</string>
+    <string name="bot_keyboard_pane">Bot keyboard</string>
+    <!-- %1$s is the bot, e.g. "@shop_bot". -->
+    <string name="bot_phone_title">Share your phone number with %1$s?</string>
+    <!-- %1$s is the bot, %2$s the user's own phone number, e.g. "+44 7911 123456". -->
+    <string name="bot_phone_text">%1$s will get your phone number, %2$s, and your name as a contact in this chat.</string>
+    <string name="bot_phone_share">Share</string>
+    <plurals name="bot_share_users_title">
+        <item quantity="one">Choose a person</item>
+        <item quantity="other">Choose up to %1$d people</item>
+    </plurals>
+    <string name="bot_share_group_title">Choose a group</string>
+    <string name="bot_share_channel_title">Choose a channel</string>
+    <!-- %1$s is the bot, e.g. "@shop_bot". -->
+    <string name="bot_share_users_note">%1$s gets the people you choose, with their names, usernames and photos as far as they show them.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_chat_note">%1$s gets the chat you choose, with its title, username and photo.</string>
+    <string name="bot_share_rights_note">Only chats where you\'re an admin are shown. Telegram checks the admin rights the bot asks for when you share.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_bot_admin_note">If %1$s isn\'t an admin there, sharing makes it one, with the rights it asks for.</string>
+    <!-- %1$s is the bot. -->
+    <string name="bot_share_bot_member_note">If %1$s isn\'t in the chat, sharing adds it.</string>
+    <string name="bot_share_no_users">No one here matches what the bot asks for</string>
+    <string name="bot_share_no_chats">None of your chats matches what the bot asks for</string>
+    <string name="bot_share">Share</string>
+    <string name="poll_quiz_required">The bot asks for a quiz</string>
+    <string name="poll_regular_required">The bot asks for a poll without a correct answer</string>
 </resources>

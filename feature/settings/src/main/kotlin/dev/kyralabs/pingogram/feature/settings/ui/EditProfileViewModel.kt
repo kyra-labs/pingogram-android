@@ -10,9 +10,10 @@ import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.usernameProblem
+import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
-import dev.kyralabs.pingogram.feature.settings.ui.photo.ProfilePhotoFiles
+import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -44,10 +45,10 @@ import kotlin.time.Duration.Companion.milliseconds
  *   the bio. Removing the username asks first. A failure stops there, keeps what was saved so far, and shows why; a
  *   refused username shows below its field too. Once everything is saved the page leaves ([EditProfileEffect.Saved]).
  * - **Back** with unsaved changes asks whether to discard them; while saving it waits.
- * - **Photo**: a picked image is copied into the cache and scaled down ([ProfilePhotoFiles]), uploaded with its
- *   progress, and the copy deleted once TDLib answered. Leaving meanwhile stops waiting for TDLib, which carries on,
- *   so the copy stays until the next photo replaces it. Removing the photo asks first. Either shows on the avatar as
- *   soon as TDLib reports the user changed, here and on Settings.
+ * - **Photo**: a picked image is copied into the upload cache, upright, without metadata and scaled down
+ *   ([PickedPhotoRepository]), uploaded with its progress, and the copy deleted once TDLib answered. Leaving meanwhile
+ *   stops waiting for TDLib, which carries on, so the copy stays until the upload cache's own cleaning. Removing the
+ *   photo asks first. Either shows on the avatar as soon as TDLib reports the user changed, here and on Settings.
  *
  * It has a handler for each event of a page with four fields, a photo and three confirmations, hence
  * `TooManyFunctions` is suppressed.
@@ -61,7 +62,7 @@ class EditProfileViewModel
         private val savedStateHandle: SavedStateHandle,
         private val profileRepository: ProfileRepository,
         userRepository: UserRepository,
-        private val photoFiles: ProfilePhotoFiles,
+        private val photoRepository: PickedPhotoRepository,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<EditProfileUiState>(EditProfileUiState.Loading)
         val uiState: StateFlow<EditProfileUiState> = mutableUiState.asStateFlow()
@@ -340,18 +341,18 @@ class EditProfileViewModel
             if (content.photoTask != PhotoTask.None) return
             mutableUiState.value = content.copy(photoTask = PhotoTask.Preparing)
             viewModelScope.launch {
-                val path = photoFiles.prepare(uri)
-                if (path == null) {
-                    finishPhotoTask(Outcome.Failure(DomainError.PhotoInvalid))
-                    return@launch
-                }
+                val path =
+                    when (val prepared = photoRepository.preparePhoto(uri)) {
+                        is Outcome.Success -> prepared.value
+                        is Outcome.Failure -> return@launch finishPhotoTask(prepared)
+                    }
                 updateContent { it.copy(photoTask = PhotoTask.Uploading(progress = null)) }
                 val outcome =
                     profileRepository.setProfilePhoto(path) { progress ->
                         updateContent { it.copy(photoTask = PhotoTask.Uploading(progress)) }
                     }
                 // Not when cancelled: TDLib may still be reading it.
-                photoFiles.delete(path)
+                photoRepository.discardPhoto(path)
                 finishPhotoTask(outcome)
             }
         }

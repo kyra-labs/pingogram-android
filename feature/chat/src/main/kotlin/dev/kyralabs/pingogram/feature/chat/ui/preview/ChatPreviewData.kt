@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatContent
 import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
@@ -24,7 +25,6 @@ import dev.kyralabs.pingogram.feature.chat.ui.MessageActionsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.MessageAlbum
 import dev.kyralabs.pingogram.feature.chat.ui.MessagePlayback
 import dev.kyralabs.pingogram.feature.chat.ui.OutgoingStatus
-import dev.kyralabs.pingogram.feature.chat.ui.QuickReaction
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionChip
 import dev.kyralabs.pingogram.feature.chat.ui.ReactionLabel
 import dev.kyralabs.pingogram.feature.chat.ui.ReplyQuote
@@ -39,6 +39,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -59,8 +60,7 @@ internal object ChatPreviewData {
     val canWrite =
         ComposerUiState.Available(
             canSchedule = true,
-            attachOptions =
-                persistentListOf(AttachOption.Gallery, AttachOption.Camera, AttachOption.File, AttachOption.Contact),
+            attachOptions = AttachOption.entries.filter { it != AttachOption.Poll }.toPersistentList(),
         )
 
     /** A photo without sizes, which no image loads for. Declared before the samples, which use it. */
@@ -86,7 +86,7 @@ internal object ChatPreviewData {
                     title = UiText.Plain("Ada Lovelace"),
                     photo = null,
                     placeholderIcon = null,
-                    subtitle = ChatSubtitle.Status(UiText.resource(R.string.chat_subtitle_online)),
+                    subtitle = ChatSubtitle.Status(UiText.resource(UiR.string.user_status_online)),
                 ),
             content =
                 content(
@@ -120,7 +120,6 @@ internal object ChatPreviewData {
                         time = "9:40 AM",
                         isOutgoing = true,
                         status = OutgoingStatus.Failed,
-                        position = GroupPosition.Last,
                     ),
                     bubble(
                         7,
@@ -128,7 +127,7 @@ internal object ChatPreviewData {
                         time = "9:40 AM",
                         isOutgoing = true,
                         status = OutgoingStatus.Sent,
-                        position = GroupPosition.Middle,
+                        position = GroupPosition.Last,
                     ),
                     bubble(
                         6,
@@ -172,7 +171,7 @@ internal object ChatPreviewData {
                     placeholderIcon = null,
                     subtitle =
                         ChatSubtitle.Action(
-                            UiText.resource(UiR.string.named_action_typing, UiText.Plain("Grace")),
+                            UiText.resource(UiR.string.named_action_typing, isolated("Grace")),
                         ),
                 ),
             content =
@@ -231,9 +230,9 @@ internal object ChatPreviewData {
                         senderId = GRACE,
                         groupChat = true,
                         position = GroupPosition.First,
-                        forwardedFrom = UiText.resource(R.string.chat_forwarded_from, UiText.Plain("Material Design")),
+                        forwardedFrom = UiText.resource(R.string.chat_forwarded_from, isolated("Material Design")),
                     ),
-                    ChatItem.Service(22, UiText.resource(UiR.string.preview_joined, UiText.Plain("Linus")), today),
+                    ChatItem.Service(22, UiText.resource(UiR.string.preview_joined, isolated("Linus")), today),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
                 ),
         )
@@ -284,7 +283,7 @@ internal object ChatPreviewData {
                     ChatItem.Service(44, UiText.resource(UiR.string.preview_you_pinned), today),
                     ChatItem.Service(
                         43,
-                        UiText.resource(UiR.string.preview_added_member, UiText.Plain("Ada"), UiText.Plain("Grace")),
+                        UiText.resource(UiR.string.preview_added_member, isolated("Ada"), isolated("Grace")),
                         today,
                     ),
                     ChatItem.DateSeparator(epochDay = 2, date = today),
@@ -299,7 +298,7 @@ internal object ChatPreviewData {
                     ),
                     ChatItem.Service(
                         41,
-                        UiText.resource(UiR.string.preview_created_group, UiText.Plain("Ada"), UiText.Plain("Compose")),
+                        UiText.resource(UiR.string.preview_created_group, isolated("Ada"), isolated("Compose")),
                         yesterday,
                     ),
                     ChatItem.DateSeparator(epochDay = 1, date = yesterday),
@@ -517,41 +516,53 @@ internal object ChatPreviewData {
     val error =
         ChatUiState(header = privateChat.header, content = ChatContent.Error(DomainError.Network), composer = canWrite)
 
-    /** The quick reactions of the actions sheets, the user's [chosen] one checked. */
-    private fun quickReactions(chosen: String?): ImmutableList<QuickReaction> =
-        listOf("👍", "❤️", "🔥", "🎉", "😁", "😢", "🤔", "👏")
-            .map { QuickReaction(ReactionLabel.Emoji(it), isChosen = it == chosen) }
-            .toImmutableList()
-
     /** The actions sheet of the user's own message 6 in [privateChat]: everything, with pinning for oneself. */
     val ownMessageActions =
         MessageActionsSheet(
             messageId = 6,
             reactionsMessageId = 6,
-            reactions = quickReactions(chosen = null),
+            reactions = ReactionPreviewData.reactionOptions(ReactionPreviewData.topReactions),
             actions =
                 persistentListOf(
                     MessageAction.Reply,
                     MessageAction.Copy,
+                    MessageAction.Forward,
                     MessageAction.Edit,
                     MessageAction.Pin,
                     MessageAction.PinForSelf,
                     MessageAction.Delete,
                 ),
+            picker = ReactionPreviewData.reactionPicker(onMessage = persistentListOf(), chosen = null),
         )
 
-    /** The actions sheet of Grace's message 24 in [groupChat], whose fire the user chose: no editing. */
+    /**
+     * The actions sheet of Grace's message 24 in [groupChat], whose fire the user chose: no editing. Its picker shows
+     * the message's reactions, one a custom emoji, and a recent custom emoji, both without a picture.
+     */
     val incomingMessageActions =
         MessageActionsSheet(
             messageId = 24,
             reactionsMessageId = 24,
-            reactions = quickReactions(chosen = "🔥"),
+            reactions = ReactionPreviewData.reactionOptions(ReactionPreviewData.topReactions, chosen = "🔥"),
             actions =
                 persistentListOf(
                     MessageAction.Reply,
                     MessageAction.Copy,
+                    MessageAction.Forward,
                     MessageAction.Pin,
+                    MessageAction.Select,
+                    MessageAction.Report,
                     MessageAction.Delete,
+                ),
+            picker =
+                ReactionPreviewData.reactionPicker(
+                    onMessage =
+                        persistentListOf(
+                            ReactionChip(ReactionLabel.Emoji("🔥"), 5, isChosen = true),
+                            ReactionChip(ReactionLabel.Emoji("❤️"), 3, isChosen = false),
+                            ReactionChip(ReactionLabel.CustomEmoji(customEmojiId = 5), 1, isChosen = false),
+                        ),
+                    chosen = "🔥",
                 ),
         )
 
@@ -571,6 +582,9 @@ internal object ChatPreviewData {
 
     /** [groupChat] with the actions sheet of someone else's message. */
     val incomingActionsSheet = groupChat.copy(messageActions = incomingMessageActions)
+
+    /** [incomingActionsSheet] at its reactions picker, as a bubble's "+N" or the sheet's expand button opens it. */
+    val reactionPickerSheet = groupChat.copy(messageActions = incomingMessageActions.copy(showsPicker = true))
 
     /** [privateChat] asking before message 6 is deleted. */
     val deleteConfirmation = privateChat.copy(deleteDialog = deleteForBoth)
@@ -680,6 +694,8 @@ internal object ChatPreviewData {
             time = time,
             isEdited = isEdited,
             status = status,
+            showsTime = !position.joinsNext,
+            canResend = status == OutgoingStatus.Failed,
             forwardedFrom = forwardedFrom,
             reply = reply,
             content = content ?: MessageContent.Text(formatted, linkPreview = null),
@@ -694,3 +710,6 @@ internal object ChatPreviewData {
         )
     }
 }
+
+/** A name as the mappers put it into a string: isolated (`bidiIsolated`). */
+private fun isolated(name: String): UiText = UiText.Plain(name).bidiIsolated()

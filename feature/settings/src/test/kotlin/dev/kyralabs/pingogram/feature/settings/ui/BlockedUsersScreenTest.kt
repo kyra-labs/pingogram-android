@@ -2,12 +2,18 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -16,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -90,11 +97,21 @@ class BlockedUsersScreenTest {
     }
 
     @Test
-    fun `rows show usernames and phone numbers`() {
+    fun `the row's button is an Unblock text button named after the row`() {
+        setScreen()
+
+        composeRule
+            .onNodeWithContentDescription(string(R.string.settings_unblock, "Grace Hopper"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(hasText(string(R.string.settings_unblock_button)))
+    }
+
+    @Test
+    fun `rows show usernames and phone numbers formatted for their country`() {
         setScreen()
 
         composeRule.onNodeWithText("@grace").assertExists()
-        composeRule.onNodeWithText("+447700900123", substring = true).assertExists()
+        composeRule.onNodeWithText("+44 7700 900123").assertExists()
         composeRule.onNodeWithText("4 blocked users and chats").assertExists()
     }
 
@@ -132,7 +149,7 @@ class BlockedUsersScreenTest {
             BlockedUsersViewModel(
                 TdlibBlockListRepository(client),
                 TdlibUserRepository(client, scope),
-                TdlibChatRepository(client, scope, Dispatchers.Unconfined),
+                TdlibChatRepository(client, scope, Dispatchers.Unconfined, OpenChats()),
                 TdlibGroupRepository(client, scope),
             )
         composeRule.setContent {
@@ -140,7 +157,10 @@ class BlockedUsersScreenTest {
         }
 
         composeRule.onNodeWithContentDescription(string(R.string.settings_unblock, "Grace Hopper")).performClick()
-        composeRule.onNodeWithText(string(R.string.settings_unblocked, "Grace Hopper")).assertExists()
+        // The name isolated, and the snackbar's text as a whole (`bidiIsolated`).
+        composeRule
+            .onNodeWithText(string(R.string.settings_unblocked, "Grace Hopper".bidiIsolated()).bidiIsolated())
+            .assertExists()
         composeRule.onNodeWithText(string(R.string.settings_unblock_undo)).performClick()
         composeRule.waitForIdle()
 

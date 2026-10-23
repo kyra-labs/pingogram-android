@@ -13,6 +13,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -28,6 +29,8 @@ import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
@@ -43,27 +46,53 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
  * The whole card opens Edit profile ([onEditProfile]), and so does the chevron. Screen readers read the card as one
  * item that edits the profile; the chevron repeats the card's action for touch, so it is left out of the semantics
  * and of keyboard focus rather than announced twice. TDLib reports the account's changes, so they show here at once,
- * made in Edit profile or on another device.
+ * made in Edit profile or on another device. With [selected] (Settings home beside the open page on an expanded
+ * window) the card is selectable, in the list item's selected colors and shape while Edit profile is open.
  */
 @Composable
 internal fun AccountCard(
     account: AccountUiModel,
     onEditProfile: () -> Unit,
     modifier: Modifier = Modifier,
+    selected: Boolean? = null,
 ) {
     val editProfile = stringResource(R.string.settings_edit_profile_button)
-    SegmentedListItem(
-        onClick = onEditProfile,
-        shapes = ListItemDefaults.shapes(shape = MaterialTheme.shapes.extraLarge),
-        // Names what a tap does; the list item's click supplies the action.
-        modifier = modifier.semantics { onClick(label = editProfile, action = null) },
-        leadingContent = { AccountAvatar(account) },
-        trailingContent = { ChevronButton(onEditProfile) },
-        supportingContent = { AccountDetails(account) },
-        verticalAlignment = Alignment.CenterVertically,
-        contentPadding = PaddingValues(MaterialTheme.spacing.large),
-    ) {
-        Text(text = account.name, style = MaterialTheme.typography.titleLarge)
+    val shapes = ListItemDefaults.shapes(shape = MaterialTheme.shapes.extraLarge)
+    // Names what a tap does; the list item's click supplies the action.
+    val cardModifier = modifier.semantics { onClick(label = editProfile, action = null) }
+    val leadingContent = @Composable { AccountAvatar(account) }
+    val trailingContent = @Composable { ChevronButton(onEditProfile) }
+    val supportingContent = @Composable { AccountDetails(account) }
+    val contentPadding = PaddingValues(MaterialTheme.spacing.large)
+    val colors = settingsRowColors()
+    val name = @Composable { Text(text = account.name, style = MaterialTheme.typography.titleLarge.userContent) }
+    if (selected != null) {
+        SegmentedListItem(
+            selected = selected,
+            onClick = onEditProfile,
+            shapes = shapes,
+            modifier = cardModifier,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = contentPadding,
+            colors = colors,
+            content = name,
+        )
+    } else {
+        SegmentedListItem(
+            onClick = onEditProfile,
+            shapes = shapes,
+            modifier = cardModifier,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            supportingContent = supportingContent,
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = contentPadding,
+            colors = colors,
+            content = name,
+        )
     }
 }
 
@@ -94,7 +123,7 @@ private fun AccountAvatar(account: AccountUiModel) {
                     .align(Alignment.BottomEnd)
                     .size(sizes.avatarBadge)
                     .background(colors.surfaceContainerHighest, CircleShape)
-                    .border(sizes.avatarRing, ListItemDefaults.segmentedColors().containerColor, CircleShape)
+                    .border(sizes.avatarRing, settingsRowContainerColor(), CircleShape)
                     .padding((sizes.avatarBadge - sizes.badgeIcon) / 2),
             tint = colors.onSurfaceVariant,
         )
@@ -105,15 +134,17 @@ private fun AccountAvatar(account: AccountUiModel) {
  * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and the
  * "Premium" label below them for Telegram Premium subscribers.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AccountDetails(account: AccountUiModel) {
     Column {
         if (account.phoneNumber.isNotEmpty()) {
-            Text(text = account.phoneNumber, style = MaterialTheme.typography.bodyLarge)
+            Text(text = account.phoneNumber, style = MaterialTheme.typography.bodyLarge.numericContent)
         }
         account.username?.let { username ->
-            Text(stringResource(R.string.settings_account_username, username))
+            Text(
+                text = stringResource(R.string.settings_account_username, username),
+                style = LocalTextStyle.current.userContent,
+            )
         }
         if (account.isPremium) PremiumLabel(Modifier.padding(top = MaterialTheme.spacing.small))
     }
@@ -123,7 +154,6 @@ private fun AccountDetails(account: AccountUiModel) {
  * "Premium", a status of the account: a full pill in `tertiaryContainer` with `labelMediumEmphasized` text. Not a chip:
  * it does nothing when tapped, and Pingogram sells nothing (`REQUIREMENTS.md` §1.2).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PremiumLabel(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
@@ -140,7 +170,6 @@ private fun PremiumLabel(modifier: Modifier = Modifier) {
 }
 
 /** The tonal chevron at the end of the card, whose shape morphs when pressed; see [AccountCard] for its semantics. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChevronButton(onClick: () -> Unit) {
     FilledTonalIconButton(

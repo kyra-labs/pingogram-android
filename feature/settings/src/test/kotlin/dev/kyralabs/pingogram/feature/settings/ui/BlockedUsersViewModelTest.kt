@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.settings.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.data.repository.OpenChats
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
@@ -70,7 +71,7 @@ class BlockedUsersViewModelTest {
     // TDLib's updates before the test emits any, as they do at app start.
     private suspend fun TestScope.viewModel(announce: Boolean = true): BlockedUsersViewModel {
         val users = TdlibUserRepository(client, backgroundScope)
-        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler))
+        val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
         val groups = TdlibGroupRepository(client, backgroundScope)
         if (announce) {
             listOf(grace, alan, deleted).forEach { client.emit(TdApiFixtures.updateUser(it)) }
@@ -149,7 +150,8 @@ class BlockedUsersViewModelTest {
                             BlockedSenderItem(
                                 sender = MessageSender.User(8),
                                 name = UiText.Plain("Alan Turing"),
-                                detail = UiText.resource(R.string.settings_blocked_phone, "+447700900123"),
+                                detail = null,
+                                phoneNumber = "+447700900123",
                                 photo = null,
                                 avatarId = 8,
                             ),

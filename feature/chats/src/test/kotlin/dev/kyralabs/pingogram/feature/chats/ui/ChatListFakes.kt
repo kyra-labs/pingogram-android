@@ -10,6 +10,8 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatAction
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
@@ -18,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
+import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import kotlinx.collections.immutable.ImmutableList
@@ -88,9 +91,19 @@ class FakeChatRepository : ChatRepository {
     override fun unreadChatCount(list: ChatListType): Flow<UnreadChatCount> =
         unreadCounts.map { it[list] ?: UnreadChatCount.None }.distinctUntilChanged()
 
-    override fun chat(id: Long): Flow<Chat?> = unused()
+    /** A chat of any list, as [setChats] put it. */
+    override fun chat(id: Long): Flow<Chat?> =
+        chats
+            .map { lists ->
+                lists.values
+                    .asSequence()
+                    .flatten()
+                    .firstOrNull { it.id == id }
+            }.distinctUntilChanged()
 
     /** A chat of any list, as the repository keeps them in memory; [DomainError.NotFound] otherwise. */
+    override suspend fun privateChat(userId: Long): Outcome<Chat> = unused()
+
     override suspend fun getChat(id: Long): Outcome<Chat> =
         chats.value.values
             .flatten()
@@ -147,6 +160,7 @@ class FakeChatRepository : ChatRepository {
     override suspend fun viewMessages(
         chatId: Long,
         messageIds: List<Long>,
+        topic: MessageTopic?,
     ): Outcome<Unit> = unused()
 }
 
@@ -209,6 +223,27 @@ class FakeGroupRepository : GroupRepository {
     override val supergroups: Flow<ImmutableMap<Long, Supergroup>> = supergroupMap
 
     override fun supergroup(id: Long): Flow<Supergroup?> = unused()
+}
+
+class FakeSecretChatRepository : SecretChatRepository {
+    val secretChatMap = MutableStateFlow<ImmutableMap<Int, SecretChat>>(persistentMapOf())
+
+    fun setSecretChats(vararg secretChats: SecretChat) {
+        secretChatMap.value = secretChats.associateBy { it.id }.toImmutableMap()
+    }
+
+    override val secretChats: Flow<ImmutableMap<Int, SecretChat>> = secretChatMap
+
+    override fun secretChat(id: Int): Flow<SecretChat?> = unused()
+
+    override suspend fun createSecretChat(userId: Long): Outcome<Long> = unused()
+
+    override suspend fun closeSecretChat(secretChatId: Int): Outcome<Unit> = unused()
+
+    override suspend fun setSelfDestructTime(
+        chatId: Long,
+        seconds: Int,
+    ): Outcome<Unit> = unused()
 }
 
 class FakeChatActionRepository : ChatActionRepository {

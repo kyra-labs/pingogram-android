@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.SecretChat
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
@@ -17,11 +18,13 @@ import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.chatActionText
 import dev.kyralabs.pingogram.core.ui.text.draftPreviewText
 import dev.kyralabs.pingogram.core.ui.text.isDeleted
 import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.text.shortName
+import dev.kyralabs.pingogram.core.ui.text.stateText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
@@ -29,12 +32,13 @@ import kotlinx.collections.immutable.toImmutableList
 import java.time.Instant
 
 /**
- * What rows show besides their chats, as of one emission: the users, supergroups and actions of every chat, the
- * current user, and the minute (for times and online dots that expire).
+ * What rows show besides their chats, as of one emission: the users, supergroups, secret chats and actions of every
+ * chat, the current user, and the minute (for times and online dots that expire).
  */
 internal class RowSnapshot(
     val users: ImmutableMap<Long, User>,
     val supergroups: ImmutableMap<Long, Supergroup>,
+    val secretChats: ImmutableMap<Int, SecretChat>,
     val actionsByChat: ImmutableMap<Long, ImmutableList<SenderAction>>,
     val myUserId: Long?,
     val now: Instant,
@@ -51,7 +55,7 @@ internal class RowSources(
  * Maps chats to [ChatListItemModel]s, reusing the previous row of a chat when everything it is made from is the same
  * (`docs/PERFORMANCE.md` §4): user statuses change many times a minute, and each change emits every row. The inputs
  * are compared field by field, mostly by identity, as the repositories keep unchanged objects; only a changed chat,
- * one of its users, its group, its actions, the list, the current user or the minute maps a row again.
+ * one of its users, its group or secret chat, its actions, the list, the current user or the minute maps a row again.
  *
  * Not thread-safe: one flow collection uses it at a time.
  */
@@ -95,6 +99,7 @@ private data class RowInputs(
     val list: ChatListType,
     val user: User?,
     val supergroup: Supergroup?,
+    val secretChat: SecretChat?,
     val actions: ImmutableList<SenderAction>?,
     val referencedUsers: List<User?>,
     val myUserId: Long?,
@@ -110,6 +115,7 @@ private fun RowSources.inputsOf(chat: Chat): RowInputs {
         list = list,
         user = chat.userId?.let(users::get),
         supergroup = (chat.type as? ChatType.Supergroup)?.let { snapshot.supergroups[it.supergroupId] },
+        secretChat = (chat.type as? ChatType.Secret)?.let { snapshot.secretChats[it.secretChatId] },
         actions = actions,
         referencedUsers = referencedUserIds(chat, actions).map(users::get),
         myUserId = snapshot.myUserId,
@@ -210,8 +216,9 @@ private fun RowInputs.senderNames(users: Map<Long, User>): (MessageSender) -> Ui
     }
 
 /**
- * By precedence: what people are doing, the draft, the last message. Saved Messages shows nobody typing; a draft that
- * is only a reply, without a text, shows as no draft.
+ * By precedence: what people are doing, the state of a secret chat that cannot be written to (waiting for the other
+ * user, ended), the draft, the last message. Saved Messages shows nobody typing; a draft that is only a reply, without
+ * a text, shows as no draft.
  */
 private fun RowInputs.preview(
     isSavedMessages: Boolean,
@@ -220,8 +227,10 @@ private fun RowInputs.preview(
     val action = actions?.takeIf { !isSavedMessages }?.let { chatActionText(it, chat.isGroup, name) }
     val draft = chat.shownDraft
     val message = chat.lastMessage
+    val secretState = secretChat?.stateText(user?.shortName() ?: UiText.Plain(chat.title))
     return when {
         action != null -> ChatPreview.Action(action)
+        secretState != null -> ChatPreview.SecretChat(secretState)
         draft != null -> ChatPreview.Draft(draftPreviewText(draft.content))
         message != null -> ChatPreview.Message(senderPrefix(message, name), messagePreviewText(message, myUserId, name))
         else -> ChatPreview.None
@@ -240,7 +249,7 @@ private fun RowInputs.senderPrefix(
     return when {
         !chat.isGroup || message.isChannelPost || message.content is MessageContent.Service -> null
         message.isOutgoing -> UiText.resource(R.string.preview_sender_you)
-        sender is MessageSender.User -> name(sender)
+        sender is MessageSender.User -> name(sender)?.bidiIsolated()
         else -> null
     }
 }

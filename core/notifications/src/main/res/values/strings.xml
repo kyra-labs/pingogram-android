@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channels, in the system's notification settings. Never "Telegram" (CLAUDE.md rule 2). -->
+    <string name="notification_channel_private_chats">Private chats</string>
+    <string name="notification_channel_private_chats_description">New messages in one-to-one and secret chats</string>
+    <string name="notification_channel_groups">Groups</string>
+    <string name="notification_channel_groups_description">New messages in groups</string>
+    <string name="notification_channel_channels">Channels</string>
+    <string name="notification_channel_channels_description">New posts in channels</string>
+    <string name="notification_channel_calls">Calls</string>
+    <string name="notification_channel_calls_description">Incoming calls, with your ringtone</string>
+    <string name="notification_channel_ongoing_calls">Ongoing calls</string>
+    <string name="notification_channel_ongoing_calls_description">The call you are in</string>
+    <!-- The incoming call notification's text, under the caller's name. -->
+    <string name="call_notification_incoming">Incoming voice call</string>
+    <string name="notification_channel_other">Other</string>
+    <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
+    <string name="notification_channel_transfers">Transfers</string>
+    <string name="notification_channel_transfers_description">Progress of the files you send and download, and of chat exports</string>
+
+    <!-- Notification texts. -->
+    <!-- Shown instead of a message when the chat's settings hide message previews. -->
+    <string name="notification_new_message">New message</string>
+    <string name="notification_new_secret_chat">Secret chat started</string>
+    <string name="notification_incoming_call">Incoming call</string>
+    <!-- A sender TDLib knows nothing about. -->
+    <string name="notification_someone">Someone</string>
+    <!-- The title of a chat TDLib does not know (rare). -->
+    <string name="notification_unknown_chat">Chat</string>
+    <!-- The current user in a conversation notification, beside their own messages. -->
+    <string name="notification_you">You</string>
+    <plurals name="notification_new_messages">
+        <item quantity="one">%d new message</item>
+        <item quantity="other">%d new messages</item>
+    </plurals>
+    <string name="notification_reply">Reply</string>
+    <!-- The hint in the reply field of a notification. -->
+    <string name="notification_reply_label">Message</string>
+    <string name="notification_mark_as_read">Mark as read</string>
+    <!-- Shown briefly on older Android versions while a reply is sent or messages are marked as read. -->
+    <string name="notification_working">Updating your chats…</string>
+
+    <!-- The progress notification of the files the user sends and downloads (FR-N4), while they are on their way. -->
+    <plurals name="transfer_sending">
+        <item quantity="one">Sending %d file</item>
+        <item quantity="other">Sending %d files</item>
+    </plurals>
+    <plurals name="transfer_downloading">
+        <item quantity="one">Downloading %d file</item>
+        <item quantity="other">Downloading %d files</item>
+    </plurals>
+    <plurals name="transfer_sending_and_downloading">
+        <item quantity="one">Sending and downloading %d file</item>
+        <item quantity="other">Sending and downloading %d files</item>
+    </plurals>
+    <!-- How much has been transferred, e.g. "1.2 MB of 4.5 MB". -->
+    <string name="transfer_progress">%1$s of %2$s</string>
+    <!-- The percentage of a transfer, short enough for the status bar chip of a Live Update (Android 16). -->
+    <string name="transfer_percent">%d%%</string>
+    <!-- Cancels every transfer: downloads stop, messages being sent are deleted. -->
+    <string name="transfer_cancel">Cancel</string>
+    <!-- The notifications of a chat export (Export chat): while it runs, then once it ended. -->
+    <!-- %1$s is the chat's name. -->
+    <string name="chat_export_notification_title">Exporting %1$s</string>
+    <plurals name="chat_export_notification_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <!-- Telegram asked to wait before the next messages; %d is the seconds. -->
+    <string name="chat_export_notification_waiting">Waiting %d s for Telegram</string>
+    <!-- Stops the export and deletes what it wrote. -->
+    <string name="chat_export_notification_cancel">Cancel</string>
+    <string name="chat_export_notification_done">%1$s exported</string>
+    <string name="chat_export_notification_failed">Couldn\'t export %1$s</string>
+
+    <!-- The words of an exported chat's HTML page (messages.html), in the app's language. -->
+    <!-- %1$s is the date and time. -->
+    <string name="chat_export_file_exported_on">Exported from Pingogram on %1$s</string>
+    <plurals name="chat_export_file_messages">
+        <item quantity="one">%s message</item>
+        <item quantity="other">%s messages</item>
+    </plurals>
+    <!-- %1$s is the original sender's name. -->
+    <string name="chat_export_file_forwarded_from">Forwarded from %1$s</string>
+    <!-- A link to the message replied to, further up the page. -->
+    <string name="chat_export_file_in_reply_to">In reply to this message</string>
+    <string name="chat_export_file_reply_not_exported">In reply to a message not in this export</string>
+    <!-- After a message's time, when it was edited. -->
+    <string name="chat_export_file_edited">edited</string>
+    <!-- %1$s is what the file is: Photo, Video, Voice message… -->
+    <string name="chat_export_file_not_exported">%1$s not exported</string>
+    <string name="chat_export_file_too_large">%1$s not exported: larger than the size limit</string>
+    <string name="chat_export_file_self_destructing">%1$s not exported: it self-destructs once viewed</string>
+    <string name="chat_export_file_unavailable">%1$s not exported: no longer available</string>
+    <string name="chat_export_file_no_messages">No messages</string>
+</resources>

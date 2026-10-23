@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.ui.text.UiText
 
 /** One-off effects of [ChatViewModel], handled by the screen once each (`docs/ARCHITECTURE.md`, ViewModels). */
 sealed interface ChatEffect {
@@ -35,6 +37,16 @@ sealed interface ChatEffect {
         val at: Long,
     ) : ChatEffect
 
+    /** Open the profile of user [userId] (`REQUIREMENTS.md` FR-P2). */
+    data class OpenProfile(
+        val userId: Long,
+    ) : ChatEffect
+
+    /** Open chat [chatId], a group or channel a mention named. */
+    data class OpenChat(
+        val chatId: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,
@@ -56,6 +68,59 @@ sealed interface ChatEffect {
     /** The action asked for is not allowed for the message (any more): a snackbar says so. */
     data object ActionUnavailable : ChatEffect
 
+    /** "Join" sent a request to join the chat, which an administrator accepts: a snackbar says so. */
+    data object JoinRequestSent : ChatEffect
+
+    /** Telegram did not let the user join, or the chat checks new members with a bot first: a snackbar says so. */
+    data object JoinRefused : ChatEffect
+
+    /** The pinned messages bar was hidden on this device: a snackbar says it returns with a newer pinned message. */
+    data object PinnedHidden : ChatEffect
+
+    /** A bot's menu button opens a Mini App, which Pingogram cannot open yet: a snackbar says so, never a WebView. */
+    data object MiniAppsUnsupported : ChatEffect
+
+    /** An inline bot's result is a game, which Pingogram cannot play yet: a snackbar says so, nothing is sent. */
+    data object GamesUnsupported : ChatEffect
+
+    /** A day picked to jump to has no messages on it or before it (the chat starts later): a snackbar says so. */
+    data object NoMessagesForDay : ChatEffect
+
+    /**
+     * Open the conversation of [topic] of chat [chatId]: a message's thread (`REQUIREMENTS.md` FR-C9), whose chat is
+     * the channel's discussion group for a post's comments.
+     */
+    data class OpenThread(
+        val chatId: Long,
+        val topic: MessageTopic,
+    ) : ChatEffect
+
+    /**
+     * Messages were forwarded to [count] chats: a snackbar says so, naming the chat if there was one ([chatTitle]),
+     * with an action that opens it if it is another chat ([openChatId]).
+     */
+    data class Forwarded(
+        val count: Int,
+        val chatTitle: UiText? = null,
+        val openChatId: Long? = null,
+    ) : ChatEffect
+
+    /**
+     * Forwarding to [failed] chats failed, the first time with [error] (a flood wait stops it, counting the chats left
+     * as failed); [forwarded] chats got the messages. A snackbar says so.
+     */
+    data class ForwardFailed(
+        val error: DomainError,
+        val failed: Int,
+        val forwarded: Int,
+    ) : ChatEffect
+
+    /**
+     * A message being sent failed while the screen was shown: a `Reject` haptic on Android 14 and later; the message's
+     * "Not sent" label says the rest.
+     */
+    data object SendFailed : ChatEffect
+
     /**
      * Open the camera app to take a photo into the file at [path] (in the app's cache, handed over as a content URI);
      * the screen reports what came of it with `ChatEvent.PhotoTaken`, also when no camera app opens.
@@ -74,4 +139,34 @@ sealed interface ChatEffect {
     ) : ChatEffect {
         override fun toString() = "OpenLocation(…)"
     }
+
+    /**
+     * Open [url], a sponsored message's link or a bot's button's, with the app's link handler (Telegram links open in
+     * Pingogram, others in the platform's handler); a snackbar if no app on the device can.
+     */
+    data class OpenUrl(
+        val url: String,
+    ) : ChatEffect {
+        override fun toString() = "OpenUrl(…)"
+    }
+
+    /** What came of reporting a sponsored message: a snackbar says it. */
+    data class SponsoredNotice(
+        val notice: SponsoredReportNotice,
+    ) : ChatEffect
+}
+
+/** What a report of a sponsored message came to ([ChatEffect.SponsoredNotice]). */
+enum class SponsoredReportNotice {
+    /** Telegram has the report; the ad is gone from the list. */
+    Reported,
+
+    /** Telegram hid sponsored messages for the user. */
+    AdsHidden,
+
+    /** Hiding ads needs Telegram Premium; said, never offered. */
+    PremiumRequired,
+
+    /** Telegram did not take the report. */
+    ReportFailed,
 }

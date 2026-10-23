@@ -35,6 +35,7 @@ internal fun SavedStateHandle.savePoll(
     this[KEY_POLL_OPTIONS] = ArrayList(draft.options)
     this[KEY_POLL_FLAGS] = booleanArrayOf(draft.isAnonymous, draft.allowsMultipleAnswers, draft.isQuiz)
     this[KEY_POLL_CORRECT] = draft.correctOptionIndex ?: NO_CORRECT_OPTION
+    this[KEY_POLL_REQUIRED_QUIZ] = draft.requiredQuiz
 }
 
 /** Whether the poll form was open. */
@@ -50,6 +51,7 @@ internal fun SavedStateHandle.restoredPoll(): PollDraft {
         allowsMultipleAnswers = flags[1],
         isQuiz = flags[2],
         correctOptionIndex = get<Int>(KEY_POLL_CORRECT)?.takeIf { it >= 0 },
+        requiredQuiz = get<Boolean>(KEY_POLL_REQUIRED_QUIZ),
     )
 }
 
@@ -158,3 +160,4 @@ private const val KEY_POLL_QUESTION = "chat.pollQuestion"
 private const val KEY_POLL_OPTIONS = "chat.pollOptions"
 private const val KEY_POLL_FLAGS = "chat.pollFlags"
 private const val KEY_POLL_CORRECT = "chat.pollCorrect"
+private const val KEY_POLL_REQUIRED_QUIZ = "chat.pollRequiredQuiz"

@@ -5,7 +5,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -62,8 +65,26 @@ class PingogramColorsTest {
             AvatarColors(scheme.primaryContainer, scheme.onPrimaryContainer),
             scheme.avatarPlaceholderColors(0),
         )
-        assertEquals(AvatarColors(scheme.surfaceVariant, scheme.onSurfaceVariant), scheme.avatarPlaceholderColors(-1))
-        assertEquals(scheme.avatarPlaceholderColors(supergroupId), scheme.avatarPlaceholderColors(supergroupId + 7))
+        assertEquals(
+            AvatarColors(scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+            scheme.avatarPlaceholderColors(-1),
+        )
+        assertEquals(scheme.avatarPlaceholderColors(supergroupId), scheme.avatarPlaceholderColors(supergroupId + 4))
+    }
+
+    @Test
+    fun `avatar placeholders never use the fixed roles, which keep their light tone in dark theme`() {
+        val scheme = brandColorScheme(dark = true, Contrast.Standard)
+        val fixed = setOf(scheme.primaryFixed, scheme.secondaryFixed, scheme.tertiaryFixed)
+
+        (0L until 4L).forEach { id -> assertFalse(scheme.avatarPlaceholderColors(id).container in fixed) }
+    }
+
+    @Test
+    fun `avatar placeholders on a selected row are primary`() {
+        val scheme = brandColorScheme(dark = false, Contrast.Standard)
+
+        assertEquals(AvatarColors(scheme.primary, scheme.onPrimary), scheme.avatarPlaceholderColorsOnSelection())
     }
 
     @Test
@@ -98,6 +119,10 @@ class PingogramColorsTest {
             assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.content)
             assertEquals(scheme.onPrimaryContainer, colors.outgoingBubble.secondaryContent)
             assertEquals(scheme.surfaceContainerLow, colors.outgoingBubble.block)
+            assertEquals(scheme.secondaryContainer, colors.selectedBubble.container)
+            assertEquals(scheme.onSecondaryContainer, colors.selectedBubble.content)
+            assertEquals(scheme.onSecondaryContainer, colors.selectedBubble.secondaryContent)
+            assertEquals(scheme.surfaceContainerLow, colors.selectedBubble.block)
             listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
                 assertEquals(scheme.primary, bubble.accent)
                 assertEquals(scheme.onPrimary, bubble.onAccent)
@@ -124,12 +149,32 @@ class PingogramColorsTest {
     ) {
         val colors = pingogramColors(brandColorScheme(dark, contrast), dark)
 
-        listOf(colors.incomingBubble, colors.outgoingBubble).forEach { bubble ->
+        listOf(colors.incomingBubble, colors.outgoingBubble, colors.selectedBubble).forEach { bubble ->
             listOf(bubble.accent, bubble.correct, bubble.wrong).forEach { accent ->
                 assertTrue(accent.contrastWith(bubble.container) >= 3f, "$accent on ${bubble.container}")
             }
             assertTrue(bubble.onAccent.contrastWith(bubble.accent) >= 3f)
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource("false, Standard", "false, High", "true, Standard", "true, High")
+    fun `a hidden spoiler is a tint of the bubble that keeps 3 to 1 against it`(
+        dark: Boolean,
+        contrast: Contrast,
+    ) {
+        val colors = pingogramColors(brandColorScheme(dark, contrast), dark)
+
+        listOf(colors.incomingBubble, colors.outgoingBubble, colors.selectedBubble).forEach { bubble ->
+            assertTrue(bubble.spoiler.contrastWith(bubble.container) >= 3f, "${bubble.spoiler} on ${bubble.container}")
+            assertNotEquals(bubble.secondaryContent, bubble.spoiler)
+        }
+    }
+
+    @Test
+    fun `dims media in dark theme only`() {
+        assertNull(pingogramColors(brandColorScheme(dark = false, Contrast.Standard), dark = false).mediaColorFilter)
+        assertNotNull(pingogramColors(brandColorScheme(dark = true, Contrast.Standard), dark = true).mediaColorFilter)
     }
 
     private fun String.toColor() = Color(toLong(radix = 16))

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- No cleartext HTTP anywhere (REQUIREMENTS.md §6.2). Android 9 and later refuse it by default; Android 8 would allow it
+     without this file. TDLib's own connections to Telegram are its encrypted MTProto sockets, which this does not
+     touch. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

@@ -16,7 +16,7 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 
 - G1. A native Android experience that looks and moves like a Google-made Material 3 Expressive app.
 - G2. Feature parity with the official app for everyday messaging by v1.0 (see §5).
-- G3. Fast, battery-friendly, small download (< 40 MB per-ABI APK target).
+- G3. Fast, battery-friendly, small download (≤ 50 MB per-ABI APK target, calls included; `docs/PERFORMANCE.md` §1).
 - G4. Fully open source, reproducible builds, releases on GitHub (APK), later F-Droid/Play.
 - G5. Privacy-respecting: no analytics, no ads, no telemetry.
 
@@ -37,7 +37,7 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 | Repository | `pingogram-android` |
 | `applicationId` | `dev.kyralabs.pingogram` (debug builds: `dev.kyralabs.pingogram.debug`) |
 | Kotlin package root | `dev.kyralabs.pingogram` |
-| License | **GPL-3.0-or-later** (owner may switch to Apache-2.0 before first release; TDLib is Boost 1.0 so either is allowed) |
+| License | **GPL-3.0-or-later** with an additional permission (GPL §7) to combine Pingogram with Google's Play services and Firebase libraries for the `gms` flavor (`LICENSE-EXCEPTION.md`, owner decision 2026-10-21, `docs/adr/0010-gpl-additional-permission-for-play-services.md`); TDLib is Boost 1.0 |
 | Trademark | Must not use "Telegram" in name, icon, package or store title. "Pingogram — Telegram client" is acceptable as a *description*. |
 | Telegram API | Each build uses the owner's `api_id`/`api_hash` from https://my.telegram.org. Never committed. |
 | API Terms | https://core.telegram.org/api/terms and https://core.telegram.org/api/obtaining_api_id — binding. |
@@ -50,7 +50,7 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 |---|---|---|
 | `minSdk` | 26 (Android 8.0) | Notification channels, adaptive icons, modern APIs; ~97% coverage |
 | `targetSdk` | 36 (Android 16) or the latest Play requirement | Play requires targeting recent APIs; edge-to-edge is enforced from 35 |
-| `compileSdk` | 37 | Required by the latest stable Compose (BOM 2026.09.00 / Compose 1.12); compiling against a newer SDK does not change runtime behaviour |
+| `compileSdk` | 37 | Required by the libraries: Compose 1.12 (`ui`, `foundation`), material3 1.5.0-beta01 and navigation-compose 2.10.2 declare `minCompileSdk=37` in their AAR metadata (checked 2026-10-20); compiling against a newer SDK does not change runtime behaviour |
 | ABIs | `arm64-v8a`, `armeabi-v7a`, `x86_64` (+ universal APK) | x86 32-bit dropped |
 | 16 KB page size | Required — 64-bit TDLib native libs must be built 16 KB-aligned (NDK r28+) | Play requirement for apps targeting Android 15+ |
 | Language | Kotlin 2.x, Compose compiler plugin | |
@@ -72,7 +72,9 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 - **Coil 3** for images (with TDLib file paths), **Media3/ExoPlayer** for audio/video,
   **CameraX** for in-app camera (later milestone).
 - **AndroidX**: `core-splashscreen`, `activity-compose`, `lifecycle`, `work` (background
-  downloads), `biometric` (passcode lock), `security-crypto`/Keystore for DB key.
+  downloads), the platform's `BiometricPrompt` for the passcode lock (Android 10+, not `androidx.biometric`:
+  `docs/adr/0005-passcode-lock.md`, accepted by the owner 2026-10-21), the Android Keystore for the DB key (not the
+  deprecated `security-crypto`).
 - **Tooling**: Gradle version catalog, convention plugins in `build-logic/`, ktlint, detekt,
   Android Lint (fatal on error), Roborazzi screenshot tests, Turbine, MockK, JUnit 5.
 
@@ -108,7 +110,8 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-L6 Must: Search (global): chats, contacts, messages, via `searchChats`, `searchMessages`,
   with recent searches, using the M3 search bar, opened from the search button beside the floating
   navigation bar (the rail's button on larger windows; `docs/DESIGN_SYSTEM.md` §6.1).
-- FR-L7 Must: FAB → new message / new group / new channel / new contact as an **FAB menu**.
+- FR-L7 Must: a "New chat" FAB (medium extended, collapsing on scroll) opening a New chat screen with new
+  group / new channel / new contact and the contacts, with a container transform (`docs/DESIGN_SYSTEM.md` §6).
 - FR-L8 Should: Selection mode (long-press) with bulk actions in a **floating toolbar**.
 - FR-L9 Should: Archived chats screen with the same list component.
 
@@ -127,8 +130,9 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-C5 Must: Composer: multi-line text, formatting menu, attach sheet (gallery via Photo
   Picker, file, camera, location, contact, poll), voice record (hold), emoji & sticker panel,
   send-as (channels), silent send, schedule send, reply/edit bar, draft sync.
-- FR-C6 Must: Message actions bottom sheet: reply, copy, forward, edit, pin, delete (for me /
-  for all), select, report, save to downloads, react.
+- FR-C6 Must: Message actions on long-press, in a menu anchored to the lifted message (a bottom sheet with
+  TalkBack or in short windows): reply, copy, forward, edit, pin, delete (for me / for all), select, report,
+  save to downloads, react.
 - FR-C7 Must: Reactions picker (quick row + full grid) with Expressive spring animations.
 - FR-C8 Must: Chat header → profile; typing/online status; muted state; call buttons (later).
 - FR-C9 Should: Threads / comments, topics in forums, pinned messages bar with cycling.
@@ -150,17 +154,18 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
   (last seen, photo, calls, groups, blocked users, passcode lock w/ biometrics, 2FA, active
   sessions), Notifications (per-type channels, exceptions, sounds), Data & Storage (auto-download
   per network, storage usage via `getStorageStatistics`, clear cache), Chat settings (theme mode,
-  dynamic color toggle, seed color, message corner radius, font size, chat wallpaper—solid/gradient
+  color theme (`docs/adr/0016-color-themes.md`), message corner radius, font size, chat wallpaper—solid/gradient
   only), Language (per-app language API), About (version, licenses, GitHub link).
-- FR-S2 Must: Appearance: System / Light / Dark, Dynamic color (Android 12+), brand palette
-  fallback, AMOLED black option, contrast levels (standard/medium/high per M3).
+- FR-S2 Must: Appearance: System / Light / Dark, a color theme (wallpaper colors on Android 12+, the brand's or
+  curated Material 3 themes, `docs/adr/0016-color-themes.md`), AMOLED black option, contrast levels
+  (standard/medium/high per M3).
 
 ### 5.6 Notifications & background [M3]
 
 - FR-N1 Must: Push via TDLib's long-polling in a foreground-less model (TDLib keeps a
   connection); on Android 13+ request `POST_NOTIFICATIONS` with rationale.
 - FR-N2 Must: Notification channels: Private chats, Groups, Channels, Calls, Other. Conversation
-  style (`MessagingStyle`), shortcuts for top chats (direct share), reply/mark-read actions,
+  style (`MessagingStyle`), shortcuts for top chats (direct share: [M4], owner 2026-10-21), reply/mark-read actions,
   bubbles opt-in, grouped per chat, respect mute/exceptions from TDLib.
 - FR-N3 Should: FCM push support (TDLib `registerDevice` with `deviceTokenFirebaseCloudMessaging`)
   behind a build flag so F-Droid builds stay Google-free.
@@ -171,7 +176,7 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 
 - FR-V1 Should: Voice calls via TDLib + libtgvoip/tgcalls (`createCall`, `acceptCall`) with
   CallKit-style full-screen notification, speaker/mute, encryption emoji.
-- FR-V2 Later: Video calls, group calls / live streams.
+- FR-V2 Should [M5.1]: 1:1 video calls, then group voice chats and watching live streams (`docs/adr/0019-video-and-group-calls-scope.md`); group video later.
 
 ### 5.8 Secret chats [M4]
 
@@ -193,7 +198,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Cold start → chat list ≤ 1.2 s, warm start ≤ 400 ms (Macrobenchmark, Baseline + Startup Profiles shipped).
 - Chat list / conversation scroll at the display's native rate (60/90/120 Hz): P90 frame ≤ 8–10 ms, jank < 1%.
 - Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms.
-- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 35 MB arm64.
+- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 50 MB arm64 (raised from 35 MB for the call engine, owner 2026-10-22).
 - Background battery ≤ 1.5% / 8 h; idle data ≤ 2 MB / 24 h; no polling, no periodic jobs < 15 min.
 - Compose: immutable state, keyed/contentTyped lazy lists, zero off-screen recompositions,
   animations in draw/layout phase; TDLib: suspendable, batched, prioritized, cancellable calls.
@@ -205,8 +210,22 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - `android:allowBackup="false"`, exclude TDLib dirs from any backup.
 - Optional app passcode with biometric prompt; screen obscured in recents when enabled.
 - Network only to Telegram data centers (via TDLib) and user-requested links; no third-party
-  network calls. `networkSecurityConfig` with cleartext disabled.
-- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release.
+  network calls (the `gms` flavor's push service, FR-N3, is the one exception; `foss` has none). `networkSecurityConfig` with cleartext disabled.
+- Debug logs never contain message text, phone numbers or tokens; TDLib verbosity ≤ 2 in release. Logs and the last
+  crash stay on the device; "Send feedback" redacts them into a report the user reads and shares themselves
+  (`docs/TESTING_GUIDE.md`), never sent by the app.
+- Contacts sync (FR-P1, `docs/adr/0011-contacts-sync.md`, approved by the owner 2026-10-21) is opt-in and off by
+  default: only with it on are the names and phone numbers of the phone's contacts read (`READ_CONTACTS`) and sent to
+  Telegram (its contact import), when it is turned on, when Contacts opens while it is on and on "Sync now", never in
+  the background; turning it off deletes the imported numbers from Telegram.
+- The camera (`CAMERA`, no camera is required to install) has two uses:
+  - The QR code scanner (FR-P5, `docs/adr/0012-camerax-and-zxing-qr-scanner.md`, approved by the owner 2026-10-21),
+    asked when the scanner opens, after it says why: frames are decoded on the device by ZXing and dropped, nothing
+    the camera sees is kept or sent, and only the text of a Telegram link reaches TDLib. Scanning from an image uses
+    the Photo Picker, without a permission.
+  - Video calls (FR-V2, `docs/adr/0019-video-and-group-calls-scope.md`, approved for 1:1 video), asked when the user
+    turns the camera on in a call: the video goes to the other person only, end-to-end encrypted like the call's
+    audio, while the camera is on, and is not kept.
 
 ### 6.3 Accessibility (Google standards)
 
@@ -221,6 +240,9 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - English source strings; RTL layouts verified (Arabic/Hebrew); per-app language selector;
   plurals via ICU; dates via `java.time` + `DateTimeFormatter` localized; numbers via
   `NumberFormat`. Telegram's own translations (`getLanguagePackStrings`) considered later.
+- Translations come from Hosted Weblate (owner decision 2026-10-22), never machine-translated into the repository; a
+  language ships once it covers 80% of the strings (`docs/TRANSLATING.md`). Pseudo-locales `en-XA` and `ar-XB` in debug
+  builds check long text and right to left.
 
 ### 6.5 Reliability
 
@@ -233,7 +255,7 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 Every screen must satisfy this list before merge:
 
 - [ ] Material 3 Expressive theme (`MaterialExpressiveTheme`), expressive `MotionScheme`, full compliance audit (`docs/DESIGN_SYSTEM.md` §12)
-- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; dark `GRAD −25`
+- [ ] Google Sans Flex type scale incl. emphasized styles; `opsz` = size; `GRAD` 0 (25 with high contrast)
 - [ ] Dynamic color on Android 12+ with brand-seeded fallback; tonal palettes, not hard-coded hex
 - [ ] Edge-to-edge (`enableEdgeToEdge()`), insets via `WindowInsets` / `Scaffold` content padding
 - [ ] Predictive back (`android:enableOnBackInvokedCallback="true"`, `PredictiveBackHandler`
@@ -245,7 +267,8 @@ Every screen must satisfy this list before merge:
 - [ ] Foreground services declare `foregroundServiceType`
 - [ ] Per-app language, large-screen keyboard/mouse support, state restoration (rotation, process death)
 - [ ] Accessibility (§6.3), haptics via `HapticFeedbackType`, no custom vibration patterns > 50 ms
-- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `MissingTranslation` fatal
+- [ ] No deprecated APIs; lint `NewApi`, `UnusedResources`, `ExtraTranslation` fatal (`MissingTranslation`
+      informational: a language ships at 80% translated, `docs/adr/0020-translations-on-weblate.md`)
 - [ ] Performance budgets in `docs/PERFORMANCE.md` met for the screen
 - [ ] Android 16 Live Updates (`ProgressStyle` notification) for long uploads/downloads where available
 
@@ -253,7 +276,8 @@ Every screen must satisfy this list before merge:
 
 - Semantic versioning `MAJOR.MINOR.PATCH`; tag `vX.Y.Z` triggers the release workflow.
 - Release artifacts: `pingogram-X.Y.Z-arm64-v8a.apk`, `-armeabi-v7a.apk`, `-x86_64.apk`,
-  `-universal.apk`, `SHA256SUMS.txt`, and an `.aab` attached as a workflow artifact.
+  `-universal.apk` (`foss`), the same four with a `-gms` suffix (`gms`, push through Firebase), `SHA256SUMS.txt`,
+  and the `.aab` bundles of both flavors attached as a workflow artifact.
 - Signed with the owner's release keystore (GitHub secret); debug builds use a committed
   debug keystore so anyone can build.
 - Changelog section auto-extracted from `CHANGELOG.md` into the GitHub Release body.

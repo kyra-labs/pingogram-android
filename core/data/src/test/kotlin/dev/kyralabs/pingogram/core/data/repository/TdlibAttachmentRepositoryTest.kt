@@ -11,9 +11,14 @@ import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentThumbnail
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
+import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -297,6 +302,64 @@ class TdlibAttachmentRepositoryTest {
                 listOf(contact.phoneNumber, contact.firstName, contact.lastName, contact.vcard, contact.userId),
             )
             assertEquals(7L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+        }
+
+    @Test
+    fun `a location goes as an inputMessageLocation with its accuracy, replying and silent as asked`() =
+        runTest {
+            answerSends()
+            val here = DeviceLocation(Location(48.858370, 2.294481), accuracyMeters = 12.5f)
+
+            repository().sendLocation(CHAT, here, SendOptions(silent = true), replyToMessageId = 7)
+
+            val request = client.sentOf<TdApi.SendMessage>().single()
+            val location = (request.inputMessageContent as TdApi.InputMessageLocation).location
+            assertEquals(
+                listOf(48.858370, 2.294481, 12.5),
+                listOf(location.latitude, location.longitude, location.horizontalAccuracy),
+            )
+            assertEquals(7L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+            assertTrue(request.options.disableNotification)
+        }
+
+    @Test
+    fun `a sticker goes as an inputMessageSticker of its file, size and emoji, with the reply`() =
+        runTest {
+            answerSends()
+            val duck =
+                Sticker(
+                    setId = 7,
+                    width = 512,
+                    height = 480,
+                    emoji = "🦆",
+                    format = StickerFormat.Tgs,
+                    thumbnail = null,
+                    file = FileRef(70, 30_000),
+                )
+
+            repository().sendSticker(CHAT, duck, replyToMessageId = 7)
+
+            val request = client.sentOf<TdApi.SendMessage>().single()
+            val content = request.inputMessageContent as TdApi.InputMessageSticker
+            assertEquals(70, (content.sticker.sticker as TdApi.InputFileId).id)
+            assertEquals(listOf(512, 480), listOf(content.sticker.width, content.sticker.height))
+            assertEquals("🦆", content.emoji)
+            assertEquals(7L, (request.replyTo as TdApi.InputMessageReplyToMessage).messageId)
+        }
+
+    @Test
+    fun `a location's accuracy stays within what Telegram takes, 0 when unknown`() =
+        runTest {
+            answerSends()
+
+            repository().sendLocation(CHAT, DeviceLocation(Location(1.0, 2.0), accuracyMeters = 2_400f))
+            repository().sendLocation(CHAT, DeviceLocation(Location(1.0, 2.0), accuracyMeters = null))
+
+            val accuracies =
+                client.sentOf<TdApi.SendMessage>().map {
+                    (it.inputMessageContent as TdApi.InputMessageLocation).location.horizontalAccuracy
+                }
+            assertEquals(listOf(1_500.0, 0.0), accuracies)
         }
 
     @Test

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pingogram's own "bot commands" symbol: a slash in a rounded square, drawn to match Material Symbols Rounded
+     (wght 400, opsz 24, FILL 0) on its 960 grid, for the composer's commands button; Material Symbols has no slash. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:pathData="M240,160H720A80,80 0,0 1,800 240V720A80,80 0,0 1,720 800H240A80,80 0,0 1,160 720V240A80,80 0,0 1,240 160Z"
+        android:strokeWidth="80"
+        android:strokeColor="@android:color/white" />
+    <path
+        android:pathData="M560,320L400,640"
+        android:strokeLineCap="round"
+        android:strokeWidth="80"
+        android:strokeColor="@android:color/white" />
+</vector>

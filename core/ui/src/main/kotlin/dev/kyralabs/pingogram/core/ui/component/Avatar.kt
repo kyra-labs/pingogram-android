@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -51,11 +50,13 @@ import dev.kyralabs.pingogram.core.ui.R
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.theme.AvatarColors
 import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderColors
-import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderPolygon
+import dev.kyralabs.pingogram.core.ui.theme.avatarPlaceholderColorsOnSelection
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.transition.snapWhenReducedMotion
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 
@@ -67,8 +68,9 @@ import kotlinx.coroutines.launch
  *   [size] and faded in on the motion scheme's default effects spring; shown at once when Coil's memory cache has it,
  *   e.g. when a list scrolls back.
  * - **Placeholder**: the initials of [name] (or [placeholderIcon], or a person when [name] has no initials) on a
- *   [MaterialShapes] polygon in one of the seven avatar color pairs. Both are chosen by [id], so a chat looks the same
- *   everywhere, and they cycle with coprime lengths, so a shape does not always come with the same colors.
+ *   circle in one of the four avatar color pairs, chosen by [id], so a chat looks the same everywhere. Circles, as in
+ *   Google Messages and Contacts: one silhouette per list, not one per chat. On a selected or open row
+ *   ([onSelection]) the placeholder takes `primary`, which stands out from the row's `secondaryContainer`.
  * - **Online**: a dot in `MaterialTheme.pingogramColors.online` at the bottom end, set off from the avatar by a ring of
  *   [onlineRingColor]. It grows in and shrinks away on the motion scheme's fast spatial spring.
  * - **Selected**: the avatar's shape morphs into a [MaterialShapes] burst in `primary` with a check in `onPrimary`
@@ -91,6 +93,8 @@ import kotlinx.coroutines.launch
  * @param contentDescription what the avatar shows, for screen readers; null keeps it decorative.
  * @param onlineRingColor the color behind the avatar (a row's container color), which sets the online dot off.
  * @param selected shows the selected look instead of the avatar.
+ * @param onSelection the avatar sits on a selected or open row, whose `secondaryContainer` would swallow a
+ *   container-colored placeholder.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -105,11 +109,16 @@ fun Avatar(
     contentDescription: String? = null,
     onlineRingColor: Color = MaterialTheme.colorScheme.surface,
     selected: Boolean = false,
+    onSelection: Boolean = false,
 ) {
     val fileId = photo?.small?.id
     // From 0 while the photo loads to 1 once it shows; starts over for another photo.
     val photoAlpha = if (fileId != null) remember(fileId) { Animatable(0f) } else null
     val colors = MaterialTheme.colorScheme
+    val placeholderColors =
+        remember(colors, id, onSelection) {
+            if (onSelection) colors.avatarPlaceholderColorsOnSelection() else colors.avatarPlaceholderColors(id)
+        }
     Box(
         modifier
             .size(size)
@@ -117,9 +126,9 @@ fun Avatar(
             // Outside the online dot, which fades out with the avatar.
             .avatarSelection(
                 selected = selected,
-                avatarShape = if (fileId != null) MaterialShapes.Circle else avatarPlaceholderPolygon(id),
+                avatarShape = MaterialShapes.Circle,
                 mark = SelectedMark(painterResource(R.drawable.ic_check), colors.primary, colors.onPrimary),
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                animationSpec = snapWhenReducedMotion(MaterialTheme.motionScheme.defaultSpatialSpec()),
             ).onlineIndicator(
                 online = isOnline,
                 dotColor = MaterialTheme.pingogramColors.online,
@@ -129,7 +138,7 @@ fun Avatar(
     ) {
         AvatarPlaceholder(
             name = name,
-            id = id,
+            colors = placeholderColors,
             size = size,
             icon = placeholderIcon,
             modifier = Modifier.matchParentSize().fadingOutAs(photoAlpha),
@@ -141,8 +150,8 @@ fun Avatar(
 }
 
 /**
- * Fades the placeholder out as the photo fades in ([photoAlpha] from 0 to 1), so the polygon's corners do not show
- * around the round photo. Read in the draw phase.
+ * Fades the placeholder out as the photo fades in ([photoAlpha] from 0 to 1), so its colors do not show around the
+ * photo's antialiased edge. Read in the draw phase.
  */
 private fun Modifier.fadingOutAs(photoAlpha: Animatable<Float, AnimationVector1D>?): Modifier =
     if (photoAlpha == null) this else graphicsLayer { alpha = 1f - photoAlpha.value }
@@ -189,21 +198,16 @@ private fun AvatarPhoto(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AvatarPlaceholder(
     name: String,
-    id: Long,
+    colors: AvatarColors,
     size: Dp,
     @DrawableRes icon: Int?,
     modifier: Modifier,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    val colors = remember(colorScheme, id) { colorScheme.avatarPlaceholderColors(id) }
-    // toShape() remembers the shape per polygon.
-    val shape = avatarPlaceholderPolygon(id).toShape()
     val initials = remember(name) { avatarInitials(name) }
-    Box(modifier.background(colors.container, shape), contentAlignment = Alignment.Center) {
+    Box(modifier.background(colors.container, CircleShape), contentAlignment = Alignment.Center) {
         if (icon == null && initials.isNotEmpty()) {
             Text(
                 text = initials,
@@ -225,7 +229,7 @@ private fun AvatarPlaceholder(
 
 /**
  * The largest style of the type scale whose size is at most [INITIALS_SIZE_RATIO] of the avatar's, so two initials fit
- * the placeholder polygon: `titleMedium` for 40–54 dp, `titleLarge` for 55–59 dp. Its size is taken in dp: the avatar
+ * the placeholder circle: `titleMedium` for 40–54 dp, `titleLarge` for 55–59 dp. Its size is taken in dp: the avatar
  * does not grow with the font scale, so neither do its initials. Its font keeps the style's optical size, which
  * matches.
  */
@@ -265,14 +269,14 @@ private fun Modifier.avatarSemantics(contentDescription: String?): Modifier =
         }
     }
 
-// Two initials at about 40% of the avatar fit inside every placeholder polygon.
+// Two initials at about 40% of the avatar fit inside the placeholder circle.
 private const val INITIALS_SIZE_RATIO = 0.4f
 private const val ICON_SIZE_RATIO = 0.55f
 
 /**
- * Avatar variants for previews and screenshot tests: initials in every color pair and placeholder shape, a person and
- * an icon placeholder, photos, online dots, selected avatars, and the sizes the type scale steps through. Photos are a
- * solid color, which Coil shows in inspection mode (previews) instead of loading from TDLib.
+ * Avatar variants for previews and screenshot tests: initials in every color pair, a person and an icon placeholder,
+ * photos, online dots, selected avatars, a placeholder on a selected row, and the sizes the type scale steps through.
+ * Photos are a solid color, which Coil shows in inspection mode (previews) instead of loading from TDLib.
  */
 @OptIn(ExperimentalCoilApi::class)
 @Composable
@@ -303,6 +307,7 @@ internal fun AvatarShowcase(modifier: Modifier = Modifier) {
                 Avatar(photo = null, name = "Émile Zola", id = 1, size = medium, selected = true)
                 Avatar(photo = SamplePhoto, name = "Ada Lovelace", id = 10, size = medium, selected = true)
                 Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, isOnline = true, selected = true)
+                Avatar(photo = null, name = "Ada Lovelace", id = 9, size = medium, onSelection = true)
             }
             ShowcaseRow {
                 listOf(ProfileSize, medium, BetweenSize, MaterialTheme.sizes.avatarSmall, TinySize).forEach { size ->

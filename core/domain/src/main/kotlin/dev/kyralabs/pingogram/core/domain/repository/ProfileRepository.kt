@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
+import dev.kyralabs.pingogram.core.domain.model.ProfileLink
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import kotlinx.coroutines.flow.StateFlow
 
@@ -54,4 +55,10 @@ interface ProfileRepository {
      * when the user has no photo.
      */
     suspend fun deleteProfilePhoto(): Outcome<Unit>
+
+    /**
+     * The link to the user's profile for their QR code (`REQUIREMENTS.md` FR-P5): `t.me/<username>`, or without a
+     * username a temporary one that Telegram makes for it.
+     */
+    suspend fun profileLink(): Outcome<ProfileLink>
 }

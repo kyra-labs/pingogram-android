@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The [DomainError] for a TDLib error (`docs/ARCHITECTURE.md`, Error handling). Telegram's error names
@@ -11,7 +12,13 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
  * ("First name must be non-empty") are matched too.
  */
 internal fun TdError.toDomainError(): DomainError {
-    val floodWait = retryAfter
+    val floodWait =
+        retryAfter ?: TOO_FRESH
+            .find(message)
+            ?.groupValues
+            ?.get(1)
+            ?.toLongOrNull()
+            ?.seconds
     return when {
         floodWait != null -> {
             DomainError.FloodWait(floodWait.inWholeSeconds)
@@ -49,6 +56,13 @@ private const val UNAUTHORIZED = 401
 private const val NOT_FOUND = 404
 private const val SILENT = 406
 
+/**
+ * Telegram's refusals to change 2-step verification for a while, with the seconds left: `PASSWORD_TOO_FRESH_x` (the
+ * password was set only recently) and `SESSION_TOO_FRESH_x` (this session logged in only recently). The user can only
+ * wait, as for `FLOOD_WAIT_x`.
+ */
+private val TOO_FRESH = Regex("""^(?:PASSWORD|SESSION)_TOO_FRESH_(\d+)""")
+
 /** An upper-case Telegram error name at the start of the message, e.g. `PHONE_NUMBER_INVALID`. */
 private val ERROR_NAME = Regex("""^[A-Z][A-Z0-9_]*(?![a-z])""")
 
@@ -72,6 +86,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "EMAIL_CODE_EXPIRED" to DomainError.CodeExpired,
         // account.verifyEmail, which checks the email code of an address entered during login.
         "EMAIL_VERIFY_EXPIRED" to DomainError.CodeExpired,
+        // account.confirmPasswordEmail: the recovery email's confirmation code is too old.
+        "EMAIL_HASH_EXPIRED" to DomainError.CodeExpired,
         "PASSWORD_HASH_INVALID" to DomainError.PasswordInvalid,
         "FIRSTNAME_INVALID" to DomainError.FirstNameInvalid,
         "LASTNAME_INVALID" to DomainError.LastNameInvalid,
@@ -88,6 +104,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "USERNAME_INVALID" to DomainError.UsernameInvalid,
         "USERNAME_PURCHASE_AVAILABLE" to DomainError.UsernameForSale,
         "ABOUT_TOO_LONG" to DomainError.BioTooLong,
+        // Contacts: contacts.addContact without a first name, contacts.resolveUsername for a username no one has.
+        "CONTACT_NAME_EMPTY" to DomainError.FirstNameInvalid,
+        "USERNAME_NOT_OCCUPIED" to DomainError.NotFound,
         "PHOTO_CROP_SIZE_SMALL" to DomainError.PhotoInvalid,
         "PHOTO_INVALID_DIMENSIONS" to DomainError.PhotoInvalid,
         "PHOTO_EXT_INVALID" to DomainError.PhotoInvalid,
@@ -101,6 +120,33 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "CHAT_SEND_VIDEOS_FORBIDDEN" to DomainError.SendingNotAllowed,
         "CHAT_SEND_DOCS_FORBIDDEN" to DomainError.SendingNotAllowed,
         "CHAT_SEND_POLL_FORBIDDEN" to DomainError.SendingNotAllowed,
+        // Creating groups and channels: messages.createChat, channels.createChannel, channels.updateUsername.
+        "CHAT_TITLE_EMPTY" to DomainError.TitleInvalid,
+        "CHANNELS_TOO_MUCH" to DomainError.TooManyChats,
+        "CHANNELS_ADMIN_PUBLIC_TOO_MUCH" to DomainError.TooManyPublicLinks,
+        "USER_RESTRICTED" to DomainError.AccountRestricted,
+        // Administering groups and channels: channels.editAdmin, channels.editBanned, messages.editChatTitle, ….
+        "CHAT_ADMIN_REQUIRED" to DomainError.AdminRightsRequired,
+        "RIGHT_FORBIDDEN" to DomainError.AdminRightsRequired,
+        "USER_ADMIN_INVALID" to DomainError.AdminRightsRequired,
+        "ADMIN_RANK_INVALID" to DomainError.AdminRightsRequired,
+        "USER_CREATOR" to DomainError.AdminRightsRequired,
+        "CHAT_ABOUT_TOO_LONG" to DomainError.DescriptionTooLong,
+        "USER_NOT_MUTUAL_CONTACT" to DomainError.NotMutualContact,
+        "ADMINS_TOO_MUCH" to DomainError.TooManyAdmins,
+        // Joining: messages.checkChatInvite, messages.importChatInvite, channels.joinChannel.
+        "INVITE_HASH_EXPIRED" to DomainError.InviteLinkInvalid,
+        "INVITE_HASH_INVALID" to DomainError.InviteLinkInvalid,
+        "INVITE_HASH_EMPTY" to DomainError.InviteLinkInvalid,
+        "USERS_TOO_MUCH" to DomainError.ChatFull,
+        // Logging in another device by QR code: auth.acceptLoginToken.
+        "AUTH_TOKEN_EXPIRED" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_INVALID" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_INVALIDX" to DomainError.QrLoginExpired,
+        "AUTH_TOKEN_ALREADY_ACCEPTED" to DomainError.QrLoginExpired,
+        // Calls: phone.requestCall, phone.acceptCall.
+        "USER_PRIVACY_RESTRICTED" to DomainError.CallPrivacyRestricted,
+        "PARTICIPANT_VERSION_OUTDATED" to DomainError.CallPeerOutdated,
     )
 
 /**
@@ -125,6 +171,11 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Polls can't be sent to the private chat" to DomainError.SendingNotAllowed,
         "Non-anonymous polls can't be sent to channel chats" to DomainError.SendingNotAllowed,
         "Message can't be sent to a secret chat" to DomainError.SendingNotAllowed,
+        // createNewBasicGroupChat and createNewSupergroupChat with a title that is empty once cleaned
+        // (ChatManager::create_new_chat, create_new_channel).
+        "Title must be non-empty" to DomainError.TitleInvalid,
+        // checkChatInviteLink and joinChatByInviteLink with a link that is no invite link (LinkManager).
+        "Wrong invite link" to DomainError.InviteLinkInvalid,
     )
 
 /**
@@ -136,4 +187,7 @@ private val TDLIB_PATTERNS: List<Pair<Regex, DomainError>> =
     listOf(
         Regex("""^File of size \d+ bytes is too big""") to DomainError.FileTooLarge,
         Regex("""^Not enough rights to send """) to DomainError.SendingNotAllowed,
+        // TDLib's own rights checks of the administration functions ("Not enough rights to …"), after the sending
+        // check above, as the first match wins.
+        Regex("""^Not enough rights\b""") to DomainError.AdminRightsRequired,
     )

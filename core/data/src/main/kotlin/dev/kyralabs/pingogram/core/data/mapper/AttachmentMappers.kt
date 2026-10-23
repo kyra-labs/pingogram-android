@@ -2,7 +2,10 @@ package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import org.drinkless.tdlib.TdApi
 
 // What the attach menu sends, as TDLib's input message contents (td_api.tl of the pinned TDLib, 1.8.68).
@@ -46,6 +49,13 @@ internal fun Attachment.toInputMessageContent(caption: TdApi.FormattedText?): Td
     }
 
 /**
+ * `inputMessageVoiceNote` of an `inputVoiceNote` from the recorded file, with its length and waveform, without caption,
+ * not self-destructing. TDLib takes the file's type from its extension (`.ogg`, `.m4a`).
+ */
+internal fun RecordedVoiceNote.toInputMessageVoiceNote(): TdApi.InputMessageVoiceNote =
+    TdApi.InputMessageVoiceNote(TdApi.InputVoiceNote(TdApi.InputFileLocal(path), duration, waveform.bytes), null, null)
+
+/**
  * [attachments] in the messages they are sent as, in their order: runs of photos and videos, and runs of documents
  * (td_api.tl `sendMessageAlbum`: documents group only with documents), split into albums of at most
  * [MAX_ALBUM_SIZE]. A group of one is a message of its own.
@@ -75,6 +85,27 @@ internal const val MAX_ALBUM_SIZE = 10
 /** `inputMessageContact` of this contact, with no vCard. */
 internal fun Contact.toInputMessageContact(): TdApi.InputMessageContact =
     TdApi.InputMessageContact(TdApi.Contact(phoneNumber, firstName, lastName, "", userId))
+
+/**
+ * `inputMessageLocation` of this location, a point (TDLib sends live locations as `inputMessageLiveLocation`): its
+ * accuracy within td_api.tl's 0–1500 m, 0 where Android gave none, as Telegram reads 0 as unknown. An approximate
+ * location (about 2 km on Android 12 and later) goes as accurate to 1.5 km, the most Telegram takes.
+ */
+internal fun DeviceLocation.toInputMessageLocation(): TdApi.InputMessageLocation {
+    val accuracy = accuracyMeters?.toDouble()?.coerceIn(0.0, MAX_HORIZONTAL_ACCURACY) ?: 0.0
+    return TdApi.InputMessageLocation(TdApi.Location(location.latitude, location.longitude, accuracy))
+}
+
+/** td_api.tl `location.horizontal_accuracy`: 0–1500 m. */
+private const val MAX_HORIZONTAL_ACCURACY = 1500.0
+
+/**
+ * `inputMessageSticker` of a sticker TDLib already knows (from a sticker set, the recent or the favorite ones): its
+ * file by id, which TDLib sends as the existing remote file without uploading anything, its size and its emoji, so the
+ * chat list's preview shows "😀 Sticker". No thumbnail: the remote file has its own.
+ */
+internal fun Sticker.toInputMessageSticker(): TdApi.InputMessageSticker =
+    TdApi.InputMessageSticker(TdApi.InputSticker(TdApi.InputFileId(file.id), null, width, height), emoji)
 
 /**
  * `inputMessagePoll` of this poll: plain question and options (only Premium users may add custom emoji), no

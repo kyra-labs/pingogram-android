@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.composer
 
+import android.icu.text.BreakIterator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldBuffer
@@ -24,12 +25,14 @@ import kotlinx.collections.immutable.toImmutableList
  *   pasting, the keyboard's corrections), from the exact changes of the edit ([afterReplace]). An edit it does not see
  *   (an undo, a text set from code) is reconciled when the text is next read ([afterChange]).
  * - **Formatting**: [toggle] applies or removes a type over a selection, [setLink] links it.
+ * - **Emoji panel**: [insert] puts an emoji at the cursor, [deleteBackward] deletes what is before it.
  * - **Reading**: [content] is the text with its entities, both snapshot state, so readers in composition or a
  *   `snapshotFlow` follow every change.
  *
  * Its owner, the conversation's view model, keeps it across rotations; it only touches the main thread, as the text
  * field does.
  */
+@Suppress("TooManyFunctions") // One per edit of the text: formatting, links, replacing, emoji, commands.
 @Stable
 class ComposerText(
     initial: FormattedText = FormattedText.Empty,
@@ -68,6 +71,37 @@ class ComposerText(
         formatting = Formatting(content.text, content.entities.toList())
     }
 
+    /**
+     * Puts [text] in place of the selection, or at the cursor, and the cursor after it: an emoji from the emoji panel.
+     * Formatting around it moves as it does for typed text.
+     */
+    fun insert(text: String) {
+        val selection = state.selection
+        replace(selection.min, selection.max, text)
+    }
+
+    /**
+     * Puts [text] at the start of the field, the cursor after it: a bot command inserted before what the field holds,
+     * for the user to write its arguments. Formatting after it moves along.
+     */
+    fun prepend(text: String) = replace(0, 0, text)
+
+    /**
+     * Deletes the selection, or else the character before the cursor, as the keyboard's backspace does: a whole emoji
+     * sequence (a family, a flag, a skin tone) at once, as one grapheme cluster of ICU's character break iterator.
+     */
+    fun deleteBackward() {
+        val selection = state.selection
+        if (!selection.collapsed) {
+            replace(selection.min, selection.max, "")
+        } else if (selection.min > 0) {
+            val breaks = BreakIterator.getCharacterInstance()
+            breaks.setText(state.text.toString())
+            val start = breaks.preceding(selection.min).takeIf { it != BreakIterator.DONE } ?: 0
+            replace(start, selection.min, "")
+        }
+    }
+
     /** Applies [type] to the [selection], or removes it if the selection has it everywhere ([toggling]). */
     fun toggle(
         type: TextEntityType,
@@ -96,6 +130,20 @@ class ComposerText(
     /** The address the [selection] links to; null if it is not within one link. */
     fun linkAt(selection: TextRange = state.selection): String? =
         entitiesFor(state.text.toString()).linkAt(selection.min, selection.max)
+
+    /** Replaces [start] until [end] with [replacement], the cursor after it, moving the entities with the edit. */
+    private fun replace(
+        start: Int,
+        end: Int,
+        replacement: String,
+    ) {
+        val entities = entitiesFor(state.text.toString()).afterReplace(start, end, replacement.length)
+        state.edit {
+            replace(start, end, replacement)
+            selection = TextRange(start + replacement.length)
+        }
+        formatting = Formatting(state.text.toString(), entities)
+    }
 
     private inline fun changeEntities(change: (List<TextEntity>) -> List<TextEntity>) {
         val text = state.text.toString()

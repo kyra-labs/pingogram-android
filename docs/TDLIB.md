@@ -29,7 +29,7 @@ per pinned commit in CI and reuse the AAR everywhere.
    attaches it to a GitHub Release tagged `tdlib-<short-sha>` marked pre-release, so the app
    build can download it deterministically.
 5. The build fetches that AAR by itself (`pingogram.tdlib` convention plugin, applied by
-   `core/tdlib/build.gradle.kts`; logic in `build-logic/.../TdlibAar.kt`):
+   `core/tdlib/build.gradle.kts`; logic in `build-logic/.../PrebuiltAar.kt`, shared with the call engine's AAR, `docs/adr/0015-call-media-engine.md`):
    - The expected SHA-256 is pinned in `gradle/libs.versions.toml` as `tdlibAarSha256` (copy it
      from `SHA256SUMS.txt` of the release). Until a release exists it is `"unpinned"` (version
      catalogs allow no empty value), and the build fails with instructions.
@@ -82,8 +82,9 @@ interface TdlibClient {
   the answers to `send`, so blocking it while a collector awaits one would deadlock.
 - `updates` has no replay: a repository that needs every update subscribes before `start()`.
 - `start()` runs `Client.execute(SetLogVerbosityLevel)` before creating the client: 1 in release
-  (`REQUIREMENTS.md` §6.2: ≤ 2), 3 in debug, where `SetLogStream` also writes a rotating file
-  (`filesDir/tdlib/logs/tdlib.log`, 10 MB). Our own logs never contain `TdApi` objects (their
+  (`REQUIREMENTS.md` §6.2: ≤ 2: errors only), 3 in debug, and `SetLogStream` writes a rotating file
+  (`filesDir/tdlib/logs/tdlib.log`; 1 MB in release, 10 MB in debug). It stays on the device: "Send feedback" shows its
+  last lines, redacted, in the report the user shares themselves (`docs/TESTING_GUIDE.md`). Our own logs never contain `TdApi` objects (their
   `toString()` dumps everything, message text included) or user data; `AuthState.toString()`
   leaves payloads out.
 - `org.drinkless.tdlib.Client` sits behind an internal seam (`TdlibNative` / `NativeClient`), so
@@ -128,8 +129,33 @@ Transient errors (IO, a busy Keystore) are thrown instead and never cost the ses
 still answers `SetTdlibParameters` with 401 (wrong key), the client discards key and database
 once and sends the parameters again.
 
-Useful options via `setOption`: `notification_group_count_max`, `notification_group_size_max`,
-`ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
+Options set via `setOption`:
+
+- `notification_group_count_max` = 25 (TDLib's maximum) and `notification_group_size_max` = 10 (TDLib's default),
+  by `TdlibNotificationRepository` at every `AuthorizationStateReady`. TDLib's notification engine stays off until the
+  first is set; TDLib keeps both in its database, so from the next start on it restores the active notifications with
+  `updateActiveNotifications` before any other notification update. 25 groups and a summary stay within the 50
+  notifications Android shows per app.
+
+Other useful options: `ignore_inline_thumbnails` (false), `use_quick_ack`, `prefer_ipv6`, `language_pack_id`.
+
+### Secret chats
+
+TDLib does all of their cryptography and accepts the secret chats other users start by itself: td_api.tl has no
+function to accept one (`toggleSessionCanAcceptSecretChats` only lets a session refuse them all), so an incoming one
+arrives pending, not outbound, and turns ready once the key is agreed. `createNewSecretChat(user_id)` starts one,
+`closeSecretChat` ends it for both sides, and the self-destruct timer is `setChatMessageAutoDeleteTime`, which takes
+any number of seconds in a secret chat (other chats: whole days up to a year). `secretChat.key_hash` is 36 bytes: two
+bits per pixel, low bits first, for a 12 × 12 image of four colors, or its first 32 bytes as hexadecimal.
+
+### Push notifications (`gms` only)
+
+`registerDevice(deviceTokenFirebaseCloudMessaging(token, encrypt = true), [])` at every login and start while logged
+in, and for each new FCM token; `processPushNotification(payload)` for each push (it may come before TDLib is fully
+started). TDLib keeps the token, re-registers it at every start by itself and answers an unchanged registration
+locally; it does not unregister on `logOut`, so the app deletes the FCM token instead. Telegram sends the pushes only
+with the FCM credentials uploaded for the `api_id` at my.telegram.org, and only on the production DC
+(`docs/adr/0004-push-delivery.md`).
 
 ## Authorization state machine
 
@@ -156,15 +182,16 @@ WaitTdlibParameters ─▶ WaitPhoneNumber ─▶ WaitCode ─▶ WaitPassword? 
 
 `updateAuthorizationState`, `updateConnectionState`, `updateOption`,
 `updateNewChat`, `updateChatPosition`, `updateChatLastMessage`, `updateChatReadInbox/Outbox`,
-`updateChatUnreadMentionCount`, `updateChatDraftMessage`, `updateChatPermissions`, `updateChatNotificationSettings`,
+`updateChatUnreadMentionCount`, `updateChatDraftMessage`, `updateChatPermissions`, `updateChatMessageSender`, `updateChatNotificationSettings`,
 `updateChatFolders`, `updateUser`, `updateUserStatus`, `updateBasicGroup`, `updateSupergroup`,
 `updateSecretChat`, `updateNewMessage`, `updateMessageSendSucceeded/Failed`,
 `updateMessageContent`, `updateMessageEdited`, `updateDeleteMessages`,
 `updateMessageInteractionInfo`, `updateChatAction`, `updateFile`, `updateFileDownloads`,
-`updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`,
+`updateNotificationGroup`, `updateNotification`, `updateActiveNotifications`, `updateHavePendingNotifications`,
 `updateUnreadMessageCount`, `updateUnreadChatCount`, `updateScopeNotificationSettings`,
 `updateDefaultReactionType`, `updateAvailableMessageEffects`, `updateStickerSet`,
-`updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`.
+`updateInstalledStickerSets`, `updateRecentStickers`, `updateSavedAnimations`, `updateMessageIsPinned` (pinned
+messages), `updateForumTopicInfo`, `updateForumTopic` (forum topics, while a forum is observed).
 
 Unknown updates are ignored but counted in debug logs.
 

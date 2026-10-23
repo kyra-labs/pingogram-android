@@ -67,25 +67,27 @@ internal fun contentActions(
 internal fun messageShortcuts(
     bubble: ChatItem.Bubble,
     shortcuts: MessageShortcuts,
-): List<ContentAction> {
-    val isSent = bubble.status != OutgoingStatus.Pending && bubble.status != OutgoingStatus.Failed
-    return listOfNotNull(
+): List<ContentAction> =
+    listOfNotNull(
         ContentAction(R.string.message_action_resend, ChatEvent.Resend(bubble.id))
             .takeIf { bubble.status == OutgoingStatus.Failed },
         ContentAction(
             R.string.message_action_reply,
             ChatEvent.Reply(bubble.id),
-        ).takeIf { shortcuts.canReply && isSent },
+        ).takeIf { bubble.canBeRepliedTo(shortcuts) },
         ContentAction(R.string.message_action_copy, ChatEvent.Copy(bubble.id))
             .takeIf { shortcuts.canCopy && bubble.text.text.isNotEmpty() },
     )
-}
 
 /** Cancelling the [uploads] of a bubble's messages being sent, all at once; null while none uploads. */
 internal fun uploadAction(uploads: Map<Long, *>): ContentAction? =
     uploads.keys.toList().takeIf { it.isNotEmpty() }?.let {
         ContentAction(R.string.attach_cancel_upload, ChatEvent.CancelUpload(it))
     }
+
+/** Opening the sender's profile, for an incoming message of a user in a group chat; null otherwise. */
+internal fun profileAction(bubble: ChatItem.Bubble): ContentAction? =
+    bubble.senderUserId?.let { ContentAction(R.string.chat_open_profile, ChatEvent.OpenProfile(it)) }
 
 /** Showing the replied message, for a bubble whose quote opens one ([ReplyQuote.messageId]); null otherwise. */
 internal fun replyAction(bubble: ChatItem.Bubble): ContentAction? =
@@ -108,3 +110,10 @@ private fun FileState.NotDownloaded.downloadAction(fileId: Int): ContentAction? 
     if (canBeDownloaded) ContentAction(R.string.content_download, ChatEvent.DownloadFile(fileId)) else null
 
 private val OPEN = R.string.content_open
+
+/**
+ * Whether the user can reply to this message now: where they can write ([MessageShortcuts.canReply]), once it is
+ * sent. Screen readers' "Reply" and the swipe to reply both ask.
+ */
+internal fun ChatItem.Bubble.canBeRepliedTo(shortcuts: MessageShortcuts): Boolean =
+    shortcuts.canReply && status != OutgoingStatus.Pending && status != OutgoingStatus.Failed

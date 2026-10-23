@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatPosition
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -36,11 +37,14 @@ internal fun TdApi.Chat.toChat(mutedScopes: Set<NotificationScope>): Chat? {
         hasProtectedContent = hasProtectedContent,
         messageAutoDeleteTime = messageAutoDeleteTime,
         permissions = permissions.toChatPermissions(),
+        messageSender = messageSenderId?.toMessageSender(),
+        replyMarkupMessageId = replyMarkupMessageId,
+        isTranslatable = isTranslatable,
     )
 }
 
 /** Null for a chat type added by a newer TDLib. */
-private fun TdApi.ChatType.toChatType(): ChatType? =
+internal fun TdApi.ChatType.toChatType(): ChatType? =
     when (this) {
         is TdApi.ChatTypePrivate -> ChatType.Private(userId)
         is TdApi.ChatTypeSecret -> ChatType.Secret(secretChatId, userId)

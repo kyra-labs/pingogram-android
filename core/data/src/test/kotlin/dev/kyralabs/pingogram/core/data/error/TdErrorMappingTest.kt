@@ -56,6 +56,9 @@ class TdErrorMappingTest {
                 Arguments.of(400, "EMAIL_CODE_EXPIRED", DomainError.CodeExpired),
                 Arguments.of(400, "EMAIL_VERIFY_EXPIRED", DomainError.CodeExpired),
                 Arguments.of(400, "PASSWORD_HASH_INVALID", DomainError.PasswordInvalid),
+                Arguments.of(400, "PASSWORD_TOO_FRESH_86400", DomainError.FloodWait(86_400)),
+                Arguments.of(400, "SESSION_TOO_FRESH_3600", DomainError.FloodWait(3_600)),
+                Arguments.of(400, "EMAIL_HASH_EXPIRED", DomainError.CodeExpired),
                 Arguments.of(400, "FIRSTNAME_INVALID", DomainError.FirstNameInvalid),
                 Arguments.of(400, "First name must be non-empty", DomainError.FirstNameInvalid),
                 Arguments.of(400, "LASTNAME_INVALID", DomainError.LastNameInvalid),
@@ -88,7 +91,7 @@ class TdErrorMappingTest {
                     DomainError.Unknown(400, "Call to checkAuthenticationCode unexpected"),
                 ),
                 Arguments.of(400, "SOME_NEW_ERROR", DomainError.Unknown(400, "SOME_NEW_ERROR")),
-            ) + profileErrors() + attachmentErrors()
+            ) + profileErrors() + attachmentErrors() + groupErrors()
 
         /** Editing the profile: usernames, the bio and photos. */
         private fun profileErrors(): List<Arguments> =
@@ -103,6 +106,12 @@ class TdErrorMappingTest {
                 Arguments.of(400, "PHOTO_EXT_INVALID", DomainError.PhotoInvalid),
                 Arguments.of(400, "PHOTO_INVALID", DomainError.PhotoInvalid),
                 Arguments.of(400, "IMAGE_PROCESS_FAILED", DomainError.PhotoInvalid),
+                // Creating groups and channels.
+                Arguments.of(400, "CHAT_TITLE_EMPTY", DomainError.TitleInvalid),
+                Arguments.of(400, "Title must be non-empty", DomainError.TitleInvalid),
+                Arguments.of(400, "CHANNELS_TOO_MUCH", DomainError.TooManyChats),
+                Arguments.of(400, "CHANNELS_ADMIN_PUBLIC_TOO_MUCH", DomainError.TooManyPublicLinks),
+                Arguments.of(403, "USER_RESTRICTED", DomainError.AccountRestricted),
             )
 
         /** Sending photos, videos, files and polls. */
@@ -118,6 +127,24 @@ class TdErrorMappingTest {
                 Arguments.of(400, "Polls can't be sent to the private chat", DomainError.SendingNotAllowed),
                 Arguments.of(400, "Non-anonymous polls can't be sent to channel chats", DomainError.SendingNotAllowed),
                 Arguments.of(403, "CHAT_SEND_MEDIA_FORBIDDEN", DomainError.SendingNotAllowed),
+            )
+
+        /** Administering groups and channels. */
+        private fun groupErrors(): List<Arguments> =
+            listOf(
+                Arguments.of(400, "CHAT_ADMIN_REQUIRED", DomainError.AdminRightsRequired),
+                Arguments.of(403, "RIGHT_FORBIDDEN", DomainError.AdminRightsRequired),
+                Arguments.of(400, "USER_ADMIN_INVALID", DomainError.AdminRightsRequired),
+                Arguments.of(400, "Not enough rights to change chat title", DomainError.AdminRightsRequired),
+                Arguments.of(400, "CHAT_ABOUT_TOO_LONG", DomainError.DescriptionTooLong),
+                Arguments.of(400, "USER_NOT_MUTUAL_CONTACT", DomainError.NotMutualContact),
+                Arguments.of(400, "ADMINS_TOO_MUCH", DomainError.TooManyAdmins),
+                Arguments.of(400, "INVITE_HASH_EXPIRED", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "INVITE_HASH_INVALID", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "Wrong invite link", DomainError.InviteLinkInvalid),
+                Arguments.of(400, "USERS_TOO_MUCH", DomainError.ChatFull),
+                Arguments.of(400, "AUTH_TOKEN_EXPIRED", DomainError.QrLoginExpired),
+                Arguments.of(400, "AUTH_TOKEN_ALREADY_ACCEPTED", DomainError.QrLoginExpired),
             )
     }
 }

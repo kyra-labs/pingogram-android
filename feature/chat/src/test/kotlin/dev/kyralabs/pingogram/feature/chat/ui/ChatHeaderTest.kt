@@ -51,7 +51,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
         runTest {
             val viewModel = privateChat(UserStatus.Online(expiresAtEpochSeconds = NOW.epochSecond + 60))
 
-            assertEquals(status(res(R.string.chat_subtitle_online)), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_online)), viewModel.subtitle)
         }
 
     @Test
@@ -59,7 +59,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
         runTest {
             val viewModel = privateChat(UserStatus.Online(expiresAtEpochSeconds = NOW.minusSeconds(10).epochSecond))
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_just_now)), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_just_now)), viewModel.subtitle)
         }
 
     @Test
@@ -67,19 +67,19 @@ class ChatHeaderTest : ChatViewModelHarness() {
         runTest {
             val viewModel = privateChat(offline(NOW.minusSeconds(59)))
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_just_now)), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_just_now)), viewModel.subtitle)
         }
 
     @Test
     fun `last seen within an hour counts the minutes, and follows the minute tick`() =
         runTest {
             val viewModel = privateChat(offline(NOW.minus(Duration.ofMinutes(5))))
-            assertEquals(status(plural(R.plurals.chat_subtitle_last_seen_minutes, 5)), viewModel.subtitle)
+            assertEquals(status(plural(UiR.plurals.user_status_last_seen_minutes, 5)), viewModel.subtitle)
 
             clock.setTime(NOW.plus(Duration.ofMinutes(2)))
             runCurrent()
 
-            assertEquals(status(plural(R.plurals.chat_subtitle_last_seen_minutes, 7)), viewModel.subtitle)
+            assertEquals(status(plural(UiR.plurals.user_status_last_seen_minutes, 7)), viewModel.subtitle)
         }
 
     @Test
@@ -88,7 +88,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
             // NOW is 09:41:30 UTC.
             val viewModel = privateChat(offline(Instant.parse("2026-10-18T07:05:00Z")))
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_today, "7:05 AM")), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_today, "7:05 AM")), viewModel.subtitle)
         }
 
     @Test
@@ -96,19 +96,19 @@ class ChatHeaderTest : ChatViewModelHarness() {
         runTest {
             val viewModel = privateChat(offline(Instant.parse("2026-10-17T21:30:00Z")))
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_yesterday, "9:30 PM")), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_yesterday, "9:30 PM")), viewModel.subtitle)
         }
 
     @Test
     fun `last seen earlier shows the date, with the year before this one`() =
         runTest {
             val thisYear = privateChat(offline(Instant.parse("2026-03-17T12:00:00Z")))
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_date, "Mar 17")), thisYear.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_date, "Mar 17")), thisYear.subtitle)
 
             users.setUsers(user(ADA, status = offline(Instant.parse("2025-03-17T12:00:00Z"))))
             runCurrent()
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_date, "3/17/2025")), thisYear.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_date, "3/17/2025")), thisYear.subtitle)
         }
 
     @Test
@@ -119,7 +119,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
             clock.setTime(Instant.parse("2026-10-19T00:00:00Z"))
             runCurrent()
 
-            assertEquals(status(res(R.string.chat_subtitle_last_seen_yesterday, "7:05 AM")), viewModel.subtitle)
+            assertEquals(status(res(UiR.string.user_status_last_seen_yesterday, "7:05 AM")), viewModel.subtitle)
         }
 
     @Test
@@ -128,10 +128,10 @@ class ChatHeaderTest : ChatViewModelHarness() {
             val viewModel = privateChat(UserStatus.Recently)
             val buckets =
                 listOf(
-                    UserStatus.Recently to R.string.chat_subtitle_last_seen_recently,
-                    UserStatus.LastWeek to R.string.chat_subtitle_last_seen_week,
-                    UserStatus.LastMonth to R.string.chat_subtitle_last_seen_month,
-                    UserStatus.Empty to R.string.chat_subtitle_last_seen_long_ago,
+                    UserStatus.Recently to UiR.string.user_status_last_seen_recently,
+                    UserStatus.LastWeek to UiR.string.user_status_last_seen_week,
+                    UserStatus.LastMonth to UiR.string.user_status_last_seen_month,
+                    UserStatus.Empty to UiR.string.user_status_last_seen_long_ago,
                 )
 
             val subtitles =
@@ -198,7 +198,7 @@ class ChatHeaderTest : ChatViewModelHarness() {
             val viewModel = showing(groupChat, history(message(1, chatId = groupChat.id)))
 
             assertEquals(
-                ChatSubtitle.Action(res(UiR.string.named_action_typing, UiText.Plain("Grace"))),
+                ChatSubtitle.Action(res(UiR.string.named_action_typing, UiText.Plain("\u2068Grace\u2069"))),
                 viewModel.subtitle,
             )
         }

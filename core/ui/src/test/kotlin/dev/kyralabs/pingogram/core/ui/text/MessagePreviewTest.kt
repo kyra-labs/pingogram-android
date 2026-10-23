@@ -85,9 +85,15 @@ class MessagePreviewTest {
     @Test
     fun mediaShowsItsKindAndCaption() {
         assertEquals("Photo", preview(MessageContent.Photo(photo, text(""), false, false, false)))
-        assertEquals("Photo · Sunset", preview(MessageContent.Photo(photo, text("Sunset"), false, false, false)))
+        assertEquals(
+            "Photo · \u2068Sunset\u2069",
+            preview(MessageContent.Photo(photo, text("Sunset"), false, false, false)),
+        )
         assertEquals("Video", preview(MessageContent.Video(video, text(""), false, false, false)))
-        assertEquals("GIF · lol", preview(MessageContent.Animation(animation, text("lol"), false, false, false)))
+        assertEquals(
+            "GIF · \u2068lol\u2069",
+            preview(MessageContent.Animation(animation, text("lol"), false, false, false)),
+        )
         assertEquals("Voice message", preview(MessageContent.VoiceNote(voiceNote, text(""), isListened = false)))
         assertEquals("Video message", preview(MessageContent.VideoNote(videoNote, isViewed = false, isSecret = false)))
     }
@@ -112,7 +118,10 @@ class MessagePreviewTest {
 
     @Test
     fun audioShowsPerformerAndTitleOrItsFileName() {
-        assertEquals("Queen – Bohemian Rhapsody", preview(audio(title = "Bohemian Rhapsody", performer = "Queen")))
+        assertEquals(
+            "\u2068Queen\u2069 – \u2068Bohemian Rhapsody\u2069",
+            preview(audio(title = "Bohemian Rhapsody", performer = "Queen")),
+        )
         assertEquals("Bohemian Rhapsody", preview(audio(title = "Bohemian Rhapsody")))
         assertEquals("track01.mp3", preview(audio(fileName = "track01.mp3")))
         assertEquals("Audio", preview(audio()))
@@ -121,7 +130,10 @@ class MessagePreviewTest {
     @Test
     fun documentsShowTheirFileName() {
         assertEquals("report.pdf", preview(MessageContent.Document(document("report.pdf"), text(""))))
-        assertEquals("report.pdf · Q3", preview(MessageContent.Document(document("report.pdf"), text("Q3"))))
+        assertEquals(
+            "report.pdf · \u2068Q3\u2069",
+            preview(MessageContent.Document(document("report.pdf"), text("Q3"))),
+        )
         assertEquals("File", preview(MessageContent.Document(document(""), text(""))))
     }
 
@@ -129,18 +141,24 @@ class MessagePreviewTest {
     fun placesContactsAndPollsShowWhatTheyAre() {
         assertEquals("Location", preview(MessageContent.Location(location, livePeriod = 0)))
         assertEquals("Live location", preview(MessageContent.Location(location, livePeriod = 900)))
-        assertEquals("Location · Eiffel Tower", preview(MessageContent.Venue(Venue(location, "Eiffel Tower", ""))))
-        assertEquals("Contact · Ada Lovelace", preview(MessageContent.Contact(Contact("", "Ada", "Lovelace", 0))))
-        assertEquals("Poll · Lunch?", preview(poll(PollType.Regular)))
-        assertEquals("Quiz · Lunch?", preview(poll(PollType.Quiz(text("")))))
+        assertEquals(
+            "Location · \u2068Eiffel Tower\u2069",
+            preview(MessageContent.Venue(Venue(location, "Eiffel Tower", ""))),
+        )
+        assertEquals(
+            "Contact · \u2068Ada Lovelace\u2069",
+            preview(MessageContent.Contact(Contact("", "Ada", "Lovelace", 0))),
+        )
+        assertEquals("Poll · \u2068Lunch?\u2069", preview(poll(PollType.Regular)))
+        assertEquals("Quiz · \u2068Lunch?\u2069", preview(poll(PollType.Quiz(text("")))))
     }
 
     @Test
     fun otherContentShowsWhatItIs() {
         assertEquals("🎲", preview(MessageContent.Dice("🎲", value = 4)))
         assertEquals("🎉", preview(MessageContent.AnimatedEmoji("🎉", sticker = null)))
-        assertEquals("Game · Lumberjack", preview(MessageContent.Game("Lumberjack")))
-        assertEquals("Invoice · Coffee beans", preview(MessageContent.Invoice("Coffee beans")))
+        assertEquals("Game · \u2068Lumberjack\u2069", preview(MessageContent.Game("Lumberjack")))
+        assertEquals("Invoice · \u2068Coffee beans\u2069", preview(MessageContent.Invoice("Coffee beans")))
         assertEquals("Story", preview(MessageContent.Story(storyPosterChatId = 1, storyId = 2)))
         assertEquals("Unsupported message", preview(MessageContent.Unsupported))
         assertEquals(
@@ -153,19 +171,22 @@ class MessagePreviewTest {
 
     @Test
     fun serviceMessagesNameTheirSenderOrYou() {
-        assertEquals("Alice joined the group", service(ServiceAction.MemberJoined))
+        assertEquals("\u2068Alice\u2069 joined the group", service(ServiceAction.MemberJoined))
         assertEquals("You joined the group", service(ServiceAction.MemberJoined, MessageSender.User(ME), true))
-        assertEquals("Alice joined via invite link", service(ServiceAction.MemberJoinedByLink))
-        assertEquals("Alice left the group", service(ServiceAction.MemberLeft))
-        assertEquals("Alice pinned a message", service(ServiceAction.MessagePinned(messageId = 7)))
+        assertEquals("\u2068Alice\u2069 joined via invite link", service(ServiceAction.MemberJoinedByLink))
+        assertEquals("\u2068Alice\u2069 left the group", service(ServiceAction.MemberLeft))
+        assertEquals("\u2068Alice\u2069 pinned a message", service(ServiceAction.MessagePinned(messageId = 7)))
         assertEquals("You took a screenshot", service(ServiceAction.ScreenshotTaken, MessageSender.User(ME), true))
         assertEquals(
-            "Alice created the group “Club”",
+            "\u2068Alice\u2069 created the group “\u2068Club\u2069”",
             service(ServiceAction.BasicGroupCreated("Club", persistentListOf())),
         )
-        assertEquals("Alice changed the name to “Club”", service(ServiceAction.TitleChanged("Club")))
+        assertEquals(
+            "\u2068Alice\u2069 changed the name to “\u2068Club\u2069”",
+            service(ServiceAction.TitleChanged("Club")),
+        )
         assertEquals("You removed the photo", service(ServiceAction.PhotoDeleted, MessageSender.User(ME), true))
-        assertEquals("Alice joined Telegram", service(ServiceAction.ContactRegistered))
+        assertEquals("\u2068Alice\u2069 joined Telegram", service(ServiceAction.ContactRegistered))
     }
 
     @Test
@@ -186,21 +207,27 @@ class MessagePreviewTest {
 
     @Test
     fun addedMembersAreNamedOrCounted() {
-        assertEquals("Alice added Bob", service(ServiceAction.MembersAdded(persistentListOf(BOB))))
-        assertEquals("Alice added you", service(ServiceAction.MembersAdded(persistentListOf(ME))))
         assertEquals(
-            "You added Bob",
+            "\u2068Alice\u2069 added \u2068Bob\u2069",
+            service(ServiceAction.MembersAdded(persistentListOf(BOB))),
+        )
+        assertEquals("\u2068Alice\u2069 added you", service(ServiceAction.MembersAdded(persistentListOf(ME))))
+        assertEquals(
+            "You added \u2068Bob\u2069",
             service(ServiceAction.MembersAdded(persistentListOf(BOB)), MessageSender.User(ME), isOutgoing = true),
         )
-        assertEquals("Alice added 3 members", service(ServiceAction.MembersAdded(persistentListOf(BOB, ME, UNKNOWN))))
-        assertEquals("Alice joined the group", service(ServiceAction.MembersAdded(persistentListOf(ALICE))))
+        assertEquals(
+            "\u2068Alice\u2069 added 3 members",
+            service(ServiceAction.MembersAdded(persistentListOf(BOB, ME, UNKNOWN))),
+        )
+        assertEquals("\u2068Alice\u2069 joined the group", service(ServiceAction.MembersAdded(persistentListOf(ALICE))))
     }
 
     @Test
     fun removedMembersAreNamed() {
-        assertEquals("Alice removed Bob", service(ServiceAction.MemberRemoved(BOB)))
-        assertEquals("Alice removed you", service(ServiceAction.MemberRemoved(ME)))
-        assertEquals("Alice left the group", service(ServiceAction.MemberRemoved(ALICE)))
+        assertEquals("\u2068Alice\u2069 removed \u2068Bob\u2069", service(ServiceAction.MemberRemoved(BOB)))
+        assertEquals("\u2068Alice\u2069 removed you", service(ServiceAction.MemberRemoved(ME)))
+        assertEquals("\u2068Alice\u2069 left the group", service(ServiceAction.MemberRemoved(ALICE)))
         assertEquals(
             "You removed Someone",
             service(ServiceAction.MemberRemoved(UNKNOWN), MessageSender.User(ME), isOutgoing = true),
@@ -244,9 +271,9 @@ class MessagePreviewTest {
 
     @Test
     fun groupsNameWhoIsDoingWhat() {
-        assertEquals("Alice is typing…", typing(isGroup = true, ChatAction.Typing to ALICE))
+        assertEquals("\u2068Alice\u2069 is typing…", typing(isGroup = true, ChatAction.Typing to ALICE))
         assertEquals(
-            "Alice and Bob are typing…",
+            "\u2068Alice\u2069 and \u2068Bob\u2069 are typing…",
             typing(isGroup = true, ChatAction.Typing to ALICE, ChatAction.Typing to BOB),
         )
         assertEquals(
@@ -254,7 +281,7 @@ class MessagePreviewTest {
             typing(isGroup = true, ChatAction.Typing to ALICE, ChatAction.Typing to BOB, ChatAction.Typing to ME),
         )
         assertEquals(
-            "Bob is recording a video message…",
+            "\u2068Bob\u2069 is recording a video message…",
             typing(isGroup = true, ChatAction.RecordingVideoNote to BOB, ChatAction.Typing to ALICE),
         )
         assertEquals("Someone is choosing a sticker…", typing(isGroup = true, ChatAction.ChoosingSticker to UNKNOWN))

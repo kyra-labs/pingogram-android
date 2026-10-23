@@ -24,6 +24,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # The color themes (tools/theme, docs/adr/0016-color-themes.md) are generated into Kotlin and resources and
+      # committed: generating them again must change nothing, or someone edited the output by hand.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check the generated color themes
+        working-directory: tools/theme
+        run: |
+          npm ci
+          npm run generate
+          git diff --exit-code -- ../../core/ui/src/main ../../app/src/main
+
       - name: Set up JDK
         uses: actions/setup-java@v6
         with:
@@ -54,6 +68,21 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleFossDebug --stacktrace --no-daemon
 
+      # The debug APK of every push to main goes to the owner's channel (docs/RELEASE.md, "Channel uploads"); pull
+      # requests never post, and a channel problem never fails the build. Only arm64-v8a: a bot may send at most 50 MB,
+      # and the run's artifact has every ABI.
+      - name: Post debug APK to the channel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          caption="Pingogram debug ${GITHUB_SHA::7}"$'\n'"$(git log -1 --format=%s)"$'\n\n'
+          caption+="Debug build for arm64-v8a phones; it installs next to the release app. Every ABI: ${RUN_URL}"
+          tools/ci/telegram-publish.sh "$caption" app/build/outputs/apk/foss/debug/*-arm64-v8a-debug.apk
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
@@ -70,3 +99,42 @@ jobs:
             **/build/reports/**
             **/build/test-results/**
           retention-days: 7
+
+  # The APK size budget (docs/PERFORMANCE.md §1, §8): the foss APKs built as a release is (R8, resource shrinking),
+  # signed with the debug key so no release credentials are needed; arm64-v8a at most 50 MB, universal 125 MB. Its own
+  # job, beside build, so the build's tests do not wait for R8.
+  apk-size:
+    name: apk size
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # Placeholders: the size does not depend on the values, and secrets are unavailable to forks.
+      - name: Write secrets.properties
+        run: |
+          printf 'TELEGRAM_API_ID=%s\nTELEGRAM_API_HASH=%s\n' 0 00000000000000000000000000000000 > secrets.properties
+
+      - name: Check the APK size budget
+        run: ./gradlew :app:checkFossBenchmarkReleaseApkSize --stacktrace --no-daemon
+
+      - name: Upload the size report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-size
+          path: app/build/reports/apk-size/
+          retention-days: 14

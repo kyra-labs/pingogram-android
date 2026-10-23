@@ -53,7 +53,7 @@ internal fun composerBar(
 }
 
 /** "You" for the user's own message; otherwise its sender's full name, or the chat's title. */
-private fun senderNameOf(
+internal fun senderNameOf(
     message: Message,
     chat: Chat,
     people: ChatPeople,
@@ -65,7 +65,7 @@ private fun senderNameOf(
     }
 
 /** What a preview calls [sender]: a user's short name or a chat's title; null ("Someone") if not known. */
-private fun shortNameOf(
+internal fun shortNameOf(
     sender: MessageSender,
     chat: Chat,
     people: ChatPeople,

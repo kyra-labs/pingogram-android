@@ -19,8 +19,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the message actions on a compact phone, light and dark (`docs/TESTING.md`): the actions sheet of the
- * user's own message and of someone else's, the delete confirmation, and the composer replying and editing; the own
- * message's sheet also on an expanded window, and the reply bar at 200% font scale. Brand colors.
+ * user's own message and of someone else's, the reactions picker, the delete confirmation, and the composer replying
+ * and editing; the own message's sheet also on an expanded window, and the reply bar and the picker at 200% font
+ * scale. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -47,11 +48,11 @@ class MessageActionsScreenshotTest(
         capture("expanded", ThemeMode.Light)
     }
 
-    /** At 200% font scale the bar grows instead of clipping (`REQUIREMENTS.md` §6.3). */
+    /** At 200% font scale the bar and the picker's reactions grow instead of clipping (`REQUIREMENTS.md` §6.3). */
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() {
-        assumeTrue(stateName == "replyBar")
+        assumeTrue(stateName == "replyBar" || stateName == "reactionPicker")
         capture("fontScale200", ThemeMode.Light)
     }
 
@@ -77,6 +78,7 @@ class MessageActionsScreenshotTest(
             mapOf(
                 "ownSheet" to (ChatPreviewData.ownActionsSheet to FormattedText.Empty),
                 "incomingSheet" to (ChatPreviewData.incomingActionsSheet to FormattedText.Empty),
+                "reactionPicker" to (ChatPreviewData.reactionPickerSheet to FormattedText.Empty),
                 "deleteDialog" to (ChatPreviewData.deleteConfirmation to FormattedText.Empty),
                 "replyBar" to (ChatPreviewData.replying to FormattedText.Empty),
                 "editBar" to

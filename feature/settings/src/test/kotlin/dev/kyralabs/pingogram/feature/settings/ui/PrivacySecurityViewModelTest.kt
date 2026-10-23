@@ -5,14 +5,17 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.model.PasscodeType
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +39,7 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class PrivacySecurityViewModelTest {
     private val client = FakeTdlibClient()
+    private val passcodes = FakePasscodeRepository()
 
     @BeforeEach
     fun setUp() {
@@ -58,6 +62,7 @@ class PrivacySecurityViewModelTest {
             TdlibBlockListRepository(client),
             TdlibSessionRepository(client),
             TdlibTwoStepVerificationRepository(client),
+            passcodes,
             testTimeFormats(),
         ).also { runCurrent() }
 
@@ -171,6 +176,18 @@ class PrivacySecurityViewModelTest {
         }
 
     @Test
+    fun `shows whether the passcode lock is on, as it changes`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(false, viewModel.content.passcodeLock)
+
+            passcodes.setPasscode("1234", PasscodeType.Pin)
+            runCurrent()
+
+            assertEquals(true, viewModel.content.passcodeLock)
+        }
+
+    @Test
     fun `two-step verification off`() =
         runTest {
             answerPassword(passwordState(hasPassword = false, hasRecoveryEmail = false))
@@ -205,7 +222,7 @@ class PrivacySecurityViewModelTest {
             val summary = viewModel().content.twoStepVerification
 
             assertEquals(
-                UiText.resource(R.string.settings_two_step_verification_pending_email, "a***@g***.com"),
+                UiText.resource(R.string.settings_two_step_verification_pending_email, "a***@g***.com".bidiIsolated()),
                 summary.status,
             )
             assertEquals("Oct 25, 2026, 9:41 AM", summary.pendingResetDate?.let(::plainSpaces))

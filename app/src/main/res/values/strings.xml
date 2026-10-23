@@ -9,7 +9,55 @@
     <!-- The search button next to the navigation bar and at the top of the rail -->
     <string name="nav_search">Search</string>
 
+    <!-- App shortcuts (res/xml/shortcuts.xml), shown when the launcher icon is long-pressed: the short label at most
+         about 10 characters, the long one where the launcher has room -->
+    <string name="shortcut_new_chat">New chat</string>
+    <string name="shortcut_new_chat_long">Start a new chat</string>
+    <string name="shortcut_search">Search</string>
+    <string name="shortcut_search_long">Search chats and messages</string>
+    <string name="shortcut_saved_messages">Saved</string>
+    <string name="shortcut_saved_messages_long">Saved Messages</string>
+
+    <!-- The home screen widget of recent chats (docs/adr/0017-home-screen-widget.md): its name and description in the
+         launcher's widget list, its title and "New chat" button, the messages it shows instead of chats -->
+    <string name="widget_recent_chats_label">Recent chats</string>
+    <string name="widget_recent_chats_description">Your latest chats and their unread messages</string>
+    <string name="widget_title">Chats</string>
+    <string name="widget_new_chat">New chat</string>
+    <string name="widget_signed_out">Sign in to Pingogram to see your chats here</string>
+    <string name="widget_locked">Pingogram is locked. Open it to see your chats.</string>
+    <string name="widget_no_chats">No chats yet</string>
+    <!-- In place of a secret chat's last message, which stays off the home screen -->
+    <string name="widget_secret_chat">Secret chat</string>
+    <!-- A group's last message after its sender: "Alice: Hi there" -->
+    <string name="widget_preview_sender">%1$s: %2$s</string>
+    <!-- Spoken by screen readers for a muted chat in the widget. -->
+    <string name="widget_muted">Muted</string>
+    <!-- Spoken by screen readers for a chat with an unread mention in the widget, shown as "@". -->
+    <string name="widget_unread_mention">Unread mention</string>
+    <plurals name="widget_unread_messages">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+
     <!-- The conversation pane beside the chat list on large screens, while no chat is open -->
     <string name="chats_no_chat_selected_title">Select a chat to start reading</string>
     <string name="chats_no_chat_selected_body">Its messages show here, beside your chats.</string>
+
+    <!-- Telegram links (tg://, t.me) opened from another app or tapped in the app (docs/adr/0013-deep-links.md) -->
+    <!-- Shown while a link is looked up for longer than a moment, with a button that stops it -->
+    <string name="link_opening">Opening link…</string>
+    <string name="link_opening_cancel">Cancel</string>
+    <string name="link_not_supported">Pingogram can\'t open this kind of link yet</string>
+    <!-- A link that cannot open where the app is now (outside the main screens) -->
+    <string name="link_not_yet">Pingogram can\'t open this link yet</string>
+    <string name="link_open_in_browser">Open in browser</string>
+    <string name="link_no_browser">No app on this device opens this link</string>
+    <!-- A link with a login code (t.me/login/…): Pingogram never enters it, as someone may be logging in with it -->
+    <string name="link_login_code">Pingogram never uses login codes from links. Don\'t share this code with anyone.</string>
+    <string name="link_not_found_username">No one has this username</string>
+    <string name="link_not_found_phone_number">No one on Telegram can be found by this phone number</string>
+    <string name="link_not_found_user_token">This contact link has expired</string>
+    <string name="link_not_found_message">This message isn\'t available</string>
+    <string name="link_not_found_chat">This channel or group isn\'t available</string>
 </resources>

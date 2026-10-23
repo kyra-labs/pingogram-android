@@ -26,9 +26,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the composer in the conversation on a compact phone, light and dark (`docs/TESTING.md`): empty, with
- * three lines of text (the field grows, and the send button is in), with every kind of formatting it applies, and the
- * label where the user cannot write; the formatted one also on an expanded window, and the long text at 200% font
- * scale. Brand colors.
+ * three lines of text (the field grows, and the send button is in), with every kind of formatting it applies, the
+ * label where the user cannot write, and "Join" in a public channel the user is not in; the formatted one also on an
+ * expanded window, and the long text at 200% font scale. Brand colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -111,6 +111,12 @@ class ComposerScreenshotTest(
                 "withText" to (ChatPreviewData.privateChat to longText),
                 "formatted" to (ChatPreviewData.privateChat to formattedText),
                 "cannotWrite" to (ChatPreviewData.cannotWrite to FormattedText.Empty),
+                "join" to
+                    (
+                        ChatPreviewData.cannotWrite.copy(
+                            composer = ComposerUiState.Join(isChannel = true, requestsToJoin = false),
+                        ) to FormattedText.Empty
+                    ),
             )
 
         @JvmStatic

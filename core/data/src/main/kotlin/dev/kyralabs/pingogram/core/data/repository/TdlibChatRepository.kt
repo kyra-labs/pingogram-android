@@ -6,7 +6,6 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
-import dev.kyralabs.pingogram.core.data.mapper.NotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
@@ -18,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toChatPermissions
 import dev.kyralabs.pingogram.core.data.mapper.toChatPosition
 import dev.kyralabs.pingogram.core.data.mapper.toChatPositions
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
+import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationScope
 import dev.kyralabs.pingogram.core.data.mapper.toProfilePhoto
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatList
@@ -27,6 +27,8 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -73,6 +75,7 @@ class TdlibChatRepository
         private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
         @Dispatcher(Default) private val dispatcher: CoroutineDispatcher,
+        private val openChats: OpenChats,
     ) : ChatRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, ChatCache(), ChatCache::reduce)
@@ -115,6 +118,19 @@ class TdlibChatRepository
                 }
             }
         }
+
+        /** `createPrivateChat` without `force`: TDLib knows the user, or fails. */
+        override suspend fun privateChat(userId: Long): Outcome<Chat> =
+            when (val result = client.request(TdApi.CreatePrivateChat(userId, false))) {
+                is Outcome.Success -> {
+                    val chat = result.value.toChat(store.state.value.mutedScopes)
+                    if (chat != null) Outcome.Success(chat) else Outcome.Failure(DomainError.NotFound)
+                }
+
+                is Outcome.Failure -> {
+                    result
+                }
+            }
 
         override val folders: Flow<ImmutableList<ChatFolder>> =
             store.state.map { it.folders }.distinctUntilChanged()
@@ -180,24 +196,36 @@ class TdlibChatRepository
                 is Outcome.Failure -> deletion
             }
 
-        /** `openChat`. */
-        override suspend fun openChat(chatId: Long): Outcome<Unit> = client.request(TdApi.OpenChat(chatId)).map {}
+        /** `openChat`; the chat counts as open ([OpenChats]) from now on, whether TDLib accepts it or not. */
+        override suspend fun openChat(chatId: Long): Outcome<Unit> {
+            openChats.open(chatId)
+            return client.request(TdApi.OpenChat(chatId)).map {}
+        }
 
-        /** `closeChat`. */
-        override suspend fun closeChat(chatId: Long): Outcome<Unit> = client.request(TdApi.CloseChat(chatId)).map {}
+        /** `closeChat`; the counterpart of [openChat] in [OpenChats] too. */
+        override suspend fun closeChat(chatId: Long): Outcome<Unit> {
+            openChats.close(chatId)
+            return client.request(TdApi.CloseChat(chatId)).map {}
+        }
 
         /**
          * `viewMessages` from the chat's history without `force_read`: TDLib reads them because the chat is open,
-         * as the official apps do while the conversation shows.
+         * as the official apps do while the conversation shows; from a forum topic's or a message thread's history in
+         * their conversations, which reads them there.
          */
         override suspend fun viewMessages(
             chatId: Long,
             messageIds: List<Long>,
-        ): Outcome<Unit> =
-            client
-                .request(
-                    TdApi.ViewMessages(chatId, messageIds.toLongArray(), TdApi.MessageSourceChatHistory(), false),
-                ).map {}
+            topic: MessageTopic?,
+        ): Outcome<Unit> {
+            val source =
+                when (topic) {
+                    null -> TdApi.MessageSourceChatHistory()
+                    is MessageTopic.Forum -> TdApi.MessageSourceForumTopicHistory()
+                    is MessageTopic.Thread -> TdApi.MessageSourceMessageThreadHistory()
+                }
+            return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
+        }
     }
 
 /**
@@ -347,6 +375,14 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
             ChatChange(update.chatId) { it.copy(isMarkedAsUnread = update.isMarkedAsUnread) }
         }
 
+        else -> {
+            chatSettingChange(update)
+        }
+    }
+
+/** The change an update of what the chat allows and offers makes; null for any other update. */
+private fun chatSettingChange(update: TdApi.Update): ChatChange? =
+    when (update) {
         is TdApi.UpdateChatHasProtectedContent -> {
             ChatChange(update.chatId) { it.copy(hasProtectedContent = update.hasProtectedContent) }
         }
@@ -357,6 +393,19 @@ private fun chatChange(update: TdApi.Update): ChatChange? =
 
         is TdApi.UpdateChatPermissions -> {
             ChatChange(update.chatId) { it.copy(permissions = update.permissions.toChatPermissions()) }
+        }
+
+        is TdApi.UpdateChatMessageSender -> {
+            ChatChange(update.chatId) { it.copy(messageSender = update.messageSenderId?.toMessageSender()) }
+        }
+
+        // TDLib hands the whole message over; the chat keeps its id, and the conversation fetches it if needed.
+        is TdApi.UpdateChatReplyMarkup -> {
+            ChatChange(update.chatId) { it.copy(replyMarkupMessageId = update.replyMarkupMessage?.id ?: 0) }
+        }
+
+        is TdApi.UpdateChatIsTranslatable -> {
+            ChatChange(update.chatId) { it.copy(isTranslatable = update.isTranslatable) }
         }
 
         else -> {

@@ -7,7 +7,9 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -77,8 +80,16 @@ class DefaultTdlibClient internal constructor(
     /** The current TDLib instance: null until [start] created it, replaced after `AuthorizationStateClosed`. */
     private val session = MutableStateFlow<Session?>(null)
 
+    /**
+     * The first session's parameters, prepared while TDLib's library loads and its client starts (the database key's
+     * Keystore unwrap among them), as both lie on the way to the first login step, which the splash screen and the chat
+     * list wait for (`docs/PERFORMANCE.md` §2). Taken once; later sessions and a retry with a new key build their own.
+     */
+    private val preparedParameters = AtomicReference<Deferred<TdApi.SetTdlibParameters>?>(null)
+
     override fun start() {
         if (!started.compareAndSet(false, true)) return
+        preparedParameters.set(scope.async { parametersProvider.parameters() })
         scope.launch { pumpUpdates() }
         scope.launch {
             configureLogging()
@@ -104,7 +115,7 @@ class DefaultTdlibClient internal constructor(
         settings.file?.let { file ->
             file.parentFile?.mkdirs()
             native
-                .execute(TdApi.SetLogStream(TdApi.LogStreamFile(file.path, MAX_LOG_FILE_SIZE, false)))
+                .execute(TdApi.SetLogStream(TdApi.LogStreamFile(file.path, settings.maxFileSize, false)))
                 .warnOnFailure("SetLogStream")
         }
     }
@@ -155,7 +166,8 @@ class DefaultTdlibClient internal constructor(
 
     private suspend fun sendParameters() {
         val session = session.value ?: return
-        val result = session.send(parametersProvider.parameters())
+        val parameters = preparedParameters.getAndSet(null)?.await() ?: parametersProvider.parameters()
+        val result = session.send(parameters)
         if (result !is TdResult.Failure) return
         val error = result.error
         if (error.code == WRONG_DATABASE_KEY && session.databaseDiscarded.compareAndSet(false, true)) {
@@ -185,9 +197,6 @@ class DefaultTdlibClient internal constructor(
         /** `SetTdlibParameters` answers 401 when the database key cannot open the database (td_api.tl). */
         private const val WRONG_DATABASE_KEY = 401
 
-        /** TDLib rotates its log file to `<name>.old` above this size. */
-        private const val MAX_LOG_FILE_SIZE = 10L * 1024 * 1024
-
         private fun clientScope(
             dispatcher: CoroutineDispatcher,
             log: TdlibLog,
@@ -198,22 +207,30 @@ class DefaultTdlibClient internal constructor(
     }
 }
 
-/** TDLib's own logging: verbosity 1 (errors, warnings) in release, 3 and a rotating file in debug builds. */
+/**
+ * TDLib's own logging, into a rotating file on the device ([file], moved to `<name>.old` above [maxFileSize]):
+ * verbosity 1 (errors) and 1 MB in release, whose last lines the feedback report shows, redacted, for the user to share
+ * (`docs/TESTING_GUIDE.md`); 3 and 10 MB in debug builds. Nothing reads it but that report; it never leaves the device
+ * by itself.
+ */
 internal data class TdlibLogSettings(
     val verbosity: Int,
     val file: File?,
+    val maxFileSize: Long = DEBUG_MAX_FILE_SIZE,
 ) {
     companion object {
         private const val RELEASE_VERBOSITY = 1
         private const val DEBUG_VERBOSITY = 3
+        private const val RELEASE_MAX_FILE_SIZE = 1L * 1024 * 1024
+        private const val DEBUG_MAX_FILE_SIZE = 10L * 1024 * 1024
 
         fun of(
             isDebug: Boolean,
             directories: TdlibDirectories,
         ) = if (isDebug) {
-            TdlibLogSettings(DEBUG_VERBOSITY, directories.logFile)
+            TdlibLogSettings(DEBUG_VERBOSITY, directories.logFile, DEBUG_MAX_FILE_SIZE)
         } else {
-            TdlibLogSettings(RELEASE_VERBOSITY, file = null)
+            TdlibLogSettings(RELEASE_VERBOSITY, directories.logFile, RELEASE_MAX_FILE_SIZE)
         }
     }
 }

@@ -29,7 +29,8 @@
     <string name="media_caption_collapse">Show less of the caption</string>
     <string name="media_downloading">Downloading</string>
     <string name="media_playback_failed">This video can\'t be played</string>
-    <!-- The bottom app bar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
+    <!-- The toolbar's actions (REQUIREMENTS.md FR-C6, FR-C10) -->
+    <string name="media_forward">Forward</string>
     <string name="media_share">Share</string>
     <string name="media_save">Save to gallery</string>
     <!-- State of the Share button while the file downloads before it is shared -->
@@ -47,4 +48,55 @@
     <string name="media_storage_rationale_body">On this version of Android, Pingogram needs access to storage to add photos and videos to your gallery. It only adds the ones you save.</string>
     <string name="media_storage_rationale_not_now">Not now</string>
     <string name="media_storage_rationale_continue">Continue</string>
+    <string name="media_delete">Delete</string>
+    <!-- The toolbar's button that opens the menu of further actions -->
+    <string name="media_more">More options</string>
+    <!-- Opens the conversation at the message of the shown photo or video -->
+    <string name="media_show_in_chat">Show in chat</string>
+    <!-- Puts the shown photo on the clipboard -->
+    <string name="media_copy">Copy</string>
+    <!-- State of the More button while the photo downloads before it is copied -->
+    <string name="media_copy_pending">Preparing to copy</string>
+    <!-- The clipboard's label of a copied photo -->
+    <string name="media_copy_label">Photo</string>
+    <string name="media_copied">Photo copied</string>
+    <string name="media_copy_failed">This photo can\'t be copied</string>
+    <!-- The confirmation before the shown photo, video or GIF is deleted -->
+    <string name="media_delete_photo_title">Delete photo?</string>
+    <string name="media_delete_video_title">Delete video?</string>
+    <string name="media_delete_gif_title">Delete GIF?</string>
+    <string name="media_delete_for_me_body">This deletes it only for you.</string>
+    <string name="media_delete_for_everyone_body">This deletes it for everyone in this chat.</string>
+    <!-- When the user may also delete it for the others, with the check box below -->
+    <string name="media_delete_choice_body">This deletes it for you.</string>
+    <string name="media_delete_for_everyone">Delete for everyone</string>
+    <string name="media_delete_confirm">Delete</string>
+    <string name="media_delete_cancel">Cancel</string>
+    <!-- The stories viewer. -->
+    <string name="story_viewer_title">Stories</string>
+    <string name="story_viewer_loading">Loading stories</string>
+    <!-- Read by screen readers as each story shows: "Story 2 of 5 by Ada". -->
+    <string name="story_a11y_position">Story %1$d of %2$d by %3$s</string>
+    <string name="story_next">Next story</string>
+    <string name="story_previous">Previous story</string>
+    <string name="story_pause">Pause</string>
+    <string name="story_resume">Resume</string>
+    <string name="story_close">Close</string>
+    <string name="story_mute">Mute</string>
+    <string name="story_unmute">Unmute</string>
+    <!-- How long ago a story was posted, in its first minute; later "12m", "3h" in the language's narrow units. -->
+    <string name="story_age_now">now</string>
+    <string name="story_reply_placeholder">Reply privately…</string>
+    <string name="story_send">Send reply</string>
+    <string name="story_reply_sent">Reply sent</string>
+    <string name="story_react">React</string>
+    <!-- %1$s is the emoji the user reacted with. -->
+    <string name="story_reaction_chosen">Your reaction: %1$s. Change reaction</string>
+    <string name="story_playback_failed">This video can\'t be played</string>
+    <string name="story_live_title">Live stream</string>
+    <string name="story_live_body">Pingogram can\'t join live streams from stories yet.</string>
+    <string name="story_unsupported_title">Can\'t show this story</string>
+    <string name="story_unsupported_body">Pingogram can\'t show this kind of story yet.</string>
+    <string name="story_unavailable_title">Story unavailable</string>
+    <string name="story_unavailable_body">This story was deleted or has expired.</string>
 </resources>

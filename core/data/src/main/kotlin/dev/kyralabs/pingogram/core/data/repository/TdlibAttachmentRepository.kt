@@ -18,14 +18,18 @@ import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -41,8 +45,10 @@ import javax.inject.Singleton
  * [AttachmentRepository] on TDLib and the app's cache ([UploadFiles]). Preparing and reading picked content runs on
  * [io] ([AttachmentPreparer], through the [ContentSource] and [MediaProcessor] seams); sending only sends requests: the
  * messages reach the conversation through TDLib's updates as being sent, as text messages do, and their copies are
- * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here.
+ * deleted by `UploadCleaner` once uploaded. Copies a send leaves unsent are deleted here. One function per kind of
+ * attachment, as in [AttachmentRepository] (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,
@@ -109,9 +115,7 @@ class TdlibAttachmentRepository internal constructor(
         }
 
     /**
-     * `sendMessage` for a group of one and `sendMessageAlbum` for the others ([albumGroups]), one after the other in
-     * their order, with [options] and the caption on [captionIndex]'s attachment; only the first group replies to
-     * [replyToMessageId]. The first group TDLib refuses ends the send with its error.
+     * [sendAttachments]; the copies of the attachments TDLib did not accept are deleted, as nothing will send them.
      */
     override suspend fun send(
         chatId: Long,
@@ -120,27 +124,10 @@ class TdlibAttachmentRepository internal constructor(
         options: SendOptions,
         replyToMessageId: Long?,
     ): Outcome<Unit> {
-        val captioned = captionIndex(attachments)
-        val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
-        var sent = 0
-        for ((index, group) in albumGroups(attachments).withIndex()) {
-            val contents =
-                group.mapIndexed { offset, attachment ->
-                    attachment.toInputMessageContent(tdCaption.takeIf { sent + offset == captioned })
-                }
-            val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
-            val result =
-                if (contents.size == 1) {
-                    client.sendMessage(chatId, contents[0], options, replyTo)
-                } else {
-                    val all = contents.toTypedArray()
-                    client.request(TdApi.SendMessageAlbum(chatId, null, replyTo, options.toTdOptions(), all))
-                }
-            if (result is Outcome.Failure) {
-                discard(attachments.drop(sent))
-                return result
-            }
-            sent += group.size
+        val result = client.sendAttachments(chatId, attachments, caption, options, replyToMessageId)
+        result.failure?.let { failure ->
+            discard(attachments.drop(result.sent))
+            return failure
         }
         return Outcome.Success(Unit)
     }
@@ -152,6 +139,22 @@ class TdlibAttachmentRepository internal constructor(
         replyToMessageId: Long?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, contact.toInputMessageContact(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendLocation(
+        chatId: Long,
+        location: DeviceLocation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, location.toInputMessageLocation(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendSticker(
+        chatId: Long,
+        sticker: Sticker,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyToMessageId?.let(::replyToMessage))
 
     override suspend fun sendPoll(
         chatId: Long,
@@ -176,10 +179,53 @@ class TdlibAttachmentRepository internal constructor(
     }
 }
 
-/** `sendMessage` of [content] to [chatId] with [options], replying as [replyTo] says. */
-private suspend fun TdlibClient.sendMessage(
+/**
+ * Sends [attachments] to chat [chatId]: `sendMessage` for a group of one and `sendMessageAlbum` for the others
+ * ([albumGroups]), one after the other in their order, with [options] (into their topic, if any) and the caption on
+ * [captionIndex]'s attachment;
+ * only the first group replies to [replyToMessageId]. The first group TDLib refuses ends the send with its error. The
+ * copies are left as they are: those sent are TDLib's now (`UploadCleaner`), the others still the caller's.
+ */
+internal suspend fun TdlibClient.sendAttachments(
+    chatId: Long,
+    attachments: List<Attachment>,
+    caption: FormattedText,
+    options: SendOptions,
+    replyToMessageId: Long?,
+): AttachmentSend {
+    val captioned = captionIndex(attachments)
+    val tdCaption = caption.takeIf { it.text.isNotBlank() }?.toTdFormattedText()
+    var sent = 0
+    for ((index, group) in albumGroups(attachments).withIndex()) {
+        val contents =
+            group.mapIndexed { offset, attachment ->
+                attachment.toInputMessageContent(tdCaption.takeIf { sent + offset == captioned })
+            }
+        val replyTo = replyToMessageId?.takeIf { index == 0 }?.let(::replyToMessage)
+        val result =
+            if (contents.size == 1) {
+                sendMessage(chatId, contents[0], options, replyTo)
+            } else {
+                val all = contents.toTypedArray()
+                request(TdApi.SendMessageAlbum(chatId, options.tdTopic(), replyTo, options.toTdOptions(), all))
+            }
+        if (result is Outcome.Failure) return AttachmentSend(sent, result)
+        sent += group.size
+    }
+    return AttachmentSend(sent, failure = null)
+}
+
+/** What [sendAttachments] did: [sent] attachments TDLib accepted, in their order, then [failure], if any refused. */
+internal class AttachmentSend(
+    val sent: Int,
+    val failure: Outcome.Failure?,
+)
+
+/** `sendMessage` of [content] to [chatId] as [options] say (into their topic, if any), replying as [replyTo] says. */
+internal suspend fun TdlibClient.sendMessage(
     chatId: Long,
     content: TdApi.InputMessageContent,
     options: SendOptions,
     replyTo: TdApi.InputMessageReplyTo?,
-): Outcome<Unit> = request(TdApi.SendMessage(chatId, null, replyTo, options.toTdOptions(), null, content)).map {}
+): Outcome<Unit> =
+    request(TdApi.SendMessage(chatId, options.tdTopic(), replyTo, options.toTdOptions(), null, content)).map {}

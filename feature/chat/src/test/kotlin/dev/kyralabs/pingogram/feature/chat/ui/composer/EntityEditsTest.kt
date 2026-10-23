@@ -29,6 +29,39 @@ class EntityEditsTest {
     /** Bold over characters 4 until 8 of "Say WORD now". */
     private val word = listOf(bold(4, 4))
 
+    /** A custom emoji over the two characters of "🎉" in "Hi 🎉 there", characters 3 and 4. */
+    private val emoji = listOf(TextEntity(3, 2, TextEntityType.CustomEmoji(7)))
+
+    @Nested
+    inner class CustomEmoji {
+        @Test
+        fun `text typed before or after it moves it or leaves it`() {
+            assertEquals(listOf(TextEntity(5, 2, TextEntityType.CustomEmoji(7))), emoji.afterReplace(3, 3, 2))
+            assertEquals(emoji, emoji.afterReplace(5, 5, 1))
+        }
+
+        @Test
+        fun `text typed into it removes it, as it is no custom emoji any more`() {
+            assertEquals(emptyList<TextEntity>(), emoji.afterReplace(4, 4, 1))
+        }
+
+        @Test
+        fun `deleting a part of it removes it instead of keeping half an emoji`() {
+            assertEquals(emptyList<TextEntity>(), emoji.afterReplace(4, 6, 0))
+            assertEquals(emptyList<TextEntity>(), emoji.afterReplace(2, 4, 0))
+        }
+
+        @Test
+        fun `formatting around it keeps it whole`() {
+            val formatted = emoji + bold(0, 11)
+
+            assertEquals(
+                listOf(bold(0, 13), TextEntity(3, 2, TextEntityType.CustomEmoji(7))),
+                formatted.afterReplace(8, 8, 2),
+            )
+        }
+    }
+
     @Nested
     inner class Typing {
         @Test

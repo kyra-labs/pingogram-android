@@ -27,8 +27,9 @@ import kotlinx.coroutines.launch
  * which the page reads in the draw phase ([zoom], through `graphicsLayer`), so following the fingers never
  * recomposes; only [isZoomed] turning on or off does, to lock the pager and the swipe to close.
  *
- * The page sets [bounds] from its layout. Double taps and accessibility actions animate on the spatial spring they are
- * given, a double tap keeping the tapped point in place; a gesture stops a running animation and takes over.
+ * The page sets [bounds] from its layout. Double taps, accessibility actions and the keyboard's keys animate on the
+ * spatial spring they are given, a double tap keeping the tapped point in place; a gesture stops a running animation
+ * and takes over; a mouse's wheel with Ctrl zooms at once ([transform]).
  */
 @Stable
 internal class ZoomState {
@@ -73,6 +74,14 @@ internal class ZoomState {
     ) {
         val bounds = bounds ?: return
         animateTo(steppedZoom(zoom, bounds, step), focus = Offset.Zero, spec, scope)
+    }
+
+    /** Back to fitted on [spec], as the keyboard's 0 asks. */
+    fun fit(
+        spec: AnimationSpec<Float>,
+        scope: CoroutineScope,
+    ) {
+        if (zoom != Zoom.Fit) animateTo(Zoom.Fit, focus = Offset.Zero, spec, scope)
     }
 
     /** Back to fitted at once, e.g. when the page is turned away. */

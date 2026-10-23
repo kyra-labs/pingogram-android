@@ -1,12 +1,14 @@
 package dev.kyralabs.pingogram.feature.chats.ui.preview
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chats.R
-import dev.kyralabs.pingogram.feature.chats.ui.MatchHighlight
 import dev.kyralabs.pingogram.feature.chats.ui.MessageSection
 import dev.kyralabs.pingogram.feature.chats.ui.SearchChatItem
 import dev.kyralabs.pingogram.feature.chats.ui.SearchContent
+import dev.kyralabs.pingogram.feature.chats.ui.SearchFilter
 import dev.kyralabs.pingogram.feature.chats.ui.SearchMessageItem
 import dev.kyralabs.pingogram.feature.chats.ui.SearchSection
 import dev.kyralabs.pingogram.feature.chats.ui.SearchUiState
@@ -16,8 +18,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * Sample states of global search, shared by the previews and the screenshot tests: the suggestions, the hint, results
- * in every section with the query's words highlighted, a section still searching, a section that failed, and a query
- * that found nothing.
+ * in every section with the query's words highlighted, a section still searching, a section that failed, a query
+ * that found nothing, and the Media filter without a query, finding photos and videos or none.
  */
 internal object SearchPreviewData {
     /** The query of the results. */
@@ -67,7 +69,7 @@ internal object SearchPreviewData {
         photo = null,
         placeholderIcon = null,
         badge = badge,
-        sender = sender?.let(UiText::Plain),
+        sender = sender?.let { UiText.Plain(it).bidiIsolated() },
         preview = preview,
         date = date,
     )
@@ -167,7 +169,12 @@ internal object SearchPreviewData {
                 chats = SearchSection.Items(chats),
                 contacts = SearchSection.Items(persistentListOf()),
                 global = SearchSection.Failed(DomainError.Network),
-                messages = MessageSection(SearchSection.Items(persistentListOf(messages.first()))),
+                // The next page of messages failed too: its error ends their group.
+                messages =
+                    MessageSection(
+                        SearchSection.Items(persistentListOf(messages.first())),
+                        moreError = DomainError.Network,
+                    ),
             ),
         )
 
@@ -182,6 +189,39 @@ internal object SearchPreviewData {
                 messages = MessageSection(SearchSection.Items(persistentListOf())),
             ),
         )
+
+    private val photos =
+        persistentListOf(
+            messages.last(),
+            message(
+                chatId = 8,
+                messageId = 81,
+                chatTitle = "Grace Hopper",
+                preview = UiText.resource(UiR.string.preview_video),
+                date = "Feb 2",
+            ),
+        )
+
+    private fun media(found: SearchSection<SearchMessageItem>) =
+        SearchUiState(
+            content =
+                SearchContent.Results(
+                    query = "",
+                    highlight = MatchHighlight.of(""),
+                    chats = SearchSection.Items(persistentListOf()),
+                    contacts = SearchSection.Items(persistentListOf()),
+                    global = SearchSection.Items(persistentListOf()),
+                    messages = MessageSection(found),
+                    filter = SearchFilter.Media,
+                ),
+            filter = SearchFilter.Media,
+        )
+
+    /** The Media filter without a query: every photo and video. */
+    val media = media(SearchSection.Items(photos))
+
+    /** The Media filter without a query, in chats without photos or videos. */
+    val noMedia = media(SearchSection.Items(persistentListOf()))
 
     /** What the search field holds for [state]: its query, none for the suggestions. */
     fun queryOf(state: SearchUiState): String = (state.content as? SearchContent.Results)?.query.orEmpty()

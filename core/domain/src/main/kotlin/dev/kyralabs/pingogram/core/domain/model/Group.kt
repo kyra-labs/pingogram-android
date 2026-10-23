@@ -45,6 +45,13 @@ data class Supergroup(
     val isScam: Boolean,
     /** Many users reported it as impersonating someone; shown as a warning badge. */
     val isFake: Boolean,
+    /** Joining sends a request that an administrator accepts (td_api.tl `supergroup.join_by_request`). */
+    val joinByRequest: Boolean = false,
+    /**
+     * Only members may write: a channel's discussion group where commenting needs joining. Without it, anyone may
+     * comment on the channel's posts (td_api.tl `supergroup.join_to_send_messages`).
+     */
+    val joinToSendMessages: Boolean = false,
 ) {
     override fun toString() = "Supergroup(id=$id, status=$status, isChannel=$isChannel, isForum=$isForum, …)"
 }

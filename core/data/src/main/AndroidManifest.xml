@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- AndroidNetworkRepository reads the default network (Wi-Fi, mobile data, roaming) for automatic download and
+         TDLib's setNetworkType; the app declares it too, with the owner's approval (app/src/main/AndroidManifest.xml). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+</manifest>

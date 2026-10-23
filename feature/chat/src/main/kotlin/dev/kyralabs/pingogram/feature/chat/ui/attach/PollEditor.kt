@@ -39,11 +39,25 @@ class PollEditor(
 
     var isQuiz by mutableStateOf(initial.isQuiz)
 
+    /**
+     * What a bot's keyboard button that asks for this poll requires (`KeyboardButtonType.RequestPoll`): a quiz
+     * (true), a regular poll (false), or either, the user's choice (null). [isQuiz] cannot change while one is
+     * required.
+     */
+    var requiredQuiz by mutableStateOf(initial.requiredQuiz)
+        private set
+
     /** The key of the quiz's correct option; null while none is chosen. */
     var correctOption by mutableStateOf<Long?>(null)
 
     init {
         fill(initial)
+    }
+
+    /** Requires a quiz ([quiz] true), a regular poll (false) or neither (null), and sets [isQuiz] to match. */
+    fun require(quiz: Boolean?) {
+        requiredQuiz = quiz
+        if (quiz != null) isQuiz = quiz
     }
 
     val canAddOption: Boolean get() = fields.size < NewPoll.MAX_OPTIONS
@@ -114,6 +128,7 @@ class PollEditor(
                 isAnonymous = isAnonymous,
                 allowsMultipleAnswers = allowsMultipleAnswers,
                 isQuiz = isQuiz,
+                requiredQuiz = requiredQuiz,
                 correctOptionIndex = fields.indexOfFirst { it.key == correctOption }.takeIf { it >= 0 },
             )
 
@@ -131,6 +146,7 @@ class PollEditor(
         isAnonymous = draft.isAnonymous
         allowsMultipleAnswers = draft.allowsMultipleAnswers
         isQuiz = draft.isQuiz
+        requiredQuiz = draft.requiredQuiz
         correctOption = draft.correctOptionIndex?.let { fields.getOrNull(it)?.key }
     }
 
@@ -159,6 +175,7 @@ data class PollDraft(
     val allowsMultipleAnswers: Boolean = false,
     val isQuiz: Boolean = false,
     val correctOptionIndex: Int? = null,
+    val requiredQuiz: Boolean? = null,
 ) {
     override fun toString() = "PollDraft(options=${options.size}, isQuiz=$isQuiz, …)"
 }

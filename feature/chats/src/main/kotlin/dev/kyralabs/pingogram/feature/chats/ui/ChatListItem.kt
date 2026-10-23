@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
@@ -19,6 +17,7 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +35,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
@@ -44,8 +44,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * One chat in a chat list (`REQUIREMENTS.md` FR-L2, `docs/DESIGN_SYSTEM.md` §6): an M3 [ListItem] with the avatar, the
- * name with its badges, a two-line preview ([ChatPreviewText]), and the time with the unread badges at the end
- * ([ChatMeta]). For the main list, the archive and folders alike; swipe actions and selection wrap or extend it.
+ * name with its badges, a one-line preview ([ChatPreviewText]), and the time with the unread badges at the end
+ * ([ChatMeta]). At large font scales ([timeOnPreviewLine]) the time starts the preview's line instead, so the end
+ * column is only as wide as the badges and the name keeps most of its line; the row stays two lines tall. The preview
+ * stays one plain text: the list item reads its baselines while it measures, to tell one line from several. For the
+ * main list, the archive and folders alike; swipe actions and selection wrap or extend it.
  *
  * Everything shown is in [item], mapped by the ViewModel: the row resolves texts and builds the preview's styled text,
  * and runs no effects (`docs/PERFORMANCE.md` §4). For screen readers it is one node that reads the whole row, unread
@@ -56,10 +59,10 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * padding ([insetContentPadding]): at rest nothing shows it, but a pressed, selected or open row stands apart from the
  * edges of the list's sheet and from the rows around it (`docs/DESIGN_SYSTEM.md` §4, §6).
  *
- * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row turns into a pill (full corners) in the list item's selected
- * container (`secondaryContainer`) and its avatar morphs into a check. The list item morphs its shape on the motion
- * scheme's fast spatial spring and animates its container color. The colors come from the clickable list item's own
- * selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
+ * Selected ([selected], `REQUIREMENTS.md` FR-L8), the row takes the list item's selected shape (`large` corners) in its
+ * selected container (`secondaryContainer`) and its avatar morphs into a check. The list item morphs its shape on the
+ * motion scheme's fast spatial spring and animates its container color. The colors come from the clickable list item's
+ * own selected colors: its selectable variant would make every row a radio button for screen readers, and swapping
  * variants on entering selection mode would recreate the rows and skip the morphs.
  *
  * Open ([open]), its conversation showing beside the list on expanded windows, the row takes the same selected
@@ -70,8 +73,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * @param onClick opens the chat, or selects it in selection mode; null makes the row not clickable.
  * @param onLongClick e.g. starts selection; only with [onClick].
  * @param onLongClickLabel what [onLongClick] does, for screen readers.
+ * @param dragged the row is being swiped: it takes its `large` container, as when pressed ([ChatRow]).
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ChatListItem(
     item: ChatListItemModel,
@@ -81,14 +84,17 @@ internal fun ChatListItem(
     onLongClickLabel: String? = null,
     selected: Boolean = false,
     open: Boolean = false,
+    dragged: Boolean = false,
 ) {
     val title = item.title.resolve()
     val preview = previewText(item.preview, isFailed = item.outgoingStatus == OutgoingStatus.Failed)
     // Built in the semantics blocks, so only when something reads the semantics tree.
     val resources = LocalResources.current
-    val leading = @Composable { ChatAvatar(item, title, selected) }
-    val trailing = @Composable { ChatMeta(item) }
-    val supporting = @Composable { ChatPreviewText(preview) }
+    val leading = @Composable { ChatAvatar(item, title, selected, open) }
+    val timeOnPreviewLine = timeOnPreviewLine()
+    val shownPreview = if (timeOnPreviewLine) remember(preview, item.time) { preview.after(item.time) } else preview
+    val trailing = @Composable { ChatMeta(item, showTime = !timeOnPreviewLine) }
+    val supporting = @Composable { ChatPreviewText(shownPreview) }
     val headline = @Composable { ChatTitle(title, item.isSecret, item.badge, item.isMuted, item.isUnread) }
     val insets = rowInsets()
     val contentPadding = insetContentPadding(insets)
@@ -107,7 +113,7 @@ internal fun ChatListItem(
             supportingContent = supporting,
             onLongClick = onLongClick,
             onLongClickLabel = onLongClickLabel,
-            shapes = listItemShapes(selected = selected, open = open),
+            shapes = listItemShapes(rounded = selected || open || dragged),
             colors = listItemColors(selected || open),
             contentPadding = contentPadding,
             content = headline,
@@ -167,35 +173,35 @@ private fun listItemColors(selected: Boolean): ListItemColors {
     )
 }
 
-/** The list item's shapes, with a pill ([selected]) or its selected shape ([open]) in place of its resting one. */
+/** The list item's shapes, with its selected shape (`large`) in place of its resting one while [rounded]. */
 @Composable
-private fun listItemShapes(
-    selected: Boolean,
-    open: Boolean,
-): ListItemShapes {
+private fun listItemShapes(rounded: Boolean): ListItemShapes {
     val shapes = ListItemDefaults.shapes()
-    return when {
-        selected -> shapes.copy(shape = CircleShape)
-        open -> shapes.copy(shape = shapes.selectedShape)
-        else -> shapes
-    }
+    return if (rounded) shapes.copy(shape = shapes.selectedShape) else shapes
 }
 
-/** Decorative: the row's description names the chat, and its semantics say whether it is selected. */
+/**
+ * Decorative: the row's description names the chat, and its semantics say whether it is selected. On an [open] row the
+ * placeholder takes the selection colors and the online dot's ring the row's container, `secondaryContainer`.
+ */
 @Composable
 private fun ChatAvatar(
     item: ChatListItemModel,
     title: String,
     selected: Boolean,
+    open: Boolean,
 ) {
     Avatar(
         photo = item.photo,
         name = title,
         id = item.id,
-        size = MaterialTheme.sizes.avatarMedium,
+        size = MaterialTheme.sizes.avatarRow,
         isOnline = item.isOnline,
         placeholderIcon = item.placeholderIcon,
+        onlineRingColor =
+            if (open) ListItemDefaults.colors().selectedContainerColor else MaterialTheme.colorScheme.surface,
         selected = selected,
+        onSelection = open,
     )
 }
 
@@ -224,7 +230,7 @@ internal fun ChatTitle(
             color = colors.onSurface,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
-            style = with(MaterialTheme.typography) { if (isUnread) titleMediumEmphasized else titleMedium },
+            style = with(MaterialTheme.typography) { if (isUnread) titleMediumEmphasized else titleMedium }.userContent,
         )
         when (badge) {
             TitleBadge.Verified -> {

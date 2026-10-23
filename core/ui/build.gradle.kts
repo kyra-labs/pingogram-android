@@ -14,6 +14,21 @@ dependencies {
     // FileProvider, for the content URIs of TDLib files handed to other apps (file/TdlibFiles.kt). Already in the app
     // through Compose; the catalog pins the version it resolves to.
     implementation(libs.androidx.core)
+    // PredictiveBackHandler, for leaving selection mode with back (component/SelectionBack.kt). Already in the app and
+    // in the features that show selection mode.
+    implementation(libs.androidx.activity.compose)
+    // The list-detail layouts' shared pane parts (ListDetailPanes.kt).
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation)
+
+    // Animated (TGS) stickers, drawn into bitmaps by LottieDrawable (sticker/LottieStickerDecoder.kt,
+    // docs/adr/0008-lottie-for-animated-stickers.md). Not its AppCompat dependency: only LottieAnimationView, a View,
+    // needs it, and Pingogram has no Views (CLAUDE.md rule 4).
+    implementation(libs.lottie) { exclude(group = "androidx.appcompat", module = "appcompat") }
+
+    // Encodes the QR codes Pingogram shows (qr/QrCode.kt: the login's, a chat's link, the user's own) on the device;
+    // nothing leaves it. Pure Java; R8 keeps only what is used.
+    implementation(libs.zxing.core)
 
     testImplementation(libs.kotlinx.coroutines.test)
 }

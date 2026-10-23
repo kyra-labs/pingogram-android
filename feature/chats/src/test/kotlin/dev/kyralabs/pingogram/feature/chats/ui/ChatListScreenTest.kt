@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
@@ -12,22 +13,34 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.ui.component.LocalTabReselection
+import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import kotlinx.collections.immutable.toPersistentList
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -263,13 +276,160 @@ class ChatListScreenTest {
         assertEquals(1, backs)
     }
 
+    // New chat
+
+    @Test
+    fun `the New chat button opens the New chat screen`() {
+        setScreen(ChatListPreviewData.content)
+
+        composeRule.onNode(newChatButton).assertIsDisplayed().performClick()
+
+        assertEquals(listOf(ChatListEvent.NewChat), events)
+    }
+
+    @Test
+    fun `the New chat button collapses as the list scrolls towards its end and expands as it scrolls back`() {
+        setScreen(ChatListPreviewData.content)
+        val label = string(R.string.new_chat)
+        val list = composeRule.onNode(hasScrollAction())
+        val expandedWidth =
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width
+
+        list.performTouchInput { swipeUp() }
+        composeRule.waitForIdle()
+        val collapsedWidth =
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width
+        list.performTouchInput { swipeDown() }
+        composeRule.waitForIdle()
+
+        assertTrue("$collapsedWidth < $expandedWidth", collapsedWidth < expandedWidth)
+        assertEquals(
+            expandedWidth,
+            composeRule
+                .onNode(newChatButton)
+                .fetchSemanticsNode()
+                .size.width,
+        )
+        composeRule.onNode(newChatButton).assertContentDescriptionEquals(label)
+    }
+
+    @Test
+    fun `the New chat button hides in selection mode`() {
+        setScreen(ChatListPreviewData.selecting)
+
+        assertNewChatButtonHidden()
+    }
+
+    @Test
+    fun `the archive has no New chat button`() {
+        setScreen(ChatListPreviewData.archived)
+
+        composeRule.onNode(newChatButton).assertDoesNotExist()
+    }
+
+    @Test
+    fun `no chats yet offers a New chat button`() {
+        setScreen(ChatListPreviewData.empty)
+
+        composeRule.onNode(hasText(string(R.string.new_chat)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(ChatListEvent.NewChat), events)
+    }
+
+    @Test
+    fun `an error offers to try again`() {
+        setScreen(ChatListPreviewData.error)
+
+        composeRule.onNode(hasText(string(R.string.chat_list_retry)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(ChatListEvent.Retry), events)
+    }
+
+    // Tapping the Chats tab again
+
+    @Test
+    fun `tapping the selected Chats tab scrolls the list back to its top`() {
+        val reselection = TabReselection()
+        val listState = LazyListState()
+        setScreen(longList(), reselection = reselection, listState = listState)
+        listState.requestScrollToItem(LONG_LIST_SIZE / 2)
+        composeRule.waitForIdle()
+        assertTrue(listState.firstVisibleItemIndex > 0)
+
+        reselection.reselect(ChatsRoute)
+        composeRule.waitForIdle()
+
+        assertEquals(0, listState.firstVisibleItemIndex)
+        assertEquals(0, listState.firstVisibleItemScrollOffset)
+    }
+
+    @Test
+    fun `the archive stays where it is when the Chats tab is tapped again`() {
+        val reselection = TabReselection()
+        val listState = LazyListState()
+        setScreen(longList().copy(kind = ChatListKind.Archive), reselection = reselection, listState = listState)
+        listState.requestScrollToItem(LONG_LIST_SIZE / 2)
+        composeRule.waitForIdle()
+
+        reselection.reselect(ChatsRoute)
+        composeRule.waitForIdle()
+
+        assertEquals(LONG_LIST_SIZE / 2, listState.firstVisibleItemIndex)
+    }
+
+    // Rows
+
+    @Test
+    fun `every row is as tall as the others, whatever it shows at its end`() {
+        setScreen(ChatListPreviewData.content)
+
+        val heights = rowHeights()
+        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+    }
+
+    @Test
+    fun `at twice the font size every row is still as tall as the others`() {
+        RuntimeEnvironment.setFontScale(LARGE_FONT_SCALE)
+        setScreen(ChatListPreviewData.content)
+
+        val heights = rowHeights()
+        assertEquals(heights.toString(), 1, heights.values.toSet().size)
+    }
+
+    @Test
+    fun `an empty archive offers no New chat button`() {
+        setScreen(ChatListPreviewData.archivedEmpty)
+
+        composeRule.onNode(hasText(string(R.string.new_chat))).assertDoesNotExist()
+    }
+
+    /** The "New chat" floating action button: named for screen readers, whether or not it shows its label. */
+    private val newChatButton: SemanticsMatcher
+        get() = hasContentDescription(string(R.string.new_chat)) and hasClickAction()
+
+    /** The button is not on screen: scaled away by its animation, or not there at all. */
+    private fun assertNewChatButtonHidden() {
+        composeRule.waitForIdle()
+        val buttons = composeRule.onAllNodes(newChatButton)
+        repeat(buttons.fetchSemanticsNodes().size) { buttons[it].assertIsNotDisplayed() }
+    }
+
     // The delete dialog
 
     @Test
     fun `checking the box deletes the chat for the other user too`() {
         setScreen(ChatListPreviewData.deletePrivateChatDialog)
 
-        composeRule.onNodeWithText(string(R.string.chat_list_delete_for_user, "Grace Hopper")).performClick()
+        composeRule
+            .onNodeWithText(
+                "\u2068" + string(R.string.chat_list_delete_for_user, "\u2068Grace Hopper\u2069") + "\u2069",
+            ).performClick()
         composeRule.onNodeWithText(string(R.string.chat_list_delete_confirm)).performClick()
 
         assertEquals(listOf(ChatListEvent.ConfirmDelete(forEveryone = true)), events)
@@ -321,15 +481,34 @@ class ChatListScreenTest {
         state: ChatListUiState,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
         openChatId: Long? = null,
+        reselection: TabReselection = TabReselection(),
+        listState: LazyListState = LazyListState(),
     ) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-                    ChatListScreen(state = state, onEvent = ::record, openChatId = openChatId)
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides layoutDirection,
+                    LocalTabReselection provides reselection,
+                ) {
+                    ChatListScreen(state = state, onEvent = ::record, listState = listState, openChatId = openChatId)
                 }
             }
         }
     }
+
+    /** [LONG_LIST_SIZE] chats, many screens of them. */
+    private fun longList(): ChatListUiState {
+        val row = ChatListPreviewData.items.first()
+        val rows = (1..LONG_LIST_SIZE).map { row.copy(id = it.toLong()) }.toPersistentList()
+        return ChatListPreviewData.content.copy(content = ChatListContent.Content(rows))
+    }
+
+    /** The chat rows laid out, by their description, with their heights. */
+    private fun rowHeights(): Map<String, Int> =
+        composeRule
+            .onAllNodes(hasContentDescription(",", substring = true) and hasClickAction())
+            .fetchSemanticsNodes()
+            .associate { it.config[SemanticsProperties.ContentDescription].joinToString() to it.size.height }
 
     /** Keeps the events these tests are about: not paging, which the list reports as it lays out. */
     private fun record(event: ChatListEvent) {
@@ -351,5 +530,7 @@ class ChatListScreenTest {
         const val GRACE = "Grace Hopper"
         const val GRACE_ID = 4L
         const val ORBITAL_ID = 5L
+        const val LONG_LIST_SIZE = 60
+        const val LARGE_FONT_SCALE = 2f
     }
 }

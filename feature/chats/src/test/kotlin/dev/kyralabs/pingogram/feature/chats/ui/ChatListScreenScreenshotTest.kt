@@ -4,9 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
-import dev.kyralabs.pingogram.core.domain.model.ThemeMode
-import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.feature.chats.ui.preview.ChatListPreviewData
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,24 +31,43 @@ class ChatListScreenScreenshotTest(
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun light() = capture("light", ThemeMode.Light)
+    fun light() = capture(ScreenshotVariant.Light)
 
     @Test
-    fun dark() = capture("dark", ThemeMode.Dark)
+    fun dark() = capture(ScreenshotVariant.Dark)
+
+    @Test
+    fun amoled() = captureAudit(ScreenshotVariant.Amoled)
+
+    @Test
+    fun highContrast() = captureAudit(ScreenshotVariant.HighContrast)
+
+    @Test
+    fun rtl() = captureAudit(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun medium() = captureAudit(ScreenshotVariant.Medium)
+
+    /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
+    private fun captureAudit(variant: ScreenshotVariant) {
+        assumeTrue(stateName == "content")
+        capture(variant)
+    }
 
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(
-        variant: String,
-        themeMode: ThemeMode,
-    ) {
+    private fun capture(variant: ScreenshotVariant) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
-            PingogramTheme(themeMode = themeMode, dynamicColor = false) {
+            ScreenshotTheme(variant) {
                 ChatListScreen(state = state, onEvent = {})
             }
         }
         composeRule.waitForIdle()
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$variant"))
+        // A state that is still loading shows its indicator once loading takes a moment; the golden shows it then.
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
+        composeRule.waitForIdle()
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.${variant.goldenName}"))
     }
 
     companion object {

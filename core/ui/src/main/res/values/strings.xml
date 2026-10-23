@@ -30,11 +30,25 @@
     <string name="error_username_for_sale">This username is for sale on Fragment.</string>
     <string name="error_bio_too_long">Your bio is too long.</string>
     <string name="error_photo_invalid">This image can\'t be used as a profile photo. Try another one.</string>
+    <string name="error_title_invalid">Enter a name.</string>
+    <string name="error_too_many_chats">You\'re in too many groups and channels. Leave one to create or join another.</string>
+    <string name="error_too_many_public_links">You have too many public links. Make one of your groups or channels private first.</string>
+    <string name="error_account_restricted">Telegram has limited your account, so you can\'t create groups or channels for now.</string>
     <!-- A picked photo, video, file or contact could not be read. -->
     <string name="error_file_unavailable">That file couldn\'t be read. Pick it again.</string>
     <string name="error_file_too_large">This file is too large to send.</string>
     <!-- The chat does not allow this kind of message, e.g. polls in a private chat. -->
     <string name="error_sending_not_allowed">You can\'t send this kind of message here.</string>
+    <!-- Groups and channels: what administrators change. -->
+    <string name="error_admin_rights_required">You don\'t have the rights to do this here.</string>
+    <string name="error_description_too_long">The description is too long.</string>
+    <string name="error_not_mutual_contact">Only people who have you in their contacts too can be added here.</string>
+    <string name="error_too_many_admins">This chat has as many admins as Telegram allows.</string>
+    <string name="error_invite_link_invalid">This invite link has expired or is no longer valid.</string>
+    <string name="error_chat_full">This group is full.</string>
+    <string name="error_qr_login_expired">This code has expired. Show a new one on the other device.</string>
+    <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
+    <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
 
     <!-- Remaining time in countdowns (durationText). -->
     <plurals name="duration_seconds">
@@ -53,6 +67,30 @@
     <!-- Names (UserNames.kt) and the current user's own chat. -->
     <string name="user_deleted_account">Deleted Account</string>
     <string name="chat_saved_messages">Saved Messages</string>
+    <!-- A secret chat's state, in the chat list's preview line and the conversation's subtitle (REQUIREMENTS.md FR-E1). -->
+    <string name="secret_chat_waiting">Waiting for %1$s to come online</string>
+    <string name="secret_chat_joining">Setting up encryption…</string>
+    <string name="secret_chat_ended">Secret chat ended</string>
+
+    <!-- Under a user's name (UserStatusFormatter.kt): what Telegram tells about when they were last online, in the
+         conversation's top bar and the profile. -->
+    <string name="user_status_online">online</string>
+    <string name="user_status_last_seen_just_now">last seen just now</string>
+    <plurals name="user_status_last_seen_minutes">
+        <item quantity="one">last seen %d minute ago</item>
+        <item quantity="other">last seen %d minutes ago</item>
+    </plurals>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="user_status_last_seen_today">last seen today at %1$s</string>
+    <!-- %1$s is a time of day, "9:41 AM". -->
+    <string name="user_status_last_seen_yesterday">last seen yesterday at %1$s</string>
+    <!-- %1$s is a date, "Mar 17" or "3/17/2024". -->
+    <string name="user_status_last_seen_date">last seen %1$s</string>
+    <!-- The user's privacy settings hide when they were last online; Telegram tells roughly. -->
+    <string name="user_status_last_seen_recently">last seen recently</string>
+    <string name="user_status_last_seen_week">last seen within a week</string>
+    <string name="user_status_last_seen_month">last seen within a month</string>
+    <string name="user_status_last_seen_long_ago">last seen a long time ago</string>
 
     <!-- Message previews (MessagePreview.kt): one line for a message in the chat list, replies and notifications. -->
     <!-- The sender of a message by the current user, before its preview. -->
@@ -186,4 +224,37 @@
         <item quantity="one">%d person is typing…</item>
         <item quantity="other">%d people are typing…</item>
     </plurals>
+
+    <!-- Contacts sync (core:ui contactsync), on the Contacts tab and in Settings → Privacy and security. What it sends
+         and when must stay honest: the phone's names and numbers go to Telegram, which finds who uses it. -->
+    <string name="contact_sync_rationale_title">Find your contacts on Telegram</string>
+    <string name="contact_sync_rationale_what">The names and phone numbers of your phone\'s contacts are sent to Telegram, which finds who of them uses Telegram and adds them to your Telegram contacts. This is Telegram\'s own contact import, the same as in Telegram\'s apps.</string>
+    <string name="contact_sync_rationale_when">Pingogram reads your contacts only when you turn this on, when you open Contacts while it\'s on, and when you tap Sync now. It never reads them in the background, and keeps no copy.</string>
+    <string name="contact_sync_rationale_off">You can turn it off any time in Settings, Privacy and security. Telegram then deletes the phone numbers it imported. People already in your Telegram contacts stay there.</string>
+    <string name="contact_sync_not_now">Not now</string>
+    <string name="contact_sync_continue">Continue</string>
+    <string name="contact_sync_turn_off_title">Turn off contacts sync?</string>
+    <string name="contact_sync_turn_off_text">Telegram will delete the phone numbers it imported from your phone. People already in your Telegram contacts stay there.</string>
+    <string name="contact_sync_turn_off">Turn off</string>
+    <string name="contact_sync_cancel">Cancel</string>
+    <string name="contact_sync_turned_off">Contacts sync is off. You can also take back access to your contacts in Android\'s settings.</string>
+    <string name="contact_sync_settings">Settings</string>
+    <!-- The photo editor of Edit profile and of a group's or channel's info: opens the system photo picker. -->
+    <string name="photo_editor_set">Set new photo</string>
+    <string name="photo_editor_remove">Remove photo</string>
+    <!-- Spoken by screen readers for the progress while the picked image is prepared and before its upload reports progress. -->
+    <string name="photo_editor_preparing">Preparing photo</string>
+    <!-- Spoken by screen readers for the upload progress around the photo. -->
+    <string name="photo_editor_uploading">Uploading photo</string>
+    <!-- Spoken by screen readers for the progress while the photo is removed. -->
+    <string name="photo_editor_removing">Removing photo</string>
+    <!-- The drag handle between the conversation and the profile or group info beside it, on very wide windows -->
+    <string name="pane_extra_drag_handle">Resize the side pane</string>
+    <string name="pane_extra_width_narrow">Narrow</string>
+    <string name="pane_extra_width_medium">Medium</string>
+    <string name="pane_extra_width_wide">Wide</string>
+    <string name="pane_extra_width_next">Change width</string>
+    <!-- What separates the parts of a description screen readers read as one ("Alice, online, Admin"): a comma and a
+         space in English. The quotes keep the space; translate the punctuation inside them. -->
+    <string name="list_separator">", "</string>
 </resources>

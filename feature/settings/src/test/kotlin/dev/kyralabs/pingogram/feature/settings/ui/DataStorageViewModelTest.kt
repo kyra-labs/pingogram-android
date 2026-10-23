@@ -3,9 +3,16 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeAutoDownloadRepository
+import dev.kyralabs.pingogram.core.testing.FakeNetworkRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +40,8 @@ import kotlin.time.Duration.Companion.seconds
 class DataStorageViewModelTest {
     private val client = FakeTdlibClient()
     private val savedState = SavedStateHandle()
+    private val autoDownload = FakeAutoDownloadRepository()
+    private val network = FakeNetworkRepository()
 
     @BeforeEach
     fun setUp() {
@@ -46,7 +55,7 @@ class DataStorageViewModelTest {
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
     private fun TestScope.viewModel(handle: SavedStateHandle = savedState): DataStorageViewModel =
-        DataStorageViewModel(handle, TdlibStorageRepository(client)).also { runCurrent() }
+        DataStorageViewModel(handle, TdlibStorageRepository(client), autoDownload, network).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: DataStorageViewModel): List<DataStorageEffect> {
         val effects = mutableListOf<DataStorageEffect>()
@@ -81,7 +90,29 @@ class DataStorageViewModelTest {
     private fun usage(filesSize: Long) =
         StorageUsageState.Content(StorageUsage(filesSize = filesSize, fileCount = 10, databaseSize = 1_000))
 
-    private val DataStorageViewModel.state get() = uiState.value
+    /** The storage part of the state; the automatic download part has a test of its own. */
+    private val DataStorageViewModel.state get() = uiState.value.copy(autoDownload = null, isDataSaverOn = false)
+
+    @Test
+    fun `shows the automatic download settings and Data Saver, and follows them`() =
+        runTest {
+            answerUsage(filesSize = 1_000)
+            val viewModel = viewModel()
+
+            assertEquals(AutoDownloadSettings(), viewModel.uiState.value.autoDownload)
+            assertFalse(viewModel.uiState.value.isDataSaverOn)
+
+            autoDownload.setRules(AutoDownloadNetwork.Roaming, AutoDownloadRules(photos = true))
+            network.networkStatus.value = NetworkStatus(NetworkType.Mobile, isMetered = true, isDataSaverOn = true)
+            runCurrent()
+
+            assertEquals(
+                AutoDownloadRules(photos = true),
+                viewModel.uiState.value.autoDownload
+                    ?.roaming,
+            )
+            assertTrue(viewModel.uiState.value.isDataSaverOn)
+        }
 
     @Test
     fun `is loading until TDLib reports the storage usage`() =

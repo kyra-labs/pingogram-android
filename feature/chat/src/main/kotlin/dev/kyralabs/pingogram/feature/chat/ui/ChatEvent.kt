@@ -1,6 +1,9 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.ui.text.MentionTarget
 
 /** What the user and the screen's lifecycle do on the conversation screen, sent to [ChatViewModel.onEvent]. */
 sealed interface ChatEvent {
@@ -52,8 +55,24 @@ sealed interface ChatEvent {
     /** "Try again" after finding the chat or loading messages failed. */
     data object Retry : ChatEvent
 
+    /** The composer's "Join" in a public group or channel the user is not in (`REQUIREMENTS.md` FR-P5). */
+    data object JoinChat : ChatEvent
+
+    /** A bubble's "12 comments" or "3 replies" was tapped: open the thread of message [messageId] of this chat. */
+    data class OpenThread(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** A hidden spoiler in message [messageId] was tapped: every spoiler of its text shows. */
     data class RevealSpoilers(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /**
+     * The bubble of message [messageId] was tapped where nothing else takes the tap: its time and state show, or hide
+     * again, where its group shows them on its last bubble only.
+     */
+    data class ToggleTime(
         val messageId: Long,
     ) : ChatEvent
 
@@ -85,6 +104,16 @@ sealed interface ChatEvent {
     /** The location or venue of message [messageId] was tapped, to show it in a maps app. */
     data class OpenLocation(
         val messageId: Long,
+    ) : ChatEvent
+
+    /** The profile of user [userId] was asked for: the chat's title, a sender's avatar or name. */
+    data class OpenProfile(
+        val userId: Long,
+    ) : ChatEvent
+
+    /** A mention in a message was tapped: open the profile, or the group or channel, it names. */
+    data class OpenMention(
+        val target: MentionTarget,
     ) : ChatEvent
 
     /**
@@ -146,6 +175,17 @@ sealed interface ChatEvent {
         override fun toString() = "AttachContact(…)"
     }
 
+    /** The "Location" sheet's send button: [location], the device's, is sent as [options] say. */
+    data class SendLocation(
+        val location: DeviceLocation,
+        val options: SendOptions = SendOptions(),
+    ) : ChatEvent
+
+    /** A sticker tapped in the composer's sticker panel: [sticker] is sent at once, with the composer's reply. */
+    data class SendSticker(
+        val sticker: Sticker,
+    ) : ChatEvent
+
     /** The remove button of item [key] of the preview. */
     data class RemoveAttachment(
         val key: Long,
@@ -182,6 +222,20 @@ sealed interface ChatEvent {
     data class ShowMessageActions(
         val messageId: Long,
     ) : ChatEvent
+
+    /**
+     * The "+N" badge on message [messageId]'s bubble, or a screen reader's action for it: open the actions sheet at
+     * its reactions picker, which shows every reaction of the message.
+     */
+    data class ShowAllReactions(
+        val messageId: Long,
+    ) : ChatEvent
+
+    /** The button at the end of the actions sheet's quick reactions: the sheet shows the reactions picker. */
+    data object ExpandReactions : ChatEvent
+
+    /** The reactions picker's back button: the sheet shows the quick reactions and the actions again. */
+    data object CollapseReactions : ChatEvent
 
     /** The actions sheet was dismissed without an action. */
     data object DismissMessageActions : ChatEvent
@@ -230,14 +284,22 @@ sealed interface ChatEvent {
     /** The delete confirmation was dismissed: nothing is deleted. */
     data object DismissDelete : ChatEvent
 
+    /**
+     * Forward message [messageId], an album's every item: the forward sheet opens with the chats it can go to
+     * ([ChatViewModel.forwardSheet]).
+     */
+    data class Forward(
+        val messageId: Long,
+    ) : ChatEvent
+
     /** Send the failed message [messageId] again (an album's failed items). */
     data class Resend(
         val messageId: Long,
     ) : ChatEvent
 
     /**
-     * A reaction chip of message [messageId], or a quick reaction of its actions sheet, was tapped: the user's reaction
-     * [label] goes on the message, or comes off it if they had added it.
+     * A reaction chip of message [messageId], or a reaction of its actions sheet (quick row or picker), was tapped: the
+     * user's reaction [label] goes on the message, or comes off it if they had added it.
      */
     data class ToggleReaction(
         val messageId: Long,

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +26,7 @@ internal fun ViewerError(
     modifier: Modifier = Modifier,
 ) {
     EmptyState(
-        illustration = MaterialShapes.Burst,
+        illustration = MaterialShapes.Cookie4Sided,
         icon = UiR.drawable.ic_error,
         title = stringResource(R.string.media_error_title),
         body = errorText(error),
@@ -33,7 +34,7 @@ internal fun ViewerError(
         containerColor = MaterialTheme.colorScheme.errorContainer,
         iconColor = MaterialTheme.colorScheme.onErrorContainer,
         action = {
-            Button(onClick = onRetry) {
+            Button(onClick = onRetry, shapes = ButtonDefaults.shapes()) {
                 Text(stringResource(R.string.media_retry), style = MaterialTheme.typography.labelLargeEmphasized)
             }
         },

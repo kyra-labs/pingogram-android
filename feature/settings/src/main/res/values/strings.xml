@@ -3,6 +3,9 @@
     <string name="settings_title">Settings</string>
     <!-- Spoken by screen readers for the back button of a settings page. -->
     <string name="settings_back">Back</string>
+    <!-- The page beside Settings home on a wide window while no page is open. -->
+    <string name="settings_no_page_selected_title">Pick a setting</string>
+    <string name="settings_no_page_selected_body">The page you open shows here, beside your settings.</string>
     <string name="settings_retry">Try again</string>
     <!-- The button that closes a confirmation without doing anything. -->
     <string name="settings_dialog_dismiss">Cancel</string>
@@ -19,12 +22,16 @@
     <!-- Settings home -->
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_summary">Pingogram\'s own language</string>
     <string name="settings_data_storage">Data and storage</string>
-    <string name="settings_data_storage_summary">Storage usage, clear cache</string>
+    <string name="settings_data_storage_summary">Automatic download, storage usage</string>
     <string name="settings_about">About</string>
     <string name="settings_about_summary">Version, source code, license</string>
     <string name="settings_privacy_security">Privacy and security</string>
     <string name="settings_privacy_security_summary">Who can see you, blocked users, active sessions</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_summary">Messages, groups, channels, exceptions</string>
     <string name="settings_log_out">Log out</string>
     <string name="settings_log_out_summary">Remove this account from Pingogram on this device</string>
     <!-- Spoken by screen readers for the progress indicator while logging out. -->
@@ -38,15 +45,72 @@
     <!-- Appearance (FR-S2) -->
     <!-- Spoken by screen readers for the progress indicator while the settings load. -->
     <string name="settings_appearance_loading">Loading appearance settings</string>
-    <string name="settings_section_theme">Theme</string>
+    <string name="settings_section_light_dark">Light and dark</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_amoled">AMOLED black</string>
     <string name="settings_amoled_summary">Pure black backgrounds in dark theme</string>
     <string name="settings_section_colors">Colors</string>
-    <string name="settings_dynamic_color">Dynamic color</string>
-    <string name="settings_dynamic_color_summary">Colors from your wallpaper</string>
+    <!-- Settings → Appearance → Theme (docs/adr/0016-color-themes.md): the color theme, as Pixel's Wallpaper & style. -->
+    <!-- Settings → Appearance → Chat appearance (REQUIREMENTS.md FR-S1): how conversations look. The row on Appearance shows the
+         text size, the corners and the wallpaper, e.g. "110% text · Very rounded · No wallpaper" -->
+    <string name="settings_chat_appearance">Chat appearance</string>
+    <string name="settings_section_chats">Chats</string>
+    <string name="settings_chat_appearance_summary">%1$s text · %2$s · %3$s</string>
+    <string name="settings_chat_section_messages">Messages</string>
+    <string name="settings_chat_section_wallpaper">Wallpaper</string>
+    <!-- Screen readers' description of the page's sample conversation -->
+    <string name="settings_chat_preview">Preview of a conversation with these settings</string>
+    <!-- The sample conversation: two messages from a friend and the user's reply -->
+    <string name="settings_chat_sample_first">Are you coming to the climbing wall on Sunday?</string>
+    <string name="settings_chat_sample_second">We start at nine 🧗</string>
+    <string name="settings_chat_sample_reply">Count me in! I\'ll bring snacks.</string>
+    <string name="settings_chat_text_size">Message text size</string>
+    <string name="settings_chat_bubble_corners">Bubble corners</string>
+    <!-- How round message bubbles are, from least to most: the steps of a slider -->
+    <string name="settings_chat_corners_medium">Slightly rounded</string>
+    <string name="settings_chat_corners_large">Rounded</string>
+    <string name="settings_chat_corners_large_increased">More rounded</string>
+    <string name="settings_chat_corners_extra_large">Very rounded</string>
+    <string name="settings_chat_corners_extra_large_increased">Most rounded</string>
+    <!-- Chat wallpapers, drawn from the current theme's colors: none, a plain gray, a tint of the theme's main, second
+         or third color, or a gradient between two of them. Also the "No wallpaper" of the Appearance row's summary -->
+    <string name="settings_chat_wallpaper_none">No wallpaper</string>
+    <string name="settings_chat_wallpaper_neutral">Gray</string>
+    <string name="settings_chat_wallpaper_primary">Main color</string>
+    <string name="settings_chat_wallpaper_secondary">Second color</string>
+    <string name="settings_chat_wallpaper_tertiary">Third color</string>
+    <string name="settings_chat_wallpaper_primary_tertiary">Main to third color</string>
+    <string name="settings_chat_wallpaper_secondary_primary">Second to main color</string>
+    <string name="settings_chat_wallpaper_tertiary_secondary">Third to second color</string>
+    <string name="settings_chat_wallpaper_neutral_primary">Gray to main color</string>
+    <string name="settings_color_theme">Theme</string>
+    <string name="settings_color_theme_section_wallpaper">Wallpaper colors</string>
+    <string name="settings_color_theme_section_basic">Basic colors</string>
+    <!-- The name of each theme, on its chip for screen readers and under "Theme" in Appearance. -->
+    <string name="settings_color_theme_wallpaper">Wallpaper colors</string>
+    <string name="settings_color_theme_pingogram" translatable="false">Pingogram</string>
+    <string name="settings_color_theme_blue">Blue</string>
+    <string name="settings_color_theme_teal">Teal</string>
+    <string name="settings_color_theme_green">Green</string>
+    <string name="settings_color_theme_lime">Lime</string>
+    <string name="settings_color_theme_yellow">Yellow</string>
+    <string name="settings_color_theme_orange">Orange</string>
+    <string name="settings_color_theme_red">Red</string>
+    <string name="settings_color_theme_pink">Pink</string>
+    <string name="settings_color_theme_purple">Purple</string>
+    <string name="settings_color_theme_indigo">Indigo</string>
+    <string name="settings_color_theme_brown">Brown</string>
+    <string name="settings_color_theme_monochrome">Monochrome</string>
+    <!-- What screen readers hear for the live preview at the top of the Theme page; %1$s is the theme's name. -->
+    <string name="settings_color_theme_preview">Preview of the %1$s theme: a chat, two messages and a button</string>
+    <!-- Sample content of the preview: a contact's name, the last message, its time, two messages and a button. -->
+    <string name="settings_color_theme_sample_name">Ada Lovelace</string>
+    <string name="settings_color_theme_sample_preview">See you at the ferry?</string>
+    <string name="settings_color_theme_sample_incoming">Running ten minutes late</string>
+    <string name="settings_color_theme_sample_outgoing">No rush, I saved you a seat</string>
+    <string name="settings_color_theme_sample_button">Send</string>
     <string name="settings_contrast">Contrast</string>
     <string name="settings_contrast_standard">Standard</string>
     <string name="settings_contrast_medium">Medium</string>
@@ -54,9 +118,55 @@
     <!-- Android 14+, where the system's contrast setting applies to every app. -->
     <string name="settings_contrast_follows_system">Follows your device\'s contrast setting</string>
     <!-- Before Android 14, wallpaper colors have no contrast levels. -->
-    <string name="settings_contrast_brand_colors">Medium and high contrast use Pingogram\'s colors instead of your wallpaper\'s</string>
+    <!-- %1$s is the theme's name, e.g. "Pingogram". -->
+    <string name="settings_contrast_fallback_theme">Medium and high contrast use the %1$s theme instead of your wallpaper\'s colors</string>
+
+    <!-- Language (FR-S1, per-app language) -->
+    <!-- Spoken by screen readers for the progress indicator while the languages load. -->
+    <string name="settings_language_loading">Loading languages</string>
+    <string name="settings_section_app_language">App language</string>
+    <!-- The choice that follows the device's language; the device's language, named in itself, shows below it. -->
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_footer">Text that Pingogram has no translation for yet shows in English.</string>
+    <!-- Android 13+: the heading above the row that opens Android's own app language settings. -->
+    <string name="settings_section_android">Android</string>
+    <string name="settings_language_android_settings">App language in Android settings</string>
+    <string name="settings_language_android_settings_summary">The same choice, where Android lists every app\'s language</string>
 
     <!-- Data and storage -->
+    <string name="settings_section_auto_download">Automatic download</string>
+    <string name="settings_auto_download_mobile">Mobile data</string>
+    <string name="settings_auto_download_wifi">Wi-Fi</string>
+    <string name="settings_auto_download_roaming">Roaming</string>
+    <!-- A network's summary when nothing downloads by itself on it. -->
+    <string name="settings_auto_download_nothing">Nothing</string>
+    <!-- Items of a network's summary, joined in the language's list format, e.g. "Photos, Videos up to 10 MB and
+         Files up to 3 MB". %1$s is a size such as "10 MB". -->
+    <string name="settings_auto_download_list_photos">Photos</string>
+    <string name="settings_auto_download_list_videos">Videos up to %1$s</string>
+    <string name="settings_auto_download_list_files">Files up to %1$s</string>
+    <string name="settings_auto_download_list_voice">Voice and video messages</string>
+    <string name="settings_auto_download_data_saver_footer">Data Saver is on: on mobile data, media downloads only when you tap it</string>
+    <!-- The automatic download page of one kind of network. -->
+    <string name="settings_auto_download_section">Download automatically</string>
+    <string name="settings_auto_download_photos">Photos</string>
+    <string name="settings_auto_download_photos_summary">At the size they show in chats</string>
+    <string name="settings_auto_download_videos">Videos and GIFs</string>
+    <string name="settings_auto_download_videos_summary">So they play at once</string>
+    <string name="settings_auto_download_video_limit">Largest video</string>
+    <string name="settings_auto_download_files">Files</string>
+    <string name="settings_auto_download_files_summary">Documents and music</string>
+    <string name="settings_auto_download_file_limit">Largest file</string>
+    <string name="settings_auto_download_voice">Voice and video messages</string>
+    <string name="settings_auto_download_voice_summary">So they play at once</string>
+    <!-- A size limit: %1$s is a number such as "10" or "2". -->
+    <string name="settings_size_megabytes">%1$s MB</string>
+    <string name="settings_size_gigabytes">%1$s GB</string>
+    <!-- %1$s is a size such as "10 MB". -->
+    <string name="settings_auto_download_up_to">Up to %1$s</string>
+    <string name="settings_auto_download_footer">Stickers, profile photos and previews always download. Everything else downloads when you tap it.</string>
+    <string name="settings_auto_download_data_saver">Data Saver is on</string>
+    <string name="settings_auto_download_data_saver_summary">Media downloads only when you tap it, until you turn Data Saver off or let Pingogram use data freely in Android\'s settings</string>
     <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>
@@ -87,6 +197,12 @@
     <string name="settings_privacy_security_loading">Loading privacy and security settings</string>
     <string name="settings_section_privacy">Privacy</string>
     <string name="settings_section_security">Security</string>
+    <string name="settings_section_contacts">Contacts</string>
+    <!-- Contacts sync (docs/adr/0011-contacts-sync.md): the summaries say honestly what it sends. -->
+    <string name="settings_contact_sync">Sync contacts</string>
+    <string name="settings_contact_sync_off">Send your phone\'s contacts to Telegram to find who uses it. Off</string>
+    <string name="settings_contact_sync_on">On. Your phone\'s names and numbers go to Telegram when you open Contacts and when you sync</string>
+    <string name="settings_contact_sync_paused">Paused: Pingogram can no longer read your contacts. Allow it on the Contacts tab or in Android\'s settings</string>
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>
@@ -120,6 +236,80 @@
     <string name="settings_two_step_verification_pending_email">On. Waiting for the code sent to %1$s to confirm it as the recovery email.</string>
     <!-- Follows the state of two-step verification. %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
     <string name="settings_two_step_verification_pending_reset">A reset of the password was requested. The password can be reset after %1$s.</string>
+
+    <!-- The two-step verification page and its flows (FR-S1) -->
+    <string name="settings_two_step_loading">Loading two-step verification</string>
+    <string name="settings_two_step_about">Telegram asks for this password, as well as the code, whenever your account logs in on a new device.</string>
+    <string name="settings_two_step_about_pending">The password takes effect once its recovery email is confirmed.</string>
+    <string name="settings_two_step_set_password">Set password</string>
+    <string name="settings_two_step_change_password">Change password</string>
+    <string name="settings_two_step_turn_off">Turn off</string>
+    <string name="settings_two_step_section_password">Password</string>
+    <string name="settings_two_step_section_recovery_email">Recovery email</string>
+    <string name="settings_two_step_recovery_email">Recovery email</string>
+    <string name="settings_two_step_change_recovery_email">Change recovery email</string>
+    <string name="settings_two_step_add_recovery_email">Add recovery email</string>
+    <string name="settings_two_step_recovery_email_set">Set. A forgotten password can be reset with a code sent there.</string>
+    <string name="settings_two_step_recovery_email_not_set">Not set. Without one, resetting a forgotten password takes days.</string>
+    <string name="settings_two_step_enter_email_code">Enter the code</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_email_code_sent_to">Sent to %1$s to confirm it</string>
+    <string name="settings_two_step_cancel_email">Don\'t use this address</string>
+    <string name="settings_two_step_section_reset">Password reset</string>
+    <string name="settings_two_step_reset_requested">Reset requested</string>
+    <!-- %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
+    <string name="settings_two_step_reset_after">The password can be reset after %1$s.</string>
+    <string name="settings_two_step_reset_ready">The waiting period is over: the password can be reset now.</string>
+    <string name="settings_two_step_reset_now">Reset password now</string>
+    <string name="settings_two_step_cancel_reset">Cancel reset</string>
+    <string name="settings_two_step_turn_off_title_short">Turn off password</string>
+    <string name="settings_two_step_turn_off_title">Turn off two-step verification?</string>
+    <string name="settings_two_step_turn_off_text">Logging in on a new device will need only the code. The recovery email is removed too.</string>
+    <string name="settings_two_step_reset_title">Reset password?</string>
+    <string name="settings_two_step_reset_text">Telegram removes the password and the recovery email after a waiting period of several days, and two-step verification turns off. Your chats stay, and you can cancel the reset until then.</string>
+    <string name="settings_two_step_reset_now_text">The password and the recovery email are removed, and two-step verification turns off.</string>
+    <string name="settings_two_step_reset_confirm">Reset</string>
+    <string name="settings_two_step_done_password_set">Two-step verification is on</string>
+    <string name="settings_two_step_done_password_changed">Password changed</string>
+    <string name="settings_two_step_done_password_removed">Two-step verification is off</string>
+    <string name="settings_two_step_done_email_confirmed">Recovery email confirmed</string>
+    <string name="settings_two_step_done_password_recovered">New password set</string>
+    <string name="settings_two_step_done_reset_requested">Reset requested. The password can be reset after the waiting period.</string>
+    <string name="settings_two_step_email_cancelled">The address waiting for its code is no longer used</string>
+    <string name="settings_two_step_reset_cancelled">Reset cancelled</string>
+    <!-- %1$s is a date and time such as "Mar 17, 2026, 9:41 AM". -->
+    <string name="settings_two_step_reset_declined">Telegram declined the reset. Try again after %1$s.</string>
+    <string name="settings_two_step_code_resent">Code sent again</string>
+    <string name="settings_two_step_title_forgot">Forgot password</string>
+    <string name="settings_two_step_current_password_text">Enter your current password.</string>
+    <!-- %1$s is the hint the user gave for their password. -->
+    <string name="settings_two_step_hint_is">Hint: %1$s</string>
+    <string name="settings_two_step_new_password_text">Choose a password that Telegram asks for whenever your account logs in on a new device.</string>
+    <string name="settings_two_step_hint_text">A hint helps you remember the password. It shows to anyone who tries to log in with your number, so don\'t give the password away.</string>
+    <string name="settings_two_step_recovery_email_text">If you forget the password, a code sent to this address resets it. Telegram sends it a code now to confirm it.</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_email_code_text">Enter the code Telegram sent to %1$s.</string>
+    <string name="settings_two_step_email_code_text_unknown">Enter the code Telegram sent to your recovery email.</string>
+    <!-- %1$s is a masked email address such as "a***@g***.com". -->
+    <string name="settings_two_step_recovery_code_text">Enter the code Telegram sent to %1$s to reset your password.</string>
+    <string name="settings_two_step_reset_step_text">Without a recovery email you can access, Telegram can reset your password after a waiting period of several days. Your chats stay, and you can cancel the reset on the two-step verification page until then.</string>
+    <string name="settings_two_step_label_password">Password</string>
+    <string name="settings_two_step_label_new_password">New password</string>
+    <string name="settings_two_step_label_repeat_password">Repeat password</string>
+    <string name="settings_two_step_label_hint">Hint (optional)</string>
+    <string name="settings_two_step_label_email">Email address</string>
+    <string name="settings_two_step_label_code">Code</string>
+    <string name="settings_two_step_next">Next</string>
+    <string name="settings_two_step_save">Save</string>
+    <string name="settings_two_step_skip">Skip</string>
+    <string name="settings_two_step_forgot_password">Forgot password?</string>
+    <string name="settings_two_step_resend_code">Resend code</string>
+    <string name="settings_two_step_no_access">Can\'t access it?</string>
+    <string name="settings_two_step_reset_password">Reset password</string>
+    <string name="settings_two_step_error_passwords_differ">The passwords are not the same</string>
+    <string name="settings_two_step_error_hint_is_password">The hint can\'t be the password itself</string>
+    <!-- %1$s is a duration such as "42 seconds" or "3 hours". -->
+    <string name="settings_two_step_flood_wait">Too many attempts. Try again in %1$s.</string>
 
     <!-- A privacy setting (FR-S1) -->
     <!-- Spoken by screen readers for the progress indicator while the setting loads. -->
@@ -162,13 +352,13 @@
     </plurals>
     <!-- Spoken by screen readers for the button that unblocks someone. %1$s is their name. -->
     <string name="settings_unblock">Unblock %1$s</string>
+    <!-- The button at the end of a blocked user's or chat's row that unblocks them. -->
+    <string name="settings_unblock_button">Unblock</string>
     <!-- Spoken by screen readers for the progress indicator while someone is unblocked. %1$s is their name. -->
     <string name="settings_unblocking">Unblocking %1$s</string>
     <!-- Snackbar after unblocking someone. %1$s is their name. -->
     <string name="settings_unblocked">%1$s unblocked</string>
     <string name="settings_unblock_undo">Undo</string>
-    <!-- %1$s is a phone number such as "+447911123456". -->
-    <string name="settings_blocked_phone">⁨%1$s⁩</string>
     <!-- %1$s is a username without @. -->
     <string name="settings_blocked_username">\@%1$s</string>
 
@@ -186,6 +376,8 @@
     <string name="settings_session_password_pending">Waiting for the two-step verification password</string>
     <string name="settings_session_confirm">Yes, it\'s me</string>
     <string name="settings_session_not_me">No, terminate</string>
+    <!-- What tapping another session does, spoken by screen readers ("double-tap to terminate"). -->
+    <string name="settings_session_terminate">Terminate</string>
     <!-- Spoken by screen readers for the progress indicator while a session is terminated or confirmed. -->
     <string name="settings_session_busy">Working on this session</string>
     <string name="settings_new_logins_note">Confirm a login only if it\'s yours. If it isn\'t, terminate it.</string>
@@ -222,7 +414,7 @@
 
     <!-- About -->
     <string name="settings_section_app">App</string>
-    <string name="settings_about_app_name">Pingogram</string>
+    <string name="settings_about_app_name" translatable="false">Pingogram</string>
     <!-- %1$s is the version, such as "0.3.0". -->
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_source_code">Source code</string>
@@ -230,6 +422,37 @@
     <string name="settings_about_license">License</string>
     <string name="settings_about_license_summary">GNU General Public License v3.0 or later</string>
     <string name="settings_about_unofficial">Pingogram is an unofficial Telegram client built on TDLib. It is not affiliated with Telegram.</string>
+    <string name="settings_about_licenses">Open-source licenses</string>
+    <string name="settings_about_licenses_summary">Libraries, fonts and icons</string>
+    <!-- Android 12+: opens Android's "Open by default" settings, where "Open supported links" lets Pingogram open
+         t.me links instead of the browser (docs/adr/0013-deep-links.md) -->
+    <string name="settings_about_open_links">Open Telegram links</string>
+    <string name="settings_about_open_links_summary">Let Pingogram open t.me links: turn on \"Open supported links\" in Android\'s settings</string>
+    <string name="settings_about_feedback">Send feedback or report a bug</string>
+    <string name="settings_about_feedback_summary">Prepares a report that you read and share yourself</string>
+
+    <!-- Open-source licenses (FR-S1, About) -->
+    <!-- Spoken by screen readers for the progress indicator while the list of libraries loads. -->
+    <string name="settings_licenses_loading">Loading licenses</string>
+    <!-- Above the list of libraries. %1$s is how many there are, formatted, such as "141". -->
+    <plurals name="settings_licenses_header">
+        <item quantity="one">%1$s library</item>
+        <item quantity="other">%1$s libraries</item>
+    </plurals>
+    <!-- Below a library's name. %1$s is its version, such as "1.5.0", %2$s its licenses, such as "Apache License 2.0". -->
+    <string name="settings_licenses_library_summary">%1$s · %2$s</string>
+    <string name="settings_licenses_intro">Pingogram is built with these open-source libraries, fonts and icons. Tap one to read its license.</string>
+    <!-- Spoken by screen readers for the progress indicator while a library's page loads. -->
+    <string name="settings_license_loading">Loading license</string>
+    <string name="settings_license_version">Version</string>
+    <!-- A library's Maven coordinates, such as "androidx.compose.material3:material3". -->
+    <string name="settings_license_artifact">Artifact</string>
+    <string name="settings_license_developers">Developers</string>
+    <string name="settings_license_website">Website</string>
+    <!-- Opens a license's text on the web, in the browser. -->
+    <string name="settings_license_online">Read online</string>
+    <!-- Instead of a license's text, where the app has none. -->
+    <string name="settings_license_text_missing">This license\'s text is published online.</string>
 
     <!-- Edit profile (FR-S1, Account) -->
     <string name="settings_edit_profile">Edit profile</string>
@@ -241,15 +464,6 @@
     <string name="settings_edit_profile_saving">Saving</string>
     <!-- Spoken by screen readers for the profile photo. -->
     <string name="settings_profile_photo">Your profile photo</string>
-    <!-- Opens the system photo picker. -->
-    <string name="settings_profile_photo_set">Set new photo</string>
-    <string name="settings_profile_photo_remove">Remove photo</string>
-    <!-- Spoken by screen readers for the progress while the picked image is prepared and before its upload reports progress. -->
-    <string name="settings_profile_photo_preparing">Preparing photo</string>
-    <!-- Spoken by screen readers for the upload progress around the photo. -->
-    <string name="settings_profile_photo_uploading">Uploading photo</string>
-    <!-- Spoken by screen readers for the progress while the photo is removed. -->
-    <string name="settings_profile_photo_removing">Removing photo</string>
     <string name="settings_remove_photo_dialog_title">Remove profile photo?</string>
     <string name="settings_remove_photo_dialog_text">Your current profile photo will be deleted. If you had an earlier one, it becomes your profile photo again.</string>
     <string name="settings_remove_photo_dialog_confirm">Remove</string>
@@ -306,4 +520,172 @@
     <string name="settings_discard_profile_dialog_title">Discard changes?</string>
     <string name="settings_discard_profile_dialog_text">Your changes to your name, username and bio haven\'t been saved.</string>
     <string name="settings_discard_profile_dialog_confirm">Discard</string>
+    <!-- Notifications (FR-S1, FR-N1) -->
+    <!-- Spoken by screen readers for the progress indicator while the settings load. -->
+    <string name="settings_notifications_loading">Loading notification settings</string>
+    <!-- A banner at the top when Android shows none of Pingogram's notifications (permission refused, or turned off). -->
+    <string name="settings_notifications_off">Notifications are off</string>
+    <string name="settings_notifications_off_summary">Pingogram can\'t tell you about new messages. Tap to turn notifications on.</string>
+    <!-- The headings of the kinds of chats with default settings of their own. -->
+    <string name="settings_notifications_private_chats">Private chats</string>
+    <string name="settings_notifications_groups">Groups</string>
+    <string name="settings_notifications_channels">Channels</string>
+    <string name="settings_notifications_notify">Notifications</string>
+    <string name="settings_notifications_notify_private_chats">New messages in one-to-one and secret chats</string>
+    <string name="settings_notifications_notify_groups">New messages in groups</string>
+    <string name="settings_notifications_notify_channels">New posts in channels</string>
+    <string name="settings_notifications_preview">Message previews</string>
+    <string name="settings_notifications_preview_summary">Show the text of messages in notifications</string>
+    <string name="settings_notifications_mentions">Mentions and replies</string>
+    <string name="settings_notifications_mentions_summary">Notify about messages to you, even in muted groups</string>
+    <string name="settings_notifications_pinned">Pinned messages</string>
+    <string name="settings_notifications_pinned_summary">Notify when a message is pinned</string>
+    <!-- Opens Android's settings of the kind of chats' notification channel. -->
+    <string name="settings_notifications_sound">Sound and vibration</string>
+    <string name="settings_notifications_sound_summary">Set in Android\'s notification settings</string>
+    <string name="settings_notifications_sound_blocked">Turned off in Android\'s notification settings</string>
+    <string name="settings_notifications_exceptions">Exceptions</string>
+    <string name="settings_notifications_exceptions_summary">Chats with settings of their own</string>
+    <string name="settings_notifications_section_background">Background</string>
+    <!-- A foreground service that keeps the connection open (foss builds only); the summary states its cost. -->
+    <string name="settings_keep_connected">Keep connected</string>
+    <string name="settings_keep_connected_summary">Stay connected in the background, so new messages arrive at once. Uses more battery and shows a notification while on.</string>
+    <string name="settings_notifications_reset">Reset all notification settings</string>
+    <string name="settings_notifications_reset_summary">Unmute every chat and restore the defaults</string>
+    <!-- Spoken by screen readers for the progress indicator while resetting. -->
+    <string name="settings_notifications_resetting">Resetting notification settings</string>
+    <string name="settings_notifications_reset_dialog_title">Reset notification settings?</string>
+    <string name="settings_notifications_reset_dialog_text">Every chat will use the default notification settings again, and the defaults of private chats, groups and channels will be restored. This applies to your Telegram account on all your devices.</string>
+    <string name="settings_notifications_reset_dialog_confirm">Reset</string>
+    <!-- Snackbar after resetting. -->
+    <string name="settings_notifications_reset_done">Notification settings reset</string>
+
+    <!-- Notification exceptions: the chats of a kind with settings of their own. -->
+    <string name="settings_exceptions_private_chats">Private chat exceptions</string>
+    <string name="settings_exceptions_groups">Group exceptions</string>
+    <string name="settings_exceptions_channels">Channel exceptions</string>
+    <!-- Spoken by screen readers for the progress indicator while the list loads. -->
+    <string name="settings_exceptions_loading">Loading exceptions</string>
+    <plurals name="settings_exceptions_header">
+        <item quantity="one">%1$s chat</item>
+        <item quantity="other">%1$s chats</item>
+    </plurals>
+    <string name="settings_exceptions_empty_title">No exceptions</string>
+    <string name="settings_exceptions_empty_body">Chats you mute or unmute on their own show here.</string>
+    <string name="settings_exception_muted">Muted</string>
+    <!-- %1$s is when the mute ends: a time today ("6:30 PM"), or a date and time. -->
+    <string name="settings_exception_muted_until">Muted until %1$s</string>
+    <string name="settings_exception_unmuted">Notifications on</string>
+    <string name="settings_exception_default">Uses the default</string>
+    <!-- Spoken by screen readers for a row's remove button. %1$s is the chat. -->
+    <string name="settings_exception_remove">Remove the exception for %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while a change is saved. %1$s is the chat. -->
+    <string name="settings_exception_changing">Changing notifications of %1$s</string>
+    <!-- The mute options of a chat, in a sheet. -->
+    <plurals name="settings_mute_for_hours">
+        <item quantity="one">Mute for %d hour</item>
+        <item quantity="other">Mute for %d hours</item>
+    </plurals>
+    <plurals name="settings_mute_for_days">
+        <item quantity="one">Mute for %d day</item>
+        <item quantity="other">Mute for %d days</item>
+    </plurals>
+    <string name="settings_mute_forever">Mute forever</string>
+    <string name="settings_unmute">Unmute</string>
+    <string name="settings_mute_use_default">Use the default</string>
+
+    <!-- Passcode lock (REQUIREMENTS.md FR-S1): its row on Privacy and security, its page, setting a passcode, and the
+         lock screen. -->
+    <string name="settings_passcode_lock">Passcode lock</string>
+    <string name="settings_passcode_lock_on">On</string>
+    <string name="settings_passcode_lock_off">Off</string>
+    <string name="settings_passcode_lock_loading">Loading passcode lock settings</string>
+    <string name="settings_passcode_turn_on">Turn passcode on</string>
+    <string name="settings_passcode_off_footer">Ask for a passcode whenever you come back to Pingogram, so nobody else who uses this device can read your chats. If you forget it, you\'ll have to log out and log in again, and secret chats will be lost.</string>
+    <string name="settings_passcode_section_passcode">Passcode</string>
+    <string name="settings_passcode_change">Change passcode</string>
+    <string name="settings_passcode_turn_off">Turn passcode off</string>
+    <string name="settings_passcode_on_footer">If you forget your passcode, you\'ll have to log out and log in again. Secret chats will be lost.</string>
+    <string name="settings_passcode_section_auto_lock">Auto-lock</string>
+    <string name="settings_passcode_auto_lock_immediately">Immediately</string>
+    <string name="settings_passcode_auto_lock_one_minute">After 1 minute</string>
+    <string name="settings_passcode_auto_lock_five_minutes">After 5 minutes</string>
+    <string name="settings_passcode_auto_lock_one_hour">After 1 hour</string>
+    <string name="settings_passcode_auto_lock_footer">How long Pingogram can stay in the background before it asks for the passcode again. It always asks after a restart.</string>
+    <string name="settings_passcode_section_unlock">Unlock and privacy</string>
+    <string name="settings_passcode_biometric">Unlock with fingerprint or face</string>
+    <string name="settings_passcode_biometric_summary">Use the biometrics set up on this device instead of the passcode</string>
+    <string name="settings_passcode_hide_content">Hide content in recent apps</string>
+    <string name="settings_passcode_hide_content_summary">Recent apps show Pingogram without your chats</string>
+    <string name="settings_passcode_hide_content_summary_secure">Recent apps show Pingogram without your chats. This also blocks screenshots in Pingogram.</string>
+    <string name="settings_passcode_turn_off_dialog_title">Turn passcode off?</string>
+    <string name="settings_passcode_turn_off_dialog_text">Anyone who uses this device will be able to open Pingogram and read your chats.</string>
+    <string name="settings_passcode_turn_off_dialog_confirm">Turn off</string>
+    <string name="settings_passcode_set_title">Set passcode</string>
+    <string name="settings_passcode_create_pin">Choose a PIN</string>
+    <string name="settings_passcode_create_password">Choose a password</string>
+    <string name="settings_passcode_confirm_pin">Enter the PIN again</string>
+    <string name="settings_passcode_confirm_password">Enter the password again</string>
+    <string name="settings_passcode_create_pin_hint">4 to 8 digits</string>
+    <string name="settings_passcode_create_password_hint">At least 4 characters</string>
+    <string name="settings_passcode_confirm_hint">To make sure it\'s right</string>
+    <string name="settings_passcode_use_password">Use a password</string>
+    <string name="settings_passcode_use_pin">Use a PIN</string>
+    <string name="settings_passcode_too_short_pin">A PIN needs 4 to 8 digits</string>
+    <string name="settings_passcode_too_short_password">A password needs at least 4 characters</string>
+    <string name="settings_passcode_mismatch">They didn\'t match. Choose it again.</string>
+    <string name="settings_passcode_next">Next</string>
+    <string name="settings_passcode_save">Save</string>
+    <string name="settings_passcode_verify_title">Enter your passcode</string>
+    <string name="settings_passcode_verify_hint">To change the passcode lock</string>
+    <string name="settings_passcode_label">Passcode</string>
+    <string name="settings_passcode_wrong">Wrong passcode</string>
+    <!-- %1$s: the time left, e.g. "30 seconds" or "2 minutes". -->
+    <string name="settings_passcode_wait">Too many attempts. Try again in %1$s.</string>
+    <plurals name="settings_passcode_digits_entered">
+        <item quantity="one">%1$d digit entered</item>
+        <item quantity="other">%1$d digits entered</item>
+    </plurals>
+    <string name="settings_passcode_no_digits">No digits entered</string>
+    <string name="settings_passcode_delete">Delete</string>
+    <string name="lock_title">Pingogram is locked</string>
+    <string name="lock_hint_pin">Enter your PIN</string>
+    <string name="lock_hint_password">Enter your password</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_forgot">Forgot passcode?</string>
+    <string name="lock_biometric">Unlock with fingerprint or face</string>
+    <string name="lock_biometric_prompt_title">Unlock Pingogram</string>
+    <string name="lock_biometric_prompt_cancel">Use passcode</string>
+    <string name="lock_forgot_dialog_title">Log out to remove the passcode?</string>
+    <string name="lock_forgot_dialog_text">A forgotten passcode can\'t be recovered. Logging out removes it and deletes this account\'s data from this device, including secret chats, which exist only here. Your other chats stay in your Telegram account, and you can log in again.</string>
+    <string name="lock_forgot_dialog_confirm">Log out</string>
+    <string name="lock_logging_out">Logging out</string>
+    <!-- Linking a desktop device by its QR code, and the user's own QR code (REQUIREMENTS.md FR-P5). -->
+    <string name="settings_link_device">Link desktop device</string>
+    <string name="settings_link_device_summary">Scan the QR code Telegram shows on your computer</string>
+    <string name="settings_qr_login_title">Link a device</string>
+    <string name="settings_qr_login_question">Log in on another device?</string>
+    <string name="settings_qr_login_warning">Only scan codes that Telegram shows on your own devices. Whoever shows this code gets full access to your account.</string>
+    <string name="settings_qr_login_confirm">Log in</string>
+    <string name="settings_qr_login_cancel">Cancel</string>
+    <string name="settings_qr_login_busy">Logging in…</string>
+    <string name="settings_qr_login_done">Device linked</string>
+    <string name="settings_qr_login_new_session">New session</string>
+    <string name="settings_qr_login_done_note">You can log it out any time in Active sessions.</string>
+    <string name="settings_qr_login_finish">Done</string>
+    <string name="settings_my_qr_title">Your QR code</string>
+    <string name="settings_my_qr_loading">Loading your QR code</string>
+    <!-- %1$s: the user's name. -->
+    <string name="settings_my_qr_description">QR code of %1$s\'s profile</string>
+    <string name="settings_my_qr_share">Share</string>
+    <string name="settings_my_qr_scan">Scan QR code</string>
+    <string name="settings_my_qr_set_username">Set username</string>
+    <plurals name="settings_my_qr_temporary_minutes">
+        <item quantity="one">Without a username, this code works for %1$s more minute.</item>
+        <item quantity="other">Without a username, this code works for %1$s more minutes.</item>
+    </plurals>
+    <plurals name="settings_my_qr_temporary_hours">
+        <item quantity="one">Without a username, this code works for %1$s more hour.</item>
+        <item quantity="other">Without a username, this code works for %1$s more hours.</item>
+    </plurals>
 </resources>

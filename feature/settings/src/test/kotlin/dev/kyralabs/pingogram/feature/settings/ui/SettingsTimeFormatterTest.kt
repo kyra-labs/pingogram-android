@@ -54,4 +54,16 @@ class SettingsTimeFormatterTest {
 
         assertSame(formats.formatter(), formats.formatter())
     }
+
+    @Test
+    fun `an end today shows the time, a later one the date and the time`() {
+        val formatter = testTimeFormats().formatter()
+
+        assertEquals(
+            listOf("6:30 PM", "Oct 19, 2026, 8:00 AM"),
+            listOf("2026-10-18T18:30:00Z", "2026-10-19T08:00:00Z").map {
+                plainSpaces(formatter.until(Instant.parse(it).epochSecond, TEST_NOW))
+            },
+        )
+    }
 }

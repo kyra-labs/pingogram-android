@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App shortcuts (long press on the launcher icon; docs/ARCHITECTURE.md "App shortcuts"): New chat, Search and Saved
+     Messages, each a Telegram link to MainActivity (core.telegram.org/api/links), which opens it as any other link
+     (docs/adr/0013-deep-links.md): kept through the login and the passcode lock, then resolved by TDLib's
+     getInternalLinkType. The package is the build's application id (shortcut_target_package, app/build.gradle.kts), as
+     debug builds add ".debug" to it.
+
+     Direct share (REQUIREMENTS.md FR-N2): conversation shortcuts in the share target's category (core:notifications
+     NotificationIntents.SHARE_TARGET_CATEGORY) are share targets of MainActivity for what its share filters take, so
+     the system's share sheet lists those chats; a share to one names its shortcut (EXTRA_SHORTCUT_ID). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_new_chat"
+        android:shortcutId="new_chat"
+        android:shortcutLongLabel="@string/shortcut_new_chat_long"
+        android:shortcutShortLabel="@string/shortcut_new_chat">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="tg://new"
+            android:targetClass="dev.kyralabs.pingogram.MainActivity"
+            android:targetPackage="@string/shortcut_target_package" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_search"
+        android:shortcutId="search"
+        android:shortcutLongLabel="@string/shortcut_search_long"
+        android:shortcutShortLabel="@string/shortcut_search">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="tg://chats/search"
+            android:targetClass="dev.kyralabs.pingogram.MainActivity"
+            android:targetPackage="@string/shortcut_target_package" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_saved_messages"
+        android:shortcutId="saved_messages"
+        android:shortcutLongLabel="@string/shortcut_saved_messages_long"
+        android:shortcutShortLabel="@string/shortcut_saved_messages">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="tg://settings/saved-messages"
+            android:targetClass="dev.kyralabs.pingogram.MainActivity"
+            android:targetPackage="@string/shortcut_target_package" />
+    </shortcut>
+    <share-target android:targetClass="dev.kyralabs.pingogram.MainActivity">
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="image/*" />
+        <data android:mimeType="video/*" />
+        <data android:mimeType="*/*" />
+        <category android:name="dev.kyralabs.pingogram.category.SHARE_TARGET" />
+    </share-target>
+</shortcuts>

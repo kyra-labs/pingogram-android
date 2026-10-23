@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItemColors
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -39,13 +38,17 @@ internal fun LogOutItem(
         onClick = onClick,
         enabled = !isLoggingOut,
         colors = destructiveItemColors(),
+        iconTone = SettingsIconTone.Error,
     )
 }
 
-/** The colors of a destructive row in a [SettingsGroup]: its text and icon in the error role, on its container. */
+/**
+ * The colors of a destructive row in a [SettingsGroup]: its text in the error role, on its container; its icon, if
+ * any, takes [SettingsIconTone.Error].
+ */
 @Composable
 internal fun destructiveItemColors(): ListItemColors =
-    ListItemDefaults.segmentedColors(
+    settingsRowColors(
         contentColor = MaterialTheme.colorScheme.error,
         leadingContentColor = MaterialTheme.colorScheme.error,
     )

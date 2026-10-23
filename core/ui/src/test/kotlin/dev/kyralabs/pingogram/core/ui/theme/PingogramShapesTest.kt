@@ -7,7 +7,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 
@@ -32,13 +31,6 @@ class PingogramShapesTest {
             }
 
         assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `picks avatar placeholder polygons by id, negative chat ids included`() {
-        assertNotSame(avatarPlaceholderPolygon(0), avatarPlaceholderPolygon(1))
-        assertSame(avatarPlaceholderPolygon(5), avatarPlaceholderPolygon(-1))
-        assertSame(avatarPlaceholderPolygon(-1_001_234_567_890), avatarPlaceholderPolygon(-1_001_234_567_890 + 6))
     }
 
     @Test

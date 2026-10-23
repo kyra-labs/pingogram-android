@@ -1,9 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
-import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -13,17 +10,20 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -33,14 +33,14 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.theme.predictiveBackScale
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
 
 /**
  * The selection toolbar (`REQUIREMENTS.md` FR-L8, `docs/DESIGN_SYSTEM.md` §6): an expressive
  * [HorizontalFloatingToolbar] in vibrant colors with one [IconButton] per action on the selected chats, named by its
- * label for screen readers. Five buttons fit the narrowest phones at any font scale, as icons do not grow with it.
+ * label for screen readers and in a [PlainTooltip] on a long press or hover. Five buttons fit the narrowest phones at
+ * any font scale, as icons do not grow with it.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SelectionToolbar(
     actions: ImmutableList<ChatRowAction>,
@@ -53,8 +53,15 @@ internal fun SelectionToolbar(
         colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
     ) {
         actions.forEach { action ->
-            IconButton(onClick = { onAction(action) }) {
-                Icon(painter = painterResource(action.icon), contentDescription = stringResource(action.label))
+            val label = stringResource(action.label)
+            TooltipBox(
+                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                tooltip = { PlainTooltip { Text(label) } },
+                state = rememberTooltipState(),
+            ) {
+                IconButton(onClick = { onAction(action) }, shapes = IconButtonDefaults.shapes()) {
+                    Icon(painter = painterResource(action.icon), contentDescription = label)
+                }
             }
         }
     }
@@ -66,7 +73,6 @@ internal fun SelectionToolbar(
  * on the motion scheme's springs, and shrinks with a predictive back gesture ([backProgress], 0 to 1) that leaves
  * selection mode.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SelectionToolbarHost(
     selection: ChatSelection?,
@@ -98,32 +104,6 @@ internal fun SelectionToolbarHost(
     ) { actions ->
         if (actions != null) SelectionToolbar(actions = actions, onAction = onAction)
     }
-}
-
-/**
- * Leaves selection mode with back while [enabled] (`docs/ARCHITECTURE.md`, Navigation: `PredictiveBackHandler` for
- * selection mode): the gesture's progress, for the toolbar to follow ([SelectionToolbarHost]), and [onBack] once it
- * completes. A cancelled gesture springs back on the motion scheme's fast spatial spring.
- */
-@Composable
-internal fun rememberSelectionBack(
-    enabled: Boolean,
-    onBack: () -> Unit,
-): Animatable<Float, AnimationVector1D> {
-    val progress = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    val settle = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
-    val currentOnBack by rememberUpdatedState(onBack)
-    PredictiveBackHandler(enabled = enabled) { events ->
-        try {
-            events.collect { event -> progress.snapTo(event.progress) }
-            currentOnBack()
-        } finally {
-            // Also after a cancelled gesture, when this coroutine can no longer animate.
-            scope.launch { progress.animateTo(0f, settle) }
-        }
-    }
-    return progress
 }
 
 @PingogramPreviews

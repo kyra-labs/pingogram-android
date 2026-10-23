@@ -31,8 +31,9 @@ import kotlinx.coroutines.launch
  *
  * A modifier node rather than a composable with an effect, as for the online dot: the progress animates in the node's
  * own coroutine scope on [animationSpec] (a spatial spring) and is read only while drawing, so selecting never
- * recomposes or lays out (`docs/PERFORMANCE.md` §4). With animations turned off in the system settings, Compose ends
- * the spring at once, which skips the morph. A lazy list that reuses the node for another item shows its state at once.
+ * recomposes or lays out (`docs/PERFORMANCE.md` §4). With reduced motion the caller passes a snap
+ * (`snapWhenReducedMotion`), which skips the morph. A lazy list that reuses the node for another item shows its state
+ * at once.
  */
 internal fun Modifier.avatarSelection(
     selected: Boolean,

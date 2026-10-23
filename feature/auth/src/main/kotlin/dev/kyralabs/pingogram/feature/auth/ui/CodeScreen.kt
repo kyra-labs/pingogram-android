@@ -1,6 +1,11 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,24 +19,31 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
+import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
+import dev.kyralabs.pingogram.feature.auth.ui.components.CountdownIndicator
 import dev.kyralabs.pingogram.feature.auth.ui.components.announcedCountdownSeconds
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
+import dev.kyralabs.pingogram.feature.auth.ui.preview.LANDSCAPE_PHONE
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * FR-A3: the login code for every delivery type, with the resend countdown, "change number", and the code autofilled
  * or pasted (it submits itself once complete).
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CodeScreen(
     state: AuthStepUiState.Code,
@@ -42,19 +54,23 @@ fun CodeScreen(
 ) {
     AuthStepLayout(
         title = stringResource(R.string.auth_code_title),
-        description = codeDescription(state.type, state.phoneNumber),
+        badgeShape = MaterialShapes.Sunny,
+        badgeIcon = UiR.drawable.ic_chat_filled,
+        description = codeDescription(state.type, state.phoneNumber.bidiIsolated()).bidiIsolated(),
+        isError = state.error != null,
         modifier = modifier,
-        actions = {
+        primaryAction = {
             AuthPrimaryButton(
                 text = stringResource(R.string.auth_next),
                 onClick = { onEvent(AuthEvent.SubmitCode) },
                 enabled = canSubmit && state.code.isNotBlank(),
                 inProgress = pendingAction == AuthAction.SubmitCode,
             )
+        },
+        secondaryAction = {
             AuthTextButton(
                 text = stringResource(R.string.auth_change_number),
                 onClick = { onEvent(AuthEvent.ChangePhoneNumber) },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
         },
     ) {
@@ -78,9 +94,9 @@ fun CodeScreen(
 }
 
 /**
- * The resend countdown, then the button for a new code by [AuthStepUiState.Code.nextType]. A polite live region:
- * screen readers hear the countdown at most every 15 seconds ([announcedCountdownSeconds]) and the button once it
- * replaces it.
+ * The resend countdown, its progress running down beside it ([CountdownIndicator]), then the button for a new code by
+ * [AuthStepUiState.Code.nextType]. A polite live region: screen readers hear the countdown at most every 15 seconds
+ * ([announcedCountdownSeconds]) and the button once it replaces it.
  */
 @Composable
 private fun ResendCode(
@@ -104,12 +120,18 @@ private fun ResendCode(
                     R.string.auth_code_resend_in,
                     durationText(announcedCountdownSeconds(state.resendInSeconds)),
                 )
-            Text(
-                text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CountdownIndicator(secondsLeft = state.resendInSeconds, totalSeconds = state.resendTotalSeconds)
+                Text(
+                    text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
+                )
+            }
         }
     }
 }
@@ -129,11 +151,21 @@ private fun codeDescription(
         }
 
         is AuthCodeType.SmsWord -> {
-            stringResource(R.string.auth_code_sent_sms_word, phoneNumber) + firstPartHint(type.firstLetter)
+            withStart(
+                type.firstLetter,
+                R.string.auth_code_sent_sms_word,
+                R.string.auth_code_sent_sms_word_start,
+                phoneNumber,
+            )
         }
 
         is AuthCodeType.SmsPhrase -> {
-            stringResource(R.string.auth_code_sent_sms_phrase, phoneNumber) + firstPartHint(type.firstWord)
+            withStart(
+                type.firstWord,
+                R.string.auth_code_sent_sms_phrase,
+                R.string.auth_code_sent_sms_phrase_start,
+                phoneNumber,
+            )
         }
 
         is AuthCodeType.Call -> {
@@ -149,7 +181,7 @@ private fun codeDescription(
                 R.plurals.auth_code_sent_missed_call,
                 type.length,
                 phoneNumber,
-                type.phoneNumberPrefix,
+                type.phoneNumberPrefix.bidiIsolated(),
                 type.length,
             )
         }
@@ -163,9 +195,19 @@ private fun codeDescription(
         }
     }
 
+/** [withoutStart] for [phoneNumber], or [withStart] naming the code's [start] too where Telegram tells it. */
 @Composable
-private fun firstPartHint(start: String): String =
-    if (start.isBlank()) "" else " " + stringResource(R.string.auth_code_sent_starts_with, start)
+private fun withStart(
+    start: String,
+    @StringRes withoutStart: Int,
+    @StringRes withStart: Int,
+    phoneNumber: String,
+): String =
+    if (start.isBlank()) {
+        stringResource(withoutStart, phoneNumber)
+    } else {
+        stringResource(withStart, phoneNumber, start.bidiIsolated())
+    }
 
 @Composable
 private fun resendText(type: AuthCodeType): String =
@@ -187,7 +229,9 @@ private fun resendText(type: AuthCodeType): String =
         }
     }
 
+// Also two panes on a phone in landscape (`docs/DESIGN_SYSTEM.md` §7).
 @PingogramPreviews
+@Preview(name = "Landscape", device = LANDSCAPE_PHONE)
 @Composable
 private fun CodeScreenPreview() {
     AuthScreenPreview(AuthPreviewData.code)

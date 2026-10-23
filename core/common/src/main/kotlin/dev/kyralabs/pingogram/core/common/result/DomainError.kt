@@ -123,4 +123,69 @@ sealed interface DomainError {
      * `IMAGE_PROCESS_FAILED` …, or an image the app could not read).
      */
     data object PhotoInvalid : DomainError
+
+    // Creating groups and channels (REQUIREMENTS.md FR-P4).
+
+    /** The title of a new group or channel is empty, or Telegram does not accept it (`CHAT_TITLE_EMPTY`). */
+    data object TitleInvalid : DomainError
+
+    /**
+     * The user is in as many groups and channels as Telegram allows (`CHANNELS_TOO_MUCH`): they have to leave one
+     * before they can create or join another.
+     */
+    data object TooManyChats : DomainError
+
+    /**
+     * The user already has as many public groups and channels as Telegram allows (`CHANNELS_ADMIN_PUBLIC_TOO_MUCH`):
+     * one of them has to become private before another can have a username.
+     */
+    data object TooManyPublicLinks : DomainError
+
+    /**
+     * Telegram limited the account (`USER_RESTRICTED`, e.g. after reports of spam), so it cannot create groups or
+     * channels for now.
+     */
+    data object AccountRestricted : DomainError
+
+    // Groups and channels (REQUIREMENTS.md FR-P3).
+
+    /**
+     * The current user's rights do not allow this (`CHAT_ADMIN_REQUIRED`, `RIGHT_FORBIDDEN`, TDLib's "Not enough
+     * rights"): e.g. an administrator granting a right they lack themselves, or editing one they did not promote.
+     */
+    data object AdminRightsRequired : DomainError
+
+    /** The description is longer than Telegram accepts (`CHAT_ABOUT_TOO_LONG`). */
+    data object DescriptionTooLong : DomainError
+
+    /** Only a mutual contact can be made an administrator of a basic group, or added (`USER_NOT_MUTUAL_CONTACT`). */
+    data object NotMutualContact : DomainError
+
+    /** The group or channel has as many administrators as Telegram allows (`ADMINS_TOO_MUCH`). */
+    data object TooManyAdmins : DomainError
+
+    // Joining groups and channels, and logging in other devices (REQUIREMENTS.md FR-P5).
+
+    /**
+     * The invite link expired, was revoked, reached its limit of members, or is no invite link at all
+     * (`INVITE_HASH_EXPIRED`, `INVITE_HASH_INVALID`, TDLib's "Wrong invite link").
+     */
+    data object InviteLinkInvalid : DomainError
+
+    /** The group has as many members as Telegram allows (`USERS_TOO_MUCH`). */
+    data object ChatFull : DomainError
+
+    /**
+     * The QR code of a login on another device expired, was used already, or is no login code
+     * (`AUTH_TOKEN_EXPIRED`, `AUTH_TOKEN_INVALID`, `AUTH_TOKEN_ALREADY_ACCEPTED`): the other device shows a new one.
+     */
+    data object QrLoginExpired : DomainError
+
+    // Calls (REQUIREMENTS.md FR-V1).
+
+    /** The other person's privacy settings do not let the user call them (`USER_PRIVACY_RESTRICTED`). */
+    data object CallPrivacyRestricted : DomainError
+
+    /** The other person's app is too old for calls with this one (`PARTICIPANT_VERSION_OUTDATED`). */
+    data object CallPeerOutdated : DomainError
 }

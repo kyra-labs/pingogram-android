@@ -12,6 +12,11 @@ sealed interface SearchEvent {
     /** The clear button emptied the search field: the suggestions show at once. */
     data object ClearQuery : SearchEvent
 
+    /** A filter chip was chosen: the query is searched again under [filter] at once. */
+    data class FilterChanged(
+        val filter: SearchFilter,
+    ) : SearchEvent
+
     /** A chat, contact, public chat, recent chat or person was tapped: it opens, and joins the recent chats. */
     data class OpenChat(
         val chatId: Long,

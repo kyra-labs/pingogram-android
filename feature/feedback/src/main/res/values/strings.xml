@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Send feedback (FeedbackScreen, docs/TESTING_GUIDE.md) -->
+    <string name="feedback_title">Send feedback</string>
+    <string name="feedback_back">Back</string>
+    <string name="feedback_intro">Say what happened, then share the report with an app you choose or open an issue on GitHub. Pingogram sends nothing by itself, and you can read the whole report first.</string>
+    <string name="feedback_description">What happened?</string>
+    <string name="feedback_description_hint">What you did, what you expected and what happened instead</string>
+    <string name="feedback_section_report">In the report</string>
+    <string name="feedback_app">App</string>
+    <string name="feedback_device">Device</string>
+    <string name="feedback_crash">Last crash</string>
+    <string name="feedback_crash_time">%1$s, on thread %2$s</string>
+    <string name="feedback_no_crash">None kept on this device</string>
+    <string name="feedback_log">Connection log</string>
+    <plurals name="feedback_log_lines">
+        <item quantity="one">%d line of errors</item>
+        <item quantity="other">%d lines of errors</item>
+    </plurals>
+    <string name="feedback_log_empty">Empty</string>
+    <string name="feedback_redacted">Messages, names, phone numbers, quoted text and tokens are taken out of the crash and the log. Read the report before you share it.</string>
+    <string name="feedback_show_report">Show report</string>
+    <string name="feedback_hide_report">Hide report</string>
+    <string name="feedback_copy">Copy</string>
+    <string name="feedback_copy_label">Feedback report</string>
+    <string name="feedback_copied">Report copied</string>
+    <string name="feedback_delete_crash">Delete crash report</string>
+    <string name="feedback_crash_deleted">Crash report deleted</string>
+    <string name="feedback_open_issue">Open GitHub issue</string>
+    <string name="feedback_share">Share report</string>
+    <string name="feedback_share_title">Share the feedback report</string>
+    <string name="feedback_no_browser">No app can open the issue page</string>
+    <string name="feedback_issue_note">The issue page holds as much of the log as a web address allows; attach the shared report for all of it.</string>
+</resources>

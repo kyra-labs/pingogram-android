@@ -3,15 +3,28 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
+import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
+import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
+import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -22,10 +35,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What the conversation composes again while the user scrolls and as messages come in (`docs/PERFORMANCE.md` §4: no
- * recomposition of what stays on screen), counted with [RecompositionCounter] frame by frame on the test clock. The
- * counter starts before the screen first composes, so it knows every composable's first composition and counts every
- * later one.
+ * What the conversation composes again while the user scrolls, as messages come in, when someone starts typing and
+ * when a bubble's time is tapped to show (`docs/PERFORMANCE.md` §4: no recomposition of what stays on screen), counted
+ * with [RecompositionCounter] frame by frame on the test clock. The counter starts before the screen first composes,
+ * so it knows every composable's first composition and counts every later one.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -63,6 +76,23 @@ class ChatRecompositionTest {
     }
 
     @Test
+    fun `swiping a bubble to reply recomposes none of the bubbles`() {
+        setScreen(messages(MESSAGES).copy(shortcuts = MessageShortcuts(canReply = true)))
+        val bubble = composeRule.onNode(hasContentDescription("Message $MESSAGES", substring = true))
+
+        bubble.performTouchInput { down(centerLeft + Offset(SWIPE_START.toPx(), 0f)) }
+        frame()
+        repeat(SWIPE_FRAMES) {
+            bubble.performTouchInput { moveBy(Offset(SWIPE_STEP.toPx(), 0f)) }
+            frame()
+        }
+        bubble.performTouchInput { up() }
+        repeat(SETTLE_FRAMES) { frame() }
+
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+    }
+
+    @Test
     fun `a new message composes only its own bubble`() {
         val before = messages(MESSAGES)
         setScreen(before)
@@ -73,6 +103,67 @@ class ChatRecompositionTest {
         // The screen and the list compose again for the new items; the bubbles on screen skip.
         val functions = counter.recomposedOwnFunctions
         assertTrue(functions.toString(), functions.any { "MessageList" in it })
+        assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `a new message above a sponsored message composes neither it nor the bubbles on screen`() {
+        val ad = ChatItem.Sponsored(SponsoredPreviewData.text, UiText.Plain("Today"))
+        val before = messages(MESSAGES).withNewest(ad)
+        setScreen(before)
+
+        // Where the sponsored message is pinned below every message, a new one comes above it.
+        val content = before.content as ChatContent.Content
+        val items = listOf(ad, bubble(id = MESSAGES + 1L, outgoing = true)) + content.items.drop(1)
+        state = before.copy(content = content.copy(items = items.toImmutableList()))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertTrue(functions.toString(), functions.any { "MessageList" in it })
+        assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
+    }
+
+    @Test
+    fun `showing a bubble's time composes only that bubble`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        state = before.replacing(newest.copy(showsTime = !newest.showsTime))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
+    }
+
+    @Test
+    fun `translating a bubble composes only that bubble`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val newest = before.bubbles().first()
+        val translation = BubbleTranslation.Shown(FormattedText("Translated", persistentListOf()), "es")
+        state = before.withTranslations(persistentMapOf(newest.id to translation))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubble") })
+    }
+
+    @Test
+    fun `someone starting to type composes the top bar's title and none of the bubbles`() {
+        val before = messages(MESSAGES)
+        setScreen(before)
+
+        val typing = ChatSubtitle.Action(UiText.Plain("Ada is typing…"))
+        state = before.copy(header = before.header?.copy(subtitle = typing))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // The list runs again (it takes the whole state), but every bubble on screen skips.
+        val functions = counter.recomposedOwnFunctions
+        assertTrue(functions.toString(), functions.any { it.endsWith("ChatTopBarKt.ChatTitle") })
         assertEquals(emptyList<String>(), functions.filter { it.isItemFunction() })
     }
 
@@ -88,13 +179,31 @@ class ChatRecompositionTest {
         assertNotEquals(emptyList<String>(), counter.recomposedOwnFunctions.filter { it.isItemFunction() })
     }
 
-    private fun setScreen(initial: ChatUiState) {
+    @Test
+    fun `loading custom emoji composes none of the bubbles that show them`() {
+        val renderer = testCustomEmojiRenderer(known = emptyMap())
+        setScreen(messages(MESSAGES, customEmoji = true), renderer)
+
+        renderer.emoji = CustomEmojiFakes.all.toImmutableMap()
+        repeat(SETTLE_FRAMES) { frame() }
+
+        // The pictures load and draw in the bubbles' draw phase: nothing composes again.
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filter { it.isItemFunction() })
+        assertEquals(emptyList<String>(), counter.recomposedOwn.filterNot { it.startsWith(SCREEN_LAMBDA) })
+    }
+
+    private fun setScreen(
+        initial: ChatUiState,
+        customEmoji: CustomEmojiRenderer? = null,
+    ) {
         state = initial
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
                 if (shown) {
                     listState = rememberLazyListState()
-                    ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
+                    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+                        ChatScreen(state = state, onEvent = {}, onBack = {}, listState = listState)
+                    }
                 }
             }
         }
@@ -115,11 +224,18 @@ class ChatRecompositionTest {
     private fun String.isItemFunction(): Boolean =
         ITEM_FILES.any { "ui.$it." in this || "ui.content.$it." in this } && FLOATING_PILL !in this
 
-    /** [count] messages, newest first, in runs of incoming and outgoing ones, some with reactions or replies. */
-    private fun messages(count: Int): ChatUiState {
+    /**
+     * [count] messages, newest first, in runs of incoming and outgoing ones, some with reactions or replies; with
+     * [customEmoji], every third has a custom emoji in its text and every fifth a custom emoji reaction.
+     */
+    private fun messages(
+        count: Int,
+        customEmoji: Boolean = false,
+    ): ChatUiState {
         val items =
             (count downTo 1).map { id ->
-                bubble(id.toLong(), outgoing = id / RUN % 2 == 0)
+                val bubble = bubble(id.toLong(), outgoing = id / RUN % 2 == 0)
+                if (customEmoji) bubble.withCustomEmoji() else bubble
             }
         return ChatUiState(
             header = ChatPreviewData.privateChat.header,
@@ -142,13 +258,24 @@ class ChatRecompositionTest {
             reactions = if (id % 5 == 0L) ChatPreviewData.reactions(thumbsUp, heart) else persistentListOf(),
         )
 
+    private fun ChatItem.Bubble.withCustomEmoji(): ChatItem.Bubble =
+        copy(
+            text = if (id % 3 == 0L) CustomEmojiFakes.text("${text.text} ⭐", "⭐" to CustomEmojiFakes.STAR) else text,
+            reactions =
+                if (id % 5 == 0L) {
+                    ChatPreviewData.reactions(ReactionChip(ReactionLabel.CustomEmoji(CustomEmojiFakes.LEAF), 1, false))
+                } else {
+                    reactions
+                },
+        )
+
     private fun quoteOf(id: Long) = ReplyQuote(UiText.Plain("Ada"), senderId = 2, UiText.Plain("Message $id"), id)
 
     private fun ChatUiState.bubbles() = (content as ChatContent.Content).items.filterIsInstance<ChatItem.Bubble>()
 
-    private fun ChatUiState.withNewest(bubble: ChatItem.Bubble): ChatUiState {
+    private fun ChatUiState.withNewest(item: ChatItem): ChatUiState {
         val content = content as ChatContent.Content
-        return copy(content = content.copy(items = (listOf(bubble) + content.items).toImmutableList()))
+        return copy(content = content.copy(items = (listOf(item) + content.items).toImmutableList()))
     }
 
     private fun ChatUiState.replacing(bubble: ChatItem.Bubble): ChatUiState {
@@ -166,6 +293,11 @@ class ChatRecompositionTest {
         const val SCROLL_STEP = 25f
 
         const val SETTLE_FRAMES = 60
+
+        /** A swipe to reply past its distance: where it starts on the bubble, its steps, one per frame. */
+        val SWIPE_START = 24.dp
+        val SWIPE_STEP = 8.dp
+        const val SWIPE_FRAMES = 20
 
         /** At most one recomposition in this many frames counts as rare, nothing like one in every frame. */
         const val RARE = 10
@@ -190,6 +322,7 @@ class ChatRecompositionTest {
                 "BubbleMetaKt",
                 "MessageContentBodyKt",
                 "ChatPillsKt",
+                "SponsoredMessageCardKt",
             )
     }
 }

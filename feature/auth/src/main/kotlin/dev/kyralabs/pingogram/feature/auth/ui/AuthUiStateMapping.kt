@@ -7,14 +7,19 @@ import dev.kyralabs.pingogram.core.domain.model.codeLength
 import kotlinx.collections.immutable.toImmutableList
 
 /** [AuthModel] → [AuthUiState]: which screen to show, and what it shows. */
-internal fun AuthModel.toUiState() =
-    AuthUiState(
+internal fun AuthModel.toUiState(): AuthUiState {
+    val backTarget = backTarget()
+    return AuthUiState(
         step = screen(),
         connection = connection,
         floodWaitSeconds = floodWaitSeconds,
         pendingAction = pendingAction,
-        canGoBack = backTarget() != null,
+        canGoBack = backTarget != null,
+        floodWaitTotalSeconds = floodWaitTotalSeconds,
+        // The same reduction as AuthViewModel's back, so the screen the gesture shows is the one it leads to.
+        backStep = backTarget?.let { afterBack(it).screen() },
     )
+}
 
 private fun AuthModel.screen(): AuthStepUiState {
     val step = step
@@ -41,6 +46,7 @@ private fun AuthModel.laterStepScreen(step: AuthStep): AuthStepUiState =
                 codeLength = step.type.codeLength,
                 resendInSeconds = code.resendInSeconds,
                 error = code.error,
+                resendTotalSeconds = code.resendTotalSeconds,
             )
         }
 
@@ -128,7 +134,7 @@ private fun AuthModel.phoneScreen(isChangingNumber: Boolean) =
         isChangingNumber = isChangingNumber,
         countryPicker =
             if (phone.isPickerOpen) {
-                CountryPickerUiState(phone.pickerQuery, phone.countries.matching(phone.pickerQuery))
+                CountryPickerUiState(phone.pickerQuery, phone.countries.matching(phone.pickerQuery), phone.countryIso)
             } else {
                 null
             },

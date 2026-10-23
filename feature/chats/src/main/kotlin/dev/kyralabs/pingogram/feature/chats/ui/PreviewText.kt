@@ -14,6 +14,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.chats.R
 
 /** A row's preview: [styled] for the second line, [text] for the row's description. */
@@ -24,7 +25,8 @@ internal class PreviewText(
 
 /**
  * The second line of a row: typing in `primary`; "Draft:" in `tertiary` before the draft; the sender in `onSurface`
- * before the message, which is in `error` if it failed to send ([isFailed]); the rest in the row's `onSurfaceVariant`.
+ * before the message, which is in `error` if it failed to send ([isFailed]); the rest, a secret chat's state too, in
+ * the row's `onSurfaceVariant`.
  * Built again only when its texts or colors change.
  */
 @Composable
@@ -52,12 +54,33 @@ internal fun previewText(
                 )
             }
 
+            is ChatPreview.SecretChat -> {
+                PreviewParts(text = preview.text.resolve())
+            }
+
             ChatPreview.None -> {
                 PreviewParts(text = "")
             }
         }
     return remember(parts) { parts.toPreviewText() }
 }
+
+/**
+ * This preview after [time] ("9:41 AM · Alice: Hi"), in tabular figures, for rows that show their time on the preview's
+ * line ([timeOnPreviewLine]). The description's [PreviewText.text] stays the same: it names the time elsewhere.
+ */
+internal fun PreviewText.after(time: String): PreviewText {
+    val styled =
+        buildAnnotatedString {
+            withStyle(SpanStyle(fontFeatureSettings = TABULAR_FIGURES)) { append(time) }
+            append(TIME_SEPARATOR)
+            append(this@after.styled)
+        }
+    return PreviewText(styled, text)
+}
+
+private const val TABULAR_FIGURES = "tnum"
+private const val TIME_SEPARATOR = " · "
 
 /** The label ("Draft:", "Alice:") and the text of a preview, each in its color. */
 private data class PreviewParts(
@@ -79,7 +102,10 @@ private data class PreviewParts(
     }
 }
 
-/** Two lines at most, in `bodyMedium`; screen readers get the row's description instead. */
+/**
+ * One line, in `bodyMedium`, with the sender inline: Material's two-line list item, 72 dp rows of one height
+ * (`docs/DESIGN_SYSTEM.md` §6–7). Screen readers get the row's description instead.
+ */
 @Composable
 internal fun ChatPreviewText(preview: PreviewText) {
     Text(
@@ -87,7 +113,7 @@ internal fun ChatPreviewText(preview: PreviewText) {
         modifier = Modifier.clearAndSetSemantics {},
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         overflow = TextOverflow.Ellipsis,
-        maxLines = 2,
-        style = MaterialTheme.typography.bodyMedium,
+        maxLines = 1,
+        style = MaterialTheme.typography.bodyMedium.userContent,
     )
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -13,15 +15,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * The Data and storage page (`REQUIREMENTS.md` FR-S1): how much space Pingogram takes, loaded when the page opens,
- * and clearing the cache of downloaded files after a confirmation, which shows how much it freed and loads the usage
- * again.
+ * The Data and storage page (`REQUIREMENTS.md` FR-S1): what downloads by itself on each kind of network
+ * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram
+ * takes, loaded when the page opens, and clearing the cache of downloaded files after a confirmation, which shows how
+ * much it freed and loads the usage again.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; clearing in progress does not, as
  * TDLib finishes it anyway and the usage is loaded again.
@@ -32,6 +36,8 @@ class DataStorageViewModel
     constructor(
         private val savedStateHandle: SavedStateHandle,
         private val storageRepository: StorageRepository,
+        autoDownloadRepository: AutoDownloadRepository,
+        networkRepository: NetworkRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -45,6 +51,13 @@ class DataStorageViewModel
         private var loadJob: Job? = null
 
         init {
+            viewModelScope.launch {
+                combine(autoDownloadRepository.settings, networkRepository.networkStatus) { settings, status ->
+                    settings to status.isDataSaverOn
+                }.collect { (settings, dataSaver) ->
+                    mutableUiState.update { it.copy(autoDownload = settings, isDataSaverOn = dataSaver) }
+                }
+            }
             loadUsage()
         }
 
@@ -71,7 +84,12 @@ class DataStorageViewModel
         private fun loadUsage() {
             loadJob?.cancel()
             mutableUiState.update { it.copy(usage = StorageUsageState.Loading) }
-            loadJob = viewModelScope.launch { mutableUiState.update { it.copy(usage = fetchUsage()) } }
+            loadJob =
+                viewModelScope.launch {
+                    // Fetched outside update(), which runs its function again if the state changed meanwhile.
+                    val usage = fetchUsage()
+                    mutableUiState.update { it.copy(usage = usage) }
+                }
         }
 
         private suspend fun fetchUsage(): StorageUsageState =

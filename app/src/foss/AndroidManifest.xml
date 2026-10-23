@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- "Keep connected" (foss only, off by default; docs/adr/0003-keep-connected-foreground-service.md), approved by
+         the owner on 2026-10-19 and pinned by AppManifestTest. The gms flavor ships none of this.
+         FOREGROUND_SERVICE, which it needs on every version, comes from the main manifest (transfers).
+         FOREGROUND_SERVICE_SPECIAL_USE: its type on Android 14+, specialUse, explained by the service's subtype below. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Starts the service again after a reboot, only for users who turned "Keep connected" on: the receiver is disabled
+         here and enabled by KeepConnectedController only while the setting is on. Replaces the main manifest's removal
+         of WorkManager's request, which its short-lived work does not need. -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"
+        tools:node="replace" />
+
+    <application>
+        <!-- Keeps the process, and so TDLib's connection, running in the background while "Keep connected" is on. -->
+        <service
+            android:name=".background.KeepConnectedService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps the persistent connection of this messaging app open while the user has turned on its Keep connected setting, so that new messages arrive and notify immediately without a push service. Off by default; the ongoing notification lets the user turn it off." />
+        </service>
+
+        <!-- Starts the service after a reboot or an update; disabled unless "Keep connected" is on. System broadcasts
+             reach it although it is not exported. -->
+        <receiver
+            android:name=".background.KeepConnectedBootReceiver"
+            android:enabled="false"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

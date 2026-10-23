@@ -13,16 +13,20 @@ import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.ChatMemberStatus
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Contact
+import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SendingState
+import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.UserType
@@ -103,7 +107,13 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         fun `a private chat offers everything but polls`() =
             runViewModelTest {
                 assertEquals(
-                    listOf(AttachOption.Gallery, AttachOption.Camera, AttachOption.File, AttachOption.Contact),
+                    listOf(
+                        AttachOption.Gallery,
+                        AttachOption.Camera,
+                        AttachOption.File,
+                        AttachOption.Location,
+                        AttachOption.Contact,
+                    ),
                     privateChat().options,
                 )
             }
@@ -123,6 +133,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         @Test
         fun `secret chats take no polls`() =
             runViewModelTest {
+                secretChats.setSecretChats(ChatFixtures.secretChat())
                 val secret = showing(chat(type = ChatType.Secret(secretChatId = 7, userId = ADA)), history())
 
                 assertTrue(AttachOption.Poll !in secret.options)
@@ -264,6 +275,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         @Test
         fun `the preview schedules where the composer does`() =
             runViewModelTest {
+                secretChats.setSecretChats(ChatFixtures.secretChat())
                 val secret = chat(type = ChatType.Secret(secretChatId = 7, userId = ADA))
                 val viewModel = showing(secret, history())
 
@@ -429,6 +441,88 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
                     assertEquals(ChatEffect.ShowError(DomainError.FileUnavailable), awaitItem())
                 }
                 assertTrue(attachments.sentContacts.isEmpty())
+                assertEquals(1L, viewModel.replyTo)
+            }
+    }
+
+    @Nested
+    inner class Locations {
+        private val here = DeviceLocation(Location(51.4978, -0.1745), accuracyMeters = 12f)
+
+        @Test
+        fun `the location is sent as asked, with the composer's reply`() =
+            runViewModelTest {
+                val viewModel = privateChat(replyTo = 1)
+                val silent = SendOptions(silent = true)
+
+                send(viewModel, ChatEvent.SendLocation(here, silent))
+
+                assertEquals(listOf(Triple(here, silent, 1L)), attachments.sentLocations)
+                assertNull(viewModel.replyTo)
+            }
+
+        @Test
+        fun `a refused location gives the reply back, with the error`() =
+            runViewModelTest {
+                attachments.onSendLocation = { Outcome.Failure(DomainError.SendingNotAllowed) }
+                val viewModel = privateChat(replyTo = 1)
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendLocation(here))
+
+                    assertEquals(ChatEffect.ShowError(DomainError.SendingNotAllowed), awaitItem())
+                }
+                assertEquals(1L, viewModel.replyTo)
+            }
+
+        @Test
+        fun `a scheduled location is confirmed with its time`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendLocation(here, SendOptions(scheduledAt = 1_800_000_000)))
+
+                    assertEquals(ChatEffect.MessageScheduled(1_800_000_000), awaitItem())
+                }
+            }
+    }
+
+    @Nested
+    inner class Stickers {
+        private val duck =
+            Sticker(
+                setId = 7,
+                width = 512,
+                height = 512,
+                emoji = "🦆",
+                format = StickerFormat.Tgs,
+                thumbnail = null,
+                file = FileRef(70, 30_000),
+            )
+
+        @Test
+        fun `a sticker from the panel is sent at once, with the composer's reply`() =
+            runViewModelTest {
+                val viewModel = privateChat(replyTo = 1)
+
+                send(viewModel, ChatEvent.SendSticker(duck))
+
+                assertEquals(listOf(Triple(duck, SendOptions(), 1L)), attachments.sentStickers)
+                assertNull(viewModel.replyTo)
+            }
+
+        @Test
+        fun `a refused sticker gives the reply back, with the error`() =
+            runViewModelTest {
+                attachments.onSendSticker = { Outcome.Failure(DomainError.FloodWait(30)) }
+                val viewModel = privateChat(replyTo = 1)
+
+                viewModel.effects.test {
+                    send(viewModel, ChatEvent.SendSticker(duck))
+
+                    assertEquals(ChatEffect.ShowError(DomainError.FloodWait(30)), awaitItem())
+                }
                 assertEquals(1L, viewModel.replyTo)
             }
     }

@@ -3,9 +3,11 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.data.mapper.toInteractionInfo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReplyTo
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.PersistentMap
@@ -20,76 +22,88 @@ import org.drinkless.tdlib.TdApi
 private const val MAX_WINDOWS = 3
 
 /**
- * The state of [TdlibMessageRepository]: a [HistoryWindow] per chat, for the chats being observed, which are never
- * evicted, and for the most recently used others, up to [MAX_WINDOWS] windows in all; [clock] counts the uses. Updates
- * of chats without a window are ignored: their history is loaded when someone looks at it again.
+ * The state of [TdlibMessageRepository]: a [HistoryWindow] per history ([HistoryKey]: a chat, or one of its forum
+ * topics or message threads), for the histories being observed, which are never evicted, and for the most recently
+ * used others, up to [MAX_WINDOWS] windows in all; [clock] counts the uses. Updates of chats without a window are
+ * ignored: their history is loaded when someone looks at it again. An update of a chat applies to each of its windows;
+ * a new message joins only those of the topic it is in ([HistoryKey.holds]).
  */
 internal data class HistoryCache(
-    val windows: PersistentMap<Long, HistoryWindow> = persistentMapOf(),
+    val windows: PersistentMap<HistoryKey, HistoryWindow> = persistentMapOf(),
     val clock: Long = 0,
 ) {
     fun reduce(update: TdApi.Update): HistoryCache {
-        val chatId = update.historyChatId() ?: return this
-        return changing(chatId) { window -> window.applying(update) }
+        val chatId = update.historyChatId()
+        val change = chatId?.let { update.toHistoryChange() } ?: return this
+        return windows.keys
+            .filter { it.chatId == chatId }
+            .fold(this) { cache, key ->
+                val within = change.within(key)
+                if (within == null) cache else cache.changing(key) { window -> window.applying(within) }
+            }
     }
 
-    /** One more collector observes [chatId]. */
-    fun observing(chatId: Long) = using(chatId) { it.copy(collectors = it.collectors + 1) }
+    /** One more collector observes [key]. */
+    fun observing(key: HistoryKey) = using(key) { it.copy(collectors = it.collectors + 1) }
 
-    /** One collector of [chatId] stopped; the window stays, as the most recently used. */
-    fun releasing(chatId: Long): HistoryCache =
+    /** One collector of [key] stopped; the window stays, as the most recently used. */
+    fun releasing(key: HistoryKey): HistoryCache =
         // Gone already if TDLib closed in between.
-        if (chatId in windows) using(chatId) { it.copy(collectors = it.collectors - 1) } else this
+        if (key in windows) using(key) { it.copy(collectors = it.collectors - 1) } else this
 
-    /** Load [loadId] of [chatId] starts; the window is created if missing (a chat loaded before it is observed). */
+    /** Load [loadId] of [key] starts; the window is created if missing (a history loaded before it is observed). */
     fun startingLoad(
-        chatId: Long,
+        key: HistoryKey,
         loadId: Long,
-    ) = using(chatId) { it.copy(loadId = loadId, changesWhileLoading = persistentListOf()) }
+    ) = using(key) { it.copy(loadId = loadId, changesWhileLoading = persistentListOf()) }
 
     /**
-     * Load [loadId] of [chatId] ends with [page], null if it failed. Ignored if the window is not the one the load
+     * Load [loadId] of [key] ends with [page], null if it failed. Ignored if the window is not the one the load
      * started for: evicted, or TDLib closed, in between.
      */
     fun finishingLoad(
-        chatId: Long,
+        key: HistoryKey,
         loadId: Long,
         page: HistoryPage?,
-    ) = changing(chatId) { window -> if (window.loadId == loadId) window.finishingLoad(page) else window }
+    ) = changing(key) { window -> if (window.loadId == loadId) window.finishingLoad(page) else window }
 
     /** Only the windows someone observes. */
     fun trimmed() = copy(windows = windows.filterValues { it.collectors > 0 }.toPersistentMap())
 
     /**
-     * Keeps [message], fetched as the message a message of [chatId] replies to, with that chat's window, if it has one
-     * and the message belongs to the chat; a replied message of another chat gets none of this chat's updates.
+     * Keeps [message], fetched as the message a message of [chatId] replies to, with that chat's windows, if it has
+     * any and the message belongs to the chat; a replied message of another chat gets none of this chat's updates.
      */
     fun keepingReplied(
         chatId: Long,
         message: Message,
     ) = if (message.chatId == chatId) {
-        changing(chatId) { window -> window.copy(replied = window.replied.putting(message.id, message)) }
+        windows.keys
+            .filter { it.chatId == chatId }
+            .fold(this) { cache, key ->
+                cache.changing(key) { window -> window.copy(replied = window.replied.putting(message.id, message)) }
+            }
     } else {
         this
     }
 
-    /** Replaces the window of [chatId], created if missing, with [transform] of it, as the most recent use. */
+    /** Replaces the window of [key], created if missing, with [transform] of it, as the most recent use. */
     private inline fun using(
-        chatId: Long,
+        key: HistoryKey,
         transform: (HistoryWindow) -> HistoryWindow,
     ): HistoryCache {
-        val window = transform(windows[chatId] ?: HistoryWindow()).copy(lastUsed = clock + 1)
-        return copy(windows = windows.putting(chatId, window), clock = clock + 1).evicting()
+        val window = transform(windows[key] ?: HistoryWindow()).copy(lastUsed = clock + 1)
+        return copy(windows = windows.putting(key, window), clock = clock + 1).evicting()
     }
 
-    /** Replaces the window of [chatId] with [transform] of it; the same instance if there is none, or no change. */
+    /** Replaces the window of [key] with [transform] of it; the same instance if there is none, or no change. */
     private inline fun changing(
-        chatId: Long,
+        key: HistoryKey,
         transform: (HistoryWindow) -> HistoryWindow,
     ): HistoryCache {
-        val window = windows[chatId] ?: return this
+        val window = windows[key] ?: return this
         val changed = transform(window)
-        return if (changed === window) this else copy(windows = windows.putting(chatId, changed))
+        return if (changed === window) this else copy(windows = windows.putting(key, changed))
     }
 
     /** Drops the least recently used windows nobody observes while there are more than [MAX_WINDOWS]. */
@@ -101,8 +115,33 @@ internal data class HistoryCache(
                 .filter { it.value.collectors == 0 }
                 .sortedBy { it.value.lastUsed }
                 .take(excess)
-        return copy(windows = evicted.fold(windows) { remaining, (chatId) -> remaining.removing(chatId) })
+        return copy(windows = evicted.fold(windows) { remaining, (key) -> remaining.removing(key) })
     }
+}
+
+/** The windows of chat [chatId]'s histories: the chat's own and its topics'. */
+internal fun HistoryCache.windowsOf(chatId: Long): List<HistoryWindow> =
+    windows.filterKeys { it.chatId == chatId }.values.toList()
+
+/**
+ * Which history a [HistoryWindow] holds: chat [chatId]'s own (every message of it), or that of its forum topic or
+ * message thread [topic].
+ */
+internal data class HistoryKey(
+    val chatId: Long,
+    val topic: MessageTopic? = null,
+) {
+    /**
+     * Whether [message], of this chat, belongs to this history: every message to the chat's own; to a topic's, those in
+     * it (in the General topic also those without a topic); to a thread's, its replies, the message that starts it
+     * excluded (its head, which the conversation shows itself).
+     */
+    fun holds(message: Message): Boolean =
+        when (topic) {
+            null -> true
+            is MessageTopic.Forum -> message.topic == topic || (topic.isGeneral && message.topic == null)
+            is MessageTopic.Thread -> message.topic == topic && message.id > topic.threadId
+        }
 }
 
 /**
@@ -136,13 +175,12 @@ internal data class HistoryWindow(
 ) {
     val history get() = ChatHistory(messages, reachedStart, reachedEnd, windowId)
 
-    /** Applies [update], one of the chat's updates ([historyChatId]). */
-    fun applying(update: TdApi.Update): HistoryWindow =
-        update.toHistoryChange()?.let { change ->
-            val changed = applying(change)
-            // Kept even if it changed nothing yet: it may concern a message of the page being loaded.
-            if (loadId == null) changed else changed.copy(changesWhileLoading = changesWhileLoading.adding(change))
-        } ?: this
+    /** Applies [change], from one of the chat's updates, for this window ([HistoryChange.within]). */
+    fun applying(change: HistoryChange): HistoryWindow {
+        val changed = applyingNow(change)
+        // Kept even if it changed nothing yet: it may concern a message of the page being loaded.
+        return if (loadId == null) changed else changed.copy(changesWhileLoading = changesWhileLoading.adding(change))
+    }
 
     /** Ends the load with [page], null if it failed, which leaves the messages as they are. */
     fun finishingLoad(page: HistoryPage?): HistoryWindow {
@@ -152,10 +190,10 @@ internal data class HistoryWindow(
         // Filling an empty window replaces no run of messages.
         val replacing = page.kind == HistoryPage.Kind.Replacing && messages.isNotEmpty()
         val replaced = if (replacing) merged.copy(windowId = loadId ?: windowId) else merged
-        return changesWhileLoading.fold(replaced) { window, change -> window.applying(change) }
+        return changesWhileLoading.fold(replaced) { window, change -> window.applyingNow(change) }
     }
 
-    private fun applying(change: HistoryChange): HistoryWindow =
+    private fun applyingNow(change: HistoryChange): HistoryWindow =
         when (change) {
             is HistoryChange.Put -> putting(change.message, change.replacedId)
             is HistoryChange.Edit -> editing(change.messageId, change.edit)
@@ -288,6 +326,17 @@ internal class HistoryPage(
 
 /** What an update changes in a chat's history. */
 internal sealed interface HistoryChange {
+    /**
+     * This change for the window of [key]: a new message only for a history that holds it ([HistoryKey.holds]), or,
+     * replacing a message being sent, as the removal of the one it replaces; null when it is none of the window's.
+     */
+    fun within(key: HistoryKey): HistoryChange? =
+        when {
+            this !is Put || key.holds(message) -> this
+            replacedId != null -> Remove(setOf(replacedId))
+            else -> null
+        }
+
     /** [message] is new, or replaces [replacedId]. */
     class Put(
         val message: Message,
@@ -354,9 +403,10 @@ private fun TdApi.Update.toHistoryChange(): HistoryChange? =
             }
         }
 
-        // The new content, if any, comes in its own updateMessageContent.
+        // The new content, if any, comes in its own updateMessageContent; the bot's buttons change with the edit.
         is TdApi.UpdateMessageEdited -> {
-            HistoryChange.Edit(messageId) { it.copy(editDate = editDate.toLong()) }
+            val markup = replyMarkup?.toReplyMarkup()
+            HistoryChange.Edit(messageId) { it.copy(editDate = editDate.toLong(), replyMarkup = markup) }
         }
 
         is TdApi.UpdateMessageIsPinned -> {

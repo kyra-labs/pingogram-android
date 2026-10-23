@@ -38,7 +38,7 @@ Read these before doing any work (they are the source of truth, in this order):
    `PingogramHardcodedToken`). Exceptions: the manifest, splash theme, and framework-required
    resources (icons, strings, notification icons).
 4b. **Typography is Google Sans Flex (variable).** Bundled under OFL in `core:ui`; every text
-   style sets `wght`, `opsz` (= size), `ROND`, `GRAD` (−25 in dark) and `slnt` through
+   style sets `wght`, `opsz` (= size), `ROND`, `GRAD` (0; 25 with high contrast) and `slnt` through
    `FontVariation.Settings` as specified in `docs/DESIGN_SYSTEM.md` §3. No other font family
    except `FontFamily.Monospace` for code and system fallbacks for missing scripts.
 4c. **Performance is a requirement.** Follow `docs/PERFORMANCE.md`: immutable UI state,

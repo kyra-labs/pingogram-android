@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.ServiceAction
@@ -19,6 +20,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.draft
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.folder
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.message
+import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.secretChat
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.supergroup
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.user
 import kotlinx.collections.immutable.persistentListOf
@@ -91,7 +93,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             val row = rowOf(chat(id = GROUP, type = BASIC_GROUP))
 
-            assertEquals(ChatPreview.Action(res(UiR.string.named_action_typing, UiText.Plain("Alice"))), row.preview)
+            assertEquals(ChatPreview.Action(res(UiR.string.named_action_typing, isolated("Alice"))), row.preview)
         }
 
     @Test
@@ -118,7 +120,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             val viewModel = viewModel()
 
             assertEquals(
-                ChatPreview.Action(res(UiR.string.typing_two, UiText.Plain("Alice"), UiText.Plain("Bob"))),
+                ChatPreview.Action(res(UiR.string.typing_two, isolated("Alice"), isolated("Bob"))),
                 viewModel.item(GROUP).preview,
             )
             assertEquals(
@@ -140,7 +142,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             val row = rowOf(chat(id = GROUP, type = BASIC_GROUP))
 
             assertEquals(
-                ChatPreview.Action(res(UiR.string.named_action_recording_voice, UiText.Plain("Bob"))),
+                ChatPreview.Action(res(UiR.string.named_action_recording_voice, isolated("Bob"))),
                 row.preview,
             )
         }
@@ -161,7 +163,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
 
             val viewModel = viewModel()
 
-            assertEquals(UiText.Plain("Alice"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
+            assertEquals(isolated("Alice"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
             assertEquals(
                 res(UiR.string.preview_sender_you),
                 (viewModel.item(OTHER_GROUP).preview as ChatPreview.Message).sender,
@@ -198,7 +200,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertNull((viewModel.item(20).preview as ChatPreview.Message).sender)
             assertNull((viewModel.item(21).preview as ChatPreview.Message).sender)
             assertEquals(
-                ChatPreview.Message(sender = null, text = res(UiR.string.preview_joined, UiText.Plain("Alice"))),
+                ChatPreview.Message(sender = null, text = res(UiR.string.preview_joined, isolated("Alice"))),
                 viewModel.item(22).preview,
             )
         }
@@ -216,7 +218,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             users.setUsers(user(5, firstName = "Alicia"))
             runCurrent()
 
-            assertEquals(UiText.Plain("Alicia"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
+            assertEquals(isolated("Alicia"), (viewModel.item(GROUP).preview as ChatPreview.Message).sender)
         }
 
     // Special chats
@@ -333,6 +335,59 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertTrue(row.isSecret)
             assertTrue(row.isOnline)
             assertEquals(TitleBadge.Verified, row.badge)
+        }
+
+    @Test
+    fun `a secret chat waiting for the other user says so in place of its draft`() =
+        runTest {
+            users.setUsers(user(2, firstName = "Ada"))
+            secretChats.setSecretChats(secretChat(id = 1, userId = 2, state = SecretChatState.Pending))
+
+            val row = rowOf(chat(id = 30, type = ChatType.Secret(1, userId = 2), draft = draft("hi")))
+
+            assertEquals(ChatPreview.SecretChat(res(UiR.string.secret_chat_waiting, isolated("Ada"))), row.preview)
+        }
+
+    @Test
+    fun `a secret chat the other user started says it is being set up while pending`() =
+        runTest {
+            secretChats.setSecretChats(secretChat(id = 1, state = SecretChatState.Pending, isOutbound = false))
+
+            val row = rowOf(chat(id = 30, type = ChatType.Secret(1, userId = 2)))
+
+            assertEquals(ChatPreview.SecretChat(res(UiR.string.secret_chat_joining)), row.preview)
+        }
+
+    @Test
+    fun `an ended secret chat says so in place of its last message, a ready one shows its message`() =
+        runTest {
+            secretChats.setSecretChats(
+                secretChat(id = 1, state = SecretChatState.Closed),
+                secretChat(id = 2, state = SecretChatState.Ready),
+            )
+            chats.setChats(
+                ChatListType.Main,
+                chat(id = 30, type = ChatType.Secret(1, userId = 2), lastMessage = message(chatId = 30)),
+                chat(id = 31, type = ChatType.Secret(2, userId = 2), lastMessage = message(chatId = 31)),
+            )
+
+            val viewModel = viewModel()
+
+            assertEquals(ChatPreview.SecretChat(res(UiR.string.secret_chat_ended)), viewModel.item(30).preview)
+            assertEquals(ChatPreview.Message(sender = null, text = UiText.Plain("Hello")), viewModel.item(31).preview)
+        }
+
+    @Test
+    fun `a secret chat announced later maps its row again`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(id = 30, type = ChatType.Secret(1, userId = 2)))
+            val viewModel = viewModel()
+            assertEquals(ChatPreview.None, viewModel.item(30).preview)
+
+            secretChats.setSecretChats(secretChat(id = 1, state = SecretChatState.Closed))
+            runCurrent()
+
+            assertEquals(ChatPreview.SecretChat(res(UiR.string.secret_chat_ended)), viewModel.item(30).preview)
         }
 
     @Test
@@ -494,3 +549,6 @@ class ChatListRowsTest : ChatListViewModelHarness() {
             assertTrue(viewModel.items[1].isOnline)
         }
 }
+
+/** [name] as the mappers put it into a string: in first-strong isolates (`bidiIsolated`). */
+private fun isolated(name: String) = UiText.Plain("\u2068$name\u2069")

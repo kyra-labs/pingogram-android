@@ -7,6 +7,7 @@
     <string name="chat_list_connecting_to_proxy">Connecting to proxy…</string>
     <string name="chat_list_connecting">Connecting…</string>
     <string name="chat_list_updating">Updating…</string>
+    <string name="chat_list_loading">Loading chats</string>
     <!-- The folder tab of the main chat list. -->
     <string name="chat_list_all_chats">All chats</string>
     <string name="chat_list_empty_title">No chats yet</string>
@@ -116,6 +117,13 @@
     <string name="search_placeholder">Search chats, people and messages</string>
     <string name="search_back">Back</string>
     <string name="search_clear">Clear search</string>
+    <!-- The filter chips under the search field: everything, or one kind of result. -->
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_chats">Chats</string>
+    <string name="search_filter_contacts">Contacts</string>
+    <string name="search_filter_messages">Messages</string>
+    <string name="search_filter_media">Media</string>
+    <string name="search_filter_links">Links</string>
     <!-- Section headers. -->
     <string name="search_section_people">People</string>
     <string name="search_section_recent">Recent</string>
@@ -124,6 +132,9 @@
     <!-- Public chats, channels and users found by username, outside the user's chats and contacts. -->
     <string name="search_section_global">Global search</string>
     <string name="search_section_messages">Messages</string>
+    <!-- The messages section under the Media and Links filters. -->
+    <string name="search_section_media">Photos and videos</string>
+    <string name="search_section_links">Links</string>
     <!-- Recent searches: the button that empties them, and the button that removes one (%1$s is its name). -->
     <string name="search_clear_recents">Clear all</string>
     <string name="search_remove_recent">Remove %1$s from recent searches</string>
@@ -143,6 +154,11 @@
     <!-- A query that found nothing: %1$s is the query. -->
     <string name="search_no_results_title">No results for “%1$s”</string>
     <string name="search_no_results_body">Check the spelling, or try other words.</string>
+    <!-- The Media or Links filter without a query, when the chats have none. -->
+    <string name="search_no_media_title">No photos or videos</string>
+    <string name="search_no_media_body">Photos and videos sent in your chats show up here.</string>
+    <string name="search_no_links_title">No links</string>
+    <string name="search_no_links_body">Messages with links in your chats show up here.</string>
     <string name="search_retry">Try again</string>
     <!-- A section that is still searching, for screen readers. -->
     <string name="search_searching">Searching…</string>
@@ -152,4 +168,109 @@
         <item quantity="other">%d results</item>
     </plurals>
     <string name="search_a11y_no_results">No results</string>
+
+    <!-- The request to allow notifications above the chat list (Android 13+). -->
+    <string name="notification_prompt_title">Turn on notifications</string>
+    <string name="notification_prompt_body">Get notified about new messages and calls. You can mute chats any time.</string>
+    <string name="notification_prompt_blocked_title">Notifications are off</string>
+    <string name="notification_prompt_blocked_body">To get notified about new messages and calls, allow notifications for Pingogram in your device settings.</string>
+    <string name="notification_prompt_not_now">Not now</string>
+    <string name="notification_prompt_allow">Allow</string>
+    <string name="notification_prompt_open_settings">Open settings</string>
+    <!-- Starting a chat (FR-L7): the Chats tab's button and its empty state's, and the New chat screen. -->
+    <string name="new_chat">New chat</string>
+    <string name="new_chat_back">Back</string>
+    <string name="new_chat_group">New group</string>
+    <string name="new_chat_channel">New channel</string>
+    <string name="new_chat_contact">New contact</string>
+    <string name="new_chat_contacts">Contacts</string>
+    <string name="new_chat_loading">Loading contacts</string>
+    <string name="new_chat_no_contacts">No contacts yet. People you add to your contacts show up here.</string>
+
+    <!-- Creating a group or a channel (FR-P4). -->
+    <string name="create_next">Next</string>
+    <string name="create_skip">Skip</string>
+    <string name="create_add">Add</string>
+    <string name="create_search">Search contacts</string>
+    <string name="create_search_clear">Clear search</string>
+    <!-- Screen readers: tapping a picked person's chip. %1$s is their name. -->
+    <string name="create_member_remove">Remove %1$s</string>
+    <string name="create_no_contacts">No contacts yet. You can add people later with an invite link.</string>
+    <string name="create_no_results">No contacts match your search.</string>
+    <plurals name="create_too_many_members">
+        <item quantity="one">You can add up to %d person now. Invite more people with a link later.</item>
+        <item quantity="other">You can add up to %d people now. Invite more people with a link later.</item>
+    </plurals>
+    <string name="create_photo_remove">Remove photo</string>
+    <string name="create_flood_wait">Too many attempts. Try again in %1$s.</string>
+    <string name="create_group_photo">Set group photo</string>
+    <string name="create_group_name">Group name</string>
+    <string name="create_group_name_error">Enter a name for the group.</string>
+    <string name="create_group_no_members">Only you for now. You can add people later.</string>
+    <plurals name="create_group_members">
+        <item quantity="one">%d person will be added.</item>
+        <item quantity="other">%d people will be added.</item>
+    </plurals>
+    <string name="create_auto_delete">Auto-delete messages</string>
+    <string name="create_auto_delete_off">Off</string>
+    <string name="create_auto_delete_day">1 day</string>
+    <string name="create_auto_delete_week">1 week</string>
+    <string name="create_auto_delete_month">1 month</string>
+    <string name="create_auto_delete_off_note">Messages stay until someone deletes them.</string>
+    <string name="create_auto_delete_note">New messages are deleted for everyone after this time.</string>
+    <string name="create_group">Create</string>
+    <string name="create_channel_photo">Set channel photo</string>
+    <string name="create_channel_name">Channel name</string>
+    <string name="create_channel_name_error">Enter a name for the channel.</string>
+    <string name="create_channel_description">Description (optional)</string>
+    <string name="create_channel_description_note">Tell people what your channel is about.</string>
+    <string name="create_channel_type">Channel type</string>
+    <string name="create_private">Private</string>
+    <string name="create_public">Public</string>
+    <string name="create_private_note">Only people with the invite link can join.</string>
+    <string name="create_public_note">Anyone can find the channel in search and join it.</string>
+    <string name="create_link">Link</string>
+    <string name="create_link_prefix" translatable="false">t.me/</string>
+    <string name="create_link_note">People can share this link and find your channel by it.</string>
+    <string name="create_link_checking">Checking…</string>
+    <string name="create_link_check_failed">Couldn\'t check this link. You can still try it.</string>
+    <plurals name="create_link_too_short">
+        <item quantity="one">A link needs at least %d character.</item>
+        <item quantity="other">A link needs at least %d characters.</item>
+    </plurals>
+    <plurals name="create_link_too_long">
+        <item quantity="one">A link can have at most %d character.</item>
+        <item quantity="other">A link can have at most %d characters.</item>
+    </plurals>
+    <string name="create_link_characters">Use only a–z, 0–9 and underscores.</string>
+    <string name="create_link_first_letter">A link must start with a letter.</string>
+    <string name="create_link_ends_with_underscore">A link can\'t end with an underscore.</string>
+    <string name="create_link_consecutive_underscores">A link can\'t have two underscores in a row.</string>
+    <!-- %1$s is the username, without @. -->
+    <string name="create_link_available">t.me/%1$s is available.</string>
+    <string name="create_link_invalid">Telegram doesn\'t accept this link.</string>
+    <string name="create_link_taken">This link is already taken.</string>
+    <string name="create_link_for_sale">This link is for sale on Fragment.</string>
+    <string name="create_link_unavailable">This link can\'t be used. You may have too many public links.</string>
+    <string name="create_link_loading">Loading the invite link</string>
+    <string name="create_link_copy">Copy</string>
+    <string name="create_link_share">Share</string>
+    <string name="create_link_copied">Link copied</string>
+    <string name="create_channel_members">Add subscribers</string>
+    <plurals name="create_not_added_title">
+        <item quantity="one">%d person wasn\'t added</item>
+        <item quantity="other">%d people weren\'t added</item>
+    </plurals>
+    <string name="create_not_added_text">Their privacy settings don\'t let you add them to groups. You can send them an invite link instead.</string>
+    <string name="create_not_added_text_channel">Their privacy settings don\'t let you add them to channels. You can send them an invite link instead.</string>
+    <string name="create_not_added_share">Share invite link</string>
+    <string name="create_not_added_ok">OK</string>
+    <!-- Story rings above the chat list. -->
+    <string name="stories_your_story">Your story</string>
+    <plurals name="stories_count">
+        <item quantity="one">%d story</item>
+        <item quantity="other">%d stories</item>
+    </plurals>
+    <string name="stories_a11y_unseen">not seen</string>
+    <string name="stories_a11y_seen">seen</string>
 </resources>

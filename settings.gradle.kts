@@ -24,7 +24,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        // The TDLib AAR, and nothing else from here: the pingogram.tdlib plugin (build-logic TdlibAar.REPOSITORY)
+        // The TDLib AAR, and nothing else from here: the pingogram.tdlib plugin (build-logic PrebuiltAar.TDLIB)
         // downloads it into this git-ignored directory when :core:tdlib's dependencies are resolved (docs/TDLIB.md).
         exclusiveContent {
             forRepository {
@@ -34,6 +34,18 @@ dependencyResolutionManagement {
                 }
             }
             filter { includeGroup("org.drinkless") }
+        }
+        // The call engine's AAR (NTgCalls), and nothing else from here: the pingogram.ntgcalls plugin (build-logic
+        // PrebuiltAar.NTGCALLS) installs it like TDLib's; its group never comes from Maven Central
+        // (docs/adr/0015-call-media-engine.md).
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "ntgcalls"
+                    url = uri("feature/calls/libs/maven")
+                }
+            }
+            filter { includeGroup("io.github.pytgcalls") }
         }
     }
 }
@@ -59,9 +71,12 @@ include(":core:testing")
 include(":core:ui")
 
 include(":feature:auth")
+include(":feature:calls")
 include(":feature:chat")
 include(":feature:chats")
 include(":feature:contacts")
+include(":feature:feedback")
 include(":feature:media")
 include(":feature:profile")
+include(":feature:scanner")
 include(":feature:settings")

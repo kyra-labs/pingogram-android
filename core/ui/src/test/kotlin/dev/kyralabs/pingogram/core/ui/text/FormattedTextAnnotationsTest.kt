@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -110,6 +111,31 @@ class FormattedTextAnnotationsTest {
     }
 
     @Test
+    fun `text that draws its blocks marks code and pre instead of giving them a background`() {
+        val text = "code pre kotlin"
+        val annotated =
+            FormattedText(
+                text,
+                listOf(
+                    entity(text, "code", TextEntityType.Code),
+                    entity(text, "pre", TextEntityType.Pre),
+                    entity(text, "kotlin", TextEntityType.PreCode("kotlin")),
+                ).toImmutableList(),
+            ).toAnnotatedString(styles, drawsBlocks = true)
+
+        val monospace = SpanStyle(fontFamily = FontFamily.Monospace)
+        assertEquals(
+            listOf(Styled("code", monospace), Styled("pre", monospace), Styled("kotlin", monospace)),
+            annotated.styled(),
+        )
+        assertEquals(
+            listOf("code" to TextBlock.CODE, "pre" to TextBlock.PRE, "kotlin" to TextBlock.PRE),
+            annotated.blocks(),
+        )
+        assertTrue(annotated.hasTextBlocks())
+    }
+
+    @Test
     fun `block quotes are italic in the quote color`() {
         val annotated =
             annotate(
@@ -144,6 +170,41 @@ class FormattedTextAnnotationsTest {
     }
 
     @Test
+    fun `with a mention listener, mentions and mention names open who they name`() {
+        val listener = LinkInteractionListener {}
+        val text = "@ada and Grace"
+        val annotated =
+            FormattedText(
+                text,
+                listOf(
+                    entity(text, "@ada", TextEntityType.Mention),
+                    entity(text, "Grace", TextEntityType.MentionName(userId = 7)),
+                ).toImmutableList(),
+            ).toAnnotatedString(styles, onMentionClick = listener)
+
+        val links = annotated.links()
+        assertEquals(listOf("@ada", "Grace"), links.map { it.first })
+        assertEquals(
+            listOf(MentionTarget.Username("ada"), MentionTarget.User(7)),
+            links.map { mentionTarget(it.second) },
+        )
+        assertTrue(links.all { (it.second as LinkAnnotation.Clickable).linkInteractionListener === listener })
+        assertEquals(
+            SpanStyle(color = Color.Magenta),
+            links
+                .first()
+                .second.styles
+                ?.style,
+        )
+    }
+
+    @Test
+    fun `other links name nobody`() {
+        assertEquals(null, mentionTarget(LinkAnnotation.Url("https://example.org")))
+        assertEquals(null, mentionTarget(LinkAnnotation.Clickable(SPOILER_TAG) {}))
+    }
+
+    @Test
     fun `custom emoji, dates, bank cards and unknown entities show the text as it is`() {
         val annotated =
             annotate(
@@ -157,6 +218,16 @@ class FormattedTextAnnotationsTest {
         assertEquals("😀 at 5 4111 x", annotated.text)
         assertTrue(annotated.spanStyles.isEmpty())
         assertTrue(annotated.links().isEmpty())
+    }
+
+    @Test
+    fun `a custom emoji keeps its emoji, marked with its id for its picture`() {
+        val annotated = annotate("Hi 😀", "😀" to TextEntityType.CustomEmoji(customEmojiId = 42))
+
+        assertEquals("Hi 😀", annotated.text)
+        val marks = annotated.getStringAnnotations(CUSTOM_EMOJI_TAG, 0, annotated.length)
+        assertEquals(listOf(Triple("42", 3, 5)), marks.map { Triple(it.item, it.start, it.end) })
+        assertTrue(annotated.hasCustomEmoji())
     }
 
     // Links
@@ -262,6 +333,28 @@ class FormattedTextAnnotationsTest {
         assertEquals(listOf("link"), annotated.links().map { it.first })
     }
 
+    @Test
+    fun `text that draws its blocks hides a spoiler as transparent text over a marked block`() {
+        val text = "a secret"
+        val annotated =
+            FormattedText(text, listOf(entity(text, "secret", TextEntityType.Spoiler)).toImmutableList())
+                .toAnnotatedString(styles, drawsBlocks = true)
+
+        assertEquals(listOf(Styled("secret", SpanStyle(color = Color.Transparent))), annotated.styled())
+        assertEquals(listOf("secret" to TextBlock.SPOILER), annotated.blocks())
+    }
+
+    @Test
+    fun `a revealed spoiler draws no block`() {
+        val text = "a secret"
+        val annotated =
+            FormattedText(text, listOf(entity(text, "secret", TextEntityType.Spoiler)).toImmutableList())
+                .toAnnotatedString(styles, spoilersRevealed = true, drawsBlocks = true)
+
+        assertEquals(emptyList<Pair<String, String>>(), annotated.blocks())
+        assertFalse(annotated.hasTextBlocks())
+    }
+
     // Offsets
 
     @Test
@@ -364,6 +457,9 @@ class FormattedTextAnnotationsTest {
         spanStyles.map {
             Styled(text.substring(it.start, it.end), it.item)
         }
+
+    private fun AnnotatedString.blocks(): List<Pair<String, String>> =
+        getStringAnnotations(TEXT_BLOCK_TAG, 0, length).map { text.substring(it.start, it.end) to it.item }
 
     private fun AnnotatedString.links(): List<Pair<String, LinkAnnotation>> =
         getLinkAnnotations(0, length).map { text.substring(it.start, it.end) to it.item }

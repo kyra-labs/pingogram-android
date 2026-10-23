@@ -20,16 +20,19 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToKeyAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.navigation.NavDestination
@@ -56,6 +59,12 @@ import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.ContactsRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
+import dev.kyralabs.pingogram.core.navigation.LanguageRoute
+import dev.kyralabs.pingogram.core.navigation.NewChatRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
+import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
+import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
@@ -70,9 +79,14 @@ import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.NavigationBarVisibility
+import dev.kyralabs.pingogram.core.ui.component.TabReselection
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
@@ -115,6 +129,8 @@ class PingogramAppTest {
             on(TdApi.LogOut::class, TdResult.Success(TdApi.Ok()))
             // TDLib's answer once a chat list is loaded completely: the chat list is empty.
             on(TdApi.LoadChats::class, TdResult.Failure(TdError(404, "Not Found")))
+            // No contacts: the Contacts tab shows its actions and the offer of contacts sync.
+            on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
         }
 
     @BindValue
@@ -123,7 +139,12 @@ class PingogramAppTest {
 
     private var uiState by mutableStateOf<MainActivityUiState>(MainActivityUiState.SignedIn)
 
+    /** The chat a notification asked to open, cleared once the app reports it handled, as `MainActivity` does. */
+    private var chatToOpen by mutableStateOf<Long?>(null)
+
     private lateinit var navController: NavHostController
+
+    private val tabReselection = TabReselection()
 
     // Top-level tabs
 
@@ -146,8 +167,25 @@ class PingogramAppTest {
         assertTrue(navController.currentDestination?.hasRoute<ContactsRoute>() == true)
         tab(R.string.nav_contacts).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
-        text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
+        awaitText(ContactsR.string.contacts_sync_offer_title)
         text(ChatsR.string.chat_list_empty_title).assertDoesNotExist()
+    }
+
+    @Test
+    fun `tapping the selected tab stays on it and asks its screen to go back to the top`() {
+        val reselected = mutableListOf<Any>()
+        val collector =
+            CoroutineScope(Dispatchers.Unconfined).launch {
+                tabReselection.reselections(ChatsRoute).collect { reselected += it }
+            }
+        setApp()
+
+        tab(R.string.nav_chats).performClick()
+        collector.cancel()
+
+        assertEquals(listOf<Any>(ChatsRoute), reselected)
+        assertEquals(1, backStackDestinations().size)
+        tab(R.string.nav_chats).assertIsSelected()
     }
 
     @Test
@@ -259,14 +297,18 @@ class PingogramAppTest {
     fun `back from search returns to the tab and its navigation bar`() {
         setApp()
         tab(R.string.nav_contacts).performClick()
-        composeRule.onNodeWithContentDescription(string(R.string.nav_search)).performClick()
+        // The navigation's search button; the Contacts tab's own search field is named "Search" by Material too.
+        val searchButton =
+            hasContentDescription(string(R.string.nav_search)) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        composeRule.onNode(searchButton).performClick()
         composeRule.waitForIdle()
 
         composeRule.onNodeWithContentDescription(string(ChatsR.string.search_back)).performClick()
         composeRule.waitForIdle()
 
         tab(R.string.nav_contacts).assertIsSelected()
-        text(ContactsR.string.contacts_placeholder_title).assertIsDisplayed()
+        awaitText(ContactsR.string.contacts_sync_offer_title)
     }
 
     // The archive (FR-L9)
@@ -282,6 +324,36 @@ class PingogramAppTest {
         composeRule.onNodeWithContentDescription(string(ChatsR.string.chat_list_archive_back)).performClick()
         composeRule.waitForIdle()
         tab(R.string.nav_chats).assertIsSelected()
+    }
+
+    // New chat (FR-L7)
+
+    @Test
+    fun `the New chat button grows into New chat above the chats tab, and back returns to the chats`() {
+        tdlib.on(TdApi.GetContacts::class, TdResult.Success(TdApi.Users(0, LongArray(0))))
+        setApp()
+        awaitText(ChatsR.string.chat_list_empty_title)
+        val button = composeRule.onNode(hasContentDescription(string(ChatsR.string.new_chat)) and hasClickAction())
+        val buttonBounds = button.fetchSemanticsNode().boundsInRoot
+
+        composeRule.mainClock.autoAdvance = false
+        button.performClick()
+        repeat(TRANSFORM_FRAMES) { composeRule.mainClock.advanceTimeByFrame() }
+        composeRule.waitForIdle()
+
+        // Early in the container transform New chat grows over the chat list, which is still there below it.
+        val back = composeRule.onNodeWithContentDescription(string(ChatsR.string.new_chat_back))
+        back.assertExists()
+        text(ChatsR.string.chat_list_empty_title).assertExists()
+        composeRule.mainClock.autoAdvance = true
+        awaitText(ChatsR.string.new_chat_no_contacts)
+        assertTrue(navController.currentDestination?.hasRoute<NewChatRoute>() == true)
+        assertTrue(back.fetchSemanticsNode().boundsInRoot.top < buttonBounds.top / 2)
+        assertNoNavigation()
+        back.performClick()
+        composeRule.waitForIdle()
+        tab(R.string.nav_chats).assertIsSelected()
+        assertTrue(navController.currentDestination?.hasRoute<ChatsRoute>() == true)
     }
 
     // Settings pages (FR-S1)
@@ -308,6 +380,17 @@ class PingogramAppTest {
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
 
+        text(SettingsR.string.settings_language).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<LanguageRoute>() == true)
+        // The page's radio rows are selectable: only tabs count here.
+        composeRule
+            .onAllNodes(isSelectable() and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertCountEquals(0)
+        pressBack()
+        tab(R.string.nav_settings).assertIsSelected()
+
         text(SettingsR.string.settings_appearance).performClick()
         composeRule.waitForIdle()
 
@@ -318,6 +401,36 @@ class PingogramAppTest {
             .assertCountEquals(0)
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `about opens the open-source licenses, and they open a library's page with its license`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        text(SettingsR.string.settings_about).performClick()
+        composeRule.waitForIdle()
+
+        text(SettingsR.string.settings_about_licenses).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<OpenSourceLicensesRoute>() == true)
+        assertNoNavigation()
+        // The list comes from the build's raw resource, read on the IO dispatcher.
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            composeRule.onAllNodes(hasScrollToKeyAction()).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNode(hasScrollToKeyAction()).performScrollToKey("org.drinkless:tdlib")
+        composeRule.onNodeWithText("TDLib").performClick()
+        composeRule.waitForIdle()
+
+        val route = navController.currentBackStackEntry?.toRoute<OpenSourceLibraryRoute>()
+        assertEquals("org.drinkless:tdlib", route?.libraryId)
+        composeRule.waitUntil(TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithText("Boost Software License 1.0").fetchSemanticsNodes().isNotEmpty()
+        }
+        pressBack()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<OpenSourceLicensesRoute>() == true)
     }
 
     @Test
@@ -348,6 +461,50 @@ class PingogramAppTest {
         pressBack()
         composeRule.waitForIdle()
         tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `notifications open above the settings tab, and exceptions above them`() {
+        tdlib.on(TdApi.GetScopeNotificationSettings::class, TdResult.Success(TdApi.ScopeNotificationSettings()))
+        tdlib.on(TdApi.GetChatNotificationSettingsExceptions::class, TdResult.Success(TdApi.Chats(0, longArrayOf())))
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        text(SettingsR.string.settings_notifications).performScrollTo().performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
+        assertNoNavigation()
+        composeRule
+            .onAllNodesWithText(
+                string(SettingsR.string.settings_notifications_exceptions),
+            )[0]
+            .performScrollTo()
+            .performClick()
+        composeRule.waitForIdle()
+
+        val route = navController.currentBackStackEntry?.toRoute<NotificationExceptionsRoute>()
+        assertEquals("PrivateChats", route?.scope)
+        awaitText(SettingsR.string.settings_exceptions_empty_title)
+        pressBack()
+        composeRule.waitForIdle()
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
+        pressBack()
+        composeRule.waitForIdle()
+        tab(R.string.nav_settings).assertIsSelected()
+    }
+
+    @Test
+    fun `exceptions of a kind of chats this version does not know go back`() {
+        setApp()
+        tab(R.string.nav_settings).performClick()
+        composeRule.runOnUiThread { navController.navigate(NotificationSettingsRoute) }
+        composeRule.waitForIdle()
+
+        composeRule.runOnUiThread { navController.navigate(NotificationExceptionsRoute("SomethingNew")) }
+        composeRule.waitForIdle()
+
+        assertTrue(navController.currentDestination?.hasRoute<NotificationSettingsRoute>() == true)
     }
 
     @Test
@@ -416,6 +573,36 @@ class PingogramAppTest {
         tab(R.string.nav_chats).assertIsSelected()
     }
 
+    // Notifications (FR-N2)
+
+    @Test
+    fun `a notification opens its chat above the chat list, from any tab, and back returns to the chats`() {
+        tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
+        setApp()
+        tab(R.string.nav_settings).performClick()
+
+        chatToOpen = 5
+        composeRule.waitForIdle()
+
+        assertEquals(5L, navController.currentBackStackEntry?.toRoute<ChatRoute>()?.chatId)
+        val destinations = backStackDestinations()
+        assertEquals(2, destinations.size)
+        assertTrue(destinations[0].hasRoute<ChatsRoute>())
+        assertNull(chatToOpen)
+    }
+
+    @Test
+    fun `a notification opens no chat while signed out`() {
+        uiState = MainActivityUiState.SignedOut
+        setApp()
+
+        chatToOpen = 5
+        composeRule.waitForIdle()
+
+        assertNull(chatToOpen)
+        assertTrue(navController.currentDestination.isAuthRoute())
+    }
+
     @Test
     fun `a predictive back gesture shrinks the conversation over the chat list, then leaves it`() {
         tdlib.on(TdApi.GetChat::class, TdResult.Failure(TdError(400, "Chat not found")))
@@ -474,6 +661,8 @@ class PingogramAppTest {
         uiState = MainActivityUiState.Loading
         setApp()
 
+        // The progress shows once loading takes a moment.
+        composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
         composeRule.onNodeWithContentDescription(string(AuthR.string.auth_loading)).assertIsDisplayed()
         assertNull(navController.currentDestination)
         assertNoNavigation()
@@ -602,7 +791,13 @@ class PingogramAppTest {
     @Composable
     private fun App() {
         PingogramTheme(dynamicColor = false) {
-            PingogramApp(uiState = uiState, navController = rememberNavController().also { navController = it })
+            PingogramApp(
+                uiState = uiState,
+                navController = rememberNavController().also { navController = it },
+                tabReselection = tabReselection,
+                chatToOpen = chatToOpen,
+                onChatOpened = { chatToOpen = null },
+            )
         }
     }
 
@@ -618,8 +813,10 @@ class PingogramAppTest {
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
     }
 
+    /** No tab of the navigation bar or rail; search's filter chips, selectable too, are checkboxes. */
     private fun assertNoNavigation() {
-        composeRule.onAllNodes(isSelectable()).assertCountEquals(0)
+        val isChip = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+        composeRule.onAllNodes(isSelectable() and !isChip).assertCountEquals(0)
     }
 
     /** Waits for [id]'s text: the login flow and the chat list get their state from a background dispatcher. */
@@ -647,6 +844,9 @@ class PingogramAppTest {
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
         const val HALF_GESTURE = 0.5f
+
+        /** A few frames into a container transform. */
+        const val TRANSFORM_FRAMES = 3
 
         /** How far a predictive back gesture has shrunk the screen it leaves by [HALF_GESTURE]: to about 92%. */
         val PREDICTIVE_BACK_SCALE_RANGE = 0.9f..0.95f

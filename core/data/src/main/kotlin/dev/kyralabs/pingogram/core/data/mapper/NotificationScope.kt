@@ -1,17 +1,12 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.ChatType
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
+import dev.kyralabs.pingogram.core.domain.model.notificationScope
 import org.drinkless.tdlib.TdApi
 
-/**
- * The kinds of chats with default notification settings of their own (td_api.tl `NotificationSettingsScope`). A chat
- * without its own mute setting is muted when the default of its scope is.
- */
-internal enum class NotificationScope {
-    PrivateChats,
-    GroupChats,
-    ChannelChats,
-}
+// The kinds of chats with default notification settings of their own (NotificationScope): a chat without its own mute
+// setting is muted when the default of its scope is.
 
 /**
  * Whether the chat's own setting mutes it; null if the chat follows the default of its [NotificationScope]. TDLib
@@ -58,14 +53,6 @@ internal fun resolveMute(
     type: ChatType,
     mutedScopes: Set<NotificationScope>,
 ): Boolean = ownMute ?: (type.notificationScope in mutedScopes)
-
-private val ChatType.notificationScope: NotificationScope
-    get() =
-        when (this) {
-            is ChatType.Private, is ChatType.Secret -> NotificationScope.PrivateChats
-            is ChatType.BasicGroup -> NotificationScope.GroupChats
-            is ChatType.Supergroup -> if (isChannel) NotificationScope.ChannelChats else NotificationScope.GroupChats
-        }
 
 /** Null for a scope added by a newer TDLib. */
 internal fun TdApi.NotificationSettingsScope.toNotificationScope(): NotificationScope? =

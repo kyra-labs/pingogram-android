@@ -10,10 +10,10 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,13 +26,16 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * A small FAB that scrolls to the newest message, with the unread count as badge; it grows in and out on the motion
- * scheme's fast spatial spring.
+ * The jump to the newest message (`docs/DESIGN_SYSTEM.md` §6): a `FloatingActionButton` (56 dp; Material 3 Expressive
+ * no longer recommends the small FAB) in `secondaryContainer` / `onSecondaryContainer`, Material's secondary FAB style,
+ * as it is not the screen's primary action. The unread count shows in a [Badge] on its corner, and screen readers hear
+ * it with the label. It grows in and out on the motion scheme's fast spatial spring.
  */
 @Composable
 internal fun JumpToBottomButton(
@@ -47,13 +50,7 @@ internal fun JumpToBottomButton(
         exit = scaleOut(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
     ) {
         val unread =
-            if (unreadCount >
-                0
-            ) {
-                pluralStringResource(R.plurals.chat_unread_count, unreadCount, unreadCount)
-            } else {
-                null
-            }
+            if (unreadCount > 0) pluralStringResource(R.plurals.chat_unread_count, unreadCount, unreadCount) else null
         val label = stringResource(R.string.chat_jump_to_bottom)
         BadgedBox(
             badge = {
@@ -62,7 +59,7 @@ internal fun JumpToBottomButton(
                 }
             },
         ) {
-            SmallFloatingActionButton(
+            FloatingActionButton(
                 onClick = onClick,
                 modifier = Modifier.semantics { contentDescription = listOfNotNull(label, unread).joinToString(", ") },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -127,3 +124,13 @@ private fun unreadCountText(count: Int): String =
 private const val JUMP_GLIDE_ENTRIES = 15
 
 private const val MAX_UNREAD_SHOWN = 999
+
+/**
+ * What sending does to the list of [content]: a message sent now goes to the bottom of the list, which [scrollToNewest]
+ * brings into view. Scheduled ones do not.
+ */
+internal fun scrollingToSent(
+    content: ChatContent,
+    scrollToNewest: () -> Unit,
+): (SendOptions) -> Unit =
+    { options -> if (options.scheduledAt == null && content is ChatContent.Content) scrollToNewest() }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Forum topics (REQUIREMENTS.md FR-C9): the topic list of a forum and the conversation of a topic. -->
+<resources>
+    <!-- The topic list's top bar under the forum's name. -->
+    <plurals name="topics_subtitle">
+        <item quantity="one">%d topic</item>
+        <item quantity="other">%d topics</item>
+    </plurals>
+    <string name="topics_subtitle_forum">Topics</string>
+
+    <!-- The topic list's states. -->
+    <string name="topics_empty_title">No topics yet</string>
+    <string name="topics_empty_body">Topics show here once someone creates one.</string>
+    <string name="topics_error_title">Topics couldn\'t be loaded</string>
+    <string name="topics_more_error">More topics couldn\'t be loaded</string>
+
+    <!-- A topic row's states, for screen readers. %1$d is a count. -->
+    <string name="topic_closed">Closed</string>
+    <string name="topic_pinned">Pinned</string>
+    <plurals name="topic_unread">
+        <item quantity="one">%1$d unread message</item>
+        <item quantity="other">%1$d unread messages</item>
+    </plurals>
+    <plurals name="topic_mentions">
+        <item quantity="one">%1$d mention</item>
+        <item quantity="other">%1$d mentions</item>
+    </plurals>
+
+    <!-- In the composer's place in a closed topic, for members who are not administrators. -->
+    <string name="composer_topic_closed">Only admins can write in this closed topic</string>
+</resources>

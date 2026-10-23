@@ -1,11 +1,23 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
+import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
+import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.PRIVATE_CHAT
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.message
+import dev.kyralabs.pingogram.feature.chat.ui.bot.BotStartInbox
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationConsent
+import dev.kyralabs.pingogram.feature.chat.ui.location.FakeDeviceLocationRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
+import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
+import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -60,17 +72,53 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 chatId = chatId,
                 savedStateHandle = SavedStateHandle(),
                 chatRepository = chats,
-                messageRepository = messages,
+                messages = messages,
                 messageActionRepository = messageActions,
+                sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,
                 fileRepository = files,
+                searchRepository = search,
+                sharedStorageRepository = sharedStorage,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
                 audioPlayer = player,
+                voiceRecorder = FakeVoiceRecorder(),
+                voiceNoteRepository = FakeVoiceNoteRepository(),
+                sendAsRepository = FakeSendAsRepository(),
+                secretChatRepository = FakeSecretChatRepository(),
+                autoDownloadPolicy = autoDownloads,
+                chatJoinRepository = FakeChatJoinRepository(),
+                threadRepositories =
+                    ThreadRepositories(
+                        FakePinnedMessageRepository(),
+                        FakeHiddenPinsRepository(),
+                        FakeForumTopicRepository(),
+                        FakeMessageThreadRepository(),
+                    ),
+                shareInbox = ShareInbox(),
+                botButtonRepository = FakeBotButtonRepository(),
+                botInfoRepository = FakeBotInfoRepository(),
+                botStartInbox = BotStartInbox(),
+                inlineBotRepositories =
+                    InlineBotRepositories(
+                        FakeInlineBotRepository(),
+                        FakeDeviceLocationRepository(),
+                        InlineLocationConsent(),
+                        BotStartInbox(),
+                    ),
+                translationRepositories =
+                    TranslationRepositories(
+                        FakeTranslationRepository(),
+                        FakeDeviceLanguageDetector(),
+                        FakeAppLanguageRepository(),
+                        FakeHiddenTranslateBarsRepository(),
+                    ),
+                searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
+                customEmojiRepository = FakeCustomEmojiRepository(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

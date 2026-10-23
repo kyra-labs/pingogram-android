@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveSession
 import dev.kyralabs.pingogram.core.domain.model.ActiveSessions
 import dev.kyralabs.pingogram.core.domain.repository.SessionRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -285,7 +286,7 @@ private fun ActiveSessions.toState(
  * The row of [this] session: its device, its app and system ("Pingogram 0.3.0 · Android 15", the version alone when
  * it already names the app), and where and when it was last active ("Online" for this device).
  */
-private fun ActiveSession.toItem(
+internal fun ActiveSession.toItem(
     formatter: SettingsTimeFormatter,
     now: Instant,
 ): SessionItem {
@@ -320,7 +321,10 @@ private fun sessionTitle(deviceModel: String): UiText =
     deviceModel.takeIf { it.isNotBlank() }?.let { UiText.Plain(it) }
         ?: UiText.resource(R.string.settings_session_unknown_device)
 
-/** "[first] · [second]", or the one that is not blank. */
+/**
+ * "[first] · [second]", each isolated (`bidiIsolated`): a Hebrew city before an English time no longer swaps them. Or
+ * the one that is not blank, on its own.
+ */
 private fun parts(
     first: UiText,
     second: UiText,
@@ -328,5 +332,5 @@ private fun parts(
     when {
         first is UiText.Plain && first.text.isEmpty() -> second
         second is UiText.Plain && second.text.isEmpty() -> first
-        else -> UiText.resource(R.string.settings_session_parts, first, second)
+        else -> UiText.resource(R.string.settings_session_parts, first.bidiIsolated(), second.bidiIsolated())
     }

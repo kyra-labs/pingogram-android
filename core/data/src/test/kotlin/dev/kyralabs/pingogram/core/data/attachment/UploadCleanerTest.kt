@@ -185,4 +185,42 @@ class UploadCleanerTest {
             assertFalse(old.exists())
             assertTrue(recent.exists())
         }
+
+    @Test
+    fun `a held copy stays after its first message is sent, until a later one is`() =
+        runTest {
+            val cleaner = cleaner()
+            val copy = copy()
+
+            cleaner.hold(listOf(copy.path))
+            emit(updateNewMessage(photoMessage(-1, copy)))
+            emit(updateMessageSendSucceeded(photoMessage(10, copy, state = null), oldMessageId = -1))
+            assertTrue(copy.exists())
+
+            emit(updateNewMessage(photoMessage(-2, copy)))
+            cleaner.release(listOf(copy.path))
+            advanceTimeBy(UploadCleaner.DELETE_GRACE + 1.milliseconds)
+            runCurrent()
+            assertTrue(copy.exists())
+
+            emit(updateMessageSendSucceeded(photoMessage(11, copy, state = null), oldMessageId = -2))
+            assertFalse(copy.exists())
+        }
+
+    @Test
+    fun `a released copy no message uploads is deleted after the grace`() =
+        runTest {
+            val cleaner = cleaner()
+            val copy = copy()
+
+            cleaner.hold(listOf(copy.path))
+            runCurrent()
+            cleaner.release(listOf(copy.path))
+            runCurrent()
+            assertTrue(copy.exists())
+
+            advanceTimeBy(UploadCleaner.DELETE_GRACE + 1.milliseconds)
+            runCurrent()
+            assertFalse(copy.exists())
+        }
 }

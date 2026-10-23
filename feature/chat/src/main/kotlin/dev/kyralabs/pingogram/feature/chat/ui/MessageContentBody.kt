@@ -13,7 +13,6 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
-import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.sharedMediaBounds
 import dev.kyralabs.pingogram.feature.chat.ui.attach.MessageUpload
 import dev.kyralabs.pingogram.feature.chat.ui.content.MediaAlbum
@@ -50,9 +49,11 @@ import kotlinx.collections.immutable.persistentMapOf
  * asks ([isBare], [isEdgeToEdge]; [MessageBubbleRow]); edge-to-edge media is clipped by the bubble, so it is drawn
  * with square corners here.
  *
- * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum]; tapping an item opens it by its own message.
+ * - **Albums** ([ChatItem.Bubble.album]) are one [MediaAlbum] in [mediaShape]; tapping an item opens it by its own
+ *   message.
  * - **Photos, videos and GIFs**, an album's items too, grow into the media viewer and shrink back into the bubble
- *   ([sharedMediaBounds], by their own message), from and to [mediaShape], the corners they show in the bubble.
+ *   ([sharedMediaBounds], by their own message), from and to [mediaShape], the corners they show in the bubble (an
+ *   album's items, theirs in it), which the viewer's side morphs from and back to as well.
  * - **Voice messages, songs and documents** show their file's [fileState]; voice messages and songs also how they
  *   play ([playback]), and send play and seek as events for the ViewModel's player.
  * - **Text messages** show nothing here: the bubble shows their text and link preview itself, as it does the caption
@@ -69,6 +70,8 @@ import kotlinx.collections.immutable.persistentMapOf
  * @param mediaShape the corners edge-to-edge media shows in the bubble, which clips it: the bubble's own where the
  *   media meets its edge, square where a header or a caption follows. The container transform starts and ends there.
  * @param uploads the uploads of the bubble's messages being sent, by message id; empty for the others.
+ * @param mediaDownloads whether photos download by themselves, and the downloads the user asked for: photos the rules
+ *   leave for a tap show a download button ([ChatEvent.DownloadFile], [ChatEvent.CancelDownload]).
  */
 @Composable
 internal fun MessageContentBody(
@@ -80,6 +83,7 @@ internal fun MessageContentBody(
     modifier: Modifier = Modifier,
     mediaShape: CornerBasedShape = MaterialTheme.shapes.large,
     uploads: ImmutableMap<Long, MessageUpload> = persistentMapOf(),
+    mediaDownloads: MediaDownloads = MediaDownloads(),
 ) {
     val album = bubble.album
     val content = bubble.content
@@ -90,15 +94,18 @@ internal fun MessageContentBody(
                 messageIds = album.messageIds,
                 onOpen = { index -> onEvent(ChatEvent.OpenMedia(album.messageIds[index])) },
                 modifier = modifier,
-                shape = RectangleShape,
+                shape = mediaShape,
                 uploads = uploads,
                 onCancelUpload = { messageId -> onEvent(ChatEvent.CancelUpload(listOf(messageId))) },
+                downloads = mediaDownloads,
+                onDownload = { fileId -> onEvent(ChatEvent.DownloadFile(fileId)) },
+                onCancelDownload = { fileId -> onEvent(ChatEvent.CancelDownload(fileId)) },
             )
         }
 
         content.isEdgeToEdge || content.isBare -> {
             Box {
-                MediaContent(bubble.id, content, onEvent, modifier, mediaShape)
+                MediaContent(bubble.id, content, onEvent, modifier, mediaShape, mediaDownloads)
                 uploads[bubble.id]?.let { upload ->
                     MediaUploadProgress(
                         upload = upload,
@@ -123,6 +130,7 @@ internal fun MessageContentBody(
  * Photos, videos and GIFs, edge to edge, sharing their bounds with the media viewer (from [mediaShape]); stickers,
  * animated emoji, dice and video messages, bare.
  */
+@Suppress("LongParameterList") // The message, its content, and how it shows and downloads in the bubble.
 @Composable
 private fun MediaContent(
     messageId: Long,
@@ -130,19 +138,51 @@ private fun MediaContent(
     onEvent: (ChatEvent) -> Unit,
     modifier: Modifier,
     mediaShape: CornerBasedShape,
+    mediaDownloads: MediaDownloads,
 ) {
     val onOpen = { onEvent(ChatEvent.OpenMedia(messageId)) }
     // Only what the viewer shows (no self-destructing media) shares its bounds with it.
-    val shared = modifier.sharedMediaBounds(messageId, mediaShape, FullBleedShape, enabled = content.opensInViewer)
+    val shared = modifier.sharedMediaBounds(messageId, mediaShape, enabled = content.opensInViewer)
     when (content) {
-        is MessageContent.Photo -> MessagePhoto(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.Video -> MessageVideo(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.Animation -> MessageAnimation(content, onOpen, shared, shape = RectangleShape)
-        is MessageContent.VideoNote -> MessageVideoNote(content, onOpen, modifier)
-        is MessageContent.Sticker -> MessageSticker(content, modifier)
-        is MessageContent.AnimatedEmoji -> MessageAnimatedEmoji(content, modifier)
-        is MessageContent.Dice -> MessageDice(content, modifier)
-        else -> Unit
+        is MessageContent.Photo -> {
+            MessagePhoto(
+                content = content,
+                onOpen = onOpen,
+                modifier = shared,
+                shape = RectangleShape,
+                downloads = mediaDownloads,
+                onDownload = { fileId -> onEvent(ChatEvent.DownloadFile(fileId)) },
+                onCancelDownload = { fileId -> onEvent(ChatEvent.CancelDownload(fileId)) },
+            )
+        }
+
+        is MessageContent.Video -> {
+            MessageVideo(content, onOpen, shared, shape = RectangleShape)
+        }
+
+        is MessageContent.Animation -> {
+            MessageAnimation(content, onOpen, shared, shape = RectangleShape)
+        }
+
+        is MessageContent.VideoNote -> {
+            MessageVideoNote(content, onOpen, modifier)
+        }
+
+        is MessageContent.Sticker -> {
+            MessageSticker(content, modifier)
+        }
+
+        is MessageContent.AnimatedEmoji -> {
+            MessageAnimatedEmoji(content, modifier)
+        }
+
+        is MessageContent.Dice -> {
+            MessageDice(content, modifier)
+        }
+
+        else -> {
+            Unit
+        }
     }
 }
 

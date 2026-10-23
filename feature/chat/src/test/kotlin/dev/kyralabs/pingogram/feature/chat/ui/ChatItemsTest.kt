@@ -138,7 +138,7 @@ class ChatItemsTest : ChatViewModelHarness() {
             assertEquals(listOf("m3", "s2", "m1", "date:2026-10-18"), viewModel.outline())
             assertEquals(listOf(GroupPosition.Single, GroupPosition.Single), viewModel.bubbles.map { it.position })
             val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
-            assertEquals(res(UiR.string.preview_joined, UiText.Plain("Ada")), service.text)
+            assertEquals(res(UiR.string.preview_joined, UiText.Plain("\u2068Ada\u2069")), service.text)
         }
 
     @Test
@@ -149,7 +149,11 @@ class ChatItemsTest : ChatViewModelHarness() {
 
             val service = viewModel.items.filterIsInstance<ChatItem.Service>().single()
             assertEquals(
-                res(UiR.string.preview_removed_member, UiText.Plain("Ada"), UiText.Plain("Grace")),
+                res(
+                    UiR.string.preview_removed_member,
+                    UiText.Plain("\u2068Ada\u2069"),
+                    UiText.Plain("\u2068Grace\u2069"),
+                ),
                 service.text,
             )
         }
@@ -381,7 +385,7 @@ class ChatItemsTest : ChatViewModelHarness() {
         }
 
     @Test
-    fun `channels and Saved Messages show no states`() =
+    fun `channels and Saved Messages show no sent or read states`() =
         runTest {
             val channel = showing(channelChat, history(outgoing(1, chatId = channelChat.id)))
             assertNull(channel.bubble(1).status)
@@ -426,10 +430,10 @@ class ChatItemsTest : ChatViewModelHarness() {
 
             assertEquals(
                 listOf(
-                    UiText.Plain("Grace Hopper"),
-                    UiText.Plain("Anonymous"),
-                    res(R.string.chat_forwarded_name_signed, UiText.Plain("News"), "Ed"),
-                    UiText.Plain("News"),
+                    UiText.Plain("\u2068Grace Hopper\u2069"),
+                    UiText.Plain("\u2068Anonymous\u2069"),
+                    res(R.string.chat_forwarded_name_signed, UiText.Plain("\u2068News\u2069"), "\u2068Ed\u2069"),
+                    UiText.Plain("\u2068News\u2069"),
                 ).map { res(R.string.chat_forwarded_from, it) },
                 listOf(1L, 2L, 3L, 4L).map { viewModel.bubble(it).forwardedFrom },
             )
@@ -652,6 +656,31 @@ class ChatItemsTest : ChatViewModelHarness() {
             val viewModel = showing(chat(), history(message(1, content = MessageContent.Text(text("🎉🎉"), null))))
 
             assertTrue(viewModel.bubble(1).isEmojiOnly)
+        }
+
+    @Test
+    fun `a text of a few custom emoji shows large too, as does one mixed with regular emoji`() =
+        runTest {
+            val custom =
+                FormattedText(
+                    "🎉🎉",
+                    persistentListOf(
+                        TextEntity(0, 2, TextEntityType.CustomEmoji(1)),
+                        TextEntity(2, 2, TextEntityType.CustomEmoji(2)),
+                    ),
+                )
+            val mixed = FormattedText("🎉🚀", persistentListOf(TextEntity(0, 2, TextEntityType.CustomEmoji(1))))
+            val viewModel =
+                showing(
+                    chat(),
+                    history(
+                        message(1, content = MessageContent.Text(custom, null)),
+                        message(2, content = MessageContent.Text(mixed, null)),
+                    ),
+                )
+
+            assertTrue(viewModel.bubble(1).isEmojiOnly)
+            assertTrue(viewModel.bubble(2).isEmojiOnly)
         }
 
     @Test
