@@ -52,65 +52,65 @@ private fun GeneralGroup(
     selection: SettingsPageSelection?,
 ) {
     SettingsGroup {
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_appearance),
-                summary = stringResource(R.string.settings_appearance_summary),
-                icon = R.drawable.ic_palette,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.Appearance },
-                onClick = { onOpenPage(SettingsPage.Appearance) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_chat_folders),
-                summary = stringResource(R.string.settings_chat_folders_summary),
-                icon = R.drawable.ic_folder,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.ChatFolders },
-                onClick = { onOpenPage(SettingsPage.ChatFolders) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_stickers),
-                summary = stringResource(R.string.settings_stickers_summary),
-                icon = UiR.drawable.ic_mood,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.Stickers },
-                onClick = { onOpenPage(SettingsPage.Stickers) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_notifications),
-                summary = stringResource(R.string.settings_notifications_summary),
-                icon = UiR.drawable.ic_notifications,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.Notifications },
-                onClick = { onOpenPage(SettingsPage.Notifications) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_data_storage),
-                summary = stringResource(R.string.settings_data_storage_summary),
-                icon = R.drawable.ic_storage,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.DataStorage },
-                onClick = { onOpenPage(SettingsPage.DataStorage) },
-            )
-        }
-        item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_language),
-                summary = stringResource(R.string.settings_language_summary),
-                icon = R.drawable.ic_language,
-                shapes = shapes,
-                selected = selection?.let { it.openPage == SettingsPage.Language },
-                onClick = { onOpenPage(SettingsPage.Language) },
-            )
+        GeneralPages.forEach { page ->
+            item(key = page.page) { shapes ->
+                PageItem(
+                    title = stringResource(page.title),
+                    summary = stringResource(page.summary),
+                    icon = page.icon,
+                    shapes = shapes,
+                    selected = selection?.let { it.openPage == page.page },
+                    onClick = { onOpenPage(page.page) },
+                )
+            }
         }
     }
 }
+
+/** A row of the General group: the [page] it opens, its [title], [summary] and [icon]. */
+private class GeneralPage(
+    val page: SettingsPage,
+    val title: Int,
+    val summary: Int,
+    val icon: Int,
+)
+
+private val GeneralPages =
+    listOf(
+        GeneralPage(
+            SettingsPage.Appearance,
+            R.string.settings_appearance,
+            R.string.settings_appearance_summary,
+            R.drawable.ic_palette,
+        ),
+        GeneralPage(
+            SettingsPage.ChatFolders,
+            R.string.settings_chat_folders,
+            R.string.settings_chat_folders_summary,
+            R.drawable.ic_folder,
+        ),
+        GeneralPage(
+            SettingsPage.Stickers,
+            R.string.settings_stickers,
+            R.string.settings_stickers_summary,
+            UiR.drawable.ic_mood,
+        ),
+        GeneralPage(
+            SettingsPage.Notifications,
+            R.string.settings_notifications,
+            R.string.settings_notifications_summary,
+            UiR.drawable.ic_notifications,
+        ),
+        GeneralPage(
+            SettingsPage.DataStorage,
+            R.string.settings_data_storage,
+            R.string.settings_data_storage_summary,
+            R.drawable.ic_storage,
+        ),
+        GeneralPage(
+            SettingsPage.Language,
+            R.string.settings_language,
+            R.string.settings_language_summary,
+            R.drawable.ic_language,
+        ),
+    )

@@ -23,7 +23,7 @@ internal object StickersPreviewStates {
         name = "set$id",
         count = count,
         // No file reaches previews: the emoji stands in for the picture.
-        cover = Sticker(id, 512, 512, emoji, StickerFormat.Webp, null, FileRef(id.toInt(), 0)),
+        cover = Sticker(id, STICKER_SIDE, STICKER_SIDE, emoji, StickerFormat.Webp, null, FileRef(id.toInt(), 0)),
         isInstalled = isInstalled,
         isBusy = isBusy,
     )
@@ -63,3 +63,6 @@ internal object StickersPreviewStates {
 
     val noArchived = StickerSetListUiState.Content(persistentListOf())
 }
+
+/** Telegram's stickers are 512 px on their longer side. */
+private const val STICKER_SIDE = 512

@@ -62,13 +62,6 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 // The list of Settings → Stickers: Trending stickers and Archived stickers, then the user's sets in their order
 // (dragged into another one by a handle or a long press), each opening its menu.
 
-/** What a set's menu asks for: its link shared, or the set archived or (after a question) removed. */
-internal class StickerSetActions(
-    val onShare: (StickerSetItem) -> Unit,
-    val onArchive: (StickerSetItem) -> Unit,
-    val onRemove: (StickerSetItem) -> Unit,
-)
-
 /** The page's rows; [onOpenList] opens Trending stickers (false) or Archived stickers (true). */
 @Suppress("LongParameterList") // The page's state, its events, its pages, the menu's actions and the list's state.
 @Composable

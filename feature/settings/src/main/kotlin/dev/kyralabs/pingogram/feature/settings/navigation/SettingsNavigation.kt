@@ -141,10 +141,10 @@ private fun NavGraphBuilder.stickerPages(
 
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
- * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and [PrivacySecurityRoute], and the
- * ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute] and [ChatAppearanceRoute] above
- * Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] above Stickers, [NotificationExceptionsRoute] above Notifications,
- * [AutoDownloadRoute] above Data and storage,
+ * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
+ * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute]
+ * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] above
+ * Stickers, [NotificationExceptionsRoute] above Notifications, [AutoDownloadRoute] above Data and storage,
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
