@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.auth.R
 import kotlinx.coroutines.flow.drop
@@ -180,7 +181,13 @@ private fun CountryItem(
                 modifier = Modifier.clearAndSetSemantics {},
             )
         },
-        trailingContent = { Text("+${country.callingCode}", style = MaterialTheme.typography.labelLarge) },
+        // Left to right in every layout: "+44", never "44+".
+        trailingContent = {
+            Text(
+                "+${country.callingCode}",
+                style = MaterialTheme.typography.labelLarge.numericContent,
+            )
+        },
     ) {
         Text(country.name)
     }

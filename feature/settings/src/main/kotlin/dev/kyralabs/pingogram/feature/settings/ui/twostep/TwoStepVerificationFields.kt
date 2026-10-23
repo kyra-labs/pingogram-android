@@ -60,7 +60,7 @@ internal fun TwoStepPasswordField(
                 .semantics { contentType = if (isNewPassword) ContentType.NewPassword else ContentType.Password },
         enabled = spec.enabled,
         label = { Text(spec.label) },
-        supportingText = spec.error?.let { { Text(it) } },
+        supportingText = spec.error?.let { { AnnouncedError(it) } },
         isError = spec.error != null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = spec.imeAction),
         onKeyboardAction = { spec.onAction() },
@@ -86,7 +86,7 @@ internal fun TwoStepTextField(
                 .semantics { if (autofill != null) contentType = autofill },
         enabled = spec.enabled,
         label = { Text(spec.label) },
-        supportingText = spec.error?.let { { Text(it) } },
+        supportingText = spec.error?.let { { AnnouncedError(it) } },
         isError = spec.error != null,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = spec.imeAction),
         onKeyboardAction = { spec.onAction() },
@@ -190,3 +190,9 @@ private const val SECONDS_PER_MINUTE = 60L
 
 /** Rounding up never claims less time than is left. */
 private const val STEP = 15L
+
+/** A field's error, announced as it appears: focus is usually on the button that submitted (`REQUIREMENTS.md` §6.3). */
+@Composable
+private fun AnnouncedError(text: String) {
+    Text(text, Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+}

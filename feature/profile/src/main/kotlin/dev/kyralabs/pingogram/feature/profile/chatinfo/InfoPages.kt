@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
@@ -134,6 +135,7 @@ private fun InfoPageTitle(
         text = title,
         modifier = Modifier.semantics { heading() },
         maxLines = if (expanded) EXPANDED_TITLE_MAX_LINES else 1,
+        overflow = TextOverflow.Ellipsis,
         autoSize = TextAutoSize.StepBased(maxFontSize = style.fontSize),
         style = style,
     )

@@ -14,6 +14,7 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
@@ -33,11 +34,16 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.performToggle
+import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.collections.immutable.ImmutableList
@@ -206,7 +212,8 @@ private fun <T> ConnectedChoices(
  * [RadioButton] and [label], an optional [summary] and [trailingContent]. The whole row selects it, screen readers hear
  * it as a radio button, and the selected one takes the list item's selected container (`secondaryContainer`) and its
  * rounder selected shape. [shapes] places it in its group ([SettingsGroup]); in a [ChoiceRow], [colors] leave the
- * segment's container to show while it is not selected.
+ * segment's container to show while it is not selected. A [labelLanguage] (a BCP 47 tag) marks [label] as text in that
+ * language, a language's own name: it takes its own direction and screen readers read it in that language.
  */
 @Composable
 internal fun RadioItem(
@@ -218,6 +225,7 @@ internal fun RadioItem(
     summary: String? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     colors: ListItemColors = settingsRowColors(),
+    labelLanguage: String? = null,
 ) {
     SegmentedListItem(
         selected = selected,
@@ -229,7 +237,18 @@ internal fun RadioItem(
         supportingContent = summary?.let { { Text(it) } },
         colors = colors,
     ) {
-        Text(label)
+        if (labelLanguage == null) {
+            Text(label)
+        } else {
+            // A language's own name: in its own direction, and read by screen readers in its language.
+            val text =
+                remember(label, labelLanguage) {
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(localeList = LocaleList(labelLanguage))) { append(label) }
+                    }
+                }
+            Text(text, style = LocalTextStyle.current.userContent)
+        }
     }
 }
 

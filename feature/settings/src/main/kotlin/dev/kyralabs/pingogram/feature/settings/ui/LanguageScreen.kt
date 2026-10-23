@@ -165,6 +165,7 @@ private fun LanguageContent(
                     enabled = true,
                     shapes = shapes,
                     onClick = { select(language) },
+                    labelLanguage = language,
                 )
             }
         }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -30,6 +31,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.ChatBoostStatus
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
@@ -89,6 +91,7 @@ internal fun ChatBoostScreen(
 @Composable
 private fun LevelSegment(status: ChatBoostStatus) {
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
+    val resources = LocalResources.current
     val level = stringResource(R.string.boost_level, numbers.format(status.level))
     val boosts = pluralStringResource(R.plurals.boost_count, status.boostCount, numbers.format(status.boostCount))
     val next =
@@ -111,7 +114,7 @@ private fun LevelSegment(status: ChatBoostStatus) {
                     .fillMaxWidth()
                     .background(profileRowContainerColor(), shapes.shape)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = "$level, $boosts. $next"
+                        contentDescription = spokenList(resources, listOf(level, boosts, next))
                         progressBarRangeInfo = ProgressBarRangeInfo(status.levelProgress, 0f..1f)
                     }.padding(MaterialTheme.spacing.large),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),

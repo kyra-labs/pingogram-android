@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
@@ -238,8 +239,11 @@ private fun UsernameRow(
     shapes: ListItemShapes,
     onEvent: (ProfileEvent) -> Unit,
 ) {
+    val copy = stringResource(R.string.profile_copy)
     SegmentedListItem(
         onClick = { onEvent(ProfileEvent.CopyUsername(username)) },
+        // Names what a tap does; the list item's click supplies the action.
+        modifier = Modifier.semantics { onClick(label = copy, action = null) },
         shapes = shapes,
         colors = profileRowColors(),
         supportingContent = { Text(stringResource(R.string.profile_username)) },
@@ -270,8 +274,10 @@ private fun PhoneRow(
 ) {
     val country = LocalConfiguration.current.locales[0].country
     val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
+    val call = stringResource(R.string.profile_call)
     SegmentedListItem(
         onClick = { onEvent(ProfileEvent.CallPhone) },
+        modifier = Modifier.semantics { onClick(label = call, action = null) },
         shapes = shapes,
         colors = profileRowColors(),
         supportingContent = { Text(stringResource(R.string.profile_phone)) },

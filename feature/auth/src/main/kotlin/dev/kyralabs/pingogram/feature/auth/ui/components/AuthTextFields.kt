@@ -18,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,7 +61,8 @@ internal fun AuthCodeField(
         textStyle = if (isNumeric) MaterialTheme.typography.verificationCode else MaterialTheme.typography.titleLarge,
         label = { Text(label) },
         isError = error != null,
-        supportingText = error?.let { { Text(it) } },
+        // Announced as it appears: focus is usually on the button that submitted (`REQUIREMENTS.md` §6.3).
+        supportingText = error?.let { { Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Polite }) } },
         singleLine = true,
         keyboardOptions =
             KeyboardOptions(
@@ -103,7 +106,13 @@ internal fun AuthPasswordField(
         label = { Text(label) },
         trailingIcon = { PasswordVisibilityToggle(isVisible = isVisible, onVisibleChange = { isVisible = it }) },
         isError = isError,
-        supportingText = support?.let { { Text(it) } },
+        supportingText =
+            support?.let {
+                {
+                    // An error is announced as it appears, a hint is not.
+                    Text(it, Modifier.semantics { if (error != null) liveRegion = LiveRegionMode.Polite })
+                }
+            },
         visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
         singleLine = true,
         keyboardOptions =

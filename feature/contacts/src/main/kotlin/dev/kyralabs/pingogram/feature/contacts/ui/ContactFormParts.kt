@@ -44,6 +44,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.graphics.shapes.RoundedPolygon
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.text.durationText
@@ -68,6 +70,7 @@ internal fun ContactFormTopBar(
                 text = title,
                 modifier = Modifier.semantics { heading() },
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleLargeEmphasized,
             )
         },
@@ -178,9 +181,12 @@ internal fun ConnectedChoices(
                     },
                 colors = colors,
             ) {
+                // At large font scales a label wraps rather than being cut (`REQUIREMENTS.md` §6.3).
                 Text(
                     text = label,
-                    maxLines = 1,
+                    maxLines = LABEL_MAX_LINES,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
                     style = if (checked) typography.labelLargeEmphasized else typography.labelLarge,
                 )
             }
@@ -282,3 +288,5 @@ private const val SECONDS_PER_MINUTE = 60L
 
 /** Rounding up never claims less time than is left. */
 private const val STEP = 15L
+
+private const val LABEL_MAX_LINES = 2

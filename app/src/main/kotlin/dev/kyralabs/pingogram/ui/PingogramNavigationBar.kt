@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -161,7 +163,7 @@ internal fun PingogramNavigationBar(
                 Row(
                     Modifier
                         .height(MaterialTheme.sizes.floatingNavigationBar)
-                        .padding(spacing.small)
+                        .padding(horizontal = spacing.small)
                         .selectableGroup(),
                 ) {
                     TopLevelDestination.entries.forEach { destination ->
@@ -226,18 +228,23 @@ private fun NavigationTab(
         targetValue = if (selected) colorScheme.onSecondaryContainer else LocalContentColor.current,
         animationSpec = motionScheme.defaultEffectsSpec(),
     )
+    // The tab takes touches over the pill's whole height (56 dp, `REQUIREMENTS.md` §6.3), its indicator and ripple
+    // drawn inset by the pill's padding.
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier =
             modifier
-                .clip(CircleShape)
-                .tabIndicator(indicatorColor, width = { indicatorWidth.value }, alpha = { indicatorAlpha.value })
                 .selectable(
                     selected = selected,
                     onClick = onClick,
                     role = Role.Tab,
-                    interactionSource = null,
-                    indication = ripple(),
-                ).padding(horizontal = if (selected) spacing.large else spacing.medium),
+                    interactionSource = interactionSource,
+                    indication = null,
+                ).padding(vertical = spacing.small)
+                .clip(CircleShape)
+                .indication(interactionSource, ripple())
+                .tabIndicator(indicatorColor, width = { indicatorWidth.value }, alpha = { indicatorAlpha.value })
+                .padding(horizontal = if (selected) spacing.large else spacing.medium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val iconShown = selected || !showLabel

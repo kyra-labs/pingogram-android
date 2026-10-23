@@ -36,7 +36,10 @@
     need JDK 21 and the build uses JDK 17. A test that needs a newer API sets
     `@Config(sdk = [...])` and must run on JDK 21.
 - Accessibility assertions: `assertHasClickAction`, `assertContentDescriptionEquals` on icon
-  buttons; `AccessibilityChecks` enabled in Compose UI tests.
+  buttons, and `assertAccessible()` (`core:testing`) on every screen's content: each control has a name and a 48 dp
+  touch target, in every window (`<Module>AccessibilityChecksTest`, `docs/audit/accessibility.md`). Google's
+  Accessibility Test Framework (`ui-test-junit4-accessibility`) turns itself off under Robolectric, so it is not used;
+  Accessibility Scanner on a device covers the rest. Color contrast of every theme: `ThemeContrastTest` (`core:ui`).
 - Test names in backticks describing behaviour. One assertion concept per test.
 
 ## Static analysis

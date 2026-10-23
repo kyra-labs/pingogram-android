@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.rememberMorphShape
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -125,6 +127,7 @@ private fun ProfileTitle(
     val typography = MaterialTheme.typography
     val style = if (expanded) typography.displaySmallEmphasized else typography.titleLargeEmphasized
     val verified = stringResource(R.string.profile_badge_verified)
+    val resources = LocalResources.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         if (expanded) {
             ProfileAvatar(header, name, collapsing)
@@ -134,7 +137,7 @@ private fun ProfileTitle(
             modifier =
                 Modifier.semantics(mergeDescendants = true) {
                     heading()
-                    if (header.isVerified) contentDescription = "$name, $verified"
+                    if (header.isVerified) contentDescription = spokenList(resources, listOf(name, verified))
                 },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -194,6 +197,8 @@ private fun ProfileSubtitle(header: ProfileHeader) {
         header.status?.let { status ->
             Text(
                 text = status.resolve(),
+                // At large font scales a long status ends in an ellipsis rather than pushing the labels out.
+                modifier = Modifier.weight(1f, fill = false),
                 color = if (header.isOnline) colors.primary else colors.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

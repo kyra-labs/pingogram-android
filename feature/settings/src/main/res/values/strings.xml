@@ -376,6 +376,8 @@
     <string name="settings_session_password_pending">Waiting for the two-step verification password</string>
     <string name="settings_session_confirm">Yes, it\'s me</string>
     <string name="settings_session_not_me">No, terminate</string>
+    <!-- What tapping another session does, spoken by screen readers ("double-tap to terminate"). -->
+    <string name="settings_session_terminate">Terminate</string>
     <!-- Spoken by screen readers for the progress indicator while a session is terminated or confirmed. -->
     <string name="settings_session_busy">Working on this session</string>
     <string name="settings_new_logins_note">Confirm a login only if it\'s yours. If it isn\'t, terminate it.</string>
