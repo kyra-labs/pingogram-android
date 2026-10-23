@@ -2,6 +2,8 @@
 <resources>
     <!-- The other person while TDLib does not know their name. -->
     <string name="call_someone">Someone</string>
+    <!-- A voice chat's name while its chat's title is not known yet (Android's call list, a car, a watch). -->
+    <string name="voice_chat">Voice chat</string>
 
     <!-- The call's stage under the name (call screen, ongoing notification). -->
     <string name="call_status_requesting">Calling…</string>

@@ -9,6 +9,7 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import io.github.pytgcalls.ConnectionMode
 import io.github.pytgcalls.NTgCalls
 import io.github.pytgcalls.media.AudioDescription
 import io.github.pytgcalls.media.MediaDescription
@@ -17,6 +18,7 @@ import io.github.pytgcalls.media.StreamDevice
 import io.github.pytgcalls.media.StreamMode
 import io.github.pytgcalls.media.VideoDescription
 import io.github.pytgcalls.models.Frame
+import io.github.pytgcalls.models.MediaSegmentPartStatus
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -63,6 +65,9 @@ class NtgCallsEngine
 
         private val sessions = ConcurrentHashMap<Long, NtgCallsSession>()
 
+        /** Voice chats by their NTgCalls id ([groupKey]), apart from [sessions]: TDLib's two kinds of ids may meet. */
+        private val groupSessions = ConcurrentHashMap<Long, NtgGroupCallSession>()
+
         private var instance: NTgCalls? = null
 
         /** NTgCalls, created on [engineThread] with its callbacks the first time a call needs it. */
@@ -72,15 +77,23 @@ class NtgCallsEngine
                 ContextUtils.initialize(context.applicationContext)
                 NTgCalls().also { engine ->
                     engine.onSignalingData { id, data -> sessions[id]?.emitSignaling(data) }
-                    engine.onConnectionChange { id, info -> sessions[id]?.onState(info.state.toMediaState()) }
+                    engine.onConnectionChange { id, info ->
+                        sessions[id]?.onState(info.state.toMediaState())
+                        groupSessions[id]?.onConnection(info.state.toMediaState())
+                    }
                     engine.onRemoteSourceChange { id, source ->
                         if (source.device == StreamDevice.CAMERA) {
                             sessions[id]?.onRemoteVideo(source.state.toRemoteVideo())
                         }
                     }
                     engine.onFrames { id, mode, device, frames ->
-                        if (device == StreamDevice.CAMERA) sessions[id]?.onFrames(mode, frames)
+                        if (device == StreamDevice.CAMERA) {
+                            sessions[id]?.onFrames(mode, frames)
+                            if (mode == StreamMode.PLAYBACK) groupSessions[id]?.onFrames(frames)
+                        }
                     }
+                    engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }
+                    engine.onRequestBroadcastPart { id, part -> groupSessions[id]?.request(part.toStreamRequest()) }
                     instance = engine
                 }
             }
@@ -135,6 +148,27 @@ class NtgCallsEngine
                     // NTgCalls reports every failure as an exception (no matching version, no audio device, …).
                     Log.w(TAG, "Could not connect the call: ${e.javaClass.simpleName}")
                     session.onState(CallMediaState.Failed)
+                }
+                session
+            }
+
+        override suspend fun createGroupCall(
+            groupCallId: Int,
+            muted: Boolean,
+        ): GroupCallSession =
+            withContext(engineThread) {
+                val id = groupKey(groupCallId)
+                val engine = calls()
+                val payload = engine.createCall(id)
+                val session = NtgGroupCallSession(id, payload)
+                groupSessions[id] = session
+                try {
+                    engine.setStreamSources(id, StreamMode.CAPTURE, session.capture())
+                    engine.setStreamSources(id, StreamMode.PLAYBACK, session.playback())
+                    if (muted) engine.mute(id)
+                } catch (e: RuntimeException) {
+                    Log.w(TAG, "Could not open the voice chat's media: ${e.javaClass.simpleName}")
+                    session.onConnection(CallMediaState.Failed)
                 }
                 session
             }
@@ -274,6 +308,139 @@ class NtgCallsEngine
             }
 
             /** Runs [action] on the engine's thread; a failure is logged, as there is nothing the caller could do. */
+            private suspend fun engineCall(
+                what: String,
+                action: () -> Unit,
+            ) = withContext(engineThread) {
+                if (mutableState.value == CallMediaState.Closed) return@withContext
+                try {
+                    action()
+                } catch (e: RuntimeException) {
+                    Log.w(TAG, "NTgCalls failed to $what: ${e.javaClass.simpleName}")
+                }
+            }
+        }
+
+        /** A voice chat or live stream: NTgCalls' group call, keyed by [id]. */
+        @Suppress("TooManyFunctions")
+        private inner class NtgGroupCallSession(
+            private val id: Long,
+            override val joinPayload: String,
+        ) : GroupCallSession {
+            override val audioSourceId: Int = joinPayload.audioSource()
+
+            private val mutableState = MutableStateFlow(CallMediaState.Connecting)
+            override val state: StateFlow<CallMediaState> = mutableState.asStateFlow()
+
+            private val mutableMode = MutableStateFlow<GroupCallMode?>(null)
+            override val mode: StateFlow<GroupCallMode?> = mutableMode.asStateFlow()
+
+            // A stream asks for a few segments a second at most; never blocks NTgCalls' threads.
+            private val requests = Channel<StreamRequest>(Channel.UNLIMITED)
+            override val streamRequests: Flow<StreamRequest> = requests.receiveAsFlow()
+
+            @Volatile private var videoSink: VideoFrameSink? = null
+
+            private val microphoneSource = microphone(isCapture = true)
+            private val speakerSource = microphone(isCapture = false)
+
+            @Volatile private var muted = false
+
+            @Volatile private var onHold = false
+
+            fun capture() = MediaDescription(microphoneSource, null, null, null)
+
+            /** The speaker, and a stream's video while a sink takes it. */
+            fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { videoSink != null }, null)
+
+            fun onConnection(state: CallMediaState) {
+                if (mutableState.value != CallMediaState.Closed) mutableState.value = state
+            }
+
+            fun request(request: StreamRequest) {
+                requests.trySend(request)
+            }
+
+            fun onFrames(frames: List<Frame>) {
+                val sink = videoSink ?: return
+                for (frame in frames) {
+                    val data = frame.frame_data ?: continue
+                    sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
+                }
+            }
+
+            override suspend fun connect(params: String) =
+                withContext(engineThread) {
+                    if (mutableState.value == CallMediaState.Closed) return@withContext
+                    try {
+                        val engine = calls()
+                        engine.connect(id, params, false)
+                        mutableMode.value =
+                            when (engine.getConnectionMode(id)) {
+                                ConnectionMode.STREAM, ConnectionMode.RTMP -> GroupCallMode.Stream
+                                else -> GroupCallMode.Rtc
+                            }
+                    } catch (e: RuntimeException) {
+                        Log.w(TAG, "Could not connect the voice chat: ${e.javaClass.simpleName}")
+                        mutableState.value = CallMediaState.Failed
+                    }
+                }
+
+            override suspend fun setMuted(muted: Boolean) {
+                this.muted = muted
+                applyMicrophone()
+            }
+
+            override suspend fun setOnHold(onHold: Boolean) {
+                this.onHold = onHold
+                engineCall("hold") { if (onHold) calls().pause(id) else calls().resume(id) }
+                applyMicrophone()
+            }
+
+            private suspend fun applyMicrophone() =
+                engineCall("mute") { if (muted || onHold) calls().mute(id) else calls().unmute(id) }
+
+            override suspend fun sendTime(timeMs: Long) =
+                engineCall("send the stream's time") { calls().sendBroadcastTimestamp(id, timeMs) }
+
+            override suspend fun sendSegment(
+                request: StreamRequest.Segment,
+                result: SegmentResult,
+            ) = engineCall("send a stream segment") {
+                val (status, data) =
+                    when (result) {
+                        is SegmentResult.Data -> MediaSegmentPartStatus.SUCCESS to result.bytes
+                        SegmentResult.NotReady -> MediaSegmentPartStatus.NOT_READY to null
+                        SegmentResult.ResyncNeeded -> MediaSegmentPartStatus.RESYNC_NEEDED to null
+                    }
+                calls().sendBroadcastPart(id, request.segmentId, request.partId, status, false, data)
+            }
+
+            override suspend fun setVideoSink(sink: VideoFrameSink?) {
+                val receives = (videoSink != null) != (sink != null)
+                videoSink = sink
+                if (receives) {
+                    engineCall("receive the stream's video") {
+                        calls().setStreamSources(id, StreamMode.PLAYBACK, playback())
+                    }
+                }
+            }
+
+            override suspend fun close() {
+                if (mutableState.value == CallMediaState.Closed) return
+                withContext(engineThread) {
+                    try {
+                        calls().stop(id)
+                    } catch (e: RuntimeException) {
+                        Log.w(TAG, "NTgCalls failed to stop the voice chat: ${e.javaClass.simpleName}")
+                    }
+                }
+                mutableState.value = CallMediaState.Closed
+                videoSink = null
+                groupSessions.remove(id)
+                requests.close()
+            }
+
             private suspend fun engineCall(
                 what: String,
                 action: () -> Unit,

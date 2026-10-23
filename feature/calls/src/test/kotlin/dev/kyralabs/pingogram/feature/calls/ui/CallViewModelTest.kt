@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
+import dev.kyralabs.pingogram.feature.calls.CallLine
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.ENGINE_PROTOCOL
@@ -82,6 +83,7 @@ class CallViewModelTest {
             clock,
             { "Ada" },
             { FakeNetworkRepository() },
+            CallLine(),
             backgroundScope,
         ).also { it.start() }
 

@@ -7,12 +7,14 @@ import android.os.SystemClock
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.result.getOrNull
+import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallTones
 import dev.kyralabs.pingogram.feature.calls.CallerNames
+import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.R
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -80,4 +82,20 @@ internal class UserCallerNames
             return user?.fullName()?.resolve(context.resources)?.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.call_someone)
         }
+    }
+
+/** A chat's title from [ChatRepository]; "Voice chat" while TDLib has not announced the chat. */
+internal class RepositoryChatTitles
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        private val chatRepository: ChatRepository,
+    ) : ChatTitles {
+        override suspend fun title(chatId: Long): String =
+            chatRepository
+                .chat(chatId)
+                .first()
+                ?.title
+                ?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.voice_chat)
     }
