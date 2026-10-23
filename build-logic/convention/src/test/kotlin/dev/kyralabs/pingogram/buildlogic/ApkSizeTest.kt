@@ -20,8 +20,8 @@ class ApkSizeTest {
     }
 
     @Test
-    fun `a universal APK over 125 MB fails`() {
-        assertEquals(1, ApkSize.violations(mapOf(null to 132_000_000L)).size)
+    fun `a universal APK over 123 MB fails`() {
+        assertEquals(1, ApkSize.violations(mapOf(null to 129_000_000L)).size)
     }
 
     @Test
@@ -29,7 +29,7 @@ class ApkSizeTest {
         val report = ApkSize.report(mapOf(null to 126_300_000L, "arm64-v8a" to 50_126_706L, "x86_64" to 57_700_000L))
 
         assertEquals(
-            "arm64-v8a: 47.8 MB (budget 50.0 MB)\nuniversal: 120.4 MB (budget 125.0 MB)\nx86_64: 55.0 MB\n",
+            "arm64-v8a: 47.8 MB (budget 50.0 MB)\nuniversal: 120.4 MB (budget 123.0 MB)\nx86_64: 55.0 MB\n",
             report,
         )
     }

@@ -88,8 +88,10 @@ class NtgCallsEngine
                     }
                     engine.onFrames { id, mode, device, frames ->
                         if (device == StreamDevice.CAMERA) {
-                            sessions[id]?.onFrames(mode, frames)
-                            if (mode == StreamMode.PLAYBACK) groupSessions[id]?.onFrames(frames)
+                            CallTrace.section(CallTrace.FRAMES) {
+                                sessions[id]?.onFrames(mode, frames)
+                                if (mode == StreamMode.PLAYBACK) groupSessions[id]?.onFrames(frames)
+                            }
                         }
                     }
                     engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }

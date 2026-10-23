@@ -8,6 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleStartEffect
+import dev.kyralabs.pingogram.feature.calls.engine.CallTrace
+import dev.kyralabs.pingogram.feature.calls.engine.FrameRateCounter
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import org.webrtc.EglBase
 import org.webrtc.EglRenderer
@@ -65,17 +67,18 @@ private class TextureRenderer(
     TextureView.SurfaceTextureListener {
     private val renderer = EglRenderer(name).apply { init(CallEgl.context, EglBase.CONFIG_PLAIN, GlRectDrawer()) }
     private val pool = ConcurrentLinkedQueue<ByteBuffer>()
+    private val frameRate = FrameRateCounter(name)
 
     override fun onFrame(
         i420: ByteArray,
         width: Int,
         height: Int,
         rotationDegrees: Int,
-    ) {
+    ) = CallTrace.section(CallTrace.FRAME_COPY) {
         val chromaWidth = (width + 1) / 2
         val lumaSize = width * height
         val chromaSize = chromaWidth * ((height + 1) / 2)
-        if (i420.size < lumaSize + chromaSize * 2) return
+        if (i420.size < lumaSize + chromaSize * 2) return@section
         val buffer = obtain(i420.size)
         buffer.put(i420).rewind()
         val planes =
@@ -89,9 +92,11 @@ private class TextureRenderer(
                 buffer.plane(lumaSize + chromaSize, chromaSize),
                 chromaWidth,
             ) { pool.offer(buffer) }
-        val frame = VideoFrame(planes, rotationDegrees, System.nanoTime())
+        val now = System.nanoTime()
+        val frame = VideoFrame(planes, rotationDegrees, now)
         renderer.onFrame(frame)
         frame.release()
+        frameRate.onFrame(now)
     }
 
     /** A pooled buffer of [size] bytes, cleared; buffers of another size (the video's size changed) are dropped. */
