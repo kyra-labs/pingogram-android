@@ -732,17 +732,7 @@ class CallManager
             var reconnected = false
             val sinks = MutableStateFlow(VideoSinks())
 
-            fun videoQuality(): VideoQuality {
-                val status = network
-                val byNetwork =
-                    when {
-                        status == null -> VideoQuality.High
-                        status.savesData || status.type == NetworkType.Roaming -> VideoQuality.Low
-                        status.isMetered || status.type == NetworkType.Mobile -> VideoQuality.Medium
-                        else -> VideoQuality.High
-                    }
-                return if (reconnected && byNetwork == VideoQuality.High) VideoQuality.Medium else byNetwork
-            }
+            fun videoQuality(): VideoQuality = VideoQuality.forNetwork(network, reconnected)
 
             fun sendingCamera(): CallCamera? =
                 if (!wantsCamera || onHold) {
@@ -826,8 +816,8 @@ private data class VideoSinks(
     val remote: VideoFrameSink? = null,
 )
 
-/** The camera a call sends and the most it sends. */
-private data class CameraSource(
+/** The camera a call (or a voice chat) sends and the most it sends. */
+internal data class CameraSource(
     val camera: CallCamera,
     val quality: VideoQuality,
 )

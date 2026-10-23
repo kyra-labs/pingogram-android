@@ -90,7 +90,7 @@ class NtgCallsEngine
                         if (device == StreamDevice.CAMERA) {
                             CallTrace.section(CallTrace.FRAMES) {
                                 sessions[id]?.onFrames(mode, frames)
-                                if (mode == StreamMode.PLAYBACK) groupSessions[id]?.onFrames(frames)
+                                groupSessions[id]?.onFrames(mode, frames)
                             }
                         }
                     }
@@ -343,6 +343,8 @@ class NtgCallsEngine
 
             @Volatile private var videoSink: VideoFrameSink? = null
 
+            @Volatile private var selfSink: VideoFrameSink? = null
+
             private val microphoneSource = microphone(isCapture = true)
             private val speakerSource = microphone(isCapture = false)
 
@@ -350,7 +352,11 @@ class NtgCallsEngine
 
             @Volatile private var onHold = false
 
-            fun capture() = MediaDescription(microphoneSource, null, null, null)
+            private var camera: CallCamera? = null
+            private var quality = VideoQuality.High
+
+            /** The microphone, and the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`). */
+            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
 
             /** The speaker, and a stream's video while a sink takes it. */
             fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { videoSink != null }, null)
@@ -363,8 +369,11 @@ class NtgCallsEngine
                 requests.trySend(request)
             }
 
-            fun onFrames(frames: List<Frame>) {
-                val sink = videoSink ?: return
+            fun onFrames(
+                mode: StreamMode,
+                frames: List<Frame>,
+            ) {
+                val sink = (if (mode == StreamMode.CAPTURE) selfSink else videoSink) ?: return
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
                     sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
@@ -428,6 +437,20 @@ class NtgCallsEngine
                 }
             }
 
+            override suspend fun setCamera(
+                camera: CallCamera?,
+                quality: VideoQuality,
+            ) {
+                if (this.camera == camera && (camera == null || this.quality == quality)) return
+                this.camera = camera
+                this.quality = quality
+                engineCall("set the camera") { calls().setStreamSources(id, StreamMode.CAPTURE, capture()) }
+            }
+
+            override suspend fun setSelfVideoSink(sink: VideoFrameSink?) {
+                selfSink = sink
+            }
+
             override suspend fun close() {
                 if (mutableState.value == CallMediaState.Closed) return
                 withContext(engineThread) {
@@ -439,6 +462,7 @@ class NtgCallsEngine
                 }
                 mutableState.value = CallMediaState.Closed
                 videoSink = null
+                selfSink = null
                 groupSessions.remove(id)
                 requests.close()
             }

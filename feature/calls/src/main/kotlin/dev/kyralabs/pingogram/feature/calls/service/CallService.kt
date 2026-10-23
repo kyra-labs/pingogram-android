@@ -40,8 +40,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Keeps the app running while the user's call rings or goes on, or the user is in a voice chat
  * (`docs/adr/0018-calls-and-telecom.md`, `docs/adr/0023-group-voice-chats-and-live-streams.md`): a foreground
- * service of type `phoneCall`, `microphone` too once the user talks and `camera` while the camera sends
- * (`docs/adr/0019-video-and-group-calls-scope.md`), whose notification is the call's ([CallNotifications], same id). It
+ * service of type `phoneCall`, `microphone` too once the user talks and `camera` while the camera sends, in a call or a
+ * voice chat (`docs/adr/0019-video-and-group-calls-scope.md`, `docs/adr/0024-video-in-voice-chats.md`), whose
+ * notification is the call's ([CallNotifications], same id). It
  * stops when the call ends.
  *
  * While the call's sound comes from the earpiece and no video shows, it holds a proximity wake lock: the screen turns
@@ -79,9 +80,9 @@ class CallService : Service() {
         }
         // The camera's type comes and goes with the camera: startForeground again with the types it needs.
         scope.launch {
-            callManager.call
-                .map { it?.video?.camera != null }
-                .distinctUntilChanged()
+            combine(callManager.call, groupCallManager.call) { call, group ->
+                call?.video?.camera != null || group?.video?.camera != null
+            }.distinctUntilChanged()
                 .drop(1)
                 .collect { on ->
                     camera = on

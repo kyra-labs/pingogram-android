@@ -38,6 +38,9 @@ class GroupCallAccessibilityChecksTest {
     fun connected() = check(GroupCallPreviewStates.connected)
 
     @Test
+    fun camera() = check(GroupCallPreviewStates.camera)
+
+    @Test
     fun raiseHand() = check(GroupCallPreviewStates.raiseHand)
 
     @Test

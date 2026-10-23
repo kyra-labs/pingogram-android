@@ -54,6 +54,7 @@ class FakeGroupCallRepository : GroupCallRepository {
     val started = mutableListOf<Long>()
     val mutes = mutableListOf<MuteRequest>()
     val hands = mutableListOf<Pair<MessageSender, Boolean>>()
+    val videoToggles = mutableListOf<Boolean>()
     val segments = mutableListOf<SegmentRequest>()
     var segment: StreamSegment = StreamSegment.Data(byteArrayOf(7))
 
@@ -112,6 +113,14 @@ class FakeGroupCallRepository : GroupCallRepository {
         return Outcome.Success(Unit)
     }
 
+    override suspend fun setMyVideoEnabled(
+        id: Int,
+        enabled: Boolean,
+    ): Outcome<Unit> {
+        videoToggles += enabled
+        return Outcome.Success(Unit)
+    }
+
     override suspend fun setHandRaised(
         id: Int,
         participant: MessageSender,
@@ -143,6 +152,7 @@ class FakeGroupCallRepository : GroupCallRepository {
 fun groupCall(
     isActive: Boolean = true,
     canBeManaged: Boolean = false,
+    canEnableVideo: Boolean = true,
 ) = GroupCall(
     id = 5,
     title = "",
@@ -157,4 +167,5 @@ fun groupCall(
     recentSpeakers = persistentListOf(),
     muteNewParticipants = false,
     duration = 0,
+    canEnableVideo = canEnableVideo,
 )

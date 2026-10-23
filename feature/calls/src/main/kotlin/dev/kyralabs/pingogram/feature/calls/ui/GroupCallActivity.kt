@@ -67,6 +67,11 @@ class GroupCallActivity : ComponentActivity() {
         CallVideoView(name = "Stream", mirror = false, onSink = viewModel::setVideoSink, modifier = modifier)
     }
 
+    /** The user's own camera (`docs/adr/0024-video-in-voice-chats.md`), drawn as the call screen's self-view. */
+    private val selfVideo: CallVideo = { slot, mirror, modifier ->
+        CallVideoView(name = slot.name, mirror = mirror, onSink = viewModel::setSelfVideoSink, modifier = modifier)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -83,6 +88,20 @@ class GroupCallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
                     viewModel.onEvent(GroupCallEvent.MicrophoneResult(granted, canAskAgain))
                 }
+            val camera =
+                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    val canAskAgain =
+                        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
+                    viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
+                }
+            LaunchedEffect(Unit) {
+                viewModel.effects.collect { effect ->
+                    when (effect) {
+                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
+                        CallEffect.OpenSettings -> openAppSettings()
+                    }
+                }
+            }
             LaunchedEffect(state) { if (state == GroupCallUiState.Closed) finish() }
             val stream = (state as? GroupCallUiState.InCall)?.let { it.isStream && it.hasControls } == true
             LaunchedEffect(stream) { updatePictureInPicture(stream) }
@@ -95,6 +114,7 @@ class GroupCallActivity : ComponentActivity() {
                         onRequestMicrophone = { permissions.launch(CALL_PERMISSIONS) },
                         onOpenSettings = ::openAppSettings,
                         video = video,
+                        selfVideo = selfVideo,
                         pictureInPicture = inPictureInPicture,
                     )
                 }

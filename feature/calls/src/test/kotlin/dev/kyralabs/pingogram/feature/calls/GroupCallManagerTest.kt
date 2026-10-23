@@ -43,7 +43,17 @@ class GroupCallManagerTest {
     private val line = CallLine()
 
     private fun TestScope.manager() =
-        GroupCallManager(repository, engine, system, foreground, clock, { "Book club" }, line, backgroundScope)
+        GroupCallManager(
+            repository,
+            engine,
+            system,
+            foreground,
+            clock,
+            { "Book club" },
+            line,
+            { FakeNetworkRepository() },
+            backgroundScope,
+        )
 
     private fun TestScope.joined(manager: GroupCallManager): FakeGroupCallSession {
         launchNow { manager.join(CHAT_ID) }
@@ -100,7 +110,17 @@ class GroupCallManagerTest {
 
             val free = CallLine()
             val other =
-                GroupCallManager(repository, engine, system, foreground, clock, { "" }, free, backgroundScope)
+                GroupCallManager(
+                    repository,
+                    engine,
+                    system,
+                    foreground,
+                    clock,
+                    { "" },
+                    free,
+                    { FakeNetworkRepository() },
+                    backgroundScope,
+                )
             repository.videoChats.value = emptyMap()
             assertEquals(JoinResult.NoVoiceChat, other.join(CHAT_ID))
             assertTrue(engine.groupSessions.isEmpty())
