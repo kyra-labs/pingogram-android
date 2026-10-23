@@ -230,6 +230,8 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
 
         is TdApi.InternalLinkTypeChatInvite -> LinkTarget.ChatInvite(inviteLink)
 
+        is TdApi.InternalLinkTypeChatFolderInvite -> LinkTarget.ChatFolderInvite(inviteLink)
+
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.
         is TdApi.InternalLinkTypeQrCodeAuthentication -> LinkTarget.QrCodeLogin(link)
 

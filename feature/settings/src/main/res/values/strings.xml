@@ -792,6 +792,29 @@
     <string name="settings_chat_folder_picker_no_results">No chats found</string>
     <string name="settings_chat_folder_picker_done">Done</string>
 
+    <!-- The sheet of a shared folder's link (t.me/addlist/…). %1$s in the titles is the folder's name. -->
+    <string name="folder_invite_title_add">Add the folder “%1$s”?</string>
+    <string name="folder_invite_title_new_chats">New chats in “%1$s”</string>
+    <string name="folder_invite_title_added">You have “%1$s” already</string>
+    <string name="folder_invite_text_add">The folder shows as a tab above your chats. You join the chats you pick.</string>
+    <string name="folder_invite_text_new_chats">Chats were added to this folder since you added it. You join the chats you pick.</string>
+    <string name="folder_invite_text_added">You are in every chat of this folder.</string>
+    <plurals name="folder_invite_new_chats">
+        <item quantity="one">%1$d chat to join</item>
+        <item quantity="other">%1$d chats to join</item>
+    </plurals>
+    <string name="folder_invite_joined_chats">Chats you are in</string>
+    <string name="folder_invite_group">Group</string>
+    <string name="folder_invite_channel">Channel</string>
+    <string name="folder_invite_add">Add folder</string>
+    <string name="folder_invite_join_chats">Join chats</string>
+    <string name="folder_invite_cancel">Cancel</string>
+    <string name="folder_invite_close">Close</string>
+    <string name="folder_invite_try_again">Try again</string>
+    <string name="folder_invite_failed_title">This link doesn\'t open</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is added. -->
+    <string name="folder_invite_adding">Adding the folder</string>
+
     <!-- The icons a folder can have, as screen readers name them. -->
     <string name="settings_chat_folder_icon_all">All chats</string>
     <string name="settings_chat_folder_icon_unread">Unread</string>

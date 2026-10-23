@@ -76,6 +76,16 @@ sealed interface LinkTarget {
     }
 
     /**
+     * A shared chat folder ([inviteLink], `t.me/addlist/…`): its sheet shows the folder and its chats, and asks before
+     * adding the folder and joining the chats the user picks.
+     */
+    data class ChatFolderInvite(
+        val inviteLink: String,
+    ) : LinkTarget {
+        override fun toString() = "ChatFolderInvite(…)"
+    }
+
+    /**
      * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
      * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */

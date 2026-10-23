@@ -493,6 +493,10 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.ChatInvite("https://t.me/+abc"),
                 ),
                 Arguments.of(
+                    TdApi.InternalLinkTypeChatFolderInvite("https://t.me/addlist/abc"),
+                    LinkTarget.ChatFolderInvite("https://t.me/addlist/abc"),
+                ),
+                Arguments.of(
                     TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionQrCode("")),
                     LinkTarget.MyQrCode,
                 ),
@@ -511,7 +515,6 @@ class TdlibLinkRepositoryTest {
                 TdApi.InternalLinkTypePassportDataRequest(),
                 TdApi.InternalLinkTypeStory(),
                 TdApi.InternalLinkTypeVideoChat(),
-                TdApi.InternalLinkTypeChatFolderInvite(),
                 TdApi.InternalLinkTypeInstantView(),
                 TdApi.InternalLinkTypePhoneNumberConfirmation(),
                 TdApi.InternalLinkTypeUnknownDeepLink(LINK),
