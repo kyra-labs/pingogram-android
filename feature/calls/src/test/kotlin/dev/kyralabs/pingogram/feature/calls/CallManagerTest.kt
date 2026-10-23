@@ -41,7 +41,17 @@ class CallManagerTest {
     private val network = FakeNetworkRepository()
 
     private fun TestScope.manager() =
-        CallManager(repository, engine, system, foreground, tones, clock, { "Ada" }, { network }, backgroundScope).also {
+        CallManager(
+            repository,
+            engine,
+            system,
+            foreground,
+            tones,
+            clock,
+            { "Ada" },
+            { network },
+            backgroundScope,
+        ).also {
             it.start()
             runCurrent()
         }
