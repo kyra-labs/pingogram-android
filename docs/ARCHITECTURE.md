@@ -817,6 +817,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   "Hang up" as its `RemoteAction`), the screen showing only the video there. The most the camera sends
   (`VideoQuality`) follows `NetworkRepository`: 720p on Wi-Fi, 480p on mobile data and after the connection was lost
   once, 360p roaming or with Data Saver.
+- **Voice chats and live streams** (`docs/adr/0023-group-voice-chats-and-live-streams.md`): `core:domain`'s
+  `GroupCallRepository` (`TdlibGroupCallRepository`, `core:data`, a `TdlibUpdateCache`) keeps each chat's voice chat
+  (`chat.video_chat`, `updateChatVideoChat`), the group calls (`updateGroupCall`, `getGroupCall` for one not announced)
+  and the participants of the call the user is in (`updateGroupCallParticipant`; an empty `order` drops one), and wraps
+  `createVideoChat`, `joinVideoChat`, `leaveGroupCall`, `endGroupCall`, the mute and hand toggles and a live stream's
+  `getGroupCallStreams` / `getGroupCallStreamSegment`. The engine's group call (`CallEngine.createGroupCall`,
+  `GroupCallSession`) makes the join payload, connects with TDLib's answer and asks for a stream's time and one-second
+  segments (`StreamRequest`). **`GroupCallManager`** (`:feature:calls`) is its state machine beside `CallManager`
+  (`ActiveGroupCall`: joining, connected, reconnecting, ended; muted, may unmute, hand raised, may end): it joins muted
+  as the chat's default participant, tells TDLib when the user unmutes, follows an administrator's mute, leaves, ends
+  the call for everyone, and answers a stream's requests from TDLib. It shares Telecom (`SystemCallRequest.voiceChat`,
+  `pingogram:chat/<id>`) and the foreground service, and `CallLine` keeps one call at a time across both managers: an
+  incoming one-to-one call during a voice chat is declined.
 
 ## Home screen widget
 

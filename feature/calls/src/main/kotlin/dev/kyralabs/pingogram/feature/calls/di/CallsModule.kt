@@ -9,9 +9,11 @@ import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallForeground
 import dev.kyralabs.pingogram.feature.calls.CallTones
 import dev.kyralabs.pingogram.feature.calls.CallerNames
+import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.NtgCallsEngine
 import dev.kyralabs.pingogram.feature.calls.service.CallService
+import dev.kyralabs.pingogram.feature.calls.service.RepositoryChatTitles
 import dev.kyralabs.pingogram.feature.calls.service.SystemCallClock
 import dev.kyralabs.pingogram.feature.calls.service.ToneGeneratorCallTones
 import dev.kyralabs.pingogram.feature.calls.service.UserCallerNames
@@ -22,7 +24,7 @@ import dev.kyralabs.pingogram.feature.calls.ui.AndroidMicrophoneAccess
 import dev.kyralabs.pingogram.feature.calls.ui.CameraAccess
 import dev.kyralabs.pingogram.feature.calls.ui.MicrophoneAccess
 
-/** The call manager's parts on the device: the engine, Telecom, the service, the tones, the clock and the names. */
+/** The call managers' parts on the device: the engine, Telecom, the service, the tones, the clock and the names. */
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface CallsModule {
@@ -40,6 +42,9 @@ internal interface CallsModule {
 
     @Binds
     fun callerNames(names: UserCallerNames): CallerNames
+
+    @Binds
+    fun chatTitles(titles: RepositoryChatTitles): ChatTitles
 
     @Binds
     fun microphoneAccess(access: AndroidMicrophoneAccess): MicrophoneAccess

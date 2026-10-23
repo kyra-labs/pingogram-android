@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The media of one-to-one calls (`docs/adr/0015-call-media-engine.md`, video in
- * `docs/adr/0019-video-and-group-calls-scope.md`): what moves the audio and video once TDLib has signaled a call and
- * agreed on its key. `NtgCallsEngine` in production, a fake in tests; nothing else in the app touches the engine's
- * library.
+ * The media of calls (`docs/adr/0015-call-media-engine.md`, video in `docs/adr/0019-video-and-group-calls-scope.md`,
+ * voice chats and live streams in `docs/adr/0023-group-voice-chats-and-live-streams.md`): what moves the audio and
+ * video once TDLib has signaled a call and agreed on its key, or joined a voice chat. `NtgCallsEngine` in production,
+ * a fake in tests; nothing else in the app touches the engine's library.
  */
 interface CallEngine {
     /**
@@ -30,6 +30,103 @@ interface CallEngine {
         isOutgoing: Boolean,
         connection: CallConnection,
     ): CallSession
+
+    /**
+     * Opens the microphone and the speaker for voice chat [groupCallId] and makes its join payload, which TDLib's
+     * `joinVideoChat` takes (`docs/adr/0023-group-voice-chats-and-live-streams.md`). The microphone starts [muted] or
+     * not. Loads the engine's library like [protocol]. The session runs until [GroupCallSession.close].
+     */
+    suspend fun createGroupCall(
+        groupCallId: Int,
+        muted: Boolean,
+    ): GroupCallSession
+}
+
+/** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
+interface GroupCallSession {
+    /** The join payload for `joinVideoChat` (JSON), and the microphone's audio source (SSRC) in it. */
+    val joinPayload: String
+    val audioSourceId: Int
+
+    val state: StateFlow<CallMediaState>
+
+    /**
+     * What the call is, once connected: a voice chat ([GroupCallMode.Rtc]) or a stream received in segments
+     * ([GroupCallMode.Stream]); null before. Telegram may turn a voice chat into a stream.
+     */
+    val mode: StateFlow<GroupCallMode?>
+
+    /**
+     * A live stream's requests, while the call is a stream: the engine asks for the stream's current time, then for
+     * each one-second segment, which [sendTime] and [sendSegment] answer. Hot; without a collector they wait.
+     */
+    val streamRequests: Flow<StreamRequest>
+
+    /** Connects with the call's parameters (JSON) from `joinVideoChat`. */
+    suspend fun connect(params: String)
+
+    /** Stops sending the microphone, or starts again. */
+    suspend fun setMuted(muted: Boolean)
+
+    /** Stops sending and playing while another call holds the line (Telecom's hold), or starts again. */
+    suspend fun setOnHold(onHold: Boolean)
+
+    /** Answers [StreamRequest.Time]: the stream's newest time (ms), or 0 when it has none yet (asked again later). */
+    suspend fun sendTime(timeMs: Long)
+
+    /** Answers [request] with its segment's [data], or with why there is none. */
+    suspend fun sendSegment(
+        request: StreamRequest.Segment,
+        result: SegmentResult,
+    )
+
+    /** Where a live stream's video goes, on the engine's threads; null to stop receiving it. */
+    suspend fun setVideoSink(sink: VideoFrameSink?)
+
+    /** Leaves the media and frees the microphone and the speaker. Idempotent. */
+    suspend fun close()
+}
+
+/** How a group call reaches the device. */
+enum class GroupCallMode {
+    /** A voice chat: everyone sends and receives through Telegram's servers. */
+    Rtc,
+
+    /** A large call or a live stream: received as segments Telegram recorded, nothing sent. */
+    Stream,
+}
+
+/** What a live stream asks for (NTgCalls' `onRequestBroadcastTimestamp` and `onRequestBroadcastPart`). */
+sealed interface StreamRequest {
+    data object Time : StreamRequest
+
+    /**
+     * Segment [segmentId], part [partId], which starts at [timeMs] on [channelId] (0: the audio) in [quality] (null for
+     * the audio).
+     */
+    data class Segment(
+        val segmentId: Long,
+        val partId: Int,
+        val timeMs: Long,
+        val channelId: Int,
+        val quality: StreamQuality?,
+    ) : StreamRequest
+}
+
+/** A live stream's video quality, as the engine asks for it. */
+enum class StreamQuality { Thumbnail, Medium, Full }
+
+/** The answer to a [StreamRequest.Segment]. */
+sealed interface SegmentResult {
+    class Data(
+        val bytes: ByteArray,
+    ) : SegmentResult
+
+    /** Telegram has not recorded it yet: the engine asks again shortly. */
+    data object NotReady : SegmentResult
+
+    /** The time is too far off: the engine asks for the stream's time again. */
+    data object ResyncNeeded : SegmentResult
 }
 
 /** One connected call of a [CallEngine]. */

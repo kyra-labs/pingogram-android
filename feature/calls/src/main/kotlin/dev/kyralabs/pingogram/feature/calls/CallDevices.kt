@@ -1,7 +1,8 @@
 package dev.kyralabs.pingogram.feature.calls
 
 /**
- * What [CallManager] does to the device around a call, behind small seams so its tests run on the JVM:
+ * What [CallManager] and [GroupCallManager] do to the device around a call, behind small seams so their tests run on
+ * the JVM:
  * the foreground service ([CallForeground]), the ringback and busy tones ([CallTones]) and the clock ([CallClock]).
  */
 interface CallForeground {
@@ -33,4 +34,9 @@ fun interface CallClock {
 /** The name of a user as the system's UI, a car or a watch shows it. */
 fun interface CallerNames {
     suspend fun name(userId: Long): String
+}
+
+/** The title of a voice chat's chat, as the system's UI, a car or a watch shows it. */
+fun interface ChatTitles {
+    suspend fun title(chatId: Long): String
 }

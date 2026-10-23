@@ -8,6 +8,7 @@ import androidx.core.app.Person
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.result.getOrNull
+import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.text.fullName
 import dev.kyralabs.pingogram.core.ui.text.resolve
@@ -24,6 +25,8 @@ import javax.inject.Inject
  *   choice), the caller leaves it out and the notification shows as a heads-up notification.
  * - **Ongoing** ([ongoing]): the call the user is in, outgoing ringing included, with "Hang up" and the call's timer
  *   once connected, in the silent [PingogramChannel.OngoingCalls]; the foreground service's notification.
+ * - **Voice chat** ([voiceChat], `docs/adr/0023-group-voice-chats-and-live-streams.md`): the voice chat or live stream
+ *   the user is in, as an ongoing call with the chat as its person and "Leave", in the same channel.
  *
  * `feature:calls` hands in the intents: this module does not know its activity and receiver.
  */
@@ -32,6 +35,7 @@ class CallNotificationBuilder
     internal constructor(
         @param:ApplicationContext private val context: Context,
         private val userRepository: UserRepository,
+        private val chatRepository: ChatRepository,
         private val avatars: AvatarIcons,
     ) {
         suspend fun incoming(
@@ -78,6 +82,29 @@ class CallNotificationBuilder
                     }
                 }.build()
 
+        /** The voice chat of chat [chatId] the user is in: [status] says where it is; the timer once connected. */
+        suspend fun voiceChat(
+            chatId: Long,
+            status: String,
+            connectedAtWallMillis: Long?,
+            content: PendingIntent,
+            leave: PendingIntent,
+        ): Notification =
+            base(PingogramChannel.OngoingCalls, content)
+                .setStyle(NotificationCompat.CallStyle.forOngoingCall(chatPerson(chatId), leave))
+                .setContentText(status)
+                .setSilent(true)
+                .setOnlyAlertOnce(true)
+                .apply {
+                    if (connectedAtWallMillis != null) {
+                        setWhen(connectedAtWallMillis)
+                        setUsesChronometer(true)
+                        setShowWhen(true)
+                    } else {
+                        setShowWhen(false)
+                    }
+                }.build()
+
         private fun base(
             channel: PingogramChannel,
             content: PendingIntent,
@@ -89,6 +116,19 @@ class CallNotificationBuilder
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
+
+        /** A voice chat's chat, as the call style's person: its title and photo. */
+        private suspend fun chatPerson(chatId: Long): Person {
+            val chat = chatRepository.chat(chatId).first()
+            val name =
+                chat?.title?.takeIf { it.isNotBlank() } ?: context.getString(R.string.call_notification_voice_chat)
+            return Person
+                .Builder()
+                .setName(name)
+                .setIcon(avatars.icon(chat?.photo, chatId, name))
+                .setImportant(true)
+                .build()
+        }
 
         private suspend fun person(userId: Long): Person {
             val user = userRepository.user(userId).first() ?: userRepository.getUser(userId).getOrNull()

@@ -6,9 +6,13 @@ import dev.kyralabs.pingogram.core.domain.model.CallServerType
 import io.github.pytgcalls.ConnectionState
 import io.github.pytgcalls.VideoRotation
 import io.github.pytgcalls.media.StreamStatus
+import io.github.pytgcalls.models.MediaSegmentQuality
+import io.github.pytgcalls.models.SegmentPartRequest
 import io.github.pytgcalls.p2p.Protocol
 import io.github.pytgcalls.p2p.RTCServer
 import kotlinx.collections.immutable.toImmutableList
+import org.json.JSONException
+import org.json.JSONObject
 
 /** What NTgCalls speaks, as TDLib's `callProtocol`. */
 internal fun Protocol.toCallProtocol(): CallProtocol =
@@ -72,3 +76,36 @@ internal fun VideoRotation?.toDegrees(): Int =
         VideoRotation.VIDEO_ROTATION_270 -> 270
         VideoRotation.VIDEO_ROTATION_0, null -> 0
     }
+
+/**
+ * NTgCalls' id of voice chat [groupCallId]: above every id of a one-to-one call, which TDLib numbers apart from group
+ * calls, so the two never meet in NTgCalls.
+ */
+internal fun groupKey(groupCallId: Int): Long = GROUP_KEY_BASE + groupCallId
+
+private const val GROUP_KEY_BASE = 1L shl 32
+
+/** The microphone's audio source (SSRC) in NTgCalls' join payload (`{"ssrc": 1234, …}`); 0 if it has none. */
+@Suppress("SwallowedException") // An unreadable payload has no SSRC; TDLib then refuses the join, which says so.
+internal fun String.audioSource(): Int =
+    try {
+        JSONObject(this).optInt("ssrc")
+    } catch (e: JSONException) {
+        0
+    }
+
+/** A live stream's part request as the call manager answers it. */
+internal fun SegmentPartRequest.toStreamRequest(): StreamRequest.Segment =
+    StreamRequest.Segment(
+        segmentId = segment_id,
+        partId = part_id,
+        timeMs = timestamp,
+        channelId = channel_id,
+        quality =
+            when (quality) {
+                MediaSegmentQuality.THUMBNAIL -> StreamQuality.Thumbnail
+                MediaSegmentQuality.MEDIUM -> StreamQuality.Medium
+                MediaSegmentQuality.FULL -> StreamQuality.Full
+                MediaSegmentQuality.NONE, null -> null
+            },
+    )
