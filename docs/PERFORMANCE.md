@@ -69,7 +69,8 @@ regresses by more than 10%.
 - Updates fan-out: repositories collect `updates` on `Dispatchers.Default`, apply to in-memory
   maps, and emit **immutable snapshots** (persistent collections: `kotlinx.collections.immutable`).
 - Never keep more than the visible chat's messages in memory; evict other chats' message
-  caches with an LRU of 3 chats; `onTrimMemory(TRIM_MEMORY_RUNNING_LOW)` clears all caches.
+  caches with an LRU of 3 chats; `onTrimMemory` (`PingogramApplication`, from `TRIM_MEMORY_UI_HIDDEN` on: the running
+  levels are deprecated since Android 14 and no longer sent) drops the history of every chat no screen observes.
 
 ## 4. Compose performance
 

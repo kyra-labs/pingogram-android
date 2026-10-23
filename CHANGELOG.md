@@ -64,6 +64,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   scrolling, and flinging back, has less to do in each frame.
 
 ### Fixed
+- Unencrypted web traffic is now refused on Android 8 and 9 too, as later versions already did. Pingogram never
+  used any; this makes sure no part of it can.
 - The pinned messages bar counted its messages backwards. It now counts from the oldest, as the chat shows them, so
   the newest pinned message is "5 of 5" with its mark at the bottom, and the list of pinned messages starts with the
   oldest. The bar now also follows the chat as you scroll: it shows the pinned message just above what is on screen,
