@@ -17,6 +17,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Delete account: Settings → Privacy and security → Delete account deletes your Telegram account, after your 2-step
   verification password where you set one and a confirmation, and signs out. The same page sets how long your account
   may stay unused before Telegram deletes it (1 to 24 months).
+- Chat folders: Settings → Chat folders lists your folders as the tabs above your chats show them. Create a folder,
+  rename it, give it an icon, choose the chats and kinds of chats (contacts, groups, channels, bots…) it shows and
+  those it leaves out (muted, read, archived), or delete it. Drag a folder by its handle, or touch and hold it, to
+  move its tab. Telegram's suggested folders can be added with one tap. Links to Telegram's folder settings open
+  the page too.
 
 ## [0.5.0] - 2026-10-23
 

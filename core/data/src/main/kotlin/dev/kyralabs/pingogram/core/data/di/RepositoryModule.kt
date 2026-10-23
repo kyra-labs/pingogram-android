@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatFolderRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatJoinRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
@@ -77,6 +78,7 @@ import dev.kyralabs.pingogram.core.domain.repository.CallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -242,6 +244,9 @@ interface RepositoryModule {
 
     @Binds
     fun sessionRepository(repository: TdlibSessionRepository): SessionRepository
+
+    @Binds
+    fun chatFolderRepository(repository: TdlibChatFolderRepository): ChatFolderRepository
 
     @Binds
     fun accountRepository(repository: TdlibAccountRepository): AccountRepository

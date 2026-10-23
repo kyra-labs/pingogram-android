@@ -44,6 +44,16 @@ data object SettingsRoute
 @Serializable
 data object EditProfileRoute
 
+/** The user's chat folders (`REQUIREMENTS.md` FR-L3), their order and the folders Telegram suggests. */
+@Serializable
+data object ChatFoldersRoute
+
+/** Editing chat folder [folderId], or a new folder with null, pushed above [ChatFoldersRoute]. */
+@Serializable
+data class ChatFolderEditRoute(
+    val folderId: Int? = null,
+)
+
 /**
  * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast,
  * `:feature:settings`, pushed above the Settings tab.

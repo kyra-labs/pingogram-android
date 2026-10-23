@@ -8,6 +8,10 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
@@ -69,6 +73,29 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun deleteAccountConfirmation() =
         check { DeleteAccountScreen(state = DeleteAccountPreviewStates.confirming, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun chatFolders() =
+        check {
+            ChatFoldersScreen(state = ChatFoldersPreviewStates.content, onEvent = {}, onOpenFolder = {}, onBack = {})
+        }
+
+    @Test
+    fun chatFolderEdit() =
+        check {
+            ChatFolderEditScreen(state = ChatFolderEditPreviewStates.editing, picker = null, onEvent = {}, onBack = {})
+        }
+
+    @Test
+    fun chatFolderPicker() =
+        check {
+            ChatFolderEditScreen(
+                state = ChatFolderEditPreviewStates.editing,
+                picker = ChatFolderEditPreviewStates.picker,
+                onEvent = {},
+                onBack = {},
+            )
+        }
 
     @Test
     fun notifications() =
