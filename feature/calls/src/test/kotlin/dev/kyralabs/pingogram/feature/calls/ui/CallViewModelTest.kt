@@ -262,6 +262,47 @@ class CallViewModelTest {
         }
 
     @Test
+    fun `a video call is made as one with the camera on where it is allowed`() =
+        runTest(dispatcher) {
+            camera.granted = true
+            val handle = videoCallHandle()
+
+            val viewModel = viewModel(manager(), CallActivity.ACTION_START, handle = handle)
+            runCurrent()
+
+            assertEquals(listOf(true), repository.startedVideo)
+            assertEquals(CameraFacing.Front, viewModel.inCall().video.camera)
+        }
+
+    @Test
+    fun `a video call without the camera's permission calls, asks for the camera, and turns it on once allowed`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            val effects = mutableListOf<CallEffect>()
+
+            val viewModel = viewModel(manager, CallActivity.ACTION_START, handle = videoCallHandle())
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            assertEquals(listOf(false), repository.startedVideo)
+            assertEquals(listOf<CallEffect>(CallEffect.RequestCamera), effects)
+
+            camera.granted = true
+            viewModel.onEvent(CallEvent.CameraResult(granted = true, canAskAgain = true))
+            runCurrent()
+
+            assertEquals(CameraFacing.Front, viewModel.inCall().video.camera)
+        }
+
+    private fun videoCallHandle() =
+        SavedStateHandle(
+            mapOf(
+                CallActivity.EXTRA_ACTION to CallActivity.ACTION_START,
+                CallActivity.EXTRA_USER_ID to 42L,
+                CallActivity.EXTRA_VIDEO to true,
+            ),
+        )
+
+    @Test
     fun `a device without a camera offers none`() =
         runTest(dispatcher) {
             camera.hasCamera = false

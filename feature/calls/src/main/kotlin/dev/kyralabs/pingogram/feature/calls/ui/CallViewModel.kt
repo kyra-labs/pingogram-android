@@ -56,6 +56,7 @@ class CallViewModel
     ) : ViewModel() {
         private val action: String = savedStateHandle[CallActivity.EXTRA_ACTION] ?: CallActivity.ACTION_SHOW
         private val startUserId: Long? = savedStateHandle.get<Long>(CallActivity.EXTRA_USER_ID)?.takeIf { it != 0L }
+        private val startWithVideo: Boolean = savedStateHandle.get<Boolean>(CallActivity.EXTRA_VIDEO) == true
 
         /** The permission step: the user to call or answer, and whether Android would still ask. */
         private val permissionStep = MutableStateFlow<PermissionStep?>(null)
@@ -230,9 +231,18 @@ class CallViewModel
             }
         }
 
+        /**
+         * Calls [userId]; a video call with the camera on where it is allowed, otherwise calling first and asking for
+         * the camera, which [CallEvent.CameraResult] then turns on.
+         */
         private suspend fun call(userId: Long) {
             savedStateHandle[KEY_DONE] = true
-            callManager.startCall(userId)
+            val video = startWithVideo && hasCamera
+            val cameraAllowed = camera.isGranted()
+            if (video && !cameraAllowed && savedStateHandle.get<Boolean>(KEY_CAMERA_REFUSED) != true) {
+                effectChannel.trySend(CallEffect.RequestCamera)
+            }
+            callManager.startCall(userId, withVideo = video && cameraAllowed)
         }
 
         /** Answers, a video call with the camera on where it is allowed already (otherwise the user turns it on). */
