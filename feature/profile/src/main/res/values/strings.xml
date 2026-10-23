@@ -149,6 +149,11 @@
         <item quantity="one">%1$s subscriber</item>
         <item quantity="other">%1$s subscribers</item>
     </plurals>
+    <!-- Joins the group's or channel's voice chat (docs/adr/0023-group-voice-chats-and-live-streams.md). -->
+    <string name="chat_info_action_voice_chat">Voice chat</string>
+    <string name="chat_info_action_live_stream">Live stream</string>
+    <!-- Starts a voice chat in the group or channel, for administrators who may. -->
+    <string name="chat_info_action_start_voice_chat">Start voice chat</string>
     <string name="chat_info_action_leave">Leave</string>
 
     <!-- Information rows; each label goes under its value. -->

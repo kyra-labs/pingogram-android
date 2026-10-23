@@ -67,4 +67,30 @@
     <string name="call_not_now">Not now</string>
     <string name="call_continue">Continue</string>
     <string name="call_open_settings">Open settings</string>
+    <!-- The voice chat's screen (docs/adr/0023-group-voice-chats-and-live-streams.md). -->
+    <string name="group_call_joining">Joining…</string>
+    <!-- A live stream's notification while the user watches it. -->
+    <string name="group_call_status_stream">Live stream</string>
+    <string name="group_call_left">You left</string>
+    <string name="group_call_ended">The voice chat ended</string>
+    <string name="group_call_busy">End your call first to join the voice chat.</string>
+    <string name="group_call_no_voice_chat">This voice chat has ended.</string>
+    <!-- The user's own row among the participants: "Ada (you)". -->
+    <string name="group_call_you">%1$s (you)</string>
+    <string name="group_call_speaking">Speaking</string>
+    <string name="group_call_listening">Listening</string>
+    <string name="group_call_muted">Muted</string>
+    <!-- A muted participant who asks to speak. -->
+    <string name="group_call_hand_raised">Wants to speak</string>
+    <!-- Asks an administrator to let the user speak. -->
+    <string name="group_call_raise_hand">Raise hand</string>
+    <string name="group_call_leave">Leave</string>
+    <string name="group_call_end">End voice chat</string>
+    <string name="group_call_end_stream">End live stream</string>
+    <string name="group_call_end_title">End the voice chat?</string>
+    <string name="group_call_end_stream_title">End the live stream?</string>
+    <string name="group_call_end_text">It ends for everyone in it.</string>
+    <string name="group_call_end_confirm">End</string>
+    <string name="group_call_cancel">Cancel</string>
+    <string name="group_call_microphone_rationale">To speak in the voice chat, Pingogram needs the microphone. You join muted, and nothing is sent until you unmute.</string>
 </resources>

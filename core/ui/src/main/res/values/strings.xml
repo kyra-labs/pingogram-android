@@ -262,4 +262,20 @@
     <!-- What separates the parts of a description screen readers read as one ("Alice, online, Admin"): a comma and a
          space in English. The quotes keep the space; translate the punctuation inside them. -->
     <string name="list_separator">", "</string>
+    <!-- The bar of a chat's voice chat at the top of its conversation (docs/adr/0023-group-voice-chats-and-live-streams.md). -->
+    <string name="voice_chat_bar_title">Voice chat</string>
+    <string name="voice_chat_bar_live_stream">Live stream</string>
+    <!-- %s: the number, formatted for the language ("1,284"). -->
+    <plurals name="voice_chat_bar_participants">
+        <item quantity="one">%s participant</item>
+        <item quantity="other">%s participants</item>
+    </plurals>
+    <plurals name="voice_chat_bar_watching">
+        <item quantity="one">%s watching</item>
+        <item quantity="other">%s watching</item>
+    </plurals>
+    <!-- Joins the voice chat or live stream. -->
+    <string name="voice_chat_bar_join">Join</string>
+    <!-- Opens the voice chat the user is in. -->
+    <string name="voice_chat_bar_open">Open</string>
 </resources>

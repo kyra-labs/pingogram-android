@@ -42,9 +42,12 @@ internal fun Modifier.avatarSelection(
     animationSpec: FiniteAnimationSpec<Float>,
 ): Modifier = this then AvatarSelectionElement(selected, avatarShape, mark, animationSpec)
 
-/** What a selected avatar shows: [check] in [checkColor] on its shape in [containerColor]. */
+/**
+ * What a selected avatar shows: [check] in [checkColor] on its shape in [containerColor]; [check] is null while the
+ * avatar has never been selected, so nothing draws it.
+ */
 internal data class SelectedMark(
-    val check: Painter,
+    val check: Painter?,
     val containerColor: Color,
     val checkColor: Color,
 )
@@ -134,9 +137,10 @@ private class AvatarSelectionNode(
         }
         drawPath(selectionPath(shown), mark.containerColor, alpha = shown)
         val iconSize = size.minDimension * CHECK_SIZE_RATIO * value.coerceAtLeast(0f)
+        val check = mark.check ?: return
         translate(left = (size.width - iconSize) / 2, top = (size.height - iconSize) / 2) {
             with(
-                mark.check,
+                check,
             ) { draw(Size(iconSize, iconSize), alpha = shown, colorFilter = ColorFilter.tint(mark.checkColor)) }
         }
     }

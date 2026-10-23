@@ -863,6 +863,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the call for everyone, and answers a stream's requests from TDLib. It shares Telecom (`SystemCallRequest.voiceChat`,
   `pingogram:chat/<id>`) and the foreground service, and `CallLine` keeps one call at a time across both managers: an
   incoming one-to-one call during a voice chat is declined.
+  Its screen is `GroupCallActivity` (in the call screen's task, not exported) with `GroupCallViewModel` (the voice chat,
+  its chat through `GroupCallChats`, the participants named from `UserRepository`, the timer; the microphone's
+  permission step in the `SavedStateHandle`) and `GroupCallScreen`, which shares the call screen's controls
+  (`CallControls.kt`) and theme. `CallService` and `CallNotifications` follow whichever call is under way; the voice
+  chat's notification (`CallNotificationBuilder.voiceChat`) has "Leave" (`CallActionReceiver`). A live stream's video
+  goes to the screen's `CallVideoView` (`GroupCallManager.setVideoSink`) and on in picture-in-picture. The features
+  reach voice chats through `core:ui`'s `VoiceChats` (`LocalVoiceChats`, provided by `:app` from `Calls`): the
+  conversation's `VoiceChatBarSlot` at the top of its sheet and the info page's "Voice chat" pill.
 
 ## Home screen widget
 

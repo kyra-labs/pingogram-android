@@ -402,6 +402,7 @@ class ChatInfoViewModel internal constructor(
                     canClearHistory = info.kind != GroupKind.Channel,
                     isBusy = overlay.isBusy,
                     canExport = !chat.hasProtectedContent,
+                    canStartVoiceChat = rights.canManageVideoChats,
                 ),
             members = membersPreview(info, now),
             administration =
