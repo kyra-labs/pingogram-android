@@ -17,7 +17,9 @@ import dev.kyralabs.pingogram.feature.calls.service.ToneGeneratorCallTones
 import dev.kyralabs.pingogram.feature.calls.service.UserCallerNames
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.TelecomCallSystem
+import dev.kyralabs.pingogram.feature.calls.ui.AndroidCameraAccess
 import dev.kyralabs.pingogram.feature.calls.ui.AndroidMicrophoneAccess
+import dev.kyralabs.pingogram.feature.calls.ui.CameraAccess
 import dev.kyralabs.pingogram.feature.calls.ui.MicrophoneAccess
 
 /** The call manager's parts on the device: the engine, Telecom, the service, the tones, the clock and the names. */
@@ -41,6 +43,9 @@ internal interface CallsModule {
 
     @Binds
     fun microphoneAccess(access: AndroidMicrophoneAccess): MicrophoneAccess
+
+    @Binds
+    fun cameraAccess(access: AndroidCameraAccess): CameraAccess
 
     companion object {
         @Provides

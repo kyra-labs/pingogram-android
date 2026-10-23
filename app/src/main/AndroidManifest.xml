@@ -81,10 +81,12 @@
     <uses-feature
         android:name="android.hardware.location.network"
         android:required="false" />
-    <!-- The in-app QR code scanner, its only use (REQUIREMENTS.md FR-P5, approved by the owner on 2026-10-21,
+    <!-- The in-app QR code scanner (REQUIREMENTS.md FR-P5, approved by the owner on 2026-10-21,
          docs/adr/0012-camerax-and-zxing-qr-scanner.md): asked at run time when the scanner opens, after it says why.
          Frames are read for QR codes on the device by ZXing while the scanner shows, and dropped; nothing the camera
-         sees is kept or sent, only the text of a Telegram link reaches TDLib. Devices without a camera still install
+         sees is kept or sent, only the text of a Telegram link reaches TDLib. And video calls (FR-V2, approved for 1:1
+         video, docs/adr/0019-video-and-group-calls-scope.md): asked when the user turns the camera on in a call; the
+         video goes to the other person only, end-to-end encrypted, and is not kept. Devices without a camera still install
          Pingogram and scan from an image (the photo picker, no permission). The CAMERA permission implies a required
          back camera with autofocus, so those are declared optional too. -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -102,8 +104,9 @@
          2026-10-22. RECORD_AUDIO above is asked for again before the first call or answer, after the call screen says
          why. MANAGE_OWN_CALLS: Pingogram is a self-managed calling app in Android's Telecom, so the system UI,
          Bluetooth headsets, cars and watches know its calls, and a phone call puts one on hold. The call's foreground
-         service runs as phoneCall while a call rings or goes on, and as microphone too once the user talks
-         (FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE). USE_FULL_SCREEN_INTENT shows an incoming call
+         service runs as phoneCall while a call rings or goes on, as microphone too once the user talks, and as camera
+         while the user's camera sends video (FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE,
+         FOREGROUND_SERVICE_CAMERA). USE_FULL_SCREEN_INTENT shows an incoming call
          over the lock screen; Android 14+ lets the user take it back, and the call then rings as a heads-up
          notification. BLUETOOTH_CONNECT (Android 12+, asked with the microphone) names Bluetooth headsets the call can
          move to. MODIFY_AUDIO_SETTINGS sets the call's audio mode and route where the device has no Telecom. Telecom's
@@ -111,6 +114,7 @@
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

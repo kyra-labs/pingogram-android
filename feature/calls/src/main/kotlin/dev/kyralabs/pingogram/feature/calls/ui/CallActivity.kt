@@ -67,6 +67,20 @@ class CallActivity : ComponentActivity() {
                         )
                     viewModel.onEvent(CallEvent.MicrophoneResult(granted, canAskAgain))
                 }
+            val camera =
+                rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                    val canAskAgain =
+                        ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
+                    viewModel.onEvent(CallEvent.CameraResult(granted, canAskAgain))
+                }
+            LaunchedEffect(Unit) {
+                viewModel.effects.collect { effect ->
+                    when (effect) {
+                        CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
+                        CallEffect.OpenSettings -> openAppSettings()
+                    }
+                }
+            }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
             settings?.let { appearanceSettings ->
                 CallTheme(appearanceSettings) {
@@ -77,6 +91,7 @@ class CallActivity : ComponentActivity() {
                         onRequestMicrophone = { permissions.launch(CALL_PERMISSIONS) },
                         onOpenSettings = ::openAppSettings,
                         onMessage = ::declineAndMessage,
+                        video = video,
                     )
                 }
             }
@@ -88,6 +103,16 @@ class CallActivity : ComponentActivity() {
         setIntent(intent)
         // "Answer" from the notification while the screen already shows the ringing call.
         if (intent.action == ACTION_ANSWER) viewModel.onEvent(CallEvent.Answer)
+    }
+
+    /** The call's video, drawn by WebRTC's renderer ([CallVideoView]), its frames from the call manager. */
+    private val video: CallVideo = { slot, mirror, modifier ->
+        CallVideoView(
+            name = slot.name,
+            mirror = mirror,
+            onSink = { sink -> viewModel.setVideoSink(slot, sink) },
+            modifier = modifier,
+        )
     }
 
     @Composable
