@@ -25,6 +25,7 @@ sealed interface PrivacySecurityUiState {
      * @property sessionCount how many sessions the account has, this one included.
      * @property twoStepVerification whether a 2-step verification password is set.
      * @property passcodeLock whether the passcode lock is on, on this device.
+     * @property accountTtlDays how many days without coming online Telegram waits before it deletes the account.
      */
     data class Content(
         val rules: ImmutableMap<PrivacySetting, PrivacyRules>,
@@ -32,6 +33,7 @@ sealed interface PrivacySecurityUiState {
         val sessionCount: Int,
         val twoStepVerification: TwoStepVerificationSummary,
         val passcodeLock: Boolean = false,
+        val accountTtlDays: Int = DEFAULT_ACCOUNT_TTL_DAYS,
     ) : PrivacySecurityUiState
 }
 
@@ -71,4 +73,9 @@ sealed interface PrivacySecurityPage {
     data object TwoStepVerification : PrivacySecurityPage
 
     data object PasscodeLock : PrivacySecurityPage
+
+    data object DeleteAccount : PrivacySecurityPage
 }
+
+/** Telegram's default period before it deletes an unused account: 6 months. */
+internal const val DEFAULT_ACCOUNT_TTL_DAYS = 180

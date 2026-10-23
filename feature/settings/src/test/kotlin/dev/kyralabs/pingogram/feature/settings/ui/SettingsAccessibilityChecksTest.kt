@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -59,6 +61,14 @@ class SettingsAccessibilityChecksTest {
                 onBack = {},
             )
         }
+
+    @Test
+    fun deleteAccount() =
+        check { DeleteAccountScreen(state = DeleteAccountPreviewStates.withPassword, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun deleteAccountConfirmation() =
+        check { DeleteAccountScreen(state = DeleteAccountPreviewStates.confirming, onEvent = {}, onBack = {}) }
 
     @Test
     fun notifications() =

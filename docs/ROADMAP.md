@@ -114,8 +114,9 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 - [ ] Localization: at least 5 languages. The pipeline is in (Hosted Weblate, #152, `docs/TRANSLATING.md`); no
       language is translated yet
 - [x] Google Play readiness for `gms` (`docs/PLAY_STORE.md`, #153)
-- [ ] Google Play listing (the owner, `docs/PLAY_STORE.md` §8), and deleting the account from the app, which Play
-      requires
+- [ ] Google Play listing (the owner, `docs/PLAY_STORE.md` §8). Deleting the account from the app, which Play requires,
+      is in (Settings → Privacy and security → Delete account); its web page (`docs/website/delete-account.md`) waits
+      for the owner to publish it on the Pingogram website
 - [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes.
   - Done:
     - the fastlane listing: texts, icon, feature graphic, screenshots;

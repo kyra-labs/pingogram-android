@@ -688,4 +688,33 @@
         <item quantity="one">Without a username, this code works for %1$s more hour.</item>
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
+
+    <!-- Delete account (Google Play's account deletion policy, docs/PLAY_STORE.md), a page of Privacy and security -->
+    <string name="settings_section_account">Account</string>
+    <string name="settings_delete_account">Delete account</string>
+    <!-- The row's summary on Privacy and security. %1$s is a period such as "6 months". -->
+    <string name="settings_delete_account_summary">Or automatically if away for %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_delete_account_loading">Loading account settings</string>
+    <string name="settings_delete_account_section_ttl">Delete my account if away for</string>
+    <string name="settings_delete_account_ttl_footer">If you don\'t come online at least once in this time, Telegram deletes your account and everything in it.</string>
+    <plurals name="settings_delete_account_ttl_months">
+        <item quantity="one">%1$s month</item>
+        <item quantity="other">%1$s months</item>
+    </plurals>
+    <plurals name="settings_delete_account_ttl_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="settings_delete_account_section_now">Delete now</string>
+    <string name="settings_delete_account_what_is_lost">Your account is deleted from Telegram on every device, for good: your messages and media, your contacts, your settings and your secret chats. It can\'t be undone, and nothing can be brought back.</string>
+    <string name="settings_delete_account_what_stays">Messages you sent stay with the people and groups who received them, from a deleted account. Groups and channels you created stay without their owner; their admins keep their rights.</string>
+    <string name="settings_delete_account_sign_up_again">You can sign up with the same phone number again later, as a new account.</string>
+    <string name="settings_delete_account_reason">Why are you leaving? (optional)</string>
+    <string name="settings_delete_account_password_text">Enter your 2-step verification password to confirm.</string>
+    <!-- Spoken by screen readers for the progress indicator while the account is being deleted. -->
+    <string name="settings_delete_account_deleting">Deleting your account</string>
+    <string name="settings_delete_account_dialog_title">Delete your account?</string>
+    <string name="settings_delete_account_dialog_text">Your account and everything in it is deleted on every device, for good. This can\'t be undone.</string>
+    <string name="settings_delete_account_dialog_confirm">Delete account</string>
 </resources>

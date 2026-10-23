@@ -162,6 +162,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
   pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
   leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
+- **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
+  (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
+  the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
+  reason and the 2-step verification password, waiting as long as authentication requests). TDLib then closes the
+  session by itself (`LoggingOut`, `Closed`), which the app handles as a logout. `feature:settings`' `DeleteAccountRoute`
+  (`DeleteAccountViewModel`, above Privacy and security, which shows the period on its row) offers Telegram's periods
+  (1 to 24 months, and one another app set) and deletes behind a destructive `AlertDialog`; what is typed stays in the
+  page. The web page Play asks for is `docs/website/delete-account.md`.
 - **Secret chats** (FR-E1): TDLib does all of the cryptography and accepts the secret chats other users start by itself
   (td_api.tl has no function for it). `SecretChatRepository` (`core:domain`, `TdlibSecretChatRepository` in `core:data`,
   a `TdlibUpdateCache`: TDLib announces each secret chat once with `updateSecretChat`, before its chat) keeps every
