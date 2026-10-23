@@ -141,12 +141,6 @@
         android:theme="@style/Theme.Pingogram.Starting"
         tools:targetApi="tiramisu">
 
-        <!-- Android Auto takes the conversation notifications (MessagingStyle with Reply and Mark as read) to the car's
-             screen: a declaration Android Auto reads, no Google Play services library (docs/ANDROID_AUTO.md). -->
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
-
         <!-- singleTask: a Telegram link from another app opens in Pingogram's own task, through onNewIntent when it runs,
              not in a second copy of the app inside the other app's task (docs/adr/0013-deep-links.md). -->
         <activity

@@ -746,9 +746,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MainActivity`, and `ShareTargetShortcuts` (started by `PingogramApplication`) publishes the 8 most recent chats of
   the main chat list where the user can write, Saved Messages left out, 5 s after they last changed (Direct share,
   below). No bubbles yet (they need a resizable chat activity of their own).
-- Android Auto and Wear OS take these notifications as they are (`docs/ANDROID_AUTO.md`): `:app` declares Android
-  Auto's notification use (`res/xml/automotive_app_desc.xml`, a meta-data name, no library), and the `MessagingStyle`,
-  Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car screen, no watch app.
+- Android Auto and Wear OS take these notifications as they are (`docs/ANDROID_AUTO.md`): `:app`'s `gms` flavor declares
+  Android Auto's notification use (`res/xml/automotive_app_desc.xml`, a meta-data name, no library), and the
+  `MessagingStyle`, Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car
+  screen, no watch app.
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go

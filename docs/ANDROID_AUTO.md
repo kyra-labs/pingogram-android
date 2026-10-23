@@ -7,13 +7,16 @@ templates), no Wear OS app (`REQUIREMENTS.md` §1.2). Nothing here needs a permi
 ## What Pingogram does
 
 - **Android Auto** shows the notifications of messaging apps in the car, reads them aloud and takes voice replies,
-  when the app declares it (`app/src/main/AndroidManifest.xml`: the meta-data `com.google.android.gms.car.application`
-  pointing at `res/xml/automotive_app_desc.xml`, which uses `notification` only). The name is Android Auto's; the app
-  gains no Google Play services library by it, so the `foss` flavor declares it too.
+  when the app declares it (`app/src/gms/AndroidManifest.xml`: the meta-data `com.google.android.gms.car.application`
+  pointing at `res/xml/automotive_app_desc.xml`, which uses `notification` only; `AndroidAutoManifestTest`). The name
+  is Android Auto's and brings no library, but the `foss` flavor declares no Google name at all
+  (`GoogleFreeManifestTest`), so only `gms` has it. Android Auto itself needs Google Play services. Whether `foss` should
+  declare it too, for `foss` installs on phones that have Android Auto, is the owner's call: it is one line in the main
+  manifest, and the Google-free check would have to allow that one name.
 - **Wear OS** shows a phone's notifications on the watch by itself; watches take the same `MessagingStyle`, the Reply
   action (voice, keyboard, smart replies) and Mark as read.
 - Both read the conversation notifications of `core:notifications` (`ConversationNotificationBuilder`), which follow
-  Android Auto's rules for messaging apps (checked by `AndroidAutoNotificationTest`; the manifest by `AppManifestTest`):
+  Android Auto's rules for messaging apps (checked by `AndroidAutoNotificationTest`):
   - `NotificationCompat.MessagingStyle` with the user as a named `Person` ("You") and a named `Person` for each
     sender; group chats as group conversations with their title;
   - a **Reply** action with a `RemoteInput`, `SEMANTIC_ACTION_REPLY`, `setShowsUserInterface(false)` and generated
@@ -64,7 +67,7 @@ The DHU's `--help` lists its options (night mode, input with the keyboard as the
 
 None of this can be checked in CI, which has no Android Auto, no DHU and no Telegram account on a phone:
 
-- **The DHU run above**, on the owner's phone, with a build from this branch (`foss` or `gms`).
+- **The DHU run above**, on the owner's phone, with a `gms` build from this branch.
 - **A real car** (or a head unit) with Android Auto, wired or wireless, once: car head units differ from the DHU in
   how they show actions and read messages, and some show Mark as read twice (see above).
 - **A Wear OS watch** paired with the phone: a message notification shows on the watch with the conversation, Reply

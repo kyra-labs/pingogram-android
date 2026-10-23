@@ -365,24 +365,6 @@ class AppManifestTest {
         assertEquals("false", telecom.androidAttribute("required"))
     }
 
-    @Test
-    fun `Android Auto takes the conversation notifications, and nothing else of the app`() {
-        val application = mergedManifest().elements("application").single()
-        val auto =
-            application.elements("meta-data").single {
-                it.androidAttribute("name") == "com.google.android.gms.car.application"
-            }
-        assertEquals("@xml/automotive_app_desc", auto.androidAttribute("resource"))
-        val uses = mutableListOf<String>()
-        val parser = RuntimeEnvironment.getApplication().resources.getXml(R.xml.automotive_app_desc)
-        while (parser.next() != XmlPullParser.END_DOCUMENT) {
-            if (parser.eventType == XmlPullParser.START_TAG && parser.name == "uses") {
-                uses += parser.getAttributeValue(null, "name")
-            }
-        }
-        assertEquals(listOf("notification"), uses)
-    }
-
     private companion object {
         /** What the test libraries (androidx.test's activity scenarios) add to the unit tests' manifest only. */
         val TEST_ONLY_PERMISSIONS = setOf("android.permission.REORDER_TASKS")
