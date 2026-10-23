@@ -99,3 +99,42 @@ jobs:
             **/build/reports/**
             **/build/test-results/**
           retention-days: 7
+
+  # The APK size budget (docs/PERFORMANCE.md §1, §8): the foss APKs built as a release is (R8, resource shrinking),
+  # signed with the debug key so no release credentials are needed; arm64-v8a at most 50 MB, universal 125 MB. Its own
+  # job, beside build, so the build's tests do not wait for R8.
+  apk-size:
+    name: apk size
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # Placeholders: the size does not depend on the values, and secrets are unavailable to forks.
+      - name: Write secrets.properties
+        run: |
+          printf 'TELEGRAM_API_ID=%s\nTELEGRAM_API_HASH=%s\n' 0 00000000000000000000000000000000 > secrets.properties
+
+      - name: Check the APK size budget
+        run: ./gradlew :app:checkFossBenchmarkReleaseApkSize --stacktrace --no-daemon
+
+      - name: Upload the size report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-size
+          path: app/build/reports/apk-size/
+          retention-days: 14

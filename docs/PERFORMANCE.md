@@ -17,7 +17,7 @@ regresses by more than 10%.
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
-| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`) | CI assert on release |
+| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`) | CI on every pull request and release (§8) |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
@@ -174,6 +174,20 @@ regresses by more than 10%.
   APK at the first text instead of inflating all 4 MB into memory. Subsetting would not shrink it:
   the file covers Latin only, and 3.6 MB of it is variation data (`gvar`).
 - `android:extractNativeLibs="false"`; uncompressed 16 KB-aligned `.so`.
+- The budget of §1 is checked twice, with the same limits. Each pull request runs the `apk size` job of `ci.yml`
+  (`:app:checkFossBenchmarkReleaseApkSize`, build-logic's `ApkSize`), so a change that grows the APK past its budget
+  fails before it merges. Each release checks the APKs it publishes, both flavors (`release.yml`, "Check APK sizes").
+  A change to a budget changes both. The job builds `fossBenchmarkRelease`, which shrinks as `release` does, signed
+  with the debug key. A megabyte is 1,048,576 bytes, as GitHub's release pages and the Bot API's 50 MB limit count it.
+  - Measured 2026-10-22 (`foss`): arm64-v8a 47.8 MB, universal 120.7 MB, armeabi-v7a 39.0 MB, x86_64 55.0 MB.
+  - What takes the space: the native libraries, stored uncompressed: `libntgcalls.so` (the call engine, 20.5 MB on
+    arm64-v8a) and `libtdjni.so` (16.7 MB), both already stripped. Then the code (5.5 MB of dex) and the resources
+    (4.4 MB, Google Sans Flex's 4 MB among them).
+  - Compressing the native libraries (`useLegacyPackaging = true`) would bring arm64-v8a to about 28 MB. Android
+    would then extract them at install, about 37 MB more on the device, and load them more slowly; `docs/TDLIB.md`
+    keeps them uncompressed.
+  - arm64-v8a has 2.2 MB left. The next large addition (video calls, `docs/adr/0019-video-and-group-calls-scope.md`)
+    needs the budget looked at again.
 - TDLib database and files live in `filesDir` (excluded from backup), cache limit setting
   (default 4 GB) enforced via `optimizeStorage`.
 
