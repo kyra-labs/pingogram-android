@@ -270,6 +270,23 @@ regresses by more than 10%.
   Startup has ample room. Both lists drop more than 10% of their frames at 120 Hz: the chat list misses its P90, the
   conversation its jank rate. The profile helps startup (−27% cold) but not scrolling, whose code the JIT compiles
   within a run.
+- v0.5.0 (2026-10-23, same phone and method, with the profile regenerated in #175: 72,428 baseline / 71,664 startup
+  rules). Late frames: share of frames with `frameOverrunMs` > 0; stutter: > 16 ms late.
+
+  | Benchmark | Profile | None | Change vs 2026-10-22 (profile) |
+  |---|---|---|---|
+  | Cold start, `timeToFullDisplay` (`timeToInitialDisplay`) | 517 ms (372 ms) | 752 ms (487 ms) | +6% (none +13%) |
+  | Warm start, `timeToFullDisplay` (`timeToInitialDisplay`) | 171 ms (100 ms) | 226 ms (130 ms) | +26% (none +30%) |
+  | Chat list scroll, `frameDurationCpuMs` P50 / P90 / P99 | 6.0 / 10.0 / 14.4 ms | 6.4 / 9.6 / 13.0 ms | about the same |
+  | Chat list scroll, `frameOverrunMs` P90 / P99; late; stutter | 4.7 / 11.0 ms; 65%; 0.36% | 3.9 / 8.7 ms; 76%; 0.34% | about the same |
+  | Conversation scroll, `frameDurationCpuMs` P50 / P90 / P99 | 5.9 / 8.5 / 11.7 ms | 4.7 / 7.6 / 11.5 ms | P99 −26% |
+  | Conversation scroll, `frameOverrunMs` P90 / P99; late; stutter | 2.5 / 6.0 ms; 59%; 0.05% | 1.5 / 9.0 ms; 37%; 0% | P90 −71% |
+
+  Startup stays far inside its budget but grew past the 10% regression line, warm start most: M4–M6 added work to
+  the start (calls, themes, stories, the passcode check); to be traced. The conversation now meets its CPU budget and
+  rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
+  its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
+  under ~10% may be thermal.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.
