@@ -420,6 +420,7 @@ class ChatInfoViewModel internal constructor(
                     canViewBoosts = info.kind != GroupKind.BasicGroup,
                     canEditSettings = rights.canChangeInfo || info.myRole is MemberRole.Owner,
                     isChannel = info.kind == GroupKind.Channel,
+                    joinRequestCount = info.pendingJoinRequests.takeIf { it > 0 && rights.canInviteUsers },
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )
