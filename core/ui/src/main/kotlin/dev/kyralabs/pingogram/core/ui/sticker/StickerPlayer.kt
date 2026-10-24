@@ -50,15 +50,29 @@ internal class StickerPlayer(
     ) {
         while (true) {
             awaitOnScreen(windowInfo, requestDraw)
-            stickers.slots.withPermit { playWhile { windowInfo.isWindowFocused } }
+            stickers.slots.withPermit { playWhile { windowInfo.isWindowFocused && !stickers.still.value } }
+            if (stickers.still.value) showFirstFrame()
         }
     }
 
-    /** Returns once the window has the focus and the frames were drawn after asking for it. */
+    /** Power saving turned on: back to the first frame, which stays until it is off again. */
+    private suspend fun showFirstFrame() {
+        frame = 0
+        val index = next
+        withContext(stickers.renderDispatcher) {
+            val bitmap = buffers[index] ?: createBitmap(width, height).also { buffers[index] = it }
+            renderer.render(frame, bitmap)
+        }
+        show(images[index] ?: checkNotNull(buffers[index]).asImageBitmap().also { images[index] = it })
+        next = 1 - index
+    }
+
+    /** Returns once power saving lets it play, the window has the focus and the frames were drawn after asking. */
     private suspend fun awaitOnScreen(
         windowInfo: WindowInfo,
         requestDraw: () -> Unit,
     ) {
+        stickers.still.first { !it }
         snapshotFlow { windowInfo.isWindowFocused }.first { it }
         val drawn = draws.value
         requestDraw()

@@ -126,6 +126,13 @@ data object LanguageRoute
 data object DataStorageRoute
 
 /**
+ * Power saving (Settings → Power saving): when it is on, following Battery Saver or always, and what it turns off,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object PowerSavingRoute
+
+/**
  * What downloads by itself on one kind of network, pushed above [DataStorageRoute]. [network] is the name of an
  * `AutoDownloadNetwork` of `:core:domain`, which this module does not depend on.
  */

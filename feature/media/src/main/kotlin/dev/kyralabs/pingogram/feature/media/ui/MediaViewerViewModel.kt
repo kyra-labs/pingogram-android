@@ -17,10 +17,12 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.PowerSaving
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
@@ -82,7 +84,8 @@ import javax.inject.Inject
  *   cancelled. The files of the shown item and its neighbours are followed into [MediaViewerUiState.Content.files].
  * - **Playback** ([MediaPlayback]): the current item's video or GIF plays on the one [VideoPlayer] once its file is
  *   on the device and the screen is started; it pauses when the page changes or the screen stops, and the player is
- *   released with the view model.
+ *   released with the view model. While power saving turns autoplay off (`PowerSaving.noAutoplay`), it waits for a
+ *   tap on its play button instead.
  * - **Spoilers**: hidden until tapped ([MediaViewerEvent.RevealSpoiler]), except the opened item's.
  * - **Share, Save and Copy** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's
  *   file goes to the share sheet ([MediaViewerEffect.ShareFile]), into the gallery through the
@@ -120,6 +123,7 @@ class MediaViewerViewModel internal constructor(
     private val videoPlayer: VideoPlayer,
     sharedStorage: SharedStorageRepository,
     private val pictureInPicture: PictureInPictureVideos,
+    powerSaving: Flow<PowerSaving> = flowOf(PowerSaving.None),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -136,6 +140,7 @@ class MediaViewerViewModel internal constructor(
         videoPlayer: VideoPlayer,
         sharedStorage: SharedStorageRepository,
         pictureInPicture: PictureInPictureVideos,
+        powerSaving: PowerSavingPolicy,
     ) : this(
         savedStateHandle.toRoute<MediaViewerRoute>(),
         savedStateHandle,
@@ -152,6 +157,7 @@ class MediaViewerViewModel internal constructor(
         videoPlayer,
         sharedStorage,
         pictureInPicture,
+        powerSaving.inEffect,
     )
 
     private val chatId = route.chatId
@@ -286,6 +292,7 @@ class MediaViewerViewModel internal constructor(
             downloads.cancelAll(files.value, applicationScope)
         }
         viewModelScope.launch { mediaRepository.deletedMessages(chatId).collect(::onDeleted) }
+        viewModelScope.launch { powerSaving.collect { playback.setAutoplay(!it.noAutoplay) } }
         viewModelScope.launch {
             combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
         }

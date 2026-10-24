@@ -701,13 +701,13 @@ private fun CallAvatar(
 
 /**
  * The avatar's angle while [ringing]: a ninth of a turn (one lobe of the cookie) every [RING_TURN_MILLIS], read in the
- * draw phase. It stays where it is once the call is answered, at 0 with reduced motion, and where infinite animations
- * are off (UI tests).
+ * draw phase. It stays where it is once the call is answered, at 0 with reduced motion or power saving
+ * ([LocalStillCallAnimations]), and where infinite animations are off (UI tests).
  */
 @Composable
 private fun rememberRingTurn(ringing: Boolean): () -> Float {
     val rotation = remember { Animatable(0f) }
-    val animate = ringing && !isReducedMotion()
+    val animate = ringing && !isReducedMotion() && !LocalStillCallAnimations.current
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     LaunchedEffect(animate, spec) {
         if (!animate) return@LaunchedEffect
