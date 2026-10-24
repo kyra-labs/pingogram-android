@@ -84,19 +84,21 @@ internal class DismissState {
 
     /**
      * A drag ended with [velocity] (pixels per second) on a page [height] pixels tall: [onDismiss] if it went past a
-     * [DISMISS_HEIGHT_FRACTION] of the page or was flung on that way, else the content springs back on [spec].
+     * [DISMISS_HEIGHT_FRACTION] of the page or was flung on that way, or [onSwipeUp] for an upward one where there is
+     * one (a playing video goes into picture-in-picture); else the content springs back on [spec].
      */
     fun onDragStopped(
         velocity: Float,
         height: Float,
         spec: AnimationSpec<Float>,
         scope: CoroutineScope,
+        onSwipeUp: (() -> Unit)? = null,
         onDismiss: () -> Unit,
     ) {
         val farEnough = abs(dragOffset) > height * DISMISS_HEIGHT_FRACTION
         val flung = abs(velocity) > height * FLING_HEIGHTS_PER_SECOND && sign(velocity) == sign(dragOffset)
         if (farEnough || flung) {
-            dismiss(onDismiss)
+            dismiss(if (dragOffset < 0 && onSwipeUp != null) onSwipeUp else onDismiss)
         } else {
             settling =
                 scope.launch {
