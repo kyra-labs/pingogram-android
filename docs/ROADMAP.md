@@ -89,11 +89,12 @@ the release workflow so the owner can install and test on a phone.
 
 - [x] 1:1 video calls (`docs/adr/0019-video-and-group-calls-scope.md`): camera, self-view, switch camera, camera on
       and off, picture-in-picture, lower resolutions on mobile data, roaming, Data Saver and weak connections
-- [ ] Video call buttons in the conversation's top bar and the profile (`Calls.videoCall(userId)`; the chat screens'
-      and the profile's owners)
+- [x] Video call buttons in the conversation's top bar and the profile: one call button with a voice and video menu
+      (owner, 2026-10-23), and "Call back" keeping the call's kind
 - [ ] The video frame path measured on a device (CPU and memory during a 720p call, `docs/PERFORMANCE.md`)
-- [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
-- [ ] Live streams: watching
+- [x] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin (`docs/adr/0023-group-voice-chats-and-live-streams.md`;
+      who is speaking from Telegram's recent speakers until the owner decides on audio levels)
+- [x] Live streams: watching, with picture-in-picture (ADR 0023)
 
 ## M6 — Polish → `v1.0.0`
 
@@ -114,8 +115,9 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 - [ ] Localization: at least 5 languages. The pipeline is in (Hosted Weblate, #152, `docs/TRANSLATING.md`); no
       language is translated yet
 - [x] Google Play readiness for `gms` (`docs/PLAY_STORE.md`, #153)
-- [ ] Google Play listing (the owner, `docs/PLAY_STORE.md` §8), and deleting the account from the app, which Play
-      requires
+- [ ] Google Play listing (the owner, `docs/PLAY_STORE.md` §8). Deleting the account from the app, which Play requires,
+      is in (Settings → Privacy and security → Delete account); its web page (`docs/website/delete-account.md`) waits
+      for the owner to publish it on the Pingogram website
 - [ ] F-Droid metadata (`metadata/` / `fastlane/`) and reproducible-build notes.
   - Done:
     - the fastlane listing: texts, icon, feature graphic, screenshots;

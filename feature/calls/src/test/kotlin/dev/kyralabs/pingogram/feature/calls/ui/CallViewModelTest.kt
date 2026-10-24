@@ -6,12 +6,15 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
+import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallState
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
+import dev.kyralabs.pingogram.feature.calls.CallLine
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.ENGINE_PROTOCOL
@@ -82,6 +85,7 @@ class CallViewModelTest {
             clock,
             { "Ada" },
             { FakeNetworkRepository() },
+            CallLine(),
             backgroundScope,
         ).also { it.start() }
 
@@ -370,6 +374,74 @@ class CallViewModelTest {
             assertEquals(CallStage.Connected, state.stage)
         }
 
+    /** A call of [seconds] that the other side hung up, which Telegram asks to have rated. */
+    private fun TestScope.ratedCall(
+        manager: CallManager,
+        seconds: Long = 30,
+    ): CallViewModel {
+        val viewModel = viewModel(manager, CallActivity.ACTION_START, userId = 42)
+        repository.update(Call(7, 42, isOutgoing = true, isVideo = true, state = CallState.Ready(connection())))
+        runCurrent()
+        engine.sessions
+            .single()
+            .state.value = CallMediaState.Connected
+        runCurrent()
+        clock.now += seconds * 1_000
+        repository.update(
+            Call(
+                7,
+                42,
+                isOutgoing = true,
+                isVideo = true,
+                state = CallState.Discarded(CallDiscardReason.HungUp, needsRating = true),
+            ),
+        )
+        runCurrent()
+        return viewModel
+    }
+
+    @Test
+    fun `asks to rate the ended call, and stays until it is rated`() =
+        runTest(dispatcher) {
+            val viewModel = ratedCall(manager())
+
+            val ended = viewModel.uiState.value as CallUiState.InCall
+            assertEquals(CallStage.Ended(CallEndReason.HungUp), ended.stage)
+            assertEquals(CallRatingPrompt(isVideo = true), ended.rating)
+
+            advanceTimeBy(3.seconds)
+            assertEquals(ended, viewModel.uiState.value)
+
+            viewModel.onEvent(CallEvent.Rate(1, setOf(CallProblem.PixelatedVideo)))
+            runCurrent()
+
+            assertEquals(listOf(FakeCallRepository.Rating(7, 1, setOf(CallProblem.PixelatedVideo))), repository.rated)
+            assertEquals(CallUiState.Closed, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `not rating closes the screen without rating`() =
+        runTest(dispatcher) {
+            val viewModel = ratedCall(manager())
+            advanceTimeBy(3.seconds)
+
+            viewModel.onEvent(CallEvent.DismissRating)
+            runCurrent()
+
+            assertTrue(repository.rated.isEmpty())
+            assertEquals(CallUiState.Closed, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `a call of a few seconds is not rated and closes as before`() =
+        runTest(dispatcher) {
+            val viewModel = ratedCall(manager(), seconds = 3)
+
+            assertNull((viewModel.uiState.value as CallUiState.InCall).rating)
+            advanceTimeBy(3.seconds)
+            assertEquals(CallUiState.Closed, viewModel.uiState.value)
+        }
+
     @Test
     fun `a call that could not be made shows why, then closes`() =
         runTest(dispatcher) {
@@ -430,7 +502,7 @@ class CallViewModelTest {
         )
 }
 
-private class FakeUserRepository : UserRepository {
+internal class FakeUserRepository : UserRepository {
     override val myUserId = MutableStateFlow<Long?>(1)
     private val userMap = MutableStateFlow<ImmutableMap<Long, User>>(persistentMapOf())
 
@@ -446,7 +518,7 @@ private class FakeUserRepository : UserRepository {
         userMap.value[id]?.let { Outcome.Success(it) } ?: Outcome.Failure(DomainError.NotFound)
 }
 
-private fun user(
+internal fun user(
     id: Long,
     firstName: String,
     lastName: String,
@@ -469,7 +541,7 @@ private fun user(
     haveAccess = true,
 )
 
-private class FakeCameraAccess : CameraAccess {
+internal class FakeCameraAccess : CameraAccess {
     var hasCamera = true
     var granted = false
 

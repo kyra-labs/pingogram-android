@@ -2,14 +2,17 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The media of one-to-one calls (`docs/adr/0015-call-media-engine.md`, video in
- * `docs/adr/0019-video-and-group-calls-scope.md`): what moves the audio and video once TDLib has signaled a call and
- * agreed on its key. `NtgCallsEngine` in production, a fake in tests; nothing else in the app touches the engine's
- * library.
+ * The media of calls (`docs/adr/0015-call-media-engine.md`, video in `docs/adr/0019-video-and-group-calls-scope.md`,
+ * voice chats and live streams in `docs/adr/0023-group-voice-chats-and-live-streams.md`): what moves the audio and
+ * video once TDLib has signaled a call and agreed on its key, or joined a voice chat. `NtgCallsEngine` in production,
+ * a fake in tests; nothing else in the app touches the engine's library.
  */
 interface CallEngine {
     /**
@@ -30,6 +33,135 @@ interface CallEngine {
         isOutgoing: Boolean,
         connection: CallConnection,
     ): CallSession
+
+    /**
+     * Opens the microphone and the speaker for voice chat [groupCallId] and makes its join payload, which TDLib's
+     * `joinVideoChat` takes (`docs/adr/0023-group-voice-chats-and-live-streams.md`). The microphone starts [muted] or
+     * not. Loads the engine's library like [protocol]. The session runs until [GroupCallSession.close].
+     */
+    suspend fun createGroupCall(
+        groupCallId: Int,
+        muted: Boolean,
+    ): GroupCallSession
+}
+
+/** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
+@Suppress("TooManyFunctions") // The voice chat's audio, hold, stream requests, and each kind of video it carries.
+interface GroupCallSession {
+    /** The join payload for `joinVideoChat` (JSON), and the microphone's audio source (SSRC) in it. */
+    val joinPayload: String
+    val audioSourceId: Int
+
+    val state: StateFlow<CallMediaState>
+
+    /**
+     * What the call is, once connected: a voice chat ([GroupCallMode.Rtc]) or a stream received in segments
+     * ([GroupCallMode.Stream]); null before. Telegram may turn a voice chat into a stream.
+     */
+    val mode: StateFlow<GroupCallMode?>
+
+    /**
+     * A live stream's requests, while the call is a stream: the engine asks for the stream's current time, then for
+     * each one-second segment, which [sendTime] and [sendSegment] answer. Hot; without a collector they wait.
+     */
+    val streamRequests: Flow<StreamRequest>
+
+    /** Connects with the call's parameters (JSON) from `joinVideoChat`. */
+    suspend fun connect(params: String)
+
+    /** Stops sending the microphone, or starts again. */
+    suspend fun setMuted(muted: Boolean)
+
+    /** Stops sending and playing while another call holds the line (Telecom's hold), or starts again. */
+    suspend fun setOnHold(onHold: Boolean)
+
+    /** Answers [StreamRequest.Time]: the stream's newest time (ms), or 0 when it has none yet (asked again later). */
+    suspend fun sendTime(timeMs: Long)
+
+    /** Answers [request] with its segment's [data], or with why there is none. */
+    suspend fun sendSegment(
+        request: StreamRequest.Segment,
+        result: SegmentResult,
+    )
+
+    /** Where a live stream's video goes, on the engine's threads; null to stop receiving it. */
+    suspend fun setVideoSink(sink: VideoFrameSink?)
+
+    /**
+     * Sends [camera] in the voice chat at most at [quality], or stops sending with null
+     * (`docs/adr/0024-video-in-voice-chats.md`). The join payload carries the camera's track from the start, so this
+     * needs no new join; TDLib's `toggleGroupCallIsMyVideoEnabled` tells the others.
+     */
+    suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    )
+
+    /** Where the user's own camera's frames go (the self-view), on the engine's threads; null for nowhere. */
+    suspend fun setSelfVideoSink(sink: VideoFrameSink?)
+
+    /**
+     * Receives exactly [videos] of other participants, adding those not received yet and stopping the others
+     * (NTgCalls' `addIncomingVideo` / `removeIncomingVideo`, `docs/adr/0024-video-in-voice-chats.md`). Their frames go
+     * to the sinks of [setIncomingVideoSinks], by endpoint; a video without a sink is received and dropped.
+     */
+    suspend fun receiveVideos(videos: List<IncomingVideo>)
+
+    /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
+    fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
+
+    /** Leaves the media and frees the microphone and the speaker. Idempotent. */
+    suspend fun close()
+}
+
+/** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
+data class IncomingVideo(
+    /** The participant's user or chat id. */
+    val participantId: Long,
+    val endpointId: String,
+    val sourceGroups: List<GroupCallVideoSourceGroup>,
+)
+
+/** How a group call reaches the device. */
+enum class GroupCallMode {
+    /** A voice chat: everyone sends and receives through Telegram's servers. */
+    Rtc,
+
+    /** A large call or a live stream: received as segments Telegram recorded, nothing sent. */
+    Stream,
+}
+
+/** What a live stream asks for (NTgCalls' `onRequestBroadcastTimestamp` and `onRequestBroadcastPart`). */
+sealed interface StreamRequest {
+    data object Time : StreamRequest
+
+    /**
+     * Segment [segmentId], part [partId], which starts at [timeMs] on [channelId] (0: the audio) in [quality] (null for
+     * the audio).
+     */
+    data class Segment(
+        val segmentId: Long,
+        val partId: Int,
+        val timeMs: Long,
+        val channelId: Int,
+        val quality: StreamQuality?,
+    ) : StreamRequest
+}
+
+/** A live stream's video quality, as the engine asks for it. */
+enum class StreamQuality { Thumbnail, Medium, Full }
+
+/** The answer to a [StreamRequest.Segment]. */
+sealed interface SegmentResult {
+    class Data(
+        val bytes: ByteArray,
+    ) : SegmentResult
+
+    /** Telegram has not recorded it yet: the engine asks again shortly. */
+    data object NotReady : SegmentResult
+
+    /** The time is too far off: the engine asks for the stream's time again. */
+    data object ResyncNeeded : SegmentResult
 }
 
 /** One connected call of a [CallEngine]. */
@@ -112,6 +244,27 @@ enum class VideoQuality(
 
     /** 360p at 15: roaming, or Data Saver on. */
     Low(640, 360, 15),
+    ;
+
+    companion object {
+        /**
+         * The most to send over [network]: 720p on Wi-Fi (and before the network is known), 480p on mobile data or
+         * once the connection was lost ([reconnected]), 360p roaming or with Data Saver.
+         */
+        fun forNetwork(
+            network: NetworkStatus?,
+            reconnected: Boolean = false,
+        ): VideoQuality {
+            val byNetwork =
+                when {
+                    network == null -> High
+                    network.savesData || network.type == NetworkType.Roaming -> Low
+                    network.isMetered || network.type == NetworkType.Mobile -> Medium
+                    else -> High
+                }
+            return if (reconnected && byNetwork == High) Medium else byNetwork
+        }
+    }
 }
 
 /** The other side's video. */

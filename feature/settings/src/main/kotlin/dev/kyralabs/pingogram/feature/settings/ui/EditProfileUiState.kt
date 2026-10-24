@@ -109,6 +109,8 @@ data class ProfileAccount(
     val userId: Long,
     val name: String,
     val photo: ProfilePhoto?,
+    /** The account's phone number as Telegram has it (digits); empty while unknown. */
+    val phoneNumber: String = "",
 ) {
     override fun toString() = "ProfileAccount(userId=$userId, …)"
 }

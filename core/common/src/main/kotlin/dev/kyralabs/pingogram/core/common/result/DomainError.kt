@@ -51,6 +51,9 @@ sealed interface DomainError {
     /** Too many login attempts for this phone number; Telegram gives no waiting time (`PHONE_NUMBER_FLOOD`). */
     data object PhoneNumberFlood : DomainError
 
+    /** Another account has the number (`PHONE_NUMBER_OCCUPIED`), when changing the account's number to it. */
+    data object PhoneNumberOccupied : DomainError
+
     /** A login, email or password recovery code is wrong or empty. */
     data object CodeInvalid : DomainError
 
@@ -79,6 +82,14 @@ sealed interface DomainError {
      * `pinned_archived_chat_count_max`, or the folder's limit; Telegram Premium raises them): unpin one first.
      */
     data object TooManyPinnedChats : DomainError
+
+    // Chat folders (REQUIREMENTS.md FR-L3).
+
+    /** The account has as many chat folders, or shared ones, as Telegram allows (Telegram Premium raises it). */
+    data object TooManyChatFolders : DomainError
+
+    /** A chat folder must include at least one chat or kind of chat. */
+    data object ChatFolderEmpty : DomainError
 
     // Sending files, contacts and polls (REQUIREMENTS.md FR-C5).
 

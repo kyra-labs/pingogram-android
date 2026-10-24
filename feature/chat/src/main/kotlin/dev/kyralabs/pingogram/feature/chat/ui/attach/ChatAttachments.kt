@@ -4,6 +4,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onFailure
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
@@ -203,6 +204,13 @@ internal class ChatAttachments(
         val replyTo = replies.takeReply()
         val options = SendOptions()
         scope.launch { report(repository.sendSticker(chatId, sticker, options, replyTo), options, replyTo) }
+    }
+
+    /** Sends GIF [animation], tapped in the composer's GIF tab, at once, with the composer's reply. */
+    fun sendAnimation(animation: Animation) {
+        val replyTo = replies.takeReply()
+        val options = SendOptions()
+        scope.launch { report(repository.sendAnimation(chatId, animation, options, replyTo), options, replyTo) }
     }
 
     /**

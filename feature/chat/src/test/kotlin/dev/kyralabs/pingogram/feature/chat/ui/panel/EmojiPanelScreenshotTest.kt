@@ -35,7 +35,8 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the emoji and sticker panel on a compact phone, light and dark (`docs/TESTING.md`): open below the
  * composer on its emoji tab (the composer's button shows the keyboard icon), and the stickers tab with sections, while
- * it cannot load, and without stickers. Sticker files are not on the device, so stickers show their emoji. Brand
+ * it cannot load, and without stickers; the GIF tab with saved GIFs, a search, none found, none saved and an error.
+ * Sticker files are not on the device, so stickers show their emoji, GIFs their placeholder. Brand
  * colors.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -80,13 +81,13 @@ class EmojiPanelScreenshotTest(
                         } else {
                             Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
                                 EmojiPanel(
-                                    state = STATES.getValue(stateName),
+                                    state = STATES.getValue(stateName).first,
                                     onEmoji = {},
                                     onBackspace = {},
                                     onSticker = {},
                                     onEvent = {},
                                     modifier = Modifier.fillMaxWidth().height(MaterialTheme.sizes.inputPanelHeight),
-                                    initialTab = PanelTab.Stickers,
+                                    initialTab = STATES.getValue(stateName).second,
                                 )
                             }
                         }
@@ -101,9 +102,14 @@ class EmojiPanelScreenshotTest(
     companion object {
         private val STATES =
             mapOf(
-                "stickers" to PanelPreviewData.content,
-                "stickersError" to PanelPreviewData.stickersError,
-                "stickersEmpty" to PanelPreviewData.stickersEmpty,
+                "stickers" to (PanelPreviewData.content to PanelTab.Stickers),
+                "stickersError" to (PanelPreviewData.stickersError to PanelTab.Stickers),
+                "stickersEmpty" to (PanelPreviewData.stickersEmpty to PanelTab.Stickers),
+                "gifs" to (PanelPreviewData.gifsSaved to PanelTab.Gifs),
+                "gifsEmpty" to (PanelPreviewData.gifsEmpty to PanelTab.Gifs),
+                "gifsSearch" to (PanelPreviewData.gifsSearch to PanelTab.Gifs),
+                "gifsNoResults" to (PanelPreviewData.gifsNoResults to PanelTab.Gifs),
+                "gifsError" to (PanelPreviewData.gifsError to PanelTab.Gifs),
             )
 
         @JvmStatic

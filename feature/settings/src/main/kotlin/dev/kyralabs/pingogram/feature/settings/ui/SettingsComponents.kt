@@ -313,16 +313,20 @@ internal class SettingsListRowStyle(
     val motionScheme: MotionScheme,
 )
 
-/** A row of a settings page's lazy list: as wide as the page's column, with its margins, sliding on its springs. */
+/**
+ * A row of a settings page's lazy list: as wide as the page's column, with its margins, sliding on its springs; with
+ * [animatePlacement] false it moves at once, e.g. while a finger drags it.
+ */
 internal fun Modifier.settingsListRow(
     scope: LazyItemScope,
     style: SettingsListRowStyle,
+    animatePlacement: Boolean = true,
 ): Modifier =
     with(scope) {
         this@settingsListRow
             .animateItem(
                 fadeInSpec = style.motionScheme.defaultEffectsSpec(),
-                placementSpec = style.motionScheme.defaultSpatialSpec(),
+                placementSpec = if (animatePlacement) style.motionScheme.defaultSpatialSpec() else null,
                 fadeOutSpec = style.motionScheme.fastEffectsSpec(),
             ).widthIn(max = style.maxWidth)
             .fillMaxWidth()

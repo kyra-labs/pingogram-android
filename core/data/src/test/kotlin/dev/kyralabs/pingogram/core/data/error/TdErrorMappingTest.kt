@@ -45,6 +45,7 @@ class TdErrorMappingTest {
                 Arguments.of(400, "Phone number must be non-empty", DomainError.PhoneNumberInvalid),
                 Arguments.of(400, "PHONE_NUMBER_BANNED", DomainError.PhoneNumberBanned),
                 Arguments.of(400, "PHONE_NUMBER_FLOOD", DomainError.PhoneNumberFlood),
+                Arguments.of(400, "PHONE_NUMBER_OCCUPIED", DomainError.PhoneNumberOccupied),
                 Arguments.of(400, "PHONE_CODE_INVALID", DomainError.CodeInvalid),
                 Arguments.of(400, "PHONE_CODE_EMPTY", DomainError.CodeInvalid),
                 Arguments.of(400, "CODE_INVALID", DomainError.CodeInvalid),

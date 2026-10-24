@@ -4,6 +4,8 @@ import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.phone.CountryPickerUiState
+import dev.kyralabs.pingogram.core.ui.phone.CountryUiModel
 import kotlinx.collections.immutable.ImmutableList
 
 /**
@@ -235,24 +237,3 @@ sealed interface EmailResetUiState {
         val resetInSeconds: Long,
     ) : EmailResetUiState
 }
-
-/** A country in the phone number field and the country picker. */
-@Immutable
-data class CountryUiModel(
-    val isoCode: String,
-    val name: String,
-    val flagEmoji: String,
-    /** The main calling code, without `+`. */
-    val callingCode: String,
-)
-
-/**
- * The open country picker: [countries] are the visible countries matching [query]; [selectedIsoCode] is the country
- * of the phone number field, shown selected.
- */
-@Immutable
-data class CountryPickerUiState(
-    val query: String,
-    val countries: ImmutableList<CountryUiModel>,
-    val selectedIsoCode: String? = null,
-)

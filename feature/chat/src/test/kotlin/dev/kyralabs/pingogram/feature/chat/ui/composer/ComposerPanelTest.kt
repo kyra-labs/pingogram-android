@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
+import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.preview.PanelPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.persistentListOf
@@ -31,7 +32,7 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 /**
  * The emoji and sticker panel from the composer: the button opens it and tells the panel's view model, emoji go into
  * the text and become recent, the backspace deletes, stickers are sent, back and the keyboard button close it, and
- * editing a message shows emoji only.
+ * editing a message shows emoji only. The GIF tab's search keeps the panel open while it has the focus.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -51,6 +52,7 @@ class ComposerPanelTest {
         composer: ComposerUiState.Available =
             ComposerUiState.Available(canSchedule = true, attachOptions = persistentListOf(AttachOption.Gallery)),
         recording: VoiceRecordingUiState? = null,
+        panelContent: EmojiPanelUiState = PanelPreviewData.content,
     ): ComposerText {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
@@ -61,7 +63,7 @@ class ComposerPanelTest {
                     onSend = {},
                     onFocusChanged = {},
                     recording = recording,
-                    panel = PanelPreviewData.content,
+                    panel = panelContent,
                     onPanelEvent = { events += it },
                     onSendSticker = { stickers += it },
                     panelState = panel,
@@ -106,7 +108,7 @@ class ComposerPanelTest {
         setComposer()
         openPanel()
 
-        composeRule.onNodeWithText(string(R.string.panel_tab_stickers)).performClick()
+        composeRule.onNodeWithContentDescription(string(R.string.panel_tab_stickers)).performClick()
         composeRule.onNodeWithContentDescription(string(UiR.string.preview_sticker_emoji, "🐱")).performClick()
 
         assertEquals(listOf("🐱"), stickers.map { it.emoji })
@@ -117,7 +119,7 @@ class ComposerPanelTest {
         setComposer(composer = ComposerUiState.Available(canSchedule = true))
         openPanel()
 
-        composeRule.onNodeWithText(string(R.string.panel_tab_stickers)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(string(R.string.panel_tab_stickers)).assertDoesNotExist()
         composeRule.onNodeWithText("😀").assertExists()
     }
 
@@ -143,6 +145,24 @@ class ComposerPanelTest {
         composeRule.waitForIdle()
 
         assertFalse(panel.isOpen)
+    }
+
+    @Test
+    fun `the GIF search keeps the panel while it has the focus`() {
+        setComposer(panelContent = PanelPreviewData.gifsSaved)
+        openPanel()
+
+        composeRule.onNodeWithContentDescription(string(R.string.panel_tab_gifs)).performClick()
+        composeRule.onNodeWithText(string(R.string.panel_gifs_search)).performClick()
+        composeRule.waitForIdle()
+
+        assertTrue(panel.isOpen)
+        assertTrue(panel.searching)
+
+        composeRule.runOnUiThread { panel.close() }
+        composeRule.waitForIdle()
+
+        assertFalse(panel.searching)
     }
 
     private fun string(

@@ -21,14 +21,14 @@ import java.util.Locale
 /**
  * The APK size budget of `docs/PERFORMANCE.md` §1: at most [ARM64_BUDGET_BYTES] for the arm64-v8a APK, which most
  * phones install, and [UNIVERSAL_BUDGET_BYTES] for the universal one (raised for the call engine by the owner,
- * 2026-10-22). A megabyte is 1,048,576 bytes, as GitHub's release pages and the Bot API's 50 MB file limit count it
+ * 2026-10-22; set from the APKs with voice chats at their size plus a small margin, owner, 2026-10-23). A megabyte is 1,048,576 bytes, as GitHub's release pages and the Bot API's 50 MB file limit count it
  * (`docs/RELEASE.md`, "Channel uploads").
  */
 private const val BYTES_PER_MEGABYTE = 1_048_576L
 
 object ApkSize {
     const val ARM64_BUDGET_BYTES = 50L * BYTES_PER_MEGABYTE
-    const val UNIVERSAL_BUDGET_BYTES = 125L * BYTES_PER_MEGABYTE
+    const val UNIVERSAL_BUDGET_BYTES = 123L * BYTES_PER_MEGABYTE
 
     /** The budget of the APK for [abi] (null: universal), or null where `docs/PERFORMANCE.md` sets none. */
     fun budgetOf(abi: String?): Long? =

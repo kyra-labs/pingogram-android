@@ -30,9 +30,13 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
 import dev.kyralabs.pingogram.core.domain.model.MemberFilter
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
+import dev.kyralabs.pingogram.core.ui.component.VoiceChatSummary
+import dev.kyralabs.pingogram.core.ui.component.VoiceChats
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
@@ -44,23 +48,31 @@ import dev.kyralabs.pingogram.feature.profile.ui.ActionPill
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
+import kotlinx.coroutines.flow.flowOf
 import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The page's actions as pills under the header, as the profile's (`docs/DESIGN_SYSTEM.md` §6 "Group and channel
- * info"): the mute toggle with a `ToggleOn` or `ToggleOff` haptic, then "Leave", both `FilledTonalButton`s with their
- * icon over their label, sharing the row's width. Nothing for a pill that does not apply.
+ * info"): the mute toggle with a `ToggleOn` or `ToggleOff` haptic, chat [chatId]'s voice chat ([VoiceChatPill]),
+ * then "Leave", all
+ * `FilledTonalButton`s with their icon over their label, sharing the row's width. Nothing for a pill that does not
+ * apply.
  */
 @Composable
 internal fun ChatInfoActionsRow(
+    chatId: Long,
     actions: ChatInfoActions,
     onEvent: (ChatInfoEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
     val isMuted = actions.isMuted
-    if (isMuted == null && !actions.canLeave) return
+    val voiceChats = LocalVoiceChats.current
+    val voiceChat by remember(voiceChats, chatId) { voiceChats?.voiceChat(chatId) ?: flowOf(null) }
+        .collectAsStateWithLifecycle(null)
+    val voiceChatPill = voiceChats != null && (voiceChat != null || actions.canStartVoiceChat)
+    if (isMuted == null && !actions.canLeave && !voiceChatPill) return
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -78,6 +90,9 @@ internal fun ChatInfoActionsRow(
                 modifier = Modifier.weight(1f),
             )
         }
+        if (voiceChats != null && voiceChatPill) {
+            VoiceChatPill(chatId, voiceChat, voiceChats, Modifier.weight(1f))
+        }
         if (actions.canLeave) {
             ActionPill(
                 icon = R.drawable.ic_logout,
@@ -88,6 +103,32 @@ internal fun ChatInfoActionsRow(
             )
         }
     }
+}
+
+/**
+ * The voice chat's pill (`docs/adr/0023-group-voice-chats-and-live-streams.md`): "Voice chat" (or "Live stream") joins
+ * the one under way; "Start voice chat", for those who may while there is none, starts one.
+ */
+@Composable
+private fun VoiceChatPill(
+    chatId: Long,
+    current: VoiceChatSummary?,
+    voiceChats: VoiceChats,
+    modifier: Modifier = Modifier,
+) {
+    ActionPill(
+        icon = if (current?.isLiveStream == true) UiR.drawable.ic_live_tv else UiR.drawable.ic_graphic_eq,
+        label =
+            stringResource(
+                when {
+                    current == null -> R.string.chat_info_action_start_voice_chat
+                    current.isLiveStream -> R.string.chat_info_action_live_stream
+                    else -> R.string.chat_info_action_voice_chat
+                },
+            ),
+        onClick = { if (current == null) voiceChats.start(chatId) else voiceChats.join(chatId) },
+        modifier = modifier,
+    )
 }
 
 /**

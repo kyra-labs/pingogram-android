@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.auth.ui
 
 import androidx.lifecycle.SavedStateHandle
+import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
 
 /**
  * What survives process death (`docs/TESTING.md`): local navigation and what the user typed, except secrets. TDLib
@@ -30,7 +31,7 @@ internal fun SavedStateHandle.restoreAuthModel(): AuthModel {
         editingPhone = get<Boolean>(KEY_EDITING_PHONE) ?: false,
         editingEmail = get<Boolean>(KEY_EDITING_EMAIL) ?: false,
         phone =
-            PhoneForm(
+            PhoneNumberForm(
                 callingCode = get<String>(KEY_CALLING_CODE).orEmpty(),
                 number = get<String>(KEY_PHONE_NUMBER).orEmpty(),
                 countryIso = get<String>(KEY_COUNTRY),

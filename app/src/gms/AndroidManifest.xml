@@ -16,6 +16,13 @@
 
     <application>
 
+        <!-- Android Auto takes the conversation notifications (MessagingStyle with Reply and Mark as read) to the car's
+             screen: a declaration Android Auto reads, no library. gms only: foss declares no Google name at all
+             (GoogleFreeManifestTest), and Android Auto runs only with Google Play services (docs/ANDROID_AUTO.md). -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <!-- Firebase's pushes and new tokens, handed over by its receiver (FirebaseInstanceIdReceiver, which only Play
              services may send to: com.google.android.c2dm.permission.SEND). Not exported. -->
         <service

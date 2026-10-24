@@ -7,7 +7,22 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,6 +73,77 @@ class SettingsAccessibilityChecksTest {
                 onOpen = {},
                 onBack = {},
             )
+        }
+
+    @Test
+    fun changePhoneNumber() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.number, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun changePhoneNumberCode() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.code, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun deleteAccount() =
+        check { DeleteAccountScreen(state = DeleteAccountPreviewStates.withPassword, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun deleteAccountConfirmation() =
+        check { DeleteAccountScreen(state = DeleteAccountPreviewStates.confirming, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun chatFolders() =
+        check {
+            ChatFoldersScreen(state = ChatFoldersPreviewStates.content, onEvent = {}, onOpenFolder = {}, onBack = {})
+        }
+
+    @Test
+    fun chatFolderEdit() =
+        check {
+            ChatFolderEditScreen(state = ChatFolderEditPreviewStates.editing, picker = null, onEvent = {}, onBack = {})
+        }
+
+    @Test
+    fun chatFolderPicker() =
+        check {
+            ChatFolderEditScreen(
+                state = ChatFolderEditPreviewStates.editing,
+                picker = ChatFolderEditPreviewStates.picker,
+                onEvent = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun folderInvite() =
+        check { FolderInviteContent(state = FolderInvitePreviewStates.newFolder, onEvent = {}, onCancel = {}) }
+
+    @Test
+    fun folderInviteFailed() =
+        check { FolderInviteContent(state = FolderInvitePreviewStates.offline, onEvent = {}, onCancel = {}) }
+
+    @Test
+    fun stickers() =
+        check {
+            StickersScreen(StickersPreviewStates.content, onEvent = {}, onOpenList = {}, onShare = {}, onBack = {})
+        }
+
+    @Test
+    fun trendingStickers() =
+        check {
+            StickerSetListScreen(archived = false, state = StickersPreviewStates.trending, onEvent = {}, onBack = {})
+        }
+
+    @Test
+    fun stickerSet() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
+        }
+
+    @Test
+    fun stickerSetNotFound() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notFound, onEvent = {}, onShare = {}, onClose = {})
         }
 
     @Test

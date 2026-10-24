@@ -477,6 +477,10 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.Settings(SettingsPage.Appearance),
                 ),
                 Arguments.of(
+                    TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionChatFolders("")),
+                    LinkTarget.Settings(SettingsPage.ChatFolders),
+                ),
+                Arguments.of(
                     TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionDevices()),
                     LinkTarget.Settings(SettingsPage.ActiveSessions),
                 ),
@@ -489,9 +493,14 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.ChatInvite("https://t.me/+abc"),
                 ),
                 Arguments.of(
+                    TdApi.InternalLinkTypeChatFolderInvite("https://t.me/addlist/abc"),
+                    LinkTarget.ChatFolderInvite("https://t.me/addlist/abc"),
+                ),
+                Arguments.of(
                     TdApi.InternalLinkTypeSettings(TdApi.SettingsSectionQrCode("")),
                     LinkTarget.MyQrCode,
                 ),
+                Arguments.of(TdApi.InternalLinkTypeStickerSet("garden", false), LinkTarget.StickerSet("garden")),
             )
 
         @JvmStatic
@@ -501,13 +510,12 @@ class TdlibLinkRepositoryTest {
                 TdApi.InternalLinkTypeLanguagePack(),
                 TdApi.InternalLinkTypeTheme(),
                 TdApi.InternalLinkTypeBackground(),
-                TdApi.InternalLinkTypeStickerSet(),
+                TdApi.InternalLinkTypeStickerSet("hearts", true),
                 TdApi.InternalLinkTypeWebApp(),
                 TdApi.InternalLinkTypeInvoice(),
                 TdApi.InternalLinkTypePassportDataRequest(),
                 TdApi.InternalLinkTypeStory(),
                 TdApi.InternalLinkTypeVideoChat(),
-                TdApi.InternalLinkTypeChatFolderInvite(),
                 TdApi.InternalLinkTypeInstantView(),
                 TdApi.InternalLinkTypePhoneNumberConfirmation(),
                 TdApi.InternalLinkTypeUnknownDeepLink(LINK),

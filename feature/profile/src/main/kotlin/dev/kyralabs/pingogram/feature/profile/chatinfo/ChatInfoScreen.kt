@@ -243,7 +243,12 @@ private fun LazyGridScope.chatInfoItems(
     inset: Dp,
 ) {
     fullWidth(key = ACTIONS, inset = inset) {
-        ChatInfoActionsRow(state.actions, onEvent, Modifier.padding(top = MaterialTheme.spacing.small))
+        ChatInfoActionsRow(
+            state.header.userId,
+            state.actions,
+            onEvent,
+            Modifier.padding(top = MaterialTheme.spacing.small),
+        )
     }
     if (state.description != null || state.link != null) {
         fullWidth(key = INFO, inset = inset, gapAbove = true) {

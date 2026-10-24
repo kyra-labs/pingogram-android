@@ -45,6 +45,52 @@ data object SettingsRoute
 data object EditProfileRoute
 
 /**
+ * Changing the account's phone number (`REQUIREMENTS.md` FR-S1): what it does, the new number, the code Telegram sends
+ * to it, pushed above [EditProfileRoute].
+ */
+@Serializable
+data object ChangePhoneNumberRoute
+
+/** The user's chat folders (`REQUIREMENTS.md` FR-L3), their order and the folders Telegram suggests. */
+@Serializable
+data object ChatFoldersRoute
+
+/** Editing chat folder [folderId], or a new folder with null, pushed above [ChatFoldersRoute]. */
+@Serializable
+data class ChatFolderEditRoute(
+    val folderId: Int? = null,
+)
+
+/** The user's sticker sets (`REQUIREMENTS.md` FR-C5): their order, archiving and removing them. */
+@Serializable
+data object StickersRoute
+
+/** The archived sticker sets ([archived]) or the trending ones, pushed above [StickersRoute]. */
+@Serializable
+data class StickerSetListRoute(
+    val archived: Boolean,
+)
+
+/**
+ * The sheet of sticker set [setId], or of the set named [name] (`t.me/addstickers/<name>`) when the id is 0,
+ * `:feature:settings`: a dialog destination above the screen it was opened from.
+ */
+@Serializable
+data class StickerSetRoute(
+    val setId: Long = 0,
+    val name: String? = null,
+)
+
+/**
+ * The sheet of a shared chat folder's link [inviteLink] (`t.me/addlist/…`), `:feature:settings`: a dialog destination
+ * above the screen the link was opened from.
+ */
+@Serializable
+data class ChatFolderInviteRoute(
+    val inviteLink: String,
+)
+
+/**
  * Appearance settings (`REQUIREMENTS.md` FR-S2): light or dark, AMOLED black, the color theme and contrast,
  * `:feature:settings`, pushed above the Settings tab.
  */
@@ -142,6 +188,13 @@ data object PasscodeLockRoute
 /** Setting a new passcode, entered twice, pushed above [PasscodeLockRoute]. */
 @Serializable
 data object SetPasscodeRoute
+
+/**
+ * Deleting the account (Google Play's account deletion policy, `docs/PLAY_STORE.md`) and how long it may stay unused
+ * before Telegram deletes it, pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object DeleteAccountRoute
 
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
@@ -412,3 +465,10 @@ data object MyQrCodeRoute
  */
 @Serializable
 data object FeedbackRoute
+
+/**
+ * Recent calls (`docs/ARCHITECTURE.md`, Calls), `:feature:calls`: the user's one-to-one calls, newest first, to call
+ * back; pushed above the screen it is opened from (Settings home, the Contacts tab).
+ */
+@Serializable
+data object RecentCallsRoute

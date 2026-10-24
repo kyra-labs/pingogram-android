@@ -121,7 +121,7 @@ fun EmailCodeScreen(
         AuthCodeField(
             value = state.code,
             onValueChange = { onEvent(AuthEvent.EmailCodeChanged(it)) },
-            label = stringResource(R.string.auth_code_label),
+            label = stringResource(UiR.string.login_code_label),
             error = state.error?.let { errorText(it) },
             onDone = { onEvent(AuthEvent.SubmitEmailCode) },
             contentType = EmailOtpCode,

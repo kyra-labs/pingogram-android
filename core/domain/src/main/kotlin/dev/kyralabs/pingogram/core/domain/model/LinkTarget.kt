@@ -76,6 +76,26 @@ sealed interface LinkTarget {
     }
 
     /**
+     * A shared chat folder ([inviteLink], `t.me/addlist/…`): its sheet shows the folder and its chats, and asks before
+     * adding the folder and joining the chats the user picks.
+     */
+    data class ChatFolderInvite(
+        val inviteLink: String,
+    ) : LinkTarget {
+        override fun toString() = "ChatFolderInvite(…)"
+    }
+
+    /**
+     * A sticker set by its short [name] (`t.me/addstickers/<name>`): its sheet shows the stickers and adds the set only
+     * on a tap.
+     */
+    data class StickerSet(
+        val name: String,
+    ) : LinkTarget {
+        override fun toString() = "StickerSet(…)"
+    }
+
+    /**
      * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
      * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */
@@ -130,6 +150,7 @@ sealed interface LinkTarget {
 /** The pages of Settings that a `tg://settings/…` link can open. */
 enum class SettingsPage {
     Appearance,
+    ChatFolders,
     DataAndStorage,
     ActiveSessions,
     Language,

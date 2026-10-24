@@ -184,6 +184,16 @@
     <!-- The panel's tabs. -->
     <string name="panel_tab_emoji">Emoji</string>
     <string name="panel_tab_stickers">Stickers</string>
+    <string name="panel_tab_gifs">GIFs</string>
+    <string name="panel_gifs_search">Search GIFs</string>
+    <string name="panel_gifs_clear">Clear search</string>
+    <string name="panel_gifs_empty_title">No saved GIFs</string>
+    <string name="panel_gifs_empty_body">GIFs you send show here. Search above to find one.</string>
+    <string name="panel_gifs_no_results">No GIFs found</string>
+    <string name="panel_gifs_error_title">Couldn’t load GIFs</string>
+    <string name="panel_gifs_retry">Try again</string>
+    <string name="panel_gifs_send">Send</string>
+    <string name="panel_gifs_remove">Remove from saved GIFs</string>
     <!-- The panel's backspace key, which deletes the character before the cursor. -->
     <string name="panel_backspace">Delete</string>
     <!-- The emoji the user picked last, first in the emoji tab. -->

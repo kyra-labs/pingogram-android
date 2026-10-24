@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -184,6 +185,11 @@ sealed interface ChatEvent {
     /** A sticker tapped in the composer's sticker panel: [sticker] is sent at once, with the composer's reply. */
     data class SendSticker(
         val sticker: Sticker,
+    ) : ChatEvent
+
+    /** A GIF tapped in the composer's GIF tab: [animation] is sent at once, with the composer's reply. */
+    data class SendAnimation(
+        val animation: Animation,
     ) : ChatEvent
 
     /** The remove button of item [key] of the preview. */

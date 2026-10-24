@@ -4,6 +4,10 @@ import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.Country
 import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
 import dev.kyralabs.pingogram.core.domain.model.codeLength
+import dev.kyralabs.pingogram.core.ui.phone.CountryPickerUiState
+import dev.kyralabs.pingogram.core.ui.phone.matching
+import dev.kyralabs.pingogram.core.ui.phone.toUiModel
+import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import kotlinx.collections.immutable.toImmutableList
 
 /** [AuthModel] → [AuthUiState]: which screen to show, and what it shows. */
@@ -132,12 +136,7 @@ private fun AuthModel.phoneScreen(isChangingNumber: Boolean) =
         country = phone.country?.toUiModel(),
         error = phone.error,
         isChangingNumber = isChangingNumber,
-        countryPicker =
-            if (phone.isPickerOpen) {
-                CountryPickerUiState(phone.pickerQuery, phone.countries.matching(phone.pickerQuery), phone.countryIso)
-            } else {
-                null
-            },
+        countryPicker = phone.picker,
     )
 
 private fun AuthModel.displayPhoneNumber(raw: String): String =
@@ -147,21 +146,4 @@ private fun EmailAddressResetState.toUiState(resetInSeconds: Long?): EmailResetU
     when (this) {
         is EmailAddressResetState.Available -> EmailResetUiState.Available(waitPeriodSeconds.toLong())
         is EmailAddressResetState.Pending -> EmailResetUiState.Pending(resetInSeconds ?: resetAt.secondsLeft())
-    }
-
-internal fun Country.toUiModel() = CountryUiModel(isoCode, name, flagEmoji, callingCodes.firstOrNull().orEmpty())
-
-/** The listed countries matching a picker query: by name, English name, ISO code or calling code. */
-private fun List<Country>.matching(query: String) =
-    query.trim().removePrefix("+").let { term ->
-        asSequence()
-            .filter { !it.isHidden }
-            .filter { country ->
-                term.isEmpty() ||
-                    country.name.contains(term, ignoreCase = true) ||
-                    country.englishName.contains(term, ignoreCase = true) ||
-                    country.isoCode.equals(term, ignoreCase = true) ||
-                    country.callingCodes.any { it.startsWith(term) }
-            }.map { it.toUiModel() }
-            .toImmutableList()
     }

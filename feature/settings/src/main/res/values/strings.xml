@@ -20,6 +20,8 @@
     <string name="settings_profile_saved">Profile saved</string>
 
     <!-- Settings home -->
+    <string name="settings_recent_calls">Recent calls</string>
+    <string name="settings_recent_calls_summary">Missed, incoming and outgoing calls</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
     <string name="settings_language">Language</string>
@@ -688,4 +690,235 @@
         <item quantity="one">Without a username, this code works for %1$s more hour.</item>
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
+
+    <!-- Changing the account's phone number (FR-S1), a page above Edit profile. %1$s: a phone number. -->
+    <string name="settings_change_number_title">Change number</string>
+    <string name="settings_change_number_current">Your number is %1$s.</string>
+    <string name="settings_change_number_intro">Your account, chats, contacts and media stay as they are and move to the new number. Telegram sends a code to the new number to check that it\'s yours. Who can see your number stays as your privacy settings say.</string>
+    <string name="settings_change_number_start">Change number</string>
+    <string name="settings_change_number_new">Enter your new number. Telegram sends it a code.</string>
+    <string name="settings_change_number_next">Next</string>
+    <string name="settings_change_number_wrong_number">Wrong number?</string>
+    <string name="settings_change_number_busy">Waiting for Telegram</string>
+    <string name="settings_change_number_done_title">Number changed</string>
+    <string name="settings_change_number_done_text">Your number is now %1$s.</string>
+    <string name="settings_change_number_done">Done</string>
+    <!-- Edit profile's phone number group: its header, and the button that opens Change number. -->
+    <string name="settings_section_profile_phone">Phone number</string>
+    <string name="settings_edit_profile_change_number">Change</string>
+    <!-- The same button for screen readers: %1$s the phone number. -->
+    <string name="settings_edit_profile_change_number_label">Change number %1$s</string>
+
+    <!-- Delete account (Google Play's account deletion policy, docs/PLAY_STORE.md), a page of Privacy and security -->
+    <string name="settings_section_account">Account</string>
+    <string name="settings_delete_account">Delete account</string>
+    <!-- The row's summary on Privacy and security. %1$s is a period such as "6 months". -->
+    <string name="settings_delete_account_summary">Or automatically if away for %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_delete_account_loading">Loading account settings</string>
+    <string name="settings_delete_account_section_ttl">Delete my account if away for</string>
+    <string name="settings_delete_account_ttl_footer">If you don\'t come online at least once in this time, Telegram deletes your account and everything in it.</string>
+    <plurals name="settings_delete_account_ttl_months">
+        <item quantity="one">%1$s month</item>
+        <item quantity="other">%1$s months</item>
+    </plurals>
+    <plurals name="settings_delete_account_ttl_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="settings_delete_account_section_now">Delete now</string>
+    <string name="settings_delete_account_what_is_lost">Your account is deleted from Telegram on every device, for good: your messages and media, your contacts, your settings and your secret chats. It can\'t be undone, and nothing can be brought back.</string>
+    <string name="settings_delete_account_what_stays">Messages you sent stay with the people and groups who received them, from a deleted account. Groups and channels you created stay without their owner; their admins keep their rights.</string>
+    <string name="settings_delete_account_sign_up_again">You can sign up with the same phone number again later, as a new account.</string>
+    <string name="settings_delete_account_reason">Why are you leaving? (optional)</string>
+    <string name="settings_delete_account_password_text">Enter your 2-step verification password to confirm.</string>
+    <!-- Spoken by screen readers for the progress indicator while the account is being deleted. -->
+    <string name="settings_delete_account_deleting">Deleting your account</string>
+    <string name="settings_delete_account_dialog_title">Delete your account?</string>
+    <string name="settings_delete_account_dialog_text">Your account and everything in it is deleted on every device, for good. This can\'t be undone.</string>
+    <string name="settings_delete_account_dialog_confirm">Delete account</string>
+
+    <!-- Chat folders (FR-L3), Settings → Chat folders -->
+    <string name="settings_chat_folders">Chat folders</string>
+    <string name="settings_chat_folders_summary">Sort your chats into tabs</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_chat_folders_loading">Loading your folders</string>
+    <string name="settings_chat_folders_section_yours">Your folders</string>
+    <string name="settings_chat_folders_footer">Folders show as tabs above your chats. Touch and hold a folder, or drag its handle, to move it.</string>
+    <string name="settings_chat_folders_new">New folder</string>
+    <string name="settings_chat_folders_none">No folders yet. Create one, or add one Telegram suggests.</string>
+    <string name="settings_chat_folders_section_recommended">Suggested folders</string>
+    <string name="settings_chat_folders_add">Add</string>
+    <!-- The screen reader's label of a suggested folder's button. %1$s is the folder's name. -->
+    <string name="settings_chat_folders_add_named">Add %1$s</string>
+    <!-- Spoken by screen readers while a suggested folder is created. %1$s is the folder's name. -->
+    <string name="settings_chat_folders_adding">Adding %1$s</string>
+    <string name="settings_chat_folders_move_up">Move up</string>
+    <string name="settings_chat_folders_move_down">Move down</string>
+    <!-- A folder's summary: what it includes. -->
+    <plurals name="settings_chat_folders_chat_count">
+        <item quantity="one">%1$s chat</item>
+        <item quantity="other">%1$s chats</item>
+    </plurals>
+    <string name="settings_chat_folders_type_contacts">Contacts</string>
+    <string name="settings_chat_folders_type_non_contacts">Non-contacts</string>
+    <string name="settings_chat_folders_type_groups">Groups</string>
+    <string name="settings_chat_folders_type_channels">Channels</string>
+    <string name="settings_chat_folders_type_bots">Bots</string>
+    <string name="settings_chat_folders_type_muted">Muted</string>
+    <string name="settings_chat_folders_type_read">Read</string>
+    <string name="settings_chat_folders_type_archived">Archived</string>
+    <!-- A shared folder's summary. %1$s is what it includes, e.g. "Groups and 3 chats". -->
+    <string name="settings_chat_folders_shared">Shared · %1$s</string>
+
+    <!-- Editing a folder -->
+    <string name="settings_chat_folder_new_title">New folder</string>
+    <string name="settings_chat_folder_edit_title">Edit folder</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder loads. -->
+    <string name="settings_chat_folder_loading">Loading the folder</string>
+    <string name="settings_chat_folder_name">Folder name</string>
+    <!-- Below the name field: how many characters are left. %1$s and %2$s are numbers. -->
+    <string name="settings_chat_folder_name_count">%1$s / %2$s</string>
+    <string name="settings_chat_folder_section_icon">Icon</string>
+    <string name="settings_chat_folder_icon_automatic">Automatic</string>
+    <string name="settings_chat_folder_section_included">Included chats</string>
+    <string name="settings_chat_folder_add_chats">Add chats</string>
+    <string name="settings_chat_folder_included_footer">Choose chats or kinds of chats to show in this folder.</string>
+    <string name="settings_chat_folder_section_excluded">Excluded chats</string>
+    <string name="settings_chat_folder_exclude_chats">Exclude chats</string>
+    <string name="settings_chat_folder_excluded_footer">Choose chats or kinds of chats that never show in this folder.</string>
+    <!-- The screen reader's label of a row's remove button. %1$s is a chat's name or a kind of chats. -->
+    <string name="settings_chat_folder_remove">Remove %1$s</string>
+    <string name="settings_chat_folder_save">Save</string>
+    <string name="settings_chat_folder_create">Create</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is saved. -->
+    <string name="settings_chat_folder_saving">Saving the folder</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is deleted. -->
+    <string name="settings_chat_folder_deleting">Deleting the folder</string>
+    <string name="settings_chat_folder_delete">Delete folder</string>
+    <string name="settings_chat_folder_delete_dialog_title">Delete this folder?</string>
+    <string name="settings_chat_folder_delete_dialog_text">The folder goes from all your devices. Its chats stay in your chat list.</string>
+    <string name="settings_chat_folder_delete_dialog_confirm">Delete</string>
+    <string name="settings_chat_folder_name_required">Give the folder a name.</string>
+    <string name="settings_chat_folder_no_chats">Add at least one chat or kind of chat.</string>
+
+    <!-- The sheet that picks a folder's chats -->
+    <string name="settings_chat_folder_picker_include">Add chats</string>
+    <string name="settings_chat_folder_picker_exclude">Exclude chats</string>
+    <string name="settings_chat_folder_picker_search">Search chats</string>
+    <string name="settings_chat_folder_picker_clear">Clear search</string>
+    <string name="settings_chat_folder_picker_types">Kinds of chats</string>
+    <string name="settings_chat_folder_picker_chats">Chats</string>
+    <string name="settings_chat_folder_picker_no_results">No chats found</string>
+    <string name="settings_chat_folder_picker_done">Done</string>
+
+    <!-- The sheet of a shared folder's link (t.me/addlist/…). %1$s in the titles is the folder's name. -->
+    <string name="folder_invite_title_add">Add the folder “%1$s”?</string>
+    <string name="folder_invite_title_new_chats">New chats in “%1$s”</string>
+    <string name="folder_invite_title_added">You have “%1$s” already</string>
+    <string name="folder_invite_text_add">The folder shows as a tab above your chats. You join the chats you pick.</string>
+    <string name="folder_invite_text_new_chats">Chats were added to this folder since you added it. You join the chats you pick.</string>
+    <string name="folder_invite_text_added">You are in every chat of this folder.</string>
+    <plurals name="folder_invite_new_chats">
+        <item quantity="one">%1$d chat to join</item>
+        <item quantity="other">%1$d chats to join</item>
+    </plurals>
+    <string name="folder_invite_joined_chats">Chats you are in</string>
+    <string name="folder_invite_group">Group</string>
+    <string name="folder_invite_channel">Channel</string>
+    <string name="folder_invite_add">Add folder</string>
+    <string name="folder_invite_join_chats">Join chats</string>
+    <string name="folder_invite_cancel">Cancel</string>
+    <string name="folder_invite_close">Close</string>
+    <string name="folder_invite_try_again">Try again</string>
+    <string name="folder_invite_failed_title">This link doesn\'t open</string>
+    <!-- Spoken by screen readers for the progress indicator while the folder is added. -->
+    <string name="folder_invite_adding">Adding the folder</string>
+
+    <!-- The icons a folder can have, as screen readers name them. -->
+    <string name="settings_chat_folder_icon_all">All chats</string>
+    <string name="settings_chat_folder_icon_unread">Unread</string>
+    <string name="settings_chat_folder_icon_unmuted">Unmuted</string>
+    <string name="settings_chat_folder_icon_channels">Channels</string>
+    <string name="settings_chat_folder_icon_groups">Groups</string>
+    <string name="settings_chat_folder_icon_private">Private chats</string>
+    <string name="settings_chat_folder_icon_custom">Folder</string>
+    <string name="settings_chat_folder_icon_setup">Settings</string>
+    <string name="settings_chat_folder_icon_favorite">Favorites</string>
+    <string name="settings_chat_folder_icon_flower">Flower</string>
+    <string name="settings_chat_folder_icon_game">Games</string>
+    <string name="settings_chat_folder_icon_sport">Sport</string>
+    <string name="settings_chat_folder_icon_book">Books</string>
+    <string name="settings_chat_folder_icon_travel">Travel</string>
+    <string name="settings_chat_folder_icon_light">Ideas</string>
+    <string name="settings_chat_folder_icon_palette">Art</string>
+
+    <!-- Settings → Stickers (REQUIREMENTS.md FR-C5). -->
+    <string name="settings_stickers">Stickers</string>
+    <string name="settings_stickers_summary">Your sticker sets, trending and archived sets</string>
+    <string name="settings_stickers_loading">Loading sticker sets</string>
+    <string name="settings_stickers_trending">Trending stickers</string>
+    <string name="settings_stickers_trending_summary">Popular sets on Telegram</string>
+    <plurals name="settings_stickers_trending_new">
+        <item quantity="one">%1$s new set</item>
+        <item quantity="other">%1$s new sets</item>
+    </plurals>
+    <string name="settings_stickers_archived">Archived stickers</string>
+    <string name="settings_stickers_archived_summary">No archived sets</string>
+    <plurals name="settings_stickers_set_count">
+        <item quantity="one">%1$s set</item>
+        <item quantity="other">%1$s sets</item>
+    </plurals>
+    <plurals name="settings_stickers_sticker_count">
+        <item quantity="one">%1$s sticker</item>
+        <item quantity="other">%1$s stickers</item>
+    </plurals>
+    <string name="settings_stickers_section_yours">Your sticker sets</string>
+    <string name="settings_stickers_none">You have no sticker sets. Add some from Trending stickers.</string>
+    <string name="settings_stickers_footer">The sticker panel shows your sets in this order on all your devices. Drag a set to move it.</string>
+    <string name="settings_stickers_move_up">Move up</string>
+    <string name="settings_stickers_move_down">Move down</string>
+    <string name="settings_stickers_share">Share link</string>
+    <string name="settings_stickers_archive">Archive</string>
+    <string name="settings_stickers_remove">Remove</string>
+    <string name="settings_stickers_cancel">Cancel</string>
+    <string name="settings_stickers_undo">Undo</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_remove_title">Remove “%1$s”?</string>
+    <string name="settings_stickers_remove_text">The set leaves your sticker panel on all your devices. You can add it again from a sticker of it or its link.</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_archived_done">“%1$s” archived</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_removed_done">“%1$s” removed</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_done">“%1$s” added to your stickers</string>
+    <string name="settings_stickers_add">Add</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_add_named">Add %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_adding">Adding %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_named">%1$s added</string>
+    <string name="settings_stickers_trending_footer">Sets many people on Telegram add now. Added sets join your sticker panel.</string>
+    <string name="settings_stickers_archived_footer">Archived sets stay in your account without showing in the sticker panel. Add one to bring it back.</string>
+    <string name="settings_stickers_trending_empty_title">Nothing trending</string>
+    <string name="settings_stickers_trending_empty_body">Telegram has no trending sticker sets for you right now.</string>
+    <string name="settings_stickers_archived_empty_title">No archived sets</string>
+    <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
+    <string name="settings_stickers_show">Show stickers</string>
+
+    <!-- The sheet of a sticker set (a t.me/addstickers link, or a set in Settings → Stickers). -->
+    <string name="sticker_set_add">Add stickers</string>
+    <string name="sticker_set_remove">Remove</string>
+    <string name="sticker_set_share">Share</string>
+    <string name="sticker_set_close">Close</string>
+    <string name="sticker_set_try_again">Try again</string>
+    <string name="sticker_set_adding">Adding the stickers</string>
+    <string name="sticker_set_removing">Removing the stickers</string>
+    <string name="sticker_set_not_found_title">Sticker set not found</string>
+    <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
+    <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
+    <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
+    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
+    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
 </resources>

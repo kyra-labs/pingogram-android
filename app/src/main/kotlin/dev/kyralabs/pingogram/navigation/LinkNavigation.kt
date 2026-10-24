@@ -15,6 +15,8 @@ import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatBoostRoute
+import dev.kyralabs.pingogram.core.navigation.ChatFolderInviteRoute
+import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInviteRoute
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
@@ -25,6 +27,7 @@ import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
+import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 
 /**
  * Hands [link], a Telegram link another app opened Pingogram with, to [onOpen] once the main graph shows, after
@@ -64,7 +67,9 @@ internal fun OpenLinkEffect(
  * - A **user's profile** is pushed, and so is a group's or channel's **info** (`ChatInfoRoute`).
  * - **Contacts** and **Settings** switch tabs, a page of Settings is pushed above its tab; **Edit profile** and **New
  *   chat** are pushed; **search** opens with [onOpenSearch], docked or full screen as the window wants.
- * - An **invitation** opens the join sheet above the screen (`ChatInviteRoute`, a dialog destination); a **QR code
+ * - An **invitation** opens the join sheet above the screen (`ChatInviteRoute`, a dialog destination), a **shared
+ *   folder** its sheet (`ChatFolderInviteRoute`, also a dialog destination), a **sticker set** its sheet
+ *   (`StickerSetRoute`, a dialog destination of the settings pages' graph); a **QR code
  *   login** the page that asks before logging the device in (`QrLoginRoute`); a **boost** link the chat's boosts
  *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`). Each of them changes nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
@@ -89,6 +94,8 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.NewChat -> navigate(NewChatRoute) { launchSingleTop = true }
         LinkTarget.Search -> onOpenSearch()
         is LinkTarget.ChatInvite -> navigate(ChatInviteRoute(target.inviteLink)) { launchSingleTop = true }
+        is LinkTarget.ChatFolderInvite -> navigate(ChatFolderInviteRoute(target.inviteLink)) { launchSingleTop = true }
+        is LinkTarget.StickerSet -> navigate(StickerSetRoute(name = target.name)) { launchSingleTop = true }
         is LinkTarget.QrCodeLogin -> navigate(QrLoginRoute(target.link)) { launchSingleTop = true }
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }
@@ -127,6 +134,7 @@ private fun NavHostController.openSettings(page: SettingsPage?) {
         when (page) {
             null -> return
             SettingsPage.Appearance -> AppearanceRoute
+            SettingsPage.ChatFolders -> ChatFoldersRoute
             SettingsPage.DataAndStorage -> DataStorageRoute
             SettingsPage.ActiveSessions -> ActiveSessionsRoute
             SettingsPage.Language -> LanguageRoute

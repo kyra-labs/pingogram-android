@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toCall
 import dev.kyralabs.pingogram.core.data.mapper.toTdApi
 import dev.kyralabs.pingogram.core.domain.model.Call
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.repository.CallRepository
@@ -77,6 +78,22 @@ class TdlibCallRepository
                         duration.inWholeSeconds.toInt(),
                         isVideo,
                         connectionId,
+                    ),
+                ).map {}
+
+        override suspend fun rateCall(
+            callId: Int,
+            stars: Int,
+            problems: Set<CallProblem>,
+        ): Outcome<Unit> =
+            client
+                .request(
+                    TdApi.SendCallRating(
+                        TdApi.InputCallDiscarded(callId),
+                        stars,
+                        // comment: Pingogram asks only for the stars and the problems.
+                        "",
+                        problems.map { it.toTdApi() }.toTypedArray(),
                     ),
                 ).map {}
 

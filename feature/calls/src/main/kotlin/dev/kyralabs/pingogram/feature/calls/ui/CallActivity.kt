@@ -111,6 +111,11 @@ class CallActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
+            // A call that ends in picture-in-picture is not rated: its window has no room for the question.
+            val asksRating = (state as? CallUiState.InCall)?.rating != null
+            LaunchedEffect(asksRating, inPictureInPicture) {
+                if (asksRating && inPictureInPicture) viewModel.onEvent(CallEvent.DismissRating)
+            }
             val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
             LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->
@@ -144,28 +149,6 @@ class CallActivity : ComponentActivity() {
             mirror = mirror,
             onSink = { sink -> viewModel.setVideoSink(slot, sink) },
             modifier = modifier,
-        )
-    }
-
-    @Composable
-    private fun CallTheme(
-        settings: AppearanceSettings,
-        content: @Composable () -> Unit,
-    ) {
-        val dark = settings.themeMode.isDark()
-        LaunchedEffect(dark) {
-            enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-            )
-        }
-        PingogramTheme(
-            themeMode = settings.themeMode,
-            dynamicColor = settings.dynamicColor,
-            palette = settings.palette,
-            contrast = settings.contrast,
-            amoled = settings.amoled,
-            content = content,
         )
     }
 

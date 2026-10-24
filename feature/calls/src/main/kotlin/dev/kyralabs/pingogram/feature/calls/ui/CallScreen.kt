@@ -168,6 +168,15 @@ fun CallScreen(
                 } else {
                     InCall(state, onEvent, onMinimize, onMessage)
                 }
+                // Over the ended call, never in picture-in-picture, whose window has no room for it.
+                val rating = state.rating
+                if (rating != null && !pictureInPicture) {
+                    CallRatingSheet(
+                        isVideo = rating.isVideo,
+                        onRate = { stars, problems -> onEvent(CallEvent.Rate(stars, problems)) },
+                        onDismiss = { onEvent(CallEvent.DismissRating) },
+                    )
+                }
             }
         }
     }
@@ -182,7 +191,7 @@ enum class CallVideoSlot { Remote, Self }
  */
 typealias CallVideo = @Composable (slot: CallVideoSlot, mirror: Boolean, modifier: Modifier) -> Unit
 
-private val PlaceholderVideo: CallVideo = { slot, _, modifier ->
+internal val PlaceholderVideo: CallVideo = { slot, _, modifier ->
     val color =
         when (slot) {
             CallVideoSlot.Remote -> MaterialTheme.colorScheme.surfaceContainerHighest
@@ -379,7 +388,7 @@ private fun VideoOverlay(
                 SelfView(
                     mirror = state.video.camera == CameraFacing.Front,
                     canSwitch = state.video.canSwitchCamera,
-                    landscape = compactHeight,
+                    aspectRatio = if (compactHeight) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT,
                     video = video,
                     onSwitch = { onEvent(CallEvent.SwitchCamera) },
                     modifier = modifier.width(minOf(maxWidth, maxHeight) * SELF_VIEW_FRACTION),
@@ -499,14 +508,15 @@ private fun OverlayPill(
 }
 
 /**
- * The user's own camera in a `large`-rounded card, 3:4 (4:3 in landscape), mirrored for the front camera as a mirror
- * shows; "Switch camera" at its bottom end where the device has a front and a back camera.
+ * The user's own camera in a `large`-rounded card of [aspectRatio] (the call screen's 3:4, 4:3 in landscape), mirrored
+ * for the front camera as a mirror shows; "Switch camera" at its bottom end where the device has a front and a back
+ * camera.
  */
 @Composable
-private fun SelfView(
+internal fun SelfView(
     mirror: Boolean,
     canSwitch: Boolean,
-    landscape: Boolean,
+    aspectRatio: Float,
     video: CallVideo,
     onSwitch: () -> Unit,
     modifier: Modifier = Modifier,
@@ -514,7 +524,7 @@ private fun SelfView(
     val description = stringResource(R.string.call_self_view)
     Box(
         modifier
-            .aspectRatio(if (landscape) SELF_VIEW_ASPECT_LANDSCAPE else SELF_VIEW_ASPECT)
+            .aspectRatio(aspectRatio)
             .clip(MaterialTheme.shapes.large),
     ) {
         video(CallVideoSlot.Self, mirror, Modifier.fillMaxSize().semantics { contentDescription = description })
@@ -535,31 +545,6 @@ private fun SelfView(
                 )
             }
         }
-    }
-}
-
-/** "Back to the app": the screen's top start; over video in the media overlay's colors. */
-@Composable
-private fun MinimizeButton(
-    onMinimize: () -> Unit,
-    overlay: Boolean = false,
-) {
-    IconButton(
-        onClick = onMinimize,
-        colors =
-            if (overlay) {
-                IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.pingogramColors.mediaOverlay,
-                    contentColor = MaterialTheme.pingogramColors.onMediaOverlay,
-                )
-            } else {
-                IconButtonDefaults.iconButtonColors()
-            },
-    ) {
-        Icon(
-            painterResource(UiR.drawable.ic_keyboard_arrow_down),
-            contentDescription = stringResource(R.string.call_minimize),
-        )
     }
 }
 
@@ -1099,7 +1084,7 @@ private fun CallControlsPanel(
                         label = R.string.call_mute,
                     ) { onEvent(CallEvent.ToggleMute) }
                 }
-                RouteButton(state.route, state.routes, onEvent)
+                RouteButton(state.route, state.routes) { onEvent(CallEvent.SelectRoute(it)) }
                 if (state.video.hasCamera) {
                     LabeledButton(R.string.call_camera) {
                         Toggle(
@@ -1130,153 +1115,6 @@ private fun CallControlsPanel(
     }
 }
 
-/** Hang up: a wide medium button in `error`, with the press morph. */
-@Composable
-private fun HangUpButton(onClick: () -> Unit) {
-    val height = ButtonDefaults.MediumContainerHeight
-    Button(
-        onClick = onClick,
-        shapes = ButtonDefaults.shapesFor(height),
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-            ),
-        contentPadding = ButtonDefaults.contentPaddingFor(height),
-        modifier = Modifier.fillMaxWidth(HANG_UP_WIDTH_FRACTION).heightIn(min = height),
-    ) {
-        Icon(
-            painterResource(R.drawable.ic_call_end_filled),
-            contentDescription = stringResource(R.string.call_hang_up),
-            modifier = Modifier.size(ButtonDefaults.iconSizeFor(height)),
-        )
-    }
-}
-
-/**
- * The audio route: with only the earpiece and the speaker, a toggle between them; with a headset or Bluetooth too, a
- * menu of every route, the current one selected.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun RouteButton(
-    route: AudioRoute?,
-    routes: List<AudioRoute>,
-    onEvent: (CallEvent) -> Unit,
-) {
-    val speaker = routes.firstOrNull { it.type == AudioRouteType.Speaker }
-    val other = routes.firstOrNull { it.type == AudioRouteType.Earpiece }
-    val simple = routes.all { it.type == AudioRouteType.Speaker || it.type == AudioRouteType.Earpiece }
-    var menuOpen by remember { mutableStateOf(false) }
-    LabeledButton(if (simple) R.string.call_speaker else R.string.call_audio) {
-        Box {
-            Toggle(
-                checked =
-                    route?.type == AudioRouteType.Speaker ||
-                        (!simple && route != null && route.type != AudioRouteType.Earpiece),
-                icon = if (simple) R.drawable.ic_volume_up_filled else route?.type.icon(),
-                label = if (simple) R.string.call_speaker else R.string.call_audio,
-                enabled = routes.size > 1,
-            ) {
-                if (simple) {
-                    val target = if (route?.type == AudioRouteType.Speaker) other else speaker
-                    target?.let { onEvent(CallEvent.SelectRoute(it)) }
-                } else {
-                    menuOpen = true
-                }
-            }
-            DropdownMenuPopup(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = 1)) {
-                    routes.forEachIndexed { index, item ->
-                        val selected = item == route
-                        DropdownMenuItem(
-                            text = { Text(item.label()) },
-                            onClick = {
-                                menuOpen = false
-                                onEvent(CallEvent.SelectRoute(item))
-                            },
-                            shape = MenuDefaults.itemShape(index, routes.size).shape,
-                            // The route in use shows a check in its icon's place.
-                            leadingIcon = {
-                                if (selected) {
-                                    SelectedCheck()
-                                } else {
-                                    Icon(
-                                        painterResource(item.type.icon()),
-                                        contentDescription = null,
-                                    )
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** The check after the route in use. */
-private val SelectedCheck: @Composable () -> Unit = {
-    Icon(painterResource(UiR.drawable.ic_check), contentDescription = stringResource(R.string.call_route_selected))
-}
-
-@Composable
-private fun AudioRoute.label(): String =
-    when (type) {
-        AudioRouteType.Earpiece -> stringResource(R.string.call_route_phone)
-        AudioRouteType.Speaker -> stringResource(R.string.call_route_speaker)
-        AudioRouteType.WiredHeadset -> stringResource(R.string.call_route_headset)
-        AudioRouteType.Bluetooth -> name.ifBlank { stringResource(R.string.call_route_bluetooth) }
-    }
-
-@DrawableRes
-private fun AudioRouteType?.icon(): Int =
-    when (this) {
-        AudioRouteType.Speaker -> R.drawable.ic_volume_up_filled
-        AudioRouteType.WiredHeadset -> R.drawable.ic_headphones_filled
-        AudioRouteType.Bluetooth -> R.drawable.ic_bluetooth
-        AudioRouteType.Earpiece, null -> R.drawable.ic_phone_in_talk_filled
-    }
-
-/**
- * A medium wide toggle button on the panel, `surfaceBright` (`primary` when checked), its shape morphing from round to
- * square when checked, with a toggle haptic.
- */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun Toggle(
-    checked: Boolean,
-    @DrawableRes icon: Int,
-    @StringRes label: Int,
-    enabled: Boolean = true,
-    onToggle: () -> Unit,
-) {
-    val haptics = LocalHapticFeedback.current
-    FilledTonalIconToggleButton(
-        checked = checked,
-        onCheckedChange = {
-            haptics.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-            onToggle()
-        },
-        enabled = enabled,
-        shapes = IconButtonDefaults.toggleableShapes(),
-        colors =
-            IconButtonDefaults.filledTonalIconToggleButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceBright,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                checkedContainerColor = MaterialTheme.colorScheme.primary,
-                checkedContentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        modifier = Modifier.size(IconButtonDefaults.mediumContainerSize(IconButtonWidthOption.Wide)),
-    ) {
-        Icon(
-            painterResource(icon),
-            contentDescription = stringResource(label),
-            modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
-        )
-    }
-}
-
 /** A large round button in [container], with the press morph. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1297,24 +1135,6 @@ private fun HeroButton(
             painterResource(icon),
             contentDescription = stringResource(label),
             modifier = Modifier.size(IconButtonDefaults.largeIconSize),
-        )
-    }
-}
-
-/** A button over its label; the label is for sight only, as the button carries it for screen readers. */
-@Composable
-private fun LabeledButton(
-    @StringRes label: Int,
-    button: @Composable () -> Unit,
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        button()
-        Spacer(Modifier.height(MaterialTheme.spacing.small))
-        Text(
-            stringResource(label),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }
@@ -1368,13 +1188,6 @@ private fun MicrophoneStep(
     )
 }
 
-/** The safe area below and beside docked controls, which reach the window's bottom edge; none otherwise. */
-@Composable
-private fun bottomInsets(docked: Boolean): WindowInsets =
-    if (docked) WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal) else NoInsets
-
-private val NoInsets = WindowInsets(0, 0, 0, 0)
-
 private val TOP_SIDES = WindowInsetsSides.Top + WindowInsetsSides.Horizontal
 
 private fun CallStage.isRinging() =
@@ -1383,7 +1196,7 @@ private fun CallStage.isRinging() =
 /** The self-view's width against the window's shorter side, and its shape (portrait; landscape in landscape). */
 private const val SELF_VIEW_FRACTION = 0.3f
 private const val SELF_VIEW_ASPECT = 3f / 4f
-private const val SELF_VIEW_ASPECT_LANDSCAPE = 4f / 3f
+internal const val SELF_VIEW_ASPECT_LANDSCAPE = 4f / 3f
 
 /** The avatar's largest width against the window's, as the system's dialer shows an incoming caller. */
 private const val AVATAR_WIDTH_FRACTION = 0.6f
@@ -1408,6 +1221,3 @@ private const val HANG_UP_ROTATION = 135f
 
 /** The slider's widest, against the illustrations': about the width of a phone's content. */
 private const val SLIDER_WIDTH_SCALE = 1.4f
-
-/** The hang-up pill's width against the panel's. */
-private const val HANG_UP_WIDTH_FRACTION = 0.4f

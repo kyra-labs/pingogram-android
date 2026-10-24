@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
@@ -13,7 +14,12 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
+import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
+import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
+import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
+import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
+import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
@@ -61,6 +67,13 @@ class FakeCallRepository : CallRepository {
     val startedVideo = mutableListOf<Boolean>()
     val discardedVideo = mutableListOf<Boolean>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
+    val rated = mutableListOf<Rating>()
+
+    data class Rating(
+        val callId: Int,
+        val stars: Int,
+        val problems: Set<CallProblem>,
+    )
 
     data class Discard(
         val callId: Int,
@@ -110,6 +123,15 @@ class FakeCallRepository : CallRepository {
         return discardResult
     }
 
+    override suspend fun rateCall(
+        callId: Int,
+        stars: Int,
+        problems: Set<CallProblem>,
+    ): Outcome<Unit> {
+        rated += Rating(callId, stars, problems)
+        return Outcome.Success(Unit)
+    }
+
     override suspend fun sendSignalingData(
         callId: Int,
         data: ByteArray,
@@ -145,6 +167,103 @@ class FakeCallEngine : CallEngine {
         isOutgoing: Boolean,
         connection: CallConnection,
     ): CallSession = FakeCallSession(callId, isOutgoing, connection).also { sessions += it }
+
+    val groupSessions = mutableListOf<FakeGroupCallSession>()
+
+    override suspend fun createGroupCall(
+        groupCallId: Int,
+        muted: Boolean,
+    ): GroupCallSession {
+        if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        return FakeGroupCallSession(groupCallId, muted).also { groupSessions += it }
+    }
+}
+
+class FakeGroupCallSession(
+    val groupCallId: Int,
+    var muted: Boolean,
+) : GroupCallSession {
+    override val joinPayload = "{\"ssrc\":$AUDIO_SOURCE}"
+    override val audioSourceId = AUDIO_SOURCE
+    override val state = MutableStateFlow(CallMediaState.Connecting)
+    override val mode = MutableStateFlow<GroupCallMode?>(null)
+    private val requests = Channel<StreamRequest>(Channel.UNLIMITED)
+    override val streamRequests: Flow<StreamRequest> = requests.receiveAsFlow()
+
+    var params: String? = null
+    var onHold = false
+    var closed = false
+    var videoSink: VideoFrameSink? = null
+    val times = mutableListOf<Long>()
+    val segments = mutableListOf<Pair<StreamRequest.Segment, SegmentResult>>()
+
+    /** The engine asks for [request], as NTgCalls does while the call is a stream. */
+    fun ask(request: StreamRequest) {
+        requests.trySend(request)
+    }
+
+    override suspend fun connect(params: String) {
+        this.params = params
+    }
+
+    override suspend fun setMuted(muted: Boolean) {
+        this.muted = muted
+    }
+
+    override suspend fun setOnHold(onHold: Boolean) {
+        this.onHold = onHold
+    }
+
+    override suspend fun sendTime(timeMs: Long) {
+        times += timeMs
+    }
+
+    override suspend fun sendSegment(
+        request: StreamRequest.Segment,
+        result: SegmentResult,
+    ) {
+        segments += request to result
+    }
+
+    override suspend fun setVideoSink(sink: VideoFrameSink?) {
+        videoSink = sink
+    }
+
+    /** The camera sent and its quality, null while none sends. */
+    var camera: Pair<CallCamera, VideoQuality>? = null
+    var selfSink: VideoFrameSink? = null
+
+    override suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    ) {
+        this.camera = camera?.let { it to quality }
+    }
+
+    override suspend fun setSelfVideoSink(sink: VideoFrameSink?) {
+        selfSink = sink
+    }
+
+    /** The others' videos received, as the manager last asked. */
+    var received: List<IncomingVideo> = emptyList()
+    var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
+
+    override suspend fun receiveVideos(videos: List<IncomingVideo>) {
+        received = videos
+    }
+
+    override fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>) {
+        incomingSinks = sinks
+    }
+
+    override suspend fun close() {
+        closed = true
+        state.value = CallMediaState.Closed
+    }
+
+    companion object {
+        const val AUDIO_SOURCE = 1234
+    }
 }
 
 class FakeCallSession(
