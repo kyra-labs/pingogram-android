@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.EditProxyRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
+import dev.kyralabs.pingogram.core.navigation.NetworkUsageRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -160,8 +161,8 @@ private fun NavGraphBuilder.stickerPages(
  * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute]
  * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the
  * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
- * above Notifications, [AutoDownloadRoute] and [ProxiesRoute] above Data and storage, [EditProxyRoute] above the
- * proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination),
+ * above Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage,
+ * [EditProxyRoute] above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination),
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
  * and [DeleteAccountRoute] above Privacy and security, [TwoStepVerificationFlowRoute] above 2-step verification,
  * [SetPasscodeRoute] above Passcode lock, [OpenSourceLicensesRoute] above About and [OpenSourceLibraryRoute] above it.
@@ -206,6 +207,7 @@ fun NavGraphBuilder.settingsPages(
         DataStorageScreenRoute(
             onOpenAutoDownload = { onOpen(AutoDownloadRoute(it.name)) },
             onOpenProxies = { onOpen(ProxiesRoute) },
+            onOpenNetworkUsage = { onOpen(NetworkUsageRoute) },
             onBack = onBack,
         )
     }

@@ -17,6 +17,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
   turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
   opens a sheet that shows the proxy and connects through it only when you tap "Connect".
+- Network usage: Settings → Data and storage → Network usage shows how much data Pingogram sent and received on mobile
+  data, Wi-Fi and roaming since a date, in total and for messages, photos, videos, voice messages, music, files and
+  calls, as counted on this device. "Reset statistics" starts counting again.
 - Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
   those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
   or first video in picture-in-picture.

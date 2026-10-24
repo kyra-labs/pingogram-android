@@ -241,6 +241,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   secret never in saved state) sit above Data and storage, whose "Proxy" row shows the one in use. A proxy link
   (`tg://proxy`, `t.me/socks`) resolves to `LinkTarget.ProxyServer`, which `:app` opens as `ProxyLinkRoute`, a dialog
   destination of `settingsPages` (`ProxyLinkViewModel`), connecting only on "Connect".
+- **Network usage** (Data and storage): `core:domain`'s `NetworkUsageRepository` (`TdlibNetworkUsageRepository`,
+  `core:data`, no cache) reads TDLib's own statistics (`getNetworkStatistics` of every session since the last reset,
+  answered from its database) into `NetworkUsage`, by network (TDLib's "other" networks counted as Wi-Fi, as automatic
+  download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
+  `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
+  saved state) shows them above Data and storage.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

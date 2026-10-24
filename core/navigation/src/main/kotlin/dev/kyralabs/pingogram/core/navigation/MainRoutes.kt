@@ -134,6 +134,10 @@ data class AutoDownloadRoute(
     val network: String,
 )
 
+/** How much data Pingogram sent and received on each network, pushed above [DataStorageRoute]. */
+@Serializable
+data object NetworkUsageRoute
+
 /** The proxies Pingogram connects through (`docs/adr/0027-proxies.md`), pushed above [DataStorageRoute]. */
 @Serializable
 data object ProxiesRoute

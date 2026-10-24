@@ -39,6 +39,7 @@ import java.text.NumberFormat
 internal fun DataStorageRoute(
     onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
     onOpenProxies: () -> Unit,
+    onOpenNetworkUsage: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DataStorageViewModel = hiltViewModel(),
@@ -76,6 +77,7 @@ internal fun DataStorageRoute(
         onEvent = viewModel::onEvent,
         onOpenAutoDownload = onOpenAutoDownload,
         onOpenProxies = onOpenProxies,
+        onOpenNetworkUsage = onOpenNetworkUsage,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -87,14 +89,16 @@ internal fun DataStorageRoute(
  * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
  * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
  * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs; and the proxy in use, a row that
- * opens the proxies ([onOpenProxies]).
+ * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) below it.
  */
+@Suppress("LongParameterList") // The page's state and events, the three pages it opens, back, and its scaffold's parts.
 @Composable
 internal fun DataStorageScreen(
     state: DataStorageUiState,
     onEvent: (DataStorageEvent) -> Unit,
     onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
     onOpenProxies: () -> Unit,
+    onOpenNetworkUsage: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -108,7 +112,7 @@ internal fun DataStorageScreen(
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
         }
-        NetworkGroup(state.proxy, onOpenProxies)
+        NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
             iconTone = SettingsIconTone.Secondary,
@@ -209,6 +213,7 @@ private fun DataStorageScreenPreview() {
             onEvent = {},
             onOpenAutoDownload = {},
             onOpenProxies = {},
+            onOpenNetworkUsage = {},
             onBack = {},
         )
     }
@@ -223,6 +228,7 @@ private fun DataStorageScreenLoadingPreview() {
             onEvent = {},
             onOpenAutoDownload = {},
             onOpenProxies = {},
+            onOpenNetworkUsage = {},
             onBack = {},
         )
     }
@@ -237,6 +243,7 @@ private fun DataStorageScreenErrorPreview() {
             onEvent = {},
             onOpenAutoDownload = {},
             onOpenProxies = {},
+            onOpenNetworkUsage = {},
             onBack = {},
         )
     }
@@ -251,6 +258,7 @@ private fun DataStorageScreenDialogPreview() {
             onEvent = {},
             onOpenAutoDownload = {},
             onOpenProxies = {},
+            onOpenNetworkUsage = {},
             onBack = {},
         )
     }
@@ -265,6 +273,7 @@ private fun DataStorageScreenClearingPreview() {
             onEvent = {},
             onOpenAutoDownload = {},
             onOpenProxies = {},
+            onOpenNetworkUsage = {},
             onBack = {},
         )
     }
