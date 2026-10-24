@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Link previews in secret chats: off by default, and a switch in Privacy and security turns them on. Telegram's
+  servers make link previews, so they would see the links sent in a secret chat.
 - Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other
   people's profiles show theirs under Info, and a tap opens it.
 - Contact joined Telegram: a switch in Settings → Notifications turns off the message Telegram sends when one of your

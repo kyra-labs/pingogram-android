@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import dev.kyralabs.pingogram.core.data.repository.OpenChats
+import dev.kyralabs.pingogram.core.data.repository.SecretChatLinkPreviews
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -39,7 +41,13 @@ internal class NotificationsHarness(
     val users = TdlibUserRepository(client, backgroundScope)
     val groups = TdlibGroupRepository(client, backgroundScope)
     val files = TdlibFileRepository(client, TdlibTransferRepository(client, backgroundScope), backgroundScope)
-    val notifications = TdlibNotificationRepository(client, backgroundScope, openChats)
+    val notifications =
+        TdlibNotificationRepository(
+            client,
+            backgroundScope,
+            openChats,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
     val auth = TdlibAuthRepository(client, dispatcher)
 
     val builder = ConversationNotificationBuilder(context)
