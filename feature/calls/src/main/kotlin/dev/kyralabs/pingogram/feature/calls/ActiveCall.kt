@@ -34,6 +34,17 @@ data class ActiveCall(
     val video: CallVideo = CallVideo(),
 )
 
+/**
+ * A call that ended and that Telegram asks the user to rate ([CallManager.rating]): hung up after at least 5 s
+ * connected. [isVideo] offers the video problems too.
+ */
+@Immutable
+data class CallRatingRequest(
+    val callId: Int,
+    val userId: Long,
+    val isVideo: Boolean,
+)
+
 /** The call's video (`docs/adr/0019-video-and-group-calls-scope.md`): what the user sends and what comes. */
 @Immutable
 data class CallVideo(

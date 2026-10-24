@@ -876,6 +876,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   goes to the screen's `CallVideoView` (`GroupCallManager.setVideoSink`) and on in picture-in-picture. The features
   reach voice chats through `core:ui`'s `VoiceChats` (`LocalVoiceChats`, provided by `:app` from `Calls`): the
   conversation's `VoiceChatBarSlot` at the top of its sheet and the info page's "Voice chat" pill.
+- **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
+  for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
+  call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in
+  the app's scope), declines, or another call starts. `CallViewModel` keeps the ended call on screen while it asks,
+  `CallScreen` shows `CallRatingSheet` over it (never in picture-in-picture, which declines it). The engine's log
+  (`sendCallLog`) is not sent: NTgCalls writes none Pingogram could hand over.
 - **Recent calls**: `core:domain`'s `CallHistoryRepository` (`TdlibCallHistoryRepository`, `core:data`, no cache) pages
   the call service messages of every private chat (`searchCallMessages`, by TDLib's offset, all or only missed),
   deletes one for the user only (`deleteMessages` without `revoke`) and follows `updateNewMessage` with a `messageCall`

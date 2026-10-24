@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.compose.runtime.Immutable
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.CallEndReason
@@ -42,6 +43,8 @@ sealed interface CallUiState {
         /** Made as a video call, or the other person turned video on: an incoming one says so. */
         val isVideoCall: Boolean = false,
         val video: CallVideoUi = CallVideoUi(),
+        /** Ended, and Telegram asks the user to rate it: "Rate this call" shows over the ended call. */
+        val rating: CallRatingPrompt? = null,
     ) : CallUiState {
         /** The incoming call rings: answer or decline. */
         val isIncomingRinging: Boolean get() = !isOutgoing && stage == CallStage.Ringing
@@ -64,6 +67,12 @@ data class CallVideoUi(
     /** Either side's video shows: the screen lays out as a video call. */
     val shows: Boolean get() = camera != null || remote != RemoteVideo.Off
 }
+
+/** "Rate this call" over an ended call; [isVideo] offers the video problems too. */
+@Immutable
+data class CallRatingPrompt(
+    val isVideo: Boolean,
+)
 
 /** The other person as the call screen shows them. */
 @Immutable
@@ -129,6 +138,15 @@ sealed interface CallEvent {
 
     /** "Not now" before the permission request: an outgoing call is not made, an incoming one is declined. */
     data object DismissMicrophone : CallEvent
+
+    /** "Send" in "Rate this call": [stars] from 1 to 5, and what went wrong. */
+    data class Rate(
+        val stars: Int,
+        val problems: Set<CallProblem>,
+    ) : CallEvent
+
+    /** "Rate this call" closed without rating: "Not now", the scrim, back, or picture-in-picture. */
+    data object DismissRating : CallEvent
 }
 
 /** What the call screen does once, outside its state. */

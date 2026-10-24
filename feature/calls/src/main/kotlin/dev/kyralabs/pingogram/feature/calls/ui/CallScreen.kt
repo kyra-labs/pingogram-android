@@ -168,6 +168,15 @@ fun CallScreen(
                 } else {
                     InCall(state, onEvent, onMinimize, onMessage)
                 }
+                // Over the ended call, never in picture-in-picture, whose window has no room for it.
+                val rating = state.rating
+                if (rating != null && !pictureInPicture) {
+                    CallRatingSheet(
+                        isVideo = rating.isVideo,
+                        onRate = { stars, problems -> onEvent(CallEvent.Rate(stars, problems)) },
+                        onDismiss = { onEvent(CallEvent.DismissRating) },
+                    )
+                }
             }
         }
     }
