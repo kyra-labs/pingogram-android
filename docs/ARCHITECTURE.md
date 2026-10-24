@@ -721,6 +721,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
   it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
   stream. The seek bar shows the player's buffered position.
+- Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
+  not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
+  position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player
+  of its own from there, the window's play or pause reaching it through `PipActionReceiver`. Expanding the window gives
+  the video back, and `ReturnFromPictureInPictureEffect` (in `:app`'s `PingogramNavHost`) opens the viewer again at it,
+  where `MediaPlayback.startAt` takes up the position. Secret chats' media stays in the viewer's secure window.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
   `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
   `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache

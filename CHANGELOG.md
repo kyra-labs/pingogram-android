@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
+  seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
+  the viewer where it left off. Secret chats' videos stay in the viewer.
 - Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
   whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
   reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
