@@ -693,9 +693,13 @@ Material parts (`app/.../ui/PingogramNavigationBar.kt`):
     pauses and resumes, Esc closes.
   - **Hover**: the chat list rows, the conversation's title, the pinned and translate bars, bot buttons and the media
     viewer's toolbar use Material's clickables and buttons, which show the hover state.
-  - **Send key**: Appearance → Chats → "Send with Ctrl+Enter" (a switch row, off by default, `ComposerSettingsRepository`)
-    makes Ctrl+Enter send and Enter start a new line on a hardware keyboard (`docs/audit/accessibility.md` A2; where
-    the setting lives is the owner's to confirm). The on-screen keyboard's Enter always starts a new line.
+  - **Send key** (`docs/audit/accessibility.md` A2, `docs/audit/feature-gaps-octogram.md` P1): Appearance → Chats has
+    two switch rows (`ComposerSettingsRepository`, `SendKeys`). "Send with Enter on a keyboard", on by default: a
+    hardware keyboard's Enter sends, Shift+Enter and Ctrl+Enter start a new line; off, Ctrl+Enter sends and Enter starts
+    a new line (the "Send with Ctrl+Enter" of before, which carries over). "Send with Enter on the screen keyboard", off
+    by default: on, the on-screen keyboard's action key reads "Send" (`ImeAction.Send`) and sends; off, its Enter starts
+    a new line. The conversation's route hands them to its fields (`LocalSendKeys`); other fields keep the defaults.
+    Where the rows live is the owner's to confirm.
 - Reduced motion & reduced transparency respected; no flashing content > 3 Hz.
 - Run TalkBack + Accessibility Scanner before marking any screen done.
 

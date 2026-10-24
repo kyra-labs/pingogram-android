@@ -988,8 +988,11 @@
     <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
     <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
     <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
-    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
-    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware">Send with Enter on a keyboard</string>
+    <string name="settings_enter_sends_hardware_on">Shift+Enter or Ctrl+Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware_off">Ctrl+Enter sends, Enter starts a new line</string>
+    <string name="settings_enter_sends_on_screen">Send with Enter on the screen keyboard</string>
+    <string name="settings_enter_sends_on_screen_summary">The on-screen keyboard’s Enter key becomes Send</string>
 
     <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
     <string name="settings_section_network">Network</string>

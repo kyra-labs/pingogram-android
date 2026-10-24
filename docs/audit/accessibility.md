@@ -93,7 +93,7 @@ A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say wha
 | # | Where | Finding | Rule | Suggested fix |
 |---|---|---|---|---|
 | A1 | `feature/chat/…/ui/MessageBubble.kt` (`bubbleGestures`, `LongPress.kt`) | A message's actions open by touch or TalkBack only: no keyboard focus, no key, no right-click | §9 keyboard & mouse | **Done.** The row is focusable where the keyboard moves the focus (`bubbleKeys`), with the theme's focus ring in the bubble's shape. Enter, Shift+F10, the Menu key and a right click open the floating menu, which takes the focus and closes on Esc, giving the focus back. Tests: `MessageKeysTest` |
-| A2 | `feature/chat/…/ui/composer/ComposerField.kt` (`isSendKey`) | Enter sends and Ctrl+Enter is refused. There is no "Ctrl+Enter to send" setting, which §9 asks for | §9 keyboard | A send-key preference. In Ctrl+Enter mode, Enter inserts a line break (owner decision: where the setting lives, §5) |
+| A2 | `feature/chat/…/ui/composer/ComposerField.kt` (`fieldKey`) | Fixed (2026-10-24): which Enter sends is a setting for a hardware keyboard (Ctrl+Enter sends where Enter does not) and for the on-screen keyboard (`SendKeys`) | §9 keyboard | Done; where the rows live is the owner's to confirm (§5) |
 | A3 | `feature/media/…/ui/MediaViewerScreen.kt`, `MediaPage.kt` | No keys: arrows do not turn pages, +/− do not zoom, Esc does not close | §9 keyboard & mouse | **Done.** Left/Right (mirrored in RTL), +/= and −, 0 to fit, Ctrl and the wheel, Space for a video, Esc (`MediaViewerKeys.kt`). The stories viewer has Left/Right, Space and Esc (`StoryViewerKeys.kt`). Tests: `MediaViewerKeysTest`, `StoryViewerKeysTest` |
 | A4 | `MessageBubble.kt` (sender name), `BubbleFrames.kt` (sender avatar) | `clickable(indication = null)`: no focus or hover state, no role or click label | §9 focus, hover | **Done.** `openProfileTarget`: a button with Material's pressed, hover and focus states clipped to the name or the circle, `Role.Button` and "Open profile" as its click label, on the same 48 dp target. Tests: `MessageKeysTest` |
 | A5 | `feature/chat/…/ui/BubbleDescription.kt` | The bubble's description and its reactions are joined with `", "` | `docs/TRANSLATING.md` | `spokenList` (`core:ui`) |
@@ -130,7 +130,8 @@ A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say wha
 
 ## 5. Decisions for the owner
 
-- **Ctrl+Enter to send (A2):** `docs/DESIGN_SYSTEM.md` §9 asks for it as a setting. The setting is in (2026-10-23):
-  Appearance → Chats → "Send with Ctrl+Enter", a switch row under the Chat appearance row (`ComposerSettingsRepository`,
-  `DataStoreComposerSettingsRepository`); the composer's key handling (`ComposerField.isSendKey`, session A) reads it
-  next. Where the row lives is still the owner's to confirm.
+- **Ctrl+Enter to send (A2):** done (2026-10-24). Appearance → Chats → "Send with Enter on a keyboard" (on by default:
+  Enter sends, Shift+Enter and Ctrl+Enter start a new line; off: Ctrl+Enter sends, Enter starts a new line) and "Send
+  with Enter on the screen keyboard" (off by default: on, the keyboard's action key reads "Send"), which the composer's
+  key handling follows (`ComposerField`, `LocalSendKeys`). "Send with Ctrl+Enter", saved before, carries over. Where
+  the rows live is still the owner's to confirm.

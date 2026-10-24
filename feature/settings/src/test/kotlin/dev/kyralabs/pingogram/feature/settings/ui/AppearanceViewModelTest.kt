@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
@@ -143,15 +144,16 @@ class AppearanceViewModelTest {
         }
 
     @Test
-    fun `send with Ctrl+Enter is off at first, and turning it on saves and shows it`() =
+    fun `Enter sends on a keyboard and not on the screen at first, and a change saves and shows`() =
         runTest {
             repository.save(AppearanceSettings())
             val viewModel = viewModel()
-            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(SendKeys(), (viewModel.state as AppearanceUiState.Content).sendKeys)
 
-            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+            val changed = SendKeys(hardwareKeyboard = false, onScreenKeyboard = true)
+            send(viewModel, AppearanceEvent.SetSendKeys(changed))
 
-            assertEquals(true, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(changed, (viewModel.state as AppearanceUiState.Content).sendKeys)
         }
 
     @Test
@@ -162,9 +164,9 @@ class AppearanceViewModelTest {
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
 
-            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+            send(viewModel, AppearanceEvent.SetSendKeys(SendKeys(onScreenKeyboard = true)))
 
-            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(SendKeys(), (viewModel.state as AppearanceUiState.Content).sendKeys)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 
