@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -313,6 +314,7 @@ class ChatViewModel internal constructor(
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
     private val topic: MessageTopic? = null,
+    sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -323,6 +325,7 @@ class ChatViewModel internal constructor(
         messageActionRepository: MessageActionRepository,
         sponsoredMessageRepository: SponsoredMessageRepository,
         attachmentRepository: AttachmentRepository,
+        composerSettings: ComposerSettingsRepository,
         userRepository: UserRepository,
         groupRepository: GroupRepository,
         chatActionRepository: ChatActionRepository,
@@ -387,6 +390,7 @@ class ChatViewModel internal constructor(
         AndroidChatLog,
         messageId,
         topic = topic,
+        sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
     )
 
     /**
@@ -495,6 +499,10 @@ class ChatViewModel internal constructor(
             log = log,
         )
 
+    /** Whether picked photos and videos go without compression by default (Data and storage). */
+    private val originalQualityByDefault =
+        sendsPhotosInOriginalQuality.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val attachments =
         ChatAttachments(
             chatId = chatId,
@@ -503,6 +511,7 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             replies = composer,
             onEffect = { effectChannel.trySend(it) },
+            originalByDefault = { originalQualityByDefault.value },
         )
 
     private val recorder =
@@ -1060,6 +1069,8 @@ class ChatViewModel internal constructor(
 
             is ChatEvent.RemoveAttachment -> attachments.remove(event.key)
 
+            is ChatEvent.SetOriginalQuality -> attachments.setOriginal(event.original)
+
             ChatEvent.DismissAttachments -> attachments.dismissPreview()
 
             is ChatEvent.SendAttachments -> attachments.sendPreview(event.options)
@@ -1208,7 +1219,9 @@ class ChatViewModel internal constructor(
             shortcuts = MessageShortcuts(canReply = canWrite, canCopy = !chat.hasProtectedContent),
             // What was picked or written stays while the user may not write; it shows again when they may.
             attachPreview =
-                overlays.preview?.takeIf { canWrite }?.let { AttachPreview(it.kind, it.items, canSchedule) },
+                overlays.preview?.takeIf { canWrite }?.let {
+                    AttachPreview(it.kind, it.items, canSchedule, it.offersOriginal, it.original)
+                },
             poll =
                 PollSheet(chat.isChannel, canSchedule).takeIf {
                     canWrite && overlays.pollOpen && AttachOption.Poll in options

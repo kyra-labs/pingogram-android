@@ -143,7 +143,7 @@ private fun DismissibleStories(
                         dismiss.onDragStarted()
                     },
                     onDragStopped = { velocity ->
-                        dismiss.onDragStopped(velocity, height, settle, scope, onClose)
+                        dismiss.onDragStopped(velocity, height, settle, scope, onDismiss = onClose)
                         onEvent(StoryViewerEvent.Hold(false))
                     },
                 ),

@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
@@ -40,6 +41,7 @@ class DataStorageViewModel
         autoDownloadRepository: AutoDownloadRepository,
         networkRepository: NetworkRepository,
         proxyRepository: ProxyRepository,
+        private val composerSettings: ComposerSettingsRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -66,6 +68,11 @@ class DataStorageViewModel
                     mutableUiState.update { it.copy(proxy = proxy) }
                 }
             }
+            viewModelScope.launch {
+                composerSettings.sendPhotosInOriginalQuality.collect { original ->
+                    mutableUiState.update { it.copy(photosInOriginalQuality = original) }
+                }
+            }
             loadUsage()
         }
 
@@ -85,6 +92,13 @@ class DataStorageViewModel
 
                 DataStorageEvent.ConfirmClearCache -> {
                     clearCache()
+                }
+
+                is DataStorageEvent.SetPhotosInOriginalQuality -> {
+                    viewModelScope.launch {
+                        val saved = composerSettings.setSendPhotosInOriginalQuality(event.enabled)
+                        if (saved is Outcome.Failure) effectChannel.trySend(DataStorageEffect.ShowError(saved.error))
+                    }
                 }
             }
         }

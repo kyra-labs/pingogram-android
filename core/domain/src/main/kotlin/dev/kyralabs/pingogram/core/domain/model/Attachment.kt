@@ -67,6 +67,13 @@ enum class AttachmentKind {
 
     /** From the file picker: every file as a document, as it is, also photos and videos. */
     Document,
+
+    /**
+     * From the gallery without compression: photos and videos as documents, so their pixels reach the other side as
+     * they are. Photos still lose their metadata (location, camera) and stay upright: a JPEG keeps its image data byte
+     * for byte, any other photo is written anew at its size.
+     */
+    Original,
 }
 
 /**

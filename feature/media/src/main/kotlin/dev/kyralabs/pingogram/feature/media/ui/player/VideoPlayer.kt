@@ -3,9 +3,10 @@ package dev.kyralabs.pingogram.feature.media.ui.player
 import androidx.media3.common.Player
 
 /**
- * Plays one local video file at a time: the platform side of the viewer's playback (`MediaPlayback`), behind an
- * interface so tests use a fake. [ExoVideoPlayer] in the app. Used on the main thread only, where its [listener] is
- * called too. Public only because `MediaViewerViewModel`'s injected constructor takes it.
+ * Plays one video at a time, a local file or one TDLib streams ([PlaySource]): the platform side of the viewer's
+ * playback (`MediaPlayback`), behind an interface so tests use a fake. [ExoVideoPlayer] in the app. Used on the main
+ * thread only, where its [listener] is called too. Public only because `MediaViewerViewModel`'s injected constructor
+ * takes it.
  */
 interface VideoPlayer {
     /** Told what the player does by itself; set by `MediaPlayback`. */
@@ -23,12 +24,15 @@ interface VideoPlayer {
     /** The file's length in milliseconds; null while the player does not know it. */
     val durationMillis: Long?
 
+    /** How far the player has the file, in milliseconds: what plays without waiting. */
+    val bufferedMillis: Long get() = positionMillis
+
     /**
-     * Plays the file at [path] from its start, replacing what was in the player: a [VideoKind.Video] once with its
-     * sound, holding audio focus; a [VideoKind.Gif] in a loop, silent and without audio focus.
+     * Plays [source] from its start, replacing what was in the player: a [VideoKind.Video] once with its sound,
+     * holding audio focus; a [VideoKind.Gif] in a loop, silent and without audio focus.
      */
     fun play(
-        path: String,
+        source: PlaySource,
         kind: VideoKind,
     )
 
@@ -65,6 +69,20 @@ interface VideoPlayer {
         /** The file cannot be played. */
         fun onError()
     }
+}
+
+/** What a player plays: a file on the device, or a TDLib file as it downloads (`docs/adr/0028-streaming-media.md`). */
+sealed interface PlaySource {
+    data class File(
+        val path: String,
+    ) : PlaySource {
+        // The path ends in the file's name, which can be personal.
+        override fun toString() = "File(…)"
+    }
+
+    data class Stream(
+        val fileId: Int,
+    ) : PlaySource
 }
 
 /** How a file plays: a video once with sound, a GIF in a silent loop. */

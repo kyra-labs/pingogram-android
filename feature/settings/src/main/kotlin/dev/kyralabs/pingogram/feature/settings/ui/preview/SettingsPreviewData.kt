@@ -90,6 +90,7 @@ internal object SettingsPreviewData {
                 StorageUsageState.Content(
                     StorageUsage(filesSize = 1_534_000_000, fileCount = 3_456, databaseSize = 85_200_000),
                 ),
+            photosInOriginalQuality = false,
         )
 
     val storageError =
