@@ -20,6 +20,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
@@ -209,6 +211,10 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun networkUsage() = check { NetworkUsageScreen(NetworkUsagePreviewStates.wifi, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun reactionNotifications() =
+        check { ReactionNotificationsScreen(ReactionNotificationsPreviewStates.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }

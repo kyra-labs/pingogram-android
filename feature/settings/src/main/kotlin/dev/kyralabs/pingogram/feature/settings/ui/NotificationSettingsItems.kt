@@ -236,3 +236,18 @@ private const val MENTIONS = "mentions"
 private const val PINNED = "pinned"
 private const val SOUND = "sound"
 private const val EXCEPTIONS = "exceptions"
+
+/** "Reactions", a row of its own that opens whom the account hears of reactions and poll votes from. */
+@Composable
+internal fun ReactionsGroup(onClick: () -> Unit) {
+    SettingsGroup {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_reactions),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_reactions_summary)) },
+                onClick = onClick,
+            )
+        }
+    }
+}

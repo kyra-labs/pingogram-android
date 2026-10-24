@@ -39,6 +39,7 @@ import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
 import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
+import dev.kyralabs.pingogram.core.navigation.ReactionNotificationsRoute
 import dev.kyralabs.pingogram.core.navigation.SetPasscodeRoute
 import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
@@ -68,6 +69,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as Open
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsRoute as ReactionNotificationsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
@@ -190,6 +192,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<NotificationSettingsRoute> {
         NotificationSettingsScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
+    settingsPage<ReactionNotificationsRoute> { ReactionNotificationsScreenRoute(onBack = onBack) }
     settingsPage<NotificationExceptionsRoute> { entry ->
         val scope =
             NotificationScope.entries.firstOrNull {
@@ -344,4 +347,5 @@ private val NotificationSettingsPage.route: Any
     get() =
         when (this) {
             is NotificationSettingsPage.Exceptions -> NotificationExceptionsRoute(scope.name)
+            NotificationSettingsPage.Reactions -> ReactionNotificationsRoute
         }

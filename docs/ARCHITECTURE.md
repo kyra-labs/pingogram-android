@@ -872,6 +872,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `updateScopeNotificationSettings` and `updateChatNotificationSettings`. Sounds stay with Android: the page opens each
   scope's channel (`PingogramChannel.of(scope)`) in the system settings. It shares the chat list's
   `NotificationPromptRepository` to ask for the permission while Android still shows its dialog.
+- Reaction notifications (Settings → Notifications → Reactions): `core:domain`'s `ReactionNotificationRepository`
+  (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per
+  start, `updateReactionNotificationSettings`, and has no function to read them) sets whom the account hears of
+  reactions and poll votes from (`setReactionNotificationSettings`, the sound Telegram keeps sent back as it was). TDLib
+  (a94b83d) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
+  `NotificationRenderer`: the settings serve the account's other apps until TDLib passes them on.
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
   (`KeepConnectedService`, type `specialUse`, its own low-importance "Connection" channel), run by

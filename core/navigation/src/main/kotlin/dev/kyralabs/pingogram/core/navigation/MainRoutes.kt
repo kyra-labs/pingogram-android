@@ -284,6 +284,10 @@ data class NotificationExceptionsRoute(
     val scope: String,
 )
 
+/** Whom the account hears of reactions and poll votes from, pushed above [NotificationSettingsRoute]. */
+@Serializable
+data object ReactionNotificationsRoute
+
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.

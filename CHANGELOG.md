@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
+  whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
+  reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
 - Send with Enter: Appearance → Chats chooses which Enter sends a message. On a hardware keyboard Enter sends by
   default, and Shift+Enter or Ctrl+Enter starts a new line; turned off, Ctrl+Enter sends instead. On the on-screen
   keyboard Enter starts a new line by default; turned on, its Enter key becomes Send. This replaces "Send with
