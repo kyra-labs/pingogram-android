@@ -483,6 +483,12 @@ data class RecentActionsRoute(
     val chatId: Long,
 )
 
+/** The statistics of supergroup or channel [chatId], for its administrators, pushed above its info page. */
+@Serializable
+data class ChatStatisticsRoute(
+    val chatId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(

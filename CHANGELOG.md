@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Statistics: where Telegram offers them (administrators of larger supergroups and channels), the info page's
+  Administration opens the chat's statistics: members, messages, views and reactions against the period before, and
+  Telegram's charts (growth, joins and leaves, languages, activity by hour, views and interactions), drawn as lines,
+  bars or shares, and in groups the members who wrote the most.
 - Recent actions: administrators of supergroups and channels see what administrators and members did in the last 48
   hours (messages edited, deleted or pinned, people joining, leaving, promoted or restricted, changes to the info,
   settings and invite links, voice chats), from the info page's Administration, filtered by kind with chips.

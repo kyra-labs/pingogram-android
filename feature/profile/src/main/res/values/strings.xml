@@ -567,4 +567,43 @@
     <string name="recent_actions_history_on">Showed the history to new members</string>
     <string name="recent_actions_history_off">Hid the history from new members</string>
     <string name="recent_actions_other">Did something Pingogram can’t show yet</string>
+    <!-- Statistics of a supergroup or channel, from the info page's Administration. -->
+    <string name="statistics">Statistics</string>
+    <string name="statistics_period">%1$s, as Telegram counts it</string>
+    <string name="statistics_overview">Overview</string>
+    <string name="statistics_top_members">Top members</string>
+    <plurals name="statistics_messages">
+        <item quantity="one">%1$d message</item>
+        <item quantity="other">%1$d messages</item>
+    </plurals>
+    <string name="statistics_members">Members</string>
+    <string name="statistics_messages">Messages</string>
+    <string name="statistics_viewers">Members reading</string>
+    <string name="statistics_senders">Members writing</string>
+    <string name="statistics_views_per_post">Views per post</string>
+    <string name="statistics_shares_per_post">Shares per post</string>
+    <string name="statistics_reactions_per_post">Reactions per post</string>
+    <string name="statistics_views_per_story">Views per story</string>
+    <string name="statistics_shares_per_story">Shares per story</string>
+    <string name="statistics_reactions_per_story">Reactions per story</string>
+    <string name="statistics_notifications">Subscribers with notifications on</string>
+    <string name="statistics_graph_members">Growth</string>
+    <string name="statistics_graph_joins">Joined and left</string>
+    <string name="statistics_graph_joins_by_source">New members by source</string>
+    <string name="statistics_graph_languages">Languages</string>
+    <string name="statistics_graph_messages">Messages</string>
+    <string name="statistics_graph_actions">Actions</string>
+    <string name="statistics_graph_by_hour">Activity by hour</string>
+    <string name="statistics_graph_by_weekday">Activity by day of the week</string>
+    <string name="statistics_graph_muted">Notifications</string>
+    <string name="statistics_graph_views_by_hour">Views by hour</string>
+    <string name="statistics_graph_views_by_source">Views by source</string>
+    <string name="statistics_graph_interactions">Interactions</string>
+    <string name="statistics_graph_reactions">Reactions</string>
+    <string name="statistics_graph_story_interactions">Story interactions</string>
+    <string name="statistics_graph_story_reactions">Story reactions</string>
+    <string name="statistics_graph_instant_view">Instant View interactions</string>
+    <string name="statistics_graph_loading">Loading the chart</string>
+    <string name="statistics_graph_empty">Not enough data for this chart</string>
+    <string name="statistics_chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
 </resources>
