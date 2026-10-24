@@ -41,8 +41,8 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: Chat appearance, which Enter sends on a hardware and on the on-screen keyboard, and raise to
- * listen.
+ * The "Chats" group: the rows of the Chat appearance page and of Double-tap to react, which Enter sends on a hardware
+ * and on the on-screen keyboard, and raise to listen.
  */
 @Composable
 internal fun ChatsGroup(
@@ -50,27 +50,19 @@ internal fun ChatsGroup(
     chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
     onOpenChatAppearance: () -> Unit,
+    onOpenQuickReaction: () -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
         item { shapes -> ChatAppearanceItem(chat, shapes, onOpenChatAppearance) }
         item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_enter_sends_hardware),
-                summary =
-                    stringResource(
-                        if (chats.sendKeys.hardwareKeyboard) {
-                            R.string.settings_enter_sends_hardware_on
-                        } else {
-                            R.string.settings_enter_sends_hardware_off
-                        },
-                    ),
-                checked = chats.sendKeys.hardwareKeyboard,
+            SettingsRow(
+                title = stringResource(R.string.settings_double_tap),
                 shapes = shapes,
-                onCheckedChange = {
-                    onEvent(AppearanceEvent.SetSendKeys(chats.sendKeys.copy(hardwareKeyboard = it)))
-                },
+                supportingContent = { Text(stringResource(R.string.settings_double_tap_summary)) },
+                onClick = onOpenQuickReaction,
             )
         }
+        item { shapes -> HardwareEnterItem(chats.sendKeys, shapes, onEvent) }
         item { shapes ->
             SwitchItem(
                 title = stringResource(R.string.settings_enter_sends_on_screen),
@@ -103,6 +95,29 @@ internal fun ChatsGroup(
             }
         }
     }
+}
+
+/** "Send with Enter on a keyboard", its summary saying which keys send and which start a line. */
+@Composable
+private fun HardwareEnterItem(
+    sendKeys: SendKeys,
+    shapes: ListItemShapes,
+    onEvent: (AppearanceEvent) -> Unit,
+) {
+    SwitchItem(
+        title = stringResource(R.string.settings_enter_sends_hardware),
+        summary =
+            stringResource(
+                if (sendKeys.hardwareKeyboard) {
+                    R.string.settings_enter_sends_hardware_on
+                } else {
+                    R.string.settings_enter_sends_hardware_off
+                },
+            ),
+        checked = sendKeys.hardwareKeyboard,
+        shapes = shapes,
+        onCheckedChange = { onEvent(AppearanceEvent.SetSendKeys(sendKeys.copy(hardwareKeyboard = it))) },
+    )
 }
 
 /** The "Chats" group's settings beside the appearance: which Enter sends a message, and raise to listen. */

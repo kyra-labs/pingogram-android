@@ -37,6 +37,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
@@ -215,6 +217,9 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun reactionNotifications() =
         check { ReactionNotificationsScreen(ReactionNotificationsPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun quickReaction() = check { QuickReactionScreen(QuickReactionPreviewStates.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }

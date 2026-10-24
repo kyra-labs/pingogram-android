@@ -288,6 +288,10 @@ data class NotificationExceptionsRoute(
 @Serializable
 data object ReactionNotificationsRoute
 
+/** The quick reaction and where a double tap adds it, pushed above [AppearanceRoute]. */
+@Serializable
+data object QuickReactionRoute
+
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.

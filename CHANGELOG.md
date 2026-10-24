@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →
+  Double-tap to react picks the quick reaction (it belongs to your Telegram account, so your other apps use it too) and
+  whether double taps react on others' messages, your own, or neither. A single tap still acts at once.
 - Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
   whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
   reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.

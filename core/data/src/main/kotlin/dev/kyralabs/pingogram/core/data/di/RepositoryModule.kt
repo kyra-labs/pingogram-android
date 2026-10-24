@@ -60,6 +60,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPinnedMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
@@ -134,6 +135,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
+import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
@@ -297,6 +299,9 @@ interface RepositoryModule {
 
     @Binds
     fun reactionNotificationRepository(repository: TdlibReactionNotificationRepository): ReactionNotificationRepository
+
+    @Binds
+    fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
 
     @Binds
     fun proxyRepository(repository: TdlibProxyRepository): ProxyRepository

@@ -43,12 +43,13 @@ import java.text.NumberFormat
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
- * [onOpenChatAppearance] the Chat appearance page; [onBack] leaves.
+ * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react; [onBack] leaves.
  */
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
     onOpenChatAppearance: () -> Unit,
+    onOpenQuickReaction: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -72,6 +73,7 @@ internal fun AppearanceRoute(
         onEvent = viewModel::onEvent,
         onOpenColorTheme = onOpenColorTheme,
         onOpenChatAppearance = onOpenChatAppearance,
+        onOpenQuickReaction = onOpenQuickReaction,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -85,7 +87,8 @@ internal fun AppearanceRoute(
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
  * the contrast level; then under "Chats" a row that opens the Chat appearance page ([onOpenChatAppearance]: message
- * text size, bubble corners, wallpaper) with their summary, and "Send with Ctrl+Enter" for hardware keyboards.
+ * text size, bubble corners, wallpaper) with their summary, a row that opens Double-tap to react
+ * ([onOpenQuickReaction]), and which Enter sends on a hardware and on the on-screen keyboard.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -97,6 +100,7 @@ internal fun AppearanceScreen(
     modifier: Modifier = Modifier,
     onOpenColorTheme: () -> Unit = {},
     onOpenChatAppearance: () -> Unit = {},
+    onOpenQuickReaction: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -117,7 +121,7 @@ internal fun AppearanceScreen(
                     state.settings,
                     ChatsSettings(state.sendKeys, state.raiseToListen),
                     onEvent,
-                    AppearancePages(onOpenColorTheme, onOpenChatAppearance),
+                    AppearancePages(onOpenColorTheme, onOpenChatAppearance, onOpenQuickReaction),
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -182,13 +186,14 @@ private fun AppearanceSettingsContent(
             )
         }
     }
-    ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance)
+    ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance, pages.onOpenQuickReaction)
 }
 
 /** What opens the pages above Appearance. */
 private class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
+    val onOpenQuickReaction: () -> Unit,
 )
 
 @PingogramPreviews
