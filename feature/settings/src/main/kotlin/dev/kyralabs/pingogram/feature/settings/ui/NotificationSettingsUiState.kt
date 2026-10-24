@@ -17,6 +17,7 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property blockedChannels the kinds of chats whose notification channel the user turned off in Android's settings.
  * @property isKeepConnectedOffered the build offers "Keep connected" (`foss`, `PushDelivery.TdlibConnection`).
  * @property keepConnected "Keep connected" is on.
+ * @property contactJoined whether Telegram tells the user when a contact joins; null until TDLib has said.
  * @property isResetDialogOpen the confirmation of "Reset all notification settings" is open.
  * @property isResetting resetting was confirmed and TDLib has not answered yet.
  */
@@ -27,6 +28,7 @@ data class NotificationSettingsUiState(
     val blockedChannels: ImmutableSet<NotificationScope> = persistentSetOf(),
     val isKeepConnectedOffered: Boolean = false,
     val keepConnected: Boolean = false,
+    val contactJoined: Boolean? = null,
     val isResetDialogOpen: Boolean = false,
     val isResetting: Boolean = false,
 )
@@ -80,6 +82,10 @@ sealed interface NotificationSettingsEvent {
     data object TurnOnNotifications : NotificationSettingsEvent
 
     data class SetKeepConnected(
+        val enabled: Boolean,
+    ) : NotificationSettingsEvent
+
+    data class SetContactJoined(
         val enabled: Boolean,
     ) : NotificationSettingsEvent
 
