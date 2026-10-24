@@ -16,6 +16,7 @@ import io.github.pytgcalls.media.MediaDescription
 import io.github.pytgcalls.media.MediaSource
 import io.github.pytgcalls.media.StreamDevice
 import io.github.pytgcalls.media.StreamMode
+import io.github.pytgcalls.media.StreamType
 import io.github.pytgcalls.media.VideoDescription
 import io.github.pytgcalls.models.Frame
 import io.github.pytgcalls.models.MediaSegmentPartStatus
@@ -83,17 +84,22 @@ class NtgCallsEngine
                         groupSessions[id]?.onConnection(info.state.toMediaState())
                     }
                     engine.onRemoteSourceChange { id, source ->
-                        if (source.device == StreamDevice.CAMERA) {
-                            sessions[id]?.onRemoteVideo(source.state.toRemoteVideo())
+                        when (source.device) {
+                            StreamDevice.CAMERA -> sessions[id]?.onRemoteVideo(source.state.toRemoteVideo())
+                            StreamDevice.SCREEN -> sessions[id]?.onRemoteScreen(source.state.toRemoteVideo())
+                            else -> Unit
                         }
                     }
                     engine.onFrames { id, mode, device, frames ->
-                        if (device == StreamDevice.CAMERA) {
+                        if (device == StreamDevice.CAMERA || device == StreamDevice.SCREEN) {
                             CallTrace.section(CallTrace.FRAMES) {
-                                sessions[id]?.onFrames(mode, frames)
-                                groupSessions[id]?.onFrames(mode, frames)
+                                sessions[id]?.onFrames(mode, device, frames)
+                                if (device == StreamDevice.CAMERA) groupSessions[id]?.onFrames(mode, frames)
                             }
                         }
+                    }
+                    engine.onStreamEnd { id, type, device ->
+                        if (type == StreamType.VIDEO && device == StreamDevice.SCREEN) sessions[id]?.onScreenEnded()
                     }
                     engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }
                     engine.onRequestBroadcastPart { id, part -> groupSessions[id]?.request(part.toStreamRequest()) }
@@ -191,6 +197,17 @@ class NtgCallsEngine
         private fun CallCamera.toVideoSource(quality: VideoQuality) =
             VideoDescription(MediaSource.DEVICE, quality.width, quality.height, quality.fps, metadata, true)
 
+        /** The device's screen through NTgCalls' own capturer (`"screen"`), at most [SCREEN_FPS] frames a second. */
+        private fun screenSource(quality: VideoQuality) =
+            VideoDescription(
+                MediaSource.DEVICE,
+                quality.width,
+                quality.height,
+                minOf(quality.fps, SCREEN_FPS),
+                SCREEN_SOURCE,
+                true,
+            )
+
         // CallSession's members, and what NTgCalls' callbacks hand each session.
         @Suppress("TooManyFunctions")
         private inner class NtgCallsSession(
@@ -206,6 +223,19 @@ class NtgCallsEngine
 
             private val mutableRemoteVideo = MutableStateFlow(RemoteVideo.Off)
             override val remoteVideo: StateFlow<RemoteVideo> = mutableRemoteVideo.asStateFlow()
+
+            private val mutableRemoteIsScreen = MutableStateFlow(false)
+            override val remoteIsScreen: StateFlow<Boolean> = mutableRemoteIsScreen.asStateFlow()
+
+            private val screenEnds = Channel<Unit>(Channel.CONFLATED)
+            override val screenEnded: Flow<Unit> = screenEnds.receiveAsFlow()
+
+            // The other side's camera and screen as their engine reports them; [remoteVideo] shows the screen first.
+            @Volatile private var remoteCamera = RemoteVideo.Off
+
+            @Volatile private var remoteScreen = RemoteVideo.Off
+
+            @Volatile private var screen = false
 
             @Volatile private var localSink: VideoFrameSink? = null
 
@@ -227,28 +257,74 @@ class NtgCallsEngine
             }
 
             fun onRemoteVideo(video: RemoteVideo) {
-                mutableRemoteVideo.value = video
+                remoteCamera = video
+                publishRemote()
             }
 
+            fun onRemoteScreen(video: RemoteVideo) {
+                remoteScreen = video
+                publishRemote()
+            }
+
+            private fun publishRemote() {
+                val isScreen = remoteScreen != RemoteVideo.Off
+                mutableRemoteIsScreen.value = isScreen
+                mutableRemoteVideo.value = if (isScreen) remoteScreen else remoteCamera
+            }
+
+            fun onScreenEnded() {
+                if (screen) screenEnds.trySend(Unit)
+            }
+
+            /**
+             * The camera's own frames go to the self-view; the other side's to [remoteSink], their screen's while they
+             * share and their camera's otherwise. The user's own screen has no preview: it would show itself.
+             */
             fun onFrames(
                 mode: StreamMode,
+                device: StreamDevice,
                 frames: List<Frame>,
             ) {
-                val sink = (if (mode == StreamMode.CAPTURE) localSink else remoteSink) ?: return
+                val sink =
+                    when {
+                        mode == StreamMode.CAPTURE -> localSink.takeIf { device == StreamDevice.CAMERA }
+                        (device == StreamDevice.SCREEN) == (remoteScreen != RemoteVideo.Off) -> remoteSink
+                        else -> null
+                    } ?: return
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
                     sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
                 }
             }
 
-            /** The microphone, and the camera while one sends. */
-            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
+            /** The microphone, the camera while one sends, and the screen while it is shared. */
+            fun capture() =
+                MediaDescription(
+                    microphoneSource,
+                    null,
+                    camera?.toVideoSource(quality),
+                    if (screen) screenSource(quality) else null,
+                )
 
             /**
-             * The speaker, and the other side's video while a sink takes it: NTgCalls negotiates receiving video again
-             * with each change, so a call nobody watches (a voice call, the screen away) receives no frames.
+             * The speaker, and the other side's camera and screen while a sink takes them: NTgCalls negotiates
+             * receiving video again with each change, so a call nobody watches (a voice call, the screen away)
+             * receives no frames.
              */
-            fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { remoteSink != null }, null)
+            fun playback(): MediaDescription {
+                val video = REMOTE_VIDEO.takeIf { remoteSink != null }
+                return MediaDescription(null, speakerSource, video, video)
+            }
+
+            override suspend fun setScreen(
+                on: Boolean,
+                quality: VideoQuality,
+            ) {
+                if (screen == on && (!on || this.quality == quality)) return
+                screen = on
+                if (camera == null) this.quality = quality
+                engineCall("share the screen") { calls().setStreamSources(id, StreamMode.CAPTURE, capture()) }
+            }
 
             override suspend fun setCamera(
                 camera: CallCamera?,
@@ -304,6 +380,9 @@ class NtgCallsEngine
                 }
                 mutableState.value = CallMediaState.Closed
                 mutableRemoteVideo.value = RemoteVideo.Off
+                mutableRemoteIsScreen.value = false
+                screen = false
+                screenEnds.close()
                 localSink = null
                 remoteSink = null
                 sessions.remove(id)
@@ -537,6 +616,9 @@ class NtgCallsEngine
 
             /** The other side's video, as it comes: width, height and frame rate 0 are NTgCalls' "as sent". */
             val REMOTE_VIDEO = VideoDescription(MediaSource.EXTERNAL, 0, 0, 0, "", true)
+
+            /** NTgCalls' metadata of the screen's capture device. */
+            const val SCREEN_SOURCE = "{\"id\":\"screen\"}"
 
             const val UNSIGNED_INT_MASK = 0xFFFF_FFFFL
         }

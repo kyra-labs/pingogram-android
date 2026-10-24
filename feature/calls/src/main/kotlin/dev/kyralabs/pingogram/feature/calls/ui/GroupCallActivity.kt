@@ -107,6 +107,10 @@ class GroupCallActivity : ComponentActivity() {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
+
+                        // Voice chats do not offer screen sharing yet: their view model never asks.
+                        CallEffect.RequestScreenCapture -> Unit
+
                         CallEffect.OpenSettings -> openAppSettings()
                     }
                 }

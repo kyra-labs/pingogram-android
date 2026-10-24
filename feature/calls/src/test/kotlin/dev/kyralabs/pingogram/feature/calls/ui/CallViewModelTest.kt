@@ -206,6 +206,32 @@ class CallViewModelTest {
         }
 
     @Test
+    fun `share screen asks Android first, shares once agreed, and stops`() =
+        runTest(dispatcher) {
+            val viewModel = viewModel(manager(), CallActivity.ACTION_START, userId = 42)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+
+            viewModel.onEvent(CallEvent.ToggleScreenSharing)
+            runCurrent()
+            assertEquals(listOf<CallEffect>(CallEffect.RequestScreenCapture), effects)
+
+            viewModel.onEvent(CallEvent.ScreenSharingResult(granted = false))
+            runCurrent()
+            assertFalse(viewModel.inCall().video.isSharingScreen)
+
+            viewModel.onEvent(CallEvent.ScreenSharingResult(granted = true))
+            runCurrent()
+            assertTrue(viewModel.inCall().video.isSharingScreen)
+
+            viewModel.onEvent(CallEvent.ToggleScreenSharing)
+            runCurrent()
+            assertFalse(viewModel.inCall().video.isSharingScreen)
+            assertEquals(1, effects.size)
+        }
+
+    @Test
     fun `turns the camera on and off where it is allowed`() =
         runTest(dispatcher) {
             camera.granted = true

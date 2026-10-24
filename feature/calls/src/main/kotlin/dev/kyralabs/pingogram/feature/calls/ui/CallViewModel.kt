@@ -163,6 +163,10 @@ class CallViewModel
                     viewModelScope.launch { callManager.switchCamera() }
                 }
 
+                CallEvent.ToggleScreenSharing, is CallEvent.ScreenSharingResult -> {
+                    onScreenSharing(event)
+                }
+
                 is CallEvent.CameraResult -> {
                     if (event.granted) {
                         viewModelScope.launch { callManager.setCameraOn(true) }
@@ -214,6 +218,24 @@ class CallViewModel
 
         override fun onCleared() {
             callManager.setVideoSinks(null, null)
+        }
+
+        /** "Share screen" asks Android first; its answer starts sharing; while sharing, the button stops it. */
+        private fun onScreenSharing(event: CallEvent) {
+            val call = callManager.call.value ?: return
+            when {
+                event is CallEvent.ScreenSharingResult -> {
+                    if (event.granted) viewModelScope.launch { callManager.startScreenSharing() }
+                }
+
+                call.video.isSharingScreen -> {
+                    viewModelScope.launch { callManager.stopScreenSharing() }
+                }
+
+                else -> {
+                    effectChannel.trySend(CallEffect.RequestScreenCapture)
+                }
+            }
         }
 
         private fun toggleCamera() {
@@ -395,6 +417,9 @@ private fun ActiveCall.toUiState(
                 canSwitchCamera = video.canSwitchCamera,
                 remote = video.remote,
                 hasCamera = hasCamera,
+                canShareScreen = true,
+                isSharingScreen = video.isSharingScreen,
+                remoteIsScreen = video.remoteIsScreen,
             ),
     )
 
