@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Scheduled messages: a chat with messages you scheduled shows "3 scheduled messages" at the top, with when the next
+  one goes out. Tap it to see them as they will look, under the day each goes out ("Today", "Tomorrow"), with its time,
+  "When online" for those that wait for the other person, and how often a repeating one repeats. Tap or hold one to
+  send it now, pick another time, edit it, copy its text or delete it. Messages go into the chat by themselves when
+  their time comes.
 - Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
   seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
   the viewer where it left off. Secret chats' videos stay in the viewer.

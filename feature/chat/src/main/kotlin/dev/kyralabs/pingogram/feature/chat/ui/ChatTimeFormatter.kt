@@ -16,7 +16,8 @@ import java.util.Locale
  * The times of the conversation (`REQUIREMENTS.md` FR-C1, FR-C8, §6.4) in [zone] and [locale], with the platform's
  * patterns ([TimePatterns]):
  * - a message's time: "9:41 AM", or "09:41" on the 24-hour clock ([is24HourClock]);
- * - a date separator: "Today", "Yesterday", "Monday, March 17" this year, "March 17, 2024" before;
+ * - a date separator: "Today", "Yesterday", "Tomorrow" (scheduled messages), "Monday, March 17" this year, "March 17,
+ *   2024" in other years;
  * - "online" or "last seen" of a user, as `core:ui`'s [UserStatusFormatter] says it, which the profile shares;
  * - the time of a forum topic's last message in the topic list: "9:41 AM" today, "Mar 17" this year, "3/17/24" before.
  *
@@ -52,8 +53,14 @@ internal class ChatTimeFormatter(
     ): UiText =
         when {
             day == today -> UiText.resource(R.string.chat_date_today)
+
             day == today.minusDays(1) -> UiText.resource(R.string.chat_date_yesterday)
+
+            // Scheduled messages go out in the future.
+            day == today.plusDays(1) -> UiText.resource(R.string.chat_date_tomorrow)
+
             day.year == today.year -> UiText.Plain(weekdayAndDate.format(day))
+
             else -> UiText.Plain(fullDate.format(day))
         }
 

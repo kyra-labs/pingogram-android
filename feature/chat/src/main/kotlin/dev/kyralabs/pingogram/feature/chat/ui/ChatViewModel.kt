@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
+import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
@@ -90,6 +91,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ChatScheduledMessages
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.nextText
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
@@ -248,6 +251,8 @@ import java.util.Locale
  * - **Translation** ([ChatTranslation], `REQUIREMENTS.md` FR-C3): a message's "Translate" and "Show original", the
  *   translations in place of the bubbles' texts (copied only into the bubbles they change), and the translate bar
  *   ([ChatUiState.translateBar]) where Telegram suggests translating the chat, which translates the messages on screen.
+ * - **Scheduled messages** ([ChatScheduledMessages], `REQUIREMENTS.md` FR-C5): where the chat holds messages the user
+ *   scheduled, how many, for the bar over the messages ([ChatUiState.scheduledBar]), which opens their list.
  * - **Search in the chat** ([ChatSearch], `REQUIREMENTS.md` §5.9): the query, sender and results of the search, for
  *   its bars ([searchState], kept out of [uiState] like the forward sheet), the result shown in the list as a tapped
  *   quote's message, marking the query's words ([ChatItem.Bubble.searchMatch]), the members' sheet
@@ -319,6 +324,7 @@ class ChatViewModel internal constructor(
     searchRepositories: ChatSearchRepositories,
     customEmojiRepository: CustomEmojiRepository,
     pollRepository: PollRepository,
+    scheduledMessageRepository: ScheduledMessageRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -361,6 +367,7 @@ class ChatViewModel internal constructor(
         searchRepositories: ChatSearchRepositories,
         customEmojiRepository: CustomEmojiRepository,
         pollRepository: PollRepository,
+        scheduledMessageRepository: ScheduledMessageRepository,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -398,6 +405,7 @@ class ChatViewModel internal constructor(
         searchRepositories,
         customEmojiRepository,
         pollRepository,
+        scheduledMessageRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -929,6 +937,19 @@ class ChatViewModel internal constructor(
     /** The sheet of every pinned message; null while it is closed. Kept out of [uiState], like the forward sheet. */
     val pinnedSheet: StateFlow<PinnedSheet?> get() = pinned.sheet
 
+    private val scheduled =
+        ChatScheduledMessages(
+            chatId = chatId,
+            repository = scheduledMessageRepository,
+            chat = chat.mapNotNull { (it as? ChatLookup.Found)?.chat },
+            enabled = topic == null,
+            // "When online" without the name: the bar has room for little.
+            next = { schedule ->
+                val formatter = timeFormatter()
+                formatter.nextText(schedule, clock.now().atZone(formatter.zone).toLocalDate(), user = null)
+            },
+        )
+
     private val search =
         ChatSearch(
             chatId = chatId,
@@ -990,6 +1011,7 @@ class ChatViewModel internal constructor(
             .combine(botButtons.pending) { state, pending -> state.withPendingButtons(pending) }
             .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
             .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
+            .combine(scheduled.bar) { state, bar -> state.copy(scheduledBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
             .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
             .flowOn(dispatcher)
@@ -1499,7 +1521,7 @@ private val ChatUiState.items: List<ChatItem>
     get() = (content as? ChatContent.Content)?.items.orEmpty()
 
 /** The title and photo of chat [id], then every change of them; null while TDLib has not announced the chat. */
-private fun ChatRepository.chatRef(id: Long): Flow<ChatRef?> =
+internal fun ChatRepository.chatRef(id: Long): Flow<ChatRef?> =
     chat(id)
         .map { chat -> chat?.let { ChatRef(it.id, it.title, it.photo) } }
         .distinctUntilChanged()

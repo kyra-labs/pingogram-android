@@ -18,6 +18,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.bots.BotKeyboard
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBar
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBar
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBar
@@ -55,6 +57,8 @@ import kotlinx.collections.immutable.persistentSetOf
  *   chats, and bots that show nothing.
  * @property translateBar the translate bar over the messages (`REQUIREMENTS.md` FR-C3), below the pinned messages
  *   bar; null while there is none.
+ * @property scheduledBar "3 scheduled messages" over the messages (`REQUIREMENTS.md` FR-C5), below the translate bar;
+ *   null while the chat has none.
  */
 @Immutable
 data class ChatUiState(
@@ -77,6 +81,7 @@ data class ChatUiState(
     val pinnedBar: PinnedBar? = null,
     val botIntro: BotIntro? = null,
     val translateBar: TranslateBar? = null,
+    val scheduledBar: ScheduledBar? = null,
 )
 
 /**
@@ -280,6 +285,8 @@ sealed interface ChatItem {
      *   §5.9); null for every other bubble, and while there is no search.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
+     * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
+     *   scheduled messages, [time] then being its send time; null for messages of the history.
      */
     data class Bubble(
         val id: Long,
@@ -313,6 +320,7 @@ sealed interface ChatItem {
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val schedule: BubbleSchedule? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

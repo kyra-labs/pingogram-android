@@ -335,6 +335,27 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Scheduled messages** (FR-C5): sending with a time (`SendOptions.scheduledAt`) holds a message on Telegram's servers,
+  outside the history (`HistoryCache` leaves every message with a scheduling state out). `core:domain`'s
+  `ScheduledMessageRepository` (`TdlibScheduledMessageRepository`, `core:data`, no cache, as the pinned messages) loads a
+  chat's `ScheduledMessage`s (the `Message` and its `MessageSchedule`: at a time, with td_api.tl's `repeat_period`, when
+  the other user comes online, once a video is processed) once per collection (`getChatScheduledMessages`), subscribed
+  to the updates before it asks, then follows `updateNewMessage` of messages with a scheduling state,
+  `updateMessageSendSucceeded` / `Failed` of those being scheduled, `updateDeleteMessages` (also how one leaves once
+  Telegram sent it: TDLib deletes it and announces the sent message, without a scheduling state, which the history
+  takes), `updateMessageContent` and `updateMessageEdited`. "Send now" is `editMessageSchedulingState` without a state,
+  rescheduling the same with `messageSchedulingStateSendAtDate` (keeping the repeat period), deleting `deleteMessages`;
+  td_api.tl has no update for a new scheduling state, so each change made there loads the collections' lists again.
+  `Chat.hasScheduledMessages` (`updateChatHasScheduledMessages`, kept by `TdlibChatRepository`) says whether to ask at
+  all. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
+  the bar its count and the first time (`ChatUiState.scheduledBar`); the bar opens `ScheduledMessagesRoute(chatId)` of
+  `core:navigation` (`scheduledMessagesScreen`, pushed by `:app` above the conversation, also from the detail pane).
+  `ScheduledMessagesViewModel` maps the messages with the conversation's own mapping (`inputsOf`, `toItem`, so the
+  bubbles are the conversation's `MessageBubbleRow`s) under their send days (`ScheduledItemMapper`), with the send time
+  and the schedule in the meta (`ChatItem.Bubble.schedule`); its actions sheet sends now, reschedules (the composer's
+  `ScheduleDialog`), edits in the conversation's composer (`ChatBottomBar` in edit mode, saved with
+  `MessageActionRepository.editText` / `editCaption`; the message edited and its text in the saved state), copies and
+  deletes (after an `AlertDialog`).
 - **Message translation** (FR-C3, FR-C6): Telegram translates, nothing else sees a message. `core:domain`'s
   `TranslationRepository` (`TdlibTranslationRepository`, `core:data`, no cache) sends `translateMessageText` (the
   message by its ids, into one of the language codes td_api.tl lists, `targetLanguageOf` mapping a BCP 47 tag onto

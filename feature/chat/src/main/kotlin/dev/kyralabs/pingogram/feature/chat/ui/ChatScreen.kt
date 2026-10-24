@@ -79,6 +79,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchTopBarSlot
@@ -146,6 +147,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   bot's results show above the composer ([inlineResults], the view model's, kept apart from [state]); sending one
  *   scrolls to the newest message. A bot's keyboard ([botReply], the view model's too) shows in the system keyboard's
  *   place, with a toggle in the composer's pill, and gives way to the inline results.
+ * - **Scheduled messages** (`REQUIREMENTS.md` FR-C5): where the chat holds messages the user scheduled, "3 scheduled
+ *   messages" sits below those bars ([ScheduledBarSlot]), and a tap opens their list through [onOpenScheduledMessages];
+ *   without it (a screen without the list) the bar is left out.
  * - **Search in the chat** (`REQUIREMENTS.md` §5.9, [search], the view model's, kept apart from [state]): the top
  *   bar's search button opens it; the search field ([searchQuery]) takes the top bar's place and the search's bar the
  *   composer's ([SearchTopBarSlot], [SearchBottomBarSlot]), with the result shown in the list as a tapped quote's
@@ -186,6 +190,7 @@ internal fun ChatScreen(
     search: ChatSearchUiState? = null,
     searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
+    onOpenScheduledMessages: (() -> Unit)? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -229,6 +234,7 @@ internal fun ChatScreen(
                     botReply = botReply,
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
+            onOpenScheduledMessages = onOpenScheduledMessages,
             jumpButton = {
                 JumpToBottomButton(
                     visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
@@ -265,6 +271,7 @@ private fun ChatScaffold(
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenScheduledMessages: (() -> Unit)? = null,
 ) {
     val selection = state.selection
     Scaffold(
@@ -301,6 +308,7 @@ private fun ChatScaffold(
                 state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
+                ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
             }
         }
@@ -571,7 +579,7 @@ private fun ChatItemRow(
 }
 
 /** An entry of the list: [top] above it, animating as the list changes on the [motionScheme]'s springs. */
-private fun Modifier.entry(
+internal fun Modifier.entry(
     scope: LazyItemScope,
     motionScheme: MotionScheme,
     top: Dp,
@@ -587,13 +595,13 @@ private fun Modifier.entry(
     }
 
 /** The space above an entry: less between the bubbles of a group, which then read as one stack. */
-private fun ChatItem.topSpacing(
+internal fun ChatItem.topSpacing(
     between: Dp,
     withinGroup: Dp,
 ): Dp = if (this is ChatItem.Bubble && position.joinsPrevious) withinGroup else between
 
 /** The content type of an entry, so the list reuses its compositions among entries of one kind. */
-private val ChatItem.contentType: Any
+internal val ChatItem.contentType: Any
     get() =
         when (this) {
             is ChatItem.Bubble -> BubbleContentType.of(this)

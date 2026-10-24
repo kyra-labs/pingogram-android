@@ -112,31 +112,35 @@ internal fun LinkDialog(
 /**
  * Picks when a scheduled message is sent (`docs/DESIGN_SYSTEM.md` §6: a [DatePicker], then a [TimePicker], in a
  * [DatePickerDialog]): a day from today up to a year ahead, as Telegram allows, then a time, on the device's 12- or
- * 24-hour clock, an hour from [now] at first. A time that is not in the future asks for another. [onSchedule] gets the
- * moment in the device's time zone.
+ * 24-hour clock, an hour from [now] at first, or [initial] where it is given and in the future (a scheduled message's
+ * time, which rescheduling changes). A time that is not in the future asks for another. [onSchedule] gets the moment
+ * in the device's time zone.
  */
 @Composable
 internal fun ScheduleDialog(
     now: () -> Instant,
     onDismiss: () -> Unit,
     onSchedule: (Instant) -> Unit,
+    initial: Instant? = null,
 ) {
     val zone = remember { ZoneId.systemDefault() }
     val opened = remember { now().atZone(zone) }
     val today = opened.toLocalDate()
     val lastDay = today.plusDays(MAX_DAYS_AHEAD)
-    // An hour from now at first, on the day that is then (tomorrow, late in the evening).
-    val inAnHour = opened.plusHours(1)
+    // An hour from now at first, on the day that is then (tomorrow, late in the evening); or the time given.
+    val start =
+        initial?.atZone(zone)?.takeIf { it.isAfter(opened) && !it.toLocalDate().isAfter(lastDay) }
+            ?: opened.plusHours(1)
     val dateState =
         rememberDatePickerState(
-            initialSelectedDateMillis = inAnHour.toLocalDate().utcMillis(),
+            initialSelectedDateMillis = start.toLocalDate().utcMillis(),
             yearRange = today.year..lastDay.year,
             selectableDates = remember(today) { ScheduleDates(today, lastDay) },
         )
     val timeState =
         rememberTimePickerState(
-            initialHour = inAnHour.hour,
-            initialMinute = inAnHour.minute,
+            initialHour = start.hour,
+            initialMinute = start.minute,
             is24Hour = DateFormat.is24HourFormat(LocalContext.current),
         )
     var pickingTime by rememberSaveable { mutableStateOf(false) }
