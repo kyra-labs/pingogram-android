@@ -118,7 +118,16 @@ class TdlibGroupCallRepositoryTest {
                 TdApi.UpdateGroupCallParticipant(5, participant(2, order = "1").also { it.videoInfo = noEndpoint }),
             )
 
-            val (first, second) = repository.participants(5).first()
+            client.emit(
+                TdApi.UpdateGroupCallParticipant(
+                    5,
+                    participant(3, order = "0").also { it.screenSharingVideoInfo = camera },
+                ),
+            )
+
+            val (first, second, third) = repository.participants(5).first()
+            assertEquals("endpoint-1", third.screen?.endpointId)
+            assertNull(third.video)
             assertEquals(
                 GroupCallParticipantVideo(
                     "endpoint-1",
@@ -128,6 +137,28 @@ class TdlibGroupCallRepositoryTest {
                 first.video,
             )
             assertNull(second.video)
+        }
+
+    @Test
+    fun `sharing the screen sends the presentation's payload and returns its parameters, then ends it`() =
+        runTest {
+            val repository = repository()
+            client.on(TdApi.StartGroupCallScreenSharing::class, TdResult.Success(TdApi.Text("{\"presentation\":1}")))
+            client.on(TdApi.EndGroupCallScreenSharing::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success("{\"presentation\":1}"), repository.startScreenSharing(5, 77, "{}"))
+            val sent = client.sent.filterIsInstance<TdApi.StartGroupCallScreenSharing>().single()
+            assertEquals(77, sent.audioSourceId)
+            assertEquals("{}", sent.payload)
+
+            assertEquals(Outcome.Success(Unit), repository.endScreenSharing(5))
+            assertEquals(
+                5,
+                client.sent
+                    .filterIsInstance<TdApi.EndGroupCallScreenSharing>()
+                    .single()
+                    .groupCallId,
+            )
         }
 
     @Test

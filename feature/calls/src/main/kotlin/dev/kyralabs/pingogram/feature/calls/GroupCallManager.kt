@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
+import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
@@ -210,6 +211,49 @@ class GroupCallManager
             }
         }
 
+        /**
+         * Shares the user's screen as the voice chat's presentation (`docs/adr/0026-screen-sharing.md`): the user
+         * agreed in Android's dialog, whose result reached the engine. The call service runs as `mediaProjection`
+         * first; then the engine opens the presentation, TDLib joins it (`startGroupCallScreenSharing`) and the screen
+         * goes out beside the camera. Not in a stream; where a step fails, nothing is shared.
+         */
+        @Suppress("ReturnCount") // Guards: nothing to share in, the service's type refused.
+        suspend fun startScreenSharing() {
+            val call =
+                mutex.withLock {
+                    live?.takeIf { it.phase == GroupCallPhase.Connected && !it.isStream && !it.sharingScreen }
+                } ?: return
+            val session = call.session ?: return
+            if (!foreground.setScreenCapture(true)) return
+            val presentation = session.startPresentation()
+            val joined =
+                presentation?.let { repository.startScreenSharing(call.groupCallId, it.audioSourceId, it.payload) }
+            if (joined is Outcome.Success) {
+                session.connectPresentation(joined.value, call.videoQuality())
+                mutex.withLock {
+                    call.sharingScreen = true
+                    if (live === call) publish()
+                }
+            } else {
+                session.stopPresentation()
+                foreground.setScreenCapture(false)
+            }
+        }
+
+        /** Stops sharing the screen: the user's Stop, the notification's, or the capture ending by itself. */
+        suspend fun stopScreenSharing() {
+            val call =
+                mutex.withLock {
+                    live?.takeIf { it.sharingScreen }?.also {
+                        it.sharingScreen = false
+                        publish()
+                    }
+                } ?: return
+            call.session?.stopPresentation()
+            repository.endScreenSharing(call.groupCallId)
+            foreground.setScreenCapture(false)
+        }
+
         /** Where the user's own camera's frames go (the self-view), or nowhere: the screen sets it while it shows. */
         fun setSelfVideoSink(sink: VideoFrameSink?) {
             live?.selfSink?.value = SinkHolder(sink)
@@ -321,6 +365,7 @@ class GroupCallManager
                     call.scope.launch { call.selfSink.collect { session.setSelfVideoSink(it.sink) } }
                     call.scope.launch { call.incoming.collect { session.receiveVideos(it) } }
                     call.scope.launch { call.videoSinks.collect { session.setIncomingVideoSinks(it) } }
+                    call.scope.launch { session.screenEnded.collect { stopScreenSharing() } }
                     call.scope.launch {
                         call.camera.collect { source ->
                             session.setCamera(source?.camera, source?.quality ?: VideoQuality.High)
@@ -516,8 +561,10 @@ class GroupCallManager
         }
 
         /**
-         * The others' videos [call] receives: at most [MAX_RECEIVED_VIDEOS], the pinned one first, then those speaking,
-         * then by TDLib's order (`docs/adr/0024-video-in-voice-chats.md`); none in a stream. Publishes.
+         * The others' videos [call] receives: at most [MAX_RECEIVED_VIDEOS], the pinned participant's first (their
+         * shared screen before their camera), then shared screens, then the cameras of those speaking, then by TDLib's
+         * order (`docs/adr/0024-video-in-voice-chats.md`, `docs/adr/0026-screen-sharing.md`); none in a stream.
+         * Publishes.
          */
         private fun chooseVideos(call: Live) {
             val speaking =
@@ -531,22 +578,24 @@ class GroupCallManager
                     emptyList()
                 } else {
                     call.participants
-                        .filter { !it.isCurrentUser && it.video != null }
-                        .sortedWith(
-                            compareByDescending<GroupCallParticipant> { it.participant == call.pinned }
-                                .thenByDescending { it.isSpeaking || it.participant in speaking },
+                        .filter { !it.isCurrentUser }
+                        .flatMap { participant ->
+                            listOfNotNull(
+                                participant.screen?.let { ShownVideo(participant, it, isScreen = true) },
+                                participant.video?.let { ShownVideo(participant, it, isScreen = false) },
+                            )
+                        }.sortedWith(
+                            compareByDescending<ShownVideo> { it.participant.participant == call.pinned }
+                                .thenByDescending { it.isScreen }
+                                .thenByDescending {
+                                    it.participant.isSpeaking || it.participant.participant in speaking
+                                },
                         ).take(MAX_RECEIVED_VIDEOS)
                 }
             call.shownVideos = chosen
             call.incoming.value =
-                chosen.mapNotNull { participant ->
-                    participant.video?.let {
-                        IncomingVideo(
-                            participant.participant.id(),
-                            it.endpointId,
-                            it.sourceGroups,
-                        )
-                    }
+                chosen.map { (participant, video) ->
+                    IncomingVideo(participant.participant.id(), video.endpointId, video.sourceGroups)
                 }
             publish()
         }
@@ -645,6 +694,9 @@ class GroupCallManager
             var reconnected = false
             val camera = MutableStateFlow<CameraSource?>(null)
 
+            /** The user's screen goes out as the presentation. */
+            var sharingScreen = false
+
             /** Everyone TDLib announced, in its order. */
             var participants: List<GroupCallParticipant> = emptyList()
 
@@ -652,7 +704,7 @@ class GroupCallManager
             var pinned: MessageSender? = null
 
             /** The others' videos received, in the order they show. */
-            var shownVideos: List<GroupCallParticipant> = emptyList()
+            var shownVideos: List<ShownVideo> = emptyList()
             val incoming = MutableStateFlow<List<IncomingVideo>>(emptyList())
             val videoSinks = MutableStateFlow<Map<String, VideoFrameSink>>(emptyMap())
 
@@ -700,12 +752,17 @@ class GroupCallManager
                             canSwitchCamera = cameras.any { it.isFront } && cameras.any { !it.isFront },
                             remote =
                                 shownVideos
-                                    .mapNotNull { participant ->
-                                        participant.video?.let {
-                                            RemoteParticipantVideo(participant.participant, it.endpointId, it.isPaused)
-                                        }
+                                    .map { (participant, video, isScreen) ->
+                                        RemoteParticipantVideo(
+                                            participant.participant,
+                                            video.endpointId,
+                                            video.isPaused,
+                                            isScreen,
+                                        )
                                     }.toImmutableList(),
                             pinned = pinned,
+                            canShareScreen = phase == GroupCallPhase.Connected && !isStream,
+                            isSharingScreen = sharingScreen,
                         ),
                 )
         }
@@ -761,3 +818,10 @@ private fun MessageSender.id(): Long =
         is MessageSender.User -> userId
         is MessageSender.Chat -> chatId
     }
+
+/** A video a voice chat receives: [participant]'s camera or shared screen ([isScreen]). */
+private data class ShownVideo(
+    val participant: GroupCallParticipant,
+    val video: GroupCallParticipantVideo,
+    val isScreen: Boolean,
+)

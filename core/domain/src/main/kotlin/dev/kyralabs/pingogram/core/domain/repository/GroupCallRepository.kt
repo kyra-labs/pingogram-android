@@ -80,6 +80,20 @@ interface GroupCallRepository {
         enabled: Boolean,
     ): Outcome<Unit>
 
+    /**
+     * Starts sharing the user's screen in call [id] (`startGroupCallScreenSharing`, `docs/adr/0026-screen-sharing.md`)
+     * with the engine's presentation [payload] (JSON) and its [audioSourceId]; returns the presentation's connection
+     * parameters for the engine (JSON).
+     */
+    suspend fun startScreenSharing(
+        id: Int,
+        audioSourceId: Int,
+        payload: String,
+    ): Outcome<String>
+
+    /** Stops sharing the user's screen in call [id] (`endGroupCallScreenSharing`). */
+    suspend fun endScreenSharing(id: Int): Outcome<Unit>
+
     /** Raises or lowers [participant]'s hand in call [id]: the user's own, or lowers others' as an administrator. */
     suspend fun setHandRaised(
         id: Int,

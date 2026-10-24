@@ -13,7 +13,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
-  shares theirs, it fills the window without being cut off.
+  shares theirs, it fills the window without being cut off. Voice chats too: "Share screen" in the voice chat's
+  header shares your screen beside your camera, and others' shared screens show first among the videos.
 - Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
   those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
   or first video in picture-in-picture.

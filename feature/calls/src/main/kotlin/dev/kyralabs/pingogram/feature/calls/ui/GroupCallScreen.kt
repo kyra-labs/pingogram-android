@@ -4,10 +4,13 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -168,7 +171,7 @@ private fun BoxScope.GroupCallContent(
                 videos.stream(Modifier.fillMaxSize())
             } else if (pictureInPicture && first != null) {
                 // The pinned video, or the first: the one the grid shows first.
-                videos.participants(first.endpointId, Modifier.fillMaxSize())
+                videos.participants(first.endpointId, first.isScreen, Modifier.fillMaxSize())
             } else {
                 InGroupCall(state, onEvent, onMinimize, videos)
             }
@@ -185,7 +188,22 @@ private fun InGroupCall(
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxSize()) {
-        Header(state, onMinimize)
+        Header(state, onEvent, onMinimize)
+        AnimatedVisibility(
+            visible = state.video.isSharingScreen,
+            enter =
+                expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            exit =
+                shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            ScreenSharingPill(
+                onStop = { onEvent(GroupCallEvent.ToggleScreenSharing) },
+                modifier = Modifier.padding(horizontal = spacing.medium, vertical = spacing.small),
+            )
+        }
         val camera = state.video.camera
         if (camera != null && !state.isStream && state.video.remote.isEmpty()) {
             // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md); with the others'
@@ -220,10 +238,14 @@ private fun InGroupCall(
     }
 }
 
-/** "Back to the app", the chat's title and where the voice chat is, inside the safe area. */
+/**
+ * "Back to the app", the chat's title and where the voice chat is, inside the safe area; "Share screen" at the end
+ * where the user may share (`docs/adr/0026-screen-sharing.md`).
+ */
 @Composable
 private fun Header(
     state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
@@ -252,6 +274,12 @@ private fun Header(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
+            ShareScreenButton(
+                sharing = state.video.isSharingScreen,
+                onToggle = { onEvent(GroupCallEvent.ToggleScreenSharing) },
             )
         }
     }
