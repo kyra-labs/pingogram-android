@@ -4,8 +4,10 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -39,7 +41,10 @@ class AppearanceViewModelTest {
 
     private val composerSettings = FakeComposerSettingsRepository()
 
-    private fun TestScope.viewModel() = AppearanceViewModel(repository, composerSettings).also { runCurrent() }
+    private val playbackSettings = FakePlaybackSettingsRepository()
+
+    private fun TestScope.viewModel() =
+        AppearanceViewModel(repository, composerSettings, playbackSettings).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: AppearanceViewModel): List<AppearanceEffect> {
         val effects = mutableListOf<AppearanceEffect>()
@@ -160,6 +165,36 @@ class AppearanceViewModelTest {
             send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
 
             assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
+        }
+
+    @Test
+    fun `raise to listen is on at first, and each of its switches saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(RaiseToListenSettings(), (viewModel.state as AppearanceUiState.Content).raiseToListen)
+
+            send(viewModel, AppearanceEvent.SetPauseWhenLowered(true))
+            send(viewModel, AppearanceEvent.SetRaiseToListen(false))
+
+            assertEquals(
+                RaiseToListenSettings(enabled = false, pauseWhenLowered = true),
+                (viewModel.state as AppearanceUiState.Content).raiseToListen,
+            )
+        }
+
+    @Test
+    fun `raise to listen that cannot be saved stays as it was, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            playbackSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetRaiseToListen(false))
+
+            assertTrue((viewModel.state as AppearanceUiState.Content).raiseToListen.enabled)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }
