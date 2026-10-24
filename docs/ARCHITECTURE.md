@@ -809,6 +809,13 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Without compression (`AttachmentKind.Original`, the attach preview's switch, its default `ComposerSettingsRepository.sendPhotosInOriginalQuality`
+  in Data and storage): `ChatAttachments` keeps the gallery's URIs of the preview's items and, on sending, prepares
+  each again as a file. `AttachmentPreparer` copies a JPEG's image data byte for byte without its metadata
+  (`JpegMetadata`: every application segment but JFIF and every comment taken out, the EXIF orientation written back
+  alone), and writes any other photo anew as a JPEG at its size (at most `ORIGINAL_MAX_SIDE`, 8192 px) and quality 100;
+  videos go as they are. A photo whose metadata cannot be taken out is not sent so: its compressed copy goes instead.
+  A photo more than 20 times as long as wide (td_api.tl `inputPhoto`'s limit) goes as such a file either way.
 - Picked photos (Edit profile, a new group or channel, a group's or channel's info): `core:domain`'s
   `PickedPhotoRepository` (`AndroidPickedPhotoRepository`, `core:data`) is the one place that prepares them, as picked
   photos are prepared for sending (`AttachmentPreparer`: copied into `uploads/`, decoded and written anew as an

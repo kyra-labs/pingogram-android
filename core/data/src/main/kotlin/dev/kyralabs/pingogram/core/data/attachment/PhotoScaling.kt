@@ -106,6 +106,21 @@ internal const val MAX_THUMBNAIL_SIDE = 320
 /** The JPEG quality photos and thumbnails are written in: small files without visible artifacts. */
 internal const val JPEG_QUALITY = 87
 
+/**
+ * The longest side of a photo sent without compression that is not a JPEG (`AttachmentKind.Original`), written anew:
+ * its own size up to this, which keeps the decoded picture within memory (8192 × 6144 pixels take 192 MB).
+ */
+internal const val ORIGINAL_MAX_SIDE = 8192
+
+/** The JPEG quality of a photo sent without compression that is written anew. */
+internal const val ORIGINAL_JPEG_QUALITY = 100
+
+/**
+ * How much longer than wide a photo may be (td_api.tl `inputPhoto`: "width and height ratio must be at most 20");
+ * a longer one goes as a file.
+ */
+internal const val MAX_PHOTO_ASPECT = 20
+
 private const val QUARTER_TURN = 90
 private const val HALF_TURN = 180
 private const val THREE_QUARTER_TURN = 270

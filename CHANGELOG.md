@@ -13,6 +13,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
   seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
   the viewer where it left off. Secret chats' videos stay in the viewer.
+- Send photos without compression: the attach preview's "Send without compression" sends photos and videos from the
+  gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
+  are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
+  long panoramas, which Telegram refuses as photos, now go as files too.
 - Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →
   Double-tap to react picks the quick reaction (it belongs to your Telegram account, so your other apps use it too) and
   whether double taps react on others' messages, your own, or neither. A single tap still acts at once.
