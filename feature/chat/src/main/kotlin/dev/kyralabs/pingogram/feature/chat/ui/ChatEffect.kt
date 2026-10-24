@@ -47,6 +47,11 @@ sealed interface ChatEffect {
         val chatId: Long,
     ) : ChatEffect
 
+    /** Open channel [chatId], the next unread one, in this conversation's place, so back leads where it did. */
+    data class OpenNextChannel(
+        val chatId: Long,
+    ) : ChatEffect
+
     /** Open the photo, video or GIF of message [messageId] of this chat in the media viewer. */
     data class OpenMedia(
         val messageId: Long,

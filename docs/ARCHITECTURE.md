@@ -441,6 +441,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   topic's name in the header and a closed topic's label in the composer. A topic tapped in the list is pushed above it
   (`chatScreen`'s `onOpenThread`); in the Chats tab's detail pane it takes the pane's place (`ChatPane`'s saved stack of
   topics and threads, shared axis X, back returning to the list). Creating, editing and closing topics come later.
+- **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
+  `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
+  whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first
+  other channel with unread posts it offers (`NextChannel`). `NextChannelPullState` takes the message list's leftover
+  upward drags through a nested scroll connection, read in the layout and draw phases; a release past the threshold
+  sends `ChatEvent.OpenNextChannel`, which the view model checks against what it still offers before
+  `ChatEffect.OpenNextChannel`. The route opens it through `onOpenNextChat`: `:app` replaces the pushed conversation's
+  `ChatRoute` (`popUpTo<ChatRoute>`), and the Chats tab's detail pane shows it as any chat it opens.
 - **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
   others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
   `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a

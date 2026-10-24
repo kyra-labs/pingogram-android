@@ -52,6 +52,12 @@
     <string name="chat_older_error">Older messages couldn\'t be loaded</string>
     <!-- Below the newest loaded message when newer ones could not be loaded. -->
     <string name="chat_newer_error">Newer messages couldn\'t be loaded</string>
+    <!-- Under the next unread channel's name while a read channel is pulled up past its newest post. -->
+    <string name="chat_next_channel_pull">Pull up to open</string>
+    <!-- The same, once letting go opens the channel. -->
+    <string name="chat_next_channel_release">Release to open</string>
+    <!-- Screen readers' action on a read channel's messages: the next unread channel's name. -->
+    <string name="chat_next_channel_action">Open the next unread channel, %1$s</string>
     <string name="chat_jump_to_bottom">Scroll to newest messages</string>
     <!-- The unread count in the badge of the button that scrolls to the newest messages. -->
     <string name="chat_unread_badge">%1$d</string>

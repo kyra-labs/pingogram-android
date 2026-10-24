@@ -186,6 +186,7 @@ internal fun ChatScreen(
     search: ChatSearchUiState? = null,
     searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
+    nextChannel: NextChannel? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -212,6 +213,8 @@ internal fun ChatScreen(
             onOpenChatInfo = onOpenChatInfo,
             search = search,
             searchQuery = searchQuery,
+            // A read channel's next unread one, outside selection mode and search.
+            nextChannel = nextChannel.takeIf { selection == null && search == null },
             bottomBar = {
                 ChatScreenBottomBar(
                     state = state,
@@ -262,6 +265,7 @@ private fun ChatScaffold(
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
     search: ChatSearchUiState?,
     searchQuery: TextFieldState,
+    nextChannel: NextChannel?,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -301,7 +305,9 @@ private fun ChatScaffold(
                 state.header?.let { VoiceChatBarSlot(it.chatId, contentPadding) }
                 PinnedBarSlot(state.pinnedBar, onEvent, contentPadding)
                 TranslateBarSlot(state.translateBar, onEvent, contentPadding)
-                Box(Modifier.weight(1f)) { ChatBody(state, onEvent, listState, bubbleResources, contentPadding) }
+                Box(Modifier.weight(1f)) {
+                    ChatBody(state, onEvent, listState, bubbleResources, contentPadding, nextChannel)
+                }
             }
         }
     }
@@ -378,7 +384,11 @@ private fun ChatScreenBottomBar(
     }
 }
 
-/** What the sheet shows for [state]'s content: progress, an empty or error state, or the messages. */
+/**
+ * What the sheet shows for [state]'s content: progress, an empty or error state, or the messages; below the newest of
+ * a read channel's, once the list reaches it, the pull toward the [nextChannel] ([NextChannelIndicator]).
+ */
+@Suppress("LongParameterList") // The state, its list and what the bubbles share, the sheet's padding, the next channel.
 @Composable
 private fun BoxScope.ChatBody(
     state: ChatUiState,
@@ -386,6 +396,7 @@ private fun BoxScope.ChatBody(
     listState: LazyListState,
     bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
+    nextChannel: NextChannel?,
 ) {
     val bodyModifier = Modifier.fillMaxSize().padding(contentPadding)
     when (val content = state.content) {
@@ -416,7 +427,25 @@ private fun BoxScope.ChatBody(
         }
 
         is ChatContent.Content -> {
-            MessageList(state, content, listState, bubbleResources, contentPadding, onEvent)
+            val pull = rememberNextChannelPull(nextChannel.takeIf { content.reachedEnd }, onEvent)
+            MessageList(
+                state,
+                content,
+                listState,
+                bubbleResources,
+                contentPadding,
+                onEvent,
+                if (pull != null) Modifier.pullAway(pull) else Modifier,
+            )
+            if (pull != null) {
+                NextChannelIndicator(
+                    pull = pull,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = contentPadding.calculateBottomPadding() + MaterialTheme.spacing.small),
+                )
+            }
             FloatingDatePill(
                 items = content.items,
                 listState = listState,
@@ -439,6 +468,7 @@ private fun MessageList(
     bubbleResources: BubbleResources,
     contentPadding: PaddingValues,
     onEvent: (ChatEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val fileStates = state.fileStates
     val playback = state.playback
@@ -457,7 +487,7 @@ private fun MessageList(
         )
     LazyColumn(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .anchorPlacement(jumpState, listState, listPadding, margin = spacing.extraExtraLarge)
                 .hideUntilAnchored(content.anchor, content.items, jumpState)
