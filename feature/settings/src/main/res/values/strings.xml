@@ -1112,4 +1112,16 @@
     <string name="settings_reactions_preview">Show the reaction</string>
     <string name="settings_reactions_preview_summary">Notifications say who reacted and with which emoji</string>
     <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet.</string>
+    <string name="settings_double_tap">Double-tap to react</string>
+    <string name="settings_double_tap_summary">Your quick reaction, and on which messages a double tap adds it</string>
+    <string name="settings_double_tap_loading">Loading reactions</string>
+    <string name="settings_quick_reaction">Quick reaction</string>
+    <string name="settings_quick_reaction_footer">Your quick reaction belongs to your Telegram account, so your other apps use it too.</string>
+    <string name="settings_quick_reaction_custom">Your quick reaction is a custom emoji, chosen in another app. Pick an emoji to use one of these instead.</string>
+    <string name="settings_double_tap_section">Double tap</string>
+    <string name="settings_double_tap_incoming">On others’ messages</string>
+    <string name="settings_double_tap_incoming_summary">Double-tap a message you received to react to it</string>
+    <string name="settings_double_tap_outgoing">On your messages</string>
+    <string name="settings_double_tap_outgoing_summary">Double-tap a message you sent to react to it</string>
+    <string name="settings_double_tap_footer">A double tap on a message you already reacted to with your quick reaction takes it back. A single tap still does what it did before, at once.</string>
 </resources>

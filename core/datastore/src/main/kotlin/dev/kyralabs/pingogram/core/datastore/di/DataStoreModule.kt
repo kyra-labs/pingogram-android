@@ -17,27 +17,19 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreComposerSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
-import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
-import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
-import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
-import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -62,25 +54,13 @@ interface DataStoreModule {
     fun keepConnectedRepository(repository: DataStoreKeepConnectedRepository): KeepConnectedRepository
 
     @Binds
-    fun composerSettingsRepository(repository: DataStoreComposerSettingsRepository): ComposerSettingsRepository
-
-    @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
 
     @Binds
     fun passcodeRepository(repository: DataStorePasscodeRepository): PasscodeRepository
 
     @Binds
-    fun recentEmojiRepository(repository: DataStoreRecentEmojiRepository): RecentEmojiRepository
-
-    @Binds
     fun autoDownloadRepository(repository: DataStoreAutoDownloadRepository): AutoDownloadRepository
-
-    @Binds
-    fun hiddenPinsRepository(repository: DataStoreHiddenPinsRepository): HiddenPinsRepository
-
-    @Binds
-    fun hiddenTranslateBarsRepository(repository: DataStoreHiddenTranslateBarsRepository): HiddenTranslateBarsRepository
 
     @Binds
     fun contactSyncSettingsRepository(

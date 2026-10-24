@@ -67,7 +67,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
   `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
   `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Appearance → Chats and
-  handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`). Preferences rather than Proto
+  handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`;
+  `DataStoreDoubleTapSettingsRepository` for `DoubleTapSettingsRepository`, on which messages a double tap adds the
+  quick reaction, which is the account's: `QuickReactionRepository`, `TdlibQuickReactionRepository` in `core:data`, a
+  `TdlibUpdateCache` of `updateDefaultReactionType`, set with `setDefaultReactionType`; both chosen in Appearance →
+  Chats → Double-tap to react (`QuickReactionRoute`, `QuickReactionViewModel`) and handed to the conversation's
+  bubbles by `feature:chat`'s `DoubleTapViewModel` through `LocalDoubleTapReaction`, the reaction itself going through
+  `ChatEvent.ToggleReaction` as a tapped badge's does). Preferences rather than Proto
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
