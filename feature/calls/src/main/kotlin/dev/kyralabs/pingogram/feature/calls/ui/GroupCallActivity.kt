@@ -212,6 +212,7 @@ class GroupCallActivity : ComponentActivity() {
 
         const val EXTRA_ACTION = "action"
         const val EXTRA_CHAT_ID = "chat_id"
+        const val EXTRA_LINK = "link"
 
         /** Shows the voice chat the user is in. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW_VOICE_CHAT"
@@ -222,6 +223,9 @@ class GroupCallActivity : ComponentActivity() {
         /** Starts a voice chat in [EXTRA_CHAT_ID] and joins it. */
         const val ACTION_START = "dev.kyralabs.pingogram.calls.START_VOICE_CHAT"
 
+        /** Joins the conference call of the `t.me/call` link [EXTRA_LINK] (`docs/adr/0025-conference-calls.md`). */
+        const val ACTION_JOIN_CONFERENCE = "dev.kyralabs.pingogram.calls.JOIN_CONFERENCE"
+
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
         fun open(
             context: Context,
@@ -231,6 +235,14 @@ class GroupCallActivity : ComponentActivity() {
             context.startActivity(
                 intent(context, if (start) ACTION_START else ACTION_JOIN).putExtra(EXTRA_CHAT_ID, chatId),
             )
+        }
+
+        /** Joins the conference call of [link] and shows it. */
+        fun openConference(
+            context: Context,
+            link: String,
+        ) {
+            context.startActivity(intent(context, ACTION_JOIN_CONFERENCE).putExtra(EXTRA_LINK, link))
         }
 
         internal fun pendingIntent(

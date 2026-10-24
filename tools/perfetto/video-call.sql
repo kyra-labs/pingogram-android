@@ -53,7 +53,7 @@ SELECT
   ) / 1e3) AS p90_us,
   ROUND(MAX(dur) / 1e3) AS max_us
 FROM slice
-WHERE name IN ('callFrames', 'callFrameCopy')
+WHERE name IN ('callFrames', 'callFrameCopy', 'callEncrypt', 'callDecrypt')
 GROUP BY name;
 
 -- The renderers' frame rates (the counters Remote.fps and Self.fps, set once a second while frames come).

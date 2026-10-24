@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 /** The user's camera in a voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
 class GroupCallManagerVideoTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
     private val system = FakeCallSystem()
     private val network = FakeNetworkRepository()
@@ -24,6 +25,7 @@ class GroupCallManagerVideoTest {
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             system,
             FakeCallForeground(),

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -155,6 +156,10 @@ private fun BoxScope.GroupCallContent(
             MicrophoneStep(state, onEvent, onRequestMicrophone, onOpenSettings)
         }
 
+        GroupCallUiState.ConfirmConference -> {
+            ConferenceStep(onEvent)
+        }
+
         is GroupCallUiState.Unavailable -> {
             Message(
                 title = state.chat.title,
@@ -249,41 +254,70 @@ private fun Header(
     onMinimize: () -> Unit,
 ) {
     val spacing = MaterialTheme.spacing
-    Row(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(
                     WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 ).padding(horizontal = spacing.small, vertical = spacing.small),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MinimizeButton(onMinimize)
-        Column(Modifier.weight(1f).padding(horizontal = spacing.small)) {
-            Text(
-                text = state.chat.title.ifBlank { stringResource(R.string.voice_chat) },
-                style = MaterialTheme.typography.titleLarge.userContent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                text = statusText(state),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            HeaderRow(state, onEvent, onMinimize)
         }
-        if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
-            ShareScreenButton(
-                sharing = state.video.isSharingScreen,
-                onToggle = { onEvent(GroupCallEvent.ToggleScreenSharing) },
-            )
+        // A conference call's emojis, once Telegram verified its state (docs/adr/0025-conference-calls.md).
+        AnimatedVisibility(
+            visible = state.emojis.isNotEmpty(),
+            enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()),
+        ) {
+            KeyEmojis(state.emojis, stringResource(R.string.group_call_key_explanation))
         }
     }
 }
+
+/** Back to the app, the title over the status, and screen sharing. */
+@Composable
+private fun RowScope.HeaderRow(
+    state: GroupCallUiState.InCall,
+    onEvent: (GroupCallEvent) -> Unit,
+    onMinimize: () -> Unit,
+) {
+    val spacing = MaterialTheme.spacing
+    MinimizeButton(onMinimize)
+    Column(Modifier.weight(1f).padding(horizontal = spacing.small)) {
+        Text(
+            text = state.chat.displayTitle(),
+            style = MaterialTheme.typography.titleLarge.userContent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = statusText(state),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+    if (state.hasControls && (state.video.canShareScreen || state.video.isSharingScreen)) {
+        ShareScreenButton(
+            sharing = state.video.isSharingScreen,
+            onToggle = { onEvent(GroupCallEvent.ToggleScreenSharing) },
+        )
+    }
+}
+
+/** The chat's title; "Group call" for a conference call (chat 0), "Voice chat" while the chat is not known. */
+@Composable
+private fun GroupCallChat.displayTitle(): String =
+    when {
+        chatId == 0L -> stringResource(R.string.group_call)
+        else -> title.ifBlank { stringResource(R.string.voice_chat) }
+    }
 
 /** "Connecting…", "Reconnecting…", why it ended, or once connected "12 participants · 4:05". */
 @Composable
@@ -581,7 +615,52 @@ private fun EndDialog(
     )
 }
 
-/** Why the microphone is needed before joining, then Android's request (or the settings once it no longer asks). */
+/** A conference call's link: what joining means, "Not now" and "Join" (`docs/adr/0025-conference-calls.md`). */
+@Composable
+private fun ConferenceStep(onEvent: (GroupCallEvent) -> Unit) {
+    val spacing = MaterialTheme.spacing
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(spacing.large),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.group_call_confirm_title),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Spacer(Modifier.height(spacing.medium))
+        Text(
+            text = stringResource(R.string.group_call_confirm_text),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth),
+        )
+        Spacer(Modifier.height(spacing.extraLarge))
+        Row(
+            modifier = Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            TextButton(onClick = { onEvent(GroupCallEvent.DeclineConference) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.call_not_now))
+            }
+            Button(onClick = { onEvent(GroupCallEvent.JoinConference) }, shapes = ButtonDefaults.shapes()) {
+                Text(stringResource(R.string.group_call_join), style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        }
+    }
+}
+
+/**
+ * Before joining without the microphone: why it is needed, "Not now" and "Continue" (Android's request) or "Open
+ * settings".
+ */
 @Composable
 private fun MicrophoneStep(
     state: GroupCallUiState.NeedsMicrophone,
@@ -600,7 +679,7 @@ private fun MicrophoneStep(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = state.chat.title.ifBlank { stringResource(R.string.voice_chat) },
+            text = state.chat.displayTitle(),
             style = MaterialTheme.typography.headlineSmall.userContent,
             textAlign = TextAlign.Center,
             maxLines = 2,

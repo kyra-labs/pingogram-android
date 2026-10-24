@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test
 /** The voice chat's state machine: joining, the microphone, hands, leaving, the call ending, and live streams. */
 class GroupCallManagerTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
     private val system = FakeCallSystem()
     private val foreground = FakeCallForeground()
@@ -45,6 +46,7 @@ class GroupCallManagerTest {
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             system,
             foreground,
@@ -112,6 +114,7 @@ class GroupCallManagerTest {
             val other =
                 GroupCallManager(
                     repository,
+                    conferences,
                     engine,
                     system,
                     foreground,
