@@ -323,6 +323,16 @@ internal fun ChatAdministrationGroup(
             },
             page("links", R.string.chat_info_invite_links, ChatInfoPage.InviteLinks)
                 .takeIf { administration.canManageInviteLinks },
+            administration.joinRequestCount?.let { count ->
+                ProfileRow("requests") { shapes ->
+                    ChatInfoActionRow(
+                        text = stringResource(R.string.join_requests),
+                        shapes = shapes,
+                        onClick = { onEvent(ChatInfoEvent.Open(ChatInfoPage.JoinRequests)) },
+                        detail = numbers.format(count),
+                    )
+                }
+            },
             administration.restrictedCount?.let {
                 members("restricted", R.string.chat_info_restricted, MemberFilter.Restricted, it)
             },

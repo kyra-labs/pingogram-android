@@ -610,6 +610,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     (`upgradeBasicGroupChatToSupergroupChat`). The emoji Telegram offers as reactions come once at TDLib's start
     (`updateActiveEmojiReactions`), so it is a `TdlibUpdateCache` for them.
 
+  - `JoinRequestRepository` (`TdlibJoinRequestRepository`): the requests to join through links that need approval,
+    every link's at once (`getChatJoinRequests` with an empty link, pages of 50 after the last request), approved or
+    dismissed one by one (`processChatJoinRequest`) or all together (`processChatJoinRequests`). How many wait is
+    `GroupInfo.pendingJoinRequests` (`chat.pending_join_requests`, then `updateChatPendingJoinRequests`).
+
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
 - Pages (`feature:profile` `chatinfo/`, each with its view model, routes in `core:navigation`): the info page
@@ -618,7 +623,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatMembersRoute(chatId, filter)`, `ChatMembersViewModel`: the filters the user's rights allow, paging, a search
   after a pause, the actions each member's role and the user's rights allow), a member's rights
   (`MemberRightsRoute(chatId, userId, restrict)`: promoting only with rights the user has, restricting only within the
-  chat's defaults), the settings (`ChatSettingsRoute`, `ChatSettingsViewModel`: each change one request, the page
+  chat's defaults), the join requests (`JoinRequestsRoute`, `JoinRequestsViewModel`: a request leaves the list once
+  Telegram answered, "Dismiss all" asks first), the settings (`ChatSettingsRoute`, `ChatSettingsViewModel`: each change one request, the page
   following Telegram's answer through the repository's flow; upgrading opens the new supergroup), the photo, name and
   description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
   saving the texts, following `ChatRepository.chat` for the new one), the permissions and slow mode

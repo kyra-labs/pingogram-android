@@ -144,6 +144,21 @@ class TdlibGroupInfoRepositoryTest {
         }
 
     @Test
+    fun `counts the people waiting to join, as TDLib announces them`() =
+        runTest {
+            answerSupergroup()
+
+            repository.groupInfo(CHAT).test {
+                skipUntilDetails()
+                client.emit(TdApi.UpdateChatPendingJoinRequests(CHAT, TdApi.ChatJoinRequestsInfo(4, longArrayOf(1, 2))))
+                assertEquals(4, (awaitItem() as Outcome.Success).value.pendingJoinRequests)
+                client.emit(TdApi.UpdateChatPendingJoinRequests(CHAT, null))
+                assertEquals(0, (awaitItem() as Outcome.Success).value.pendingJoinRequests)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `a full info that cannot be read leaves the details out and says why`() =
         runTest {
             answerSupergroup(full = TdResult.Failure(TdError(429, "Too Many Requests: retry after 9")))

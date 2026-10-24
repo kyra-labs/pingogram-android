@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
+  "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
+  or all at once ("Dismiss all" asks first).
 - Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
   restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
   group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a

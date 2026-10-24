@@ -471,6 +471,12 @@ data class ChatSettingsRoute(
     val chatId: Long,
 )
 
+/** The requests to join group or channel [chatId], pushed above its info page. */
+@Serializable
+data class JoinRequestsRoute(
+    val chatId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(

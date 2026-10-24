@@ -470,4 +470,28 @@
     <string name="chat_settings_upgrade_confirm">Upgrade</string>
     <!-- Spoken by screen readers for the progress indicator while a change is saved. -->
     <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+
+    <!-- The requests to join a group or channel (REQUIREMENTS.md FR-P3) -->
+    <string name="join_requests">Join requests</string>
+    <string name="join_requests_none">No one is waiting to join.</string>
+    <string name="join_requests_footer_group">People who open an invite link that needs approval wait here until an admin adds them.</string>
+    <string name="join_requests_footer_channel">People who open an invite link that needs approval wait here until an admin lets them subscribe.</string>
+    <!-- A request's supporting text: when it came, e.g. "Requested Oct 30". -->
+    <string name="join_requests_date">Requested %1$s</string>
+    <string name="join_requests_add">Add</string>
+    <!-- The approve button for screen readers. %1$s is the person's name. -->
+    <string name="join_requests_add_named">Add %1$s</string>
+    <!-- The dismiss button for screen readers. %1$s is the person's name. -->
+    <string name="join_requests_dismiss_named">Dismiss %1$s</string>
+    <string name="join_requests_add_all">Add all</string>
+    <string name="join_requests_dismiss_all">Dismiss all</string>
+    <string name="join_requests_dismiss_all_title">Dismiss every request?</string>
+    <string name="join_requests_dismiss_all_text">No one who is waiting joins. They can ask again with the link.</string>
+    <string name="join_requests_dismiss_all_confirm">Dismiss all</string>
+    <!-- Snackbar. %1$s is the person's name. -->
+    <string name="join_requests_added">%1$s joined</string>
+    <!-- Spoken by screen readers for the progress indicator while requests are processed. -->
+    <string name="join_requests_more_error">Couldn’t load more requests</string>
+    <string name="join_requests_retry">Try again</string>
+    <string name="join_requests_more">Load more</string>
 </resources>

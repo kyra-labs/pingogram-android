@@ -13,6 +13,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.DiscussionPickerContent
@@ -76,6 +78,9 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun basicGroupSettings() = check { ChatSettingsScreen(ChatSettingsPreviewData.basicGroup, {}, {}) }
+
+    @Test
+    fun joinRequests() = check { JoinRequestsScreen(JoinRequestsPreviewData.content, {}, {}) }
 
     @Test
     fun discussionPicker() = check { DiscussionPickerContent(ChatSettingsPreviewData.pickerGroups, {}) }
