@@ -208,6 +208,8 @@ data class VideoPlayback(
     val isPlaying: Boolean,
     val showsFrame: Boolean,
     val progress: () -> Float,
+    /** How far the player has the video, 0–1, read in the seek bar's draw phase. */
+    val buffered: () -> Float = progress,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
@@ -233,6 +235,9 @@ sealed interface MediaViewerEvent {
 
     /** The play or pause button of the current video was tapped. */
     data object PlayPause : MediaViewerEvent
+
+    /** The video goes on in picture-in-picture: the button beside its seek bar, or a swipe up. */
+    data object PictureInPicture : MediaViewerEvent
 
     /** The current video is to play from [fraction] (0–1) of its length. */
     data class Seek(
@@ -294,6 +299,9 @@ sealed interface MediaViewerEffect {
     /** The video or GIF could not be played: a snackbar says so. */
     data object PlaybackFailed : MediaViewerEffect
 
+    /** The video was handed to picture-in-picture: its window opens, and the viewer closes. */
+    data object OpenPictureInPicture : MediaViewerEffect
+
     /**
      * Hand the downloaded file at [path] to the system's share sheet, as the type its extension names, else
      * [mimeType].
@@ -354,3 +362,20 @@ sealed interface MediaViewerEffect {
     /** The storage permission was refused: a snackbar says saving needs it, and offers the app's settings. */
     data object StoragePermissionDenied : MediaViewerEffect
 }
+
+/** Whether the current item is a video that plays, which a swipe up hands to picture-in-picture. */
+internal val MediaViewerUiState.Content?.playsVideo: Boolean
+    get() =
+        this != null &&
+            playback?.messageId == current.messageId &&
+            current.media is ViewerMedia.Clip
+
+/** The action on the current item's file that [MediaViewerEvent.Share], `Save` and `Copy` ask for; null for others. */
+internal val MediaViewerEvent.mediaAction: MediaAction?
+    get() =
+        when (this) {
+            MediaViewerEvent.Share -> MediaAction.Share
+            MediaViewerEvent.Save -> MediaAction.Save
+            MediaViewerEvent.Copy -> MediaAction.Copy
+            else -> null
+        }

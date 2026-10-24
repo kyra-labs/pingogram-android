@@ -42,7 +42,11 @@ internal class FakeMediaProcessor : MediaProcessor {
     var canWritePhotos = true
     var canWriteThumbnails = true
     val plans = mutableListOf<PhotoPlan>()
+    val qualities = mutableListOf<Int>()
     val thumbnails = mutableListOf<Pair<Int, Int>>()
+
+    /** The first bytes of the files that are JPEGs, which [copyJpegWithoutMetadata] copies. */
+    val jpegs = mutableSetOf<Byte>()
 
     override fun imageInfo(file: File): ImageInfo? = images[file.firstByte()]
 
@@ -50,10 +54,21 @@ internal class FakeMediaProcessor : MediaProcessor {
         source: File,
         plan: PhotoPlan,
         target: File,
+        quality: Int,
     ): Boolean {
         plans += plan
+        qualities += quality
         if (!canWritePhotos) return false
         target.writeBytes(writtenBytes)
+        return true
+    }
+
+    override fun copyJpegWithoutMetadata(
+        source: File,
+        target: File,
+    ): Boolean {
+        if (source.firstByte() !in jpegs) return false
+        target.writeBytes(strippedBytes)
         return true
     }
 
@@ -75,5 +90,6 @@ internal class FakeMediaProcessor : MediaProcessor {
 
     companion object {
         val writtenBytes = ByteArray(10) { 7 }
+        val strippedBytes = ByteArray(12) { 8 }
     }
 }

@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.StorageUsage
  * @property isClearCacheDialogOpen the confirmation to clear the cache is open.
  * @property isClearingCache clearing the cache was confirmed and runs.
  * @property proxy the proxy Pingogram connects through; null when it connects directly (or the proxies are unknown).
+ * @property photosInOriginalQuality picked photos and videos go without compression by default; null until read.
  */
 @Immutable
 data class DataStorageUiState(
@@ -24,6 +25,7 @@ data class DataStorageUiState(
     val isClearCacheDialogOpen: Boolean = false,
     val isClearingCache: Boolean = false,
     val proxy: SavedProxy? = null,
+    val photosInOriginalQuality: Boolean? = null,
 )
 
 /** The storage usage card: loading, TDLib's figures, or why they could not be loaded. */
@@ -51,6 +53,11 @@ sealed interface DataStorageEvent {
     data object ConfirmClearCache : DataStorageEvent
 
     data object DismissClearCache : DataStorageEvent
+
+    /** "Send photos in original quality" turned on or off. */
+    data class SetPhotosInOriginalQuality(
+        val enabled: Boolean,
+    ) : DataStorageEvent
 }
 
 /** One-off side effects of [DataStorageViewModel], handled once by its route. */

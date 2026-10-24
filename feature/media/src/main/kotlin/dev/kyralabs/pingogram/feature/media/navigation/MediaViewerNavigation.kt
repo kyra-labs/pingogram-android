@@ -2,11 +2,19 @@ package dev.kyralabs.pingogram.feature.media.navigation
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import dagger.hilt.android.EntryPointAccessors
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
+import dev.kyralabs.pingogram.feature.media.pip.PipEntryPoint
 import dev.kyralabs.pingogram.feature.media.ui.MediaViewerRoute as MediaViewer
 
 /**
@@ -36,4 +44,24 @@ fun NavController.navigateToMediaViewer(
     messageId: Long,
 ) {
     navigate(MediaViewerRoute(chatId, messageId)) { launchSingleTop = true }
+}
+
+/**
+ * Opens the media viewer again at a video picture-in-picture gave back (its window expanded), which plays on there from
+ * where the window left it. Called once by the app's navigation, which shows the viewer above whatever is open.
+ */
+@Composable
+fun ReturnFromPictureInPictureEffect(navController: NavController) {
+    if (LocalInspectionMode.current) return
+    val context = LocalContext.current
+    val videos =
+        remember(context) {
+            EntryPointAccessors.fromApplication(context.applicationContext, PipEntryPoint::class.java).videos()
+        }
+    val video by videos.returns.collectAsStateWithLifecycle()
+    LaunchedEffect(video) {
+        val given = video?.takeUnless { it.reopened } ?: return@LaunchedEffect
+        videos.reopened(given)
+        navController.navigateToMediaViewer(given.chatId, given.messageId)
+    }
 }
