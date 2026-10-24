@@ -266,6 +266,10 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
             proxy?.toProxy()?.let(LinkTarget::ProxyServer) ?: LinkTarget.Unsupported(link)
         }
 
+        is TdApi.InternalLinkTypeGroupCall -> {
+            LinkTarget.GroupCall(inviteLink)
+        }
+
         is TdApi.InternalLinkTypeMessageDraft -> {
             LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
         }

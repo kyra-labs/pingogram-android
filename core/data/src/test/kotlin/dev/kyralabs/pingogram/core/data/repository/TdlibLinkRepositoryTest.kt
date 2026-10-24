@@ -44,6 +44,17 @@ class TdlibLinkRepositoryTest {
         }
 
     @Test
+    fun `a group call's link joins it, as the link TDLib names`() =
+        runTest {
+            linkType(TdApi.InternalLinkTypeGroupCall("https://t.me/call/abc"))
+
+            assertEquals(
+                Outcome.Success(LinkTarget.GroupCall("https://t.me/call/abc")),
+                repository.resolve("tg://call?slug=abc"),
+            )
+        }
+
+    @Test
     fun `a person's username opens their profile`() =
         runTest {
             linkType(TdApi.InternalLinkTypePublicChat("ada", "", false))

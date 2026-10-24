@@ -121,6 +121,16 @@ sealed interface LinkTarget {
         val proxy: Proxy,
     ) : LinkTarget
 
+    /**
+     * A conference call's link (`t.me/call/…`, `docs/adr/0025-conference-calls.md`): its screen asks before it joins.
+     */
+    data class GroupCall(
+        val link: String,
+    ) : LinkTarget {
+        // Whoever has the link can join the call.
+        override fun toString() = "GroupCall(…)"
+    }
+
     /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */
     data object MyQrCode : LinkTarget
 
