@@ -61,6 +61,7 @@ class TdlibProfileRepository
                     username = me.usernames?.editableUsername.orEmpty(),
                     bio = info.bio?.text.orEmpty(),
                     birthdate = info.birthdate?.toBirthdate(),
+                    personalChatId = info.personalChatId,
                 )
             }
         }

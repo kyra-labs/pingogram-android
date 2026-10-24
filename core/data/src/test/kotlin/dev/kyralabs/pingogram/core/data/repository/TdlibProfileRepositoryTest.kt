@@ -51,6 +51,20 @@ class TdlibProfileRepositoryTest {
         }
 
     @Test
+    fun `the profile carries the channel shown on it`() =
+        runTest {
+            answerMe(TdApiFixtures.user(id = 42, firstName = "Ada"))
+            client.on(
+                TdApi.GetUserFullInfo::class,
+                TdResult.Success(ProfileFixtures.userFullInfo(bio = null).also { it.personalChatId = CHANNEL }),
+            )
+
+            val profile = (repository().editableProfile() as Outcome.Success).value
+
+            assertEquals(CHANNEL, profile.personalChatId)
+        }
+
+    @Test
     fun `no username and no bio are empty`() =
         runTest {
             answerMe(TdApiFixtures.user(id = 42, firstName = "Ada"))
@@ -260,6 +274,8 @@ class TdlibProfileRepositoryTest {
         }
 
     companion object {
+        const val CHANNEL = -1_001_234L
+
         @JvmStatic
         fun checkResults(): List<Arguments> =
             listOf(

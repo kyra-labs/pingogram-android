@@ -1164,4 +1164,12 @@
     <string name="settings_website_parts">%1$s · %2$s</string>
     <string name="settings_contact_joined">Contact joined Telegram</string>
     <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
+    <string name="settings_personal_channel">Personal channel</string>
+    <string name="settings_personal_channel_summary">Show one of your channels on your profile</string>
+    <string name="settings_personal_channel_loading">Loading your channels</string>
+    <string name="settings_section_personal_channel">Show on your profile</string>
+    <string name="settings_personal_channel_off">None</string>
+    <string name="settings_personal_channel_saving">Saving your personal channel</string>
+    <string name="settings_personal_channel_footer">Everyone who sees your profile sees this channel there.</string>
+    <string name="settings_personal_channel_none_owned">Only public channels you own can be shown on your profile, and you have none.</string>
 </resources>

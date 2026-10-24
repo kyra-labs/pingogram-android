@@ -254,6 +254,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
+  no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
+  (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
+  from `ChatRepository`) above Edit profile. Other users' profiles read it from `UserFullInfo.personalChatId` and the
+  chat from `ChatRepository` (`getChat` where TDLib has not announced it).
 - **Contact joined Telegram** (Settings → Notifications): `core:domain`'s `ContactJoinedRepository`
   (`TdlibContactJoinedRepository`, `core:data`, no cache) reads TDLib's option `disable_contact_registered_notifications`
   with `getOption` per collection, follows its `updateOption`, and sets it with `setOption`.

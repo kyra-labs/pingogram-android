@@ -17,6 +17,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
   are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
   long panoramas, which Telegram refuses as photos, now go as files too.
+- Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other
+  people's profiles show theirs under Info, and a tap opens it.
 - Contact joined Telegram: a switch in Settings → Notifications turns off the message Telegram sends when one of your
   contacts joins. It belongs to your Telegram account, so your other apps follow it.
 - Websites: Privacy and security → Websites lists the sites you logged in to with Telegram, with the bot, browser and

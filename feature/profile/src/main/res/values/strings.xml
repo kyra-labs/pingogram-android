@@ -606,4 +606,5 @@
     <string name="statistics_graph_loading">Loading the chart</string>
     <string name="statistics_graph_empty">Not enough data for this chart</string>
     <string name="statistics_chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
+    <string name="profile_personal_channel">Channel</string>
 </resources>

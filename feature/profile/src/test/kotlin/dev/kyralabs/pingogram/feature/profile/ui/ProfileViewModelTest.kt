@@ -204,6 +204,38 @@ class ProfileViewModelTest {
     // The profile
 
     @Test
+    fun `shows the channel the user shows on their profile, which opens its chat`() =
+        runTest {
+            answerProfile(info = TdResult.Success(fullInfo().also { it.personalChatId = CHANNEL }))
+            val channel =
+                TdApiFixtures.chat(
+                    id = CHANNEL,
+                    type = TdApi.ChatTypeSupergroup(5, true),
+                    title = "Ada's notes",
+                )
+            client.on(TdApi.GetChat::class) { request ->
+                client.emit(TdApiFixtures.updateNewChat(channel))
+                TdResult.Success(channel.takeIf { request.chatId == CHANNEL } ?: channel)
+            }
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            assertEquals(PersonalChannel(CHANNEL, "Ada's notes"), viewModel.content.info.personalChannel)
+
+            viewModel.onEvent(ProfileEvent.OpenPersonalChannel(CHANNEL))
+            runCurrent()
+            assertEquals(listOf(ProfileEffect.OpenChat(CHANNEL)), effects)
+        }
+
+    @Test
+    fun `no personal channel, no row`() =
+        runTest {
+            answerProfile()
+
+            assertNull(viewModel().content.info.personalChannel)
+        }
+
+    @Test
     fun `loads before the user is found, then shows the header, the info and the actions`() =
         runTest {
             answerProfile()
@@ -661,6 +693,7 @@ class ProfileViewModelTest {
         }
 
     private companion object {
+        const val CHANNEL = -1_005L
         const val ADA = 42L
         const val ME = 1L
         const val BOT = 7L

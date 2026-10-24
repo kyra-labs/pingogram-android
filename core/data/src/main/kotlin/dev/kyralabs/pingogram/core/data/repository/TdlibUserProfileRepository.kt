@@ -77,4 +77,5 @@ private fun TdApi.UserFullInfo.toUserFullInfo(): UserFullInfo =
         groupsInCommon = groupInCommonCount.coerceAtLeast(0),
         canBeCalled = canBeCalled,
         supportsVideoCalls = supportsVideoCalls,
+        personalChatId = personalChatId,
     )

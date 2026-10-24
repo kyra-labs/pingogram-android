@@ -22,6 +22,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
@@ -226,6 +228,10 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun connectedWebsites() =
         check { ConnectedWebsitesScreen(ConnectedWebsitesPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun personalChannel() =
+        check { PersonalChannelScreen(PersonalChannelPreviewStates.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }
