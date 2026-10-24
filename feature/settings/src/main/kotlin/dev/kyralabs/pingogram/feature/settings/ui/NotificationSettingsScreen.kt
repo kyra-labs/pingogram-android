@@ -7,6 +7,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -106,6 +107,7 @@ internal fun NotificationSettingsRoute(
  * - private chats, groups and channels, each with its defaults ([ScopeGroup]): notifications, message previews,
  *   mentions and pinned messages where they apply, "Sound and vibration" in Android's settings (sounds belong to the
  *   notification channels there), and the chats with settings of their own;
+ * - "Reactions", whom the account hears of reactions and poll votes from ([NotificationSettingsPage.Reactions]);
  * - "Keep connected", where the build offers it, with its cost in battery said under the switch;
  * - "Reset all notification settings", after a destructive confirmation.
  */
@@ -153,6 +155,7 @@ internal fun NotificationSettingsScreen(
                 }
             }
         }
+        ReactionsGroup(onClick = { onOpen(NotificationSettingsPage.Reactions) })
         if (state.isKeepConnectedOffered) {
             KeepConnectedGroup(
                 enabled = state.keepConnected,

@@ -116,6 +116,9 @@ sealed interface NotificationSettingsEffect {
 /** The pages the Notifications page opens, each pushed above it. */
 @Immutable
 sealed interface NotificationSettingsPage {
+    /** Whom the account hears of reactions and poll votes from. */
+    data object Reactions : NotificationSettingsPage
+
     /** The chats of [scope] with settings of their own. */
     data class Exceptions(
         val scope: NotificationScope,

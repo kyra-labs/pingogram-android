@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
@@ -107,6 +108,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
+
+    /** For the reaction notification settings, which TDLib announces once per start and cannot be asked for. */
+    @Binds
+    @IntoSet
+    fun reactionNotificationCache(repository: TdlibReactionNotificationRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds

@@ -1093,4 +1093,17 @@
     <string name="settings_raise_to_listen_summary">Hold the phone to your ear to hear voice messages through the earpiece</string>
     <string name="settings_pause_when_lowered">Pause when lowered</string>
     <string name="settings_pause_when_lowered_summary">Lowering the phone pauses the voice message instead of playing on aloud</string>
+    <!-- Settings → Notifications → Reactions. -->
+    <string name="settings_reactions">Reactions</string>
+    <string name="settings_reactions_summary">Reactions to your messages and stories, votes in your polls</string>
+    <string name="settings_reactions_loading">Loading reaction settings</string>
+    <string name="settings_reactions_messages">Reactions to my messages</string>
+    <string name="settings_reactions_stories">Reactions to my stories</string>
+    <string name="settings_reactions_poll_votes">Votes in my polls</string>
+    <string name="settings_reactions_everyone">Everyone</string>
+    <string name="settings_reactions_contacts">My contacts</string>
+    <string name="settings_reactions_nobody">Nobody</string>
+    <string name="settings_reactions_preview">Show the reaction</string>
+    <string name="settings_reactions_preview_summary">Notifications say who reacted and with which emoji</string>
+    <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet.</string>
 </resources>
