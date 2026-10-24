@@ -15,8 +15,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
  * {content}, {status}", the status only for outgoing messages. The content is the forward's origin, the reply, the
  * kind of media, a poll's answers with their shares and marks ([pollDescription]), a translation's label, the text
  * (hidden spoilers read "spoiler"; a translation once shown), the link preview's title, the reactions, a self-destruct
- * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. A scheduled message's time is when it goes out, with how often it repeats. Built in the
- * bubble's `semantics` block, so only when something reads the semantics tree (`docs/PERFORMANCE.md` §4).
+ * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. A scheduled
+ * message's time is when it goes out, with how often it repeats. Built in the bubble's `semantics` block, so only when
+ * something reads the semantics tree (`docs/PERFORMANCE.md` §4).
  */
 internal fun bubbleDescription(
     resources: Resources,
