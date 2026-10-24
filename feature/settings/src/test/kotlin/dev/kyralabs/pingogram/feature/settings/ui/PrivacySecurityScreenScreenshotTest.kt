@@ -59,6 +59,7 @@ class PrivacySecurityScreenScreenshotTest {
             ContactSyncStatus.NeedsPermission,
         )
 
+    /** The whole page, down to the Websites row and the secret chats' link previews, here allowed. */
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, PrivacySecurityUiState.Loading)
 

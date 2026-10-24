@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDeleteRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
+import dev.kyralabs.pingogram.core.navigation.ConnectedWebsitesRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
@@ -22,6 +23,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as Privac
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsRoute as PrivacyExceptionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyRoute as NewChatPrivacyScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesRoute as ConnectedWebsitesScreenRoute
 
 /**
  * Privacy and security and the privacy pages above it: each setting, its exceptions, who can message the user, and
@@ -57,6 +59,7 @@ internal fun NavGraphBuilder.privacyPages(
         }
     }
     settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
+    settingsPage<ConnectedWebsitesRoute> { ConnectedWebsitesScreenRoute(onBack = onBack) }
 }
 
 private val PrivacySecurityPage.route: Any
@@ -65,6 +68,7 @@ private val PrivacySecurityPage.route: Any
             is PrivacySecurityPage.Setting -> PrivacySettingRoute(setting.name)
             PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
             PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
+            PrivacySecurityPage.Websites -> ConnectedWebsitesRoute
             PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
             PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute

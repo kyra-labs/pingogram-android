@@ -1118,4 +1118,23 @@
     <string name="settings_double_tap_outgoing">On your messages</string>
     <string name="settings_double_tap_outgoing_summary">Double-tap a message you sent to react to it</string>
     <string name="settings_double_tap_footer">A double tap on a message you already reacted to with your quick reaction takes it back. A single tap still does what it did before, at once.</string>
+    <string name="settings_websites">Websites</string>
+    <string name="settings_websites_summary">Sites you logged in to with Telegram</string>
+    <string name="settings_websites_loading">Loading websites</string>
+    <string name="settings_section_websites">Logged in with Telegram</string>
+    <string name="settings_websites_footer">These websites used “Log in with Telegram”. Logging one out ends its access to your account; it keeps what it already received.</string>
+    <string name="settings_websites_none">You haven’t logged in to any website with Telegram. Sites where you use “Log in with Telegram” show here.</string>
+    <string name="settings_websites_disconnect_all">Log out of all websites</string>
+    <string name="settings_websites_disconnecting_all">Logging out of all websites</string>
+    <string name="settings_websites_all_disconnected">Logged out of all websites</string>
+    <string name="settings_websites_dialog_title">Log out of all websites?</string>
+    <string name="settings_websites_dialog_text">Every website you logged in to with Telegram loses access to your account.</string>
+    <string name="settings_websites_dialog_confirm">Log out all</string>
+    <string name="settings_website_disconnect_button">Log out</string>
+    <string name="settings_website_disconnect">Log out of %1$s</string>
+    <string name="settings_website_disconnecting">Logging out of %1$s</string>
+    <string name="settings_website_disconnected">Logged out of %1$s</string>
+    <string name="settings_website_dialog_title">Log out of this website?</string>
+    <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
+    <string name="settings_website_parts">%1$s · %2$s</string>
 </resources>

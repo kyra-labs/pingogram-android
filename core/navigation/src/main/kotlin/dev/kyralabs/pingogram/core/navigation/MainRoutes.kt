@@ -213,6 +213,10 @@ data object BlockedUsersRoute
 @Serializable
 data object ActiveSessionsRoute
 
+/** The websites logged in with the account, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object ConnectedWebsitesRoute
+
 /** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object PasscodeLockRoute
