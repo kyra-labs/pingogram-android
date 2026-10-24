@@ -19,6 +19,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
   "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
   or all at once ("Dismiss all" asks first).
+- Media viewer: videos start playing while they download, as soon as there is enough to show, and the seek bar shows
+  how much has arrived. Seeking ahead downloads from there instead of everything before it, and leaving the video stops
+  its download. Videos sent in a way that cannot stream still play once downloaded.
 - Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
   restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
   group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a

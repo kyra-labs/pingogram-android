@@ -705,6 +705,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   offset, limit, synchronous=false)` and observes `updateFile`. A `FileRepository` dedups
   requests and exposes `Flow<FileState>` (`NotDownloaded`, `Downloading(progress)`,
   `Downloaded(path)`).
+- Streaming (`docs/adr/0028-streaming-media.md`): `core:domain`'s `FileStreamRepository` (`TdlibFileStreamRepository`,
+  `core:data`, no cache) waits until a range of a file is on the device, downloading from its offset at visible
+  priority (`downloadFile` with `limit` 0) unless a download it started covers it, and stops that download
+  (`cancelDownloadFile`) when the reader leaves; TDLib keeps what came. `core:ui`'s `TdlibDataSource` is a Media3
+  `DataSource` over it for `tdlib-file://<file id>` URIs, waiting on the player's loading thread (20 s at most) and
+  reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
+  it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
+  stream. The seek bar shows the player's buffered position.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
   `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
   `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
