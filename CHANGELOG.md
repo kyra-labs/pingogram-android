@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Hide stories: Appearance → Chat list → "Show stories" turns the story rings above the chat list off. While they are
+  off, Pingogram loads no stories for the list.
 - Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
   Pingogram (your account, profiles, contacts, shared contacts) with its country code only, "+44 •••• ••••••", for
   sharing your screen or streaming. Copying and calling still use the whole number. Off by default.

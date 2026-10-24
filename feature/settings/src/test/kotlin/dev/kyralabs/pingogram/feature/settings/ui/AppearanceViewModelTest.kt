@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,8 +46,10 @@ class AppearanceViewModelTest {
 
     private val playbackSettings = FakePlaybackSettingsRepository()
 
+    private val chatListSettings = FakeChatListSettingsRepository()
+
     private fun TestScope.viewModel() =
-        AppearanceViewModel(repository, composerSettings, playbackSettings).also { runCurrent() }
+        AppearanceViewModel(repository, composerSettings, playbackSettings, chatListSettings).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: AppearanceViewModel): List<AppearanceEffect> {
         val effects = mutableListOf<AppearanceEffect>()
@@ -197,6 +201,33 @@ class AppearanceViewModelTest {
             send(viewModel, AppearanceEvent.SetRaiseToListen(false))
 
             assertTrue((viewModel.state as AppearanceUiState.Content).raiseToListen.enabled)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
+        }
+
+    @Test
+    fun `stories show at first, and turning them off saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showStories)
+
+            send(viewModel, AppearanceEvent.SetShowStories(false))
+
+            assertFalse(chatListSettings.settings.value.showStories)
+            assertFalse((viewModel.state as AppearanceUiState.Content).chatList.showStories)
+        }
+
+    @Test
+    fun `stories that cannot be hidden stay shown, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            chatListSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetShowStories(false))
+
+            assertTrue((viewModel.state as AppearanceUiState.Content).chatList.showStories)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }
