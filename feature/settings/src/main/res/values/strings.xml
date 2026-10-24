@@ -175,6 +175,25 @@
     <string name="settings_photos_original">Send photos in original quality</string>
     <string name="settings_photos_original_summary">Photos and videos from the gallery go as files, at their full size and quality, without their location or camera details. You can change it when you send them.</string>
 
+    <!-- Power saving -->
+    <string name="settings_power_saving">Power saving</string>
+    <string name="settings_power_saving_summary">Animations and videos that play by themselves</string>
+    <string name="settings_power_saving_section_mode">Turn on</string>
+    <string name="settings_power_saving_off">Off</string>
+    <string name="settings_power_saving_with_battery_saver">With Battery Saver</string>
+    <string name="settings_power_saving_battery_saver_on">Battery Saver is on now</string>
+    <string name="settings_power_saving_battery_saver_off">Battery Saver is off now</string>
+    <string name="settings_power_saving_always">Always</string>
+    <string name="settings_power_saving_mode_footer">Power saving stops what plays by itself, so the battery lasts longer.</string>
+    <string name="settings_power_saving_section_parts">While on</string>
+    <string name="settings_power_saving_stickers">Stop animated stickers and emoji</string>
+    <string name="settings_power_saving_stickers_summary">They show still, as their first frame</string>
+    <string name="settings_power_saving_autoplay">Stop autoplay</string>
+    <string name="settings_power_saving_autoplay_summary">Videos and GIFs wait for you to tap play</string>
+    <string name="settings_power_saving_calls">Stop call screen animations</string>
+    <string name="settings_power_saving_calls_summary">The avatar of a ringing call and the speaking rings stand still</string>
+    <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
+
     <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>

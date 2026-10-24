@@ -273,6 +273,9 @@ class SettingsAccessibilityChecksTest {
     fun autoDownload() = check { AutoDownloadScreen(SettingsPreviewData.autoDownloadWiFi, onEvent = {}, onBack = {}) }
 
     @Test
+    fun powerSaving() = check { PowerSavingScreen(SettingsPreviewData.powerSaving, onEvent = {}, onBack = {}) }
+
+    @Test
     fun activeSessions() = check { ActiveSessionsScreen(SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
 
     @Test
