@@ -99,6 +99,7 @@ internal class BubbleResources(
     val mediaDownloads: MediaDownloads,
     val lift: MessageLiftState,
     val swipe: SwipeReplyStyle,
+    val share: ShareButtonStyle,
 )
 
 /**
@@ -119,6 +120,7 @@ internal fun rememberBubbleResources(
     val onMentionClick = rememberMentionOpener(onMention)
     val reactions = rememberReactionToggleState()
     val swipe = rememberSwipeReplyStyle()
+    val share = rememberShareButtonStyle()
     return remember(
         theme,
         texts,
@@ -130,6 +132,7 @@ internal fun rememberBubbleResources(
         mediaDownloads,
         lift,
         swipe,
+        share,
     ) {
         BubbleResources(
             theme,
@@ -142,6 +145,7 @@ internal fun rememberBubbleResources(
             mediaDownloads,
             lift,
             swipe,
+            share,
         )
     }
 }

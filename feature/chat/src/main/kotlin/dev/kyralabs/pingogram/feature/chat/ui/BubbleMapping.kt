@@ -46,8 +46,8 @@ internal fun ItemInputs.toItem(): ChatItem {
  * A bubble: in group chats with the sender's name on the first of a group and the avatar beside the last, for
  * incoming messages; the time and the outgoing state on the last of a group, or where its time was tapped to show;
  * whether a failed message can be sent again; the forward's origin, the reply quote, the text or caption, the kind of
- * media, the link preview and the reactions. An album's bubble takes its time, state and reactions from its newest
- * item.
+ * media, the link preview and the reactions; the share button of a channel post or a post forwarded from a channel.
+ * An album's bubble takes its time, state and reactions from its newest item.
  */
 private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
     val showsSender = kind == ChatKind.Group && !message.isOutgoing
@@ -95,6 +95,7 @@ private fun ItemInputs.toBubble(content: MessageContent): ChatItem.Bubble {
         selfDestructSeconds = (newest.selfDestruct as? SelfDestruct.Timer)?.seconds,
         thread = newest.threadLink(kind),
         keyboard = album.ifEmpty { listOf(message) }.firstNotNullOfOrNull { it.botKeyboard() },
+        hasShareButton = message.isChannelPost || message.forwardInfo?.origin is MessageOrigin.Channel,
     )
 }
 

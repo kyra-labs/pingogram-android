@@ -1264,7 +1264,12 @@ class ChatViewModel internal constructor(
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
-            shortcuts = MessageShortcuts(canReply = canWrite, canCopy = !chat.hasProtectedContent),
+            shortcuts =
+                MessageShortcuts(
+                    canReply = canWrite,
+                    canCopy = !chat.hasProtectedContent,
+                    canForward = !chat.hasProtectedContent && chat.type !is ChatType.Secret,
+                ),
             // What was picked or written stays while the user may not write; it shows again when they may.
             attachPreview =
                 overlays.preview?.takeIf { canWrite }?.let {

@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Share button: channel posts, and posts forwarded from a channel, have a round forward button beside them, which opens
+  the forward sheet for the post. Chats that protect their content and secret chats show none.
 - Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
   seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
   the viewer where it left off. Secret chats' videos stay in the viewer.

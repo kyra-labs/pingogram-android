@@ -60,22 +60,39 @@ class ChatScrollCostTest {
     fun `scroll frames with custom emoji as fallback emoji only`() =
         measure(scrollingState = true, customEmoji = true, pictures = false)
 
+    /** A channel's posts, each with its share button beside it. */
+    @Test
+    fun `scroll frames with channel posts and their share buttons`() = measure(scrollingState = true, channel = true)
+
+    /** The same posts without share buttons: the comparison. */
+    @Test
+    fun `scroll frames with channel posts without share buttons`() =
+        measure(scrollingState = true, channel = true, shareButtons = false)
+
     private fun measure(
         scrollingState: Boolean,
         customEmoji: Boolean = false,
         pictures: Boolean = customEmoji,
+        channel: Boolean = false,
+        shareButtons: Boolean = channel,
     ) {
         val state =
             ChatUiState(
                 header = ChatPreviewData.privateChat.header,
                 content =
                     ChatContent.Content(
-                        (MESSAGES downTo 1).map { bubble(it, customEmoji) }.toImmutableList(),
+                        (MESSAGES downTo 1)
+                            .map { id ->
+                                bubble(id, customEmoji).let {
+                                    if (channel) it.copy(isOutgoing = false, hasShareButton = shareButtons) else it
+                                }
+                            }.toImmutableList(),
                         reachedStart = true,
                         isLoadingOlder = false,
                         null,
                     ),
                 composer = ChatPreviewData.canWrite,
+                shortcuts = MessageShortcuts(canForward = true),
             )
         // Their still pictures from a test renderer, which draws them at once.
         val renderer = if (pictures) testCustomEmojiRenderer(CUSTOM_EMOJI) else null
@@ -95,7 +112,7 @@ class ChatScrollCostTest {
             "Scroll cost (${if (scrollingState) "scrolling" else "default"} state${emojiLabel(
                 customEmoji,
                 pictures,
-            )}): " +
+            )}${if (channel) ", channel, share buttons $shareButtons" else ""}): " +
                 "CPU per frame P50 " +
                 "${frames.percentile(50)} µs, P90 ${frames.percentile(90)} µs, P99 ${frames.percentile(99)} µs",
         )

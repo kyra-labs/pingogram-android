@@ -335,9 +335,9 @@ internal fun Modifier.openProfileTarget(
 
 /**
  * The bottom of a message's bubble above its reaction badges ([WithReactionBadges]) and its label ([WithFooter]), which
- * the sender's avatar lines up with.
+ * the sender's avatar and the share button ([WithShareButton]) line up with.
  */
-private val BubbleBottom = HorizontalAlignmentLine(merger = ::minOf)
+internal val BubbleBottom = HorizontalAlignmentLine(merger = ::minOf)
 
 /**
  * Where the bubble of this measured row content ends: [BubbleBottom] if it has badges or a label below, else its
