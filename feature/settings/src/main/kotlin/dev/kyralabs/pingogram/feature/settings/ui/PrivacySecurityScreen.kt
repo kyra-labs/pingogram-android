@@ -143,8 +143,31 @@ private fun PrivacySection(
                 }
             }
         }
+        state.newChatPrivacy?.let { privacy ->
+            item(key = NEW_CHATS) { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_privacy_new_chats),
+                    shapes = shapes,
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (privacy.allowsNonContacts) {
+                                    R.string.settings_privacy_everybody
+                                } else {
+                                    R.string.settings_privacy_new_chats_contacts
+                                },
+                            ),
+                        )
+                    },
+                    onClick = { onOpen(PrivacySecurityPage.NewChats) },
+                )
+            }
+        }
     }
 }
+
+/** The key of the "Messages" row among the privacy settings' rows. */
+private const val NEW_CHATS = "newChats"
 
 /** A privacy setting and its main choice. */
 @Composable

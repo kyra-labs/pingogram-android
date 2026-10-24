@@ -206,6 +206,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
   login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
   state, never the code.
+- **Privacy beyond the rules** (FR-S1, Privacy and security): `PrivacyRepository` also reads and sets whether the read
+  time shows (`getReadDatePrivacySettings`, `setReadDatePrivacySettings`; the Last seen page's switch) and who may start
+  a chat (`getNewChatPrivacySettings`, `setNewChatPrivacySettings`, with the option
+  `can_set_new_chat_privacy_settings` as `NewChatPrivacy.canRestrict`; a price another app set for non-contacts'
+  messages is kept while they may write and dropped when they may not, as Telegram requires).
+  `feature:settings`' `NewChatPrivacyRoute` (`NewChatPrivacyViewModel`) is its page. A setting's exceptions are
+  `PrivacyRepository.exceptions` (the users' and groups' ids of its rules, `PrivacyExceptionLists`) and `setExceptions`
+  (`setUserPrivacySettingRules` with those rules replaced, the never allowed first, every other rule kept in its
+  order); `PrivacyExceptionsRoute(setting, always)` (`PrivacyExceptionsViewModel`) shows one side, names from
+  `UserRepository` and `ChatRepository` (asked for once where TDLib has not announced them), and picks from the main
+  chat list (people and groups; Saved Messages, channels and secret chats left out), its picks in the saved state.
+  Its picker shares its parts with the chat folders' (`PickerParts.kt`).
 - **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
   its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
   bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through
@@ -220,6 +232,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `AccountRepository` also reads and sets the self-destruct timer of new chats (`getDefaultMessageAutoDeleteTime`,
   `setDefaultMessageAutoDeleteTime`), which `AutoDeleteRoute` (`AutoDeleteViewModel`) offers as Telegram's choices
   (off, a day, a week, a month, and a value another app set), saving a pick at once and taking it back on a refusal.
+- **Proxies** (Data and storage, `docs/adr/0027-proxies.md`): `core:domain`'s `ProxyRepository`
+  (`TdlibProxyRepository`, `core:data`, a singleton without a cache) wraps `getProxies`, `addProxy`, `editProxy`,
+  `enableProxy`, `disableProxy`, `removeProxy` and `pingProxy`; TDLib keeps the proxies, credentials included, and has
+  no update for them, so `proxies` reads them again after every change made through it. `feature:settings`' Proxy page
+  (`ProxiesRoute`, `ProxiesViewModel`: each proxy pinged once as it first shows, four at a time, and on "Check again")
+  and its form (`EditProxyRoute(proxyId?)`, `EditProxyViewModel`: checked on the device first, the password and the
+  secret never in saved state) sit above Data and storage, whose "Proxy" row shows the one in use. A proxy link
+  (`tg://proxy`, `t.me/socks`) resolves to `LinkTarget.ProxyServer`, which `:app` opens as `ProxyLinkRoute`, a dialog
+  destination of `settingsPages` (`ProxyLinkViewModel`), connecting only on "Connect".
+- **Network usage** (Data and storage): `core:domain`'s `NetworkUsageRepository` (`TdlibNetworkUsageRepository`,
+  `core:data`, no cache) reads TDLib's own statistics (`getNetworkStatistics` of every session since the last reset,
+  answered from its database) into `NetworkUsage`, by network (TDLib's "other" networks counted as Wi-Fi, as automatic
+  download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
+  `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
+  saved state) shows them above Data and storage.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

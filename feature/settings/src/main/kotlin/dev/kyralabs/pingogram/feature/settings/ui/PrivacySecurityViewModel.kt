@@ -150,6 +150,8 @@ class PrivacySecurityViewModel
                 val password = async { twoStepVerificationRepository.state() }
                 val accountTtl = async { accountRepository.accountTtl() }
                 val autoDelete = async { accountRepository.defaultMessageAutoDeleteTime() }
+                // Not one of the page's needs: without it, the page leaves its row out.
+                val newChats = async { privacyRepository.newChatPrivacy() }
                 val loadedRules = rules.mapValues { it.value.await() }
                 val outcomes =
                     loadedRules.values +
@@ -172,7 +174,7 @@ class PrivacySecurityViewModel
                             password = password.await().value(),
                             accountTtlDays = accountTtl.await().value(),
                             autoDeleteSeconds = autoDelete.await().value(),
-                        ),
+                        ).copy(newChatPrivacy = (newChats.await() as? Outcome.Success)?.value),
                     )
                 }
             }

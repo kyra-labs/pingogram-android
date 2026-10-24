@@ -113,6 +113,14 @@ sealed interface LinkTarget {
         val chatId: Long,
     ) : LinkTarget
 
+    /**
+     * A proxy to connect through ([proxy], `tg://proxy?…`, `t.me/socks?…`): its sheet shows the proxy and asks before
+     * adding and using it (`docs/adr/0027-proxies.md`).
+     */
+    data class ProxyServer(
+        val proxy: Proxy,
+    ) : LinkTarget
+
     /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */
     data object MyQrCode : LinkTarget
 

@@ -134,6 +134,38 @@ data class AutoDownloadRoute(
     val network: String,
 )
 
+/** How much data Pingogram sent and received on each network, pushed above [DataStorageRoute]. */
+@Serializable
+data object NetworkUsageRoute
+
+/** The proxies Pingogram connects through (`docs/adr/0027-proxies.md`), pushed above [DataStorageRoute]. */
+@Serializable
+data object ProxiesRoute
+
+/** Adding a proxy, or editing proxy [proxyId] (TDLib's id), pushed above [ProxiesRoute]. */
+@Serializable
+data class EditProxyRoute(
+    val proxyId: Int? = null,
+)
+
+/**
+ * The sheet a proxy link (`tg://proxy`, `t.me/socks`) opens, which asks before connecting through the proxy: a dialog
+ * destination of the settings pages. [kind] is the name of a `ProxyKind` of `:core:domain`; the fields another kind
+ * does not use are empty. `toString()` leaves out the address and the credentials.
+ */
+@Serializable
+data class ProxyLinkRoute(
+    val server: String,
+    val port: Int,
+    val kind: String,
+    val username: String = "",
+    val password: String = "",
+    val secret: String = "",
+    val httpOnly: Boolean = false,
+) {
+    override fun toString() = "ProxyLinkRoute(kind=$kind, …)"
+}
+
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code, license and the open-source licenses,
  * `:feature:settings`, pushed above the Settings tab.
@@ -208,6 +240,20 @@ data object LoginEmailRoute
  */
 @Serializable
 data object AutoDeleteRoute
+
+/** Who may start a chat with the user (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object NewChatPrivacyRoute
+
+/**
+ * The users and groups a privacy [setting] (its `PrivacySetting` name) always allows ([always]) or never allows,
+ * pushed above its [PrivacySettingRoute].
+ */
+@Serializable
+data class PrivacyExceptionsRoute(
+    val setting: String,
+    val always: Boolean,
+)
 
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable

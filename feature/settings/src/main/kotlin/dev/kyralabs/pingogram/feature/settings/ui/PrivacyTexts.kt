@@ -30,6 +30,7 @@ internal fun PrivacySetting.titleRes(): Int =
         PrivacySetting.PhoneNumber -> R.string.settings_privacy_phone_number
         PrivacySetting.LastSeen -> R.string.settings_privacy_last_seen
         PrivacySetting.ProfilePhoto -> R.string.settings_privacy_profile_photo
+        PrivacySetting.Bio -> R.string.settings_privacy_bio
         PrivacySetting.Birthdate -> R.string.settings_privacy_birthdate
         PrivacySetting.ForwardedMessages -> R.string.settings_privacy_forwarded_messages
         PrivacySetting.Calls -> R.string.settings_privacy_calls
@@ -44,6 +45,7 @@ internal fun PrivacySetting.questionRes(): Int =
         PrivacySetting.PhoneNumber -> R.string.settings_privacy_phone_number_question
         PrivacySetting.LastSeen -> R.string.settings_privacy_last_seen_question
         PrivacySetting.ProfilePhoto -> R.string.settings_privacy_profile_photo_question
+        PrivacySetting.Bio -> R.string.settings_privacy_bio_question
         PrivacySetting.Birthdate -> R.string.settings_privacy_birthdate_question
         PrivacySetting.ForwardedMessages -> R.string.settings_privacy_forwarded_messages_question
         PrivacySetting.Calls -> R.string.settings_privacy_calls_question

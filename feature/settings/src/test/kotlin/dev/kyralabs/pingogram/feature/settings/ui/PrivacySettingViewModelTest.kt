@@ -343,4 +343,53 @@ class PrivacySettingViewModelTest {
             assertEquals(listOf(PrivacySettingEffect.ShowError(DomainError.PremiumRequired)), effects)
             assertEquals(PrivacyChoice.Everybody, viewModel.state.shownRules?.choice)
         }
+
+    // Read time
+
+    @Test
+    fun `last seen shows whether the read time shows, other settings do not`() =
+        runTest {
+            answerRules(TdApi.UserPrivacySettingRuleAllowAll())
+            client.on(TdApi.GetReadDatePrivacySettings::class, TdResult.Success(TdApi.ReadDatePrivacySettings(true)))
+
+            assertEquals(true, viewModel().uiState.value.showsReadTime)
+            assertNull(viewModel(PrivacySetting.Calls).uiState.value.showsReadTime)
+        }
+
+    @Test
+    fun `a switched read time shows at once and is saved`() =
+        runTest {
+            answerRules(TdApi.UserPrivacySettingRuleAllowAll())
+            client.on(TdApi.GetReadDatePrivacySettings::class, TdResult.Success(TdApi.ReadDatePrivacySettings(true)))
+            client.on(TdApi.SetReadDatePrivacySettings::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+
+            viewModel.onEvent(PrivacySettingEvent.ShowReadTime(false))
+            assertEquals(false, viewModel.uiState.value.showsReadTime)
+            runCurrent()
+
+            assertEquals(false, viewModel.uiState.value.showsReadTime)
+            assertFalse(
+                client
+                    .sentOf<TdApi.SetReadDatePrivacySettings>()
+                    .single()
+                    .settings.showReadDate,
+            )
+        }
+
+    @Test
+    fun `a refused read time switches back and says why`() =
+        runTest {
+            answerRules(TdApi.UserPrivacySettingRuleAllowAll())
+            client.on(TdApi.GetReadDatePrivacySettings::class, TdResult.Success(TdApi.ReadDatePrivacySettings(true)))
+            client.on(TdApi.SetReadDatePrivacySettings::class, TdResult.Failure(TdError(400, "SOMETHING_WRONG")))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            viewModel.onEvent(PrivacySettingEvent.ShowReadTime(false))
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value.showsReadTime)
+            assertEquals(1, effects.size)
+        }
 }

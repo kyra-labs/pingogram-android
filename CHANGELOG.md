@@ -15,6 +15,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
   shares theirs, it fills the window without being cut off. Voice chats too: "Share screen" in the voice chat's
   header shares your screen beside your camera, and others' shared screens show first among the videos.
+- Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
+  turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
+  opens a sheet that shows the proxy and connects through it only when you tap "Connect".
+- Network usage: Settings → Data and storage → Network usage shows how much data Pingogram sent and received on mobile
+  data, Wi-Fi and roaming since a date, in total and for messages, photos, videos, voice messages, music, files and
+  calls, as counted on this device. "Reset statistics" starts counting again.
 - Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
   those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
   or first video in picture-in-picture.
@@ -67,6 +73,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
 - Birthday: Edit profile adds, changes or removes your birthday, with or without its year, and shows who can see it;
   "Birthday" joins the privacy settings in Privacy and security.
+- Privacy exceptions: every privacy setting's "Always allowed" and "Never allowed" open a page of their own, where you
+  add people and groups from your chats or remove them.
+- Privacy: "Messages" sets who can start a chat with you (everybody, or your contacts and Telegram Premium
+  subscribers, where Telegram lets you choose it); "Last seen and online" can hide your read time; "Bio" joins the
+  privacy settings.
 - Login email: Privacy and security → Account shows the email Telegram can send your login codes to, and changes it
   with a code sent to the new address.
 - Auto-delete messages: Privacy and security → Account sets a timer for the chats you start from then on (off, a day,
