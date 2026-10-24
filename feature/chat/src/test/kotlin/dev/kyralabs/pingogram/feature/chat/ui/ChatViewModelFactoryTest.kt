@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.GRACE
@@ -76,6 +77,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 messageActionRepository = messageActions,
                 sponsoredMessageRepository = sponsored,
                 attachmentRepository = attachments,
+                composerSettings = FakeComposerSettingsRepository(),
                 userRepository = users,
                 groupRepository = groups,
                 chatActionRepository = actions,

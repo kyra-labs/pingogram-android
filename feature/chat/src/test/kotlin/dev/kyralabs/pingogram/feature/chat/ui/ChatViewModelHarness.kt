@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositorie
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -116,6 +117,7 @@ abstract class ChatViewModelHarness {
         handle: SavedStateHandle = savedState,
         messageId: Long? = null,
         topic: MessageTopic? = null,
+        originalQuality: Boolean = false,
     ): ChatViewModel {
         val viewModel =
             ChatViewModel(
@@ -157,6 +159,7 @@ abstract class ChatViewModelHarness {
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },
                 topic = topic,
+                sendsPhotosInOriginalQuality = flowOf(originalQuality),
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
