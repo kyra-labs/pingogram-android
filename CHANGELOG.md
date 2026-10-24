@@ -17,6 +17,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
   group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a
   question). The info page's "Group settings" / "Channel settings" opens it.
+- Chats: raise to listen. While a voice message plays, holding the phone to your ear plays it through the earpiece with
+  the screen off; lowering it plays on through the speaker, or pauses if you turn on "Pause when lowered". Never with
+  headphones, Bluetooth or during a call. Settings → Appearance → Chats, on by default.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person

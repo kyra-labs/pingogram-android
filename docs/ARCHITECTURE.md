@@ -680,6 +680,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  Raise to listen (`RaiseToListen`, beside it): while voice messages play, the proximity sensor (no permission) moves
+  a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
+  proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go
+  1.5 s after the last voice message, so the next one stays at the ear. Its settings are `core:domain`'s
+  `PlaybackSettingsRepository` (`DataStorePlaybackSettingsRepository`), which Appearance → Chats sets.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
   and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).

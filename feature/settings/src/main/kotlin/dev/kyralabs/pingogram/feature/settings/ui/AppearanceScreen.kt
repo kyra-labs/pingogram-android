@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
@@ -114,7 +115,7 @@ internal fun AppearanceScreen(
             is AppearanceUiState.Content -> {
                 AppearanceSettingsContent(
                     state.settings,
-                    state.sendWithCtrlEnter,
+                    ChatsSettings(state.sendWithCtrlEnter, state.raiseToListen),
                     onEvent,
                     AppearancePages(onOpenColorTheme, onOpenChatAppearance),
                     dynamicColorAvailable,
@@ -133,11 +134,11 @@ private fun AppearanceLoading() {
     }
 }
 
-@Suppress("LongParameterList") // The settings, the send key, the events, the pages and what the device offers.
+@Suppress("LongParameterList") // The settings, the chats' settings, the events, the pages and what the device offers.
 @Composable
 private fun AppearanceSettingsContent(
     settings: AppearanceSettings,
-    sendWithCtrlEnter: Boolean,
+    chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
     pages: AppearancePages,
     dynamicColorAvailable: Boolean,
@@ -181,18 +182,7 @@ private fun AppearanceSettingsContent(
             )
         }
     }
-    SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
-        item { shapes -> ChatAppearanceItem(settings.chat, shapes, pages.onOpenChatAppearance) }
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_send_with_ctrl_enter),
-                summary = stringResource(R.string.settings_send_with_ctrl_enter_summary),
-                checked = sendWithCtrlEnter,
-                shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetSendWithCtrlEnter(it)) },
-            )
-        }
-    }
+    ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance)
 }
 
 /** What opens the pages above Appearance. */
@@ -200,35 +190,6 @@ private class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
 )
-
-/** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
-@Composable
-private fun ChatAppearanceItem(
-    chat: ChatAppearance,
-    shapes: ListItemShapes,
-    onClick: () -> Unit,
-) {
-    val locale = LocalConfiguration.current.locales[0]
-    val percent =
-        remember(chat.textScale, locale) {
-            NumberFormat.getPercentInstance(locale).format(chat.textScale.toDouble())
-        }
-    SettingsRow(
-        title = stringResource(R.string.settings_chat_appearance),
-        shapes = shapes,
-        supportingContent = {
-            Text(
-                stringResource(
-                    R.string.settings_chat_appearance_summary,
-                    percent,
-                    chat.bubbleCorners.label(),
-                    chat.wallpaper.label(),
-                ),
-            )
-        },
-        onClick = onClick,
-    )
-}
 
 @PingogramPreviews
 @Composable
