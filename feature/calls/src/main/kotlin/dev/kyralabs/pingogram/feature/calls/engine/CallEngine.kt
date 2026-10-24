@@ -189,8 +189,27 @@ interface CallSession {
         quality: VideoQuality = VideoQuality.High,
     )
 
-    /** Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. */
+    /**
+     * Sends the device's screen at most at [quality] (at [SCREEN_FPS] frames a second at most), or stops sending it
+     * (`docs/adr/0026-screen-sharing.md`). The user's consent must have reached the engine ([ScreenCaptureConsent]) and
+     * the call service must run as `mediaProjection` first: the capture starts at once.
+     */
+    suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality = VideoQuality.High,
+    )
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
+    /**
+     * Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. Their
+     * shared screen counts, in place of their camera while they share ([remoteIsScreen]).
+     */
     val remoteVideo: StateFlow<RemoteVideo>
+
+    /** The other side's video is their shared screen, not their camera. */
+    val remoteIsScreen: StateFlow<Boolean>
 
     /**
      * Where the frames go: [local] gets the camera's own (the self-view), [remote] the other side's, on the engine's
@@ -276,6 +295,15 @@ enum class RemoteVideo {
 
     /** On but held back: the other side's app is in the background, or the connection is too weak for video. */
     Paused,
+}
+
+/** The most frames a second a shared screen sends: a screen changes less than a face, and costs less so. */
+const val SCREEN_FPS = 15
+
+/** Hands Android's consent to capture the screen to the engine, which starts the capture with it. */
+fun interface ScreenCaptureConsent {
+    /** [result] is the consent dialog's result data, an `Intent`; typed loosely so the manager stays JVM-testable. */
+    fun grant(result: Any)
 }
 
 /** Takes video frames of a call, on the engine's threads. */

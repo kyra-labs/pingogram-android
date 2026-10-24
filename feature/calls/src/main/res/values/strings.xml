@@ -47,6 +47,11 @@
     <!-- For screen readers: the user's own picture, and the other person's video. %1$s: their name. -->
     <string name="call_self_view">Your camera</string>
     <string name="call_remote_video">Video of %1$s</string>
+    <string name="call_remote_screen">Screen shared by %1$s</string>
+    <string name="call_share_screen">Share screen</string>
+    <string name="call_stop_sharing">Stop sharing</string>
+    <string name="call_sharing_screen">You\'re sharing your screen</string>
+    <string name="call_sharing_stop">Stop</string>
     <!-- Over the other person's video while it does not come: their app is in the background, or the connection is weak. -->
     <string name="call_video_paused">Video paused</string>
     <string name="group_call_pin">Pin video</string>

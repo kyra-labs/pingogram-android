@@ -107,6 +107,10 @@ class CallNotifications
                     connectedAtWallMillis = call.connectedAtMillis?.toWallClock(),
                     content = content,
                     hangUp = CallActionReceiver.pendingIntent(context, CallActionReceiver.ACTION_HANG_UP),
+                    stopSharing =
+                        CallActionReceiver
+                            .pendingIntent(context, CallActionReceiver.ACTION_STOP_SHARING)
+                            .takeIf { call.video.isSharingScreen },
                 )
             }
         }
@@ -137,6 +141,7 @@ class CallNotifications
             val phase: Any,
             val isOnHold: Boolean,
             val connectedAtMillis: Long?,
+            val isSharingScreen: Boolean,
         ) {
             /** The call it shows, as last seen: what [build] reads. */
             lateinit var call: ActiveCall
@@ -152,6 +157,7 @@ class CallNotifications
                         if (call.phase is CallPhase.Ringing) call.phase else call.phase::class,
                         call.isOnHold,
                         call.connectedAtMillis,
+                        call.video.isSharingScreen,
                     ).also { it.call = call }
             }
         }

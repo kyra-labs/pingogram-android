@@ -288,6 +288,21 @@ class FakeCallSession(
     var localSink: VideoFrameSink? = null
     var remoteSink: VideoFrameSink? = null
     override val remoteVideo = MutableStateFlow(RemoteVideo.Off)
+    override val remoteIsScreen = MutableStateFlow(false)
+
+    /** Every screen state the session was told, in order. */
+    val screens = mutableListOf<Boolean>()
+
+    /** The capture ending by itself: the test sends it. */
+    val endScreen = Channel<Unit>(Channel.UNLIMITED)
+    override val screenEnded: Flow<Unit> = endScreen.receiveAsFlow()
+
+    override suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality,
+    ) {
+        screens += on
+    }
 
     override suspend fun setCamera(
         camera: CallCamera?,
@@ -375,6 +390,14 @@ class FakeCallForeground : CallForeground {
 
     override fun start(withMicrophone: Boolean) {
         events += if (withMicrophone) "start+mic" else "start"
+    }
+
+    /** Whether Android lets the service run as `mediaProjection`. */
+    var allowsScreenCapture = true
+
+    override suspend fun setScreenCapture(on: Boolean): Boolean {
+        events += if (on) "screen" else "no screen"
+        return allowsScreenCapture || !on
     }
 
     override fun stop() {

@@ -932,6 +932,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   a stream), which the engine subscribes to (`GroupCallSession.receiveVideos`, NTgCalls' `addIncomingVideo` /
   `removeIncomingVideo`) and routes by their frames' SSRC to the sink of each tile (`setParticipantVideoSink`, one
   `CallVideoView` per endpoint); the screen gets them as `ActiveGroupCall.video.remote`.
+- **Screen sharing** (`docs/adr/0026-screen-sharing.md`): the call screen asks for Android's consent
+  (`rememberScreenCaptureRequest`, `MediaProjectionManager.createScreenCaptureIntent`) and hands the result to the
+  engine (`ScreenCaptureConsent`, NTgCalls' `JavaVideoCapturerModule`). `CallManager.startScreenSharing` has the call
+  service run as `mediaProjection` first (`CallForeground.setScreenCapture`, which waits for it), then the session sends
+  the screen in place of the camera (`CallSession.setScreen`: the stream sources' `screen` slot); hold pauses it,
+  turning the camera on, Stop (the pill's or the notification's, `CallActionReceiver`) and the capture ending by itself
+  (`screenEnded`, NTgCalls' `onStreamEnd`) stop it. The other side's screen comes as their video (`remoteIsScreen`),
+  drawn fitted (`CallVideoSlot.RemoteScreen`, `CallVideoView`'s `fit`).
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

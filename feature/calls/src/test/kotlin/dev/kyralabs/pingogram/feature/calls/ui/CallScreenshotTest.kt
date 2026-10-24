@@ -73,6 +73,42 @@ class CallScreenshotTest {
     fun incomingFontScale200() = capture(CallPreviewStates.incoming)
 
     @Test
+    fun shareOfferedLight() = capture(CallPreviewStates.shareOffered)
+
+    @Test
+    fun sharingScreenLight() = capture(CallPreviewStates.sharingScreen)
+
+    @Test
+    fun sharingScreenDark() = capture(CallPreviewStates.sharingScreen, ThemeMode.Dark)
+
+    @Test
+    fun sharingScreenAmoled() = capture(CallPreviewStates.sharingScreen, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun sharingScreenHighContrast() = capture(CallPreviewStates.sharingScreen, contrast = Contrast.High)
+
+    @Test
+    fun sharingScreenRtl() = capture(CallPreviewStates.sharingScreen, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun sharingScreenMedium() = capture(CallPreviewStates.sharingScreen)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun sharingScreenFontScale200() = capture(CallPreviewStates.sharingScreen)
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-xxhdpi")
+    fun sharingScreenLandscape() = capture(CallPreviewStates.sharingScreen)
+
+    @Test
+    fun sharingScreenVideoLight() = capture(CallPreviewStates.sharingScreenVideo)
+
+    @Test
+    fun remoteScreenDark() = capture(CallPreviewStates.remoteScreen, ThemeMode.Dark)
+
+    @Test
     fun videoLight() = capture(CallPreviewStates.video)
 
     @Test

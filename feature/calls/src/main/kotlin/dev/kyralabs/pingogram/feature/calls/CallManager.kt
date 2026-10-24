@@ -257,14 +257,42 @@ class CallManager
             live?.system?.selectRoute(route)
         }
 
-        /** Turns the camera on (the one last used, the front one at first) or off. */
+        /** Turns the camera on (the one last used, the front one at first) or off. On, it stops sharing the screen. */
         suspend fun setCameraOn(on: Boolean) {
             val call = mutex.withLock { live?.takeIf { it.phase !is CallPhase.Ended } } ?: return
             if (on) loadCameras(call)
             mutex.withLock {
                 if (live !== call || call.wantsCamera == on) return
                 call.wantsCamera = on
+                if (on && call.wantsScreen) applyScreen(call, on = false)
                 applyCamera(call)
+            }
+        }
+
+        /**
+         * Shares the screen in place of the camera (`docs/adr/0026-screen-sharing.md`): the user agreed in Android's
+         * dialog, whose result already reached the engine. The call service runs as `mediaProjection` first, as
+         * Android asks; where it cannot, nothing is shared.
+         */
+        suspend fun startScreenSharing() {
+            val call = mutex.withLock { live?.takeIf { it.phase !is CallPhase.Ended && !it.wantsScreen } } ?: return
+            val running = foreground.setScreenCapture(true)
+            mutex.withLock {
+                if (running && live === call && call.phase !is CallPhase.Ended) {
+                    call.wantsCamera = false
+                    applyCamera(call)
+                    applyScreen(call, on = true)
+                } else if (running) {
+                    scope.launch { foreground.setScreenCapture(false) }
+                }
+            }
+        }
+
+        /** Stops sharing the screen: the user's Stop, the notification's, or the capture ending by itself. */
+        suspend fun stopScreenSharing() {
+            mutex.withLock {
+                val call = live ?: return
+                if (call.wantsScreen) applyScreen(call, on = false)
             }
         }
 
@@ -452,6 +480,18 @@ class CallManager
                     session.remoteVideo.collect { video -> mutex.withLock { onRemoteVideo(call, video) } }
                 }
                 call.scope.launch {
+                    call.screen.collect { on -> session.setScreen(on, call.videoQuality()) }
+                }
+                call.scope.launch {
+                    session.remoteIsScreen.collect { isScreen ->
+                        mutex.withLock {
+                            call.remoteIsScreen = isScreen
+                            if (live === call) publish()
+                        }
+                    }
+                }
+                call.scope.launch { session.screenEnded.collect { stopScreenSharing() } }
+                call.scope.launch {
                     session.signalingData.collect { data -> callRepository.sendSignalingData(callId, data) }
                 }
                 call.scope.launch { session.state.collect { media -> mutex.withLock { onMedia(call, media) } } }
@@ -565,6 +605,19 @@ class CallManager
             call.onHold = onHold
             call.session?.let { session -> call.scope.launch { session.setOnHold(onHold) } }
             applyCamera(call)
+            call.screen.value = call.sendsScreen()
+        }
+
+        /** Shares the screen, or stops: the engine gets it once it connects, and the service drops its type after. */
+        private fun applyScreen(
+            call: Live,
+            on: Boolean,
+        ) {
+            call.wantsScreen = on
+            if (on) call.hadVideo = true
+            call.screen.value = call.sendsScreen()
+            if (!on) scope.launch { foreground.setScreenCapture(false) }
+            publish()
         }
 
         private fun updateAudio(
@@ -642,6 +695,7 @@ class CallManager
                 session?.close()
                 call.scope.cancel()
             }
+            // Stopping the service drops its types, the screen's included.
             foreground.stop()
             publish()
             clearEnded =
@@ -724,6 +778,11 @@ class CallManager
             var cameras: List<CallCamera> = emptyList()
             var camerasLoaded = false
             var remoteVideo = RemoteVideo.Off
+            var remoteIsScreen = false
+
+            /** The user shares the screen (it sends once the engine connects, and not while held). */
+            var wantsScreen = false
+            val screen = MutableStateFlow(false)
 
             /** Either side sent video, or the call was made as a video call: TDLib's `is_video` when it ends. */
             var hadVideo = false
@@ -733,6 +792,8 @@ class CallManager
             val sinks = MutableStateFlow(VideoSinks())
 
             fun videoQuality(): VideoQuality = VideoQuality.forNetwork(network, reconnected)
+
+            fun sendsScreen(): Boolean = wantsScreen && !onHold
 
             fun sendingCamera(): CallCamera? =
                 if (!wantsCamera || onHold) {
@@ -760,6 +821,8 @@ class CallManager
                                     ?: if (wantsCamera && !camerasLoaded) CameraFacing.Front else null,
                             canSwitchCamera = cameras.any { it.isFront } && cameras.any { !it.isFront },
                             remote = remoteVideo,
+                            isSharingScreen = wantsScreen,
+                            remoteIsScreen = remoteIsScreen,
                         ),
                 )
         }

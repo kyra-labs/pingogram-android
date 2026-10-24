@@ -106,7 +106,9 @@
          Bluetooth headsets, cars and watches know its calls, and a phone call puts one on hold. The call's foreground
          service runs as phoneCall while a call rings or goes on, as microphone too once the user talks, and as camera
          while the user's camera sends video (FOREGROUND_SERVICE_PHONE_CALL, FOREGROUND_SERVICE_MICROPHONE,
-         FOREGROUND_SERVICE_CAMERA). USE_FULL_SCREEN_INTENT shows an incoming call
+         FOREGROUND_SERVICE_CAMERA), and as mediaProjection while the user shares the screen, after Android's consent
+         dialog (FOREGROUND_SERVICE_MEDIA_PROJECTION, approved by the owner on 2026-10-24,
+         docs/adr/0026-screen-sharing.md). USE_FULL_SCREEN_INTENT shows an incoming call
          over the lock screen; Android 14+ lets the user take it back, and the call then rings as a heads-up
          notification. BLUETOOTH_CONNECT (Android 12+, asked with the microphone) names Bluetooth headsets the call can
          move to. MODIFY_AUDIO_SETTINGS sets the call's audio mode and route where the device has no Telecom. Telecom's
@@ -115,6 +117,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

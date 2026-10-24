@@ -15,6 +15,7 @@
     <string name="call_notification_incoming">Incoming voice call</string>
     <!-- The name of a voice chat's notification while its chat's title is not known yet. -->
     <string name="call_notification_voice_chat">Voice chat</string>
+    <string name="call_notification_stop_sharing">Stop sharing</string>
     <string name="notification_channel_other">Other</string>
     <string name="notification_channel_other_description">Everything else, such as replies being sent</string>
     <string name="notification_channel_transfers">Transfers</string>
