@@ -4,6 +4,8 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
+import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -95,5 +97,65 @@ class PollModelTest {
     fun `shares stay between 0 and 1`() {
         assertEquals(0f, pollShare(option(0, percentage = -5)))
         assertEquals(1f, pollShare(option(0, percentage = 120)))
+    }
+
+    @Test
+    fun `an open poll the user has not voted in shows its answers to vote for, even to its creator`() {
+        val open = poll(option(0), option(1)).copy(canSeeResults = false)
+
+        assertEquals(false, open.showsResults)
+        assertEquals(false, open.copy(canSeeResults = true).showsResults)
+        assertEquals(true, poll(option(0, isChosen = true), option(1)).showsResults)
+    }
+
+    @Test
+    fun `a vote on its way shows the answers, with no tap taken`() {
+        val sending = poll(option(0).copy(isBeingChosen = true), option(1)).copy(canSeeResults = false)
+
+        assertEquals(false, sending.showsResults)
+        assertEquals(false, sending.canVote)
+    }
+
+    @Test
+    fun `View votes is for public polls whose voters TDLib lists`() {
+        val voted = poll(option(0, isChosen = true), option(1), anonymous = false)
+
+        assertEquals(true, voted.copy(canGetVoters = true).showsVoters)
+        assertEquals(false, voted.showsVoters)
+        assertEquals(false, voted.copy(canGetVoters = true, isAnonymous = true).showsVoters)
+    }
+
+    @Test
+    fun `a poll the user may not vote in says why until it is closed`() {
+        val open = poll(option(0), option(1)).copy(canSeeResults = false)
+
+        assertEquals(null, pollRestriction(open))
+        assertEquals(
+            R.string.poll_restricted_members,
+            pollRestriction(open.copy(voteRestriction = PollVoteRestriction.MembershipRequired(1))),
+        )
+        assertEquals(
+            R.string.poll_restricted_country,
+            pollRestriction(open.copy(voteRestriction = PollVoteRestriction.CountryRestricted("RU"))),
+        )
+        assertEquals(
+            R.string.poll_restricted_scheduled,
+            pollRestriction(open.copy(voteRestriction = PollVoteRestriction.NotSent)),
+        )
+        assertEquals(
+            R.string.poll_restricted_other,
+            pollRestriction(open.copy(voteRestriction = PollVoteRestriction.Other)),
+        )
+        assertEquals(null, pollRestriction(open.copy(isClosed = true, voteRestriction = PollVoteRestriction.Closed)))
+    }
+
+    @Test
+    fun `a quiz's explanation shows once it is answered`() {
+        val explanation = FormattedText("Because.", persistentListOf())
+        val quiz = poll(option(0), option(1, isCorrect = true)).copy(type = PollType.Quiz(explanation))
+
+        assertEquals(null, pollExplanation(quiz))
+        val answered = quiz.copy(options = persistentListOf(option(0, isChosen = true), option(1, isCorrect = true)))
+        assertEquals(explanation, pollExplanation(answered))
     }
 }

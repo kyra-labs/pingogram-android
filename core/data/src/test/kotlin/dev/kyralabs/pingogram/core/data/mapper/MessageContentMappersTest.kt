@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.core.domain.model.Video
 import dev.kyralabs.pingogram.core.domain.model.VideoNote
 import dev.kyralabs.pingogram.core.domain.model.VoiceNote
 import dev.kyralabs.pingogram.core.domain.model.Waveform
+import dev.kyralabs.pingogram.core.testing.PollFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.collections.immutable.persistentListOf
 import org.drinkless.tdlib.TdApi
@@ -307,11 +309,11 @@ class MessageContentMappersTest {
     @Test
     fun `a poll carries its question, options, votes and flags`() {
         val poll =
-            TdApiFixtures.poll(
+            PollFixtures.poll(
                 options =
                     arrayOf(
-                        TdApiFixtures.pollOption("Pizza", 3, 75, isChosen = true),
-                        TdApiFixtures.pollOption("Salad", 1, 25),
+                        PollFixtures.pollOption("Pizza", 3, 75, isChosen = true),
+                        PollFixtures.pollOption("Salad", 1, 25),
                     ),
                 totalVoterCount = 4,
                 canSeeResults = true,
@@ -339,24 +341,24 @@ class MessageContentMappersTest {
                 ),
                 description = text("Vote by noon"),
             ),
-            TdApiFixtures.messagePoll(poll, TdApiFixtures.formattedText("Vote by noon")).map(),
+            PollFixtures.messagePoll(poll, TdApiFixtures.formattedText("Vote by noon")).map(),
         )
     }
 
     @Test
     fun `a quiz marks its correct options and carries the explanation`() {
         val quiz =
-            TdApiFixtures.poll(
+            PollFixtures.poll(
                 options =
                     arrayOf(
-                        TdApiFixtures.pollOption("3"),
-                        TdApiFixtures.pollOption("4"),
-                        TdApiFixtures.pollOption("5"),
+                        PollFixtures.pollOption("3"),
+                        PollFixtures.pollOption("4"),
+                        PollFixtures.pollOption("5"),
                     ),
                 type = TdApi.PollTypeQuiz(intArrayOf(1), TdApiFixtures.formattedText("2 + 2 = 4"), null),
             )
 
-        val poll = (TdApiFixtures.messagePoll(quiz).map() as MessageContent.Poll).poll
+        val poll = (PollFixtures.messagePoll(quiz).map() as MessageContent.Poll).poll
 
         assertEquals(
             listOf(false, true, false) to PollType.Quiz(text("2 + 2 = 4")),
@@ -365,19 +367,61 @@ class MessageContentMappersTest {
     }
 
     @Test
-    fun `poll options follow TDLib's display order and keep their index`() {
-        val shuffled = TdApiFixtures.poll(optionOrder = intArrayOf(1, 0))
+    fun `a poll carries who may list its voters, revote, and what keeps the user from voting`() {
+        val restricted =
+            PollFixtures.poll(
+                options =
+                    arrayOf(
+                        PollFixtures.pollOption("Pizza", isBeingChosen = true),
+                        PollFixtures.pollOption("Salad"),
+                    ),
+                canGetVoters = true,
+                allowsRevoting = true,
+                voteRestrictionReason = TdApi.PollVoteRestrictionReasonMembershipRequired(-100L),
+            )
 
-        val options = (TdApiFixtures.messagePoll(shuffled).map() as MessageContent.Poll).poll.options
+        val poll = (PollFixtures.messagePoll(restricted).map() as MessageContent.Poll).poll
+
+        assertEquals(
+            listOf(true, true, PollVoteRestriction.MembershipRequired(-100L), listOf(true, false)),
+            listOf(poll.canGetVoters, poll.allowsRevoting, poll.voteRestriction, poll.options.map { it.isBeingChosen }),
+        )
+    }
+
+    @Test
+    fun `each reason to refuse a vote is kept`() {
+        val reasons =
+            listOf(
+                TdApi.PollVoteRestrictionReasonClosed() to PollVoteRestriction.Closed,
+                TdApi.PollVoteRestrictionReasonScheduled() to PollVoteRestriction.Scheduled,
+                TdApi.PollVoteRestrictionReasonYetUnsent() to PollVoteRestriction.NotSent,
+                TdApi.PollVoteRestrictionReasonCountryRestricted("RU") to PollVoteRestriction.CountryRestricted("RU"),
+                TdApi.PollVoteRestrictionReasonOther() to PollVoteRestriction.Other,
+            )
+
+        val mapped =
+            reasons.map { (reason, _) ->
+                val content = PollFixtures.messagePoll(PollFixtures.poll(voteRestrictionReason = reason))
+                (content.map() as MessageContent.Poll).poll.voteRestriction
+            }
+
+        assertEquals(reasons.map { it.second }, mapped)
+    }
+
+    @Test
+    fun `poll options follow TDLib's display order and keep their index`() {
+        val shuffled = PollFixtures.poll(optionOrder = intArrayOf(1, 0))
+
+        val options = (PollFixtures.messagePoll(shuffled).map() as MessageContent.Poll).poll.options
 
         assertEquals(listOf(1 to "Salad", 0 to "Pizza"), options.map { it.index to it.text.text })
     }
 
     @Test
     fun `an invalid display order leaves the poll options as they are`() {
-        val invalid = TdApiFixtures.poll(optionOrder = intArrayOf(0, 0))
+        val invalid = PollFixtures.poll(optionOrder = intArrayOf(0, 0))
 
-        val options = (TdApiFixtures.messagePoll(invalid).map() as MessageContent.Poll).poll.options
+        val options = (PollFixtures.messagePoll(invalid).map() as MessageContent.Poll).poll.options
 
         assertEquals(listOf(0, 1), options.map { it.index })
     }

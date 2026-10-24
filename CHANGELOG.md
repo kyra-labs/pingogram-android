@@ -131,6 +131,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   replies; Wear OS watches show them with Reply and Mark as read, as before (`docs/ANDROID_AUTO.md`).
 - Send with Ctrl+Enter: Settings → Appearance → Chats can make Ctrl+Enter send a message from a hardware keyboard, Enter
   then starting a new line.
+- Voting in polls: tap an answer to vote, or check several and tap Vote where the poll allows more than one. Once you
+  voted, or the poll is closed, each answer shows its share of the votes as a bar with its percentage, your answer
+  marked; in a quiz the right answer is marked green and a wrong one red, with the quiz's explanation below. A public
+  poll's "View votes" shows who chose each answer, and tapping someone opens their profile. Long-press a poll to take
+  your vote back (where the poll lets you) or, for your own polls, to stop it for everyone. A poll you can't vote in
+  says why, for example when only members may vote.
 - GIFs in the sticker panel: a third tab shows your saved GIFs and searches GIFs as you type, through the bot
   Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
 - Change number: Edit profile shows your phone number with "Change", which moves your account to a new number with

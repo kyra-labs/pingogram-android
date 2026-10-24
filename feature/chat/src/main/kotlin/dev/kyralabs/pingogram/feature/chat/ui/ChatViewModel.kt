@@ -40,6 +40,7 @@ import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
@@ -85,6 +86,10 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedSheet
 import dev.kyralabs.pingogram.feature.chat.ui.player.AudioPlayer
+import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
+import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
+import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
+import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
@@ -247,6 +252,9 @@ import java.util.Locale
  *   its bars ([searchState], kept out of [uiState] like the forward sheet), the result shown in the list as a tapped
  *   quote's message, marking the query's words ([ChatItem.Bubble.searchMatch]), the members' sheet
  *   ([searchSenderSheet]) and the jump to a day.
+ * - **Polls** ([ChatPolls], `REQUIREMENTS.md` FR-C4): voting (the answers checked before "Vote" copied into their
+ *   bubbles only), taking a vote back and stopping a poll from the message actions, the question before a stop
+ *   ([stopPollDialog]) and the voters' sheet ([pollVotersSheet]), both kept out of [uiState] like the forward sheet.
  * - **Sponsored messages** ([ChatSponsoredMessages]) of a channel or a chat with a bot (`REQUIREMENTS.md` §2): loaded
  *   once ([SponsoredMessageRepository]), placed among the items where they reach the chat's newest message, viewed once
  *   wholly on screen, opened, and "About this ad" ([ChatUiState.sponsoredSheet]) with reporting.
@@ -310,6 +318,7 @@ class ChatViewModel internal constructor(
     translationRepositories: TranslationRepositories,
     searchRepositories: ChatSearchRepositories,
     customEmojiRepository: CustomEmojiRepository,
+    pollRepository: PollRepository,
     private val log: ChatLog,
     private val initialMessageId: Long? = null,
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
@@ -351,6 +360,7 @@ class ChatViewModel internal constructor(
         translationRepositories: TranslationRepositories,
         searchRepositories: ChatSearchRepositories,
         customEmojiRepository: CustomEmojiRepository,
+        pollRepository: PollRepository,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -387,6 +397,7 @@ class ChatViewModel internal constructor(
         translationRepositories,
         searchRepositories,
         customEmojiRepository,
+        pollRepository,
         AndroidChatLog,
         messageId,
         topic = topic,
@@ -659,6 +670,8 @@ class ChatViewModel internal constructor(
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
             translationAction = { translation.actionFor(it) },
+            onRetractVote = { polls.retract(it) },
+            onStopPoll = { polls.askStop(it) },
         )
 
     private val selection =
@@ -770,6 +783,30 @@ class ChatViewModel internal constructor(
             scope = viewModelScope,
             onEffect = { effectChannel.trySend(it) },
         )
+
+    private val polls =
+        ChatPolls(
+            chatId = chatId,
+            repository = pollRepository,
+            users = userRepository,
+            chats = chatRepository,
+            history = history,
+            messageOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+            },
+            savedState = savedStateHandle,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** Who voted for each answer of a public poll; null while the sheet is closed. Kept out of [uiState]. */
+    val pollVotersSheet: StateFlow<PollVotersSheet?> get() = polls.votersSheet
+
+    /** The question before a poll is stopped; null while none shows. */
+    val stopPollDialog: StateFlow<StopPollDialog?> get() = polls.stopDialog
 
     /** Which messages the conversation shows, where its list shows them, and how far pages have loaded. */
     private val window =
@@ -954,6 +991,7 @@ class ChatViewModel internal constructor(
             .combine(translation.bubbles) { state, translations -> state.withTranslations(translations) }
             .combine(translation.bar) { state, bar -> state.copy(translateBar = bar) }
             .combine(search.highlight) { state, highlight -> state.withSearchMatch(highlight) }
+            .combine(polls.choices) { state, choices -> state.withPollChoices(choices) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatUiState())
 
@@ -1020,7 +1058,17 @@ class ChatViewModel internal constructor(
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
+            is PollEvent -> onPollEvent(event)
             else -> onMessageEvent(event)
+        }
+    }
+
+    /** The events of polls: taking a vote back and stopping a poll go through the message actions' checks. */
+    private fun onPollEvent(event: PollEvent) {
+        when (event) {
+            is PollEvent.RetractVote -> messageActions.retractVote(event.messageId)
+            is PollEvent.StopPoll -> messageActions.stopPoll(event.messageId)
+            else -> polls.onEvent(event)
         }
     }
 

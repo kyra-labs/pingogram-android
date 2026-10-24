@@ -94,36 +94,43 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,
                 chatJoinRepository = FakeChatJoinRepository(),
-                threadRepositories =
-                    ThreadRepositories(
-                        FakePinnedMessageRepository(),
-                        FakeHiddenPinsRepository(),
-                        FakeForumTopicRepository(),
-                        FakeMessageThreadRepository(),
-                    ),
+                threadRepositories = threadRepositories(),
                 shareInbox = ShareInbox(),
                 botButtonRepository = FakeBotButtonRepository(),
                 botInfoRepository = FakeBotInfoRepository(),
                 botStartInbox = BotStartInbox(),
-                inlineBotRepositories =
-                    InlineBotRepositories(
-                        FakeInlineBotRepository(),
-                        FakeDeviceLocationRepository(),
-                        InlineLocationConsent(),
-                        BotStartInbox(),
-                    ),
-                translationRepositories =
-                    TranslationRepositories(
-                        FakeTranslationRepository(),
-                        FakeDeviceLanguageDetector(),
-                        FakeAppLanguageRepository(),
-                        FakeHiddenTranslateBarsRepository(),
-                    ),
+                inlineBotRepositories = inlineBotRepositories(),
+                translationRepositories = translationRepositories(),
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
                 customEmojiRepository = FakeCustomEmojiRepository(),
+                pollRepository = FakePollRepository(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()
         return viewModel
     }
+
+    private fun threadRepositories() =
+        ThreadRepositories(
+            FakePinnedMessageRepository(),
+            FakeHiddenPinsRepository(),
+            FakeForumTopicRepository(),
+            FakeMessageThreadRepository(),
+        )
+
+    private fun inlineBotRepositories() =
+        InlineBotRepositories(
+            FakeInlineBotRepository(),
+            FakeDeviceLocationRepository(),
+            InlineLocationConsent(),
+            BotStartInbox(),
+        )
+
+    private fun translationRepositories() =
+        TranslationRepositories(
+            FakeTranslationRepository(),
+            FakeDeviceLanguageDetector(),
+            FakeAppLanguageRepository(),
+            FakeHiddenTranslateBarsRepository(),
+        )
 }

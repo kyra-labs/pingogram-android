@@ -36,12 +36,14 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVideo
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVideoNote
 import dev.kyralabs.pingogram.feature.chat.ui.content.MessageVoiceNote
 import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
+import dev.kyralabs.pingogram.feature.chat.ui.content.PollAction
 import dev.kyralabs.pingogram.feature.chat.ui.content.downloadableFileId
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 
 /**
  * What a bubble shows of its message's content above the text or caption (`REQUIREMENTS.md` FR-C4): the one place
@@ -234,7 +236,10 @@ private fun FileContent(
     }
 }
 
-/** Locations, contacts, polls and the rest, padded in the bubble; nothing for text, which the bubble shows. */
+/**
+ * Locations, contacts, polls (with the answers checked before voting, [ChatItem.Bubble.pollChoices], and their taps as
+ * [PollEvent]s) and the rest, padded in the bubble; nothing for text, which the bubble shows.
+ */
 @Composable
 private fun InfoContent(
     bubble: ChatItem.Bubble,
@@ -244,16 +249,51 @@ private fun InfoContent(
 ) {
     val onOpenLocation = { onEvent(ChatEvent.OpenLocation(bubble.id)) }
     when (val content = bubble.content) {
-        is MessageContent.Location -> MessageLocation(content, onOpenLocation, modifier, colors)
-        is MessageContent.Venue -> MessageVenue(content, onOpenLocation, modifier, colors)
-        is MessageContent.Contact -> MessageContact(content, modifier, colors)
-        is MessageContent.Poll -> MessagePoll(content, modifier, colors)
-        is MessageContent.Game -> MessageGame(content, modifier, colors)
-        is MessageContent.Invoice -> MessageInvoice(content, modifier, colors)
-        is MessageContent.Story -> MessageStory(modifier, colors)
-        is MessageContent.Expired -> MessageExpired(content, modifier, colors)
-        MessageContent.Unsupported -> bubble.contentLabel?.let { ContentPlaceholder(it.resolve(), colors, modifier) }
-        else -> Unit
+        is MessageContent.Location -> {
+            MessageLocation(content, onOpenLocation, modifier, colors)
+        }
+
+        is MessageContent.Venue -> {
+            MessageVenue(content, onOpenLocation, modifier, colors)
+        }
+
+        is MessageContent.Contact -> {
+            MessageContact(content, modifier, colors)
+        }
+
+        is MessageContent.Poll -> {
+            MessagePoll(
+                content = content,
+                modifier = modifier,
+                colors = colors,
+                choices = bubble.pollChoices ?: persistentSetOf(),
+                onAction = { action -> onEvent(action.eventFor(bubble.id)) },
+            )
+        }
+
+        is MessageContent.Game -> {
+            MessageGame(content, modifier, colors)
+        }
+
+        is MessageContent.Invoice -> {
+            MessageInvoice(content, modifier, colors)
+        }
+
+        is MessageContent.Story -> {
+            MessageStory(modifier, colors)
+        }
+
+        is MessageContent.Expired -> {
+            MessageExpired(content, modifier, colors)
+        }
+
+        MessageContent.Unsupported -> {
+            bubble.contentLabel?.let { ContentPlaceholder(it.resolve(), colors, modifier) }
+        }
+
+        else -> {
+            Unit
+        }
     }
 }
 
@@ -273,3 +313,12 @@ private fun ContentPlaceholder(
         style = MaterialTheme.typography.bodyMedium,
     )
 }
+
+/** The event of a tap in the poll of message [messageId]. */
+private fun PollAction.eventFor(messageId: Long): ChatEvent =
+    when (this) {
+        is PollAction.Vote -> PollEvent.Vote(messageId, optionIndex)
+        is PollAction.Toggle -> PollEvent.Toggle(messageId, optionIndex)
+        PollAction.Submit -> PollEvent.SubmitVotes(messageId)
+        PollAction.ShowVoters -> PollEvent.OpenVoters(messageId)
+    }
