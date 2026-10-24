@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Next unread channel: at the bottom of a channel you have read, pull up to open the next channel with unread posts
+  from your chat list. Letting go opens it in place of the one you read; screen readers have an action for it.
 - Share button: channel posts, and posts forwarded from a channel, have a round forward button beside them, which opens
   the forward sheet for the post. Chats that protect their content and secret chats show none.
 - Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
