@@ -44,11 +44,15 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.ListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsItemIcon
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsRow
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
+import dev.kyralabs.pingogram.feature.settings.ui.dragAfterLongPress
+import dev.kyralabs.pingogram.feature.settings.ui.dragHandle
+import dev.kyralabs.pingogram.feature.settings.ui.rememberListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.settingsListRow
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import java.text.NumberFormat
@@ -70,7 +74,9 @@ internal fun ChatFoldersList(
     val spacing = MaterialTheme.spacing
     val style = SettingsListRowStyle(MaterialTheme.sizes.contentMaxWidth, windowMargin(), MaterialTheme.motionScheme)
     val reorder =
-        rememberFolderReorderState(listState, state.folders.map { it.id }) { onEvent(ChatFoldersEvent.Reorder(it)) }
+        rememberListReorderState(listState, state.folders.map { it.id }, ::folderRowKey) {
+            onEvent(ChatFoldersEvent.Reorder(it))
+        }
     val byId = state.folders.associateBy { it.id }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -105,7 +111,7 @@ internal fun ChatFoldersList(
 
 /** The user's folders under their heading, in the order the finger leaves them while one is dragged. */
 private fun LazyListScope.folders(
-    reorder: FolderReorderState,
+    reorder: ListReorderState<Int>,
     byId: Map<Int, FolderItem>,
     style: SettingsListRowStyle,
     onEvent: (ChatFoldersEvent) -> Unit,
@@ -326,6 +332,9 @@ internal val ChatFolderIncludedType.icon: Int
             ChatFolderIncludedType.Channels -> R.drawable.ic_public
             ChatFolderIncludedType.Bots -> UiR.drawable.ic_tag
         }
+
+/** The key of folder [id]'s row in the page's lazy list. */
+private fun folderRowKey(id: Int): String = "folder-$id"
 
 private const val NEW = "new"
 private const val NONE = "none"

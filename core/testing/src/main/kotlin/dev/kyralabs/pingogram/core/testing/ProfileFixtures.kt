@@ -8,8 +8,13 @@ import org.drinkless.tdlib.TdApi
  */
 object ProfileFixtures {
     /** A user's full info with [bio], and TDLib's "none" for everything else. */
-    fun userFullInfo(bio: String? = null) =
-        TdApi.UserFullInfo().also { it.bio = bio?.let(TdApiFixtures::formattedText) }
+    fun userFullInfo(
+        bio: String? = null,
+        birthdate: TdApi.Birthdate? = null,
+    ) = TdApi.UserFullInfo().also {
+        it.bio = bio?.let(TdApiFixtures::formattedText)
+        it.birthdate = birthdate
+    }
 
     /** An integer option, e.g. `bio_length_max`; [value] null for the empty value of a removed option. */
     fun integerOption(

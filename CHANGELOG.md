@@ -10,6 +10,38 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
+  screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
+  "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
+  shares theirs, it fills the window without being cut off.
+- Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
+  turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
+  opens a sheet that shows the proxy and connects through it only when you tap "Connect".
+- Network usage: Settings → Data and storage → Network usage shows how much data Pingogram sent and received on mobile
+  data, Wi-Fi and roaming since a date, in total and for messages, photos, videos, voice messages, music, files and
+  calls, as counted on this device. "Reset statistics" starts counting again.
+- Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
+  those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
+  or first video in picture-in-picture.
+- Voice chats: where the voice chat allows video, a Camera button sends your camera, and your own picture shows above
+  the participants with "Switch camera" on it. Pingogram asks for the camera when you first turn it on. It sends less on
+  mobile data and roaming, and stops while the call is on hold.
+- Rate this call: when Telegram asks for it after a call of at least a few seconds that ended normally, a sheet over
+  the ended call asks for one to five stars, and what went wrong for one to three (echo, noise, sound cutting out,
+  not hearing each other, a dropped call, and for video calls distorted or blurry video). It says that the rating goes
+  to Telegram to improve calls. "Not now", back or a swipe closes it without rating.
+- Recent calls: Settings and the Contacts tab open a list of your calls, newest first and by day, all of them or only
+  the missed ones, with who it was, whether it was a voice or a video call, incoming, outgoing, missed or declined, and
+  how long it lasted. Tap a call to call back the same way; hold it to delete it from your call history (the other
+  person keeps theirs).
+- Voice chats: when a group or channel has a voice chat, a bar at the top of the conversation shows it with how many
+  are in it, and "Join" opens it (so does "Voice chat" on the group's info page). You join muted; tap Mute to speak,
+  and the others see you unmuted. Everyone in it is listed, with who is speaking, who is muted and who raised their
+  hand; when an admin keeps you muted, "Raise hand" asks to speak. Leave from the screen or its notification.
+  Administrators start a voice chat with "Start voice chat" on the info page and can end it for everyone. Who is
+  speaking follows what Telegram reports and may lag a second or two.
+- Live streams: a channel's live stream opens the same way and plays full screen; leave the screen and it goes on in
+  picture-in-picture with Leave.
 - Video call buttons: the call button in a conversation's top bar, and the "Call" button on a profile, now open a
   small menu with "Voice call" and "Video call" where the other person's app takes video calls and your phone has a
   camera; elsewhere a tap calls at once, as before. Calling back from a call in the chat keeps its kind: a missed
@@ -24,6 +56,31 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the page too.
 - Shared folders: a folder link (`t.me/addlist/…`) shows the folder and its chats. Pick the chats you want to join
   and add the folder with one tap, or join the chats added to a folder you have. Nothing is joined until you tap.
+- Stickers: Settings → Stickers lists your sticker sets in the order the sticker panel shows them. Drag a set by its
+  handle, or touch and hold it, to move it; tap it to share its link, archive it or remove it, with "Undo" right
+  after. Trending stickers shows the sets popular on Telegram and Archived stickers the ones you archived, each with
+  "Add".
+- Sticker set links: a sticker set's link (`t.me/addstickers/…`) shows its stickers, to add the set with one tap; the
+  sets in Settings → Stickers open the same way.
+- Android Auto (the Play services build): message notifications show in the car, are read aloud and take spoken
+  replies; Wear OS watches show them with Reply and Mark as read, as before (`docs/ANDROID_AUTO.md`).
+- Send with Ctrl+Enter: Settings → Appearance → Chats can make Ctrl+Enter send a message from a hardware keyboard, Enter
+  then starting a new line.
+- GIFs in the sticker panel: a third tab shows your saved GIFs and searches GIFs as you type, through the bot
+  Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
+- Change number: Edit profile shows your phone number with "Change", which moves your account to a new number with
+  the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
+- Birthday: Edit profile adds, changes or removes your birthday, with or without its year, and shows who can see it;
+  "Birthday" joins the privacy settings in Privacy and security.
+- Privacy exceptions: every privacy setting's "Always allowed" and "Never allowed" open a page of their own, where you
+  add people and groups from your chats or remove them.
+- Privacy: "Messages" sets who can start a chat with you (everybody, or your contacts and Telegram Premium
+  subscribers, where Telegram lets you choose it); "Last seen and online" can hide your read time; "Bio" joins the
+  privacy settings.
+- Login email: Privacy and security → Account shows the email Telegram can send your login codes to, and changes it
+  with a code sent to the new address.
+- Auto-delete messages: Privacy and security → Account sets a timer for the chats you start from then on (off, a day,
+  a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

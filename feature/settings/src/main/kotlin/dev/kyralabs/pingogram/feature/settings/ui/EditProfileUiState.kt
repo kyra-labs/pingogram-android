@@ -2,6 +2,9 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
+import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
@@ -31,6 +34,7 @@ sealed interface EditProfileUiState {
      * @property usernameStatus what is known about the username typed, shown below its field.
      * @property isSaving the changes are being saved; the fields wait meanwhile.
      * @property dialog the open confirmation, if any.
+     * @property birthdatePrivacy who may see the birthday ([PrivacySetting.Birthdate]); null until Telegram said.
      */
     data class Content(
         val account: ProfileAccount?,
@@ -41,6 +45,7 @@ sealed interface EditProfileUiState {
         val usernameStatus: UsernameStatus = UsernameStatus.Unchanged,
         val isSaving: Boolean = false,
         val dialog: EditProfileDialog? = null,
+        val birthdatePrivacy: PrivacyRules? = null,
     ) : EditProfileUiState {
         /** Why the first name cannot be saved as typed; null if it can. */
         val firstNameProblem: FieldProblem?
@@ -61,7 +66,7 @@ sealed interface EditProfileUiState {
 
         /** Something differs from what TDLib has, as TDLib would save it (names and bio trimmed). */
         val hasChanges: Boolean
-            get() = nameChanged || usernameChanged || bioChanged
+            get() = nameChanged || usernameChanged || bioChanged || birthdateChanged
 
         val nameChanged: Boolean
             get() = fields.firstName.trim() != saved.firstName || fields.lastName.trim() != saved.lastName
@@ -71,6 +76,9 @@ sealed interface EditProfileUiState {
 
         val bioChanged: Boolean
             get() = fields.bio.trim() != saved.bio
+
+        val birthdateChanged: Boolean
+            get() = fields.birthdate != saved.birthdate
 
         /** Save is enabled: something changed, everything typed is valid, and nothing is being saved. */
         val canSave: Boolean
@@ -85,10 +93,11 @@ sealed interface EditProfileUiState {
 }
 
 /**
- * The user's names, username and bio, as TDLib has them or as typed. `toString()` leaves them out, so a state can be
- * logged.
+ * The user's names, username, bio and birthday, as TDLib has them or as typed. `toString()` leaves them out, so a
+ * state can be logged.
  *
  * @property username without `@`; empty for none.
+ * @property birthdate null for none.
  */
 @Immutable
 data class ProfileFields(
@@ -96,6 +105,7 @@ data class ProfileFields(
     val lastName: String,
     val username: String,
     val bio: String,
+    val birthdate: Birthdate? = null,
 ) {
     override fun toString() = "ProfileFields(…)"
 }
@@ -109,6 +119,8 @@ data class ProfileAccount(
     val userId: Long,
     val name: String,
     val photo: ProfilePhoto?,
+    /** The account's phone number as Telegram has it (digits); empty while unknown. */
+    val phoneNumber: String = "",
 ) {
     override fun toString() = "ProfileAccount(userId=$userId, …)"
 }
@@ -185,6 +197,11 @@ sealed interface EditProfileEvent {
 
     data class BioChanged(
         val value: String,
+    ) : EditProfileEvent
+
+    /** The birthday picked in its dialog, or null where it was removed; saved with the rest. */
+    data class BirthdateChanged(
+        val birthdate: Birthdate?,
     ) : EditProfileEvent
 
     data object Save : EditProfileEvent

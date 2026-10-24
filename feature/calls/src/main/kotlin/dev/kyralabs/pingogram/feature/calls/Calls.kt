@@ -3,13 +3,21 @@ package dev.kyralabs.pingogram.feature.calls
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.ui.component.CallStarter
+import dev.kyralabs.pingogram.core.ui.component.VoiceChatSummary
+import dev.kyralabs.pingogram.core.ui.component.VoiceChats
 import dev.kyralabs.pingogram.feature.calls.service.CallNotifications
+import dev.kyralabs.pingogram.feature.calls.service.isOver
 import dev.kyralabs.pingogram.feature.calls.ui.CallActivity
 import dev.kyralabs.pingogram.feature.calls.ui.CameraAccess
+import dev.kyralabs.pingogram.feature.calls.ui.GroupCallActivity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -18,18 +26,24 @@ import javax.inject.Singleton
 /**
  * What the rest of the app knows of calls (`docs/ARCHITECTURE.md`, Calls): `PingogramApplication` [start]s them with
  * the app, before TDLib, so incoming calls ring whenever TDLib announces one; the call buttons [call] someone, or
- * [videoCall] them where [canVideoCall] says so. It is the [CallStarter] `:app` hands to the features.
+ * [videoCall] them where [canVideoCall] says so. It is the [CallStarter] `:app` hands to the features, and their
+ * [VoiceChats]: a chat's voice chat, joined or started on the voice chat's screen
+ * (`docs/adr/0023-group-voice-chats-and-live-streams.md`).
  */
 @Singleton
 class Calls
     @Inject
+    @Suppress("LongParameterList") // Injected: both managers, the notifications, profiles, the camera, group calls.
     internal constructor(
         @param:ApplicationContext private val context: Context,
         private val manager: CallManager,
         private val notifications: CallNotifications,
         private val profiles: UserProfileRepository,
         private val camera: CameraAccess,
-    ) : CallStarter {
+        private val groupCalls: GroupCallRepository,
+        private val groupCallManager: GroupCallManager,
+    ) : CallStarter,
+        VoiceChats {
         fun start() {
             manager.start()
             notifications.start()
@@ -46,7 +60,43 @@ class Calls
         override fun videoCall(userId: Long) = CallActivity.startCall(context, userId, video = true)
 
         override fun canVideoCall(userId: Long): Flow<Boolean> = videoCallable(userId, profiles, camera)
+
+        override fun voiceChat(chatId: Long): Flow<VoiceChatSummary?> =
+            voiceChatSummary(chatId, groupCalls, groupCallManager.call)
+
+        /** Opens the voice chat's screen, which asks for the microphone if needed, then joins. */
+        override fun join(chatId: Long) = GroupCallActivity.open(context, chatId)
+
+        override fun start(chatId: Long) = GroupCallActivity.open(context, chatId, start = true)
     }
+
+/**
+ * Chat [chatId]'s voice chat as the chat's screens show it (`Calls.voiceChat`): its group call's count and kind, and
+ * whether the user is in it here.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun voiceChatSummary(
+    chatId: Long,
+    groupCalls: GroupCallRepository,
+    current: Flow<ActiveGroupCall?>,
+): Flow<VoiceChatSummary?> =
+    groupCalls
+        .videoChat(chatId)
+        .map { it?.groupCallId }
+        .distinctUntilChanged()
+        .flatMapLatest { id ->
+            if (id == null) {
+                flowOf(null)
+            } else {
+                combine(groupCalls.groupCall(id), current) { call, active ->
+                    VoiceChatSummary(
+                        participantCount = call?.participantCount,
+                        isLiveStream = call?.isRtmpStream == true,
+                        isJoined = active?.groupCallId == id && !active.isOver(),
+                    )
+                }
+            }
+        }.distinctUntilChanged()
 
 /**
  * Whether user [userId] can get a video call (`Calls.canVideoCall`): the device has a camera, and the user's full

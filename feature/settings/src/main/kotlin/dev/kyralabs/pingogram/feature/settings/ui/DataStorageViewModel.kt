@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
+import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -25,7 +26,7 @@ import javax.inject.Inject
  * The Data and storage page (`REQUIREMENTS.md` FR-S1): what downloads by itself on each kind of network
  * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram
  * takes, loaded when the page opens, and clearing the cache of downloaded files after a confirmation, which shows how
- * much it freed and loads the usage again.
+ * much it freed and loads the usage again; and the proxy in use ([ProxyRepository]), which its page changes.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; clearing in progress does not, as
  * TDLib finishes it anyway and the usage is loaded again.
@@ -38,6 +39,7 @@ class DataStorageViewModel
         private val storageRepository: StorageRepository,
         autoDownloadRepository: AutoDownloadRepository,
         networkRepository: NetworkRepository,
+        proxyRepository: ProxyRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -56,6 +58,12 @@ class DataStorageViewModel
                     settings to status.isDataSaverOn
                 }.collect { (settings, dataSaver) ->
                     mutableUiState.update { it.copy(autoDownload = settings, isDataSaverOn = dataSaver) }
+                }
+            }
+            viewModelScope.launch {
+                proxyRepository.proxies.collect { outcome ->
+                    val proxy = (outcome as? Outcome.Success)?.value?.firstOrNull { it.isEnabled }
+                    mutableUiState.update { it.copy(proxy = proxy) }
                 }
             }
             loadUsage()

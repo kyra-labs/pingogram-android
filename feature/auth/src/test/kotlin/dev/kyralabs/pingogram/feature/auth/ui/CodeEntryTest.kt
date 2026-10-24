@@ -119,7 +119,7 @@ class CodeEntryTest {
     @Test
     fun `a new code can be requested only once the countdown reaches zero`() {
         showCodeScreen()
-        val resend = string(R.string.auth_code_resend_call)
+        val resend = string(CoreUiR.string.login_code_resend_call)
 
         advanceClockBySeconds(RESEND_TIMEOUT_SECONDS - 1L)
         val resendBeforeZero = composeRule.onAllNodesWithText(resend).fetchSemanticsNodes().size

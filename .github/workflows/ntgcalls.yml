@@ -9,8 +9,10 @@ name: Build NTgCalls
 # NTgCalls builds itself: `setup.py build_lib --target=android` downloads the toolchain and the prebuilt static
 # libraries its version.properties pins (NDK r28b, Chromium's clang and libc++, WebRTC from pytgcalls/webrtc-build,
 # Boost, FFmpeg, OpenH264; their build scripts are public) and builds libntgcalls per ABI; its Gradle project in
-# targets/android then links the JNI layer it generates and packages the AAR. The only change made here: 32-bit x86,
-# which Pingogram does not ship (docs/RELEASE.md), is left out of both.
+# targets/android then links the JNI layer it generates and packages the AAR. The changes made here: 32-bit x86,
+# which Pingogram does not ship (docs/RELEASE.md), is left out of both, and the patches of tools/ntgcalls/ are applied
+# (docs/adr/0025-conference-calls.md), which the release's tag names (ntgcalls-<short-sha>-<NTGCALLS_PATCHES>) and its
+# source archive contains.
 
 on:
   workflow_dispatch:
@@ -26,6 +28,9 @@ permissions:
 env:
   # NTgCalls 3.0.5. Keep in sync with gradle/libs.versions.toml → ntgcalls.
   NTGCALLS_COMMIT: "e8ab467185017827625f664d024824947b5c5d5f"
+  # The patches of tools/ntgcalls/ as one name, bumped whenever they change. Keep in sync with
+  # gradle/libs.versions.toml → ntgcalls ("<commit>-<patches>").
+  NTGCALLS_PATCHES: "pingogram1"
   ABIS: "arm64-v8a armeabi-v7a x86_64"
 
 jobs:
@@ -62,7 +67,25 @@ jobs:
         run: |
           FULL=$(git rev-parse HEAD)
           echo "full=$FULL" >> "$GITHUB_OUTPUT"
-          echo "short=${FULL:0:10}" >> "$GITHUB_OUTPUT"
+          echo "short=${FULL:0:10}-${NTGCALLS_PATCHES}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Pingogram's patches
+        uses: actions/checkout@v7
+        with:
+          path: pingogram
+          sparse-checkout: tools/ntgcalls
+          fetch-depth: 1
+
+      - name: Apply Pingogram's patches
+        working-directory: ntgcalls
+        run: |
+          set -euo pipefail
+          for patch in ../pingogram/tools/ntgcalls/*.patch; do
+            echo "Applying $(basename "$patch")"
+            git apply --index "$patch"
+          done
+          # Committed, so the source archive below is the source the AAR was built from (LGPL-3.0).
+          git -c user.name="Pingogram CI" -c user.email="ci@localhost" commit -q -m "Pingogram patches (${NTGCALLS_PATCHES})"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -148,7 +171,8 @@ jobs:
           prerelease: true
           body: |
             Prebuilt NTgCalls for Android, the call engine of Pingogram (docs/adr/0015-call-media-engine.md).
-            - pytgcalls/ntgcalls commit: `${{ steps.sha.outputs.full }}`
+            - pytgcalls/ntgcalls commit: `${{ steps.sha.outputs.full }}`, with Pingogram's patches `${{ env.NTGCALLS_PATCHES }}`
+              (tools/ntgcalls/ of this repository; the source archive contains them)
             - ABIs: ${{ env.ABIS }} (64-bit libraries 16 KB page aligned)
             - License: GNU Lesser General Public License v3.0 (https://github.com/pytgcalls/ntgcalls); the statically
               linked components and their licenses are in the AAR's META-INF/ntgcalls/THIRD_PARTY_NOTICES.md

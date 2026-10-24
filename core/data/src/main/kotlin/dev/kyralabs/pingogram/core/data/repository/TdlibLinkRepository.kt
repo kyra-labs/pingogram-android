@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
+import dev.kyralabs.pingogram.core.data.mapper.toProxy
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.NewChatKind
@@ -214,33 +215,69 @@ class TdlibLinkRepository
  */
 private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
     when (this) {
-        is TdApi.InternalLinkTypeMyProfilePage -> LinkTarget.EditProfile
+        is TdApi.InternalLinkTypeMyProfilePage -> {
+            LinkTarget.EditProfile
+        }
 
-        is TdApi.InternalLinkTypeContactsPage -> LinkTarget.Contacts
+        is TdApi.InternalLinkTypeContactsPage -> {
+            LinkTarget.Contacts
+        }
 
-        is TdApi.InternalLinkTypeSettings -> section.toTarget()
+        is TdApi.InternalLinkTypeSettings -> {
+            section.toTarget()
+        }
 
-        is TdApi.InternalLinkTypeNewPrivateChat -> LinkTarget.NewChat(NewChatKind.Private)
+        is TdApi.InternalLinkTypeNewPrivateChat -> {
+            LinkTarget.NewChat(NewChatKind.Private)
+        }
 
-        is TdApi.InternalLinkTypeNewGroupChat -> LinkTarget.NewChat(NewChatKind.Group)
+        is TdApi.InternalLinkTypeNewGroupChat -> {
+            LinkTarget.NewChat(NewChatKind.Group)
+        }
 
-        is TdApi.InternalLinkTypeNewChannelChat -> LinkTarget.NewChat(NewChatKind.Channel)
+        is TdApi.InternalLinkTypeNewChannelChat -> {
+            LinkTarget.NewChat(NewChatKind.Channel)
+        }
 
-        is TdApi.InternalLinkTypeSearch -> LinkTarget.Search
+        is TdApi.InternalLinkTypeSearch -> {
+            LinkTarget.Search
+        }
 
-        is TdApi.InternalLinkTypeChatInvite -> LinkTarget.ChatInvite(inviteLink)
+        is TdApi.InternalLinkTypeChatInvite -> {
+            LinkTarget.ChatInvite(inviteLink)
+        }
 
-        is TdApi.InternalLinkTypeChatFolderInvite -> LinkTarget.ChatFolderInvite(inviteLink)
+        is TdApi.InternalLinkTypeChatFolderInvite -> {
+            LinkTarget.ChatFolderInvite(inviteLink)
+        }
+
+        // Custom emoji packs are for Telegram Premium subscribers, which Pingogram does not offer to add.
+        is TdApi.InternalLinkTypeStickerSet -> {
+            if (expectCustomEmoji) LinkTarget.Unsupported(link) else LinkTarget.StickerSet(stickerSetName)
+        }
 
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.
-        is TdApi.InternalLinkTypeQrCodeAuthentication -> LinkTarget.QrCodeLogin(link)
+        is TdApi.InternalLinkTypeQrCodeAuthentication -> {
+            LinkTarget.QrCodeLogin(link)
+        }
 
-        is TdApi.InternalLinkTypeMessageDraft -> LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
+        // A protocol of a newer TDLib that Pingogram cannot describe is not offered.
+        is TdApi.InternalLinkTypeProxy -> {
+            proxy?.toProxy()?.let(LinkTarget::ProxyServer) ?: LinkTarget.Unsupported(link)
+        }
+
+        is TdApi.InternalLinkTypeMessageDraft -> {
+            LinkTarget.MessageDraft(text.toFormattedText(), containsLink)
+        }
 
         // Never entered anywhere: someone may be logging in to the user's account with it.
-        is TdApi.InternalLinkTypeAuthenticationCode -> LinkTarget.LoginCode
+        is TdApi.InternalLinkTypeAuthenticationCode -> {
+            LinkTarget.LoginCode
+        }
 
-        else -> LinkTarget.Unsupported(link)
+        else -> {
+            LinkTarget.Unsupported(link)
+        }
     }
 
 /** The page of Settings a `tg://settings/…` link names, Settings home for the ones Pingogram has no page for. */

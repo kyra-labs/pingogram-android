@@ -16,7 +16,8 @@ chats behave exactly like the official apps at the protocol level, while the UI 
 
 - G1. A native Android experience that looks and moves like a Google-made Material 3 Expressive app.
 - G2. Feature parity with the official app for everyday messaging by v1.0 (see §5).
-- G3. Fast, battery-friendly, small download (≤ 50 MB per-ABI APK target, calls included; `docs/PERFORMANCE.md` §1).
+- G3. Fast, battery-friendly, small download (≤ 50 MB arm64-v8a APK, ≤ 123 MB universal, calls and voice chats
+  included; `docs/PERFORMANCE.md` §1).
 - G4. Fully open source, reproducible builds, releases on GitHub (APK), later F-Droid/Play.
 - G5. Privacy-respecting: no analytics, no ads, no telemetry.
 
@@ -198,7 +199,9 @@ Binding budgets and techniques are in `docs/PERFORMANCE.md`; headline targets:
 - Cold start → chat list ≤ 1.2 s, warm start ≤ 400 ms (Macrobenchmark, Baseline + Startup Profiles shipped).
 - Chat list / conversation scroll at the display's native rate (60/90/120 Hz): P90 frame ≤ 8–10 ms, jank < 1%.
 - Open a cached chat ≤ 150 ms; optimistic send ≤ 50 ms.
-- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 50 MB arm64 (raised from 35 MB for the call engine, owner 2026-10-22).
+- Memory ≤ 120 MB idle, ≤ 250 MB in a 10k-message media chat; APK ≤ 50 MB arm64-v8a and
+  ≤ 123 MB universal (raised from 35 MB for the call engine, owner 2026-10-22; set from the APKs with voice chats plus
+  a small margin, owner 2026-10-23).
 - Background battery ≤ 1.5% / 8 h; idle data ≤ 2 MB / 24 h; no polling, no periodic jobs < 15 min.
 - Compose: immutable state, keyed/contentTyped lazy lists, zero off-screen recompositions,
   animations in draw/layout phase; TDLib: suspendable, batched, prioritized, cancellable calls.

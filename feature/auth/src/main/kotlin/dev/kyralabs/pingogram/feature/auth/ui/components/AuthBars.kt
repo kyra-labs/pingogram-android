@@ -31,9 +31,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
+import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
+import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -149,21 +152,6 @@ internal fun FloodWaitBanner(
         )
     }
 }
-
-/**
- * Whole seconds of a countdown as screen readers hear them: under a minute rounded up to 15-second steps, so a live
- * region speaks at most every 15 seconds; `durationText` already rounds longer times up to minutes and hours. Rounding
- * up never claims less time than is left.
- */
-internal fun announcedCountdownSeconds(seconds: Long): Long =
-    if (seconds in 1 until SECONDS_PER_MINUTE) {
-        (seconds + ANNOUNCEMENT_STEP_SECONDS - 1) / ANNOUNCEMENT_STEP_SECONDS * ANNOUNCEMENT_STEP_SECONDS
-    } else {
-        seconds
-    }
-
-private const val SECONDS_PER_MINUTE = 60L
-private const val ANNOUNCEMENT_STEP_SECONDS = 15L
 
 /** A banner below the top bar, as wide as the step's content on wide windows: a leading [icon], then [content]. */
 @Composable

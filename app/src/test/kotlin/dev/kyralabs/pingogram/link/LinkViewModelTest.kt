@@ -242,13 +242,13 @@ class LinkViewModelTest {
     @Test
     fun `a web link Pingogram does not open offers the browser`() =
         runTest {
-            linkType(TdApi.InternalLinkTypeStickerSet())
+            linkType(TdApi.InternalLinkTypeTheme("night"))
 
             viewModel.effects.test {
-                viewModel.open("https://t.me/addstickers/pack")
+                viewModel.open("https://t.me/addtheme/night")
 
                 assertEquals(
-                    LinkEffect.Notice(LinkNotice.Unsupported("https://t.me/addstickers/pack")),
+                    LinkEffect.Notice(LinkNotice.Unsupported("https://t.me/addtheme/night")),
                     awaitItem(),
                 )
             }

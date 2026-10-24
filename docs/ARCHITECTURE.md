@@ -65,7 +65,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Settings** (`core:datastore`) are the app's own, kept on the device and kept across logouts: one
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
-  `DataStoreAppearanceRepository` for `AppearanceRepository`. Preferences rather than Proto
+  `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
+  `ComposerSettingsRepository`, the composer's send key, which Appearance → Chats sets). Preferences rather than Proto
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
@@ -132,6 +133,22 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   registered in `:app`'s `NavHost`, `FolderInviteViewModel`), which checks the link (only reading) and adds the folder
   with the chats the user picked, joining them, only on "Add folder"; a folder the user has offers the chats added to
   it since.
+- **Sticker sets** (FR-C5, Settings → Stickers): the installed sets are `StickerRepository.installedSets` (the panel's
+  list, `getInstalledStickerSets` on `updateInstalledStickerSets`); `core:domain`'s `StickerSetRepository`
+  (`TdlibStickerSetRepository`, `core:data`, no cache: TDLib keeps the sets and announces their changes) reads the
+  archived sets (`getArchivedStickerSets`, the first 100) and the trending ones (`getTrendingStickerSets`, the first
+  page, again on `updateTrendingStickerSets`), both again whenever the installed sets change, and one set with its
+  stickers (`getStickerSet`, again on its `updateStickerSet`); it installs, archives and removes sets
+  (`changeStickerSet`), reorders the installed ones (`reorderInstalledStickerSets`), marks trending sets seen
+  (`viewTrendingStickerSets`) and finds a set by its link's name (`searchStickerSet`). `feature:settings`' Stickers page
+  (`StickersRoute`, `StickersViewModel`: a dragged order shown at once and taken back when Telegram refuses it, an
+  archived or removed set gone at once with "Undo", which installs it again at its place) opens Trending stickers and
+  Archived stickers (`StickerSetListRoute(archived)`, `StickerSetListViewModel`: "Add" per set, the trending sets shown
+  marked seen once). The pages draw covers with `core:ui`'s `StickerCover` (still, from Coil, the emoji until then;
+  animated TGS ones through the app's `AnimatedStickers` where asked). A set's sheet (`StickerSetRoute(setId, name)`, a
+  dialog destination of `settingsPages`, so it is in `:app`'s `NavHost` and the Settings detail pane's alike,
+  `StickerSetSheetViewModel`: a link's name found first, the set read again on its changes, "Add stickers" / "Remove"
+  only on a tap) opens from a set's row and from `t.me/addstickers/<name>` links (`LinkTarget.StickerSet`).
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which
@@ -179,6 +196,57 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
   pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
   leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
+- **Changing the phone number** (FR-S1, Account): `core:domain`'s `PhoneNumberChangeRepository`
+  (`TdlibPhoneNumberChangeRepository`, `core:data`, no cache: TDLib keeps the pending change and announces the new
+  number with `updateUser`) sends the code (`sendPhoneNumberCode` with `phoneNumberCodeTypeChange` and the login's code
+  settings: no flash or missed calls, no SMS Retriever, no Firebase), asks for it again (`resendPhoneNumberCode`) and
+  checks it (`checkPhoneNumberCode`), waiting as long as authentication requests; another account's number fails with
+  `DomainError.PhoneNumberOccupied`. `feature:settings`' `ChangePhoneNumberRoute` (`ChangePhoneNumberViewModel`, above
+  Edit profile, whose "Phone number" row opens it) types the number as sign-in does, with what both share in `core:ui`'s
+  `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
+  login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
+  state, never the code.
+- **Privacy beyond the rules** (FR-S1, Privacy and security): `PrivacyRepository` also reads and sets whether the read
+  time shows (`getReadDatePrivacySettings`, `setReadDatePrivacySettings`; the Last seen page's switch) and who may start
+  a chat (`getNewChatPrivacySettings`, `setNewChatPrivacySettings`, with the option
+  `can_set_new_chat_privacy_settings` as `NewChatPrivacy.canRestrict`; a price another app set for non-contacts'
+  messages is kept while they may write and dropped when they may not, as Telegram requires).
+  `feature:settings`' `NewChatPrivacyRoute` (`NewChatPrivacyViewModel`) is its page. A setting's exceptions are
+  `PrivacyRepository.exceptions` (the users' and groups' ids of its rules, `PrivacyExceptionLists`) and `setExceptions`
+  (`setUserPrivacySettingRules` with those rules replaced, the never allowed first, every other rule kept in its
+  order); `PrivacyExceptionsRoute(setting, always)` (`PrivacyExceptionsViewModel`) shows one side, names from
+  `UserRepository` and `ChatRepository` (asked for once where TDLib has not announced them), and picks from the main
+  chat list (people and groups; Saved Messages, channels and secret chats left out), its picks in the saved state.
+  Its picker shares its parts with the chat folders' (`PickerParts.kt`).
+- **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
+  its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
+  bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through
+  `PrivacyRepository`, whose page Privacy and security lists too.
+- **Login email and auto-delete** (FR-S1, Account): `core:domain`'s `LoginEmailRepository`
+  (`TdlibLoginEmailRepository`, `core:data`, no cache) reads the login email as Telegram's pattern of it
+  (`getPasswordState`'s `login_email_address_pattern`; Telegram lets an account change it only once it set one, so
+  Privacy and security shows the row only then), sets a new one (`setLoginEmailAddress`), sends its code again
+  (`resendLoginEmailAddressCode`) and checks it (`checkLoginEmailAddressCode`). `feature:settings`' `LoginEmailRoute`
+  (`LoginEmailViewModel`) runs it as Change number does, sharing its step parts (`account/FlowStepState.kt`:
+  `FlowStepState`, `StepText`, `StepActions`); the address typed is in its saved state, never the code.
+  `AccountRepository` also reads and sets the self-destruct timer of new chats (`getDefaultMessageAutoDeleteTime`,
+  `setDefaultMessageAutoDeleteTime`), which `AutoDeleteRoute` (`AutoDeleteViewModel`) offers as Telegram's choices
+  (off, a day, a week, a month, and a value another app set), saving a pick at once and taking it back on a refusal.
+- **Proxies** (Data and storage, `docs/adr/0027-proxies.md`): `core:domain`'s `ProxyRepository`
+  (`TdlibProxyRepository`, `core:data`, a singleton without a cache) wraps `getProxies`, `addProxy`, `editProxy`,
+  `enableProxy`, `disableProxy`, `removeProxy` and `pingProxy`; TDLib keeps the proxies, credentials included, and has
+  no update for them, so `proxies` reads them again after every change made through it. `feature:settings`' Proxy page
+  (`ProxiesRoute`, `ProxiesViewModel`: each proxy pinged once as it first shows, four at a time, and on "Check again")
+  and its form (`EditProxyRoute(proxyId?)`, `EditProxyViewModel`: checked on the device first, the password and the
+  secret never in saved state) sit above Data and storage, whose "Proxy" row shows the one in use. A proxy link
+  (`tg://proxy`, `t.me/socks`) resolves to `LinkTarget.ProxyServer`, which `:app` opens as `ProxyLinkRoute`, a dialog
+  destination of `settingsPages` (`ProxyLinkViewModel`), connecting only on "Connect".
+- **Network usage** (Data and storage): `core:domain`'s `NetworkUsageRepository` (`TdlibNetworkUsageRepository`,
+  `core:data`, no cache) reads TDLib's own statistics (`getNetworkStatistics` of every session since the last reset,
+  answered from its database) into `NetworkUsage`, by network (TDLib's "other" networks counted as Wi-Fi, as automatic
+  download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
+  `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
+  saved state) shows them above Data and storage.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
@@ -647,6 +715,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   (`ChatEvent.SendSticker` → `ChatAttachments` → `AttachmentRepository.sendSticker`), so it takes the composer's reply
   along. The panel takes the keyboard's place (`ComposerPanelState`, `PanelArea`): it takes the keyboard's last height
   and stays until the keyboard is fully up, read from the IME insets in the layout phase, so switching moves nothing.
+  The GIF tab (`PanelGifs`, a part of `EmojiPanelViewModel`, which takes the chat's id for it) reads
+  `SavedGifRepository` (`TdlibSavedGifRepository`, `core:data`, no cache: `getSavedAnimations`, read again on
+  `updateSavedAnimations`; `removeSavedAnimation`) and searches through the bot Telegram names for it (the option
+  `animation_search_bot_username`) as an inline query in that chat (`InlineBotRepository`: the bot looked up at the
+  first search, queries 400 ms after the last change, the newest cancelling the older, its GIF results only, paged by
+  `next_offset`). A GIF goes out through `ChatViewModel` (`ChatEvent.SendAnimation` → `ChatAttachments` →
+  `AttachmentRepository.sendAnimation`, `inputMessageAnimation` of its file by id), with the composer's reply. While
+  the tab's search field has the focus (`ComposerPanelState.searching`), the keyboard comes up below the panel, which
+  stays above it instead of giving way.
 - Auto-download (`docs/PERFORMANCE.md` §7): the rules of each network (`AutoDownloadSettings`, `core:domain`) are kept in
   DataStore (`DataStoreAutoDownloadRepository`), not in TDLib's `setAutoDownloadSettings`, which stores them on
   Telegram's servers, has no switch for voice messages and needs the network to read them back. `AndroidNetworkRepository`
@@ -730,6 +807,10 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `MainActivity`, and `ShareTargetShortcuts` (started by `PingogramApplication`) publishes the 8 most recent chats of
   the main chat list where the user can write, Saved Messages left out, 5 s after they last changed (Direct share,
   below). No bubbles yet (they need a resizable chat activity of their own).
+- Android Auto and Wear OS take these notifications as they are (`docs/ANDROID_AUTO.md`): `:app`'s `gms` flavor declares
+  Android Auto's notification use (`res/xml/automotive_app_desc.xml`, a meta-data name, no library), and the
+  `MessagingStyle`, Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car
+  screen, no watch app.
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go
@@ -847,6 +928,47 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the call for everyone, and answers a stream's requests from TDLib. It shares Telecom (`SystemCallRequest.voiceChat`,
   `pingogram:chat/<id>`) and the foreground service, and `CallLine` keeps one call at a time across both managers: an
   incoming one-to-one call during a voice chat is declined.
+  Its screen is `GroupCallActivity` (in the call screen's task, not exported) with `GroupCallViewModel` (the voice chat,
+  its chat through `GroupCallChats`, the participants named from `UserRepository`, the timer; the microphone's
+  permission step in the `SavedStateHandle`) and `GroupCallScreen`, which shares the call screen's controls
+  (`CallControls.kt`) and theme. `CallService` and `CallNotifications` follow whichever call is under way; the voice
+  chat's notification (`CallNotificationBuilder.voiceChat`) has "Leave" (`CallActionReceiver`). A live stream's video
+  goes to the screen's `CallVideoView` (`GroupCallManager.setVideoSink`) and on in picture-in-picture. The features
+  reach voice chats through `core:ui`'s `VoiceChats` (`LocalVoiceChats`, provided by `:app` from `Calls`): the
+  conversation's `VoiceChatBarSlot` at the top of its sheet and the info page's "Voice chat" pill.
+  Video in voice chats (`docs/adr/0024-video-in-voice-chats.md`): where Telegram allows it (`groupCall.can_enable_video`),
+  `GroupCallManager.setCameraOn` sends a camera through the engine's group session (`GroupCallSession.setCamera`: its
+  capture sources again, as NTgCalls' join payload already carries the camera's track) and tells the others with
+  `GroupCallRepository.setMyVideoEnabled` (`toggleGroupCallIsMyVideoEnabled`); the most it sends follows the network as
+  in one-to-one calls (`VideoQuality.forNetwork`), none while held, and it stops when Telegram takes video back. The
+  screen draws the self-view through `setSelfVideoSink`, and the call service adds the `camera` type while it sends.
+  The others' videos: `GroupCallParticipant.video` (`video_info`: the endpoint, its SSRC groups, paused) picks at most
+  four (`GroupCallManager.chooseVideos`: the pinned one, `setPinned`, then those speaking, then TDLib's order; none in
+  a stream), which the engine subscribes to (`GroupCallSession.receiveVideos`, NTgCalls' `addIncomingVideo` /
+  `removeIncomingVideo`) and routes by their frames' SSRC to the sink of each tile (`setParticipantVideoSink`, one
+  `CallVideoView` per endpoint); the screen gets them as `ActiveGroupCall.video.remote`.
+- **Screen sharing** (`docs/adr/0026-screen-sharing.md`): the call screen asks for Android's consent
+  (`rememberScreenCaptureRequest`, `MediaProjectionManager.createScreenCaptureIntent`) and hands the result to the
+  engine (`ScreenCaptureConsent`, NTgCalls' `JavaVideoCapturerModule`). `CallManager.startScreenSharing` has the call
+  service run as `mediaProjection` first (`CallForeground.setScreenCapture`, which waits for it), then the session sends
+  the screen in place of the camera (`CallSession.setScreen`: the stream sources' `screen` slot); hold pauses it,
+  turning the camera on, Stop (the pill's or the notification's, `CallActionReceiver`) and the capture ending by itself
+  (`screenEnded`, NTgCalls' `onStreamEnd`) stop it. The other side's screen comes as their video (`remoteIsScreen`),
+  drawn fitted (`CallVideoSlot.RemoteScreen`, `CallVideoView`'s `fit`).
+- **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
+  for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
+  call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in
+  the app's scope), declines, or another call starts. `CallViewModel` keeps the ended call on screen while it asks,
+  `CallScreen` shows `CallRatingSheet` over it (never in picture-in-picture, which declines it). The engine's log
+  (`sendCallLog`) is not sent: NTgCalls writes none Pingogram could hand over.
+- **Recent calls**: `core:domain`'s `CallHistoryRepository` (`TdlibCallHistoryRepository`, `core:data`, no cache) pages
+  the call service messages of every private chat (`searchCallMessages`, by TDLib's offset, all or only missed),
+  deletes one for the user only (`deleteMessages` without `revoke`) and follows `updateNewMessage` with a `messageCall`
+  and permanent `updateDeleteMessages` while collected. `feature:calls`' `RecentCallsRoute` (`RecentCallsViewModel`,
+  `history/`, a destination of `:app`'s `NavHost`) lists them by day with the people from `UserRepository`, keeps the
+  filter in its saved state, and calls back through `LocalCallStarter`, a video call for a video call. Settings home
+  and the Contacts tab open it through `core:ui`'s `LocalRecentCallsLauncher`, which `PingogramApp` provides, as
+  "Send feedback" is opened.
 
 ## Home screen widget
 

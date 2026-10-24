@@ -16,12 +16,14 @@ import dev.kyralabs.pingogram.core.data.attachment.MediaProcessor
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageAnimation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContact
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageLocation
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessagePoll
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -155,6 +157,19 @@ class TdlibAttachmentRepository internal constructor(
         replyToMessageId: Long?,
     ): Outcome<Unit> =
         client.sendMessage(chatId, sticker.toInputMessageSticker(), options, replyToMessageId?.let(::replyToMessage))
+
+    override suspend fun sendAnimation(
+        chatId: Long,
+        animation: Animation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ): Outcome<Unit> =
+        client.sendMessage(
+            chatId,
+            animation.toInputMessageAnimation(),
+            options,
+            replyToMessageId?.let(::replyToMessage),
+        )
 
     override suspend fun sendPoll(
         chatId: Long,

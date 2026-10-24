@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -100,6 +101,18 @@ interface AttachmentRepository {
     suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
+        options: SendOptions = SendOptions(),
+        replyToMessageId: Long? = null,
+    ): Outcome<Unit>
+
+    /**
+     * Sends GIF [animation], one TDLib knows already (a saved GIF, a GIF search's result), to chat [chatId] as
+     * [options] say, replying to [replyToMessageId] if it is not null. Telegram then puts it first among the saved
+     * GIFs.
+     */
+    suspend fun sendAnimation(
+        chatId: Long,
+        animation: Animation,
         options: SendOptions = SendOptions(),
         replyToMessageId: Long? = null,
     ): Outcome<Unit>

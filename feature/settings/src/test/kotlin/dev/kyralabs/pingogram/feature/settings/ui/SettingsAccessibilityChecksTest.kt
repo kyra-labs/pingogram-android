@@ -5,17 +5,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.AutoDeleteScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
+import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.NetworkUsagePreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.PrivacyPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ProxyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,6 +91,48 @@ class SettingsAccessibilityChecksTest {
         }
 
     @Test
+    fun changePhoneNumber() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.number, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun changePhoneNumberCode() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.code, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun loginEmailAddress() =
+        check { LoginEmailScreen(state = AccountPagePreviewStates.loginEmailAddress, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun loginEmailCode() =
+        check { LoginEmailScreen(state = AccountPagePreviewStates.loginEmailCode, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun autoDelete() =
+        check { AutoDeleteScreen(state = AccountPagePreviewStates.autoDelete, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun newChatPrivacy() =
+        check { NewChatPrivacyScreen(state = PrivacyPreviewStates.newChatsWithoutPremium, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun privacyExceptions() =
+        check {
+            PrivacyExceptionsScreen(
+                PrivacySetting.LastSeen,
+                PrivacyExceptionSide.Never,
+                PrivacyPreviewStates.exceptions,
+                onEvent = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun privacyExceptionsPicker() =
+        check {
+            PrivacyExceptionsPickerContent(PrivacyPreviewStates.exceptionsPicker, onEvent = {})
+        }
+
+    @Test
     fun deleteAccount() =
         check { DeleteAccountScreen(state = DeleteAccountPreviewStates.withPassword, onEvent = {}, onBack = {}) }
 
@@ -108,6 +172,63 @@ class SettingsAccessibilityChecksTest {
         check { FolderInviteContent(state = FolderInvitePreviewStates.offline, onEvent = {}, onCancel = {}) }
 
     @Test
+    fun stickers() =
+        check {
+            StickersScreen(StickersPreviewStates.content, onEvent = {}, onOpenList = {}, onShare = {}, onBack = {})
+        }
+
+    @Test
+    fun trendingStickers() =
+        check {
+            StickerSetListScreen(archived = false, state = StickersPreviewStates.trending, onEvent = {}, onBack = {})
+        }
+
+    @Test
+    fun proxies() =
+        check {
+            ProxiesScreen(
+                ProxyPreviewStates.proxies,
+                onEvent = {},
+                onAddProxy = {},
+                onEditProxy = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun proxiesEmpty() =
+        check {
+            ProxiesScreen(ProxyPreviewStates.proxiesEmpty, onEvent = {}, onAddProxy = {}, onEditProxy = {}, onBack = {})
+        }
+
+    @Test
+    fun editProxy() = check { EditProxyScreen(ProxyPreviewStates.editProxy, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun editProxyErrors() = check { EditProxyScreen(ProxyPreviewStates.mtprotoErrors, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun networkUsage() = check { NetworkUsageScreen(NetworkUsagePreviewStates.wifi, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }
+
+    @Test
+    fun proxyLinkConnected() = check { ProxyLinkContent(ProxyPreviewStates.linkConnected, onEvent = {}, onClose = {}) }
+
+    @Test
+    fun stickerSet() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
+        }
+
+    @Test
+    fun stickerSetNotFound() =
+        check {
+            StickerSetContent(StickerSetSheetPreviewStates.notFound, onEvent = {}, onShare = {}, onClose = {})
+        }
+
+    @Test
     fun notifications() =
         check {
             NotificationSettingsScreen(
@@ -120,7 +241,16 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun dataStorage() =
-        check { DataStorageScreen(SettingsPreviewData.storage, onEvent = {}, onOpenAutoDownload = {}, onBack = {}) }
+        check {
+            DataStorageScreen(
+                SettingsPreviewData.storage,
+                onEvent = {},
+                onOpenAutoDownload = {},
+                onOpenProxies = {},
+                onOpenNetworkUsage = {},
+                onBack = {},
+            )
+        }
 
     @Test
     fun autoDownload() = check { AutoDownloadScreen(SettingsPreviewData.autoDownloadWiFi, onEvent = {}, onBack = {}) }

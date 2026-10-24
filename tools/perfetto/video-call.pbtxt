@@ -1,0 +1,79 @@
+# Perfetto config for a 5-minute video call (docs/PERFORMANCE.md §9, "Video calls").
+# Records the CPU time of every thread of Pingogram, its memory (RSS, anonymous, swap) once a second, the CPU
+# frequencies, the battery current and the app's own trace sections and counters (callFrames, callFrameCopy,
+# Remote.fps, Self.fps), for 5 minutes.
+# Run it with tools/perfetto/video-call.sh. Nothing in it reads messages, names or the call's media.
+
+buffers {
+  size_kb: 131072
+  fill_policy: RING_BUFFER
+}
+buffers {
+  size_kb: 8192
+  fill_policy: RING_BUFFER
+}
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    target_buffer: 0
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "sched/sched_process_exit"
+      ftrace_events: "sched/sched_process_free"
+      ftrace_events: "task/task_newtask"
+      ftrace_events: "task/task_rename"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "camera"
+      atrace_categories: "audio"
+      atrace_apps: "dev.kyralabs.pingogram"
+      buffer_size_kb: 16384
+      drain_period_ms: 250
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.process_stats"
+    target_buffer: 1
+    process_stats_config {
+      scan_all_processes_on_start: true
+      proc_stats_poll_ms: 1000
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.sys_stats"
+    target_buffer: 1
+    sys_stats_config {
+      stat_period_ms: 1000
+      stat_counters: STAT_CPU_TIMES
+      meminfo_period_ms: 1000
+      meminfo_counters: MEMINFO_MEM_AVAILABLE
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "android.power"
+    target_buffer: 1
+    android_power_config {
+      battery_poll_ms: 1000
+      battery_counters: BATTERY_COUNTER_CURRENT
+      battery_counters: BATTERY_COUNTER_CHARGE
+    }
+  }
+}
+
+duration_ms: 300000
+write_into_file: true
+file_write_period_ms: 2500
+flush_period_ms: 30000

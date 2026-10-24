@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.data.error.toDomainError
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallServer
 import dev.kyralabs.pingogram.core.domain.model.CallServerType
@@ -78,3 +79,16 @@ private fun TdApi.CallServer.toCallServer(): CallServer? {
         }
     return CallServer(id = id, ipv4 = ipAddress.orEmpty(), ipv6 = ipv6Address.orEmpty(), port = port, type = type)
 }
+
+internal fun CallProblem.toTdApi(): TdApi.CallProblem =
+    when (this) {
+        CallProblem.Echo -> TdApi.CallProblemEcho()
+        CallProblem.Noise -> TdApi.CallProblemNoise()
+        CallProblem.Interruptions -> TdApi.CallProblemInterruptions()
+        CallProblem.DistortedSpeech -> TdApi.CallProblemDistortedSpeech()
+        CallProblem.SilentLocal -> TdApi.CallProblemSilentLocal()
+        CallProblem.SilentRemote -> TdApi.CallProblemSilentRemote()
+        CallProblem.Dropped -> TdApi.CallProblemDropped()
+        CallProblem.DistortedVideo -> TdApi.CallProblemDistortedVideo()
+        CallProblem.PixelatedVideo -> TdApi.CallProblemPixelatedVideo()
+    }

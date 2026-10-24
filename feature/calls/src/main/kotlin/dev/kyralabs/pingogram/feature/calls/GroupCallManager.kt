@@ -7,21 +7,28 @@ import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
+import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
+import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
+import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
 import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
 import dev.kyralabs.pingogram.feature.calls.engine.StreamQuality
 import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
+import dev.kyralabs.pingogram.feature.calls.engine.VideoQuality
 import dev.kyralabs.pingogram.feature.calls.system.CallSystem
 import dev.kyralabs.pingogram.feature.calls.system.SystemCall
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallListener
 import dev.kyralabs.pingogram.feature.calls.system.SystemCallRequest
 import dev.kyralabs.pingogram.feature.calls.system.SystemEndCause
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -34,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -58,7 +66,8 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("TooManyFunctions") // One function per action of the user and per transition of the state machine.
 class GroupCallManager
     @Inject
-    @Suppress("LongParameterList") // Injected: TDLib's group calls, engine, Telecom, service, clock, titles, line.
+    // Injected: TDLib's group calls, engine, Telecom, service, clock, titles, line, network.
+    @Suppress("LongParameterList")
     internal constructor(
         private val repository: GroupCallRepository,
         private val engine: CallEngine,
@@ -67,6 +76,8 @@ class GroupCallManager
         private val clock: CallClock,
         private val titles: ChatTitles,
         private val line: CallLine,
+        // Lazy, as in CallManager: made only once a camera turns on, off the main thread.
+        private val network: dagger.Lazy<NetworkRepository>,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val mutableCall = MutableStateFlow<ActiveGroupCall?>(null)
@@ -170,6 +181,65 @@ class GroupCallManager
             live?.sink?.value = SinkHolder(sink)
         }
 
+        /**
+         * Sends the user's camera in the voice chat, or stops (`docs/adr/0024-video-in-voice-chats.md`): only where
+         * Telegram allows it ([GroupCall.canEnableVideo]) and not in a stream. The front camera first; none while
+         * the call is held. TDLib tells the others.
+         */
+        @Suppress("ReturnCount") // Guards: no voice chat, video not allowed, nothing to change.
+        suspend fun setCameraOn(on: Boolean) {
+            val call = mutex.withLock { live?.takeIf { it.phase !is GroupCallPhase.Ended } } ?: return
+            if (on && !call.canSendVideo()) return
+            if (on) loadCameras(call)
+            mutex.withLock {
+                if (live !== call || call.wantsCamera == on) return
+                call.wantsCamera = on
+                if (on) followNetwork(call)
+                applyCamera(call)
+                call.scope.launch { repository.setMyVideoEnabled(call.groupCallId, on) }
+            }
+        }
+
+        /** Sends the other camera: the back one after the front one, and back. */
+        suspend fun switchCamera() {
+            mutex.withLock {
+                val call = live ?: return
+                val next = call.cameras.firstOrNull { it.isFront != call.facingFront } ?: return
+                call.facingFront = next.isFront
+                applyCamera(call)
+            }
+        }
+
+        /** Where the user's own camera's frames go (the self-view), or nowhere: the screen sets it while it shows. */
+        fun setSelfVideoSink(sink: VideoFrameSink?) {
+            live?.selfSink?.value = SinkHolder(sink)
+        }
+
+        /**
+         * Pins [participant]'s video, on this device only, or unpins with null: a pinned video is received first,
+         * whatever the others do (`docs/adr/0024-video-in-voice-chats.md`).
+         */
+        suspend fun setPinned(participant: MessageSender?) {
+            mutex.withLock {
+                val call = live ?: return
+                if (call.pinned == participant) return
+                call.pinned = participant
+                chooseVideos(call)
+            }
+        }
+
+        /**
+         * Where the frames of the participant's video at [endpointId] go, or nowhere with null: the screen sets each
+         * while its tile shows. Not suspending, so a tile that goes away takes its sink back at once.
+         */
+        fun setParticipantVideoSink(
+            endpointId: String,
+            sink: VideoFrameSink?,
+        ) {
+            val sinks = live?.videoSinks ?: return
+            sinks.update { current -> if (sink == null) current - endpointId else current + (endpointId to sink) }
+        }
+
         // Transitions; all under the mutex unless said.
 
         /** Makes [call] the user's call and tells Android about it. */
@@ -199,7 +269,13 @@ class GroupCallManager
             }
             call.scope.launch {
                 repository.participants(call.groupCallId).collect { participants ->
-                    mutex.withLock { onSelf(call, participants.firstOrNull { it.isCurrentUser }) }
+                    mutex.withLock {
+                        if (live === call) {
+                            call.participants = participants
+                            chooseVideos(call)
+                        }
+                        onSelf(call, participants.firstOrNull { it.isCurrentUser })
+                    }
                 }
             }
         }
@@ -242,6 +318,14 @@ class GroupCallManager
                     call.scope.launch { session.mode.collect { mode -> mutex.withLock { onMode(call, mode) } } }
                     call.scope.launch { session.streamRequests.collect { answer(call, session, it) } }
                     call.scope.launch { call.sink.collect { session.setVideoSink(it.sink) } }
+                    call.scope.launch { call.selfSink.collect { session.setSelfVideoSink(it.sink) } }
+                    call.scope.launch { call.incoming.collect { session.receiveVideos(it) } }
+                    call.scope.launch { call.videoSinks.collect { session.setIncomingVideoSinks(it) } }
+                    call.scope.launch {
+                        call.camera.collect { source ->
+                            session.setCamera(source?.camera, source?.quality ?: VideoQuality.High)
+                        }
+                    }
                     session.connect(joined.value)
                     repository.loadParticipants(call.groupCallId, PARTICIPANTS_PAGE)
                 }
@@ -263,7 +347,14 @@ class GroupCallManager
                 }
 
                 CallMediaState.Connecting -> {
-                    if (call.connectedAt != null) call.phase = GroupCallPhase.Reconnecting
+                    if (call.connectedAt != null) {
+                        call.phase = GroupCallPhase.Reconnecting
+                        if (!call.reconnected) {
+                            // Lost once: the rest of the call sends less video, as one-to-one calls do.
+                            call.reconnected = true
+                            applyCamera(call)
+                        }
+                    }
                 }
 
                 CallMediaState.Failed -> {
@@ -284,7 +375,7 @@ class GroupCallManager
         ) {
             if (live !== call) return
             call.streamed = mode == GroupCallMode.Stream
-            publish()
+            chooseVideos(call)
         }
 
         private fun onGroupCall(
@@ -297,7 +388,13 @@ class GroupCallManager
                 finish(call, GroupCallEndReason.Ended)
                 return
             }
-            publish()
+            if (call.wantsCamera && !call.canSendVideo()) {
+                // Telegram took video back (an administrator, or the call became a stream): the camera stops.
+                call.wantsCamera = false
+                applyCamera(call)
+            }
+            // Who speaks changes which videos come first.
+            chooseVideos(call)
         }
 
         private fun onSelf(
@@ -381,10 +478,10 @@ class GroupCallManager
                 override fun onHold(onHold: Boolean) {
                     scope.launch {
                         mutex.withLock {
-                            if (live ===
-                                call
-                            ) {
+                            if (live === call) {
+                                call.onHold = onHold
                                 call.session?.let { session -> call.scope.launch { session.setOnHold(onHold) } }
+                                applyCamera(call)
                             }
                         }
                     }
@@ -418,9 +515,89 @@ class GroupCallManager
                 }
         }
 
+        /**
+         * The others' videos [call] receives: at most [MAX_RECEIVED_VIDEOS], the pinned one first, then those speaking,
+         * then by TDLib's order (`docs/adr/0024-video-in-voice-chats.md`); none in a stream. Publishes.
+         */
+        private fun chooseVideos(call: Live) {
+            val speaking =
+                call.info
+                    ?.recentSpeakers
+                    .orEmpty()
+                    .filter { it.isSpeaking }
+                    .mapTo(HashSet()) { it.participant }
+            val chosen =
+                if (call.isStream) {
+                    emptyList()
+                } else {
+                    call.participants
+                        .filter { !it.isCurrentUser && it.video != null }
+                        .sortedWith(
+                            compareByDescending<GroupCallParticipant> { it.participant == call.pinned }
+                                .thenByDescending { it.isSpeaking || it.participant in speaking },
+                        ).take(MAX_RECEIVED_VIDEOS)
+                }
+            call.shownVideos = chosen
+            call.incoming.value =
+                chosen.mapNotNull { participant ->
+                    participant.video?.let {
+                        IncomingVideo(
+                            participant.participant.id(),
+                            it.endpointId,
+                            it.sourceGroups,
+                        )
+                    }
+                }
+            publish()
+        }
+
+        /** The camera [call] should send now and how much: none while held or not wanted. */
+        private fun applyCamera(call: Live) {
+            call.camera.value = call.sendingCamera()?.let { CameraSource(it, call.videoQuality()) }
+            publish()
+        }
+
+        /** Follows the network once the camera first turns on, for the most it sends. */
+        private fun followNetwork(call: Live) {
+            if (call.followsNetwork) return
+            call.followsNetwork = true
+            call.scope.launch {
+                network.get().networkStatus.collect { status ->
+                    mutex.withLock {
+                        if (live === call && status.type != NetworkType.None && call.network != status) {
+                            call.network = status
+                            applyCamera(call)
+                        }
+                    }
+                }
+            }
+        }
+
+        /** Asks the engine for the device's cameras once per voice chat; not under the mutex. */
+        private suspend fun loadCameras(call: Live) {
+            if (call.camerasLoaded) return
+            val cameras = camerasOrEmpty()
+            mutex.withLock {
+                call.cameras = cameras
+                call.camerasLoaded = true
+                if (cameras.none { it.isFront }) call.facingFront = false
+            }
+        }
+
         private fun publish() {
             mutableCall.value = live?.toActiveGroupCall()
         }
+
+        /** The device's cameras; none if the engine cannot list them, which leaves the camera off. */
+        @Suppress("TooGenericExceptionCaught", "SwallowedException") // Any failure means no camera to send.
+        private suspend fun camerasOrEmpty(): List<CallCamera> =
+            try {
+                engine.cameras()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                emptyList()
+            }
 
         /** The engine's group call; null if its library could not load or the microphone could not open. */
         @Suppress("TooGenericExceptionCaught", "SwallowedException") // Any failure ends the voice chat with a reason.
@@ -455,8 +632,42 @@ class GroupCallManager
             var system: SystemCall? = null
             var session: GroupCallSession? = null
             val sink = MutableStateFlow(SinkHolder(null))
+            val selfSink = MutableStateFlow(SinkHolder(null))
+            var onHold = false
+
+            /** The user wants the camera on (it sends once the engine connects, and not while held). */
+            var wantsCamera = false
+            var facingFront = true
+            var cameras: List<CallCamera> = emptyList()
+            var camerasLoaded = false
+            var network: NetworkStatus? = null
+            var followsNetwork = false
+            var reconnected = false
+            val camera = MutableStateFlow<CameraSource?>(null)
+
+            /** Everyone TDLib announced, in its order. */
+            var participants: List<GroupCallParticipant> = emptyList()
+
+            /** The participant the user pinned on this device. */
+            var pinned: MessageSender? = null
+
+            /** The others' videos received, in the order they show. */
+            var shownVideos: List<GroupCallParticipant> = emptyList()
+            val incoming = MutableStateFlow<List<IncomingVideo>>(emptyList())
+            val videoSinks = MutableStateFlow<Map<String, VideoFrameSink>>(emptyMap())
 
             val isStream: Boolean get() = streamed || info?.isRtmpStream == true
+
+            fun canSendVideo(): Boolean = !isStream && info?.canEnableVideo == true
+
+            fun videoQuality(): VideoQuality = VideoQuality.forNetwork(network, reconnected)
+
+            fun sendingCamera(): CallCamera? =
+                if (!wantsCamera || onHold) {
+                    null
+                } else {
+                    cameras.firstOrNull { it.isFront == facingFront } ?: cameras.firstOrNull()
+                }
 
             /** Not muted by an administrator, or allowed to unmute: a stream has nothing to unmute. */
             fun canUnmute(): Boolean {
@@ -480,12 +691,31 @@ class GroupCallManager
                     canEnd = info?.canBeManaged == true,
                     audio = audio,
                     connectedAtMillis = connectedAt,
+                    video =
+                        GroupCallVideo(
+                            canSend = canSendVideo(),
+                            camera =
+                                sendingCamera()?.let { if (it.isFront) CameraFacing.Front else CameraFacing.Back }
+                                    ?: if (wantsCamera && !camerasLoaded) CameraFacing.Front else null,
+                            canSwitchCamera = cameras.any { it.isFront } && cameras.any { !it.isFront },
+                            remote =
+                                shownVideos
+                                    .mapNotNull { participant ->
+                                        participant.video?.let {
+                                            RemoteParticipantVideo(participant.participant, it.endpointId, it.isPaused)
+                                        }
+                                    }.toImmutableList(),
+                            pinned = pinned,
+                        ),
                 )
         }
 
         private companion object {
             /** How long an ended voice chat stays on screen with why it ended. */
             val ENDED_SHOWN = 2.seconds
+
+            /** The most videos of others received at once (`docs/adr/0024-video-in-voice-chats.md`). */
+            const val MAX_RECEIVED_VIDEOS = 4
 
             /** How many participants TDLib announces at first; the screen asks for more as it scrolls. */
             const val PARTICIPANTS_PAGE = 50
@@ -524,4 +754,10 @@ private fun StreamSegment.toSegmentResult(): SegmentResult =
         is StreamSegment.Data -> SegmentResult.Data(bytes)
         StreamSegment.NotReady -> SegmentResult.NotReady
         StreamSegment.Unavailable -> SegmentResult.ResyncNeeded
+    }
+
+private fun MessageSender.id(): Long =
+    when (this) {
+        is MessageSender.User -> userId
+        is MessageSender.Chat -> chatId
     }

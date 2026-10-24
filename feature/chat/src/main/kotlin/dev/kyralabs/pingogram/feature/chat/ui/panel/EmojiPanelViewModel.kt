@@ -2,6 +2,9 @@ package dev.kyralabs.pingogram.feature.chat.ui.panel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
@@ -9,7 +12,9 @@ import dev.kyralabs.pingogram.core.domain.model.EmojiGroup
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
+import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
@@ -29,7 +34,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * The composer's emoji and sticker panel (`REQUIREMENTS.md` FR-C5). Sending a sticker goes through the conversation
@@ -44,17 +48,29 @@ import javax.inject.Inject
  *   [PRELOADED_SETS] sets at once; meanwhile it shows as many placeholders as it has stickers. A set that fails to
  *   load is asked for again when it next comes into view. Without installed sets ([StickerTab.Error], "Try again":
  *   [EmojiPanelEvent.Retry]) nothing shows; favorites or recent stickers that fail are left out.
+ * - **GIFs** ([PanelGifs]): the saved GIFs, and the search through Telegram's GIF bot, as typed in this chat.
  * - Reading stops [STOP_TIMEOUT_MILLIS] after the screen stops collecting [uiState] (the app went to the background);
  *   loaded sets stay.
  */
-@HiltViewModel
+@HiltViewModel(assistedFactory = EmojiPanelViewModel.Factory::class)
 class EmojiPanelViewModel
-    @Inject
+    @AssistedInject
     constructor(
+        @Assisted chatId: Long,
         private val emojiCatalog: EmojiCatalogRepository,
         private val recentEmoji: RecentEmojiRepository,
         private val stickers: StickerRepository,
+        savedGifs: SavedGifRepository,
+        inlineBots: InlineBotRepository,
     ) : ViewModel() {
+        /** Makes the panel of chat [chatId], whose GIF searches are asked as typed in it. */
+        @AssistedFactory
+        interface Factory {
+            fun create(chatId: Long): EmojiPanelViewModel
+        }
+
+        private val gifs = PanelGifs(viewModelScope, chatId, savedGifs, inlineBots)
+
         private val opened = MutableStateFlow(false)
         private val attempt = MutableStateFlow(0)
         private val loadedSets = MutableStateFlow<PersistentMap<Long, ImmutableList<Sticker>>>(persistentMapOf())
@@ -66,7 +82,11 @@ class EmojiPanelViewModel
         val uiState: StateFlow<EmojiPanelUiState> =
             opened
                 .flatMapLatest { isOpen ->
-                    if (isOpen) combine(emojiTab(), stickerTab(), ::EmojiPanelUiState) else flowOf(EmojiPanelUiState())
+                    if (isOpen) {
+                        combine(emojiTab(), stickerTab(), gifs.tab(), ::EmojiPanelUiState)
+                    } else {
+                        flowOf(EmojiPanelUiState())
+                    }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), EmojiPanelUiState())
 
         fun onEvent(event: EmojiPanelEvent) {
@@ -75,6 +95,10 @@ class EmojiPanelViewModel
                 is EmojiPanelEvent.EmojiPicked -> viewModelScope.launch { recentEmoji.addRecent(event.emoji) }
                 is EmojiPanelEvent.SetsVisible -> event.setIds.forEach(::loadSet)
                 EmojiPanelEvent.Retry -> attempt.value++
+                is EmojiPanelEvent.GifQueryChanged -> gifs.onQueryChanged(event.query)
+                EmojiPanelEvent.MoreGifs -> gifs.loadMore()
+                EmojiPanelEvent.RetryGifs -> gifs.retry()
+                is EmojiPanelEvent.RemoveSavedGif -> gifs.remove(event.gif)
             }
         }
 

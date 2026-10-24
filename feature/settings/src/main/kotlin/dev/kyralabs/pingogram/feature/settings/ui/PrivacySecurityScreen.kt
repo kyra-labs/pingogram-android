@@ -27,7 +27,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountGroup
+import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import java.text.NumberFormat
 
@@ -79,7 +79,8 @@ internal fun PrivacySecurityRoute(
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
- * - Account: "Delete account", with how long the account may stay unused, opening its page.
+ * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
+ *   may stay unused, each opening its page.
  */
 @Suppress("LongParameterList") // The page's state and events, and contacts sync's.
 @Composable
@@ -112,9 +113,11 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
                 SecuritySection(state, onOpen)
-                DeleteAccountGroup(
+                AccountGroup(
+                    loginEmailPattern = state.loginEmailPattern,
+                    autoDeleteSeconds = state.defaultAutoDeleteSeconds,
                     accountTtlDays = state.accountTtlDays,
-                    onClick = { onOpen(PrivacySecurityPage.DeleteAccount) },
+                    onOpen = onOpen,
                 )
             }
         }
@@ -140,8 +143,31 @@ private fun PrivacySection(
                 }
             }
         }
+        state.newChatPrivacy?.let { privacy ->
+            item(key = NEW_CHATS) { shapes ->
+                SettingsRow(
+                    title = stringResource(R.string.settings_privacy_new_chats),
+                    shapes = shapes,
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (privacy.allowsNonContacts) {
+                                    R.string.settings_privacy_everybody
+                                } else {
+                                    R.string.settings_privacy_new_chats_contacts
+                                },
+                            ),
+                        )
+                    },
+                    onClick = { onOpen(PrivacySecurityPage.NewChats) },
+                )
+            }
+        }
     }
 }
+
+/** The key of the "Messages" row among the privacy settings' rows. */
+private const val NEW_CHATS = "newChats"
 
 /** A privacy setting and its main choice. */
 @Composable

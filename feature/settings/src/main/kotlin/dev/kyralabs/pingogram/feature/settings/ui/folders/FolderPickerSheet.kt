@@ -55,6 +55,13 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.PickerAvatarRow
+import dev.kyralabs.pingogram.feature.settings.ui.PickerDone
+import dev.kyralabs.pingogram.feature.settings.ui.PickerHeader
+import dev.kyralabs.pingogram.feature.settings.ui.PickerSearchField
+import dev.kyralabs.pingogram.feature.settings.ui.PickerTitle
+import dev.kyralabs.pingogram.feature.settings.ui.pickerRow
+import dev.kyralabs.pingogram.feature.settings.ui.pickerRowLook
 import kotlinx.coroutines.flow.drop
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
@@ -88,11 +95,24 @@ internal fun FolderPickerContent(
 ) {
     val included = picker.side == FolderPickerSide.Included
     LazyColumn(Modifier.fillMaxWidth()) {
-        item(key = TITLE) { PickerTitle(included) }
-        item(key = SEARCH) {
-            PickerSearchField(picker.query) { onEvent(ChatFolderEditEvent.PickerQueryChanged(it)) }
+        item(key = TITLE) {
+            PickerTitle(
+                stringResource(
+                    pick(
+                        included,
+                        R.string.settings_chat_folder_picker_include,
+                        R.string.settings_chat_folder_picker_exclude,
+                    ),
+                ),
+            )
         }
-        item(key = TYPES) { PickerHeader(R.string.settings_chat_folder_picker_types) }
+        item(key = SEARCH) {
+            PickerSearchField(
+                query = picker.query,
+                placeholder = stringResource(R.string.settings_chat_folder_picker_search),
+            ) { onEvent(ChatFolderEditEvent.PickerQueryChanged(it)) }
+        }
+        item(key = TYPES) { PickerHeader(stringResource(R.string.settings_chat_folder_picker_types)) }
         if (included) {
             items(ChatFolderIncludedType.entries, key = { it.name }) { type ->
                 TypeRow(type.label, type.icon, type in picker.includedTypes) {
@@ -106,7 +126,7 @@ internal fun FolderPickerContent(
                 }
             }
         }
-        item(key = CHATS) { PickerHeader(R.string.settings_chat_folder_picker_chats) }
+        item(key = CHATS) { PickerHeader(stringResource(R.string.settings_chat_folder_picker_chats)) }
         if (picker.chats.isEmpty()) {
             item(key = NO_RESULTS) {
                 Text(
@@ -118,108 +138,16 @@ internal fun FolderPickerContent(
             }
         }
         items(picker.chats, key = { it.chatId }) { chat ->
-            PickerChatRow(chat) { onEvent(ChatFolderEditEvent.TogglePickedChat(chat)) }
+            PickerAvatarRow(id = chat.chatId, title = chat.title, photo = chat.photo, selected = chat.selected) {
+                onEvent(ChatFolderEditEvent.TogglePickedChat(chat))
+            }
         }
-        item(key = DONE) { PickerDone { onEvent(ChatFolderEditEvent.ClosePicker) } }
-    }
-}
-
-/** The picker's title in `titleLargeEmphasized`, a heading for screen readers. */
-@Composable
-private fun PickerTitle(included: Boolean) {
-    Text(
-        text =
-            stringResource(
-                pick(
-                    included,
-                    R.string.settings_chat_folder_picker_include,
-                    R.string.settings_chat_folder_picker_exclude,
-                ),
-            ),
-        modifier =
-            Modifier
-                .padding(horizontal = MaterialTheme.spacing.large)
-                .padding(bottom = MaterialTheme.spacing.medium)
-                .semantics { heading() },
-        style = MaterialTheme.typography.titleLargeEmphasized,
-    )
-}
-
-/** "Done" at the end, which closes the picker with what was picked. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun PickerDone(onDone: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(MaterialTheme.spacing.large),
-        horizontalArrangement = Arrangement.End,
-    ) {
-        Button(onClick = onDone, shapes = ButtonDefaults.shapes()) {
-            Text(
-                stringResource(R.string.settings_chat_folder_picker_done),
-                style = MaterialTheme.typography.labelLargeEmphasized,
-            )
+        item(key = DONE) {
+            PickerDone(stringResource(R.string.settings_chat_folder_picker_done)) {
+                onEvent(ChatFolderEditEvent.ClosePicker)
+            }
         }
     }
-}
-
-/** The search bar's input field on its container, with a clear button while there is text. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun PickerSearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-) {
-    val text = rememberTextFieldState(query)
-    val currentOnQueryChange by rememberUpdatedState(onQueryChange)
-    LaunchedEffect(text) { snapshotFlow { text.text.toString() }.drop(1).collect { currentOnQueryChange(it) } }
-    val keyboard = LocalSoftwareKeyboardController.current
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = MaterialTheme.spacing.large)
-                .padding(bottom = MaterialTheme.spacing.small),
-        shape = SearchBarDefaults.inputFieldShape,
-        color = SearchBarDefaults.colors().containerColor,
-    ) {
-        SearchBarDefaults.InputField(
-            textFieldState = text,
-            searchBarState = rememberSearchBarState(),
-            onSearch = { keyboard?.hide() },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.settings_chat_folder_picker_search)) },
-            leadingIcon = { Icon(painterResource(UiR.drawable.ic_search), contentDescription = null) },
-            trailingIcon =
-                if (text.text.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { text.clearText() }, shapes = IconButtonDefaults.shapes()) {
-                            Icon(
-                                painter = painterResource(UiR.drawable.ic_close),
-                                contentDescription = stringResource(R.string.settings_chat_folder_picker_clear),
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        )
-    }
-}
-
-@Composable
-private fun PickerHeader(text: Int) {
-    Text(
-        text = stringResource(text),
-        modifier =
-            Modifier
-                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small)
-                .semantics { heading() },
-        color = MaterialTheme.colorScheme.primary,
-        style = MaterialTheme.typography.titleSmallEmphasized,
-    )
 }
 
 /** A kind of chats: its icon and name, and a checkbox; the whole row toggles it. */
@@ -246,53 +174,6 @@ private fun TypeRow(
         Text(stringResource(label))
     }
 }
-
-/** A chat: its avatar (a check while picked) and title as user content; the whole row toggles it. */
-@Composable
-private fun PickerChatRow(
-    chat: FolderChatItem,
-    onToggle: () -> Unit,
-) {
-    ListItem(
-        modifier =
-            Modifier.pickerRow(MaterialTheme.spacing.small, pickerRowLook(chat.selected), chat.selected, onToggle),
-        leadingContent = {
-            Avatar(
-                photo = chat.photo,
-                name = chat.title,
-                id = chat.chatId,
-                size = MaterialTheme.sizes.avatarRow,
-                selected = chat.selected,
-                onSelection = chat.selected,
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    ) {
-        Text(chat.title, style = LocalTextStyle.current.userContent, maxLines = 1)
-    }
-}
-
-/** The look of a picker row: `large` in `secondaryContainer` while [selected]. */
-@Composable
-private fun pickerRowLook(selected: Boolean): Pair<Shape, Color> =
-    if (selected) {
-        MaterialTheme.shapes.large to MaterialTheme.colorScheme.secondaryContainer
-    } else {
-        MaterialTheme.shapes.extraSmall to Color.Transparent
-    }
-
-/** A row inset by [inset] from the sheet's sides, in [look], that toggles as a checkbox. */
-private fun Modifier.pickerRow(
-    inset: Dp,
-    look: Pair<Shape, Color>,
-    checked: Boolean,
-    onToggle: () -> Unit,
-): Modifier =
-    fillMaxWidth()
-        .padding(horizontal = inset)
-        .clip(look.first)
-        .background(look.second)
-        .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
 
 private const val TITLE = "title"
 private const val SEARCH = "search"

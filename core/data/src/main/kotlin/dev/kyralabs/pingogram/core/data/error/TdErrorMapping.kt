@@ -77,6 +77,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "PHONE_NUMBER_EMPTY" to DomainError.PhoneNumberInvalid,
         "PHONE_NUMBER_BANNED" to DomainError.PhoneNumberBanned,
         "PHONE_NUMBER_FLOOD" to DomainError.PhoneNumberFlood,
+        // account.sendChangePhoneCode for a number another account has.
+        "PHONE_NUMBER_OCCUPIED" to DomainError.PhoneNumberOccupied,
+        "BIRTHDAY_INVALID" to DomainError.BirthdateInvalid,
         "PHONE_CODE_INVALID" to DomainError.CodeInvalid,
         "PHONE_CODE_EMPTY" to DomainError.CodeInvalid,
         "CODE_INVALID" to DomainError.CodeInvalid,
@@ -107,6 +110,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         // Contacts: contacts.addContact without a first name, contacts.resolveUsername for a username no one has.
         "CONTACT_NAME_EMPTY" to DomainError.FirstNameInvalid,
         "USERNAME_NOT_OCCUPIED" to DomainError.NotFound,
+        // messages.getStickerSet for a sticker set no one has (a link to a deleted set).
+        "STICKERSET_INVALID" to DomainError.NotFound,
         "PHOTO_CROP_SIZE_SMALL" to DomainError.PhotoInvalid,
         "PHOTO_INVALID_DIMENSIONS" to DomainError.PhotoInvalid,
         "PHOTO_EXT_INVALID" to DomainError.PhotoInvalid,

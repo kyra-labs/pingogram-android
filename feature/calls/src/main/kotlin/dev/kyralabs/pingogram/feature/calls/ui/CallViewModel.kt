@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.feature.calls.ActiveCall
 import dev.kyralabs.pingogram.feature.calls.CallClock
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
+import dev.kyralabs.pingogram.feature.calls.CallRatingRequest
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -71,8 +72,19 @@ class CallViewModel
 
         private val hasCamera = camera.hasCamera()
 
+        /** The ended call as last shown with "Rate this call": it stays on screen while the question does. */
+        private var ratedCall: CallUiState.InCall? = null
+
         val uiState: StateFlow<CallUiState> =
-            combine(callManager.call, permissionStep, person(), duration()) { call, step, person, duration ->
+            combine(
+                callManager.call,
+                permissionStep,
+                person(),
+                duration(),
+                callManager.rating,
+            ) { call, step, person, duration, rating ->
+                // The ended call that asks for a rating, once the call manager let it go.
+                val asking = ratedCall?.takeIf { rating != null && it.rating != null }
                 when {
                     step != null -> {
                         CallUiState.NeedsMicrophone(
@@ -84,7 +96,13 @@ class CallViewModel
 
                     call != null -> {
                         sawCall = true
-                        call.toUiState(person ?: CallPerson(call.userId, "", null), duration, hasCamera)
+                        call
+                            .toUiState(person ?: CallPerson(call.userId, "", null), duration, hasCamera)
+                            .withRating(rating, call.callId)
+                    }
+
+                    asking != null -> {
+                        asking
                     }
 
                     sawCall || savedStateHandle.get<Boolean>(
@@ -145,12 +163,24 @@ class CallViewModel
                     viewModelScope.launch { callManager.switchCamera() }
                 }
 
+                CallEvent.ToggleScreenSharing, is CallEvent.ScreenSharingResult -> {
+                    onScreenSharing(event)
+                }
+
                 is CallEvent.CameraResult -> {
                     if (event.granted) {
                         viewModelScope.launch { callManager.setCameraOn(true) }
                     } else if (!event.canAskAgain) {
                         savedStateHandle[KEY_CAMERA_REFUSED] = true
                     }
+                }
+
+                is CallEvent.Rate -> {
+                    callManager.rate(event.stars, event.problems)
+                }
+
+                CallEvent.DismissRating -> {
+                    callManager.dismissRating()
                 }
 
                 CallEvent.DismissMicrophone -> {
@@ -160,6 +190,15 @@ class CallViewModel
                     if (step.isAnswering) viewModelScope.launch { callManager.hangUp() }
                 }
             }
+        }
+
+        /** An ended call that Telegram asks to have rated shows the question, and is kept to stay on screen. */
+        private fun CallUiState.InCall.withRating(
+            rating: CallRatingRequest?,
+            callId: Int?,
+        ): CallUiState.InCall {
+            if (stage !is CallStage.Ended || rating == null || rating.callId != callId) return this
+            return copy(rating = CallRatingPrompt(rating.isVideo)).also { ratedCall = it }
         }
 
         private var localSink: VideoFrameSink? = null
@@ -179,6 +218,24 @@ class CallViewModel
 
         override fun onCleared() {
             callManager.setVideoSinks(null, null)
+        }
+
+        /** "Share screen" asks Android first; its answer starts sharing; while sharing, the button stops it. */
+        private fun onScreenSharing(event: CallEvent) {
+            val call = callManager.call.value ?: return
+            when {
+                event is CallEvent.ScreenSharingResult -> {
+                    if (event.granted) viewModelScope.launch { callManager.startScreenSharing() }
+                }
+
+                call.video.isSharingScreen -> {
+                    viewModelScope.launch { callManager.stopScreenSharing() }
+                }
+
+                else -> {
+                    effectChannel.trySend(CallEffect.RequestScreenCapture)
+                }
+            }
         }
 
         private fun toggleCamera() {
@@ -360,6 +417,9 @@ private fun ActiveCall.toUiState(
                 canSwitchCamera = video.canSwitchCamera,
                 remote = video.remote,
                 hasCamera = hasCamera,
+                canShareScreen = true,
+                isSharingScreen = video.isSharingScreen,
+                remoteIsScreen = video.remoteIsScreen,
             ),
     )
 

@@ -47,8 +47,16 @@
     <!-- For screen readers: the user's own picture, and the other person's video. %1$s: their name. -->
     <string name="call_self_view">Your camera</string>
     <string name="call_remote_video">Video of %1$s</string>
+    <string name="call_remote_screen">Screen shared by %1$s</string>
+    <string name="call_share_screen">Share screen</string>
+    <string name="call_stop_sharing">Stop sharing</string>
+    <string name="call_sharing_screen">You\'re sharing your screen</string>
+    <string name="call_sharing_stop">Stop</string>
     <!-- Over the other person's video while it does not come: their app is in the background, or the connection is weak. -->
     <string name="call_video_paused">Video paused</string>
+    <string name="group_call_pin">Pin video</string>
+    <string name="group_call_unpin">Unpin video</string>
+    <string name="group_call_video_pinned">Pinned</string>
     <!-- The incoming call's chip: declines the call and opens the chat with the caller. -->
     <string name="call_message">Message</string>
     <!-- The answer slider, for screen readers, which answer and decline through its actions. -->
@@ -67,4 +75,72 @@
     <string name="call_not_now">Not now</string>
     <string name="call_continue">Continue</string>
     <string name="call_open_settings">Open settings</string>
+    <!-- The voice chat's screen (docs/adr/0023-group-voice-chats-and-live-streams.md). -->
+    <string name="group_call_joining">Joining…</string>
+    <!-- A live stream's notification while the user watches it. -->
+    <string name="group_call_status_stream">Live stream</string>
+    <string name="group_call_left">You left</string>
+    <string name="group_call_ended">The voice chat ended</string>
+    <string name="group_call_busy">End your call first to join the voice chat.</string>
+    <string name="group_call_no_voice_chat">This voice chat has ended.</string>
+    <!-- The user's own row among the participants: "Ada (you)". -->
+    <string name="group_call_you">%1$s (you)</string>
+    <string name="group_call_speaking">Speaking</string>
+    <string name="group_call_listening">Listening</string>
+    <string name="group_call_muted">Muted</string>
+    <!-- A muted participant who asks to speak. -->
+    <string name="group_call_hand_raised">Wants to speak</string>
+    <!-- Asks an administrator to let the user speak. -->
+    <string name="group_call_raise_hand">Raise hand</string>
+    <string name="group_call_leave">Leave</string>
+    <string name="group_call_end">End voice chat</string>
+    <string name="group_call_end_stream">End live stream</string>
+    <string name="group_call_end_title">End the voice chat?</string>
+    <string name="group_call_end_stream_title">End the live stream?</string>
+    <string name="group_call_end_text">It ends for everyone in it.</string>
+    <string name="group_call_end_confirm">End</string>
+    <string name="group_call_cancel">Cancel</string>
+    <string name="group_call_microphone_rationale">To speak in the voice chat, Pingogram needs the microphone. You join muted, and nothing is sent until you unmute.</string>
+    <!-- Recent calls (the call history). -->
+    <string name="recent_calls_title">Recent calls</string>
+    <string name="recent_calls_back">Back</string>
+    <string name="recent_calls_filter_all">All</string>
+    <string name="recent_calls_filter_missed">Missed</string>
+    <string name="recent_calls_today">Today</string>
+    <string name="recent_calls_yesterday">Yesterday</string>
+    <string name="recent_calls_empty">No calls yet</string>
+    <string name="recent_calls_empty_body">Calls you make and get show here. Start one from a chat or a profile.</string>
+    <string name="recent_calls_no_missed">No missed calls</string>
+    <string name="recent_calls_no_missed_body">Calls you didn\'t answer show here.</string>
+    <string name="recent_calls_error">Couldn\'t load your calls</string>
+    <string name="recent_calls_try_again">Try again</string>
+    <!-- How a call went and how long it lasted: "Outgoing call · 4:05". -->
+    <string name="recent_calls_kind_and_length">%1$s · %2$s</string>
+    <!-- What a tap on a row does, for screen readers. -->
+    <string name="recent_calls_call_back">Call back</string>
+    <string name="recent_calls_video_call_back">Video call back</string>
+    <string name="recent_calls_row_menu">More options</string>
+    <string name="recent_calls_delete">Delete from call history</string>
+    <string name="recent_calls_deleted">Call deleted from your history</string>
+    <!-- How long an answered call lasted, for screen readers: "lasted 4:05". -->
+    <string name="recent_calls_duration">lasted %1$s</string>
+    <!-- Rate this call (docs/DESIGN_SYSTEM.md §6 "Call rating"), over the ended call when Telegram asks for it. -->
+    <string name="call_rating_title">Rate this call</string>
+    <plurals name="call_rating_stars">
+        <item quantity="one">%d star</item>
+        <item quantity="other">%d stars</item>
+    </plurals>
+    <string name="call_rating_problems">What went wrong?</string>
+    <string name="call_problem_echo">Echo</string>
+    <string name="call_problem_noise">Noise</string>
+    <string name="call_problem_interruptions">Sound kept cutting out</string>
+    <string name="call_problem_distorted_speech">Distorted voice</string>
+    <string name="call_problem_silent_local">I couldn\'t hear them</string>
+    <string name="call_problem_silent_remote">They couldn\'t hear me</string>
+    <string name="call_problem_dropped">The call dropped</string>
+    <string name="call_problem_distorted_video">Distorted video</string>
+    <string name="call_problem_pixelated_video">Blurry video</string>
+    <string name="call_rating_note">Your rating goes to Telegram, which uses it to improve calls.</string>
+    <string name="call_rating_not_now">Not now</string>
+    <string name="call_rating_send">Send</string>
 </resources>

@@ -53,6 +53,8 @@ class ErrorTextTest {
                 DomainError.PhoneNumberInvalid,
                 DomainError.PhoneNumberBanned,
                 DomainError.PhoneNumberFlood,
+                DomainError.PhoneNumberOccupied,
+                DomainError.BirthdateInvalid,
                 DomainError.CodeInvalid,
                 DomainError.CodeExpired,
                 DomainError.PasswordInvalid,

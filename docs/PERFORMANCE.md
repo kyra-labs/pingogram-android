@@ -17,7 +17,7 @@ regresses by more than 10%.
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
-| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 125 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`) | CI on every pull request and release (§8) |
+| APK size (arm64-v8a) | ≤ 50 MB; universal ≤ 123 MB (raised from 35 / 60 MB for the call engine by the owner, 2026-10-22, `docs/adr/0015-call-media-engine.md`; set from the APKs with voice chats at their size plus a small margin, owner 2026-10-23, `docs/adr/0023-group-voice-chats-and-live-streams.md`) | CI on every pull request and release (§8) |
 | Battery, 8 h background with 50 active chats | ≤ 1.5% (Battery Historian) | manual weekly |
 | Data, 24 h idle | ≤ 2 MB (TDLib keep-alive only) | TDLib `getNetworkStatistics` |
 | Composition count per frame while scrolling | 0 recompositions of off-screen items | Layout Inspector / compiler reports |
@@ -213,15 +213,18 @@ regresses by more than 10%.
   fails before it merges. Each release checks the APKs it publishes, both flavors (`release.yml`, "Check APK sizes").
   A change to a budget changes both. The job builds `fossBenchmarkRelease`, which shrinks as `release` does, signed
   with the debug key. A megabyte is 1,048,576 bytes, as GitHub's release pages and the Bot API's 50 MB limit count it.
-  - Measured 2026-10-22 (`foss`): arm64-v8a 47.8 MB, universal 120.7 MB, armeabi-v7a 39.0 MB, x86_64 55.0 MB.
+  - Measured 2026-10-23 with voice chats and live streams (`foss`, #183): arm64-v8a 48.2 MB, universal 121.1 MB,
+    armeabi-v7a 39.4 MB, x86_64 55.4 MB (2026-10-22, before them: 47.8, 120.7, 39.0 and 55.0 MB). `gms` APKs are
+    0.2 MB larger than `foss` ones (v0.5.0's release: arm64-v8a 48.1 and 48.2 MB, universal 121.0 and 121.2 MB).
   - What takes the space: the native libraries, stored uncompressed: `libntgcalls.so` (the call engine, 20.5 MB on
     arm64-v8a) and `libtdjni.so` (16.7 MB), both already stripped. Then the code (5.5 MB of dex) and the resources
     (4.4 MB, Google Sans Flex's 4 MB among them).
   - Compressing the native libraries (`useLegacyPackaging = true`) would bring arm64-v8a to about 28 MB. Android
     would then extract them at install, about 37 MB more on the device, and load them more slowly; `docs/TDLIB.md`
     keeps them uncompressed.
-  - arm64-v8a has 2.2 MB left. The next large addition (video calls, `docs/adr/0019-video-and-group-calls-scope.md`)
-    needs the budget looked at again.
+  - arm64-v8a has 1.8 MB left and universal 1.9 MB, about 1.6 MB for `gms`. The owner set the universal
+    budget from these sizes (2026-10-23); the next addition that grows the native libraries (group video,
+    `docs/adr/0019-video-and-group-calls-scope.md`) needs the budget looked at again.
 - TDLib database and files live in `filesDir` (excluded from backup), cache limit setting
   (default 4 GB) enforced via `optimizeStorage`.
 
@@ -344,6 +347,30 @@ regresses by more than 10%.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
+- Video calls (`docs/adr/0019-video-and-group-calls-scope.md`): every remote frame crosses JNI as a new `byte[]`, about
+  1.4 MB at 720p, 30 a second, and is copied once more into a direct buffer for WebRTC's renderer. The frame path has
+  trace sections and counters (`feature:calls`' `CallTrace`): `callFrames` (a batch handed over from NTgCalls' thread
+  to the sinks), `callFrameCopy` (one frame copied and queued for its `EglRenderer`), and the frame rates `Remote.fps`
+  and `Self.fps`, set once a second; the renderers draw on their own threads (`RemoteEglRenderer`,
+  `SelfEglRenderer`). `tools/perfetto/video-call.pbtxt` records them for 5 minutes with every thread's CPU time,
+  Pingogram's memory (RSS, anonymous, swap) once a second and the battery's current; `tools/perfetto/video-call.sh`
+  runs it and adds `dumpsys meminfo` (PSS) once a minute; `tools/perfetto/video-call.sql` summarizes the trace with
+  Perfetto's trace processor or in https://ui.perfetto.dev, which reads the file in the browser. The trace holds
+  thread names, timings, memory and counters: no message, name, number or picture. On the owner's phone:
+  1. `./gradlew :app:installFossBenchmarkRelease` (R8 as `release`, profileable; uninstall a release-signed Pingogram
+     first, as above), open it and sign in.
+  2. Call someone on another phone with Telegram's app, both on Wi-Fi, both cameras on, until each sees the other's
+     720p video. Keep Pingogram's call screen in front with the screen on, the phone unplugged.
+  3. From the repository, run `tools/perfetto/video-call.sh` and keep the call going until it prints "Done" (5 minutes).
+  4. Send back its folder: `device.txt`, `meminfo.txt` and `video-call.perfetto-trace`.
+
+  A voice chat with video (`docs/adr/0024-video-in-voice-chats.md`) is recorded the same way: join a group's voice
+  chat where four others send their cameras (from Telegram's apps), turn Pingogram's camera on, keep the voice chat's
+  screen in front with the four videos and the self-view showing, and run step 3. Each video's frames go to their own
+  renderer (`EglRenderer` threads named "Participant …"), so the trace shows what each costs; the four tell whether
+  the cap of four holds on that phone.
+
+  §1 has no budget for calls yet: the first results go here and set one.
 - LeakCanary in debug builds; a leak fails the nightly.
 - Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only (the plugin skips
   them on emulators until `benchmark/build.gradle.kts` sets

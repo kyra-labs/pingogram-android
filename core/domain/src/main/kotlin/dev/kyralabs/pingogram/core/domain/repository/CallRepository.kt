@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
+import dev.kyralabs.pingogram.core.domain.model.CallState
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
@@ -57,6 +59,16 @@ interface CallRepository {
         duration: Duration,
         isVideo: Boolean,
         connectionId: Long,
+    ): Outcome<Unit>
+
+    /**
+     * Rates ended call [callId] from 1 to 5 [stars], with what went wrong ([problems]), for Telegram to improve calls
+     * (td_api.tl `sendCallRating`). Only for a call Telegram asked to have rated ([CallState.Discarded.needsRating]).
+     */
+    suspend fun rateCall(
+        callId: Int,
+        stars: Int,
+        problems: Set<CallProblem>,
     ): Outcome<Unit>
 
     /** Sends the engine's [data] for call [callId] to the other side. */

@@ -52,6 +52,8 @@ class DataStorageScreenTest {
                     state = state,
                     onEvent = { events += it },
                     onOpenAutoDownload = { opened += it },
+                    onOpenProxies = {},
+                    onOpenNetworkUsage = {},
                     onBack = { backs++ },
                 )
             }

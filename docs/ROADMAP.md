@@ -92,8 +92,9 @@ the release workflow so the owner can install and test on a phone.
 - [x] Video call buttons in the conversation's top bar and the profile: one call button with a voice and video menu
       (owner, 2026-10-23), and "Call back" keeping the call's kind
 - [ ] The video frame path measured on a device (CPU and memory during a 720p call, `docs/PERFORMANCE.md`)
-- [ ] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin
-- [ ] Live streams: watching
+- [x] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin (`docs/adr/0023-group-voice-chats-and-live-streams.md`;
+      who is speaking from Telegram's recent speakers until the owner decides on audio levels)
+- [x] Live streams: watching, with picture-in-picture (ADR 0023)
 
 ## M6 — Polish → `v1.0.0`
 
@@ -137,3 +138,5 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
 reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion.
+
+Features other clients have, with verdicts and priorities: `docs/audit/feature-gaps-octogram.md` (2026-10-24).

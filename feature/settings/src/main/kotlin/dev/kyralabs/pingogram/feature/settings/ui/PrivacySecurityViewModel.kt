@@ -149,9 +149,19 @@ class PrivacySecurityViewModel
                 val sessions = async { sessionRepository.activeSessions() }
                 val password = async { twoStepVerificationRepository.state() }
                 val accountTtl = async { accountRepository.accountTtl() }
+                val autoDelete = async { accountRepository.defaultMessageAutoDeleteTime() }
+                // Not one of the page's needs: without it, the page leaves its row out.
+                val newChats = async { privacyRepository.newChatPrivacy() }
                 val loadedRules = rules.mapValues { it.value.await() }
                 val outcomes =
-                    loadedRules.values + listOf(blocked.await(), sessions.await(), password.await(), accountTtl.await())
+                    loadedRules.values +
+                        listOf(
+                            blocked.await(),
+                            sessions.await(),
+                            password.await(),
+                            accountTtl.await(),
+                            autoDelete.await(),
+                        )
                 val error = outcomes.firstNotNullOfOrNull { (it as? Outcome.Failure)?.error }
                 if (error != null) {
                     Outcome.Failure(error)
@@ -163,7 +173,8 @@ class PrivacySecurityViewModel
                             sessions = sessions.await().value(),
                             password = password.await().value(),
                             accountTtlDays = accountTtl.await().value(),
-                        ),
+                            autoDeleteSeconds = autoDelete.await().value(),
+                        ).copy(newChatPrivacy = (newChats.await() as? Outcome.Success)?.value),
                     )
                 }
             }
@@ -174,12 +185,15 @@ class PrivacySecurityViewModel
             sessions: ActiveSessions,
             password: TwoStepVerificationState,
             accountTtlDays: Int,
+            autoDeleteSeconds: Int,
         ) = PrivacySecurityUiState.Content(
             rules = rules.toImmutableMap(),
             blockedCount = blocked.totalCount,
             sessionCount = sessions.sessions.size,
             twoStepVerification = password.summary(),
             accountTtlDays = accountTtlDays,
+            loginEmailPattern = password.loginEmailPattern,
+            defaultAutoDeleteSeconds = autoDeleteSeconds,
         )
 
         private fun TwoStepVerificationState.summary(): TwoStepVerificationSummary {

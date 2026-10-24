@@ -20,6 +20,8 @@
     <string name="settings_profile_saved">Profile saved</string>
 
     <!-- Settings home -->
+    <string name="settings_recent_calls">Recent calls</string>
+    <string name="settings_recent_calls_summary">Missed, incoming and outgoing calls</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary">Theme, colors and contrast</string>
     <string name="settings_language">Language</string>
@@ -206,6 +208,8 @@
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>
+    <string name="settings_privacy_bio">Bio</string>
+    <string name="settings_privacy_birthdate">Birthday</string>
     <string name="settings_privacy_forwarded_messages">Forwarded messages</string>
     <string name="settings_privacy_calls">Calls</string>
     <string name="settings_privacy_chat_invites">Invitations to groups and channels</string>
@@ -319,6 +323,32 @@
     <string name="settings_privacy_phone_number_question">Who can see my phone number</string>
     <string name="settings_privacy_last_seen_question">Who can see when I was last online</string>
     <string name="settings_privacy_profile_photo_question">Who can see my profile photos</string>
+    <string name="settings_privacy_bio_question">Who can see my bio</string>
+    <string name="settings_privacy_birthdate_question">Who can see my birthday</string>
+    <string name="settings_section_privacy_read_time">Read time</string>
+    <string name="settings_privacy_exceptions_loading">Loading exceptions</string>
+    <string name="settings_privacy_exceptions_add">Add users or groups</string>
+    <string name="settings_privacy_exceptions_search">Search chats</string>
+    <string name="settings_privacy_exceptions_group">Group</string>
+    <string name="settings_privacy_exceptions_remove">Remove</string>
+    <!-- For screen readers: the "Remove" button of an exception's row; %1$s is the user's or group's name. -->
+    <string name="settings_privacy_exceptions_remove_label">Remove %1$s</string>
+    <string name="settings_privacy_exceptions_always_note">These people, and the members of these groups, are always allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_never_note">These people, and the members of these groups, are never allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_none">Add users or groups</string>
+    <string name="settings_privacy_new_chats">Messages</string>
+    <string name="settings_privacy_new_chats_loading">Loading who can message you</string>
+    <string name="settings_privacy_new_chats_question">Who can message me</string>
+    <string name="settings_privacy_new_chats_contacts">My contacts and Telegram Premium users</string>
+    <string name="settings_privacy_new_chats_premium">Telegram lets only Telegram Premium subscribers choose this</string>
+    <string name="settings_privacy_new_chats_note">People who are not your contacts can start a chat with you only if you let them. Telegram Premium subscribers can always write first. Chats you have keep going either way.</string>
+    <plurals name="settings_privacy_new_chats_paid">
+        <item quantity="one">Non-contacts pay %1$s Telegram Star for each message, as set in another app.</item>
+        <item quantity="other">Non-contacts pay %1$s Telegram Stars for each message, as set in another app.</item>
+    </plurals>
+    <string name="settings_privacy_read_time">Show my read time</string>
+    <string name="settings_privacy_read_time_summary">When you read messages in private chats</string>
+    <string name="settings_privacy_read_time_note">People who can see when you were last online always see your read time. If you hide it, you don\'t see other people\'s read time either, unless you have Telegram Premium.</string>
     <string name="settings_privacy_forwarded_messages_question">Whose forwards of my messages link to my account</string>
     <string name="settings_privacy_calls_question">Who can call me</string>
     <string name="settings_privacy_chat_invites_question">Who can add me to groups and channels</string>
@@ -689,6 +719,65 @@
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
 
+    <!-- The login email (FR-S1), a page above Privacy and security. %1$s: Telegram's pattern of an address. -->
+    <string name="settings_login_email">Login email</string>
+    <string name="settings_login_email_loading">Loading the login email</string>
+    <string name="settings_login_email_current">Your login email is %1$s.</string>
+    <string name="settings_login_email_none">This account has no login email. Telegram asks for one when you log in, if it wants one, and you can change it here after that.</string>
+    <string name="settings_login_email_intro">Telegram can send your login codes to this address instead of by SMS. To change it, Telegram sends a code to the new address.</string>
+    <string name="settings_login_email_change">Change email</string>
+    <string name="settings_login_email_new">Enter the new address. Telegram sends a code to it.</string>
+    <string name="settings_login_email_label">Email address</string>
+    <string name="settings_login_email_code_sent">We sent a code to %1$s.</string>
+    <string name="settings_login_email_resend">Send the code again</string>
+    <string name="settings_login_email_resent">A new code is on its way</string>
+    <string name="settings_login_email_done_title">Login email changed</string>
+    <string name="settings_login_email_done_text">Telegram sends login codes to %1$s from now on.</string>
+    <!-- The self-destruct timer of new chats (FR-S1), a page above Privacy and security. -->
+    <string name="settings_auto_delete">Auto-delete messages</string>
+    <string name="settings_auto_delete_loading">Loading the auto-delete timer</string>
+    <string name="settings_auto_delete_section">Delete messages in new chats after</string>
+    <string name="settings_auto_delete_footer">Chats you start from now on get this timer: their messages are deleted for everyone once it runs out. Chats you have already keep theirs, which you can change in each chat.</string>
+    <string name="settings_auto_delete_off">Off</string>
+    <string name="settings_auto_delete_day">1 day</string>
+    <string name="settings_auto_delete_week">1 week</string>
+    <string name="settings_auto_delete_month">1 month</string>
+    <plurals name="settings_auto_delete_days">
+        <item quantity="one">%s day</item>
+        <item quantity="other">%s days</item>
+    </plurals>
+    <!-- The progress of a request in the account's flows (Change number, Login email), for screen readers. -->
+    <string name="settings_account_flow_busy">Waiting for Telegram</string>
+    <!-- Changing the account's phone number (FR-S1), a page above Edit profile. %1$s: a phone number. -->
+    <string name="settings_change_number_title">Change number</string>
+    <string name="settings_change_number_current">Your number is %1$s.</string>
+    <string name="settings_change_number_intro">Your account, chats, contacts and media stay as they are and move to the new number. Telegram sends a code to the new number to check that it\'s yours. Who can see your number stays as your privacy settings say.</string>
+    <string name="settings_change_number_start">Change number</string>
+    <string name="settings_change_number_new">Enter your new number. Telegram sends it a code.</string>
+    <string name="settings_account_flow_next">Next</string>
+    <string name="settings_change_number_wrong_number">Wrong number?</string>
+    <string name="settings_change_number_done_title">Number changed</string>
+    <string name="settings_change_number_done_text">Your number is now %1$s.</string>
+    <string name="settings_account_flow_done">Done</string>
+    <!-- Edit profile's phone number group: its header, and the button that opens Change number. -->
+    <string name="settings_section_profile_birthday">Birthday</string>
+    <string name="settings_edit_profile_birthday_none">No birthday</string>
+    <string name="settings_edit_profile_birthday_add">Add</string>
+    <string name="settings_edit_profile_birthday_change">Change</string>
+    <!-- For screen readers: the "Add" button of the birthday row. -->
+    <string name="settings_edit_profile_birthday_add_label">Add birthday</string>
+    <!-- For screen readers: the "Change" button of the birthday row; %1$s is the birthday, "December 10". -->
+    <string name="settings_edit_profile_birthday_change_label">Change birthday %1$s</string>
+    <string name="settings_edit_profile_birthday_privacy">Who can see it</string>
+    <string name="settings_edit_profile_birthday_show_year">Show the year</string>
+    <string name="settings_edit_profile_birthday_remove">Remove</string>
+    <string name="settings_edit_profile_birthday_cancel">Cancel</string>
+    <string name="settings_edit_profile_birthday_done">Done</string>
+    <string name="settings_section_profile_phone">Phone number</string>
+    <string name="settings_edit_profile_change_number">Change</string>
+    <!-- The same button for screen readers: %1$s the phone number. -->
+    <string name="settings_edit_profile_change_number_label">Change number %1$s</string>
+
     <!-- Delete account (Google Play's account deletion policy, docs/PLAY_STORE.md), a page of Privacy and security -->
     <string name="settings_section_account">Account</string>
     <string name="settings_delete_account">Delete account</string>
@@ -832,4 +921,169 @@
     <string name="settings_chat_folder_icon_travel">Travel</string>
     <string name="settings_chat_folder_icon_light">Ideas</string>
     <string name="settings_chat_folder_icon_palette">Art</string>
+
+    <!-- Settings → Stickers (REQUIREMENTS.md FR-C5). -->
+    <string name="settings_stickers">Stickers</string>
+    <string name="settings_stickers_summary">Your sticker sets, trending and archived sets</string>
+    <string name="settings_stickers_loading">Loading sticker sets</string>
+    <string name="settings_stickers_trending">Trending stickers</string>
+    <string name="settings_stickers_trending_summary">Popular sets on Telegram</string>
+    <plurals name="settings_stickers_trending_new">
+        <item quantity="one">%1$s new set</item>
+        <item quantity="other">%1$s new sets</item>
+    </plurals>
+    <string name="settings_stickers_archived">Archived stickers</string>
+    <string name="settings_stickers_archived_summary">No archived sets</string>
+    <plurals name="settings_stickers_set_count">
+        <item quantity="one">%1$s set</item>
+        <item quantity="other">%1$s sets</item>
+    </plurals>
+    <plurals name="settings_stickers_sticker_count">
+        <item quantity="one">%1$s sticker</item>
+        <item quantity="other">%1$s stickers</item>
+    </plurals>
+    <string name="settings_stickers_section_yours">Your sticker sets</string>
+    <string name="settings_stickers_none">You have no sticker sets. Add some from Trending stickers.</string>
+    <string name="settings_stickers_footer">The sticker panel shows your sets in this order on all your devices. Drag a set to move it.</string>
+    <string name="settings_stickers_move_up">Move up</string>
+    <string name="settings_stickers_move_down">Move down</string>
+    <string name="settings_stickers_share">Share link</string>
+    <string name="settings_stickers_archive">Archive</string>
+    <string name="settings_stickers_remove">Remove</string>
+    <string name="settings_stickers_cancel">Cancel</string>
+    <string name="settings_stickers_undo">Undo</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_remove_title">Remove “%1$s”?</string>
+    <string name="settings_stickers_remove_text">The set leaves your sticker panel on all your devices. You can add it again from a sticker of it or its link.</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_archived_done">“%1$s” archived</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_removed_done">“%1$s” removed</string>
+    <!-- %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_done">“%1$s” added to your stickers</string>
+    <string name="settings_stickers_add">Add</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_add_named">Add %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_adding">Adding %1$s</string>
+    <!-- For screen readers; %1$s: the sticker set's name. -->
+    <string name="settings_stickers_added_named">%1$s added</string>
+    <string name="settings_stickers_trending_footer">Sets many people on Telegram add now. Added sets join your sticker panel.</string>
+    <string name="settings_stickers_archived_footer">Archived sets stay in your account without showing in the sticker panel. Add one to bring it back.</string>
+    <string name="settings_stickers_trending_empty_title">Nothing trending</string>
+    <string name="settings_stickers_trending_empty_body">Telegram has no trending sticker sets for you right now.</string>
+    <string name="settings_stickers_archived_empty_title">No archived sets</string>
+    <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
+    <string name="settings_stickers_show">Show stickers</string>
+
+    <!-- The sheet of a sticker set (a t.me/addstickers link, or a set in Settings → Stickers). -->
+    <string name="sticker_set_add">Add stickers</string>
+    <string name="sticker_set_remove">Remove</string>
+    <string name="sticker_set_share">Share</string>
+    <string name="sticker_set_close">Close</string>
+    <string name="sticker_set_try_again">Try again</string>
+    <string name="sticker_set_adding">Adding the stickers</string>
+    <string name="sticker_set_removing">Removing the stickers</string>
+    <string name="sticker_set_not_found_title">Sticker set not found</string>
+    <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
+    <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
+    <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
+    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
+    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
+
+    <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
+    <string name="settings_section_network">Network</string>
+    <string name="settings_proxy">Proxy</string>
+    <string name="settings_proxy_summary_off">Off · Connect directly</string>
+    <!-- %1$s is the proxy in use: its name, or its address such as "proxy.example.org:1080". -->
+    <string name="settings_proxy_summary_on">Connected through %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_proxy_loading">Loading proxies</string>
+    <string name="settings_proxy_use">Use proxy</string>
+    <string name="settings_proxy_use_summary">Connect to Telegram through a proxy server</string>
+    <string name="settings_proxy_add">Add proxy</string>
+    <string name="settings_proxy_section">Your proxies</string>
+    <string name="settings_proxy_footer">Pingogram connects to Telegram through the proxy you pick. The proxy’s owner can see that you use Telegram, and from which address, but not your messages.</string>
+    <!-- A proxy's address and port, e.g. "proxy.example.org:1080". -->
+    <string name="settings_proxy_address" translatable="false">%1$s:%2$s</string>
+    <string name="settings_proxy_kind_socks5">SOCKS5</string>
+    <string name="settings_proxy_kind_http">HTTP</string>
+    <string name="settings_proxy_kind_mtproto">MTProto</string>
+    <string name="settings_proxy_checking">Checking…</string>
+    <!-- %1$s is how long Telegram took to answer, e.g. "120 ms". -->
+    <string name="settings_proxy_available">Available · %1$s</string>
+    <!-- A duration in milliseconds, e.g. "120 ms". -->
+    <string name="settings_proxy_ping_ms">%1$s ms</string>
+    <string name="settings_proxy_unavailable">Unavailable</string>
+    <!-- A proxy's details: its protocol, then its address or its state, e.g. "SOCKS5 · Available · 120 ms". -->
+    <string name="settings_proxy_details">%1$s · %2$s</string>
+    <string name="settings_proxy_check_again">Check again</string>
+    <!-- The more-options button of a proxy, for screen readers. %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_options">Options for %1$s</string>
+    <string name="settings_proxy_edit">Edit</string>
+    <string name="settings_proxy_delete">Delete</string>
+    <string name="settings_proxy_delete_title">Delete this proxy?</string>
+    <!-- %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_delete_text">%1$s will be removed from Pingogram. If you use it now, Pingogram connects directly.</string>
+    <string name="settings_proxy_delete_confirm">Delete</string>
+    <string name="settings_proxy_none_text">Add a proxy if Telegram is blocked or slow where you are.</string>
+    <!-- Adding or editing a proxy -->
+    <string name="settings_proxy_new">New proxy</string>
+    <string name="settings_proxy_edit_title">Edit proxy</string>
+    <string name="settings_proxy_edit_loading">Loading the proxy</string>
+    <string name="settings_proxy_protocol">Protocol</string>
+    <string name="settings_proxy_server">Server</string>
+    <string name="settings_proxy_server_error">Enter the server’s address, without spaces.</string>
+    <string name="settings_proxy_port">Port</string>
+    <string name="settings_proxy_port_error">Enter a port from 1 to 65535.</string>
+    <string name="settings_proxy_username">Username (optional)</string>
+    <string name="settings_proxy_password">Password (optional)</string>
+    <string name="settings_proxy_secret">Secret</string>
+    <string name="settings_proxy_secret_error">Enter the secret the proxy’s owner gave you.</string>
+    <string name="settings_proxy_http_only">HTTP requests only</string>
+    <string name="settings_proxy_http_only_summary">For proxies that don’t allow other connections</string>
+    <string name="settings_proxy_name">Name (optional)</string>
+    <string name="settings_proxy_check">Check</string>
+    <string name="settings_proxy_save">Save</string>
+    <string name="settings_proxy_save_connect">Save and connect</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is saved. -->
+    <string name="settings_proxy_saving">Saving the proxy</string>
+    <!-- The sheet a proxy link opens -->
+    <string name="settings_proxy_link_title">Connect through this proxy?</string>
+    <string name="settings_proxy_link_text">Pingogram will connect to Telegram through this server. Its owner can see that you use Telegram, and from which address, but not your messages. Only use proxies you trust.</string>
+    <string name="settings_proxy_link_in_use">You already use this proxy.</string>
+    <string name="settings_proxy_link_connect">Connect</string>
+    <string name="settings_proxy_link_cancel">Cancel</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is added. -->
+    <string name="settings_proxy_link_connecting">Connecting through the proxy</string>
+    <string name="settings_proxy_link_connected">Proxy turned on</string>
+    <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
+    <string name="settings_proxy_link_done">Done</string>
+
+    <!-- Data and storage → Network usage -->
+    <string name="settings_network_usage">Network usage</string>
+    <string name="settings_network_usage_summary">How much data Pingogram sent and received</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_network_usage_loading">Loading network usage</string>
+    <!-- A section header. %1$s is a date such as "Oct 1, 2026". -->
+    <string name="settings_network_usage_since">Since %1$s</string>
+    <string name="settings_network_usage_footer">Counted on this device. Pingogram counts its own traffic only, not other apps’.</string>
+    <string name="settings_network_usage_total">Total</string>
+    <!-- %1$s and %2$s are sizes such as "1.2 MB". -->
+    <string name="settings_network_usage_amount">Sent %1$s · Received %2$s</string>
+    <string name="settings_network_usage_messages">Messages and other data</string>
+    <string name="settings_network_usage_photos">Photos</string>
+    <string name="settings_network_usage_videos">Videos and GIFs</string>
+    <string name="settings_network_usage_voice">Voice and video messages</string>
+    <string name="settings_network_usage_music">Music</string>
+    <string name="settings_network_usage_files">Files</string>
+    <string name="settings_network_usage_other">Stickers, profile photos and thumbnails</string>
+    <string name="settings_network_usage_calls">Calls</string>
+    <string name="settings_network_usage_reset">Reset statistics</string>
+    <string name="settings_network_usage_reset_title">Reset network usage?</string>
+    <string name="settings_network_usage_reset_text">The counts of every network start again from zero.</string>
+    <string name="settings_network_usage_reset_confirm">Reset</string>
+    <!-- Spoken by screen readers for the progress indicator while the statistics are reset. -->
+    <string name="settings_network_usage_resetting">Resetting network usage</string>
+    <string name="settings_network_usage_reset_done">Network usage reset</string>
 </resources>

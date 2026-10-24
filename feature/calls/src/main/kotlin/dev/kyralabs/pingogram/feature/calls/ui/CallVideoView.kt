@@ -2,12 +2,17 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import android.graphics.SurfaceTexture
 import android.view.TextureView
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleStartEffect
+import dev.kyralabs.pingogram.feature.calls.engine.CallTrace
+import dev.kyralabs.pingogram.feature.calls.engine.FrameRateCounter
 import dev.kyralabs.pingogram.feature.calls.engine.VideoFrameSink
 import org.webrtc.EglBase
 import org.webrtc.EglRenderer
@@ -22,7 +27,9 @@ import java.util.concurrent.TimeUnit
 /**
  * A call's video (`docs/adr/0019-video-and-group-calls-scope.md`): WebRTC's [EglRenderer], which the engine's AAR
  * bundles, drawing on its own thread into a [TextureView], which Compose clips like any view (a `SurfaceView` would
- * keep square corners). It fills its bounds, cropping the frames to them, [mirror]ed for the front camera's self-view.
+ * keep square corners). It fills its bounds, cropping the frames to them, [mirror]ed for the front camera's self-view;
+ * with [fit] (a shared screen, `docs/adr/0026-screen-sharing.md`) it takes the frames' shape instead, centred in its
+ * bounds, so nothing of the screen is cut off.
  *
  * [onSink] gets the renderer as the [VideoFrameSink] the engine hands frames to while the screen is started, and null
  * when it stops or the view leaves.
@@ -33,6 +40,7 @@ internal fun CallVideoView(
     mirror: Boolean,
     onSink: (VideoFrameSink?) -> Unit,
     modifier: Modifier = Modifier,
+    fit: Boolean = false,
 ) {
     val renderer = remember(name) { TextureRenderer(name) }
     DisposableEffect(renderer) { onDispose(renderer::release) }
@@ -42,10 +50,11 @@ internal fun CallVideoView(
         onSink(renderer)
         onStopOrDispose { onSink(null) }
     }
+    val aspect = if (fit) renderer.frameAspect.floatValue else 0f
     AndroidView(
         factory = { context -> TextureView(context).apply { surfaceTextureListener = renderer } },
         update = { renderer.setMirror(mirror) },
-        modifier = modifier,
+        modifier = if (aspect > 0f) modifier.wrapContentSize().aspectRatio(aspect) else modifier,
     )
 }
 
@@ -65,17 +74,21 @@ private class TextureRenderer(
     TextureView.SurfaceTextureListener {
     private val renderer = EglRenderer(name).apply { init(CallEgl.context, EglBase.CONFIG_PLAIN, GlRectDrawer()) }
     private val pool = ConcurrentLinkedQueue<ByteBuffer>()
+    private val frameRate = FrameRateCounter(name)
+
+    /** The frames' width over height as shown (rotation applied), 0 before the first; written only when it changes. */
+    val frameAspect = mutableFloatStateOf(0f)
 
     override fun onFrame(
         i420: ByteArray,
         width: Int,
         height: Int,
         rotationDegrees: Int,
-    ) {
+    ) = CallTrace.section(CallTrace.FRAME_COPY) {
         val chromaWidth = (width + 1) / 2
         val lumaSize = width * height
         val chromaSize = chromaWidth * ((height + 1) / 2)
-        if (i420.size < lumaSize + chromaSize * 2) return
+        if (i420.size < lumaSize + chromaSize * 2) return@section
         val buffer = obtain(i420.size)
         buffer.put(i420).rewind()
         val planes =
@@ -89,9 +102,14 @@ private class TextureRenderer(
                 buffer.plane(lumaSize + chromaSize, chromaSize),
                 chromaWidth,
             ) { pool.offer(buffer) }
-        val frame = VideoFrame(planes, rotationDegrees, System.nanoTime())
+        val aspect =
+            if (rotationDegrees % HALF_TURN == 0) width.toFloat() / height else height.toFloat() / width
+        if (frameAspect.floatValue != aspect) frameAspect.floatValue = aspect
+        val now = System.nanoTime()
+        val frame = VideoFrame(planes, rotationDegrees, now)
         renderer.onFrame(frame)
         frame.release()
+        frameRate.onFrame(now)
     }
 
     /** A pooled buffer of [size] bytes, cleared; buffers of another size (the video's size changed) are dropped. */
@@ -144,6 +162,8 @@ private class TextureRenderer(
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
 }
+
+private const val HALF_TURN = 180
 
 /** How long the main thread waits for the renderer to let go of a destroyed surface. */
 private const val RELEASE_TIMEOUT_MS = 500L

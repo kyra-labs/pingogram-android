@@ -2,6 +2,9 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -43,6 +46,7 @@ interface CallEngine {
 }
 
 /** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
+@Suppress("TooManyFunctions") // The voice chat's audio, hold, stream requests, and each kind of video it carries.
 interface GroupCallSession {
     /** The join payload for `joinVideoChat` (JSON), and the microphone's audio source (SSRC) in it. */
     val joinPayload: String
@@ -83,9 +87,40 @@ interface GroupCallSession {
     /** Where a live stream's video goes, on the engine's threads; null to stop receiving it. */
     suspend fun setVideoSink(sink: VideoFrameSink?)
 
+    /**
+     * Sends [camera] in the voice chat at most at [quality], or stops sending with null
+     * (`docs/adr/0024-video-in-voice-chats.md`). The join payload carries the camera's track from the start, so this
+     * needs no new join; TDLib's `toggleGroupCallIsMyVideoEnabled` tells the others.
+     */
+    suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    )
+
+    /** Where the user's own camera's frames go (the self-view), on the engine's threads; null for nowhere. */
+    suspend fun setSelfVideoSink(sink: VideoFrameSink?)
+
+    /**
+     * Receives exactly [videos] of other participants, adding those not received yet and stopping the others
+     * (NTgCalls' `addIncomingVideo` / `removeIncomingVideo`, `docs/adr/0024-video-in-voice-chats.md`). Their frames go
+     * to the sinks of [setIncomingVideoSinks], by endpoint; a video without a sink is received and dropped.
+     */
+    suspend fun receiveVideos(videos: List<IncomingVideo>)
+
+    /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
+    fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
+
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
 }
+
+/** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
+data class IncomingVideo(
+    /** The participant's user or chat id. */
+    val participantId: Long,
+    val endpointId: String,
+    val sourceGroups: List<GroupCallVideoSourceGroup>,
+)
 
 /** How a group call reaches the device. */
 enum class GroupCallMode {
@@ -154,8 +189,27 @@ interface CallSession {
         quality: VideoQuality = VideoQuality.High,
     )
 
-    /** Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. */
+    /**
+     * Sends the device's screen at most at [quality] (at [SCREEN_FPS] frames a second at most), or stops sending it
+     * (`docs/adr/0026-screen-sharing.md`). The user's consent must have reached the engine ([ScreenCaptureConsent]) and
+     * the call service must run as `mediaProjection` first: the capture starts at once.
+     */
+    suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality = VideoQuality.High,
+    )
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
+    /**
+     * Whether the other side sends video, as its engine reports it; [RemoteVideo.Off] until it says otherwise. Their
+     * shared screen counts, in place of their camera while they share ([remoteIsScreen]).
+     */
     val remoteVideo: StateFlow<RemoteVideo>
+
+    /** The other side's video is their shared screen, not their camera. */
+    val remoteIsScreen: StateFlow<Boolean>
 
     /**
      * Where the frames go: [local] gets the camera's own (the self-view), [remote] the other side's, on the engine's
@@ -209,6 +263,27 @@ enum class VideoQuality(
 
     /** 360p at 15: roaming, or Data Saver on. */
     Low(640, 360, 15),
+    ;
+
+    companion object {
+        /**
+         * The most to send over [network]: 720p on Wi-Fi (and before the network is known), 480p on mobile data or
+         * once the connection was lost ([reconnected]), 360p roaming or with Data Saver.
+         */
+        fun forNetwork(
+            network: NetworkStatus?,
+            reconnected: Boolean = false,
+        ): VideoQuality {
+            val byNetwork =
+                when {
+                    network == null -> High
+                    network.savesData || network.type == NetworkType.Roaming -> Low
+                    network.isMetered || network.type == NetworkType.Mobile -> Medium
+                    else -> High
+                }
+            return if (reconnected && byNetwork == High) Medium else byNetwork
+        }
+    }
 }
 
 /** The other side's video. */
@@ -220,6 +295,15 @@ enum class RemoteVideo {
 
     /** On but held back: the other side's app is in the background, or the connection is too weak for video. */
     Paused,
+}
+
+/** The most frames a second a shared screen sends: a screen changes less than a face, and costs less so. */
+const val SCREEN_FPS = 15
+
+/** Hands Android's consent to capture the screen to the engine, which starts the capture with it. */
+fun interface ScreenCaptureConsent {
+    /** [result] is the consent dialog's result data, an `Intent`; typed loosely so the manager stays JVM-testable. */
+    fun grant(result: Any)
 }
 
 /** Takes video frames of a call, on the engine's threads. */

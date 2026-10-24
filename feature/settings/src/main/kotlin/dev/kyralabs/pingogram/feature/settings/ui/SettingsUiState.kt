@@ -45,6 +45,7 @@ enum class SettingsPage {
     EditProfile,
     Appearance,
     ChatFolders,
+    Stickers,
     Notifications,
     DataStorage,
     Language,

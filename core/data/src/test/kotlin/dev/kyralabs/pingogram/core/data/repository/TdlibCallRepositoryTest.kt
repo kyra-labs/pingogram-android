@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallServer
 import dev.kyralabs.pingogram.core.domain.model.CallServerType
@@ -238,6 +239,24 @@ class TdlibCallRepositoryTest {
             assertEquals(
                 listOf<Any>(3, true, 61, 7L, ""),
                 listOf(sent.callId, sent.isDisconnected, sent.duration, sent.connectionId, sent.inviteLink),
+            )
+        }
+
+    @Test
+    fun `rates an ended call with its stars and problems`() =
+        runTest {
+            client.on(TdApi.SendCallRating::class, TdResult.Success(TdApi.Ok()))
+
+            val result = repository().rateCall(3, 2, setOf(CallProblem.Echo, CallProblem.PixelatedVideo))
+
+            assertEquals(Outcome.Success(Unit), result)
+            val sent = client.sentOf<TdApi.SendCallRating>().single()
+            assertEquals(3, (sent.callId as TdApi.InputCallDiscarded).callId)
+            assertEquals(2, sent.rating)
+            assertEquals("", sent.comment)
+            assertEquals(
+                setOf(TdApi.CallProblemEcho.CONSTRUCTOR, TdApi.CallProblemPixelatedVideo.CONSTRUCTOR),
+                sent.problems.map { it.constructor }.toSet(),
             )
         }
 

@@ -172,3 +172,27 @@ sealed interface EmailAddressResetState {
         val resetAt: ComparableTimeMark,
     ) : EmailAddressResetState
 }
+
+/**
+ * Where Telegram sent a code outside of the login (changing the phone number): to [phoneNumber] (formatted by
+ * Telegram), as [type]; [nextType] is how a new one can be asked for, after [timeoutSeconds] (0: at once), or null when
+ * there is none.
+ */
+data class LoginCodeInfo(
+    val phoneNumber: String,
+    val type: AuthCodeType,
+    val nextType: AuthCodeType?,
+    val timeoutSeconds: Int,
+) {
+    override fun toString() = "LoginCodeInfo(type=$type, nextType=$nextType, timeoutSeconds=$timeoutSeconds)"
+}
+
+/**
+ * Where Telegram sent an email code: to [addressPattern] ("a••••@g••••.com"), [length] characters long (0: unknown).
+ */
+data class EmailCodeInfo(
+    val addressPattern: String,
+    val length: Int,
+) {
+    override fun toString() = "EmailCodeInfo(length=$length)"
+}

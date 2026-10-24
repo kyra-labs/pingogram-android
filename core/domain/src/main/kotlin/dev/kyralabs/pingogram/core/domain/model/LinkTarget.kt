@@ -86,6 +86,16 @@ sealed interface LinkTarget {
     }
 
     /**
+     * A sticker set by its short [name] (`t.me/addstickers/<name>`): its sheet shows the stickers and adds the set only
+     * on a tap.
+     */
+    data class StickerSet(
+        val name: String,
+    ) : LinkTarget {
+        override fun toString() = "StickerSet(…)"
+    }
+
+    /**
      * A login of another device by QR code ([link], `tg://login?token=…`): its page asks before confirming it with
      * `confirmQrCodeAuthentication`, then shows the device it logged in.
      */
@@ -101,6 +111,14 @@ sealed interface LinkTarget {
      */
     data class ChatBoost(
         val chatId: Long,
+    ) : LinkTarget
+
+    /**
+     * A proxy to connect through ([proxy], `tg://proxy?…`, `t.me/socks?…`): its sheet shows the proxy and asks before
+     * adding and using it (`docs/adr/0027-proxies.md`).
+     */
+    data class ProxyServer(
+        val proxy: Proxy,
     ) : LinkTarget
 
     /** The user's own QR code, to share their profile (`tg://settings/qr_code`). */

@@ -20,11 +20,14 @@ import dev.kyralabs.pingogram.feature.calls.AudioRouteType
 import dev.kyralabs.pingogram.feature.calls.CallForeground
 import dev.kyralabs.pingogram.feature.calls.CallManager
 import dev.kyralabs.pingogram.feature.calls.CallPhase
+import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -36,10 +39,12 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Keeps the app running while the user's call rings or goes on (`docs/adr/0018-calls-and-telecom.md`): a foreground
- * service of type `phoneCall`, `microphone` too once the user talks and `camera` while the camera sends
- * (`docs/adr/0019-video-and-group-calls-scope.md`), whose notification is the call's ([CallNotifications], same id). It
- * stops when the call ends.
+ * Keeps the app running while the user's call rings or goes on, or the user is in a voice chat
+ * (`docs/adr/0018-calls-and-telecom.md`, `docs/adr/0023-group-voice-chats-and-live-streams.md`): a foreground
+ * service of type `phoneCall`, `microphone` too once the user talks and `camera` while the camera sends, in a call or a
+ * voice chat (`docs/adr/0019-video-and-group-calls-scope.md`, `docs/adr/0024-video-in-voice-chats.md`), and
+ * `mediaProjection` while the user shares the screen (`docs/adr/0026-screen-sharing.md`), whose notification is the
+ * call's ([CallNotifications], same id). It stops when the call ends.
  *
  * While the call's sound comes from the earpiece and no video shows, it holds a proximity wake lock: the screen turns
  * off at the ear, so the cheek touches nothing, and on again away from it.
@@ -48,12 +53,15 @@ import kotlin.time.Duration.Companion.seconds
 class CallService : Service() {
     @Inject lateinit var callManager: CallManager
 
+    @Inject lateinit var groupCallManager: GroupCallManager
+
     @Inject lateinit var notifications: CallNotifications
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var proximity: PowerManager.WakeLock? = null
     private var microphone = false
     private var camera = false
+    private var screen = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -66,14 +74,17 @@ class CallService : Service() {
                 .collect(::setProximity)
         }
         scope.launch {
-            callManager.call.first { it == null || it.phase is CallPhase.Ended }
+            // Over once neither a call nor a voice chat goes on.
+            combine(callManager.call, groupCallManager.call) { call, group ->
+                (call == null || call.phase is CallPhase.Ended) && group.isOver()
+            }.first { it }
             stop()
         }
         // The camera's type comes and goes with the camera: startForeground again with the types it needs.
         scope.launch {
-            callManager.call
-                .map { it?.video?.camera != null }
-                .distinctUntilChanged()
+            combine(callManager.call, groupCallManager.call) { call, group ->
+                call?.video?.camera != null || group?.video?.camera != null
+            }.distinctUntilChanged()
                 .drop(1)
                 .collect { on ->
                     camera = on
@@ -88,6 +99,7 @@ class CallService : Service() {
         startId: Int,
     ): Int {
         microphone = microphone || intent?.getBooleanExtra(EXTRA_MICROPHONE, false) == true
+        if (intent?.hasExtra(EXTRA_SCREEN) == true) screen = intent.getBooleanExtra(EXTRA_SCREEN, false)
         scope.launch { promote() }
         return START_NOT_STICKY
     }
@@ -98,18 +110,24 @@ class CallService : Service() {
      * notification is never shown.
      */
     private suspend fun promote() {
-        val call = callManager.call.value
-        if (call == null || call.phase is CallPhase.Ended) {
+        val call = callManager.call.value?.takeIf { it.phase !is CallPhase.Ended }
+        val group = groupCallManager.call.value?.takeIf { !it.isOver() }
+        if (call == null && group == null) {
             stop()
             return
         }
-        val notification = withTimeoutOrNull(BUILD_TIMEOUT) { notifications.build(call) }
+        val notification =
+            withTimeoutOrNull(BUILD_TIMEOUT) {
+                if (call != null) notifications.build(call) else group?.let { notifications.build(it) }
+            }
         if (notification == null) {
             stop()
             return
         }
         try {
             ServiceCompat.startForeground(this, CallNotifications.ID, notification, types())
+            // types() includes mediaProjection from Android 10 on: before, there are no types to wait for.
+            ScreenCaptureForeground.running.value = screen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
         } catch (
             @Suppress("TooGenericExceptionCaught") e: RuntimeException, // The platform's refusals, by version.
         ) {
@@ -119,8 +137,8 @@ class CallService : Service() {
 
     /**
      * `phoneCall` always; `microphone` once the user talks and `camera` while the camera sends, each with its
-     * permission granted (Android asks for both). Types start with Android 10, `microphone` and `camera` with
-     * Android 11; before 10 `ServiceCompat` passes none.
+     * permission granted (Android asks for both); `mediaProjection` while the user shares the screen. Types start with
+     * Android 10, `microphone` and `camera` with Android 11; before 10 `ServiceCompat` passes none.
      */
     private fun types(): Int {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0
@@ -133,6 +151,8 @@ class CallService : Service() {
                 types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
             }
         }
+        // After the user's consent only: Android 14+ refuses the type without it.
+        if (screen) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
         return types
     }
 
@@ -159,6 +179,7 @@ class CallService : Service() {
     }
 
     override fun onDestroy() {
+        ScreenCaptureForeground.running.value = false
         setProximity(false)
         scope.cancel()
         super.onDestroy()
@@ -168,7 +189,11 @@ class CallService : Service() {
         const val TAG = "CallService"
         const val WAKE_LOCK_TAG = "pingogram:call-proximity"
         const val EXTRA_MICROPHONE = "microphone"
+        const val EXTRA_SCREEN = "screen"
         val BUILD_TIMEOUT = 3.seconds
+
+        /** How long sharing waits for the service to run as `mediaProjection`. */
+        val SCREEN_TIMEOUT = 3.seconds
     }
 
     /** [CallForeground] by this service. */
@@ -189,10 +214,31 @@ class CallService : Service() {
                 }
             }
 
+            override suspend fun setScreenCapture(on: Boolean): Boolean {
+                val running = ScreenCaptureForeground.running
+                // Before Android 10 there are no types: the capture needs none.
+                if (running.value == on || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
+                val reached =
+                    try {
+                        val intent = Intent(context, CallService::class.java).putExtra(EXTRA_SCREEN, on)
+                        ContextCompat.startForegroundService(context, intent)
+                        true
+                    } catch (e: IllegalStateException) {
+                        Log.w(TAG, "Could not reach the call service: ${e.javaClass.simpleName}")
+                        false
+                    }
+                return reached && withTimeoutOrNull(SCREEN_TIMEOUT) { running.first { it == on } } != null
+            }
+
             override fun stop() {
                 context.stopService(Intent(context, CallService::class.java))
             }
         }
+}
+
+/** Whether the call service runs as `mediaProjection` now, which a screen's capture waits for. */
+internal object ScreenCaptureForeground {
+    val running = MutableStateFlow(false)
 }
 
 /**

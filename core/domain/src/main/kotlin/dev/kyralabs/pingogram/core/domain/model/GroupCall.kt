@@ -40,6 +40,10 @@ data class GroupCall(
     val muteNewParticipants: Boolean,
     /** How long it has been going (seconds), for an active call. */
     val duration: Int,
+    /** The user may send their camera in it (`docs/adr/0024-video-in-voice-chats.md`). */
+    val canEnableVideo: Boolean = false,
+    /** The user sends their camera, as Telegram knows it. */
+    val isMyVideoEnabled: Boolean = false,
 )
 
 /** One of a [GroupCall]'s recent speakers. */
@@ -69,10 +73,28 @@ data class GroupCallParticipant(
     val canBeUnmutedForAllUsers: Boolean,
     /** TDLib's sort key, descending: speakers and raised hands first. */
     val order: String,
+    /** The participant's camera, while they send it (`docs/adr/0024-video-in-voice-chats.md`); null otherwise. */
+    val video: GroupCallParticipantVideo? = null,
 ) {
     /** Whether the participant is silent for the user: muted by an administrator, by themselves, or locally. */
     val isMuted: Boolean get() = isMutedForAllUsers || isMutedForCurrentUser
 }
+
+/**
+ * A participant's video in a group call (td_api.tl `groupCallParticipantVideoInfo`): what the engine needs to receive
+ * it ([endpointId], [sourceGroups]), and whether it is held back ([isPaused]).
+ */
+data class GroupCallParticipantVideo(
+    val endpointId: String,
+    val sourceGroups: ImmutableList<GroupCallVideoSourceGroup>,
+    val isPaused: Boolean,
+)
+
+/** One of a video's source groups (td_api.tl `groupCallVideoSourceGroup`): its SSRCs and their [semantics] ("SIM"). */
+data class GroupCallVideoSourceGroup(
+    val semantics: String,
+    val sourceIds: ImmutableList<Int>,
+)
 
 /** One of a live stream's channels (td_api.tl `groupCallStream`): its newest segment's time. */
 data class GroupCallStream(

@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreComposerSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
@@ -27,6 +28,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
@@ -55,6 +57,9 @@ interface DataStoreModule {
 
     @Binds
     fun keepConnectedRepository(repository: DataStoreKeepConnectedRepository): KeepConnectedRepository
+
+    @Binds
+    fun composerSettingsRepository(repository: DataStoreComposerSettingsRepository): ComposerSettingsRepository
 
     @Binds
     fun passcodeRepository(repository: DataStorePasscodeRepository): PasscodeRepository

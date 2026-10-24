@@ -5,13 +5,18 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.EmojiCategory
 import dev.kyralabs.pingogram.core.domain.model.EmojiGroup
+import dev.kyralabs.pingogram.core.domain.model.InlineBot
+import dev.kyralabs.pingogram.core.domain.model.InlineQueryResults
+import dev.kyralabs.pingogram.core.domain.model.InlineResult
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
+import dev.kyralabs.pingogram.feature.chat.ui.FakeInlineBotRepository
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -44,7 +49,10 @@ class EmojiPanelViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = EmojiPanelViewModel(catalog, recentEmoji, stickers)
+    private val savedGifs = FakeSavedGifRepository()
+    private val inlineBots = FakeInlineBotRepository()
+
+    private fun viewModel() = EmojiPanelViewModel(CHAT_ID, catalog, recentEmoji, stickers, savedGifs, inlineBots)
 
     private fun set(
         id: Long,
@@ -195,4 +203,145 @@ class EmojiPanelViewModelTest {
 
             assertEquals(listOf("recent"), tab.sections.map { it.key })
         }
+
+    @Test
+    fun `the GIF tab shows the saved GIFs, and offers search where Telegram names a bot`() =
+        runTest {
+            savedGifs.saved.value = listOf(gif(1), gif(2))
+
+            val tab = opened(viewModel()).gifs as GifTab.Content
+
+            assertEquals(listOf(1, 2), tab.saved.map { it.file.id })
+            assertEquals(true, tab.canSearch)
+            assertEquals(null, tab.search)
+        }
+
+    @Test
+    fun `without a search bot there is no search`() =
+        runTest {
+            savedGifs.searchBot = null
+
+            assertEquals(false, (opened(viewModel()).gifs as GifTab.Content).canSearch)
+        }
+
+    @Test
+    fun `saved GIFs that cannot be read show the error, and try again reads them`() =
+        runTest {
+            savedGifs.onSaved = Outcome.Failure(DomainError.Network)
+            val viewModel = viewModel()
+            assertInstanceOf(GifTab.Error::class.java, opened(viewModel).gifs)
+
+            savedGifs.onSaved = null
+            viewModel.onEvent(EmojiPanelEvent.RetryGifs)
+            runCurrent()
+
+            assertInstanceOf(GifTab.Content::class.java, viewModel.uiState.value.gifs)
+        }
+
+    @Test
+    fun `a search asks the GIF bot after a pause, as typed in this chat, keeping only GIFs`() =
+        runTest {
+            inlineBots.bots["gif"] = InlineBot(GIF_BOT, GIF_BOT, "gif", "Search GIFs", needsLocation = false)
+            inlineBots.onResults = {
+                Outcome.Success(
+                    InlineQueryResults(
+                        5,
+                        null,
+                        persistentListOf(
+                            InlineResult.Animation("a", gif(7), "Cat"),
+                            InlineResult.Sticker("s", sticker(fileId = 8)),
+                        ),
+                        "next",
+                    ),
+                )
+            }
+            val viewModel = viewModel()
+            opened(viewModel)
+
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged("ca"))
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged("cats"))
+            runCurrent()
+            assertEquals(true, (viewModel.uiState.value.gifs as GifTab.Content).search?.isLoading)
+            advanceTimeBy(SEARCH_PAUSE)
+            runCurrent()
+
+            val search = (viewModel.uiState.value.gifs as GifTab.Content).search!!
+            assertEquals(listOf(7), search.results.map { it.file.id })
+            assertEquals(true, search.hasMore)
+            assertEquals(listOf(FakeInlineBotRepository.Query(GIF_BOT, CHAT_ID, "cats", "", null)), inlineBots.queries)
+        }
+
+    @Test
+    fun `the next page appends to the results, and clearing the field shows the saved GIFs`() =
+        runTest {
+            inlineBots.bots["gif"] = InlineBot(GIF_BOT, GIF_BOT, "gif", "", needsLocation = false)
+            inlineBots.onResults = { query ->
+                val id = if (query.offset.isEmpty()) 7 else 9
+                Outcome.Success(
+                    InlineQueryResults(
+                        5,
+                        null,
+                        persistentListOf(InlineResult.Animation("r$id", gif(id), "")),
+                        if (query.offset.isEmpty()) "next" else "",
+                    ),
+                )
+            }
+            val viewModel = viewModel()
+            opened(viewModel)
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged("cats"))
+            advanceTimeBy(SEARCH_PAUSE)
+            runCurrent()
+
+            viewModel.onEvent(EmojiPanelEvent.MoreGifs)
+            runCurrent()
+            val search = (viewModel.uiState.value.gifs as GifTab.Content).search!!
+            assertEquals(listOf(7, 9), search.results.map { it.file.id })
+            assertEquals(false, search.hasMore)
+            assertEquals("next", inlineBots.queries.last().offset)
+
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged(""))
+            runCurrent()
+            assertEquals(null, (viewModel.uiState.value.gifs as GifTab.Content).search)
+        }
+
+    @Test
+    fun `a failed search shows its error, and try again asks again`() =
+        runTest {
+            inlineBots.bots["gif"] = InlineBot(GIF_BOT, GIF_BOT, "gif", "", needsLocation = false)
+            inlineBots.onResults = { Outcome.Failure(DomainError.Network) }
+            val viewModel = viewModel()
+            opened(viewModel)
+            viewModel.onEvent(EmojiPanelEvent.GifQueryChanged("cats"))
+            advanceTimeBy(SEARCH_PAUSE)
+            runCurrent()
+            assertEquals(DomainError.Network, (viewModel.uiState.value.gifs as GifTab.Content).search?.error)
+
+            inlineBots.onResults = { Outcome.Success(InlineQueryResults(5, null, persistentListOf(), "")) }
+            viewModel.onEvent(EmojiPanelEvent.RetryGifs)
+            runCurrent()
+
+            val search = (viewModel.uiState.value.gifs as GifTab.Content).search!!
+            assertEquals(null, search.error)
+            assertEquals(2, inlineBots.queries.size)
+        }
+
+    @Test
+    fun `removing a saved GIF takes it out of the saved GIFs`() =
+        runTest {
+            savedGifs.saved.value = listOf(gif(1), gif(2))
+            val viewModel = viewModel()
+            opened(viewModel)
+
+            viewModel.onEvent(EmojiPanelEvent.RemoveSavedGif(gif(1)))
+            runCurrent()
+
+            assertEquals(listOf(gif(1)), savedGifs.removed)
+            assertEquals(listOf(2), (viewModel.uiState.value.gifs as GifTab.Content).saved.map { it.file.id })
+        }
 }
+
+private const val CHAT_ID = 42L
+private const val GIF_BOT = 140L
+
+/** The pause after the last change of the query before it is searched, and a little more. */
+private const val SEARCH_PAUSE = 401L

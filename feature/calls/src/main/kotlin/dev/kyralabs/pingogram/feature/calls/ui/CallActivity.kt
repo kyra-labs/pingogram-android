@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -61,6 +62,8 @@ import javax.inject.Inject
 @Suppress("TooManyFunctions") // Android's callbacks and the window's: lock screen, picture-in-picture, settings, chat.
 class CallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: CallViewModel by viewModels()
 
@@ -102,15 +105,23 @@ class CallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(CallEvent.CameraResult(granted, canAskAgain))
                 }
+            val screenCapture =
+                rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
+                        CallEffect.RequestScreenCapture -> screenCapture()
                         CallEffect.OpenSettings -> openAppSettings()
                     }
                 }
             }
             LaunchedEffect(state) { if (state == CallUiState.Closed) finish() }
+            // A call that ends in picture-in-picture is not rated: its window has no room for the question.
+            val asksRating = (state as? CallUiState.InCall)?.rating != null
+            LaunchedEffect(asksRating, inPictureInPicture) {
+                if (asksRating && inPictureInPicture) viewModel.onEvent(CallEvent.DismissRating)
+            }
             val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
             LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->
@@ -144,28 +155,7 @@ class CallActivity : ComponentActivity() {
             mirror = mirror,
             onSink = { sink -> viewModel.setVideoSink(slot, sink) },
             modifier = modifier,
-        )
-    }
-
-    @Composable
-    private fun CallTheme(
-        settings: AppearanceSettings,
-        content: @Composable () -> Unit,
-    ) {
-        val dark = settings.themeMode.isDark()
-        LaunchedEffect(dark) {
-            enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-            )
-        }
-        PingogramTheme(
-            themeMode = settings.themeMode,
-            dynamicColor = settings.dynamicColor,
-            palette = settings.palette,
-            contrast = settings.contrast,
-            amoled = settings.amoled,
-            content = content,
+            fit = slot == CallVideoSlot.RemoteScreen,
         )
     }
 
@@ -182,6 +172,8 @@ class CallActivity : ComponentActivity() {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
+
+    private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(CallEvent.ScreenSharingResult(granted))
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,

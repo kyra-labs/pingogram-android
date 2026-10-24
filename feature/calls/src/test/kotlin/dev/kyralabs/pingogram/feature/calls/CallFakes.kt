@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
@@ -15,6 +16,7 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
+import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
 import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
@@ -65,6 +67,13 @@ class FakeCallRepository : CallRepository {
     val startedVideo = mutableListOf<Boolean>()
     val discardedVideo = mutableListOf<Boolean>()
     val sent = mutableListOf<Pair<Int, List<Byte>>>()
+    val rated = mutableListOf<Rating>()
+
+    data class Rating(
+        val callId: Int,
+        val stars: Int,
+        val problems: Set<CallProblem>,
+    )
 
     data class Discard(
         val callId: Int,
@@ -112,6 +121,15 @@ class FakeCallRepository : CallRepository {
         discarded += Discard(callId, isDisconnected, duration)
         discardedVideo += isVideo
         return discardResult
+    }
+
+    override suspend fun rateCall(
+        callId: Int,
+        stars: Int,
+        problems: Set<CallProblem>,
+    ): Outcome<Unit> {
+        rated += Rating(callId, stars, problems)
+        return Outcome.Success(Unit)
     }
 
     override suspend fun sendSignalingData(
@@ -211,6 +229,33 @@ class FakeGroupCallSession(
         videoSink = sink
     }
 
+    /** The camera sent and its quality, null while none sends. */
+    var camera: Pair<CallCamera, VideoQuality>? = null
+    var selfSink: VideoFrameSink? = null
+
+    override suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    ) {
+        this.camera = camera?.let { it to quality }
+    }
+
+    override suspend fun setSelfVideoSink(sink: VideoFrameSink?) {
+        selfSink = sink
+    }
+
+    /** The others' videos received, as the manager last asked. */
+    var received: List<IncomingVideo> = emptyList()
+    var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
+
+    override suspend fun receiveVideos(videos: List<IncomingVideo>) {
+        received = videos
+    }
+
+    override fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>) {
+        incomingSinks = sinks
+    }
+
     override suspend fun close() {
         closed = true
         state.value = CallMediaState.Closed
@@ -243,6 +288,21 @@ class FakeCallSession(
     var localSink: VideoFrameSink? = null
     var remoteSink: VideoFrameSink? = null
     override val remoteVideo = MutableStateFlow(RemoteVideo.Off)
+    override val remoteIsScreen = MutableStateFlow(false)
+
+    /** Every screen state the session was told, in order. */
+    val screens = mutableListOf<Boolean>()
+
+    /** The capture ending by itself: the test sends it. */
+    val endScreen = Channel<Unit>(Channel.UNLIMITED)
+    override val screenEnded: Flow<Unit> = endScreen.receiveAsFlow()
+
+    override suspend fun setScreen(
+        on: Boolean,
+        quality: VideoQuality,
+    ) {
+        screens += on
+    }
 
     override suspend fun setCamera(
         camera: CallCamera?,
@@ -330,6 +390,14 @@ class FakeCallForeground : CallForeground {
 
     override fun start(withMicrophone: Boolean) {
         events += if (withMicrophone) "start+mic" else "start"
+    }
+
+    /** Whether Android lets the service run as `mediaProjection`. */
+    var allowsScreenCapture = true
+
+    override suspend fun setScreenCapture(on: Boolean): Boolean {
+        events += if (on) "screen" else "no screen"
+        return allowsScreenCapture || !on
     }
 
     override fun stop() {

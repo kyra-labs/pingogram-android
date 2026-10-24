@@ -12,8 +12,11 @@ import dev.kyralabs.pingogram.feature.calls.CallerNames
 import dev.kyralabs.pingogram.feature.calls.ChatTitles
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.NtgCallsEngine
+import dev.kyralabs.pingogram.feature.calls.engine.NtgScreenCaptureConsent
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallService
 import dev.kyralabs.pingogram.feature.calls.service.RepositoryChatTitles
+import dev.kyralabs.pingogram.feature.calls.service.RepositoryGroupCallChats
 import dev.kyralabs.pingogram.feature.calls.service.SystemCallClock
 import dev.kyralabs.pingogram.feature.calls.service.ToneGeneratorCallTones
 import dev.kyralabs.pingogram.feature.calls.service.UserCallerNames
@@ -22,6 +25,7 @@ import dev.kyralabs.pingogram.feature.calls.system.TelecomCallSystem
 import dev.kyralabs.pingogram.feature.calls.ui.AndroidCameraAccess
 import dev.kyralabs.pingogram.feature.calls.ui.AndroidMicrophoneAccess
 import dev.kyralabs.pingogram.feature.calls.ui.CameraAccess
+import dev.kyralabs.pingogram.feature.calls.ui.GroupCallChats
 import dev.kyralabs.pingogram.feature.calls.ui.MicrophoneAccess
 
 /** The call managers' parts on the device: the engine, Telecom, the service, the tones, the clock and the names. */
@@ -30,6 +34,9 @@ import dev.kyralabs.pingogram.feature.calls.ui.MicrophoneAccess
 internal interface CallsModule {
     @Binds
     fun callEngine(engine: NtgCallsEngine): CallEngine
+
+    @Binds
+    fun screenCaptureConsent(consent: NtgScreenCaptureConsent): ScreenCaptureConsent
 
     @Binds
     fun callSystem(system: TelecomCallSystem): CallSystem
@@ -45,6 +52,9 @@ internal interface CallsModule {
 
     @Binds
     fun chatTitles(titles: RepositoryChatTitles): ChatTitles
+
+    @Binds
+    fun groupCallChats(chats: RepositoryGroupCallChats): GroupCallChats
 
     @Binds
     fun microphoneAccess(access: AndroidMicrophoneAccess): MicrophoneAccess

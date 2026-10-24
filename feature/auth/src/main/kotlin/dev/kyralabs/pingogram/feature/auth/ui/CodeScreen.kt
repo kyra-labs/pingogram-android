@@ -22,18 +22,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.isNumeric
+import dev.kyralabs.pingogram.core.ui.component.CountdownIndicator
+import dev.kyralabs.pingogram.core.ui.phone.loginCodeDescription
+import dev.kyralabs.pingogram.core.ui.phone.loginCodeResendText
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.durationText
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
+import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 import dev.kyralabs.pingogram.feature.auth.R
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthCodeField
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthPrimaryButton
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthStepLayout
 import dev.kyralabs.pingogram.feature.auth.ui.components.AuthTextButton
-import dev.kyralabs.pingogram.feature.auth.ui.components.CountdownIndicator
-import dev.kyralabs.pingogram.feature.auth.ui.components.announcedCountdownSeconds
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthPreviewData
 import dev.kyralabs.pingogram.feature.auth.ui.preview.AuthScreenPreview
 import dev.kyralabs.pingogram.feature.auth.ui.preview.LANDSCAPE_PHONE
@@ -56,7 +59,7 @@ fun CodeScreen(
         title = stringResource(R.string.auth_code_title),
         badgeShape = MaterialShapes.Sunny,
         badgeIcon = UiR.drawable.ic_chat_filled,
-        description = codeDescription(state.type, state.phoneNumber.bidiIsolated()).bidiIsolated(),
+        description = loginCodeDescription(state.type, state.phoneNumber.bidiIsolated()).bidiIsolated(),
         isError = state.error != null,
         modifier = modifier,
         primaryAction = {
@@ -77,7 +80,7 @@ fun CodeScreen(
         AuthCodeField(
             value = state.code,
             onValueChange = { onEvent(AuthEvent.CodeChanged(it)) },
-            label = stringResource(R.string.auth_code_label),
+            label = stringResource(UiR.string.login_code_label),
             error = state.error?.let { errorText(it) },
             onDone = { onEvent(AuthEvent.SubmitCode) },
             isNumeric = state.type.isNumeric,
@@ -109,7 +112,7 @@ private fun ResendCode(
     Box(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
         if (state.canResend) {
             AuthTextButton(
-                text = resendText(nextType),
+                text = loginCodeResendText(nextType),
                 onClick = { onEvent(AuthEvent.ResendCode) },
                 enabled = canSubmit,
                 inProgress = pendingAction == AuthAction.ResendCode,
@@ -117,7 +120,7 @@ private fun ResendCode(
         } else {
             val announcement =
                 stringResource(
-                    R.string.auth_code_resend_in,
+                    UiR.string.login_code_resend_in,
                     durationText(announcedCountdownSeconds(state.resendInSeconds)),
                 )
             Row(
@@ -126,7 +129,7 @@ private fun ResendCode(
             ) {
                 CountdownIndicator(secondsLeft = state.resendInSeconds, totalSeconds = state.resendTotalSeconds)
                 Text(
-                    text = stringResource(R.string.auth_code_resend_in, durationText(state.resendInSeconds)),
+                    text = stringResource(UiR.string.login_code_resend_in, durationText(state.resendInSeconds)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.clearAndSetSemantics { contentDescription = announcement },
@@ -135,99 +138,6 @@ private fun ResendCode(
         }
     }
 }
-
-@Composable
-private fun codeDescription(
-    type: AuthCodeType,
-    phoneNumber: String,
-): String =
-    when (type) {
-        is AuthCodeType.TelegramMessage -> {
-            stringResource(R.string.auth_code_sent_telegram)
-        }
-
-        is AuthCodeType.Sms -> {
-            stringResource(R.string.auth_code_sent_sms, phoneNumber)
-        }
-
-        is AuthCodeType.SmsWord -> {
-            withStart(
-                type.firstLetter,
-                R.string.auth_code_sent_sms_word,
-                R.string.auth_code_sent_sms_word_start,
-                phoneNumber,
-            )
-        }
-
-        is AuthCodeType.SmsPhrase -> {
-            withStart(
-                type.firstWord,
-                R.string.auth_code_sent_sms_phrase,
-                R.string.auth_code_sent_sms_phrase_start,
-                phoneNumber,
-            )
-        }
-
-        is AuthCodeType.Call -> {
-            stringResource(R.string.auth_code_sent_call, phoneNumber)
-        }
-
-        is AuthCodeType.FlashCall -> {
-            stringResource(R.string.auth_code_sent_flash_call, phoneNumber)
-        }
-
-        is AuthCodeType.MissedCall -> {
-            pluralStringResource(
-                R.plurals.auth_code_sent_missed_call,
-                type.length,
-                phoneNumber,
-                type.phoneNumberPrefix.bidiIsolated(),
-                type.length,
-            )
-        }
-
-        is AuthCodeType.Fragment -> {
-            stringResource(R.string.auth_code_sent_fragment, phoneNumber)
-        }
-
-        is AuthCodeType.Firebase -> {
-            stringResource(R.string.auth_code_sent_unsupported)
-        }
-    }
-
-/** [withoutStart] for [phoneNumber], or [withStart] naming the code's [start] too where Telegram tells it. */
-@Composable
-private fun withStart(
-    start: String,
-    @StringRes withoutStart: Int,
-    @StringRes withStart: Int,
-    phoneNumber: String,
-): String =
-    if (start.isBlank()) {
-        stringResource(withoutStart, phoneNumber)
-    } else {
-        stringResource(withStart, phoneNumber, start.bidiIsolated())
-    }
-
-@Composable
-private fun resendText(type: AuthCodeType): String =
-    when (type) {
-        is AuthCodeType.Sms, is AuthCodeType.SmsWord, is AuthCodeType.SmsPhrase, is AuthCodeType.Firebase -> {
-            stringResource(R.string.auth_code_resend_sms)
-        }
-
-        is AuthCodeType.Call, is AuthCodeType.FlashCall, is AuthCodeType.MissedCall -> {
-            stringResource(R.string.auth_code_resend_call)
-        }
-
-        is AuthCodeType.TelegramMessage -> {
-            stringResource(R.string.auth_code_resend_telegram)
-        }
-
-        is AuthCodeType.Fragment -> {
-            stringResource(R.string.auth_code_resend_fragment)
-        }
-    }
 
 // Also two panes on a phone in landscape (`docs/DESIGN_SYSTEM.md` §7).
 @PingogramPreviews

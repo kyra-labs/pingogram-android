@@ -3,8 +3,12 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
+import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.UsernameProblem
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -31,6 +35,7 @@ import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -59,6 +64,11 @@ class EditProfileViewModelTest {
         client.on(TdApi.SetName::class, ok)
         client.on(TdApi.SetUsername::class, ok)
         client.on(TdApi.SetBio::class, ok)
+        client.on(TdApi.SetBirthdate::class, ok)
+        client.on(
+            TdApi.GetUserPrivacySettingRules::class,
+            TdResult.Success(TdApi.UserPrivacySettingRules(arrayOf(TdApi.UserPrivacySettingRuleAllowContacts()))),
+        )
     }
 
     @AfterEach
@@ -77,7 +87,9 @@ class EditProfileViewModelTest {
             client.emit(TdApiFixtures.myIdOption(42))
         }
         runCurrent()
-        return EditProfileViewModel(handle, profiles, users, photoFiles).also { runCurrent() }
+        return EditProfileViewModel(handle, profiles, users, photoFiles, TdlibPrivacyRepository(client)).also {
+            runCurrent()
+        }
     }
 
     private fun TestScope.effectsOf(viewModel: EditProfileViewModel): List<EditProfileEffect> {
@@ -125,7 +137,7 @@ class EditProfileViewModelTest {
 
             assertEquals(saved, content.saved)
             assertEquals(saved, content.fields)
-            assertEquals(ProfileAccount(userId = 42, name = "Ada Lovelace", photo = null), content.account)
+            assertEquals(ProfileAccount(42, "Ada Lovelace", photo = null, phoneNumber = "9996621234"), content.account)
             assertEquals(70, content.bioLengthMax)
             assertEquals(UsernameStatus.Unchanged, content.usernameStatus)
             assertFalse(content.hasChanges)
@@ -533,6 +545,80 @@ class EditProfileViewModelTest {
             assertEquals(saved, content.saved)
             assertEquals(EditProfileDialog.Discard, content.dialog)
             assertEquals(UsernameStatus.Checked(UsernameCheck.Available), content.usernameStatus)
+        }
+
+    // Birthday
+
+    @Test
+    fun `the birthday comes with the profile, with who may see it`() =
+        runTest {
+            client.on(
+                TdApi.GetUserFullInfo::class,
+                TdResult.Success(ProfileFixtures.userFullInfo(bio = "Analyst", birthdate = TdApi.Birthdate(10, 12, 0))),
+            )
+
+            val content = viewModel().content
+
+            assertEquals(Birthdate(10, 12, null), content.fields.birthdate)
+            assertEquals(PrivacyRules(PrivacyChoice.Contacts), content.birthdatePrivacy)
+            assertFalse(content.hasChanges)
+            assertInstanceOf(
+                TdApi.UserPrivacySettingShowBirthdate::class.java,
+                client.sentOf<TdApi.GetUserPrivacySettingRules>().single().setting,
+            )
+        }
+
+    @Test
+    fun `a picked birthday is saved with the rest, and a removed one too`() =
+        runTest {
+            val viewModel = viewModel()
+
+            send(viewModel, EditProfileEvent.BirthdateChanged(Birthdate(10, 12, 1815)))
+            assertTrue(viewModel.content.canSave)
+            send(viewModel, EditProfileEvent.Save)
+            send(viewModel, EditProfileEvent.BirthdateChanged(null), EditProfileEvent.Save)
+
+            val (set, removed) = client.sentOf<TdApi.SetBirthdate>()
+            assertEquals(Triple(10, 12, 1815), Triple(set.birthdate.day, set.birthdate.month, set.birthdate.year))
+            assertNull(removed.birthdate)
+            assertTrue(client.sentOf<TdApi.SetBio>().isEmpty())
+            assertFalse(viewModel.content.hasChanges)
+        }
+
+    @Test
+    fun `who may see the birthday follows its changes`() =
+        runTest {
+            val viewModel = viewModel()
+
+            backgroundScope.launch {
+                client.emit(
+                    TdApi.UpdateUserPrivacySettingRules(
+                        TdApi.UserPrivacySettingShowBirthdate(),
+                        TdApi.UserPrivacySettingRules(arrayOf(TdApi.UserPrivacySettingRuleRestrictAll())),
+                    ),
+                )
+            }
+            runCurrent()
+
+            assertEquals(PrivacyRules(PrivacyChoice.Nobody), viewModel.content.birthdatePrivacy)
+        }
+
+    @Test
+    fun `a removed birthday survives process death`() =
+        runTest {
+            client.on(
+                TdApi.GetUserFullInfo::class,
+                TdResult.Success(
+                    ProfileFixtures.userFullInfo(bio = "Analyst", birthdate = TdApi.Birthdate(10, 12, 1815)),
+                ),
+            )
+            send(viewModel(), EditProfileEvent.BirthdateChanged(null))
+
+            val restored = SavedStateHandle(savedState.keys().associateWith { savedState.get<Any?>(it) })
+            val content = viewModel(restored).content
+
+            assertNull(content.fields.birthdate)
+            assertTrue(content.birthdateChanged)
         }
 
     // Photo
