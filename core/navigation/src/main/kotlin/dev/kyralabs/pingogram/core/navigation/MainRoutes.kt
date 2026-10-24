@@ -134,6 +134,34 @@ data class AutoDownloadRoute(
     val network: String,
 )
 
+/** The proxies Pingogram connects through (`docs/adr/0027-proxies.md`), pushed above [DataStorageRoute]. */
+@Serializable
+data object ProxiesRoute
+
+/** Adding a proxy, or editing proxy [proxyId] (TDLib's id), pushed above [ProxiesRoute]. */
+@Serializable
+data class EditProxyRoute(
+    val proxyId: Int? = null,
+)
+
+/**
+ * The sheet a proxy link (`tg://proxy`, `t.me/socks`) opens, which asks before connecting through the proxy: a dialog
+ * destination of the settings pages. [kind] is the name of a `ProxyKind` of `:core:domain`; the fields another kind
+ * does not use are empty. `toString()` leaves out the address and the credentials.
+ */
+@Serializable
+data class ProxyLinkRoute(
+    val server: String,
+    val port: Int,
+    val kind: String,
+    val username: String = "",
+    val password: String = "",
+    val secret: String = "",
+    val httpOnly: Boolean = false,
+) {
+    override fun toString() = "ProxyLinkRoute(kind=$kind, …)"
+}
+
 /**
  * About Pingogram (`REQUIREMENTS.md` FR-S1): version, source code, license and the open-source licenses,
  * `:feature:settings`, pushed above the Settings tab.

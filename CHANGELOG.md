@@ -14,6 +14,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
   shares theirs, it fills the window without being cut off.
+- Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
+  turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
+  opens a sheet that shows the proxy and connects through it only when you tap "Connect".
 - Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
   those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
   or first video in picture-in-picture.

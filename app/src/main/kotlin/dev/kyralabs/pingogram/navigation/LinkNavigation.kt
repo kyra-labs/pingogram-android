@@ -10,6 +10,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.MainActivityUiState
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
+import dev.kyralabs.pingogram.core.domain.model.Proxy
+import dev.kyralabs.pingogram.core.domain.model.ProxyType
 import dev.kyralabs.pingogram.core.domain.model.SettingsPage
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
@@ -26,6 +28,7 @@ import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
+import dev.kyralabs.pingogram.core.navigation.ProxyLinkRoute
 import dev.kyralabs.pingogram.core.navigation.QrLoginRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 
@@ -71,7 +74,9 @@ internal fun OpenLinkEffect(
  *   folder** its sheet (`ChatFolderInviteRoute`, also a dialog destination), a **sticker set** its sheet
  *   (`StickerSetRoute`, a dialog destination of the settings pages' graph); a **QR code
  *   login** the page that asks before logging the device in (`QrLoginRoute`); a **boost** link the chat's boosts
- *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`). Each of them changes nothing by itself.
+ *   (`ChatBoostRoute`); the user's **QR code** its page (`MyQrCodeRoute`); a **proxy** the sheet that asks before
+ *   connecting through it (`ProxyLinkRoute`, a dialog destination of the settings pages' graph). Each of them changes
+ *   nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
  *   goes to, never sent by itself.
  */
@@ -99,6 +104,7 @@ internal fun NavHostController.openLinkTarget(
         is LinkTarget.QrCodeLogin -> navigate(QrLoginRoute(target.link)) { launchSingleTop = true }
         is LinkTarget.ChatBoost -> navigate(ChatBoostRoute(target.chatId)) { launchSingleTop = true }
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }
+        is LinkTarget.ProxyServer -> navigate(target.proxy.linkRoute()) { launchSingleTop = true }
         is LinkTarget.MessageDraft -> onShare(SharedContent(text = target.text))
         else -> return false
     }
@@ -126,6 +132,22 @@ private fun NavHostController.openLinkedChat(
         }
     }
 }
+
+/** The route of the sheet that asks before connecting through this proxy. */
+private fun Proxy.linkRoute(): ProxyLinkRoute =
+    when (val type = type) {
+        is ProxyType.Socks5 -> {
+            ProxyLinkRoute(server, port, type.kind.name, username = type.username, password = type.password)
+        }
+
+        is ProxyType.Http -> {
+            ProxyLinkRoute(server, port, type.kind.name, type.username, type.password, httpOnly = type.httpOnly)
+        }
+
+        is ProxyType.Mtproto -> {
+            ProxyLinkRoute(server, port, type.kind.name, secret = type.secret)
+        }
+    }
 
 /** The Settings tab, with [page] pushed above it if the link named one. */
 private fun NavHostController.openSettings(page: SettingsPage?) {

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
+import dev.kyralabs.pingogram.core.domain.model.SavedProxy
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 
 /**
@@ -13,6 +14,7 @@ import dev.kyralabs.pingogram.core.domain.model.StorageUsage
  * @property usage how much space Pingogram takes, as TDLib reports it.
  * @property isClearCacheDialogOpen the confirmation to clear the cache is open.
  * @property isClearingCache clearing the cache was confirmed and runs.
+ * @property proxy the proxy Pingogram connects through; null when it connects directly (or the proxies are unknown).
  */
 @Immutable
 data class DataStorageUiState(
@@ -21,6 +23,7 @@ data class DataStorageUiState(
     val usage: StorageUsageState = StorageUsageState.Loading,
     val isClearCacheDialogOpen: Boolean = false,
     val isClearingCache: Boolean = false,
+    val proxy: SavedProxy? = null,
 )
 
 /** The storage usage card: loading, TDLib's figures, or why they could not be loaded. */

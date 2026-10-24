@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
+import dev.kyralabs.pingogram.core.data.mapper.toProxy
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.LinkTarget
 import dev.kyralabs.pingogram.core.domain.model.NewChatKind
@@ -258,6 +259,11 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.
         is TdApi.InternalLinkTypeQrCodeAuthentication -> {
             LinkTarget.QrCodeLogin(link)
+        }
+
+        // A protocol of a newer TDLib that Pingogram cannot describe is not offered.
+        is TdApi.InternalLinkTypeProxy -> {
+            proxy?.toProxy()?.let(LinkTarget::ProxyServer) ?: LinkTarget.Unsupported(link)
         }
 
         is TdApi.InternalLinkTypeMessageDraft -> {

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStorageRepository
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadRules
@@ -55,7 +56,13 @@ class DataStorageViewModelTest {
 
     // Through the real TDLib repository on FakeTdlibClient, as the app wires it.
     private fun TestScope.viewModel(handle: SavedStateHandle = savedState): DataStorageViewModel =
-        DataStorageViewModel(handle, TdlibStorageRepository(client), autoDownload, network).also { runCurrent() }
+        DataStorageViewModel(
+            handle,
+            TdlibStorageRepository(client),
+            autoDownload,
+            network,
+            TdlibProxyRepository(client),
+        ).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: DataStorageViewModel): List<DataStorageEffect> {
         val effects = mutableListOf<DataStorageEffect>()
@@ -339,4 +346,25 @@ class DataStorageViewModelTest {
         /** `REQUEST_TIMEOUT` of `core:data`. */
         val REQUEST_TIMEOUT = 30.seconds
     }
+
+    @Test
+    fun `shows the proxy in use, and none while it connects directly`() =
+        runTest {
+            answerUsage(filesSize = 0)
+            val proxy = TdApi.Proxy("proxy.example", 1080, TdApi.ProxyTypeSocks5("", ""))
+            client.on(
+                TdApi.GetProxies::class,
+                TdResult.Success(TdApi.AddedProxies(arrayOf(TdApi.AddedProxy(3, 0, true, "Home", proxy)))),
+            )
+
+            assertEquals(
+                "Home",
+                viewModel()
+                    .uiState.value.proxy
+                    ?.name,
+            )
+
+            client.on(TdApi.GetProxies::class, TdResult.Success(TdApi.AddedProxies(emptyArray())))
+            assertEquals(null, viewModel().uiState.value.proxy)
+        }
 }

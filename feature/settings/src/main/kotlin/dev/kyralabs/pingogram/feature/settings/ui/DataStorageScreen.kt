@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -37,6 +38,7 @@ import java.text.NumberFormat
 @Composable
 internal fun DataStorageRoute(
     onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
+    onOpenProxies: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DataStorageViewModel = hiltViewModel(),
@@ -73,6 +75,7 @@ internal fun DataStorageRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onOpenAutoDownload = onOpenAutoDownload,
+        onOpenProxies = onOpenProxies,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -83,13 +86,15 @@ internal fun DataStorageRoute(
  * Data and storage (`REQUIREMENTS.md` FR-S1): what downloads by itself on mobile data, Wi-Fi and roaming, each a row
  * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
  * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
- * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs.
+ * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs; and the proxy in use, a row that
+ * opens the proxies ([onOpenProxies]).
  */
 @Composable
 internal fun DataStorageScreen(
     state: DataStorageUiState,
     onEvent: (DataStorageEvent) -> Unit,
     onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
+    onOpenProxies: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -103,6 +108,7 @@ internal fun DataStorageScreen(
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
         }
+        NetworkGroup(state.proxy, onOpenProxies)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
             iconTone = SettingsIconTone.Secondary,
@@ -198,7 +204,13 @@ private fun DatabaseItem(
 @Composable
 private fun DataStorageScreenPreview() {
     PingogramPreview {
-        DataStorageScreen(state = SettingsPreviewData.storage, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+        DataStorageScreen(
+            state = SettingsPreviewData.storage,
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onOpenProxies = {},
+            onBack = {},
+        )
     }
 }
 
@@ -210,6 +222,7 @@ private fun DataStorageScreenLoadingPreview() {
             state = DataStorageUiState(),
             onEvent = {},
             onOpenAutoDownload = {},
+            onOpenProxies = {},
             onBack = {},
         )
     }
@@ -219,7 +232,13 @@ private fun DataStorageScreenLoadingPreview() {
 @Composable
 private fun DataStorageScreenErrorPreview() {
     PingogramPreview {
-        DataStorageScreen(state = SettingsPreviewData.storageError, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+        DataStorageScreen(
+            state = SettingsPreviewData.storageError,
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onOpenProxies = {},
+            onBack = {},
+        )
     }
 }
 
@@ -231,6 +250,7 @@ private fun DataStorageScreenDialogPreview() {
             state = SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true),
             onEvent = {},
             onOpenAutoDownload = {},
+            onOpenProxies = {},
             onBack = {},
         )
     }
@@ -240,7 +260,12 @@ private fun DataStorageScreenDialogPreview() {
 @Composable
 private fun DataStorageScreenClearingPreview() {
     PingogramPreview {
-        DataStorageScreen(state = SettingsPreviewData.storage.copy(isClearingCache = true), onEvent = {
-        }, onOpenAutoDownload = {}, onBack = {})
+        DataStorageScreen(
+            state = SettingsPreviewData.storage.copy(isClearingCache = true),
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onOpenProxies = {},
+            onBack = {},
+        )
     }
 }
