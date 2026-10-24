@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,10 +22,14 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -38,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +51,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -86,7 +93,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *
  * - **Photos and videos** ([AttachmentKind.Media]): a row of square thumbnails, decoded by Coil at their size, in
  *   `medium` corners; a video with its length and a play badge; an item being prepared as a [LoadingIndicator] on a
- *   tonal square. Each has a remove button on a `mediaOverlay` circle.
+ *   tonal square. Each has a remove button on a `mediaOverlay` circle. Where they came from the gallery, a switch row
+ *   below them, "Send without compression" ([AttachPreview.original]), sends them as files at their size.
  * - **Files** ([AttachmentKind.Document]): one row each, its kind's icon, its name (shortened in the middle, so the
  *   extension stays) and size, and a remove button; the list scrolls where the window is short.
  * - **Caption** ([caption], the view model's): the composer's text field, formatting included; Enter on a hardware
@@ -128,6 +136,7 @@ internal fun AttachPreviewSheet(
             preview = preview,
             caption = caption,
             onRemove = { onEvent(ChatEvent.RemoveAttachment(it)) },
+            onOriginalChange = { onEvent(ChatEvent.SetOriginalQuality(it)) },
             onSend = send,
             onSchedule = { scheduling = true },
             onLink = { linking = it },
@@ -165,6 +174,7 @@ internal fun ColumnScope.AttachPreviewContent(
     onSend: (SendOptions) -> Unit,
     onSchedule: () -> Unit,
     onLink: (TextRange) -> Unit,
+    onOriginalChange: (Boolean) -> Unit = {},
 ) {
     val spacing = MaterialTheme.spacing
     Text(
@@ -195,9 +205,10 @@ internal fun ColumnScope.AttachPreviewContent(
                     )
                 }
             }
+            if (preview.offersOriginal) OriginalQualityRow(preview.original, onOriginalChange)
         }
 
-        AttachmentKind.Document -> {
+        AttachmentKind.Document, AttachmentKind.Original -> {
             // Bounded by the sheet, so the caption row stays in view while many files scroll.
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 preview.items.forEachIndexed { index, item ->
@@ -207,6 +218,44 @@ internal fun ColumnScope.AttachPreviewContent(
         }
     }
     CaptionRow(preview, caption, onSend, onSchedule, onLink)
+}
+
+/**
+ * "Send without compression": a switch row (`Role.Switch`, a check in the thumb) whose summary says the photos and
+ * videos then go as files at their size, without their location or camera details.
+ */
+@Composable
+private fun OriginalQualityRow(
+    original: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.attach_original)) },
+        supportingContent = { Text(stringResource(R.string.attach_original_summary)) },
+        trailingContent = {
+            Switch(
+                checked = original,
+                onCheckedChange = null,
+                thumbContent =
+                    if (original) {
+                        { Icon(painterResource(UiR.drawable.ic_check), null, Modifier.size(SwitchDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier =
+            Modifier
+                .padding(top = MaterialTheme.spacing.small)
+                .toggleable(value = original, role = Role.Switch) { checked ->
+                    haptics.performHapticFeedback(
+                        if (checked) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                    )
+                    onChange(checked)
+                },
+    )
 }
 
 /** The caption field and the send split button, which waits until every item of [preview] is ready. */
@@ -249,7 +298,7 @@ private fun previewTitle(preview: AttachPreview): String {
     val attachments = preview.attachments
     val allReady = preview.isReady
     return when {
-        preview.kind == AttachmentKind.Document -> {
+        preview.kind != AttachmentKind.Media -> {
             pluralStringResource(R.plurals.attach_preview_files, count, count)
         }
 

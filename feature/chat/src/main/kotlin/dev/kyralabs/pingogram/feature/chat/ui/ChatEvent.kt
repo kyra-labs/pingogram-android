@@ -192,6 +192,11 @@ sealed interface ChatEvent {
         val animation: Animation,
     ) : ChatEvent
 
+    /** The attach preview's "Send without compression": its photos and videos go as files, or compressed. */
+    data class SetOriginalQuality(
+        val original: Boolean,
+    ) : ChatEvent
+
     /** The remove button of item [key] of the preview. */
     data class RemoveAttachment(
         val key: Long,

@@ -40,6 +40,9 @@ import kotlinx.coroutines.launch
  *   once, takes the composer's reply along ([ReplyHandoff]), and sends; a refusal gives the reply back with a snackbar
  *   ([ChatEffect.ShowError]), a scheduled message is confirmed ([ChatEffect.MessageScheduled]). A refused poll opens
  *   again as it was.
+ * - **Without compression** ([setOriginal]; on at first where Data and storage says so, [originalByDefault]): the
+ *   gallery's photos and videos are prepared again from their URIs when sent, as files at their size without their
+ *   metadata (`AttachmentKind.Original`); one that cannot be keeps its compressed copy.
  * - **Shared files** ([addShared], direct share) join the preview like picked ones, their text as its caption.
  * - **Camera** ([takePhoto]): a new file for the camera app ([ChatEffect.LaunchCamera]), whose photo joins the preview
  *   ([photoTaken]); not taken, the file is deleted.
@@ -57,6 +60,7 @@ internal class ChatAttachments(
     private val scope: CoroutineScope,
     private val replies: ReplyHandoff,
     private val onEffect: (ChatEffect) -> Unit,
+    private val originalByDefault: () -> Boolean = { false },
 ) {
     /** The caption of the preview's photos, videos or files. */
     val caption =
@@ -84,6 +88,12 @@ internal class ChatAttachments(
 
     /** The jobs preparing picked files, which closing the preview stops. */
     private val preparing = mutableSetOf<Job>()
+
+    /**
+     * The gallery's URIs of the preview's photos and videos, by item, to prepare them again without compression when
+     * sent so; lost with the process, as the picker's grants are.
+     */
+    private val sources = mutableMapOf<Long, String>()
 
     /** Starts keeping the caption and the poll form in [savedState], once. */
     fun start() {
@@ -150,7 +160,14 @@ internal class ChatAttachments(
         val item = draft.items.firstOrNull { it.key == key } ?: return
         (item as? PreviewItem.Ready)?.let { repository.discard(listOf(it.attachment)) }
         val items = draft.items.removing(item)
-        if (items.isEmpty()) close() else setPreview(draft.copy(items = items))
+        sources -= key
+        if (items.isEmpty()) close() else setPreview(draft.copy(items = items, offersOriginal = offersOriginal()))
+    }
+
+    /** The preview's photos and videos go without compression ([original]), or compressed. */
+    fun setOriginal(original: Boolean) {
+        val draft = mutablePreview.value?.takeIf { it.offersOriginal } ?: return
+        setPreview(draft.copy(original = original))
     }
 
     /** Closes the preview without sending: what is being prepared stops, and the copies are deleted. */
@@ -167,11 +184,38 @@ internal class ChatAttachments(
         setPreview(null)
         caption.setContent(FormattedText.Empty)
         val replyTo = replies.takeReply()
+        val originals =
+            if (draft.original) {
+                draft.items.mapNotNull { item ->
+                    sources[item.key]?.let { item to it }
+                }
+            } else {
+                emptyList()
+            }
+        sources.clear()
         scope.launch {
-            val result = repository.send(chatId, draft.attachments, text, options, replyTo)
+            val attachments = if (originals.isEmpty()) draft.attachments else withOriginals(draft, originals.toMap())
+            val result = repository.send(chatId, attachments, text, options, replyTo)
             report(result, options, replyTo)
         }
     }
+
+    /**
+     * The preview's attachments with each of [originals] prepared again from its gallery URI without compression, in
+     * their order; one that fails to keeps its compressed copy, which holds no metadata either.
+     */
+    private suspend fun withOriginals(
+        draft: PreviewDraft,
+        originals: Map<PreviewItem, String>,
+    ): List<Attachment> =
+        draft.items.mapNotNull { item ->
+            val compressed = (item as? PreviewItem.Ready)?.attachment ?: return@mapNotNull null
+            val uri = originals[item] ?: return@mapNotNull compressed
+            when (val original = repository.prepare(uri, AttachmentKind.Original)) {
+                is Outcome.Success -> original.value.also { repository.discard(listOf(compressed)) }
+                is Outcome.Failure -> compressed
+            }
+        }
 
     /** Sends the contact the contact picker returned at [uri], read while its grant lasts. */
     fun sendContact(uri: String) {
@@ -266,6 +310,10 @@ internal class ChatAttachments(
     ) {
         if (uris.isEmpty()) return
         val keys = startItems(kind, uris.size)
+        if (kind == AttachmentKind.Media) {
+            sources += keys.zip(uris)
+            mutablePreview.value?.let { setPreview(it.copy(offersOriginal = true)) }
+        }
         track(
             scope.launch {
                 // One at a time: preparing photos decodes large bitmaps.
@@ -286,7 +334,8 @@ internal class ChatAttachments(
         if (current == null) dismissPreview()
         val keys = List(count) { nextKey++ }
         val items = (current?.items ?: persistentListOf()).addingAll(keys.map { PreviewItem.Preparing(it) })
-        setPreview(PreviewDraft(kind, items))
+        val original = current?.original ?: (kind == AttachmentKind.Media && originalByDefault())
+        setPreview(PreviewDraft(kind, items, current?.offersOriginal == true, original))
         return keys
     }
 
@@ -322,7 +371,11 @@ internal class ChatAttachments(
         job.invokeOnCompletion { preparing -= job }
     }
 
+    /** Whether a photo or video of the preview came from the gallery, and so may go without compression. */
+    private fun offersOriginal(): Boolean = sources.isNotEmpty()
+
     private fun close() {
+        sources.clear()
         preparing.toList().forEach(Job::cancel)
         setPreview(null)
         caption.setContent(FormattedText.Empty)
@@ -367,6 +420,8 @@ internal class ChatAttachments(
 internal data class PreviewDraft(
     val kind: AttachmentKind,
     val items: PersistentList<PreviewItem>,
+    val offersOriginal: Boolean = false,
+    val original: Boolean = false,
 ) {
     val isReady: Boolean get() = items.isNotEmpty() && items.none { it is PreviewItem.Preparing }
 

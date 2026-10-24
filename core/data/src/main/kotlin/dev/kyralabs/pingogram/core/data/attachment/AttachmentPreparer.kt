@@ -57,18 +57,31 @@ internal class AttachmentPreparer(
 
                 is Copy.Done -> {
                     val type = info.mimeType ?: mimeTypeOf(copy.name)
-                    val document = { Attachment.Document(copy.path, copied.size, copy.name, type.orEmpty()) }
-                    val attachment =
-                        when {
-                            kind == AttachmentKind.Document -> document()
-                            type == GIF -> document()
-                            type?.startsWith(IMAGE) == true -> photo(copy, directory, photoMaxSide) ?: document()
-                            type?.startsWith(VIDEO) == true -> video(copy, copied.size, directory) ?: document()
-                            else -> document()
-                        }
-                    Outcome.Success(attachment)
+                    attachment(copy, copied.size, type, directory, kind, photoMaxSide)
+                        ?.let { Outcome.Success(it) }
+                        ?: Outcome.Failure(DomainError.FileUnavailable)
                 }
             }
+        }
+    }
+
+    /** The copied file [copy] of [size] bytes and MIME [type] as [kind] says; null when it cannot be prepared. */
+    @Suppress("LongParameterList") // What prepare learnt about the file, and what it was asked for.
+    private fun attachment(
+        copy: File,
+        size: Long,
+        type: String?,
+        directory: File,
+        kind: AttachmentKind,
+        photoMaxSide: Int,
+    ): Attachment? {
+        val document = { Attachment.Document(copy.path, size, copy.name, type.orEmpty()) }
+        return when {
+            kind == AttachmentKind.Document || type == GIF -> document()
+            type?.startsWith(IMAGE) == true -> image(copy, directory, kind, photoMaxSide, document)
+            kind == AttachmentKind.Original -> document()
+            type?.startsWith(VIDEO) == true -> video(copy, size, directory) ?: document()
+            else -> document()
         }
     }
 
@@ -164,6 +177,50 @@ internal class AttachmentPreparer(
         }
     }
 
+    /**
+     * The picked image in [copy] as [kind] wants it: a photo (a document when Android cannot decode it, or when it is
+     * longer than a photo may be, [MAX_PHOTO_ASPECT]), or without compression a document without its metadata
+     * ([original]); null when its metadata cannot be taken out, so that nothing leaves with it.
+     */
+    private fun image(
+        copy: File,
+        directory: File,
+        kind: AttachmentKind,
+        photoMaxSide: Int,
+        asItIs: () -> Attachment.Document,
+    ): Attachment? {
+        val info = media.imageInfo(copy) ?: return asItIs()
+        return if (kind == AttachmentKind.Original || info.aspect > MAX_PHOTO_ASPECT) {
+            original(copy, directory, info)?.let { Attachment.Document(it.path, it.length(), it.name, JPEG_TYPE) }
+        } else {
+            photo(copy, directory, photoMaxSide) ?: asItIs()
+        }
+    }
+
+    /**
+     * The image in [copy], whose metadata it deletes, as a file without it in [directory]: a JPEG's image data as it
+     * is, with its orientation; any other image written anew as a JPEG at its size, upright, at most
+     * [ORIGINAL_MAX_SIDE]. Null when neither works.
+     */
+    private fun original(
+        copy: File,
+        directory: File,
+        info: ImageInfo,
+    ): File? {
+        val name = copy.nameWithoutExtension.ifEmpty { PHOTO_PREFIX } + JPEG_SUFFIX
+        val target = File(directory, "$ORIGINAL_DIRECTORY/$name").apply { parentFile?.mkdirs() }
+        val written =
+            media.copyJpegWithoutMetadata(copy, target) ||
+                media.writePhoto(
+                    source = copy,
+                    plan = photoPlan(info.width, info.height, info.orientation, ORIGINAL_MAX_SIDE),
+                    target = target,
+                    quality = ORIGINAL_JPEG_QUALITY,
+                )
+        copy.delete()
+        return target.takeIf { written && it.length() > 0 }
+    }
+
     /** The video in [source] with its size, length and a still written into [directory]; null when unreadable. */
     private fun video(
         source: File,
@@ -198,9 +255,13 @@ internal class AttachmentPreparer(
     private companion object {
         const val BUFFER_SIZE = 64 * 1024
         const val PHOTO_PREFIX = "photo"
+
+        /** Where a file sent without its metadata is written, so it keeps its own name beside the picked copy. */
+        const val ORIGINAL_DIRECTORY = "original"
         const val THUMBNAIL_PREFIX = "thumbnail"
         const val JPEG_SUFFIX = ".jpg"
         const val GIF = "image/gif"
+        const val JPEG_TYPE = "image/jpeg"
         const val IMAGE = "image/"
         const val VIDEO = "video/"
     }
