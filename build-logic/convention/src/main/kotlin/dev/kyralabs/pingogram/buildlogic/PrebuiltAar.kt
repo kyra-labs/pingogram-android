@@ -42,7 +42,15 @@ class PrebuiltAar(
     private val docs: String,
     private val license: String,
 ) {
-    fun releaseTag(commit: String): String = "$releasePrefix-${commit.take(SHORT_COMMIT_LENGTH)}"
+    /**
+     * The release of [commit], the catalog's value: an upstream commit, or one followed by `-<patches>` when the
+     * workflow applies this repository's patches to it (e.g. `tools/ntgcalls/`), which a release of its own holds.
+     */
+    fun releaseTag(commit: String): String {
+        val patches = commit.substringAfter(PATCHES_SEPARATOR, missingDelimiterValue = "")
+        val sha = commit.substringBefore(PATCHES_SEPARATOR).take(SHORT_COMMIT_LENGTH)
+        return if (patches.isEmpty()) "$releasePrefix-$sha" else "$releasePrefix-$sha-$patches"
+    }
 
     fun downloadUrl(commit: String): URI = URI("$RELEASES/download/${releaseTag(commit)}/${releaseTag(commit)}.aar")
 
@@ -180,6 +188,7 @@ class PrebuiltAar(
 
         private const val RELEASES = "https://github.com/kyra-labs/pingogram-android/releases"
         private const val SHORT_COMMIT_LENGTH = 10
+        private const val PATCHES_SEPARATOR = '-'
         private val SHA256 = Regex("[0-9a-fA-F]{64}")
 
         fun sha256(file: File): String {
