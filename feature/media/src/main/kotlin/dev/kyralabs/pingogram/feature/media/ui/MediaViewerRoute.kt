@@ -7,6 +7,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
@@ -41,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.file.tdlibFileUri
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.media.R
+import dev.kyralabs.pingogram.feature.media.pip.VideoPipActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -85,12 +87,17 @@ internal fun MediaViewerRoute(
         exits = remember(onBack, onShowInChat, onForward) { ViewerExits(onBack, onShowInChat, onForward) },
     )
     notices(snackbarHostState)
+    val context = LocalContext.current
+    val pictureInPicture =
+        remember(context) { context.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) }
     MediaViewerScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        // Never a secret chat's media, which only this secure window may show.
+        canPictureInPicture = pictureInPicture && !isSecretChat,
         videoSurface = { surfaceModifier ->
             PlayerSurface(
                 player = viewModel.surfacePlayer,
@@ -154,6 +161,11 @@ private fun MediaViewerEffects(
                     context.copy(effect, resources.getString(R.string.media_copy_label))?.let { message ->
                         snackbars.show(resources.getString(message))
                     }
+                }
+
+                MediaViewerEffect.OpenPictureInPicture -> {
+                    VideoPipActivity.open(context)
+                    currentExits.follow(MediaViewerEffect.Close)
                 }
 
                 MediaViewerEffect.CheckStoragePermission -> {
