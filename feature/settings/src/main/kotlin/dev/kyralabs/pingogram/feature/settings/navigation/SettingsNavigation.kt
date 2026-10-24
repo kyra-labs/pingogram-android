@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
+import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -73,6 +74,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyRoute as NewChatPrivacyScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
@@ -228,6 +230,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<PrivacySecurityRoute> {
         PrivacySecurityScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
     }
+    settingsPage<NewChatPrivacyRoute> { NewChatPrivacyScreenRoute(onBack = onBack) }
     settingsPage<PrivacySettingRoute> { entry ->
         val setting = PrivacySetting.entries.firstOrNull { it.name == entry.toRoute<PrivacySettingRoute>().setting }
         if (setting != null) {
@@ -359,6 +362,7 @@ private val PrivacySecurityPage.route: Any
             PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute
             PrivacySecurityPage.LoginEmail -> LoginEmailRoute
             PrivacySecurityPage.AutoDelete -> AutoDeleteRoute
+            PrivacySecurityPage.NewChats -> NewChatPrivacyRoute
         }
 
 private val NotificationSettingsPage.route: Any

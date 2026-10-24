@@ -20,9 +20,11 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewS
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.PrivacyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
@@ -97,6 +99,10 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun autoDelete() =
         check { AutoDeleteScreen(state = AccountPagePreviewStates.autoDelete, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun newChatPrivacy() =
+        check { NewChatPrivacyScreen(state = PrivacyPreviewStates.newChatsWithoutPremium, onEvent = {}, onBack = {}) }
 
     @Test
     fun deleteAccount() =

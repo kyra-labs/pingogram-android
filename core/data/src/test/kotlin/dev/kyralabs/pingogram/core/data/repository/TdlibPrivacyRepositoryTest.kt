@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -82,6 +84,10 @@ class TdlibPrivacyRepositoryTest {
 
                     PrivacySetting.ProfilePhoto -> {
                         TdApi.UserPrivacySettingShowProfilePhoto::class.java
+                    }
+
+                    PrivacySetting.Bio -> {
+                        TdApi.UserPrivacySettingShowBio::class.java
                     }
 
                     PrivacySetting.Birthdate -> {
@@ -211,7 +217,7 @@ class TdlibPrivacyRepositoryTest {
             // Not shown by Pingogram.
             client.emit(
                 TdApi.UpdateUserPrivacySettingRules(
-                    TdApi.UserPrivacySettingShowBio(),
+                    TdApi.UserPrivacySettingAutosaveGifts(),
                     rules(TdApi.UserPrivacySettingRuleAllowAll()),
                 ),
             )
@@ -347,5 +353,69 @@ class TdlibPrivacyRepositoryTest {
                 arrayOf<Any>(TdApi.UserPrivacySettingRuleAllowAll::class.java),
                 answered.rules.map { it.javaClass }.toTypedArray(),
             )
+        }
+
+    // Read time and new chats
+
+    @Test
+    fun `reads and sets whether the read time shows`() =
+        runTest {
+            client.on(TdApi.GetReadDatePrivacySettings::class, TdResult.Success(TdApi.ReadDatePrivacySettings(true)))
+            client.on(TdApi.SetReadDatePrivacySettings::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(true), repository.showsReadDate())
+            assertEquals(Outcome.Success(Unit), repository.setShowsReadDate(false))
+
+            assertFalse(
+                client
+                    .sentOf<TdApi.SetReadDatePrivacySettings>()
+                    .single()
+                    .settings.showReadDate,
+            )
+        }
+
+    @Test
+    fun `new chats from non-contacts, whether they can be limited, and paid messages`() =
+        runTest {
+            client.on(
+                TdApi.GetNewChatPrivacySettings::class,
+                TdResult.Success(TdApi.NewChatPrivacySettings(true, 10)),
+            )
+            client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueBoolean(true)))
+
+            assertEquals(
+                Outcome.Success(NewChatPrivacy(allowsNonContacts = true, paidMessageStars = 10, canRestrict = true)),
+                repository.newChatPrivacy(),
+            )
+            assertEquals("can_set_new_chat_privacy_settings", client.sentOf<TdApi.GetOption>().single().name)
+        }
+
+    @Test
+    fun `an option TDLib does not know means non-contacts cannot be limited`() =
+        runTest {
+            client.on(
+                TdApi.GetNewChatPrivacySettings::class,
+                TdResult.Success(TdApi.NewChatPrivacySettings(true, 0)),
+            )
+            client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueEmpty()))
+
+            assertEquals(Outcome.Success(NewChatPrivacy(allowsNonContacts = true)), repository.newChatPrivacy())
+        }
+
+    @Test
+    fun `keeping non-contacts out drops their price, letting them in keeps it`() =
+        runTest {
+            client.on(
+                TdApi.GetNewChatPrivacySettings::class,
+                TdResult.Success(TdApi.NewChatPrivacySettings(true, 10)),
+            )
+            client.on(TdApi.SetNewChatPrivacySettings::class, TdResult.Success(TdApi.Ok()))
+
+            repository.setAllowsNonContacts(false)
+            repository.setAllowsNonContacts(true)
+
+            val (out, inside) = client.sentOf<TdApi.SetNewChatPrivacySettings>().map { it.settings }
+            assertEquals(false to 0L, out.allowNewChatsFromUnknownUsers to out.incomingPaidMessageStarCount)
+            assertEquals(true to 10L, inside.allowNewChatsFromUnknownUsers to inside.incomingPaidMessageStarCount)
         }
 }

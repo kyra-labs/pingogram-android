@@ -41,6 +41,8 @@ import kotlinx.coroutines.launch
  * - Voice and video messages ([PrivacySetting.VoiceMessages]) can only be limited with Telegram Premium: without it the
  *   page offers "Everybody" only ([PrivacySettingUiState.premiumRequired]), and if Telegram still refuses a choice
  *   (`DomainError.PremiumRequired`), it says so. Nothing pretends otherwise.
+ * - Last seen ([PrivacySetting.LastSeen]) also shows whether the read time shows; a switch shows at once, is saved, and
+ *   switches back with the error if Telegram refuses. Where it cannot be read, the page leaves it out.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = PrivacySettingViewModel.Factory::class)
@@ -88,12 +90,35 @@ class PrivacySettingViewModel
                     .launchIn(viewModelScope)
             }
             load()
+            if (setting == PrivacySetting.LastSeen) {
+                viewModelScope.launch {
+                    val shows = privacyRepository.showsReadDate()
+                    if (shows is Outcome.Success) mutableUiState.update { it.copy(showsReadTime = shows.value) }
+                }
+            }
         }
 
         fun onEvent(event: PrivacySettingEvent) {
             when (event) {
                 is PrivacySettingEvent.Select -> select(event.choice)
                 PrivacySettingEvent.Retry -> if (uiState.value.rules is PrivacyRulesState.Failed) load()
+                is PrivacySettingEvent.ShowReadTime -> showReadTime(event.shows)
+            }
+        }
+
+        /** Shows [shows] at once and saves it; a switch made meanwhile is saved after it, as each one is. */
+        private fun showReadTime(shows: Boolean) {
+            val before = uiState.value.showsReadTime ?: return
+            if (before == shows) return
+            mutableUiState.update { it.copy(showsReadTime = shows) }
+            viewModelScope.launch {
+                val saved = privacyRepository.setShowsReadDate(shows)
+                if (saved is Outcome.Failure) {
+                    mutableUiState.update { if (it.showsReadTime == shows) it.copy(showsReadTime = before) else it }
+                    if (saved.error != DomainError.Silent) {
+                        effectChannel.trySend(PrivacySettingEffect.ShowError(saved.error))
+                    }
+                }
             }
         }
 

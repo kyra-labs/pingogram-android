@@ -206,6 +206,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
   login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
   state, never the code.
+- **Privacy beyond the rules** (FR-S1, Privacy and security): `PrivacyRepository` also reads and sets whether the read
+  time shows (`getReadDatePrivacySettings`, `setReadDatePrivacySettings`; the Last seen page's switch) and who may start
+  a chat (`getNewChatPrivacySettings`, `setNewChatPrivacySettings`, with the option
+  `can_set_new_chat_privacy_settings` as `NewChatPrivacy.canRestrict`; a price another app set for non-contacts'
+  messages is kept while they may write and dropped when they may not, as Telegram requires).
+  `feature:settings`' `NewChatPrivacyRoute` (`NewChatPrivacyViewModel`) is its page.
 - **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
   its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
   bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through

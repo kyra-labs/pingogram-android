@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSessionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PasscodeType
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
@@ -135,6 +136,20 @@ class PrivacySecurityViewModelTest {
         }
 
     @Test
+    fun `shows who may start a chat, and leaves it out where Telegram cannot say`() =
+        runTest {
+            assertEquals(null, viewModel().content.newChatPrivacy)
+
+            client.on(TdApi.GetNewChatPrivacySettings::class, TdResult.Success(TdApi.NewChatPrivacySettings(false, 0)))
+            client.on(TdApi.GetOption::class, TdResult.Success(TdApi.OptionValueBoolean(true)))
+
+            assertEquals(
+                NewChatPrivacy(allowsNonContacts = false, canRestrict = true),
+                viewModel().content.newChatPrivacy,
+            )
+        }
+
+    @Test
     fun `is loading until everything is loaded`() =
         runTest {
             client.on(TdApi.GetPasswordState::class) { CompletableDeferred<TdResult<TdApi.PasswordState>>().await() }
@@ -176,6 +191,7 @@ class PrivacySecurityViewModelTest {
                     PrivacySetting.LastSeen to
                         PrivacyRules(PrivacyChoice.Everybody, PrivacyExceptions(restrictedUserCount = 2)),
                     PrivacySetting.ProfilePhoto to everybody,
+                    PrivacySetting.Bio to everybody,
                     PrivacySetting.Birthdate to everybody,
                     PrivacySetting.ForwardedMessages to everybody,
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),

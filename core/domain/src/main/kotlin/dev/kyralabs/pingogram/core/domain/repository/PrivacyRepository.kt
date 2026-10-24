@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
@@ -33,4 +34,22 @@ interface PrivacyRepository {
         setting: PrivacySetting,
         choice: PrivacyChoice,
     ): Outcome<PrivacyRules>
+
+    /**
+     * Whether the user's read time shows to the people they chat with privately (td_api.tl `readDatePrivacySettings`).
+     * Those who may see when the user was last online always see it; without it, the user sees no one else's, unless
+     * they have Telegram Premium.
+     */
+    suspend fun showsReadDate(): Outcome<Boolean>
+
+    suspend fun setShowsReadDate(shows: Boolean): Outcome<Unit>
+
+    /** Who may start a chat with the user. */
+    suspend fun newChatPrivacy(): Outcome<NewChatPrivacy>
+
+    /**
+     * Lets non-contacts write first, or keeps them out ([NewChatPrivacy.canRestrict] first). Keeping them out drops a
+     * price for their messages, which Telegram allows only while they may write.
+     */
+    suspend fun setAllowsNonContacts(allows: Boolean): Outcome<Unit>
 }

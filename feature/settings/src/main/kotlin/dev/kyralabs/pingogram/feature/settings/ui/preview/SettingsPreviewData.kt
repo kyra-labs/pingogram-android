@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
@@ -121,6 +122,7 @@ internal object SettingsPreviewData {
                     PrivacySetting.PhoneNumber to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.LastSeen to contactsWithExceptions,
                     PrivacySetting.ProfilePhoto to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.Bio to PrivacyRules(PrivacyChoice.Everybody),
                     PrivacySetting.Birthdate to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.ForwardedMessages to PrivacyRules(PrivacyChoice.Everybody),
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
@@ -133,6 +135,7 @@ internal object SettingsPreviewData {
                 TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
             loginEmailPattern = "a****@e******.org",
             defaultAutoDeleteSeconds = 604_800,
+            newChatPrivacy = NewChatPrivacy(allowsNonContacts = true),
         )
 
     val twoStepOn = TwoStepVerificationUiState.Content(hasPassword = true, hasRecoveryEmail = true)
@@ -164,6 +167,7 @@ internal object SettingsPreviewData {
         PrivacySettingUiState(
             setting = PrivacySetting.LastSeen,
             rules = PrivacyRulesState.Loaded(contactsWithExceptions),
+            showsReadTime = true,
         )
 
     /** Voice and video messages for a user without Telegram Premium. */

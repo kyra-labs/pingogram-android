@@ -209,6 +209,10 @@ data object LoginEmailRoute
 @Serializable
 data object AutoDeleteRoute
 
+/** Who may start a chat with the user (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object NewChatPrivacyRoute
+
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object TwoStepVerificationRoute

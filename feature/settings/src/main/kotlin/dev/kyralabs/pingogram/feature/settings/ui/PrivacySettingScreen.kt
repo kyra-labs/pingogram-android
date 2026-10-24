@@ -100,6 +100,9 @@ internal fun PrivacySettingScreen(
                     ChoicesSection(state, rules.choice, onSelect = { onEvent(PrivacySettingEvent.Select(it)) })
                     if (rules.hasExceptions) ExceptionsSection(rules)
                 }
+                state.showsReadTime?.let { shows ->
+                    ReadTimeSection(shows, onShow = { onEvent(PrivacySettingEvent.ShowReadTime(it)) })
+                }
             }
         }
     }
@@ -129,6 +132,28 @@ private fun ChoicesSection(
                     trailingContent = if (choice == state.savingChoice) ({ SavingIndicator() }) else null,
                 )
             }
+        }
+    }
+}
+
+/** On the last seen page: "Show my read time" as a switch row, and what it does as the footer. */
+@Composable
+private fun ReadTimeSection(
+    shows: Boolean,
+    onShow: (Boolean) -> Unit,
+) {
+    SettingsGroup(
+        title = stringResource(R.string.settings_section_privacy_read_time),
+        footer = stringResource(R.string.settings_privacy_read_time_note),
+    ) {
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_privacy_read_time),
+                summary = stringResource(R.string.settings_privacy_read_time_summary),
+                checked = shows,
+                shapes = shapes,
+                onCheckedChange = onShow,
+            )
         }
     }
 }
@@ -166,49 +191,5 @@ private fun ExceptionsSection(rules: PrivacyRules) {
                 )
             }
         }
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenPreview() {
-    PingogramPreview { PrivacySettingScreen(state = SettingsPreviewData.privacySetting, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenSavingPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(
-            state = SettingsPreviewData.privacySetting.copy(savingChoice = PrivacyChoice.Nobody),
-            onEvent = {},
-            onBack = {},
-        )
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenPremiumRequiredPreview() {
-    PingogramPreview { PrivacySettingScreen(state = SettingsPreviewData.voiceMessages, onEvent = {}, onBack = {}) }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenLoadingPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(state = PrivacySettingUiState(PrivacySetting.Calls), onEvent = {}, onBack = {})
-    }
-}
-
-@PingogramPreviews
-@Composable
-private fun PrivacySettingScreenErrorPreview() {
-    PingogramPreview {
-        PrivacySettingScreen(
-            state = PrivacySettingUiState(PrivacySetting.Calls, PrivacyRulesState.Failed(DomainError.Network)),
-            onEvent = {},
-            onBack = {},
-        )
     }
 }
