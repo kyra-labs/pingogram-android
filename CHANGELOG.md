@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Transfer ownership: the owner of a supergroup or channel makes an administrator or member the owner from their
+  rights page. Pingogram first asks Telegram whether it may be done now (it needs a 2-step verification password that
+  is not new, on a device logged in for a while), then asks for that password in a question that says what changes.
 - Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
   "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
   or all at once ("Dismiss all" asks first).

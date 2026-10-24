@@ -494,4 +494,16 @@
     <string name="join_requests_more_error">Couldn’t load more requests</string>
     <string name="join_requests_retry">Try again</string>
     <string name="join_requests_more">Load more</string>
+    <!-- Transferring the ownership of a supergroup or channel, from a member's rights page. -->
+    <string name="chat_info_transfer">Transfer ownership</string>
+    <string name="chat_info_transfer_summary">%1$s becomes the owner. You stay an administrator.</string>
+    <string name="chat_info_transfer_title">Transfer ownership to %1$s?</string>
+    <string name="chat_info_transfer_text">%1$s will own the group and can change or remove your rights. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_transfer_text_channel">%1$s will own the channel and can change or remove your rights. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_transfer_password">Password</string>
+    <string name="chat_info_transfer_confirm">Transfer</string>
+    <string name="chat_info_transfer_checking">Checking whether you can transfer the ownership</string>
+    <string name="chat_info_transfer_password_needed">Turn on 2-step verification in Settings → Privacy and security to transfer the ownership.</string>
+    <string name="chat_info_transfer_password_too_new">Telegram lets you transfer the ownership only a while after the 2-step verification password was set. Try again in %1$s.</string>
+    <string name="chat_info_transfer_session_too_new">Telegram lets you transfer the ownership only from a device that has been logged in for a while. Try again in %1$s.</string>
 </resources>

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo
 
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.lifecycle.SavedStateHandle
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
@@ -13,6 +14,7 @@ import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -175,6 +178,80 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
         runCurrent()
         return viewModel
     }
+
+
+    // Transferring the ownership
+
+    private fun answerOwner() {
+        answerSupergroup(status = TdApiFixtures.creatorStatus())
+        client.on(TdApi.GetChatMember::class, TdResult.Success(member(ADA, TdApiFixtures.memberStatus())))
+    }
+
+    @Test
+    fun `the owner transfers after Telegram allows it and the password is right, then the page closes`() =
+        runTest {
+            answerOwner()
+            client.on(TdApi.CanTransferOwnership::class, TdResult.Success(TdApi.CanTransferOwnershipResultOk()))
+            client.on(TdApi.TransferChatOwnership::class) { request ->
+                if (request.password == "secret") {
+                    TdResult.Success(TdApi.Ok())
+                } else {
+                    TdResult.Failure(TdError(400, "PASSWORD_HASH_INVALID"))
+                }
+            }
+            val viewModel = rights(restrict = false)
+            assertTrue(viewModel.content.canTransfer)
+            val effects = collected(viewModel.effects)
+
+            viewModel.onEvent(MemberRightsEvent.Transfer)
+            runCurrent()
+            assertTrue(client.sentOf<TdApi.TransferChatOwnership>().isEmpty())
+            viewModel.transferPassword.setTextAndPlaceCursorAtEnd("wrong")
+            viewModel.onEvent(MemberRightsEvent.ConfirmTransfer)
+            runCurrent()
+            assertEquals(DomainError.PasswordInvalid, viewModel.transferDialog.value?.error)
+
+            viewModel.transferPassword.setTextAndPlaceCursorAtEnd("secret")
+            viewModel.onEvent(MemberRightsEvent.ConfirmTransfer)
+            runCurrent()
+
+            val sent = client.sentOf<TdApi.TransferChatOwnership>().last()
+            assertEquals(Triple(CHAT, ADA, "secret"), Triple(sent.chatId, sent.userId, sent.password))
+            assertNull(viewModel.transferDialog.value)
+            assertEquals(listOf(MemberRightsEffect.Transferred), effects)
+        }
+
+    @Test
+    fun `a password set too recently is a snackbar, and no password is asked for`() =
+        runTest {
+            answerOwner()
+            client.on(
+                TdApi.CanTransferOwnership::class,
+                TdResult.Success(TdApi.CanTransferOwnershipResultPasswordTooFresh(3_600)),
+            )
+            val viewModel = rights(restrict = false)
+            val effects = collected(viewModel.effects)
+
+            viewModel.onEvent(MemberRightsEvent.Transfer)
+            runCurrent()
+
+            assertNull(viewModel.transferDialog.value)
+            assertEquals(
+                listOf(MemberRightsEffect.TransferUnavailable(OwnershipTransferCheck.PasswordTooNew(3_600))),
+                effects,
+            )
+        }
+
+    @Test
+    fun `only the owner may transfer, and not while restricting`() =
+        runTest {
+            answerSupergroup()
+            client.on(TdApi.GetChatMember::class, TdResult.Success(member(ADA, TdApiFixtures.memberStatus())))
+            assertFalse(rights(restrict = false).content.canTransfer)
+
+            answerOwner()
+            assertFalse(rights(restrict = true).content.canTransfer)
+        }
 
     @Test
     fun `a permission switched sends every permission, and a refusal takes it back`() =

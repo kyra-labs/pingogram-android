@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +40,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -60,6 +64,7 @@ internal fun MemberRightsRoute(
     viewModel: MemberRightsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val transfer by viewModel.transferDialog.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showDetails = isDebuggable()
@@ -67,8 +72,12 @@ internal fun MemberRightsRoute(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                MemberRightsEffect.Saved -> {
+                MemberRightsEffect.Saved, MemberRightsEffect.Transferred -> {
                     currentOnSaved()
+                }
+
+                is MemberRightsEffect.TransferUnavailable -> {
+                    snackbarHostState.showSnackbar(transferUnavailableText(resources, effect.check))
                 }
 
                 is MemberRightsEffect.ShowError -> {
@@ -79,7 +88,15 @@ internal fun MemberRightsRoute(
             }
         }
     }
-    MemberRightsScreen(state, viewModel::onEvent, onBack, modifier, snackbarHostState)
+    MemberRightsScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+        transfer = transfer,
+        transferPassword = viewModel.transferPassword,
+    )
 }
 
 /**
@@ -87,7 +104,8 @@ internal fun MemberRightsRoute(
  * name in a segment of their own), then the rights or permissions as a group of switch rows ([RightsGroup]), those the
  * user may not change disabled; a `LinearWavyProgressIndicator` while Telegram answers, then "Dismiss admin" or "Lift
  * restrictions" as a `TextButton` in `error` at the start where they apply and a default `Button` ("Save", "Promote" or
- * "Restrict") at the end, both with the press morph.
+ * "Restrict") at the end, both with the press morph. For the owner of a supergroup or channel, "Transfer ownership" in
+ * `error` follows the rights in a segment of its own ([TransferRow]).
  */
 @Composable
 internal fun MemberRightsScreen(
@@ -96,6 +114,8 @@ internal fun MemberRightsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    transfer: TransferDialog? = null,
+    transferPassword: TextFieldState = remember { TextFieldState() },
 ) {
     val title =
         when (state) {
@@ -124,6 +144,7 @@ internal fun MemberRightsScreen(
             }
         }
     }
+    transfer?.let { TransferOwnershipDialog(it, transferPassword, onEvent) }
 }
 
 @Composable
@@ -140,6 +161,7 @@ private fun RightsContent(
         items = state.switches,
         onToggle = { key, on -> onEvent(MemberRightsEvent.Toggle(key, on)) },
     )
+    if (state.canTransfer) TransferRow(state, onEvent)
     Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)) {
         if (state.isSaving) SavingIndicator()
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -197,6 +219,42 @@ private fun MemberHeader(state: MemberRightsUiState.Content) {
         },
     ) {
         Text(name, style = MaterialTheme.typography.bodyLarge.userContent)
+    }
+}
+
+/**
+ * "Transfer ownership" in `error` over what it does, one segment; while Telegram is asked whether it may be done, a
+ * `LoadingIndicator` at its end.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TransferRow(
+    state: MemberRightsUiState.Content,
+    onEvent: (MemberRightsEvent) -> Unit,
+) {
+    val checking = stringResource(R.string.chat_info_transfer_checking)
+    SegmentedListItem(
+        onClick = { onEvent(MemberRightsEvent.Transfer) },
+        shapes = ListItemDefaults.segmentedShapes(0, 1),
+        enabled = !state.isCheckingTransfer && !state.isSaving,
+        colors = profileRowColors(),
+        supportingContent = {
+            Text(stringResource(R.string.chat_info_transfer_summary, state.name.resolve().bidiIsolated()))
+        },
+        trailingContent =
+            if (state.isCheckingTransfer) {
+                {
+                    LoadingIndicator(
+                        Modifier
+                            .size(MaterialTheme.sizes.inlineIcon)
+                            .semantics { contentDescription = checking },
+                    )
+                }
+            } else {
+                null
+            },
+    ) {
+        Text(stringResource(R.string.chat_info_transfer), color = MaterialTheme.colorScheme.error)
     }
 }
 

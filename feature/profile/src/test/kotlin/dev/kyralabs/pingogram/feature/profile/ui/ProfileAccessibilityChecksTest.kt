@@ -74,6 +74,17 @@ class ProfileAccessibilityChecksTest {
     fun memberRights() = check { MemberRightsScreen(ChatInfoPreviewData.adminRights, {}, {}) }
 
     @Test
+    fun transferOwnership() =
+        check {
+            MemberRightsScreen(
+                ChatInfoPreviewData.ownerRights,
+                onEvent = {},
+                onBack = {},
+                transfer = ChatInfoPreviewData.transferWrongPassword,
+            )
+        }
+
+    @Test
     fun chatSettings() = check { ChatSettingsScreen(ChatSettingsPreviewData.channel, {}, {}) }
 
     @Test

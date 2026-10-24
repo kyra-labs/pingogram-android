@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.profile.chatinfo.preview
 
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
@@ -30,6 +31,7 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.MembersPreview
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MoreMembers
 import dev.kyralabs.pingogram.feature.profile.chatinfo.Permission
 import dev.kyralabs.pingogram.feature.profile.chatinfo.RightSwitch
+import dev.kyralabs.pingogram.feature.profile.chatinfo.TransferDialog
 import dev.kyralabs.pingogram.feature.profile.chatinfo.key
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileHeader
 import kotlinx.collections.immutable.persistentListOf
@@ -169,6 +171,18 @@ object ChatInfoPreviewData {
             photo = ProfilePhoto(small = FileRef(1, 0), big = FileRef(2, 0), minithumbnail = null),
             photoTask = PhotoTask.Uploading(progress = 0.6f),
         )
+
+    /** The owner editing an administrator's rights, who may make them the owner. */
+    val ownerRights = adminRights.copy(isNew = false, canRevoke = true, canTransfer = true)
+
+    /** The question before transferring the ownership, its password not typed yet. */
+    val transferDialog = TransferDialog(UiText.Plain("Alan Turing"), isChannel = false)
+
+    /** The password was wrong. */
+    val transferWrongPassword = transferDialog.copy(error = DomainError.PasswordInvalid)
+
+    /** Telegram transfers the ownership. */
+    val transferring = transferDialog.copy(isTransferring = true)
 
     val restrictions =
         MemberRightsUiState.Content(

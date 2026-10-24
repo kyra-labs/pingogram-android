@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.AdministratorRights
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -141,6 +142,37 @@ class TdlibGroupAdministrationRepositoryTest {
             assertEquals(Outcome.Failure(DomainError.AdminRightsRequired), repository.removePhoto(CHAT))
 
             assertNull(client.sentOf<TdApi.SetChatPhoto>().single().photo)
+        }
+
+    @Test
+    fun `maps whether the ownership may be transferred now`() =
+        runTest {
+            val answers =
+                mapOf(
+                    TdApi.CanTransferOwnershipResultOk() to OwnershipTransferCheck.Allowed,
+                    TdApi.CanTransferOwnershipResultPasswordNeeded() to OwnershipTransferCheck.PasswordNeeded,
+                    TdApi.CanTransferOwnershipResultPasswordTooFresh(60) to OwnershipTransferCheck.PasswordTooNew(60),
+                    TdApi.CanTransferOwnershipResultSessionTooFresh(90) to OwnershipTransferCheck.SessionTooNew(90),
+                )
+            answers.forEach { (answer, check) ->
+                client.on(TdApi.CanTransferOwnership::class, TdResult.Success(answer))
+                assertEquals(Outcome.Success(check), repository.ownershipTransferCheck())
+            }
+        }
+
+    @Test
+    fun `transfers with the password, and refuses an empty one before TDLib`() =
+        runTest {
+            client.on(TdApi.TransferChatOwnership::class, TdResult.Failure(TdError(400, "PASSWORD_HASH_INVALID")))
+
+            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository.transferOwnership(CHAT, 7, ""))
+            assertTrue(client.sentOf<TdApi.TransferChatOwnership>().isEmpty())
+            assertEquals(Outcome.Failure(DomainError.PasswordInvalid), repository.transferOwnership(CHAT, 7, "nope"))
+
+            client.on(TdApi.TransferChatOwnership::class, TdResult.Success(TdApi.Ok()))
+            assertEquals(Outcome.Success(Unit), repository.transferOwnership(CHAT, 7, "secret"))
+            val sent = client.sentOf<TdApi.TransferChatOwnership>().last()
+            assertEquals(Triple(CHAT, 7L, "secret"), Triple(sent.chatId, sent.userId, sent.password))
         }
 
     private companion object {
