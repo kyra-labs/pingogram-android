@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.sync.Mutex
@@ -34,7 +36,8 @@ import java.io.File
  * - **At most [maxAnimating] play at once** ([slots]), stickers and custom emoji alike (each custom emoji that plays
  *   counts as one); the others show their first frame until one stops. They play at
  *   most [MAX_FRAMES_PER_SECOND] frames per second, only while on screen and while the window has the focus, and not at
- *   all with animations off (or [animate] false, as in previews and screenshots).
+ *   all with animations off (or [animate] false, as in previews and screenshots). While [still] is true (power saving,
+ *   `PowerSaving.stillStickers`), none play: each shows its first frame, and plays on once it is false again.
  *
  * File ids belong to one TDLib instance: [clear] after TDLib closes.
  */
@@ -45,6 +48,7 @@ class AnimatedStickers(
     internal val renderDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(RENDER_THREADS),
     maxAnimating: Int = MAX_ANIMATING,
     internal val animate: Boolean = true,
+    internal val still: StateFlow<Boolean> = MutableStateFlow(false),
 ) {
     /** One permit per sticker that may play now. */
     internal val slots = Semaphore(maxAnimating)

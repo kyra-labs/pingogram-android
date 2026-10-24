@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAutoDownloadRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeNetworkRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.CompletableDeferred
@@ -43,6 +44,7 @@ class DataStorageViewModelTest {
     private val savedState = SavedStateHandle()
     private val autoDownload = FakeAutoDownloadRepository()
     private val network = FakeNetworkRepository()
+    private val composerSettings = FakeComposerSettingsRepository()
 
     @BeforeEach
     fun setUp() {
@@ -62,6 +64,7 @@ class DataStorageViewModelTest {
             autoDownload,
             network,
             TdlibProxyRepository(client),
+            composerSettings,
         ).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: DataStorageViewModel): List<DataStorageEffect> {
@@ -97,8 +100,30 @@ class DataStorageViewModelTest {
     private fun usage(filesSize: Long) =
         StorageUsageState.Content(StorageUsage(filesSize = filesSize, fileCount = 10, databaseSize = 1_000))
 
+    /** The page's state with [usage], photos going compressed as the fake's default says. */
+    private fun state(
+        usage: StorageUsageState = StorageUsageState.Loading,
+        isClearingCache: Boolean = false,
+    ) = DataStorageUiState(usage = usage, isClearingCache = isClearingCache, photosInOriginalQuality = false)
+
     /** The storage part of the state; the automatic download part has a test of its own. */
     private val DataStorageViewModel.state get() = uiState.value.copy(autoDownload = null, isDataSaverOn = false)
+
+    @Test
+    fun `sending photos in original quality is off until turned on, and a failed save says so`() =
+        runTest {
+            val viewModel = viewModel()
+            assertEquals(false, viewModel.uiState.value.photosInOriginalQuality)
+
+            send(viewModel, DataStorageEvent.SetPhotosInOriginalQuality(true))
+            assertEquals(true, viewModel.uiState.value.photosInOriginalQuality)
+
+            val effects = effectsOf(viewModel)
+            composerSettings.failure = DomainError.Unknown(0, "disk full")
+            send(viewModel, DataStorageEvent.SetPhotosInOriginalQuality(false))
+            assertEquals(listOf(DataStorageEffect.ShowError(DomainError.Unknown(0, "disk full"))), effects)
+            assertEquals(true, viewModel.uiState.value.photosInOriginalQuality)
+        }
 
     @Test
     fun `shows the automatic download settings and Data Saver, and follows them`() =
@@ -128,7 +153,7 @@ class DataStorageViewModelTest {
                 CompletableDeferred<TdResult<TdApi.StorageStatisticsFast>>().await()
             }
 
-            assertEquals(DataStorageUiState(), viewModel().state)
+            assertEquals(state(), viewModel().state)
         }
 
     @Test
@@ -137,7 +162,7 @@ class DataStorageViewModelTest {
             answerUsage(filesSize = 5_000, fileCount = 4, databaseSize = 700)
 
             assertEquals(
-                DataStorageUiState(usage = StorageUsageState.Content(StorageUsage(5_000, 4, 700))),
+                state(usage = StorageUsageState.Content(StorageUsage(5_000, 4, 700))),
                 viewModel().state,
             )
         }
@@ -223,7 +248,7 @@ class DataStorageViewModelTest {
 
             assertEquals(1, client.sentOf<TdApi.OptimizeStorage>().size)
             assertEquals(
-                DataStorageUiState(usage = usage(filesSize = 5_000), isClearingCache = true),
+                state(usage = usage(filesSize = 5_000), isClearingCache = true),
                 viewModel.state,
             )
         }
@@ -254,7 +279,7 @@ class DataStorageViewModelTest {
             send(viewModel, DataStorageEvent.ClearCache, DataStorageEvent.ConfirmClearCache)
 
             assertEquals(listOf(DataStorageEffect.CacheCleared(freedBytes = 4_000)), effects)
-            assertEquals(DataStorageUiState(usage = usage(filesSize = 1_000)), viewModel.state)
+            assertEquals(state(usage = usage(filesSize = 1_000)), viewModel.state)
         }
 
     @Test
@@ -267,7 +292,7 @@ class DataStorageViewModelTest {
 
             send(viewModel, DataStorageEvent.ClearCache, DataStorageEvent.ConfirmClearCache)
 
-            assertEquals(DataStorageUiState(usage = usage(filesSize = 5_000)), viewModel.state)
+            assertEquals(state(usage = usage(filesSize = 5_000)), viewModel.state)
         }
 
     @Test
@@ -281,7 +306,7 @@ class DataStorageViewModelTest {
             send(viewModel, DataStorageEvent.ClearCache, DataStorageEvent.ConfirmClearCache)
 
             assertEquals(listOf(DataStorageEffect.ShowError(DomainError.FloodWait(9))), effects)
-            assertEquals(DataStorageUiState(usage = usage(filesSize = 5_000)), viewModel.state)
+            assertEquals(state(usage = usage(filesSize = 5_000)), viewModel.state)
 
             answerClearCache(freed = 1)
             send(viewModel, DataStorageEvent.ClearCache, DataStorageEvent.ConfirmClearCache)
@@ -339,7 +364,7 @@ class DataStorageViewModelTest {
 
             val restored = viewModel(SavedStateHandle(savedState.keys().associateWith { savedState.get<Any>(it) }))
 
-            assertEquals(DataStorageUiState(usage = usage(filesSize = 5_000)), restored.state)
+            assertEquals(state(usage = usage(filesSize = 5_000)), restored.state)
         }
 
     private companion object {

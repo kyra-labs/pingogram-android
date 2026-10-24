@@ -87,6 +87,70 @@ class AttachmentPreparerTest {
     }
 
     @Test
+    fun `without compression a JPEG goes as a file under its name, its image data kept without its metadata`() {
+        content.add("content://photo", "IMG_4.jpg", "image/jpeg", bytes = byteArrayOf(PHOTO))
+        media.images[PHOTO] = ImageInfo(8000, 6000, Orientation.fromExif(6))
+        media.jpegs += PHOTO
+
+        val document = prepared("content://photo", AttachmentKind.Original).value() as Attachment.Document
+
+        assertEquals(
+            listOf<Any>("IMG_4.jpg", "image/jpeg", FakeMediaProcessor.strippedBytes.size.toLong()),
+            listOf(document.fileName, document.mimeType, document.size),
+        )
+        assertTrue(media.plans.isEmpty())
+        // The picked copy, with its metadata, is gone.
+        assertEquals(listOf("IMG_4.jpg"), leftFiles())
+        assertEquals(FakeMediaProcessor.strippedBytes.toList(), File(document.path).readBytes().toList())
+    }
+
+    @Test
+    fun `without compression another photo is written anew at its size and best quality, as a file`() {
+        content.add("content://photo", "IMG_5.heic", "image/heic", bytes = byteArrayOf(PHOTO))
+        media.images[PHOTO] = ImageInfo(12000, 9000, Orientation.Normal)
+
+        val document = prepared("content://photo", AttachmentKind.Original).value() as Attachment.Document
+
+        assertEquals(listOf("IMG_5.jpg", "image/jpeg"), listOf(document.fileName, document.mimeType))
+        assertEquals(listOf(8192, 6144), media.plans.single().let { listOf(it.width, it.height) })
+        assertEquals(listOf(ORIGINAL_JPEG_QUALITY), media.qualities)
+        assertEquals(listOf("IMG_5.jpg"), leftFiles())
+    }
+
+    @Test
+    fun `a photo whose metadata cannot be taken out is not sent without compression`() {
+        content.add("content://photo", "IMG_6.heic", "image/heic", bytes = byteArrayOf(PHOTO))
+        media.images[PHOTO] = ImageInfo(100, 100, Orientation.Normal)
+        media.canWritePhotos = false
+
+        assertEquals(Outcome.Failure(DomainError.FileUnavailable), prepared("content://photo", AttachmentKind.Original))
+        assertTrue(leftFiles().isEmpty())
+    }
+
+    @Test
+    fun `without compression a video goes as a file, as it is`() {
+        content.add("content://video", "VID_1.mp4", "video/mp4", bytes = byteArrayOf(VIDEO))
+        media.videos[VIDEO] = VideoInfo(1920, 1080, 0, 5_000)
+
+        val document = prepared("content://video", AttachmentKind.Original).value() as Attachment.Document
+
+        assertEquals(listOf("VID_1.mp4", "video/mp4"), listOf(document.fileName, document.mimeType))
+        assertTrue(media.thumbnails.isEmpty())
+    }
+
+    @Test
+    fun `a photo longer than Telegram takes as a photo goes as a file, without its metadata`() {
+        content.add("content://panorama", "PANO_1.jpg", "image/jpeg", bytes = byteArrayOf(PHOTO))
+        media.images[PHOTO] = ImageInfo(21000, 1000, Orientation.Normal)
+        media.jpegs += PHOTO
+
+        val document = prepared("content://panorama").value() as Attachment.Document
+
+        assertEquals("PANO_1.jpg", document.fileName)
+        assertTrue(media.plans.isEmpty())
+    }
+
+    @Test
     fun `a GIF from the gallery goes as a document, so Telegram shows it animated`() {
         content.add("content://gif", "cat.gif", "image/gif", bytes = byteArrayOf(PHOTO))
         media.images[PHOTO] = ImageInfo(100, 100, Orientation.Normal)

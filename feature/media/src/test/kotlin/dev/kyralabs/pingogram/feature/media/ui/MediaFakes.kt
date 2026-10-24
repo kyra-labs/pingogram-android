@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -316,14 +317,24 @@ internal class FakeVideoPlayer : VideoPlayer {
 
     override var durationMillis: Long? = null
 
-    /** `play:<path>:<kind>`, `pause`, `resume`, `seek:<position>`, `stop`, `muted:<muted>` and `release`, in order. */
+    override var bufferedMillis = 0L
+
+    /**
+     * `play:<path>:<kind>` (`play:stream:<file id>:<kind>` for a stream), `pause`, `resume`, `seek:<position>`, `stop`,
+     * `muted:<muted>` and `release`, in order.
+     */
     val calls = mutableListOf<String>()
 
     override fun play(
-        path: String,
+        source: PlaySource,
         kind: VideoKind,
     ) {
-        calls += "play:$path:$kind"
+        val played =
+            when (source) {
+                is PlaySource.File -> source.path
+                is PlaySource.Stream -> "stream:${source.fileId}"
+            }
+        calls += "play:$played:$kind"
         positionMillis = 0
     }
 

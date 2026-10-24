@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
+  seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
+  the viewer where it left off. Secret chats' videos stay in the viewer.
+- Send photos without compression: the attach preview's "Send without compression" sends photos and videos from the
+  gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
+  are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
+  long panoramas, which Telegram refuses as photos, now go as files too.
 - Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
   Pingogram (your account, profiles, contacts, shared contacts) with its country code only, "+44 •••• ••••••", for
   sharing your screen or streaming. Copying and calling still use the whole number. Off by default.
@@ -44,6 +51,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
   "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
   or all at once ("Dismiss all" asks first).
+- Power saving: Settings → Power saving turns off what plays by itself while Android's Battery Saver is on (or always,
+  or never). Animated stickers and emoji show their first frame, videos and GIFs in the media viewer wait for you to
+  tap play, and the call screens' animations stand still; each can be left on.
+- Media viewer: videos start playing while they download, as soon as there is enough to show, and the seek bar shows
+  how much has arrived. Seeking ahead downloads from there instead of everything before it, and leaving the video stops
+  its download. Videos sent in a way that cannot stream still play once downloaded.
 - Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
   restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
   group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a
@@ -128,6 +141,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
+- Voice messages pause the music another app plays only while they play, and it plays on after them. A call pauses
+  a voice message or video that plays.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.

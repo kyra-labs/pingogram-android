@@ -104,6 +104,10 @@ class AttachScreenshotTest(
                             ComposerUiState.Available(true, attachOptions = AttachOption.entries.toImmutableList()),
                     ),
                 "previewMedia" to ChatPreviewData.privateChat.copy(attachPreview = AttachPreviewData.media),
+                "previewOriginal" to
+                    ChatPreviewData.privateChat.copy(
+                        attachPreview = AttachPreviewData.media.copy(offersOriginal = true, original = true),
+                    ),
                 "previewFiles" to ChatPreviewData.privateChat.copy(attachPreview = AttachPreviewData.files),
                 "pollForm" to ChatPreviewData.groupChat.copy(poll = PollSheet()),
                 "uploading" to ChatPreviewData.uploading,

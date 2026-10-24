@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLicensesRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
+import dev.kyralabs.pingogram.core.navigation.PowerSavingRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySecurityRoute
 import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.core.navigation.ProxiesRoute
@@ -68,6 +69,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingRoute as PowerSavingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsRoute as ReactionNotificationsScreenRoute
@@ -162,10 +164,11 @@ private fun NavGraphBuilder.stickerPages(
 
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
- * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
- * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
+ * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [PowerSavingRoute], [LanguageRoute],
+ * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
  * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute], [ChatAppearanceRoute] and [QuickReactionRoute]
- * above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
+ * above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set
+ * ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
  * above Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage,
  * [EditProxyRoute] above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination),
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
@@ -227,6 +230,7 @@ fun NavGraphBuilder.settingsPages(
         }
     }
     networkPages(onOpen, onBack)
+    settingsPage<PowerSavingRoute> { PowerSavingScreenRoute(onBack = onBack) }
     settingsPage<LanguageRoute> { LanguageScreenRoute(onBack = onBack) }
     settingsPage<AboutRoute> { AboutScreenRoute(onOpenLicenses = { onOpen(OpenSourceLicensesRoute) }, onBack = onBack) }
     settingsPage<OpenSourceLicensesRoute> {
@@ -341,6 +345,7 @@ internal val SettingsPage.route: Any
             SettingsPage.Stickers -> StickersRoute
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
+            SettingsPage.PowerSaving -> PowerSavingRoute
             SettingsPage.Language -> LanguageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
