@@ -797,6 +797,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
   `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
   download button.
+- Power saving (Settings → Power saving): `core:domain`'s `PowerSavingSettings` (the mode: off, with Battery Saver,
+  always; the parts it turns off: animated stickers and custom emoji, autoplay, call screen animations) are kept in
+  DataStore (`DataStorePowerSavingRepository`, bound in its own `PowerSavingModule`), `AndroidBatterySaverRepository`
+  (`core:data`) follows `PowerManager.isPowerSaveMode` through `ACTION_POWER_SAVE_MODE_CHANGED`, and
+  `DefaultPowerSavingPolicy` combines both into what is turned off now (`PowerSavingPolicy.inEffect`, `PowerSaving`).
+  Three places follow it: `:app`'s `AnimatedStickersModule` hands `AnimatedStickers` a `still` flow, which holds every
+  sticker and custom emoji at its first frame (`StickerPlayer`); `MediaViewerViewModel` turns `MediaPlayback`'s
+  autoplay off, so the current video or GIF waits for its play button (`VideoPlayback.waitsForTap`); `CallActivity`
+  and `GroupCallActivity` pass it to `CallTheme`, whose `LocalStillCallAnimations` holds the ringing avatar's turn and
+  the speaking rings' fades still. `feature:settings`' `PowerSavingRoute` (`PowerSavingViewModel`) sets it. Reduced
+  motion stays the system's.
 - Background transfers (FR-N4, `docs/adr/0009-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or

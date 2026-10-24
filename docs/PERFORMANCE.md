@@ -192,6 +192,9 @@ regresses by more than 10%.
 - The home screen widget has no timer (`updatePeriodMillis` 0): it is redrawn when the chats change while the process
   runs and a widget is placed, 1 s after the last change (`docs/adr/0017-home-screen-widget.md`).
 - Respect Doze and App Standby buckets; never request battery-optimization exemptions by default.
+- Power saving (Settings → Power saving, with Battery Saver by default): while on, animated stickers and custom emoji
+  hold their first frame (no rendering thread work, no frame draws), videos and GIFs in the media viewer wait for a tap,
+  and the call screens' ringing avatar and speaking rings stand still. Each part can be left on.
 
 ## 7. Network & data
 

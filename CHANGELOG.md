@@ -42,6 +42,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
   "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
   or all at once ("Dismiss all" asks first).
+- Power saving: Settings → Power saving turns off what plays by itself while Android's Battery Saver is on (or always,
+  or never). Animated stickers and emoji show their first frame, videos and GIFs in the media viewer wait for you to
+  tap play, and the call screens' animations stand still; each can be left on.
 - Media viewer: videos start playing while they download, as soon as there is enough to show, and the seek bar shows
   how much has arrived. Seeking ahead downloads from there instead of everything before it, and leaving the video stops
   its download. Videos sent in a way that cannot stream still play once downloaded.
