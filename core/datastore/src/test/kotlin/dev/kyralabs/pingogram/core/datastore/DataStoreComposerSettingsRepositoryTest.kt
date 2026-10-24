@@ -3,10 +3,13 @@ package dev.kyralabs.pingogram.core.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -34,9 +37,9 @@ class DataStoreComposerSettingsRepositoryTest {
         PreferenceDataStoreFactory.create(scope = scope, produceFile = { file })
 
     @Test
-    fun `is off until turned on`() =
+    fun `a hardware keyboard's Enter sends, the on-screen keyboard's does not, until changed`() =
         runTest {
-            assertEquals(false, DataStoreComposerSettingsRepository(dataStore()).sendWithCtrlEnter.first())
+            assertEquals(SendKeys(), DataStoreComposerSettingsRepository(dataStore()).sendKeys.first())
         }
 
     @Test
@@ -44,34 +47,58 @@ class DataStoreComposerSettingsRepositoryTest {
         runTest {
             val repository = DataStoreComposerSettingsRepository(dataStore())
 
-            repository.sendWithCtrlEnter.test {
-                assertEquals(false, awaitItem())
+            repository.sendKeys.test {
+                assertEquals(SendKeys(), awaitItem())
 
-                assertEquals(Outcome.Success(Unit), repository.setSendWithCtrlEnter(true))
-                assertEquals(true, awaitItem())
+                val onScreen = SendKeys(hardwareKeyboard = true, onScreenKeyboard = true)
+                assertEquals(Outcome.Success(Unit), repository.setSendKeys(onScreen))
+                assertEquals(onScreen, awaitItem())
 
-                repository.setSendWithCtrlEnter(false)
-                assertEquals(false, awaitItem())
+                repository.setSendKeys(SendKeys(hardwareKeyboard = false))
+                assertEquals(SendKeys(hardwareKeyboard = false), awaitItem())
             }
         }
 
     @Test
-    fun `the setting survives the app process`() =
+    fun `the settings survive the app process`() =
         runTest {
             val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
-            DataStoreComposerSettingsRepository(dataStore(firstProcess)).setSendWithCtrlEnter(true)
+            DataStoreComposerSettingsRepository(dataStore(firstProcess)).setSendKeys(SendKeys(onScreenKeyboard = true))
             firstProcess.coroutineContext[Job]?.cancelAndJoin()
 
-            assertEquals(true, DataStoreComposerSettingsRepository(dataStore()).sendWithCtrlEnter.first())
+            assertEquals(
+                SendKeys(onScreenKeyboard = true),
+                DataStoreComposerSettingsRepository(dataStore()).sendKeys.first(),
+            )
         }
 
     @Test
-    fun `a setting that cannot be read counts as off, and saving it fails`() =
+    fun `send with Ctrl+Enter, saved before, keeps Enter from sending until the next save`() =
+        runTest {
+            val store = dataStore()
+            store.edit { it[booleanPreferencesKey("composer.send_with_ctrl_enter")] = true }
+            val repository = DataStoreComposerSettingsRepository(store)
+
+            assertEquals(SendKeys(hardwareKeyboard = false), repository.sendKeys.first())
+
+            repository.setSendKeys(SendKeys())
+            assertEquals(SendKeys(), repository.sendKeys.first())
+            assertEquals(null, store.data.first()[booleanPreferencesKey("composer.send_with_ctrl_enter")])
+        }
+
+    @Test
+    fun `settings that cannot be read count as the defaults, and saving them fails`() =
         runTest {
             val repository = DataStoreComposerSettingsRepository(FailingDataStore())
 
-            assertEquals(false, repository.sendWithCtrlEnter.first())
-            assertTrue((repository.setSendWithCtrlEnter(true) as Outcome.Failure).error is DomainError.Unknown)
+            assertEquals(SendKeys(), repository.sendKeys.first())
+            assertTrue(
+                (
+                    repository.setSendKeys(
+                        SendKeys(onScreenKeyboard = true),
+                    ) as Outcome.Failure
+                ).error is DomainError.Unknown,
+            )
         }
 
     /** A settings file that can be neither read nor written, as on a failing disk. */

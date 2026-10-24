@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
@@ -39,7 +40,10 @@ import dev.kyralabs.pingogram.feature.settings.R
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
-/** The "Chats" group: Chat appearance, the composer's send key and raise to listen. */
+/**
+ * The "Chats" group: Chat appearance, which Enter sends on a hardware and on the on-screen keyboard, and raise to
+ * listen.
+ */
 @Composable
 internal fun ChatsGroup(
     chat: ChatAppearance,
@@ -51,11 +55,31 @@ internal fun ChatsGroup(
         item { shapes -> ChatAppearanceItem(chat, shapes, onOpenChatAppearance) }
         item { shapes ->
             SwitchItem(
-                title = stringResource(R.string.settings_send_with_ctrl_enter),
-                summary = stringResource(R.string.settings_send_with_ctrl_enter_summary),
-                checked = chats.sendWithCtrlEnter,
+                title = stringResource(R.string.settings_enter_sends_hardware),
+                summary =
+                    stringResource(
+                        if (chats.sendKeys.hardwareKeyboard) {
+                            R.string.settings_enter_sends_hardware_on
+                        } else {
+                            R.string.settings_enter_sends_hardware_off
+                        },
+                    ),
+                checked = chats.sendKeys.hardwareKeyboard,
                 shapes = shapes,
-                onCheckedChange = { onEvent(AppearanceEvent.SetSendWithCtrlEnter(it)) },
+                onCheckedChange = {
+                    onEvent(AppearanceEvent.SetSendKeys(chats.sendKeys.copy(hardwareKeyboard = it)))
+                },
+            )
+        }
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_enter_sends_on_screen),
+                summary = stringResource(R.string.settings_enter_sends_on_screen_summary),
+                checked = chats.sendKeys.onScreenKeyboard,
+                shapes = shapes,
+                onCheckedChange = {
+                    onEvent(AppearanceEvent.SetSendKeys(chats.sendKeys.copy(onScreenKeyboard = it)))
+                },
             )
         }
         item { shapes ->
@@ -81,9 +105,9 @@ internal fun ChatsGroup(
     }
 }
 
-/** The "Chats" group's settings beside the appearance: the composer's send key and raise to listen. */
+/** The "Chats" group's settings beside the appearance: which Enter sends a message, and raise to listen. */
 internal class ChatsSettings(
-    val sendWithCtrlEnter: Boolean,
+    val sendKeys: SendKeys,
     val raiseToListen: RaiseToListenSettings,
 )
 

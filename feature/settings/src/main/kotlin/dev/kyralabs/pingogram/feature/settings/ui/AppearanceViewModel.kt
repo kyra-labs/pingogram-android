@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.onFailure
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
@@ -29,12 +30,12 @@ sealed interface AppearanceUiState {
     data object Loading : AppearanceUiState
 
     /**
-     * The [settings], whether Ctrl+Enter sends messages from a hardware keyboard ([sendWithCtrlEnter]) and how voice
-     * messages play at the ear ([raiseToListen]).
+     * The [settings], which Enter sends the composer's messages ([sendKeys]) and how voice messages play at the ear
+     * ([raiseToListen]).
      */
     data class Content(
         val settings: AppearanceSettings,
-        val sendWithCtrlEnter: Boolean = false,
+        val sendKeys: SendKeys = SendKeys(),
         val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
     ) : AppearanceUiState
 }
@@ -53,9 +54,9 @@ sealed interface AppearanceEvent {
         val contrast: Contrast,
     ) : AppearanceEvent
 
-    /** "Send with Ctrl+Enter" turned on or off. */
-    data class SetSendWithCtrlEnter(
-        val enabled: Boolean,
+    /** "Enter sends" turned on or off for a hardware or the on-screen keyboard. */
+    data class SetSendKeys(
+        val keys: SendKeys,
     ) : AppearanceEvent
 
     /** "Raise to listen" turned on or off. */
@@ -92,11 +93,11 @@ class AppearanceViewModel
         private val playbackSettingsRepository: PlaybackSettingsRepository,
     ) : ViewModel() {
         val uiState: StateFlow<AppearanceUiState> =
-            combine<AppearanceSettings, Boolean, RaiseToListenSettings, AppearanceUiState>(
+            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, AppearanceUiState>(
                 appearanceRepository.appearance,
-                composerSettingsRepository.sendWithCtrlEnter,
+                composerSettingsRepository.sendKeys,
                 playbackSettingsRepository.raiseToListen,
-            ) { settings, ctrlEnter, raise -> AppearanceUiState.Content(settings, ctrlEnter, raise) }
+            ) { settings, keys, raise -> AppearanceUiState.Content(settings, keys, raise) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
 
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
@@ -118,8 +119,8 @@ class AppearanceViewModel
                             appearanceRepository.setContrast(event.contrast)
                         }
 
-                        is AppearanceEvent.SetSendWithCtrlEnter -> {
-                            composerSettingsRepository.setSendWithCtrlEnter(event.enabled)
+                        is AppearanceEvent.SetSendKeys -> {
+                            composerSettingsRepository.setSendKeys(event.keys)
                         }
 
                         is AppearanceEvent.SetRaiseToListen -> {

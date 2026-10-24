@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -18,7 +19,8 @@ import javax.inject.Singleton
 
 /**
  * [ComposerSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). A file that cannot
- * be read and a missing key read as off, the default: Enter sends.
+ * be read and missing keys read as the defaults. "Send with Ctrl+Enter", the setting before (2026-10-23), still counts
+ * until the first save: on, it means a hardware keyboard's Enter does not send.
  */
 @Singleton
 class DataStoreComposerSettingsRepository
@@ -26,20 +28,33 @@ class DataStoreComposerSettingsRepository
     constructor(
         @param:SettingsDataStore private val dataStore: DataStore<Preferences>,
     ) : ComposerSettingsRepository {
-        override val sendWithCtrlEnter: Flow<Boolean> =
+        override val sendKeys: Flow<SendKeys> =
             dataStore.data
                 .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
-                .map { it[SEND_WITH_CTRL_ENTER] ?: false }
-                .distinctUntilChanged()
+                .map { preferences ->
+                    SendKeys(
+                        hardwareKeyboard =
+                            preferences[ENTER_SENDS_HARDWARE] ?: (preferences[SEND_WITH_CTRL_ENTER] != true),
+                        onScreenKeyboard = preferences[ENTER_SENDS_ON_SCREEN] ?: false,
+                    )
+                }.distinctUntilChanged()
 
-        override suspend fun setSendWithCtrlEnter(enabled: Boolean): Outcome<Unit> =
+        override suspend fun setSendKeys(keys: SendKeys): Outcome<Unit> =
             try {
-                dataStore.edit { it[SEND_WITH_CTRL_ENTER] = enabled }
+                dataStore.edit {
+                    it[ENTER_SENDS_HARDWARE] = keys.hardwareKeyboard
+                    it[ENTER_SENDS_ON_SCREEN] = keys.onScreenKeyboard
+                    it.remove(SEND_WITH_CTRL_ENTER)
+                }
                 Outcome.Success(Unit)
             } catch (error: IOException) {
                 Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
             }
     }
 
-// The key in the settings file; renaming it loses what users saved under it.
+// The keys in the settings file; renaming them loses what users saved under them.
+private val ENTER_SENDS_HARDWARE = booleanPreferencesKey("composer.enter_sends_hardware")
+private val ENTER_SENDS_ON_SCREEN = booleanPreferencesKey("composer.enter_sends_on_screen")
+
+/** The setting before [ENTER_SENDS_HARDWARE], read until the first save, which removes it. */
 private val SEND_WITH_CTRL_ENTER = booleanPreferencesKey("composer.send_with_ctrl_enter")

@@ -66,7 +66,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
   `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
-  `ComposerSettingsRepository`, the composer's send key, which Appearance → Chats sets). Preferences rather than Proto
+  `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Appearance → Chats and
+  handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`). Preferences rather than Proto
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
