@@ -25,6 +25,8 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.pip.PictureInPictureVideos
+import dev.kyralabs.pingogram.feature.media.pip.PipVideo
 import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
@@ -96,9 +98,10 @@ import javax.inject.Inject
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
  *
  * It takes one repository per kind of data, plus the player, file actions, clock, dispatcher, scope, language and
- * time patterns that tests replace, hence `LongParameterList` is suppressed.
+ * time patterns that tests replace, hence `LongParameterList` is suppressed; and one function per kind of work it does
+ * itself (loading, paging, spoilers, deletions, picture-in-picture), hence `TooManyFunctions`.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MediaViewerViewModel internal constructor(
@@ -116,6 +119,7 @@ class MediaViewerViewModel internal constructor(
     locale: () -> Locale,
     private val videoPlayer: VideoPlayer,
     sharedStorage: SharedStorageRepository,
+    private val pictureInPicture: PictureInPictureVideos,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -131,6 +135,7 @@ class MediaViewerViewModel internal constructor(
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
         sharedStorage: SharedStorageRepository,
+        pictureInPicture: PictureInPictureVideos,
     ) : this(
         savedStateHandle.toRoute<MediaViewerRoute>(),
         savedStateHandle,
@@ -146,6 +151,7 @@ class MediaViewerViewModel internal constructor(
         Locale::getDefault,
         videoPlayer,
         sharedStorage,
+        pictureInPicture,
     )
 
     private val chatId = route.chatId
@@ -197,7 +203,10 @@ class MediaViewerViewModel internal constructor(
         }
 
     private val playback =
-        MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }
+        MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
+            // Picture-in-picture gave this video back: it plays on from where the window left it.
+            pictureInPicture.takeReturn(chatId, route.messageId)?.let { startAt(it.messageId, it.positionMillis) }
+        }
 
     /** The last [files], whose states carry over while the next ones are subscribed; main thread only. */
     private var knownFiles: Map<Int, FileState> = emptyMap()
@@ -309,20 +318,16 @@ class MediaViewerViewModel internal constructor(
                 playback.playPause()
             }
 
+            MediaViewerEvent.PictureInPicture -> {
+                toPictureInPicture()
+            }
+
             is MediaViewerEvent.Seek -> {
                 playback.seek(event.fraction)
             }
 
-            MediaViewerEvent.Share -> {
-                sharing.start(MediaAction.Share)
-            }
-
-            MediaViewerEvent.Save -> {
-                sharing.start(MediaAction.Save)
-            }
-
-            MediaViewerEvent.Copy -> {
-                sharing.start(MediaAction.Copy)
+            MediaViewerEvent.Share, MediaViewerEvent.Save, MediaViewerEvent.Copy -> {
+                event.mediaAction?.let(sharing::start)
             }
 
             MediaViewerEvent.Delete -> {
@@ -358,6 +363,33 @@ class MediaViewerViewModel internal constructor(
                 sharing.permission.onResult(event.granted)
             }
         }
+    }
+
+    /**
+     * Hands the video playing to picture-in-picture ([PictureInPictureVideos]), which plays on from its position, and
+     * closes the viewer. Never a secret chat's media, which only its window, kept secure, may show.
+     */
+    private fun toPictureInPicture() {
+        val clip =
+            viewer.value.window
+                ?.messages
+                ?.firstOrNull { it.id == viewer.value.currentId }
+                ?.content
+                ?.toViewerMedia() as? ViewerMedia.Clip
+        // The player hands the video over only once the clip may leave the window.
+        val (media, handOff) =
+            clip?.takeUnless { isSecretChat.value }?.let { c -> playback.handOff()?.let { c to it } } ?: return
+        pictureInPicture.start(
+            PipVideo(
+                chatId = chatId,
+                messageId = handOff.target.messageId,
+                source = handOff.target.source,
+                positionMillis = handOff.positionMillis,
+                width = media.video.width,
+                height = media.video.height,
+            ),
+        )
+        effectChannel.trySend(MediaViewerEffect.OpenPictureInPicture)
     }
 
     /** The settled page's item becomes the current one; a side that failed is tried again as the user moves on. */

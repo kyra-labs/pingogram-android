@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
+  seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
+  the viewer where it left off. Secret chats' videos stay in the viewer.
 - Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →
   Double-tap to react picks the quick reaction (it belongs to your Telegram account, so your other apps use it too) and
   whether double taps react on others' messages, your own, or neither. A single tap still acts at once.

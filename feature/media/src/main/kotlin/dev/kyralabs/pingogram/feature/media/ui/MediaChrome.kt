@@ -22,17 +22,23 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -67,7 +73,6 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.media.R
-import java.util.Locale
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
@@ -165,6 +170,7 @@ internal fun ViewerBottomBar(
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
     actions: (@Composable () -> Unit)? = null,
+    canPictureInPicture: Boolean = false,
 ) {
     val controls = playback?.takeIf { item.media is ViewerMedia.Clip && it.messageId == item.messageId }
     if (item.caption.text.isEmpty() && controls == null && actions == null) return
@@ -196,6 +202,7 @@ internal fun ViewerBottomBar(
                 playback = controls,
                 durationSeconds = media.video.duration,
                 onEvent = onEvent,
+                canPictureInPicture = canPictureInPicture,
                 modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small).then(maxWidth),
             )
         }
@@ -258,6 +265,7 @@ private fun VideoControls(
     durationSeconds: Int,
     onEvent: (MediaViewerEvent) -> Unit,
     modifier: Modifier = Modifier,
+    canPictureInPicture: Boolean = false,
 ) {
     val sliderState = remember(playback.messageId) { SliderState(value = playback.progress()) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -297,6 +305,23 @@ private fun VideoControls(
             track = { state -> BufferedTrack(state, playback.buffered) },
         )
         TimeText(formatDuration(durationSeconds, locale))
+        if (canPictureInPicture) PictureInPictureButton(onClick = { onEvent(MediaViewerEvent.PictureInPicture) })
+    }
+}
+
+/** Picture-in-picture, an icon button named for screen readers and in a [PlainTooltip] on a long press or hover. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PictureInPictureButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.media_picture_in_picture)
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+    ) {
+        IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
+            Icon(painterResource(R.drawable.ic_picture_in_picture), contentDescription = label)
+        }
     }
 }
 
@@ -310,28 +335,8 @@ private fun TimeText(text: String) {
     )
 }
 
-/** A media length or position, "0:05", "1:05" or "1:01:05", in the digits of [locale]. Negative counts as 0. */
-internal fun formatDuration(
-    seconds: Int,
-    locale: Locale,
-): String {
-    val total = seconds.coerceAtLeast(0)
-    val hours = total / SECONDS_PER_HOUR
-    val minutes = total / SECONDS_PER_MINUTE % MINUTES_PER_HOUR
-    val rest = total % SECONDS_PER_MINUTE
-    return if (hours > 0) {
-        String.format(locale, "%d:%02d:%02d", hours, minutes, rest)
-    } else {
-        String.format(locale, "%d:%02d", minutes, rest)
-    }
-}
-
 /** Lines of a collapsed caption. */
 private const val COLLAPSED_LINES = 3
 
 /** The most of the window's height an expanded caption takes before it scrolls. */
 private const val EXPANDED_MAX_HEIGHT_FRACTION = 0.4f
-
-private const val SECONDS_PER_MINUTE = 60
-private const val MINUTES_PER_HOUR = 60
-private const val SECONDS_PER_HOUR = 3_600
