@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.CreationExtras
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
+import dev.kyralabs.pingogram.feature.media.pip.PictureInPictureVideos
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.CHAT
 import dev.kyralabs.pingogram.feature.media.ui.MediaFixtures.NOW
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,7 @@ abstract class MediaViewerViewModelHarness {
     protected val messageActions = FakeMessageActionRepository()
     internal val player = FakeVideoPlayer()
     protected val sharedStorage = FakeSharedStorageRepository()
+    protected val pictureInPicture = PictureInPictureVideos()
 
     /** The view models the test made, cleared when it ends. */
     private val created = mutableListOf<MediaViewerViewModel>()
@@ -72,6 +74,7 @@ abstract class MediaViewerViewModelHarness {
                 locale = { Locale.US },
                 videoPlayer = player,
                 sharedStorage = sharedStorage,
+                pictureInPicture = pictureInPicture,
             )
         created += viewModel
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }

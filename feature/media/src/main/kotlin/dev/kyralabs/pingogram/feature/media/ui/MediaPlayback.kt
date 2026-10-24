@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
  *
  * Main thread only, like the player. A file the player cannot play goes to [onFailed], once.
  */
+@Suppress("TooManyFunctions") // The one player's state machine: a function per thing the viewer or the player does.
 internal class MediaPlayback(
     private val player: VideoPlayer,
     private val scope: CoroutineScope,
@@ -41,6 +42,9 @@ internal class MediaPlayback(
     private var session: Session? = null
     private val ticker = ProgressTicker(player, scope)
     private var isStarted = false
+
+    /** Where a message's video is to start ([startAt]), until it does. */
+    private var startPosition: Pair<Long, Long>? = null
 
     /** The target the player failed to play, not tried again until another one was shown. */
     private var failed: PlayTarget? = null
@@ -121,6 +125,25 @@ internal class MediaPlayback(
         player.seekTo((target * length).toLong())
     }
 
+    /**
+     * The video in the player with where it is, for picture-in-picture, which plays on from there: the player stops.
+     * Null for a GIF, or a video not playing yet.
+     */
+    fun handOff(): HandOff? {
+        val current = session?.takeIf { it.hasStarted && it.target.kind == VideoKind.Video } ?: return null
+        val position = if (current.progress.floatValue >= 1f) 0L else player.positionMillis
+        stop()
+        return HandOff(current.target, position)
+    }
+
+    /** Message [messageId]'s video, once it plays, starts at [positionMillis]: picture-in-picture gave it back. */
+    fun startAt(
+        messageId: Long,
+        positionMillis: Long,
+    ) {
+        startPosition = messageId to positionMillis
+    }
+
     /** Stops and frees the player for good. */
     fun release() {
         stop()
@@ -132,6 +155,12 @@ internal class MediaPlayback(
         session.hasStarted = true
         session.isPlaying = true
         player.play(session.target.source, session.target.kind)
+        startPosition?.takeIf { it.first == session.target.messageId }?.let { (_, position) ->
+            startPosition = null
+            player.seekTo(position)
+            val length = session.target.durationMillis
+            if (length > 0) session.progress.floatValue = (position.toFloat() / length).coerceIn(0f, 1f)
+        }
         ticker.start(session)
         publish()
     }
@@ -168,6 +197,12 @@ internal class MediaPlayback(
             }
     }
 }
+
+/** A video taken out of the player at [positionMillis], for picture-in-picture. */
+internal data class HandOff(
+    val target: PlayTarget,
+    val positionMillis: Long,
+)
 
 /** What the player is to play: [source] of message [messageId], as [kind], [durationMillis] long. */
 internal data class PlayTarget(

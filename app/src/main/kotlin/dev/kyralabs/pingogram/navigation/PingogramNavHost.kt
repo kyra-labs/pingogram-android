@@ -50,6 +50,7 @@ import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
 import dev.kyralabs.pingogram.feature.feedback.navigation.feedbackScreen
+import dev.kyralabs.pingogram.feature.media.navigation.ReturnFromPictureInPictureEffect
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToMediaViewer
 import dev.kyralabs.pingogram.feature.media.navigation.navigateToStoryViewer
 import dev.kyralabs.pingogram.feature.media.navigation.storyViewerScreen
@@ -133,6 +134,7 @@ internal fun PingogramNavHost(
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
+    ReturnFromPictureInPictureEffect(navController)
 }
 
 /**
