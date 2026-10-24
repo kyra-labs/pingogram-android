@@ -364,6 +364,12 @@ regresses by more than 10%.
   3. From the repository, run `tools/perfetto/video-call.sh` and keep the call going until it prints "Done" (5 minutes).
   4. Send back its folder: `device.txt`, `meminfo.txt` and `video-call.perfetto-trace`.
 
+  A voice chat with video (`docs/adr/0024-video-in-voice-chats.md`) is recorded the same way: join a group's voice
+  chat where four others send their cameras (from Telegram's apps), turn Pingogram's camera on, keep the voice chat's
+  screen in front with the four videos and the self-view showing, and run step 3. Each video's frames go to their own
+  renderer (`EglRenderer` threads named "Participant …"), so the trace shows what each costs; the four tell whether
+  the cap of four holds on that phone.
+
   §1 has no budget for calls yet: the first results go here and set one.
 - LeakCanary in debug builds; a leak fails the nightly.
 - Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only (the plugin skips

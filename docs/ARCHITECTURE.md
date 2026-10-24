@@ -901,6 +901,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `GroupCallRepository.setMyVideoEnabled` (`toggleGroupCallIsMyVideoEnabled`); the most it sends follows the network as
   in one-to-one calls (`VideoQuality.forNetwork`), none while held, and it stops when Telegram takes video back. The
   screen draws the self-view through `setSelfVideoSink`, and the call service adds the `camera` type while it sends.
+  The others' videos: `GroupCallParticipant.video` (`video_info`: the endpoint, its SSRC groups, paused) picks at most
+  four (`GroupCallManager.chooseVideos`: the pinned one, `setPinned`, then those speaking, then TDLib's order; none in
+  a stream), which the engine subscribes to (`GroupCallSession.receiveVideos`, NTgCalls' `addIncomingVideo` /
+  `removeIncomingVideo`) and routes by their frames' SSRC to the sink of each tile (`setParticipantVideoSink`, one
+  `CallVideoView` per endpoint); the screen gets them as `ActiveGroupCall.video.remote`.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

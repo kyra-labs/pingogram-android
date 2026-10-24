@@ -3,9 +3,11 @@ package dev.kyralabs.pingogram.core.data.mapper
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
+import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallSpeaker
 import dev.kyralabs.pingogram.core.domain.model.GroupCallStream
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
+import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 
@@ -61,6 +63,27 @@ internal fun TdApi.GroupCallParticipant.toGroupCallParticipant(): GroupCallParti
         canBeMutedForAllUsers = canBeMutedForAllUsers,
         canBeUnmutedForAllUsers = canBeUnmutedForAllUsers,
         order = order.orEmpty(),
+        video = videoInfo?.toParticipantVideo(),
+    )
+}
+
+private fun TdApi.GroupCallParticipantVideoInfo.toParticipantVideo(): GroupCallParticipantVideo? {
+    val endpoint = endpointId?.takeIf { it.isNotEmpty() } ?: return null
+    return GroupCallParticipantVideo(
+        endpointId = endpoint,
+        sourceGroups =
+            sourceGroups
+                .orEmpty()
+                .map { group ->
+                    GroupCallVideoSourceGroup(
+                        group.semantics.orEmpty(),
+                        group.sourceIds
+                            ?.toList()
+                            .orEmpty()
+                            .toImmutableList(),
+                    )
+                }.toImmutableList(),
+        isPaused = isPaused,
     )
 }
 

@@ -127,6 +127,12 @@ class GroupCallViewModel
         /** Where the user's own camera's frames go while the screen draws the self-view; null once it does not. */
         fun setSelfVideoSink(sink: VideoFrameSink?) = manager.setSelfVideoSink(sink)
 
+        /** Where the frames of the video at [endpointId] go while its tile shows; null once it does not. */
+        fun setParticipantVideoSink(
+            endpointId: String,
+            sink: VideoFrameSink?,
+        ) = manager.setParticipantVideoSink(endpointId, sink)
+
         override fun onCleared() {
             manager.setVideoSink(null)
             manager.setSelfVideoSink(null)
@@ -173,6 +179,10 @@ class GroupCallViewModel
                     viewModelScope.launch { manager.switchCamera() }
                 }
 
+                is GroupCallEvent.TogglePin -> {
+                    togglePin(event.key)
+                }
+
                 is GroupCallEvent.CameraResult -> {
                     if (event.granted) {
                         viewModelScope.launch { manager.setCameraOn(true) }
@@ -196,6 +206,12 @@ class GroupCallViewModel
 
                 else -> effectChannel.trySend(CallEffect.RequestCamera)
             }
+        }
+
+        private fun togglePin(key: String) {
+            val video = manager.call.value?.video ?: return
+            val participant = video.remote.firstOrNull { it.participant.key() == key }?.participant ?: return
+            viewModelScope.launch { manager.setPinned(participant.takeIf { it != video.pinned }) }
         }
 
         private suspend fun takeAction() {
@@ -292,7 +308,7 @@ class GroupCallViewModel
                 is MessageSender.User -> {
                     val user = users[sender.userId]
                     GroupCallParticipantUi(
-                        "user:${sender.userId}",
+                        sender.key(),
                         sender.userId,
                         user?.let(::displayName).orEmpty(),
                         user?.profilePhoto,
@@ -304,7 +320,7 @@ class GroupCallViewModel
                 is MessageSender.Chat -> {
                     val chat = chats.chat(sender.chatId).first()
                     GroupCallParticipantUi(
-                        "chat:${sender.chatId}",
+                        sender.key(),
                         sender.chatId,
                         chat?.title.orEmpty(),
                         chat?.photo,
@@ -362,8 +378,26 @@ class GroupCallViewModel
                     canSend = video.canSend && hasCamera,
                     camera = video.camera,
                     canSwitchCamera = video.canSwitchCamera,
+                    remote = remoteVideos(details.participants),
                 ),
         )
+
+        /** The others' videos, named from their rows; a participant TDLib has not announced yet waits. */
+        private fun ActiveGroupCall.remoteVideos(rows: ImmutableList<GroupCallParticipantUi>) =
+            video.remote
+                .mapNotNull { remote ->
+                    val key = remote.participant.key()
+                    rows.firstOrNull { it.key == key }?.let { row ->
+                        ParticipantVideoUi(
+                            key = key,
+                            endpointId = remote.endpointId,
+                            name = row.name,
+                            isPaused = remote.isPaused,
+                            isPinned = remote.participant == video.pinned,
+                            isSpeaking = row.state == ParticipantState.Speaking,
+                        )
+                    }
+                }.toImmutableList()
 
         private companion object {
             const val KEY_DONE = "group_call_action_done"
@@ -376,6 +410,13 @@ class GroupCallViewModel
     }
 
 private fun ActiveGroupCall.isOver() = phase is GroupCallPhase.Ended
+
+/** A participant's row key, also their video tile's: "user:42" or "chat:-100". */
+private fun MessageSender.key(): String =
+    when (this) {
+        is MessageSender.User -> "user:$userId"
+        is MessageSender.Chat -> "chat:$chatId"
+    }
 
 /** First and last name, as TDLib has them; the screen resolves an empty one to "Someone". */
 private fun displayName(user: User): String =

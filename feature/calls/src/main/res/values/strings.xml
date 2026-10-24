@@ -49,6 +49,9 @@
     <string name="call_remote_video">Video of %1$s</string>
     <!-- Over the other person's video while it does not come: their app is in the background, or the connection is weak. -->
     <string name="call_video_paused">Video paused</string>
+    <string name="group_call_pin">Pin video</string>
+    <string name="group_call_unpin">Unpin video</string>
+    <string name="group_call_video_pinned">Pinned</string>
     <!-- The incoming call's chip: declines the call and opens the chat with the caller. -->
     <string name="call_message">Message</string>
     <!-- The answer slider, for screen readers, which answer and decline through its actions. -->

@@ -2,6 +2,9 @@ package dev.kyralabs.pingogram.feature.calls
 
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /**
  * The voice chat or live stream the user is in, as [GroupCallManager] runs it
@@ -37,6 +40,18 @@ data class GroupCallVideo(
     val camera: CameraFacing? = null,
     /** The device has a front and a back camera. */
     val canSwitchCamera: Boolean = false,
+    /** The others' videos received, at most four, in the order they show: pinned, then speakers. */
+    val remote: ImmutableList<RemoteParticipantVideo> = persistentListOf(),
+    /** The participant the user pinned on this device, or null. */
+    val pinned: MessageSender? = null,
+)
+
+/** Another participant's video the voice chat receives: whose, its endpoint for the frames' sink, held back or not. */
+@Immutable
+data class RemoteParticipantVideo(
+    val participant: MessageSender,
+    val endpointId: String,
+    val isPaused: Boolean,
 )
 
 /** Where an [ActiveGroupCall] is. */
