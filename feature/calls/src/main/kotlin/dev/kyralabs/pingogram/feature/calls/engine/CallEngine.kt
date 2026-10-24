@@ -110,9 +110,37 @@ interface GroupCallSession {
     /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
     fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
 
+    /**
+     * Opens the presentation, the shared screen's own connection (`docs/adr/0026-screen-sharing.md`), and returns its
+     * join payload for TDLib's `startGroupCallScreenSharing`; null where the engine could not. The user's consent must
+     * have reached the engine ([ScreenCaptureConsent]).
+     */
+    suspend fun startPresentation(): Presentation?
+
+    /**
+     * Connects the presentation with TDLib's [params] (JSON) and starts sending the screen at most at [quality]; the
+     * call service must run as `mediaProjection` by then.
+     */
+    suspend fun connectPresentation(
+        params: String,
+        quality: VideoQuality,
+    )
+
+    /** Stops sending the screen and closes the presentation. Idempotent. */
+    suspend fun stopPresentation()
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
 }
+
+/** A voice chat's presentation, before it connects: its join payload (JSON) and the audio source (SSRC) in it. */
+data class Presentation(
+    val payload: String,
+    val audioSourceId: Int,
+)
 
 /** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
 data class IncomingVideo(

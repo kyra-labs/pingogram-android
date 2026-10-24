@@ -183,6 +183,10 @@ class GroupCallViewModel
                     togglePin(event.key)
                 }
 
+                GroupCallEvent.ToggleScreenSharing, is GroupCallEvent.ScreenSharingResult -> {
+                    onScreenSharing(event)
+                }
+
                 is GroupCallEvent.CameraResult -> {
                     if (event.granted) {
                         viewModelScope.launch { manager.setCameraOn(true) }
@@ -205,6 +209,24 @@ class GroupCallViewModel
                 ) == true -> effectChannel.trySend(CallEffect.OpenSettings)
 
                 else -> effectChannel.trySend(CallEffect.RequestCamera)
+            }
+        }
+
+        /** "Share screen" asks Android first; its answer starts sharing; while sharing, the button stops it. */
+        private fun onScreenSharing(event: GroupCallEvent) {
+            val call = manager.call.value ?: return
+            when {
+                event is GroupCallEvent.ScreenSharingResult -> {
+                    if (event.granted) viewModelScope.launch { manager.startScreenSharing() }
+                }
+
+                call.video.isSharingScreen -> {
+                    viewModelScope.launch { manager.stopScreenSharing() }
+                }
+
+                else -> {
+                    effectChannel.trySend(CallEffect.RequestScreenCapture)
+                }
             }
         }
 
@@ -379,6 +401,8 @@ class GroupCallViewModel
                     camera = video.camera,
                     canSwitchCamera = video.canSwitchCamera,
                     remote = remoteVideos(details.participants),
+                    canShareScreen = video.canShareScreen,
+                    isSharingScreen = video.isSharingScreen,
                 ),
         )
 
@@ -395,6 +419,7 @@ class GroupCallViewModel
                             isPaused = remote.isPaused,
                             isPinned = remote.participant == video.pinned,
                             isSpeaking = row.state == ParticipantState.Speaking,
+                            isScreen = remote.isScreen,
                         )
                     }
                 }.toImmutableList()

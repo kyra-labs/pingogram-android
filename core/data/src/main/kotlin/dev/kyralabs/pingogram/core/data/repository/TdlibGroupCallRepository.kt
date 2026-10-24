@@ -134,6 +134,16 @@ class TdlibGroupCallRepository
             enabled: Boolean,
         ): Outcome<Unit> = client.request(TdApi.ToggleGroupCallIsMyVideoEnabled(id, enabled)).map {}
 
+        override suspend fun startScreenSharing(
+            id: Int,
+            audioSourceId: Int,
+            payload: String,
+        ): Outcome<String> =
+            client.request(TdApi.StartGroupCallScreenSharing(id, audioSourceId, payload)).map { it.text }
+
+        override suspend fun endScreenSharing(id: Int): Outcome<Unit> =
+            client.request(TdApi.EndGroupCallScreenSharing(id)).map {}
+
         override suspend fun setHandRaised(
             id: Int,
             participant: MessageSender,

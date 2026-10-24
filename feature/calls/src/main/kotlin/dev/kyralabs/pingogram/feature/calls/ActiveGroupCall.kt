@@ -44,14 +44,22 @@ data class GroupCallVideo(
     val remote: ImmutableList<RemoteParticipantVideo> = persistentListOf(),
     /** The participant the user pinned on this device, or null. */
     val pinned: MessageSender? = null,
+    /** The voice chat lets the user share their screen now: connected, and not a stream. */
+    val canShareScreen: Boolean = false,
+    /** The user shares their screen (`docs/adr/0026-screen-sharing.md`). */
+    val isSharingScreen: Boolean = false,
 )
 
-/** Another participant's video the voice chat receives: whose, its endpoint for the frames' sink, held back or not. */
+/**
+ * Another participant's video the voice chat receives: whose, its endpoint for the frames' sink, held back or not, and
+ * whether it is their shared screen rather than their camera.
+ */
 @Immutable
 data class RemoteParticipantVideo(
     val participant: MessageSender,
     val endpointId: String,
     val isPaused: Boolean,
+    val isScreen: Boolean = false,
 )
 
 /** Where an [ActiveGroupCall] is. */

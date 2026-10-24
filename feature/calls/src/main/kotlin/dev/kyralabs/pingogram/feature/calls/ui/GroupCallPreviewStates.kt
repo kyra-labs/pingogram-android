@@ -31,7 +31,8 @@ internal object GroupCallPreviewStates {
         isPaused: Boolean = false,
         isPinned: Boolean = false,
         isSpeaking: Boolean = false,
-    ) = ParticipantVideoUi("user:$id", "endpoint-$id", name, isPaused, isPinned, isSpeaking)
+        isScreen: Boolean = false,
+    ) = ParticipantVideoUi("user:$id", "endpoint-$id", name, isPaused, isPinned, isSpeaking, isScreen)
 
     private val participants =
         persistentListOf(
@@ -89,6 +90,26 @@ internal object GroupCallPreviewStates {
                 ),
         )
 
+    /** The user shares their screen: "You're sharing your screen" with "Stop" under the header (ADR 0026). */
+    val sharingScreen =
+        connected.copy(video = GroupCallVideoUi(canSend = true, canShareScreen = true, isSharingScreen = true))
+
+    /** Grace shares her screen beside her camera; the screen comes first. */
+    val screens =
+        connected.copy(
+            video =
+                GroupCallVideoUi(
+                    canSend = true,
+                    canShareScreen = true,
+                    remote =
+                        persistentListOf(
+                            video(1, "Grace Hopper", isScreen = true),
+                            video(1, "Grace Hopper", isSpeaking = true),
+                            video(2, "Alan Turing"),
+                        ),
+                ),
+        )
+
     /** An administrator keeps the user muted: Raise hand in Mute's place, raised. */
     val raiseHand = connected.copy(canUnmute = false, isHandRaised = true)
 
@@ -133,6 +154,15 @@ private fun GroupCallVideosPreview() = Preview(GroupCallPreviewStates.videos)
 @PingogramPreviews
 @Composable
 private fun GroupCallVideoPreview() = Preview(GroupCallPreviewStates.video)
+
+@PingogramPreviews
+@PingogramVariantPreviews
+@Composable
+private fun GroupCallSharingScreenPreview() = Preview(GroupCallPreviewStates.sharingScreen)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallScreensPreview() = Preview(GroupCallPreviewStates.screens)
 
 @PingogramPreviews
 @Composable

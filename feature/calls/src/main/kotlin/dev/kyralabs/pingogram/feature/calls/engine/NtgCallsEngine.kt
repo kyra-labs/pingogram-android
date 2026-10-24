@@ -94,12 +94,15 @@ class NtgCallsEngine
                         if (device == StreamDevice.CAMERA || device == StreamDevice.SCREEN) {
                             CallTrace.section(CallTrace.FRAMES) {
                                 sessions[id]?.onFrames(mode, device, frames)
-                                if (device == StreamDevice.CAMERA) groupSessions[id]?.onFrames(mode, frames)
+                                groupSessions[id]?.onFrames(mode, device, frames)
                             }
                         }
                     }
                     engine.onStreamEnd { id, type, device ->
-                        if (type == StreamType.VIDEO && device == StreamDevice.SCREEN) sessions[id]?.onScreenEnded()
+                        if (type == StreamType.VIDEO && device == StreamDevice.SCREEN) {
+                            sessions[id]?.onScreenEnded()
+                            groupSessions[id]?.onScreenEnded()
+                        }
                     }
                     engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }
                     engine.onRequestBroadcastPart { id, part -> groupSessions[id]?.request(part.toStreamRequest()) }
@@ -443,8 +446,57 @@ class NtgCallsEngine
 
             @Volatile private var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
 
-            /** The microphone, and the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`). */
-            fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
+            /** The presentation is connected and sends the screen, at [screenQuality]. */
+            @Volatile private var presenting = false
+            private var screenQuality = VideoQuality.High
+
+            private val screenEnds = Channel<Unit>(Channel.CONFLATED)
+            override val screenEnded: Flow<Unit> = screenEnds.receiveAsFlow()
+
+            /**
+             * The microphone, the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`), and the screen
+             * while the presentation is connected (`docs/adr/0026-screen-sharing.md`), which NTgCalls sends on it.
+             */
+            fun capture() =
+                MediaDescription(
+                    microphoneSource,
+                    null,
+                    camera?.toVideoSource(quality),
+                    if (presenting) screenSource(screenQuality) else null,
+                )
+
+            fun onScreenEnded() {
+                if (presenting) screenEnds.trySend(Unit)
+            }
+
+            override suspend fun startPresentation(): Presentation? =
+                withContext(engineThread) {
+                    if (mutableState.value == CallMediaState.Closed) return@withContext null
+                    try {
+                        calls().initPresentation(id).let { Presentation(it, it.audioSource()) }
+                    } catch (e: RuntimeException) {
+                        Log.w(TAG, "Could not open the presentation: ${e.javaClass.simpleName}")
+                        null
+                    }
+                }
+
+            override suspend fun connectPresentation(
+                params: String,
+                quality: VideoQuality,
+            ) = engineCall("share the screen") {
+                calls().connect(id, params, true)
+                presenting = true
+                screenQuality = quality
+                calls().setStreamSources(id, StreamMode.CAPTURE, capture())
+            }
+
+            override suspend fun stopPresentation() =
+                engineCall("stop sharing the screen") {
+                    val was = presenting
+                    presenting = false
+                    if (was) calls().setStreamSources(id, StreamMode.CAPTURE, capture())
+                    calls().stopPresentation(id)
+                }
 
             /** The speaker, and a stream's video while a sink takes it. */
             fun playback() = MediaDescription(null, speakerSource, REMOTE_VIDEO.takeIf { videoSink != null }, null)
@@ -457,18 +509,30 @@ class NtgCallsEngine
                 requests.trySend(request)
             }
 
+            /**
+             * The camera's own frames to the self-view (the shared screen has no preview); the others' cameras and
+             * screens to their tiles' sinks by SSRC; a stream's to [videoSink].
+             */
             fun onFrames(
                 mode: StreamMode,
+                device: StreamDevice,
                 frames: List<Frame>,
             ) {
                 if (mode == StreamMode.PLAYBACK && endpoints.isNotEmpty()) {
                     onIncomingFrames(frames)
                     return
                 }
-                val sink = (if (mode == StreamMode.CAPTURE) selfSink else videoSink) ?: return
+                val sink =
+                    if (mode ==
+                        StreamMode.CAPTURE
+                    ) {
+                        selfSink.takeIf { device == StreamDevice.CAMERA }
+                    } else {
+                        videoSink
+                    }
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
-                    sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
+                    sink?.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
                 }
             }
 
@@ -586,6 +650,8 @@ class NtgCallsEngine
                     }
                 }
                 mutableState.value = CallMediaState.Closed
+                presenting = false
+                screenEnds.close()
                 videoSink = null
                 selfSink = null
                 incomingSinks = emptyMap()
