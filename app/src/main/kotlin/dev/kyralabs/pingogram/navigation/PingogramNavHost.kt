@@ -43,7 +43,6 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilitySco
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
-import dev.kyralabs.pingogram.feature.chat.navigation.chatScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -258,16 +257,7 @@ private fun NavGraphBuilder.mainGraph(
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         newChatScreens(navController)
-        // The chat messages were forwarded to goes above the conversation they came from, so back returns there; so do
-        // a forum's topics and a message's thread of replies.
-        chatScreen(
-            onBack = { navController.popBackStack() },
-            onOpenMedia = openMedia,
-            onOpenChat = { chatId -> navController.navigate(ChatRoute(chatId)) },
-            onOpenThread = { route -> navController.navigate(route) },
-            onOpenProfile = navController::navigateToProfile,
-            onOpenChatInfo = navController::navigateToChatInfo,
-        )
+        pushedChat(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
         // "Export chat", from a profile or an info page (docs/adr/0021-chat-export.md).
