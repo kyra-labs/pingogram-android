@@ -120,6 +120,17 @@ class PrebuiltAarTest {
     }
 
     @Test
+    fun `a patched build comes from the release of the commit and its patches`() {
+        assertEquals(
+            URI(
+                "https://github.com/kyra-labs/pingogram-android/releases/download/ntgcalls-e8ab467185-pingogram1/" +
+                    "ntgcalls-e8ab467185-pingogram1.aar",
+            ),
+            PrebuiltAar.NTGCALLS.downloadUrl("e8ab467185017827625f664d024824947b5c5d5f-pingogram1"),
+        )
+    }
+
+    @Test
     fun `an unpinned call engine names its own catalog key, workflow and property`() {
         val message =
             failure { PrebuiltAar.NTGCALLS.plan("e8ab467185", PrebuiltAar.UNPINNED, overrideAar = null) { null } }

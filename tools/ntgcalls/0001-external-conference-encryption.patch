@@ -1,0 +1,401 @@
+diff --git a/ntgcalls/include/ntgcalls/instances/conference_call.hpp b/ntgcalls/include/ntgcalls/instances/conference_call.hpp
+index 940692d..a38fb11 100644
+--- a/ntgcalls/include/ntgcalls/instances/conference_call.hpp
++++ b/ntgcalls/include/ntgcalls/instances/conference_call.hpp
+@@ -5,13 +5,18 @@
+ #pragma once
+ #include <ntgcalls/e2e/session.hpp>
+ #include <ntgcalls/instances/e2e_interface.hpp>
++#include <ntgcalls/instances/external_encryptor.hpp>
+ #include <ntgcalls/instances/group_call.hpp>
+ #include <ntgcalls/p2p/conference_join_params.hpp>
+ 
+ namespace ntgcalls::instances {
+ 
+     class ConferenceCall final: public GroupCall, public E2EInterface {
++        void forward_participant_requests();
++
+         std::shared_ptr<e2e::Session> session_;
++        // Pingogram: set instead of session_ when TDLib keeps the call's blockchain and encrypts (init_external).
++        std::unique_ptr<ExternalEncryptor> external_, external_presentation_;
+         wrtc::utils::synchronized_callback<void(wrtc::models::ParticipantsRequest)> request_participants_callback_;
+ 
+     public:
+@@ -19,6 +24,8 @@ namespace ntgcalls::instances {
+ 
+         p2p::ConferenceJoinParams init_conference(int64_t user_id, const std::optional<bytes::binary>& last_block);
+ 
++        std::string init_external(int64_t chat_id);
++
+         std::string init_presentation() override;
+ 
+         void connect(const std::string& json_data, bool is_presentation) override;
+diff --git a/ntgcalls/include/ntgcalls/instances/external_encryptor.hpp b/ntgcalls/include/ntgcalls/instances/external_encryptor.hpp
+new file mode 100644
+index 0000000..42e1854
+--- /dev/null
++++ b/ntgcalls/include/ntgcalls/instances/external_encryptor.hpp
+@@ -0,0 +1,30 @@
++//
++// Pingogram: an encryptor whose work is done outside NTgCalls (TDLib), for conference calls that TDLib runs.
++//
++
++#pragma once
++#include <cstddef>
++#include <cstdint>
++#include <functional>
++#include <wrtc/interfaces/media/e2e_encryptor.hpp>
++
++namespace ntgcalls::instances {
++    class ExternalEncryptor final: public wrtc::interfaces::media::E2EEncryptor {
++        int64_t chat_id_;
++        int channel_;
++
++    public:
++        using EncryptHandler = std::function<bytes::binary(int64_t chat_id, int channel, const bytes::binary& data, size_t unencrypted_prefix)>;
++        using DecryptHandler = std::function<bytes::binary(int64_t chat_id, int channel, int64_t user_id, const bytes::binary& data)>;
++
++        // Set once by the binding (the JNI layer), before any conference call starts. Called on WebRTC's threads; an
++        // empty result drops the frame.
++        static void set_handlers(EncryptHandler encrypt, DecryptHandler decrypt);
++
++        ExternalEncryptor(int64_t chat_id, int channel): chat_id_(chat_id), channel_(channel) {}
++
++        bytes::binary encrypt(const bytes::binary& data, size_t unencrypted_prefix) override;
++
++        bytes::binary decrypt(int64_t user_id, const bytes::binary& data) override;
++    };
++} // ntgcalls::instances
+diff --git a/ntgcalls/include/ntgcalls/ntgcalls.hpp b/ntgcalls/include/ntgcalls/ntgcalls.hpp
+index 332384a..3bf3fb7 100644
+--- a/ntgcalls/include/ntgcalls/ntgcalls.hpp
++++ b/ntgcalls/include/ntgcalls/ntgcalls.hpp
+@@ -101,6 +101,10 @@ namespace ntgcalls {
+ 
+         [[ntg::async]] p2p::ConferenceJoinParams init_conference(int64_t chat_id, int64_t user_id, const std::optional<bytes::binary>& last_block);
+ 
++        // Pingogram: a conference call whose blockchain and encryption TDLib keeps (ExternalEncryptor). Turns the chat's
++        // one-to-one call into it when there is one; returns the join payload.
++        [[ntg::async]] std::string init_external_conference(int64_t chat_id);
++
+         [[ntg::async]] void connect(int64_t chat_id, const std::string& params, bool is_presentation);
+ 
+         [[ntg::async]] uint32_t add_incoming_video(int64_t chat_id, int64_t user_id, const std::string& endpoint, const std::vector<wrtc::models::SsrcGroup>& ssrc_groups);
+diff --git a/ntgcalls/src/instances/conference_call.cpp b/ntgcalls/src/instances/conference_call.cpp
+index 2d299a4..ec888a1 100644
+--- a/ntgcalls/src/instances/conference_call.cpp
++++ b/ntgcalls/src/instances/conference_call.cpp
+@@ -12,6 +12,24 @@ namespace ntgcalls::instances {
+         if (last_block) {
+             session_->set_last_block(*last_block);
+         }
++        forward_participant_requests();
++        return {
++            std::move(payload),
++            session_->public_key(),
++            session_->make_join_block()
++        };
++    }
++
++    std::string ConferenceCall::init_external(const int64_t chat_id) {
++        external_ = std::make_unique<ExternalEncryptor>(chat_id, 0);
++        external_presentation_ = std::make_unique<ExternalEncryptor>(chat_id, 1);
++        auto payload = init();
++        safe<wrtc::interfaces::GroupConnection>(connection_)->set_e2e_encryptor(external_.get());
++        forward_participant_requests();
++        return payload;
++    }
++
++    void ConferenceCall::forward_participant_requests() {
+         const std::weak_ptr weak(shared_from_this());
+         safe<wrtc::interfaces::GroupConnection>(connection_)->on_request_participants([weak](wrtc::models::ParticipantsRequest request) {
+             const auto strong = std::static_pointer_cast<ConferenceCall>(weak.lock());
+@@ -20,25 +38,22 @@ namespace ntgcalls::instances {
+             }
+             (void) strong->request_participants_callback_(std::move(request));
+         });
+-        return {
+-            std::move(payload),
+-            session_->public_key(),
+-            session_->make_join_block()
+-        };
+     }
+ 
+     std::string ConferenceCall::init_presentation() {
+         auto res = GroupCall::init_presentation();
+         if (const auto presentation = presentation_connection()) {
+-            presentation->set_e2e_encryptor(session_.get());
++            presentation->set_e2e_encryptor(session_ ? static_cast<wrtc::interfaces::media::E2EEncryptor*>(session_.get()) : external_presentation_.get());
+         }
+         return res;
+     }
+ 
+     void ConferenceCall::connect(const std::string& json_data, const bool is_presentation) {
+         GroupCall::connect(json_data, is_presentation);
+-        session_->short_poll(0);
+-        session_->short_poll(1);
++        if (session_) {
++            session_->short_poll(0);
++            session_->short_poll(1);
++        }
+     }
+ 
+     void ConferenceCall::migrate(P2PCall* p2p_call) {
+@@ -53,11 +68,15 @@ namespace ntgcalls::instances {
+         const std::vector<bytes::binary>& blocks,
+         const bool from_short_poll
+     ) const {
+-        session_->apply_blocks(subchain, next_offset, blocks, from_short_poll);
++        if (session_) {
++            session_->apply_blocks(subchain, next_offset, blocks, from_short_poll);
++        }
+     }
+ 
+     void ConferenceCall::finish_subchain_request(const int subchain) const {
+-        session_->finish_subchain_request(subchain);
++        if (session_) {
++            session_->finish_subchain_request(subchain);
++        }
+     }
+ 
+     void ConferenceCall::update_audio_ssrc_mappings(const std::vector<wrtc::models::SsrcMapping>& audio_ssrcs) const {
+@@ -69,11 +88,15 @@ namespace ntgcalls::instances {
+     }
+ 
+     void ConferenceCall::on_outbound_block(const std::function<void(bytes::binary)>& callback) const {
+-        session_->on_outbound_block(callback);
++        if (session_) {
++            session_->on_outbound_block(callback);
++        }
+     }
+ 
+     void ConferenceCall::on_subchain_request(const std::function<void(e2e::SubchainRequest)>& callback) const {
+-        session_->on_subchain_request(callback);
++        if (session_) {
++            session_->on_subchain_request(callback);
++        }
+     }
+ 
+     void ConferenceCall::on_request_participants(const std::function<void(wrtc::models::ParticipantsRequest)>& callback) {
+@@ -81,7 +104,9 @@ namespace ntgcalls::instances {
+     }
+ 
+     void ConferenceCall::on_update_emojis(const std::function<void(std::string)>& callback) {
+-        session_->on_update_emoji_hash(callback);
++        if (session_) {
++            session_->on_update_emoji_hash(callback);
++        }
+     }
+ 
+     CallInterface::Type ConferenceCall::type() const {
+@@ -98,6 +123,6 @@ namespace ntgcalls::instances {
+     }
+ 
+     std::string ConferenceCall::get_fingerprint_emojis() {
+-        return session_->get_fingerprint_emojis();
++        return session_ ? session_->get_fingerprint_emojis() : std::string();
+     }
+ } // ntgcalls::instances
+diff --git a/ntgcalls/src/instances/external_encryptor.cpp b/ntgcalls/src/instances/external_encryptor.cpp
+new file mode 100644
+index 0000000..21e7234
+--- /dev/null
++++ b/ntgcalls/src/instances/external_encryptor.cpp
+@@ -0,0 +1,38 @@
++//
++// Pingogram: an encryptor whose work is done outside NTgCalls (TDLib).
++//
++
++#include <mutex>
++#include <ntgcalls/instances/external_encryptor.hpp>
++
++namespace ntgcalls::instances {
++    namespace {
++        std::mutex handlers_mutex;
++        ExternalEncryptor::EncryptHandler encrypt_handler;
++        ExternalEncryptor::DecryptHandler decrypt_handler;
++    }
++
++    void ExternalEncryptor::set_handlers(EncryptHandler encrypt, DecryptHandler decrypt) {
++        const std::lock_guard lock(handlers_mutex);
++        encrypt_handler = std::move(encrypt);
++        decrypt_handler = std::move(decrypt);
++    }
++
++    bytes::binary ExternalEncryptor::encrypt(const bytes::binary& data, const size_t unencrypted_prefix) {
++        EncryptHandler handler;
++        {
++            const std::lock_guard lock(handlers_mutex);
++            handler = encrypt_handler;
++        }
++        return handler ? handler(chat_id_, channel_, data, unencrypted_prefix) : bytes::binary();
++    }
++
++    bytes::binary ExternalEncryptor::decrypt(const int64_t user_id, const bytes::binary& data) {
++        DecryptHandler handler;
++        {
++            const std::lock_guard lock(handlers_mutex);
++            handler = decrypt_handler;
++        }
++        return handler ? handler(chat_id_, channel_, user_id, data) : bytes::binary();
++    }
++} // ntgcalls::instances
+diff --git a/ntgcalls/src/ntgcalls.cpp b/ntgcalls/src/ntgcalls.cpp
+index b26dae6..029cc77 100644
+--- a/ntgcalls/src/ntgcalls.cpp
++++ b/ntgcalls/src/ntgcalls.cpp
+@@ -193,6 +193,24 @@ namespace ntgcalls {
+         return result;
+     }
+ 
++    std::string NTgCalls::init_external_conference(const int64_t chat_id) {
++        const std::lock_guard lock(mutex_);
++        auto conference_call = std::make_shared<instances::ConferenceCall>(*update_thread_);
++        if (exists(chat_id)) {
++            auto* p2p_call = dynamic_cast<instances::P2PCall*>(connections_[chat_id].get());
++            if (!p2p_call) {
++                throw ConnectionError("Connection cannot be initialized more than once.");
++            }
++            RTC_LOG(LS_INFO) << "Migrating P2P call to an external conference call for " << chat_id;
++            conference_call->migrate(p2p_call);
++            p2p_call->stop();
++        }
++        connections_[chat_id] = std::move(conference_call);
++        auto payload = safe_call<instances::ConferenceCall>(connections_[chat_id].get())->init_external(chat_id);
++        setup_listeners(chat_id);
++        return payload;
++    }
++
+     void NTgCalls::connect(const int64_t chat_id, const std::string& params, const bool is_presentation) {
+         safe_call<instances::GroupCall>(safe_connection(chat_id))->connect(params, is_presentation);
+     }
+diff --git a/targets/android/app/src/main/java/io/github/pytgcalls/ExternalEncryption.java b/targets/android/app/src/main/java/io/github/pytgcalls/ExternalEncryption.java
+new file mode 100644
+index 0000000..11ff6ae
+--- /dev/null
++++ b/targets/android/app/src/main/java/io/github/pytgcalls/ExternalEncryption.java
+@@ -0,0 +1,38 @@
++package io.github.pytgcalls;
++
++/**
++ * Pingogram: the encryption of conference calls started with {@code initExternalConference}, done outside NTgCalls.
++ * NTgCalls calls {@link Handler} on WebRTC's threads for every frame it sends and receives, and waits for the answer;
++ * an empty or null answer drops the frame. Set the handler after the native library is loaded (after the first
++ * {@code new NTgCalls()}).
++ */
++@SuppressWarnings("unused")
++public final class ExternalEncryption {
++    /** Channel 0 is the call's main connection, 1 its screen sharing (the presentation). */
++    public interface Handler {
++        byte[] encrypt(long chatId, int channel, byte[] data, int unencryptedPrefix);
++
++        byte[] decrypt(long chatId, int channel, long userId, byte[] data);
++    }
++
++    private static volatile Handler handler;
++
++    private ExternalEncryption() {}
++
++    public static void setHandler(Handler value) {
++        handler = value;
++        nativeInit();
++    }
++
++    private static byte[] encrypt(long chatId, int channel, byte[] data, int unencryptedPrefix) {
++        Handler current = handler;
++        return current == null ? null : current.encrypt(chatId, channel, data, unencryptedPrefix);
++    }
++
++    private static byte[] decrypt(long chatId, int channel, long userId, byte[] data) {
++        Handler current = handler;
++        return current == null ? null : current.decrypt(chatId, channel, userId, data);
++    }
++
++    private static native void nativeInit();
++}
+diff --git a/targets/android/app/src/main/jni/CMakeLists.txt b/targets/android/app/src/main/jni/CMakeLists.txt
+index 09ac9e4..2006f79 100644
+--- a/targets/android/app/src/main/jni/CMakeLists.txt
++++ b/targets/android/app/src/main/jni/CMakeLists.txt
+@@ -18,6 +18,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
+     jni.cpp
+     jni_onload.cpp
+     java_video_capturer_module_jni.cpp
++    external_encryption_jni.cpp
+ )
+ 
+ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -B ${DEPS_DIR}/clang/bin")
+diff --git a/targets/android/app/src/main/jni/external_encryption_jni.cpp b/targets/android/app/src/main/jni/external_encryption_jni.cpp
+new file mode 100644
+index 0000000..d9c7f3d
+--- /dev/null
++++ b/targets/android/app/src/main/jni/external_encryption_jni.cpp
+@@ -0,0 +1,68 @@
++//
++// Pingogram: hands a conference call's frames to Java (ExternalEncryption), which has TDLib encrypt and decrypt them.
++//
++
++#include <jni.h>
++#include <ntgcalls/instances/external_encryptor.hpp>
++#include <wrtc/utils/java_context.hpp>
++
++namespace {
++    jclass external_class = nullptr;
++    jmethodID encrypt_method = nullptr;
++    jmethodID decrypt_method = nullptr;
++
++    jbyteArray to_java(JNIEnv* env, const bytes::binary& data) {
++        const auto array = env->NewByteArray(static_cast<jsize>(data.size()));
++        if (array) {
++            env->SetByteArrayRegion(array, 0, static_cast<jsize>(data.size()), reinterpret_cast<const jbyte*>(data.data()));
++        }
++        return array;
++    }
++
++    bytes::binary from_java(JNIEnv* env, const jbyteArray array) {
++        if (env->ExceptionCheck()) {
++            env->ExceptionDescribe();
++            env->ExceptionClear();
++            return {};
++        }
++        if (!array) {
++            return {};
++        }
++        bytes::binary result(env->GetArrayLength(array));
++        env->GetByteArrayRegion(array, 0, static_cast<jsize>(result.size()), reinterpret_cast<jbyte*>(result.data()));
++        env->DeleteLocalRef(array);
++        return result;
++    }
++}
++
++extern "C" JNIEXPORT void JNICALL Java_io_github_pytgcalls_ExternalEncryption_nativeInit(JNIEnv* env, jclass clazz) {
++    if (external_class) {
++        return;
++    }
++    // Looked up here, on a Java thread: WebRTC's threads see only the system class loader.
++    external_class = static_cast<jclass>(env->NewGlobalRef(clazz));
++    encrypt_method = env->GetStaticMethodID(external_class, "encrypt", "(JI[BI)[B");
++    decrypt_method = env->GetStaticMethodID(external_class, "decrypt", "(JIJ[B)[B");
++    ntgcalls::instances::ExternalEncryptor::set_handlers(
++        [](const int64_t chat_id, const int channel, const bytes::binary& data, const size_t unencrypted_prefix) {
++            const auto env = static_cast<JNIEnv*>(wrtc::utils::get_jni_env());
++            const auto input = to_java(env, data);
++            const auto output = static_cast<jbyteArray>(env->CallStaticObjectMethod(
++                external_class, encrypt_method, static_cast<jlong>(chat_id), static_cast<jint>(channel), input,
++                static_cast<jint>(unencrypted_prefix)
++            ));
++            env->DeleteLocalRef(input);
++            return from_java(env, output);
++        },
++        [](const int64_t chat_id, const int channel, const int64_t user_id, const bytes::binary& data) {
++            const auto env = static_cast<JNIEnv*>(wrtc::utils::get_jni_env());
++            const auto input = to_java(env, data);
++            const auto output = static_cast<jbyteArray>(env->CallStaticObjectMethod(
++                external_class, decrypt_method, static_cast<jlong>(chat_id), static_cast<jint>(channel),
++                static_cast<jlong>(user_id), input
++            ));
++            env->DeleteLocalRef(input);
++            return from_java(env, output);
++        }
++    );
++}
