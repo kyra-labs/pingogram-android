@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.ReplyMarkupFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -44,7 +45,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositoryTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     /** A repository with the first page of [CHAT] loaded, a chat whose messages have [ids]. */
     private suspend fun TestScope.repositoryWith(vararg ids: Long) =

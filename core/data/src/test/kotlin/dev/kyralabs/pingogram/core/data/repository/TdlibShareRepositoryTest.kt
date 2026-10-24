@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.ShareResult
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -48,7 +49,15 @@ class TdlibShareRepositoryTest {
         val io = StandardTestDispatcher(testScheduler)
         val cleaner = UploadCleaner(client, files, io, backgroundScope, maxAge = null)
         runCurrent()
-        return TdlibShareRepository(client, files, content, media, cleaner, io)
+        return TdlibShareRepository(
+            client,
+            files,
+            content,
+            media,
+            cleaner,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+            io,
+        )
     }
 
     private fun answerSends() {

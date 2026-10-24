@@ -45,6 +45,7 @@ class TdlibNotificationRepository
         private val client: TdlibClient,
         @ApplicationScope scope: CoroutineScope,
         openChats: OpenChats,
+        private val linkPreviews: SecretChatLinkPreviews,
     ) : NotificationRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, NotificationCache(), NotificationCache::reduce)
@@ -66,13 +67,17 @@ class TdlibNotificationRepository
         override val hasPendingNotifications: Flow<Boolean> =
             store.state.map { it.hasPendingNotifications }.distinctUntilChanged()
 
-        /** `sendMessage` with a plain text: TDLib finds links, mentions and hashtags itself. The draft stays. */
+        /**
+         * `sendMessage` with a plain text: TDLib finds links, mentions and hashtags itself, with no link preview in a
+         * secret chat unless allowed ([SecretChatLinkPreviews]). The draft stays.
+         */
         override suspend fun reply(
             chatId: Long,
             text: String,
             replyToMessageId: Long?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), null, false)
+            val content =
+                TdApi.InputMessageText(TdApi.FormattedText(text, emptyArray()), linkPreviews.optionsFor(chatId), false)
             return client
                 .request(TdApi.SendMessage(chatId, null, replyToMessageId?.let(::replyToMessage), null, null, content))
                 .map {}

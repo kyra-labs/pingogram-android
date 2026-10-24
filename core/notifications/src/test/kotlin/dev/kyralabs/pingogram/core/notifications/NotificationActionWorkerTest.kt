@@ -56,10 +56,10 @@ class NotificationActionWorkerTest {
             assertEquals(ListenableWorker.Result.success(), result)
             assertEquals(
                 listOf("SendMessage", "ViewMessages"),
-                harness.client.sent.map { it.javaClass.simpleName }.filter {
-                    it !=
-                        "SetOption"
-                },
+                // GetChat: whether the chat is secret decides its link previews.
+                harness.client.sent
+                    .map { it.javaClass.simpleName }
+                    .filter { it != "SetOption" && it != "GetChat" },
             )
             assertEquals(
                 listOf(10L, 11L),

@@ -7,10 +7,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,11 +26,14 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.contactsync.ContactSyncHost
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.errorMessage
+import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
@@ -44,11 +49,20 @@ internal fun PrivacySecurityRoute(
     modifier: Modifier = Modifier,
     viewModel: PrivacySecurityViewModel = hiltViewModel(),
     contactSyncViewModel: ContactSyncSettingViewModel = hiltViewModel(),
+    secretChatPreviewsViewModel: SecretChatPreviewsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
     val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
+    val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    val showErrorDetails = isDebuggable()
+    LaunchedEffect(secretChatPreviewsViewModel) {
+        secretChatPreviewsViewModel.errors.collect { error ->
+            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
+        }
+    }
     LifecycleStartEffect(viewModel, contactSyncViewModel) {
         viewModel.onEvent(PrivacySecurityEvent.Refresh)
         contactSyncViewModel.onStarted()
@@ -68,6 +82,8 @@ internal fun PrivacySecurityRoute(
         modifier = modifier,
         contactSync = contactSync,
         onContactSyncChange = contactSyncViewModel::onCheckedChange,
+        secretChatPreviews = secretChatPreviews,
+        onSecretChatPreviewsChange = secretChatPreviewsViewModel::onCheckedChange,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -77,6 +93,8 @@ internal fun PrivacySecurityRoute(
  * - Privacy: every privacy setting with its main choice ("My contacts + exceptions"), each opening its page;
  * - Contacts: "Sync contacts" ([contactSync], `docs/adr/0011-contacts-sync.md`), a switch with what it sends in its
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
+ * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
+ *   them;
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
  * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
@@ -92,6 +110,8 @@ internal fun PrivacySecurityScreen(
     modifier: Modifier = Modifier,
     contactSync: ContactSyncStatus = ContactSyncStatus.Off,
     onContactSyncChange: (Boolean) -> Unit = {},
+    secretChatPreviews: Boolean? = null,
+    onSecretChatPreviewsChange: (Boolean) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     SettingsPageScaffold(
@@ -112,6 +132,7 @@ internal fun PrivacySecurityScreen(
             is PrivacySecurityUiState.Content -> {
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
+                SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
                 SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,
