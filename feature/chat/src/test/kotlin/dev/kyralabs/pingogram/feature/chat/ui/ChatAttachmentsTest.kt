@@ -175,6 +175,51 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
             }
 
         @Test
+        fun `the gallery's photos may go without compression, prepared again as files when sent`() =
+            runViewModelTest {
+                val viewModel = privateChat()
+                send(viewModel, ChatEvent.AttachMedia(listOf("content://a", "content://b")))
+                assertEquals(true, viewModel.preview?.offersOriginal)
+                assertEquals(false, viewModel.preview?.original)
+
+                send(viewModel, ChatEvent.SetOriginalQuality(true))
+                assertEquals(true, viewModel.preview?.original)
+                attachments.onPrepare = { uri, kind ->
+                    if (kind == AttachmentKind.Original && uri.endsWith("b")) {
+                        Outcome.Failure(DomainError.FileUnavailable)
+                    } else {
+                        Outcome.Success(photo(uri.removePrefix("content://") + kind.name))
+                    }
+                }
+                send(viewModel, ChatEvent.SendAttachments())
+
+                assertEquals(
+                    listOf("content://a" to AttachmentKind.Original, "content://b" to AttachmentKind.Original),
+                    attachments.prepared.drop(2),
+                )
+                // b could not be prepared again: its compressed copy goes.
+                assertEquals(
+                    listOf(photo("aOriginal"), photo("content://b")),
+                    attachments.sent.single().attachments,
+                )
+                assertEquals(listOf(photo("content://a")), attachments.discarded)
+            }
+
+        @Test
+        fun `without compression is on at first where Data and storage says so, and files never offer it`() =
+            runViewModelTest {
+                chats.setChats(chat())
+                messages.setHistory(ADA, history(message(1)))
+                val viewModel = viewModel(originalQuality = true)
+
+                send(viewModel, ChatEvent.AttachMedia(listOf("content://a")))
+                assertEquals(true, viewModel.preview?.original)
+
+                send(viewModel, ChatEvent.DismissAttachments, ChatEvent.AttachFiles(listOf("content://report")))
+                assertEquals(false, viewModel.preview?.offersOriginal)
+            }
+
+        @Test
         fun `picked files are prepared as documents`() =
             runViewModelTest {
                 val viewModel = privateChat()

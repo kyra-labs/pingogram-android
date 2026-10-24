@@ -24,6 +24,8 @@
     <string name="media_show_newer">Show newer</string>
     <string name="media_play">Play</string>
     <string name="media_pause">Pause</string>
+    <string name="media_picture_in_picture">Picture-in-picture</string>
+    <string name="media_pip_video">Video in picture-in-picture</string>
     <string name="media_seek">Playback position</string>
     <string name="media_caption_expand">Show the whole caption</string>
     <string name="media_caption_collapse">Show less of the caption</string>

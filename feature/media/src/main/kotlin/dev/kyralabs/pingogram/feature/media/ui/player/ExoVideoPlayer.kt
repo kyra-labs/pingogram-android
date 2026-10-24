@@ -7,13 +7,19 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
+import dev.kyralabs.pingogram.core.ui.media.TdlibDataSource
 import java.io.File
 import javax.inject.Inject
 
 /**
- * [VideoPlayer] on Media3's [ExoPlayer], playing files TDLib has downloaded (no network module). The player is built
+ * [VideoPlayer] on Media3's [ExoPlayer], playing files TDLib has downloaded or downloads as they play
+ * ([TdlibDataSource], `docs/adr/0028-streaming-media.md`; no network module). The player is built
  * on the first [play], on the main thread it then belongs to, so a viewer that shows only photos costs nothing;
  * [release] frees it. The viewer's video surface attaches itself to [surfacePlayer].
  *
@@ -26,6 +32,7 @@ internal class ExoVideoPlayer
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val streams: FileStreamRepository,
     ) : VideoPlayer {
         private var player: ExoPlayer? = null
 
@@ -69,8 +76,10 @@ internal class ExoVideoPlayer
         override val durationMillis: Long?
             get() = player?.duration?.takeIf { it != C.TIME_UNSET }
 
+        override val bufferedMillis: Long get() = player?.bufferedPosition ?: 0L
+
         override fun play(
-            path: String,
+            source: PlaySource,
             kind: VideoKind,
         ) {
             val player = player ?: newPlayer().also { player = it }
@@ -79,7 +88,12 @@ internal class ExoVideoPlayer
                 this.kind = kind
             }
             if (kind == VideoKind.Video) player.volume = if (isMuted) 0f else 1f
-            player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))))
+            val uri =
+                when (source) {
+                    is PlaySource.File -> Uri.fromFile(File(source.path))
+                    is PlaySource.Stream -> TdlibDataSource.uriOf(source.fileId)
+                }
+            player.setMediaItem(MediaItem.fromUri(uri))
             player.prepare()
             player.play()
         }
@@ -116,10 +130,14 @@ internal class ExoVideoPlayer
             player = null
         }
 
+        /** Files on the device as they are; TDLib's (`tdlib-file://`, not a scheme of the device's) as they stream. */
+        @androidx.annotation.OptIn(UnstableApi::class)
         private fun newPlayer(): ExoPlayer =
             ExoPlayer
                 .Builder(context)
-                .setHandleAudioBecomingNoisy(true)
+                .setMediaSourceFactory(
+                    DefaultMediaSourceFactory(DefaultDataSource.Factory(context, TdlibDataSource.Factory(streams))),
+                ).setHandleAudioBecomingNoisy(true)
                 .build()
                 .apply { addListener(playerListener) }
     }

@@ -276,6 +276,8 @@
         <item quantity="other">%d files</item>
     </plurals>
     <!-- The hint in the empty caption field of the preview. -->
+    <string name="attach_original">Send without compression</string>
+    <string name="attach_original_summary">As files, at their full size and quality. Location and camera details are removed.</string>
     <string name="attach_caption">Add a caption</string>
     <!-- Screen readers: an item of the preview. %1$d is its place, %2$d how many there are. -->
     <string name="attach_item_photo">Photo %1$d of %2$d</string>

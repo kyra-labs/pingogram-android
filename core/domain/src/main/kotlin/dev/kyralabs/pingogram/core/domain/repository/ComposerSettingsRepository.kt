@@ -14,4 +14,13 @@ interface ComposerSettingsRepository {
 
     /** Saves [keys]; fails with `DomainError.Unknown` if they cannot be written (a full disk). */
     suspend fun setSendKeys(keys: SendKeys): Outcome<Unit>
+
+    /**
+     * Whether picked photos and videos go without compression by default (`AttachmentKind.Original`: as files, their
+     * metadata removed), then every change; the attach preview can still change it per send. Off when unreadable.
+     */
+    val sendPhotosInOriginalQuality: Flow<Boolean>
+
+    /** Saves [sendPhotosInOriginalQuality]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setSendPhotosInOriginalQuality(enabled: Boolean): Outcome<Unit>
 }
