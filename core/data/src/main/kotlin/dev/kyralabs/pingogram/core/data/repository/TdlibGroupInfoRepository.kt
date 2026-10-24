@@ -320,6 +320,7 @@ class TdlibGroupInfoRepository
                         slowModeDelay = fullInfo.slowModeDelay,
                         members = persistentListOf(),
                         primaryInviteLink = fullInfo.inviteLink?.toInviteLink(),
+                        canGetStatistics = fullInfo.canGetStatistics,
                     )
                 }
 

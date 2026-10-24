@@ -102,6 +102,8 @@ import androidx.compose.ui.unit.dp
  *   whatever the colors of its edge pixels.
  * @property pinnedIndicator the width of the pinned messages bar's segments, one per pinned message, that show which
  *   one the bar shows.
+ * @property chartHeight the plot of a statistics chart, without its labels.
+ * @property chartLine the width of a statistics chart's lines.
  */
 @Immutable
 data class PingogramSizes(
@@ -163,6 +165,8 @@ data class PingogramSizes(
     val leadingIconContainer: Dp = 40.dp,
     val keyImageOutline: Dp = 2.dp,
     val pinnedIndicator: Dp = 3.dp,
+    val chartHeight: Dp = 192.dp,
+    val chartLine: Dp = 2.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }
