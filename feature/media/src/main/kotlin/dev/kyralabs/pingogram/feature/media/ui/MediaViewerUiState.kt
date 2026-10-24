@@ -208,6 +208,8 @@ data class VideoPlayback(
     val isPlaying: Boolean,
     val showsFrame: Boolean,
     val progress: () -> Float,
+    /** How far the player has the video, 0–1, read in the seek bar's draw phase. */
+    val buffered: () -> Float = progress,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */

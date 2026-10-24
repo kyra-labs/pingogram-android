@@ -74,6 +74,10 @@ regresses by more than 10%.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
   `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
   concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).
+- Streaming (`docs/adr/0028-streaming-media.md`): a video that plays as it downloads downloads from where it plays at
+  32, as visible media, and only while the player reads it: closing the viewer, turning the page or seeking elsewhere
+  stops it (`cancelDownloadFile`, what came stays). It holds Media3's default buffer (50 s of media at most) and no copy
+  of the file; each read that waits costs a `getFile` and, when it moves, a `downloadFile`.
 - Auto-download rules per network type (the default network from `ConnectivityManager`'s callback: Wi-Fi, mobile,
   roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
   Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
