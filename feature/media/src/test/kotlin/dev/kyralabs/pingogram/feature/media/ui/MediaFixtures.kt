@@ -63,6 +63,7 @@ object MediaFixtures {
     fun videoContent(
         messageId: Long,
         duration: Int = 60,
+        supportsStreaming: Boolean = false,
     ) = MessageContent.Video(
         video =
             Video(
@@ -71,7 +72,7 @@ object MediaFixtures {
                 height = 1080,
                 minithumbnail = null,
                 thumbnail = Thumbnail(ThumbnailFormat.Jpeg, 320, 180, FileRef((messageId * 10 + 2).toInt(), 9_000)),
-                supportsStreaming = true,
+                supportsStreaming = supportsStreaming,
                 file = FileRef(fullFileId(messageId), 12_000_000),
             ),
         caption = text(""),

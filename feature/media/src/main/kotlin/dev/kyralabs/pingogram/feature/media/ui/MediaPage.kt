@@ -104,7 +104,8 @@ internal fun MediaPage(
         }
         if (item.isHidden) {
             SpoilerLabel(Modifier.align(Alignment.Center))
-        } else {
+        } else if (playback?.showsFrame != true) {
+            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
             DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
         }
     }
