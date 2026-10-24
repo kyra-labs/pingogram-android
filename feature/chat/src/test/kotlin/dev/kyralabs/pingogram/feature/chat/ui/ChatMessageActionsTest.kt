@@ -1175,7 +1175,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
             runViewModelTest {
                 val viewModel = privateChat()
 
-                assertEquals(MessageShortcuts(canReply = true, canCopy = true), viewModel.state.shortcuts)
+                assertEquals(
+                    MessageShortcuts(canReply = true, canCopy = true, canForward = true),
+                    viewModel.state.shortcuts,
+                )
             }
 
         @Test
@@ -1184,7 +1187,10 @@ class ChatMessageActionsTest : ChatViewModelHarness() {
                 groups.supergroupMap.value = mapOf(ChatFixtures.SUPERGROUP_ID to supergroup(9))
                 val viewModel = showing(channelChat, history(message(1, CHANNEL_CHAT)))
 
-                assertEquals(MessageShortcuts(canReply = false, canCopy = true), viewModel.state.shortcuts)
+                assertEquals(
+                    MessageShortcuts(canReply = false, canCopy = true, canForward = true),
+                    viewModel.state.shortcuts,
+                )
             }
 
         @Test

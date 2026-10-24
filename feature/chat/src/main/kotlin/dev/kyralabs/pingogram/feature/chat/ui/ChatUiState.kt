@@ -280,6 +280,8 @@ sealed interface ChatItem {
      *   §5.9); null for every other bubble, and while there is no search.
      * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
      *   null for every other bubble, and while none is checked.
+     * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
+     *   forwards it, where the chat lets messages be forwarded ([showsShareButton]).
      */
     data class Bubble(
         val id: Long,
@@ -313,6 +315,7 @@ sealed interface ChatItem {
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
+        val hasShareButton: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

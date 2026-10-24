@@ -146,12 +146,7 @@ internal fun MessageBubbleRow(
     val focus = remember { MutableInteractionSource() }
     val isSelected = selection?.isSelected == true
     val toggle = rememberSelectionToggle(bubble.id, isSelected, onEvent)
-    val swipe =
-        if (selection == null && bubble.canBeRepliedTo(resources.shortcuts)) {
-            rememberSwipeToReply(bubble.id, onEvent, resources.swipe)
-        } else {
-            null
-        }
+    val swipe = rowSwipe(bubble, selecting = selection != null, resources, onEvent)
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Row(
         modifier =
@@ -194,14 +189,31 @@ internal fun MessageBubbleRow(
             isSelected = isSelected,
             modifier = Modifier.weight(1f).then(if (swipe != null) Modifier.swipeOffset(swipe) else Modifier),
             focus = focus,
+            showsShare = selection == null && bubble.showsShareButton(resources.shortcuts),
         )
     }
 }
 
+/** The row's swipe to reply, where the user can reply to [bubble] and is not [selecting] messages. */
+@Composable
+private fun rowSwipe(
+    bubble: ChatItem.Bubble,
+    selecting: Boolean,
+    resources: BubbleResources,
+    onEvent: (ChatEvent) -> Unit,
+): SwipeToReplyState? =
+    if (!selecting && bubble.canBeRepliedTo(resources.shortcuts)) {
+        rememberSwipeToReply(bubble.id, onEvent, resources.swipe)
+    } else {
+        null
+    }
+
 /**
  * The bubble of a row, at the end for outgoing messages and at the start for incoming ones, beside the sender's avatar
  * in group chats; the list's rows and the message lifted for its floating menu ([MessageActionsMenu]) both show it.
- * While the row has the keyboard's focus ([focus], the list's rows only), the bubble shows its focus ring.
+ * While the row has the keyboard's focus ([focus], the list's rows only), the bubble shows its focus ring. Where
+ * [showsShare] (the list's rows of channel posts, outside selection mode), the share button sits beside it
+ * ([WithShareButton]), forwarding it ([ChatEvent.Forward]).
  */
 @Suppress("LongParameterList") // The bubble, its states and look, and where its content sends events.
 @Composable
@@ -215,6 +227,7 @@ internal fun BubbleRowContent(
     isSelected: Boolean,
     modifier: Modifier = Modifier,
     focus: MutableInteractionSource? = null,
+    showsShare: Boolean = false,
 ) {
     Row(
         modifier = modifier,
@@ -222,22 +235,36 @@ internal fun BubbleRowContent(
         verticalAlignment = Alignment.Bottom,
     ) {
         if (bubble.hasAvatarColumn) SenderAvatarColumn(bubble.avatar, bubble.senderUserId, onEvent)
-        MessageBubble(
-            bubble = bubble,
-            fileState = fileState,
-            playback = playback,
-            resources = resources,
-            onEvent = onEvent,
-            uploads = uploads,
-            isSelected = isSelected,
-            modifier = Modifier.alignBy { it.bubbleBottom() },
-            focus = focus,
-        )
+        val messageBubble: @Composable (Modifier) -> Unit = { bubbleModifier ->
+            MessageBubble(
+                bubble = bubble,
+                fileState = fileState,
+                playback = playback,
+                resources = resources,
+                onEvent = onEvent,
+                uploads = uploads,
+                isSelected = isSelected,
+                modifier = bubbleModifier,
+                focus = focus,
+            )
+        }
+        val aligned = Modifier.alignBy { it.bubbleBottom() }
+        if (showsShare) {
+            WithShareButton(
+                isOutgoing = bubble.isOutgoing,
+                style = resources.share,
+                onShare = { onEvent(ChatEvent.Forward(bubble.id)) },
+                modifier = aligned,
+                bubble = { messageBubble(Modifier) },
+            )
+        } else {
+            messageBubble(aligned)
+        }
     }
 }
 
 /**
- * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
+ * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction], [shareAction],
  * [contentActions], [messageShortcuts], showing the original of a translated text, voting in a poll ([pollActions]),
  * the buttons a bot attached ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the
  * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
@@ -261,7 +288,13 @@ private fun bubbleActions(
         true
     }
     val fixed =
-        listOfNotNull(uploadAction(uploads), replyAction(bubble), profileAction(bubble), threadAction(bubble)) +
+        listOfNotNull(
+            uploadAction(uploads),
+            replyAction(bubble),
+            profileAction(bubble),
+            threadAction(bubble),
+            shareAction(bubble, shortcuts),
+        ) +
             contentActions(bubble, fileState, isPlaying) + messageShortcuts(bubble, shortcuts)
     val original =
         if (bubble.translation is BubbleTranslation.Shown) {
