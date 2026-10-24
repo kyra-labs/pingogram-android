@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.core.data.mapper
 
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
@@ -101,6 +102,56 @@ internal fun TdApi.UserPrivacySettingRules.withChoice(choice: PrivacyChoice): Td
         }
     return TdApi.UserPrivacySettingRules((exceptions + listOfNotNull(main)).toTypedArray())
 }
+
+/** The users and groups these rules always or never allow, as TDLib lists them. */
+internal fun TdApi.UserPrivacySettingRules.toExceptionLists(): PrivacyExceptionLists =
+    PrivacyExceptionLists(
+        alwaysUserIds =
+            rules.filterIsInstance<TdApi.UserPrivacySettingRuleAllowUsers>().flatMap {
+                it.userIds.asList()
+            },
+        alwaysChatIds =
+            rules.filterIsInstance<TdApi.UserPrivacySettingRuleAllowChatMembers>().flatMap { it.chatIds.asList() },
+        neverUserIds =
+            rules.filterIsInstance<TdApi.UserPrivacySettingRuleRestrictUsers>().flatMap {
+                it.userIds.asList()
+            },
+        neverChatIds =
+            rules.filterIsInstance<TdApi.UserPrivacySettingRuleRestrictChatMembers>().flatMap { it.chatIds.asList() },
+    )
+
+/**
+ * These rules with [lists] as their users and groups always and never allowed: those rules go, and the new ones come
+ * first, the never allowed before the always allowed (one id is never on both sides), then every other rule in its
+ * order (Telegram Premium subscribers, bots, the main choice). Call it on rules just received from TDLib, as
+ * [withChoice].
+ */
+internal fun TdApi.UserPrivacySettingRules.withExceptions(lists: PrivacyExceptionLists): TdApi.UserPrivacySettingRules {
+    val kept = rules.filterNot { it.isUserOrGroupRule() }
+    val exceptions =
+        listOfNotNull(
+            lists.neverUserIds.takeIf { it.isNotEmpty() }?.let {
+                TdApi.UserPrivacySettingRuleRestrictUsers(it.toLongArray())
+            },
+            lists.neverChatIds.takeIf { it.isNotEmpty() }?.let {
+                TdApi.UserPrivacySettingRuleRestrictChatMembers(it.toLongArray())
+            },
+            lists.alwaysUserIds.takeIf { it.isNotEmpty() }?.let {
+                TdApi.UserPrivacySettingRuleAllowUsers(it.toLongArray())
+            },
+            lists.alwaysChatIds.takeIf { it.isNotEmpty() }?.let {
+                TdApi.UserPrivacySettingRuleAllowChatMembers(it.toLongArray())
+            },
+        )
+    return TdApi.UserPrivacySettingRules((exceptions + kept).toTypedArray())
+}
+
+/** A rule about some users or the members of some groups. */
+private fun TdApi.UserPrivacySettingRule.isUserOrGroupRule(): Boolean =
+    this is TdApi.UserPrivacySettingRuleAllowUsers ||
+        this is TdApi.UserPrivacySettingRuleAllowChatMembers ||
+        this is TdApi.UserPrivacySettingRuleRestrictUsers ||
+        this is TdApi.UserPrivacySettingRuleRestrictChatMembers
 
 /** A rule about everyone or about all contacts, rather than about some users, groups or bots. */
 private fun TdApi.UserPrivacySettingRule.isMainRule(): Boolean =

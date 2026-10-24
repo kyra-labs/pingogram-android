@@ -14,8 +14,10 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
@@ -45,10 +47,17 @@ class PrivacySettingScreenTest {
 
     private val events = mutableListOf<PrivacySettingEvent>()
 
+    private val openedExceptions = mutableListOf<PrivacyExceptionSide>()
+
     private fun setScreen(state: PrivacySettingUiState = SettingsPreviewData.privacySetting) {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                PrivacySettingScreen(state = state, onEvent = { events += it }, onBack = {})
+                PrivacySettingScreen(
+                    state = state,
+                    onEvent = { events += it },
+                    onBack = {},
+                    onOpenExceptions = { openedExceptions += it },
+                )
             }
         }
     }
@@ -108,7 +117,7 @@ class PrivacySettingScreenTest {
     }
 
     @Test
-    fun `no exceptions, no exceptions section`() {
+    fun `everybody offers only never allowed, which opens its page`() {
         setScreen(
             PrivacySettingUiState(
                 PrivacySetting.Calls,
@@ -116,7 +125,20 @@ class PrivacySettingScreenTest {
             ),
         )
 
-        composeRule.onNodeWithText(string(R.string.settings_section_privacy_exceptions)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.settings_privacy_always_allowed)).assertDoesNotExist()
+        composeRule.onNodeWithText(string(R.string.settings_privacy_never_allowed)).performScrollTo().performClick()
+
+        assertEquals(listOf(PrivacyExceptionSide.Never), openedExceptions)
+    }
+
+    @Test
+    fun `my contacts offers both sides`() {
+        setScreen()
+
+        composeRule.onNodeWithText(string(R.string.settings_privacy_always_allowed)).performScrollTo().performClick()
+        composeRule.onNodeWithText(string(R.string.settings_privacy_never_allowed)).performScrollTo().performClick()
+
+        assertEquals(listOf(PrivacyExceptionSide.Always, PrivacyExceptionSide.Never), openedExceptions)
     }
 
     @Test

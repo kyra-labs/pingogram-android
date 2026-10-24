@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
@@ -417,5 +418,93 @@ class TdlibPrivacyRepositoryTest {
             val (out, inside) = client.sentOf<TdApi.SetNewChatPrivacySettings>().map { it.settings }
             assertEquals(false to 0L, out.allowNewChatsFromUnknownUsers to out.incomingPaidMessageStarCount)
             assertEquals(true to 10L, inside.allowNewChatsFromUnknownUsers to inside.incomingPaidMessageStarCount)
+        }
+
+    // Exceptions
+
+    @Test
+    fun `reads the users and groups always and never allowed`() =
+        runTest {
+            answerRules(
+                TdApi.UserPrivacySettingRuleRestrictUsers(longArrayOf(5, 6)),
+                TdApi.UserPrivacySettingRuleAllowChatMembers(longArrayOf(-100)),
+                TdApi.UserPrivacySettingRuleAllowUsers(longArrayOf(7)),
+                TdApi.UserPrivacySettingRuleAllowContacts(),
+            )
+
+            assertEquals(
+                Outcome.Success(
+                    PrivacyExceptionLists(
+                        alwaysUserIds = listOf(7),
+                        alwaysChatIds = listOf(-100),
+                        neverUserIds = listOf(5, 6),
+                    ),
+                ),
+                repository.exceptions(PrivacySetting.LastSeen),
+            )
+        }
+
+    @Test
+    fun `new exceptions come first and every other rule stays in its order`() =
+        runTest {
+            answerRules(
+                TdApi.UserPrivacySettingRuleAllowUsers(longArrayOf(7)),
+                TdApi.UserPrivacySettingRuleAllowPremiumUsers(),
+                TdApi.UserPrivacySettingRuleAllowContacts(),
+            )
+            answerSet()
+
+            val result =
+                repository.setExceptions(
+                    PrivacySetting.ChatInvites,
+                    PrivacyExceptionLists(alwaysUserIds = listOf(8), neverChatIds = listOf(-100)),
+                )
+
+            val sent =
+                client
+                    .sentOf<TdApi.SetUserPrivacySettingRules>()
+                    .single()
+                    .rules.rules
+            assertArrayEquals(
+                arrayOf<Any>(
+                    TdApi.UserPrivacySettingRuleRestrictChatMembers::class.java,
+                    TdApi.UserPrivacySettingRuleAllowUsers::class.java,
+                    TdApi.UserPrivacySettingRuleAllowPremiumUsers::class.java,
+                    TdApi.UserPrivacySettingRuleAllowContacts::class.java,
+                ),
+                sent.map { it.javaClass }.toTypedArray(),
+            )
+            assertArrayEquals(longArrayOf(8), (sent[1] as TdApi.UserPrivacySettingRuleAllowUsers).userIds)
+            assertEquals(
+                Outcome.Success(
+                    PrivacyRules(
+                        PrivacyChoice.Contacts,
+                        PrivacyExceptions(allowedUserCount = 1, restrictedChatCount = 1, allowsPremiumUsers = true),
+                    ),
+                ),
+                result,
+            )
+        }
+
+    @Test
+    fun `no exceptions left leaves only the other rules`() =
+        runTest {
+            answerRules(
+                TdApi.UserPrivacySettingRuleRestrictUsers(longArrayOf(5)),
+                TdApi.UserPrivacySettingRuleAllowAll(),
+            )
+            answerSet()
+
+            repository.setExceptions(PrivacySetting.LastSeen, PrivacyExceptionLists())
+
+            val sent =
+                client
+                    .sentOf<TdApi.SetUserPrivacySettingRules>()
+                    .single()
+                    .rules.rules
+            assertArrayEquals(
+                arrayOf<Any>(TdApi.UserPrivacySettingRuleAllowAll::class.java),
+                sent.map { it.javaClass }.toTypedArray(),
+            )
         }
 }

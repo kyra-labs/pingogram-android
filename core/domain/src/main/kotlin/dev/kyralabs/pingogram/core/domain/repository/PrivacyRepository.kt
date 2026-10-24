@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.domain.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
@@ -33,6 +34,20 @@ interface PrivacyRepository {
     suspend fun setChoice(
         setting: PrivacySetting,
         choice: PrivacyChoice,
+    ): Outcome<PrivacyRules>
+
+    /** The users and groups [setting] always or never allows, by id. */
+    suspend fun exceptions(setting: PrivacySetting): Outcome<PrivacyExceptionLists>
+
+    /**
+     * Makes [lists] the users and groups [setting] always and never allows. Its main choice, Telegram Premium
+     * subscribers and bots stay as they are.
+     *
+     * @return the rules of [setting] with these exceptions, which TDLib also reports through [changes].
+     */
+    suspend fun setExceptions(
+        setting: PrivacySetting,
+        lists: PrivacyExceptionLists,
     ): Outcome<PrivacyRules>
 
     /**

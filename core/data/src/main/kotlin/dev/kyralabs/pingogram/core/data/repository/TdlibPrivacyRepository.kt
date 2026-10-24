@@ -2,12 +2,15 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.mapper.toExceptionLists
 import dev.kyralabs.pingogram.core.data.mapper.toPrivacyRules
 import dev.kyralabs.pingogram.core.data.mapper.toPrivacySetting
 import dev.kyralabs.pingogram.core.data.mapper.toTdPrivacySetting
 import dev.kyralabs.pingogram.core.data.mapper.withChoice
+import dev.kyralabs.pingogram.core.data.mapper.withExceptions
 import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionLists
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRulesChange
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
@@ -57,6 +60,25 @@ class TdlibPrivacyRepository
                 }
             val rules = current.withChoice(choice)
             // toPrivacyRules first: TDLib may change the rules it was sent.
+            val changed = rules.toPrivacyRules()
+            return client.request(TdApi.SetUserPrivacySettingRules(setting.toTdPrivacySetting(), rules)).map { changed }
+        }
+
+        override suspend fun exceptions(setting: PrivacySetting): Outcome<PrivacyExceptionLists> =
+            client
+                .request(TdApi.GetUserPrivacySettingRules(setting.toTdPrivacySetting()))
+                .map { it.toExceptionLists() }
+
+        override suspend fun setExceptions(
+            setting: PrivacySetting,
+            lists: PrivacyExceptionLists,
+        ): Outcome<PrivacyRules> {
+            val current =
+                when (val rules = client.request(TdApi.GetUserPrivacySettingRules(setting.toTdPrivacySetting()))) {
+                    is Outcome.Success -> rules.value
+                    is Outcome.Failure -> return rules
+                }
+            val rules = current.withExceptions(lists)
             val changed = rules.toPrivacyRules()
             return client.request(TdApi.SetUserPrivacySettingRules(setting.toTdPrivacySetting(), rules)).map { changed }
         }

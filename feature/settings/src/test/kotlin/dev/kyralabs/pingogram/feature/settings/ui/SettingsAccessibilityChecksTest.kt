@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
@@ -24,6 +26,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.PrivacyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
@@ -103,6 +107,24 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun newChatPrivacy() =
         check { NewChatPrivacyScreen(state = PrivacyPreviewStates.newChatsWithoutPremium, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun privacyExceptions() =
+        check {
+            PrivacyExceptionsScreen(
+                PrivacySetting.LastSeen,
+                PrivacyExceptionSide.Never,
+                PrivacyPreviewStates.exceptions,
+                onEvent = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun privacyExceptionsPicker() =
+        check {
+            PrivacyExceptionsPickerContent(PrivacyPreviewStates.exceptionsPicker, onEvent = {})
+        }
 
     @Test
     fun deleteAccount() =

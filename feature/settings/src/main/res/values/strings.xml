@@ -326,6 +326,16 @@
     <string name="settings_privacy_bio_question">Who can see my bio</string>
     <string name="settings_privacy_birthdate_question">Who can see my birthday</string>
     <string name="settings_section_privacy_read_time">Read time</string>
+    <string name="settings_privacy_exceptions_loading">Loading exceptions</string>
+    <string name="settings_privacy_exceptions_add">Add users or groups</string>
+    <string name="settings_privacy_exceptions_search">Search chats</string>
+    <string name="settings_privacy_exceptions_group">Group</string>
+    <string name="settings_privacy_exceptions_remove">Remove</string>
+    <!-- For screen readers: the "Remove" button of an exception's row; %1$s is the user's or group's name. -->
+    <string name="settings_privacy_exceptions_remove_label">Remove %1$s</string>
+    <string name="settings_privacy_exceptions_always_note">These people, and the members of these groups, are always allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_never_note">These people, and the members of these groups, are never allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_none">Add users or groups</string>
     <string name="settings_privacy_new_chats">Messages</string>
     <string name="settings_privacy_new_chats_loading">Loading who can message you</string>
     <string name="settings_privacy_new_chats_question">Who can message me</string>

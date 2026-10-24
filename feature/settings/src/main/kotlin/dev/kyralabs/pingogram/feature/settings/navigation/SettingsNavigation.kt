@@ -13,11 +13,9 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.toRoute
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
-import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.AboutRoute
 import dev.kyralabs.pingogram.core.navigation.ActiveSessionsRoute
 import dev.kyralabs.pingogram.core.navigation.AppearanceRoute
-import dev.kyralabs.pingogram.core.navigation.AutoDeleteRoute
 import dev.kyralabs.pingogram.core.navigation.AutoDownloadRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
@@ -28,9 +26,7 @@ import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LanguageRoute
-import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.MyQrCodeRoute
-import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationExceptionsRoute
 import dev.kyralabs.pingogram.core.navigation.NotificationSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.OpenSourceLibraryRoute
@@ -50,7 +46,6 @@ import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
 import dev.kyralabs.pingogram.core.ui.component.SheetDialogProperties
 import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetSheetRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
@@ -59,7 +54,6 @@ import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ActiveSessionsRoute as ActiveSessionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AppearanceRoute as AppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.AutoDownloadRoute as AutoDownloadScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
@@ -68,13 +62,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeLockRoute as PasscodeLockScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as SetPasscodeScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyRoute as NewChatPrivacyScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
@@ -227,20 +218,7 @@ fun NavGraphBuilder.settingsPages(
     settingsPage<OpenSourceLibraryRoute> { entry ->
         OpenSourceLibraryScreenRoute(libraryId = entry.toRoute<OpenSourceLibraryRoute>().libraryId, onBack = onBack)
     }
-    settingsPage<PrivacySecurityRoute> {
-        PrivacySecurityScreenRoute(onOpen = { onOpen(it.route) }, onBack = onBack)
-    }
-    settingsPage<NewChatPrivacyRoute> { NewChatPrivacyScreenRoute(onBack = onBack) }
-    settingsPage<PrivacySettingRoute> { entry ->
-        val setting = PrivacySetting.entries.firstOrNull { it.name == entry.toRoute<PrivacySettingRoute>().setting }
-        if (setting != null) {
-            PrivacySettingScreenRoute(setting = setting, onBack = onBack)
-        } else {
-            // A setting this version does not know, e.g. from a back stack restored after an update.
-            LaunchedEffect(Unit) { onBack() }
-        }
-    }
-    settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
+    privacyPages(onOpen, onBack)
     devicePages(onOpen, onBack, onScanQrCode)
     settingsPage<PasscodeLockRoute> {
         PasscodeLockScreenRoute(onSetPasscode = { onOpen(SetPasscodeRoute) }, onBack = onBack)
@@ -349,20 +327,6 @@ internal val SettingsPage.route: Any
             SettingsPage.Language -> LanguageRoute
             SettingsPage.About -> AboutRoute
             SettingsPage.PrivacySecurity -> PrivacySecurityRoute
-        }
-
-private val PrivacySecurityPage.route: Any
-    get() =
-        when (this) {
-            is PrivacySecurityPage.Setting -> PrivacySettingRoute(setting.name)
-            PrivacySecurityPage.BlockedUsers -> BlockedUsersRoute
-            PrivacySecurityPage.ActiveSessions -> ActiveSessionsRoute
-            PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
-            PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
-            PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute
-            PrivacySecurityPage.LoginEmail -> LoginEmailRoute
-            PrivacySecurityPage.AutoDelete -> AutoDeleteRoute
-            PrivacySecurityPage.NewChats -> NewChatPrivacyRoute
         }
 
 private val NotificationSettingsPage.route: Any

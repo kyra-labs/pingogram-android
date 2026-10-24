@@ -105,3 +105,53 @@ data class NewChatPrivacy(
     val paidMessageStars: Long = 0,
     val canRestrict: Boolean = false,
 )
+
+/** Which exceptions of a [PrivacySetting]: those always allowed, or those never allowed, whatever its main choice. */
+enum class PrivacyExceptionSide { Always, Never }
+
+/**
+ * The users and groups (their members) a [PrivacySetting] treats apart from its main choice, by id, as TDLib lists
+ * them (td_api.tl `userPrivacySettingRuleAllowUsers` and the others). Chat ids are those of basic groups and
+ * supergroups.
+ */
+data class PrivacyExceptionLists(
+    val alwaysUserIds: List<Long> = emptyList(),
+    val alwaysChatIds: List<Long> = emptyList(),
+    val neverUserIds: List<Long> = emptyList(),
+    val neverChatIds: List<Long> = emptyList(),
+) {
+    fun userIds(side: PrivacyExceptionSide): List<Long> =
+        if (side == PrivacyExceptionSide.Always) alwaysUserIds else neverUserIds
+
+    fun chatIds(side: PrivacyExceptionSide): List<Long> =
+        if (side == PrivacyExceptionSide.Always) alwaysChatIds else neverChatIds
+
+    /**
+     * These lists with [side] holding [userIds] and [chatIds]; they leave the other side, since one user or group
+     * cannot be both always and never allowed.
+     */
+    fun with(
+        side: PrivacyExceptionSide,
+        userIds: List<Long>,
+        chatIds: List<Long>,
+    ): PrivacyExceptionLists =
+        when (side) {
+            PrivacyExceptionSide.Always -> {
+                PrivacyExceptionLists(
+                    alwaysUserIds = userIds,
+                    alwaysChatIds = chatIds,
+                    neverUserIds = neverUserIds - userIds.toSet(),
+                    neverChatIds = neverChatIds - chatIds.toSet(),
+                )
+            }
+
+            PrivacyExceptionSide.Never -> {
+                PrivacyExceptionLists(
+                    alwaysUserIds = alwaysUserIds - userIds.toSet(),
+                    alwaysChatIds = alwaysChatIds - chatIds.toSet(),
+                    neverUserIds = userIds,
+                    neverChatIds = chatIds,
+                )
+            }
+        }
+}
