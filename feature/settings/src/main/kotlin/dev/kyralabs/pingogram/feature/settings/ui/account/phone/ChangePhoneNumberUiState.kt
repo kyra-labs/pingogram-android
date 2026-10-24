@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AuthCodeType
 import dev.kyralabs.pingogram.core.ui.phone.CountryPickerUiState
 import dev.kyralabs.pingogram.core.ui.phone.CountryUiModel
+import dev.kyralabs.pingogram.feature.settings.ui.account.FlowStepState
 
 /** The steps of changing the number, one page each. */
 enum class ChangePhoneNumberStep {
@@ -64,12 +65,10 @@ data class ChangePhoneNumberUiState(
     val newNumber: NewNumberUiState = NewNumberUiState(),
     val code: CodeUiState? = null,
     val changedTo: String? = null,
-    val isWorking: Boolean = false,
-    val floodWaitSeconds: Long? = null,
-    val floodWaitTotalSeconds: Long = 0,
-) {
-    val canSubmit: Boolean get() = !isWorking && floodWaitSeconds == null
-
+    override val isWorking: Boolean = false,
+    override val floodWaitSeconds: Long? = null,
+    override val floodWaitTotalSeconds: Long = 0,
+) : FlowStepState {
     /** Back returns to the step before rather than leaving: from the new number and the code. */
     val canGoBack: Boolean get() = step == ChangePhoneNumberStep.Number || step == ChangePhoneNumberStep.Code
 

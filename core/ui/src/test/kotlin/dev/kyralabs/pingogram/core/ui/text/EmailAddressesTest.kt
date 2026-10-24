@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui
+package dev.kyralabs.pingogram.core.ui.text
 
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

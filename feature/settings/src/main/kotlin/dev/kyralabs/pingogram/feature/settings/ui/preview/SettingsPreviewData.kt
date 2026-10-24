@@ -129,6 +129,8 @@ internal object SettingsPreviewData {
             sessionCount = 4,
             twoStepVerification =
                 TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
+            loginEmailPattern = "a****@e******.org",
+            defaultAutoDeleteSeconds = 604_800,
         )
 
     val twoStepOn = TwoStepVerificationUiState.Content(hasPassword = true, hasRecoveryEmail = true)

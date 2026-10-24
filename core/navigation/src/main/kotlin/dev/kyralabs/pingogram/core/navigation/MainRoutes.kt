@@ -196,6 +196,19 @@ data object SetPasscodeRoute
 @Serializable
 data object DeleteAccountRoute
 
+/**
+ * The login email (`REQUIREMENTS.md` FR-S1): Telegram's pattern of it and changing it with a code sent to the new
+ * address, pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object LoginEmailRoute
+
+/**
+ * The self-destruct timer of the chats the user starts (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute].
+ */
+@Serializable
+data object AutoDeleteRoute
+
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object TwoStepVerificationRoute
