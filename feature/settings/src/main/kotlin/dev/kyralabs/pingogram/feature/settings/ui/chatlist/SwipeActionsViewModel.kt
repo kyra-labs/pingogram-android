@@ -63,9 +63,9 @@ sealed interface SwipeActionsEffect {
 
 /**
  * Settings → Appearance → Chat list → "Swipe actions" (`docs/audit/feature-gaps-octogram.md`, P2): whether swiping
- * the chat list changes the folder, else what swiping a chat row does toward each side, kept on the device ([ChatListSettingsRepository]) and saved at once. The page shows
- * what is saved, so a choice that cannot be saved changes nothing but a snackbar. Nothing to restore after process
- * death.
+ * the chat list changes the folder, else what swiping a chat row does toward each side, kept on the device
+ * ([ChatListSettingsRepository]) and saved at once. The page shows what is saved, so a choice that cannot be saved
+ * changes nothing but a snackbar. Nothing to restore after process death.
  */
 @HiltViewModel
 class SwipeActionsViewModel

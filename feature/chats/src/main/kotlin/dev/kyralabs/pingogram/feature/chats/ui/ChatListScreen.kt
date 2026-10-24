@@ -224,25 +224,13 @@ private fun ChatListBody(
 ) {
     val state = rememberShownList(uiState, listState, folderSwitch, hasStories = stories != null)
     val animateRows = folderSwitch.animateRows
-    val swipesChangeFolder = LocalChatSwipes.current.changesFolder && uiState.kind == ChatListKind.Chats
-    val neighbours =
-        remember(uiState.folderTabs, uiState.selectedFolderId) {
-            FolderNeighbours.of(uiState.folderTabs, uiState.selectedFolderId)
-        }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { sheetPadding ->
         val contentPadding = rememberClearOfNewChatButton(sheetPadding, state.kind)
         Column(Modifier.fillMaxSize()) {
             // Takes no room while it shows nothing.
             Box(Modifier.fillMaxWidth().padding(contentPadding.sidesOnly()), Alignment.TopCenter) { header() }
-            Box(
-                Modifier.weight(1f).folderSwipe(
-                    enabled = swipesChangeFolder && uiState.selection == null && uiState.folderTabs.isNotEmpty(),
-                    folderSwitch = folderSwitch,
-                    neighbours = neighbours,
-                    onSelect = { onEvent(ChatListEvent.SelectFolder(it)) },
-                ),
-            ) {
+            Box(Modifier.weight(1f).folderSwipe(uiState, folderSwitch, onEvent)) {
                 val contentModifier = Modifier.fadeThrough(folderSwitch, isRtl).fillMaxSize()
                 when (val content = state.content) {
                     ChatListContent.Loading -> {
@@ -374,7 +362,7 @@ private fun rememberShownList(
     LaunchedEffect(state.selectedFolderId) {
         // The system's animator duration scale, which Compose applies to every animation; 0 is reduced motion.
         val animated = coroutineContext[MotionDurationScale]?.scaleFactor != 0f
-        // A swipe that selected the folder: the old list slid away already, and the new one slides in instead of fading.
+        // A swipe that selected the folder: the old list slid away, and the new one slides in rather than fades.
         val slideInFrom = folderSwitch.slideInFrom
         folderSwitch.slideInFrom = null
         if (state.selectedFolderId != shownFolderId) {

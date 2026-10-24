@@ -55,6 +55,30 @@ internal data class FolderNeighbours(
 }
 
 /**
+ * [folderSwipe] for the chat list in [uiState]: only on the Chats tab with folder tabs, not in selection mode, and only
+ * while the user chose it ([ChatSwipes.changesFolder]).
+ */
+@Composable
+internal fun Modifier.folderSwipe(
+    uiState: ChatListUiState,
+    folderSwitch: FolderSwitch,
+    onEvent: (ChatListEvent) -> Unit,
+): Modifier {
+    val neighbours =
+        remember(uiState.folderTabs, uiState.selectedFolderId) {
+            FolderNeighbours.of(uiState.folderTabs, uiState.selectedFolderId)
+        }
+    return folderSwipe(
+        enabled =
+            LocalChatSwipes.current.changesFolder && uiState.kind == ChatListKind.Chats &&
+                uiState.selection == null && uiState.folderTabs.isNotEmpty(),
+        folderSwitch = folderSwitch,
+        neighbours = neighbours,
+        onSelect = { onEvent(ChatListEvent.SelectFolder(it)) },
+    )
+}
+
+/**
  * Swiping the whole list sideways to the folder tab beside the selected one ([ChatSwipes.changesFolder]), as Telegram's
  * "Change folder" swipe does: the list follows the finger ([FolderSwitch.position], drawn in its graphics layer, so a
  * drag never recomposes), toward the end showing the tab before the selected one ([FolderNeighbours.previous]) and
