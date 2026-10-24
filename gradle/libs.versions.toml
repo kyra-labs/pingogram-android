@@ -52,7 +52,7 @@ detekt = "1.23.8"
 # The Google Services plugin turns the owner's git-ignored google-services.json into the resources Firebase reads;
 # :app applies it only when the file exists (pingogram.android.gms, docs/adr/0004-push-delivery.md).
 googleServices = "4.5.0"
-gradleVersionsPlugin = "0.54.0"
+gradleVersionsPlugin = "0.66.0"
 # Gradle Play Publisher: the optional upload of release.yml's Play bundle (docs/PLAY_STORE.md §7).
 gradlePlayPublisher = "4.1.1"
 hilt = "2.60.1"
