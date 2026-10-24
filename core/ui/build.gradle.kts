@@ -33,5 +33,9 @@ dependencies {
     // nothing leaves it. Pure Java; R8 keeps only what is used.
     implementation(libs.zxing.core)
 
+    // TdlibDataSource, which plays TDLib files while they download (media/TdlibDataSource.kt,
+    // docs/adr/0027-streaming-media.md). media3-exoplayer, in the features that play, depends on it already.
+    implementation(libs.media3.datasource)
+
     testImplementation(libs.kotlinx.coroutines.test)
 }

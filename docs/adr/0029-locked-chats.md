@@ -1,4 +1,4 @@
-# 0028 · Locked chats
+# 0029 · Locked chats
 
 Date: 2026-10-24 · Status: proposed, waiting for the owner's answers below (`docs/audit/feature-gaps-octogram.md`, P1,
 "Owner"). Extends `docs/adr/0005-passcode-lock.md`.

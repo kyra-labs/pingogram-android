@@ -248,7 +248,9 @@ internal fun ExpandableCaption(
  * Play or pause and seek the current video (`REQUIREMENTS.md` FR-C10): a [FilledIconButton] whose shape morphs while
  * pressed, the time played, an expressive [Slider] and the length. The slider follows the playback in its layout and
  * draw phases ([SliderState], updated from [VideoPlayback.progress]), except while the user drags it; letting go seeks
- * there. The times recompose only when the second changes.
+ * there. Its inactive track shows in `outline` how far the player has the video ([VideoPlayback.buffered], read in the
+ * draw phase), as a stream downloads (`docs/adr/0028-streaming-media.md`). The times recompose only when the second
+ * changes.
  */
 @Composable
 private fun VideoControls(
@@ -292,6 +294,7 @@ private fun VideoControls(
             modifier = Modifier.weight(1f).semantics { contentDescription = seekLabel },
             onValueChangeFinished = { onEvent(MediaViewerEvent.Seek(sliderState.value)) },
             interactionSource = interactionSource,
+            track = { state -> BufferedTrack(state, playback.buffered) },
         )
         TimeText(formatDuration(durationSeconds, locale))
     }

@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -481,10 +482,16 @@ class MediaViewerViewModel internal constructor(
             deletion.focus(null)
             return
         }
-        downloads.focus(window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 }, index, files)
         val message = window.messages[index]
         val media = message.content.toViewerMedia()
-        playback.show(media?.playTarget(message.id, files))
+        val target = media?.playTarget(message.id, files)
+        downloads.focus(
+            window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 },
+            index,
+            files,
+            streamed = (target?.source as? PlaySource.Stream)?.fileId,
+        )
+        playback.show(target)
         sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
         deletion.focus(message.id)
     }
@@ -638,17 +645,36 @@ private fun SendChannel<MediaViewerEffect>.showError(error: DomainError) {
     if (error != DomainError.Silent) trySend(MediaViewerEffect.ShowError(error))
 }
 
-/** What the player plays for this media: a video's or GIF's file once it is on the device; nothing for a photo. */
+/**
+ * What the player plays for this media: a video that supports it as it streams, whether on the device or not, so the
+ * target stays the same as it downloads (`docs/adr/0028-streaming-media.md`); another video's or a GIF's file once it
+ * is on the device; nothing for a photo.
+ */
 private fun ViewerMedia.playTarget(
     messageId: Long,
     files: Map<Int, FileState>,
 ): PlayTarget? {
-    val path = (files[fileId] as? FileState.Downloaded)?.path
+    val downloaded = (files[fileId] as? FileState.Downloaded)?.path?.let(PlaySource::File)
     return when {
-        path == null -> null
-        this is ViewerMedia.Clip -> PlayTarget(messageId, path, VideoKind.Video, video.duration * MILLIS_PER_SECOND)
-        this is ViewerMedia.Gif -> PlayTarget(messageId, path, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
-        else -> null
+        this is ViewerMedia.Clip && video.supportsStreaming -> {
+            PlayTarget(messageId, PlaySource.Stream(fileId), VideoKind.Video, video.duration * MILLIS_PER_SECOND)
+        }
+
+        downloaded == null -> {
+            null
+        }
+
+        this is ViewerMedia.Clip -> {
+            PlayTarget(messageId, downloaded, VideoKind.Video, video.duration * MILLIS_PER_SECOND)
+        }
+
+        this is ViewerMedia.Gif -> {
+            PlayTarget(messageId, downloaded, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
+        }
+
+        else -> {
+            null
+        }
     }
 }
 

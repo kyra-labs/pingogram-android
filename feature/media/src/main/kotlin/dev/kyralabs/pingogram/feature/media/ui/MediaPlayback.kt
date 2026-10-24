@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.ui
 
 import androidx.compose.runtime.mutableFloatStateOf
+import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.coroutines.CoroutineScope
@@ -130,7 +131,7 @@ internal class MediaPlayback(
     private fun start(session: Session) {
         session.hasStarted = true
         session.isPlaying = true
-        player.play(session.target.path, session.target.kind)
+        player.play(session.target.source, session.target.kind)
         ticker.start(session)
         publish()
     }
@@ -162,20 +163,19 @@ internal class MediaPlayback(
 
     private fun publish() {
         mutableState.value =
-            session?.let { VideoPlayback(it.target.messageId, it.isPlaying, it.showsFrame, it.readProgress) }
+            session?.let {
+                VideoPlayback(it.target.messageId, it.isPlaying, it.showsFrame, it.readProgress, it.readBuffered)
+            }
     }
 }
 
-/** What the player is to play: the file at [path] of message [messageId], as [kind], [durationMillis] long. */
+/** What the player is to play: [source] of message [messageId], as [kind], [durationMillis] long. */
 internal data class PlayTarget(
     val messageId: Long,
-    val path: String,
+    val source: PlaySource,
     val kind: VideoKind,
     val durationMillis: Long,
-) {
-    // The path ends in the file's name, which can be personal.
-    override fun toString() = "PlayTarget(messageId=$messageId, kind=$kind, …)"
-}
+)
 
 /**
  * [target] in the player: whether it has been given to the player yet ([hasStarted]: not while the screen is
@@ -187,6 +187,10 @@ private class Session(
 ) {
     val progress = mutableFloatStateOf(0f)
     val readProgress: () -> Float = { progress.floatValue }
+
+    /** How far the player has the video, 0–1: all of a file on the device, what came so far of a stream. */
+    val buffered = mutableFloatStateOf(0f)
+    val readBuffered: () -> Float = { buffered.floatValue }
     var hasStarted = false
     var isPlaying = false
     var showsFrame = false
@@ -209,6 +213,7 @@ private class ProgressTicker(
             scope.launch {
                 while (true) {
                     session.progress.floatValue = player.playedFraction(session)
+                    session.buffered.floatValue = player.bufferedFraction(session)
                     delay(TICK_MILLIS)
                 }
             }
@@ -228,7 +233,15 @@ private class ProgressTicker(
 }
 
 /** How much of [session] has played, 0–1, by the player's length or the video's until the player knows it. */
-private fun VideoPlayer.playedFraction(session: Session): Float {
+private fun VideoPlayer.playedFraction(session: Session): Float = fractionOf(positionMillis, session)
+
+/** How much of [session] the player has, 0–1. */
+private fun VideoPlayer.bufferedFraction(session: Session): Float = fractionOf(bufferedMillis, session)
+
+private fun VideoPlayer.fractionOf(
+    millis: Long,
+    session: Session,
+): Float {
     val length = durationMillis ?: session.target.durationMillis
-    return if (length > 0) (positionMillis.toFloat() / length).coerceIn(0f, 1f) else 0f
+    return if (length > 0) (millis.toFloat() / length).coerceIn(0f, 1f) else 0f
 }
