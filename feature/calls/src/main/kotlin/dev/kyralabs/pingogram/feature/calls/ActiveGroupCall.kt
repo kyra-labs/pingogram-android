@@ -13,10 +13,13 @@ import kotlinx.collections.immutable.persistentListOf
  */
 @Immutable
 data class ActiveGroupCall(
+    /** The voice chat's chat; 0 for a conference call (`docs/adr/0025-conference-calls.md`). */
     val chatId: Long,
-    /** TDLib's id of the group call. */
+    /** TDLib's id of the group call; a conference call's is 0 until it is joined. */
     val groupCallId: Int,
     val phase: GroupCallPhase,
+    /** A conference call: end-to-end encrypted, outside any chat, reached by a link or an invitation. */
+    val isConference: Boolean = false,
     /** A live stream (or a call too large to speak in): received only, nothing sent. */
     val isStream: Boolean = false,
     val isMuted: Boolean = true,

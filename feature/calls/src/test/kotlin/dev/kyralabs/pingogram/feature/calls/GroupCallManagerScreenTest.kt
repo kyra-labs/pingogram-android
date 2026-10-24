@@ -18,12 +18,14 @@ import org.junit.jupiter.api.Test
 /** Sharing the screen in a voice chat, and the others' shared screens (`docs/adr/0026-screen-sharing.md`). */
 class GroupCallManagerScreenTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
     private val foreground = FakeCallForeground()
 
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             FakeCallSystem(),
             foreground,

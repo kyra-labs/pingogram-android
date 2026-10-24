@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import io.github.pytgcalls.ConnectionMode
+import io.github.pytgcalls.ExternalEncryption
 import io.github.pytgcalls.NTgCalls
 import io.github.pytgcalls.media.AudioDescription
 import io.github.pytgcalls.media.MediaDescription
@@ -21,6 +22,7 @@ import io.github.pytgcalls.media.VideoDescription
 import io.github.pytgcalls.models.Frame
 import io.github.pytgcalls.models.MediaSegmentPartStatus
 import io.github.pytgcalls.models.SsrcGroup
+import io.github.pytgcalls.models.SsrcMapping
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -30,11 +32,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.withContext
-import org.json.JSONException
-import org.json.JSONObject
 import org.webrtc.ContextUtils
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -70,6 +71,12 @@ class NtgCallsEngine
         /** Voice chats by their NTgCalls id ([groupKey]), apart from [sessions]: TDLib's two kinds of ids may meet. */
         private val groupSessions = ConcurrentHashMap<Long, NtgGroupCallSession>()
 
+        /** The encryption of each conference call, by its NTgCalls id ([conferenceKey]). */
+        private val encryptions = ConcurrentHashMap<Long, ConferenceEncryption>()
+
+        /** Counts the conference calls made, for their NTgCalls ids: TDLib names the call only once it is joined. */
+        private val conferences = AtomicInteger()
+
         private var instance: NTgCalls? = null
 
         /** NTgCalls, created on [engineThread] with its callbacks the first time a call needs it. */
@@ -104,6 +111,29 @@ class NtgCallsEngine
                             groupSessions[id]?.onScreenEnded()
                         }
                     }
+                    engine.onRequestParticipants { id, request -> groupSessions[id]?.onUnknownSources(request.ssrcs) }
+                    // Conference calls' frames, on WebRTC's threads, which wait for TDLib's answer.
+                    ExternalEncryption.setHandler(
+                        object : ExternalEncryption.Handler {
+                            override fun encrypt(
+                                chatId: Long,
+                                channel: Int,
+                                data: ByteArray,
+                                unencryptedPrefix: Int,
+                            ): ByteArray? =
+                                CallTrace.section(CallTrace.ENCRYPT) {
+                                    encryptions[chatId]?.encrypt(channel.toChannel(), data, unencryptedPrefix)
+                                }
+
+                            override fun decrypt(
+                                chatId: Long,
+                                channel: Int,
+                                userId: Long,
+                                data: ByteArray,
+                            ): ByteArray? =
+                                CallTrace.section(CallTrace.DECRYPT) { encryptions[chatId]?.decrypt(userId, data) }
+                        },
+                    )
                     engine.onRequestBroadcastTimestamp { id -> groupSessions[id]?.request(StreamRequest.Time) }
                     engine.onRequestBroadcastPart { id, part -> groupSessions[id]?.request(part.toStreamRequest()) }
                     instance = engine
@@ -122,16 +152,6 @@ class NtgCallsEngine
                     .orEmpty()
                     .mapNotNull { it.metadata?.toCamera() }
                     .sortedByDescending { it.isFront }
-            }
-
-        /** NTgCalls' camera metadata: `{"id": "1", "is_front": true}`. */
-        private fun String.toCamera(): CallCamera? =
-            try {
-                val json = JSONObject(this)
-                CallCamera(id = json.getString("id"), isFront = json.optBoolean("is_front"), metadata = this)
-            } catch (e: JSONException) {
-                Log.w(TAG, "Unreadable camera: ${e.javaClass.simpleName}")
-                null
             }
 
         override suspend fun connect(
@@ -167,11 +187,26 @@ class NtgCallsEngine
         override suspend fun createGroupCall(
             groupCallId: Int,
             muted: Boolean,
+        ): GroupCallSession = openGroupCall(groupKey(groupCallId), muted) { calls().createCall(it) }
+
+        override suspend fun createConference(
+            muted: Boolean,
+            encryption: ConferenceEncryption,
+        ): GroupCallSession {
+            val id = conferenceKey(conferences.incrementAndGet())
+            encryptions[id] = encryption
+            return openGroupCall(id, muted) { calls().initExternalConference(it) }
+        }
+
+        /** A group call's session as NTgCalls' [create] makes its connection [id] and its join payload. */
+        private suspend fun openGroupCall(
+            id: Long,
+            muted: Boolean,
+            create: (Long) -> String,
         ): GroupCallSession =
             withContext(engineThread) {
-                val id = groupKey(groupCallId)
                 val engine = calls()
-                val payload = engine.createCall(id)
+                val payload = create(id)
                 val session = NtgGroupCallSession(id, payload)
                 groupSessions[id] = session
                 try {
@@ -196,9 +231,6 @@ class NtgCallsEngine
                 .firstOrNull()
                 ?.metadata
                 .orEmpty()
-
-        private fun CallCamera.toVideoSource(quality: VideoQuality) =
-            VideoDescription(MediaSource.DEVICE, quality.width, quality.height, quality.fps, metadata, true)
 
         /** The device's screen through NTgCalls' own capturer (`"screen"`), at most [SCREEN_FPS] frames a second. */
         private fun screenSource(quality: VideoQuality) =
@@ -416,6 +448,19 @@ class NtgCallsEngine
 
             private val mutableState = MutableStateFlow(CallMediaState.Connecting)
             override val state: StateFlow<CallMediaState> = mutableState.asStateFlow()
+
+            // NTgCalls asks again every few seconds while a source stays unknown; never blocks its threads.
+            private val unknown = Channel<List<Int>>(Channel.CONFLATED)
+            override val unknownSources: Flow<List<Int>> = unknown.receiveAsFlow()
+
+            fun onUnknownSources(ssrcs: List<Int>) {
+                unknown.trySend(ssrcs)
+            }
+
+            override suspend fun mapSources(sources: Map<Int, Long>) =
+                engineCall("map the audio sources") {
+                    calls().updateAudioSsrcMappings(id, sources.map { (ssrc, userId) -> SsrcMapping(userId, ssrc) })
+                }
 
             private val mutableMode = MutableStateFlow<GroupCallMode?>(null)
             override val mode: StateFlow<GroupCallMode?> = mutableMode.asStateFlow()
@@ -657,6 +702,8 @@ class NtgCallsEngine
                 incomingSinks = emptyMap()
                 endpoints = emptyMap()
                 groupSessions.remove(id)
+                encryptions.remove(id)
+                unknown.close()
                 requests.close()
             }
 

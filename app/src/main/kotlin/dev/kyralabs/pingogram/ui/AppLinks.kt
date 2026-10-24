@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.R
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
 import dev.kyralabs.pingogram.core.domain.model.SharedContent
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
+import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.floatingToolbarInsets
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
@@ -94,6 +95,7 @@ internal fun LinkEffects(
     val currentOnOpenSearch by rememberUpdatedState(onOpenSearch)
     val currentOnShare by rememberUpdatedState(onShare)
     val besideList by rememberChatBesideList()
+    val voiceChats = LocalVoiceChats.current
     LaunchedEffect(links, navController, snackbars) {
         links.effects.collect { effect ->
             when (effect) {
@@ -106,6 +108,7 @@ internal fun LinkEffects(
                                 onOpenSearch = currentOnOpenSearch,
                                 onShare = currentOnShare,
                                 besideList = besideList,
+                                onJoinGroupCall = voiceChats?.let { it::joinConference },
                             )
                     if (!opened) launch { snackbars.showSnackbar(resources.getString(R.string.link_not_yet)) }
                 }

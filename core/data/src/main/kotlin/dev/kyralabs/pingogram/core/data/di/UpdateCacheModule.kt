@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
@@ -82,6 +83,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun groupCallCache(repository: TdlibGroupCallRepository): TdlibUpdateCache
+
+    /** TDLib announces a conference call's verification and its blockchain's members only by updates. */
+    @Binds
+    @IntoSet
+    fun conferenceCallCache(repository: TdlibConferenceCallRepository): TdlibUpdateCache
 
     @Binds
     @IntoSet

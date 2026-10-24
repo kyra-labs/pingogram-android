@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
 import dev.kyralabs.pingogram.feature.calls.engine.CallEngine
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
 import dev.kyralabs.pingogram.feature.calls.engine.CallSession
+import dev.kyralabs.pingogram.feature.calls.engine.ConferenceEncryption
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
 import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
@@ -178,6 +179,18 @@ class FakeCallEngine : CallEngine {
         if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
         return FakeGroupCallSession(groupCallId, muted).also { groupSessions += it }
     }
+
+    /** The conference calls' encryptions, in the order their sessions were made. */
+    val encryptions = mutableListOf<ConferenceEncryption>()
+
+    override suspend fun createConference(
+        muted: Boolean,
+        encryption: ConferenceEncryption,
+    ): GroupCallSession {
+        if (failsToLoad) throw UnsatisfiedLinkError("no libntgcalls")
+        encryptions += encryption
+        return FakeGroupCallSession(0, muted).also { groupSessions += it }
+    }
 }
 
 class FakeGroupCallSession(
@@ -193,6 +206,15 @@ class FakeGroupCallSession(
 
     var params: String? = null
     var onHold = false
+
+    /** What the engine does not know the senders of, and the senders the manager told it. */
+    val unknown = Channel<List<Int>>(Channel.UNLIMITED)
+    override val unknownSources: Flow<List<Int>> = unknown.receiveAsFlow()
+    val mappedSources = mutableListOf<Map<Int, Long>>()
+
+    override suspend fun mapSources(sources: Map<Int, Long>) {
+        mappedSources += sources
+    }
 
     /** The presentation: whether it opens, its parameters once connected (null: none), and "closed" once stopped. */
     var opensPresentation = true

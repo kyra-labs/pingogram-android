@@ -2,17 +2,22 @@ package dev.kyralabs.pingogram.feature.calls.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
+import dev.kyralabs.pingogram.core.domain.model.ConferenceVerification
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.feature.calls.CALL_ID
 import dev.kyralabs.pingogram.feature.calls.CHAT_ID
+import dev.kyralabs.pingogram.feature.calls.CONFERENCE_CALL_ID
+import dev.kyralabs.pingogram.feature.calls.CONFERENCE_LINK
 import dev.kyralabs.pingogram.feature.calls.CallLine
 import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.FakeCallClock
 import dev.kyralabs.pingogram.feature.calls.FakeCallEngine
 import dev.kyralabs.pingogram.feature.calls.FakeCallForeground
 import dev.kyralabs.pingogram.feature.calls.FakeCallSystem
+import dev.kyralabs.pingogram.feature.calls.FakeConferenceCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeGroupCallRepository
 import dev.kyralabs.pingogram.feature.calls.FakeNetworkRepository
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
@@ -20,6 +25,7 @@ import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.MuteRequest
 import dev.kyralabs.pingogram.feature.calls.SELF_ID
 import dev.kyralabs.pingogram.feature.calls.engine.CallMediaState
+import dev.kyralabs.pingogram.feature.calls.groupCall
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +51,7 @@ import org.junit.jupiter.api.Test
 class GroupCallViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
     private val clock = FakeCallClock()
     private val users = FakeUserRepository()
@@ -69,6 +76,7 @@ class GroupCallViewModelTest {
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             FakeCallSystem(),
             FakeCallForeground(),
@@ -86,7 +94,17 @@ class GroupCallViewModelTest {
             SavedStateHandle(
                 mapOf(GroupCallActivity.EXTRA_ACTION to action, GroupCallActivity.EXTRA_CHAT_ID to CHAT_ID),
             ),
-    ) = GroupCallViewModel(handle, manager, repository, chats, users, { microphone }, camera, clock).also { viewModel ->
+    ) = GroupCallViewModel(
+        handle,
+        manager,
+        repository,
+        conferences,
+        chats,
+        users,
+        { microphone },
+        camera,
+        clock,
+    ).also { viewModel ->
         created += viewModel
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -138,6 +156,51 @@ class GroupCallViewModelTest {
             runCurrent()
             assertTrue(viewModel.uiState.value is GroupCallUiState.InCall)
             assertEquals(1, repository.joins.size)
+        }
+
+    private fun conferenceHandle() =
+        SavedStateHandle(
+            mapOf(
+                GroupCallActivity.EXTRA_ACTION to GroupCallActivity.ACTION_JOIN_CONFERENCE,
+                GroupCallActivity.EXTRA_LINK to CONFERENCE_LINK,
+            ),
+        )
+
+    @Test
+    fun `a conference call's link asks first, then joins and shows the emojis to compare`() =
+        runTest(dispatcher) {
+            repository.calls.value += CONFERENCE_CALL_ID to groupCall()
+            val handle = conferenceHandle()
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN_CONFERENCE, handle)
+
+            assertEquals(GroupCallUiState.ConfirmConference, viewModel.uiState.value)
+            assertTrue(conferences.joins.isEmpty())
+
+            viewModel.onEvent(GroupCallEvent.JoinConference)
+            runCurrent()
+            conferences.verification.value = ConferenceVerification(1, persistentListOf("🐝", "🌵", "🎈", "🦊"))
+            runCurrent()
+
+            assertEquals(ConferenceTarget.Link(CONFERENCE_LINK), conferences.joins.single().first)
+            val state = viewModel.uiState.value as GroupCallUiState.InCall
+            assertTrue(state.isConference)
+            assertEquals(listOf("🐝", "🌵", "🎈", "🦊"), state.emojis)
+            assertTrue(repository.joins.isEmpty())
+        }
+
+    @Test
+    fun `not now on a conference call's link joins nothing and closes the screen, also after a restart`() =
+        runTest(dispatcher) {
+            val handle = conferenceHandle()
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN_CONFERENCE, handle)
+
+            viewModel.onEvent(GroupCallEvent.DeclineConference)
+            runCurrent()
+            assertEquals(GroupCallUiState.Closed, viewModel.uiState.value)
+
+            val again = viewModel(manager(), GroupCallActivity.ACTION_JOIN_CONFERENCE, handle)
+            assertTrue(again.uiState.value !is GroupCallUiState.ConfirmConference)
+            assertTrue(conferences.joins.isEmpty())
         }
 
     @Test

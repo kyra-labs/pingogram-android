@@ -682,6 +682,11 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  Raise to listen (`RaiseToListen`, beside it): while voice messages play, the proximity sensor (no permission) moves
+  a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
+  proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go
+  1.5 s after the last voice message, so the next one stays at the ear. Its settings are `core:domain`'s
+  `PlaybackSettingsRepository` (`DataStorePlaybackSettingsRepository`), which Appearance → Chats sets.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
   and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).
@@ -977,6 +982,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `GroupCallRepository.startScreenSharing` (`startGroupCallScreenSharing`) and connects it
   (`connectPresentation`), beside the camera; others' screens (`GroupCallParticipant.screen`,
   `screen_sharing_video_info`) are received as their cameras are, first among the videos (`chooseVideos`).
+- **Conference calls** (`docs/adr/0025-conference-calls.md`): end-to-end encrypted group calls outside any chat.
+  `core:domain`'s `ConferenceCallRepository` (`TdlibConferenceCallRepository`, `core:data`, a `TdlibUpdateCache`:
+  `updateGroupCallVerificationState` and `updateGroupCallParticipants` come only as updates) joins one by its link
+  (`joinGroupCall` with `inputGroupCallLink`), follows its emojis and the users of its blockchain, and encrypts and
+  decrypts every frame (`encryptGroupCallData`, `decryptGroupCallData`, 100 ms at most, a late frame dropped). The
+  engine is NTgCalls patched by `tools/ntgcalls/` (`CallEngine.createConference`): its `ExternalEncryption` hands each
+  frame to `TdlibConferenceEncryption` on WebRTC's thread, which waits for TDLib, and asks whose an audio source is
+  (`GroupCallSession.unknownSources`), which `GroupCallManager.joinConference` answers from the participants'
+  `audioSourceId` (`mapSources`). Everything else is a voice chat's: `GroupCallManager` follows the call by the id
+  TDLib answered, with chat 0, and Telecom names it "Group call". A `t.me/call/…` link (`LinkTarget.GroupCall`) opens
+  the voice chat's screen through `core:ui`'s `VoiceChats.joinConference`, which asks before it joins
+  (`GroupCallUiState.ConfirmConference`, the answer in the saved state) and shows the emojis to compare under the
+  header. Upgrading a one-to-one call, inviting and invitations come later.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

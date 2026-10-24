@@ -370,6 +370,12 @@ regresses by more than 10%.
   renderer (`EglRenderer` threads named "Participant …"), so the trace shows what each costs; the four tell whether
   the cap of four holds on that phone.
 
+  A conference call (`docs/adr/0025-conference-calls.md`) waits for TDLib on WebRTC's threads for every frame it sends
+  (`callEncrypt`) and receives (`callDecrypt`), at most 100 ms each before the frame is dropped. Record one the same
+  way: open a `t.me/call/…` link from Telegram's app, join with three others who speak (one with the camera on), and
+  run step 3. The two sections' P90 and their count per second tell whether a frame's round trip keeps within an audio
+  frame's 20 ms on that phone.
+
   §1 has no budget for calls yet: the first results go here and set one.
 - LeakCanary in debug builds; a leak fails the nightly.
 - Nightly workflow (to add in M2) runs benchmarks on an emulator for trend only (the plugin skips

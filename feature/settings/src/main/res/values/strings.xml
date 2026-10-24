@@ -1086,4 +1086,8 @@
     <!-- Spoken by screen readers for the progress indicator while the statistics are reset. -->
     <string name="settings_network_usage_resetting">Resetting network usage</string>
     <string name="settings_network_usage_reset_done">Network usage reset</string>
+    <string name="settings_raise_to_listen">Raise to listen</string>
+    <string name="settings_raise_to_listen_summary">Hold the phone to your ear to hear voice messages through the earpiece</string>
+    <string name="settings_pause_when_lowered">Pause when lowered</string>
+    <string name="settings_pause_when_lowered_summary">Lowering the phone pauses the voice message instead of playing on aloud</string>
 </resources>

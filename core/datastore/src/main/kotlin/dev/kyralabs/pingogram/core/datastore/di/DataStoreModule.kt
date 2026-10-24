@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsReposit
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePasscodeRepository
+import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
@@ -35,6 +36,7 @@ import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsReposito
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
+import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -48,6 +50,7 @@ import javax.inject.Singleton
  */
 @Module
 @InstallIn(SingletonComponent::class)
+@Suppress("TooManyFunctions") // One binding per settings repository, as RepositoryModule has one per repository.
 interface DataStoreModule {
     @Binds
     fun appearanceRepository(repository: DataStoreAppearanceRepository): AppearanceRepository
@@ -60,6 +63,9 @@ interface DataStoreModule {
 
     @Binds
     fun composerSettingsRepository(repository: DataStoreComposerSettingsRepository): ComposerSettingsRepository
+
+    @Binds
+    fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
 
     @Binds
     fun passcodeRepository(repository: DataStorePasscodeRepository): PasscodeRepository

@@ -88,7 +88,10 @@ internal class UserCallerNames
         }
     }
 
-/** A chat's title from [ChatRepository]; "Voice chat" while TDLib has not announced the chat. */
+/**
+ * A chat's title from [ChatRepository]; "Voice chat" while TDLib has not announced the chat, "Group call" for a
+ * conference call (chat 0, `docs/adr/0025-conference-calls.md`).
+ */
 internal class RepositoryChatTitles
     @Inject
     constructor(
@@ -96,6 +99,9 @@ internal class RepositoryChatTitles
         private val chatRepository: ChatRepository,
     ) : ChatTitles {
         override suspend fun title(chatId: Long): String =
+            if (chatId == 0L) context.getString(R.string.group_call) else chatTitle(chatId)
+
+        private suspend fun chatTitle(chatId: Long): String =
             chatRepository
                 .chat(chatId)
                 .first()

@@ -79,6 +79,8 @@ internal fun OpenLinkEffect(
  *   nothing by itself.
  * - A **message to share** (`t.me/share?url=…&text=…`) opens the share sheet through [onShare], to pick the chat it
  *   goes to, never sent by itself.
+ * - A **group call's** link (`t.me/call/…`) opens the voice chat's screen through [onJoinGroupCall], which asks before
+ *   it joins (`docs/adr/0025-conference-calls.md`).
  */
 @Suppress("CyclomaticComplexMethod") // One branch per kind of target, each a single navigation.
 internal fun NavHostController.openLinkTarget(
@@ -87,6 +89,7 @@ internal fun NavHostController.openLinkTarget(
     onOpenSearch: () -> Unit,
     onShare: (SharedContent) -> Unit = {},
     besideList: Boolean = false,
+    onJoinGroupCall: ((String) -> Unit)? = null,
 ): Boolean {
     when (target) {
         is LinkTarget.Chat -> openLinkedChat(target, fromOutside, besideList)
@@ -106,7 +109,7 @@ internal fun NavHostController.openLinkTarget(
         LinkTarget.MyQrCode -> navigate(MyQrCodeRoute) { launchSingleTop = true }
         is LinkTarget.ProxyServer -> navigate(target.proxy.linkRoute()) { launchSingleTop = true }
         is LinkTarget.MessageDraft -> onShare(SharedContent(text = target.text))
-        else -> return false
+        else -> return target is LinkTarget.GroupCall && onJoinGroupCall?.invoke(target.link) != null
     }
     return true
 }

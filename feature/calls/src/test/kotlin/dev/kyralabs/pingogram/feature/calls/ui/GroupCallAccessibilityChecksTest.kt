@@ -61,6 +61,12 @@ class GroupCallAccessibilityChecksTest {
     @Test
     fun unavailable() = check(GroupCallPreviewStates.unavailable)
 
+    @Test
+    fun confirmConference() = check(GroupCallPreviewStates.confirmConference)
+
+    @Test
+    fun conference() = check(GroupCallPreviewStates.conference)
+
     private fun check(state: GroupCallUiState) {
         composeRule.setContent { PingogramTheme(dynamicColor = false) { GroupCallScreen(state, {}, {}, {}, {}) } }
         composeRule.assertAccessible()

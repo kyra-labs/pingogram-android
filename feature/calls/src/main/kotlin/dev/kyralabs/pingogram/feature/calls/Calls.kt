@@ -68,6 +68,8 @@ class Calls
         override fun join(chatId: Long) = GroupCallActivity.open(context, chatId)
 
         override fun start(chatId: Long) = GroupCallActivity.open(context, chatId, start = true)
+
+        override fun joinConference(link: String) = GroupCallActivity.openConference(context, link)
     }
 
 /**
