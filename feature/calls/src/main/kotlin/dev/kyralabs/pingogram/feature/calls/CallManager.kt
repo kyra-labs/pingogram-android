@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Call
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallDiscardReason
+import dev.kyralabs.pingogram.core.domain.model.CallProblem
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallSignalingData
 import dev.kyralabs.pingogram.core.domain.model.CallState
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -90,6 +92,14 @@ class CallManager
         /** The call the user is in, then every change; null without one. An ended call stays for [ENDED_SHOWN]. */
         val call: StateFlow<ActiveCall?> = mutableCall.asStateFlow()
 
+        private val mutableRating = MutableStateFlow<CallRatingRequest?>(null)
+
+        /**
+         * The call that just ended and that Telegram asks to have rated, until the user rates it ([rate]), declines
+         * ([dismissRating]) or another call starts; null otherwise. The call screen shows "Rate this call" for it.
+         */
+        val rating: StateFlow<CallRatingRequest?> = mutableRating.asStateFlow()
+
         private val mutex = Mutex()
 
         @Volatile private var live: Live? = null
@@ -107,6 +117,23 @@ class CallManager
             started = true
             scope.launch { callRepository.calls.collect { calls -> mutex.withLock { onCalls(calls) } } }
             scope.launch { callRepository.signalingData.collect { data -> mutex.withLock { onSignaling(data) } } }
+        }
+
+        /**
+         * Rates the call of [rating] with [stars] (1 to 5) and what went wrong ([problems]), in the app's scope, as
+         * the screen closes; a refusal is not shown, as the user is done with the call.
+         */
+        fun rate(
+            stars: Int,
+            problems: Set<CallProblem>,
+        ) {
+            val request = mutableRating.getAndUpdate { null } ?: return
+            scope.launch { callRepository.rateCall(request.callId, stars, problems) }
+        }
+
+        /** The user does not rate the call of [rating]. */
+        fun dismissRating() {
+            mutableRating.value = null
         }
 
         /**
@@ -306,6 +333,7 @@ class CallManager
         /** Makes [call] the user's call and tells Android about it. */
         private fun start(call: Live) {
             clearEnded?.cancel()
+            mutableRating.value = null
             line.take(this)
             live = call
             publish()
@@ -383,7 +411,7 @@ class CallManager
                 }
 
                 is CallState.Discarded -> {
-                    finish(call, state.reason.toEndReason(call))
+                    finish(call, state.reason.toEndReason(call), askRating = state.needsRating)
                 }
 
                 is CallState.Failed -> {
@@ -597,9 +625,11 @@ class CallManager
         private fun finish(
             call: Live,
             reason: CallEndReason,
+            askRating: Boolean = false,
         ) {
             if (call.phase is CallPhase.Ended) return
             call.phase = CallPhase.Ended(reason)
+            if (askRating && reason == CallEndReason.HungUp) askForRating(call)
             call.callId?.let {
                 seen += it
                 earlySignaling.remove(it)
@@ -624,6 +654,18 @@ class CallManager
                         }
                     }
                 }
+        }
+
+        /** Telegram asks for a rating: only for a call that was connected long enough to judge (as Telegram's apps). */
+        private fun askForRating(call: Live) {
+            val callId = call.callId
+            val connectedAt = call.connectedAt
+            if (callId != null &&
+                connectedAt != null &&
+                (clock.elapsedRealtimeMillis() - connectedAt).milliseconds >= RATING_MIN_CONNECTED
+            ) {
+                mutableRating.value = CallRatingRequest(callId, call.userId, isVideo = call.hadVideo)
+            }
         }
 
         private fun publish() {
@@ -690,17 +732,7 @@ class CallManager
             var reconnected = false
             val sinks = MutableStateFlow(VideoSinks())
 
-            fun videoQuality(): VideoQuality {
-                val status = network
-                val byNetwork =
-                    when {
-                        status == null -> VideoQuality.High
-                        status.savesData || status.type == NetworkType.Roaming -> VideoQuality.Low
-                        status.isMetered || status.type == NetworkType.Mobile -> VideoQuality.Medium
-                        else -> VideoQuality.High
-                    }
-                return if (reconnected && byNetwork == VideoQuality.High) VideoQuality.Medium else byNetwork
-            }
+            fun videoQuality(): VideoQuality = VideoQuality.forNetwork(network, reconnected)
 
             fun sendingCamera(): CallCamera? =
                 if (!wantsCamera || onHold) {
@@ -770,6 +802,9 @@ class CallManager
             /** How long an ended call stays on screen with why it ended. */
             val ENDED_SHOWN = 2.seconds
 
+            /** A call connected for less is not worth rating, even when Telegram asks. */
+            val RATING_MIN_CONNECTED = 5.seconds
+
             const val EARLY_SIGNALING_MAX = 64
         }
     }
@@ -781,8 +816,8 @@ private data class VideoSinks(
     val remote: VideoFrameSink? = null,
 )
 
-/** The camera a call sends and the most it sends. */
-private data class CameraSource(
+/** The camera a call (or a voice chat) sends and the most it sends. */
+internal data class CameraSource(
     val camera: CallCamera,
     val quality: VideoQuality,
 )

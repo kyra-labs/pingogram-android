@@ -116,4 +116,23 @@
     <string name="recent_calls_deleted">Call deleted from your history</string>
     <!-- How long an answered call lasted, for screen readers: "lasted 4:05". -->
     <string name="recent_calls_duration">lasted %1$s</string>
+    <!-- Rate this call (docs/DESIGN_SYSTEM.md §6 "Call rating"), over the ended call when Telegram asks for it. -->
+    <string name="call_rating_title">Rate this call</string>
+    <plurals name="call_rating_stars">
+        <item quantity="one">%d star</item>
+        <item quantity="other">%d stars</item>
+    </plurals>
+    <string name="call_rating_problems">What went wrong?</string>
+    <string name="call_problem_echo">Echo</string>
+    <string name="call_problem_noise">Noise</string>
+    <string name="call_problem_interruptions">Sound kept cutting out</string>
+    <string name="call_problem_distorted_speech">Distorted voice</string>
+    <string name="call_problem_silent_local">I couldn\'t hear them</string>
+    <string name="call_problem_silent_remote">They couldn\'t hear me</string>
+    <string name="call_problem_dropped">The call dropped</string>
+    <string name="call_problem_distorted_video">Distorted video</string>
+    <string name="call_problem_pixelated_video">Blurry video</string>
+    <string name="call_rating_note">Your rating goes to Telegram, which uses it to improve calls.</string>
+    <string name="call_rating_not_now">Not now</string>
+    <string name="call_rating_send">Send</string>
 </resources>

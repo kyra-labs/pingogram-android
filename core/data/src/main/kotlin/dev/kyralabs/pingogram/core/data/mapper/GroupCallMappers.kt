@@ -41,6 +41,8 @@ internal fun TdApi.GroupCall.toGroupCall(): GroupCall =
                 }.toImmutableList(),
         muteNewParticipants = muteNewParticipants,
         duration = duration,
+        canEnableVideo = canEnableVideo,
+        isMyVideoEnabled = isMyVideoEnabled,
     )
 
 /** Null for a participant type added by a newer TDLib. */

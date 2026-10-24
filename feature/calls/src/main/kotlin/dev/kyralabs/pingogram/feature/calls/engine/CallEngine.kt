@@ -2,6 +2,8 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
+import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -82,6 +84,19 @@ interface GroupCallSession {
 
     /** Where a live stream's video goes, on the engine's threads; null to stop receiving it. */
     suspend fun setVideoSink(sink: VideoFrameSink?)
+
+    /**
+     * Sends [camera] in the voice chat at most at [quality], or stops sending with null
+     * (`docs/adr/0024-video-in-voice-chats.md`). The join payload carries the camera's track from the start, so this
+     * needs no new join; TDLib's `toggleGroupCallIsMyVideoEnabled` tells the others.
+     */
+    suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    )
+
+    /** Where the user's own camera's frames go (the self-view), on the engine's threads; null for nowhere. */
+    suspend fun setSelfVideoSink(sink: VideoFrameSink?)
 
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
@@ -209,6 +224,27 @@ enum class VideoQuality(
 
     /** 360p at 15: roaming, or Data Saver on. */
     Low(640, 360, 15),
+    ;
+
+    companion object {
+        /**
+         * The most to send over [network]: 720p on Wi-Fi (and before the network is known), 480p on mobile data or
+         * once the connection was lost ([reconnected]), 360p roaming or with Data Saver.
+         */
+        fun forNetwork(
+            network: NetworkStatus?,
+            reconnected: Boolean = false,
+        ): VideoQuality {
+            val byNetwork =
+                when {
+                    network == null -> High
+                    network.savesData || network.type == NetworkType.Roaming -> Low
+                    network.isMetered || network.type == NetworkType.Mobile -> Medium
+                    else -> High
+                }
+            return if (reconnected && byNetwork == High) Medium else byNetwork
+        }
+    }
 }
 
 /** The other side's video. */

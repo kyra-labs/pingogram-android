@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Voice chats: where the voice chat allows video, a Camera button sends your camera, and your own picture shows above
+  the participants with "Switch camera" on it. Pingogram asks for the camera when you first turn it on. It sends less on
+  mobile data and roaming, and stops while the call is on hold.
+- Rate this call: when Telegram asks for it after a call of at least a few seconds that ended normally, a sheet over
+  the ended call asks for one to five stars, and what went wrong for one to three (echo, noise, sound cutting out,
+  not hearing each other, a dropped call, and for video calls distorted or blurry video). It says that the rating goes
+  to Telegram to improve calls. "Not now", back or a swipe closes it without rating.
 - Recent calls: Settings and the Contacts tab open a list of your calls, newest first and by day, all of them or only
   the missed ones, with who it was, whether it was a voice or a video call, incoming, outgoing, missed or declined, and
   how long it lasted. Tap a call to call back the same way; hold it to delete it from your call history (the other

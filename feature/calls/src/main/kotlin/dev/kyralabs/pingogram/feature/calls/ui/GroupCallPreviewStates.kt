@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
 import dev.kyralabs.pingogram.feature.calls.AudioRouteType
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import kotlinx.collections.immutable.persistentListOf
 
@@ -47,6 +48,13 @@ internal object GroupCallPreviewStates {
             routes = persistentListOf(earpiece, speaker),
         )
 
+    /** Telegram allows video: the panel offers the camera, off (`docs/adr/0024-video-in-voice-chats.md`). */
+    val cameraOffered = connected.copy(video = GroupCallVideoUi(canSend = true))
+
+    /** The user sends the front camera: the self-view above the participants. */
+    val camera =
+        connected.copy(video = GroupCallVideoUi(canSend = true, camera = CameraFacing.Front, canSwitchCamera = true))
+
     /** An administrator keeps the user muted: Raise hand in Mute's place, raised. */
     val raiseHand = connected.copy(canUnmute = false, isHandRaised = true)
 
@@ -78,6 +86,10 @@ private fun GroupCallJoiningPreview() = Preview(GroupCallPreviewStates.joining)
 @PingogramVariantPreviews
 @Composable
 private fun GroupCallConnectedPreview() = Preview(GroupCallPreviewStates.connected)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallCameraPreview() = Preview(GroupCallPreviewStates.camera)
 
 @PingogramPreviews
 @Composable

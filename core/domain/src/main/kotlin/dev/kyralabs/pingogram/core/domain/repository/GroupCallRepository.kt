@@ -71,6 +71,15 @@ interface GroupCallRepository {
         isMuted: Boolean,
     ): Outcome<Unit>
 
+    /**
+     * Tells the others in call [id] that the user sends their camera, or stopped ([enabled] false)
+     * (`toggleGroupCallIsMyVideoEnabled`); the engine sends or stops the frames.
+     */
+    suspend fun setMyVideoEnabled(
+        id: Int,
+        enabled: Boolean,
+    ): Outcome<Unit>
+
     /** Raises or lowers [participant]'s hand in call [id]: the user's own, or lowers others' as an administrator. */
     suspend fun setHandRaised(
         id: Int,

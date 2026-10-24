@@ -14,9 +14,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the voice chat's screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): joining, connected with its
- * participants, muted by an administrator (Raise hand), a live stream, ended, the microphone's rationale and joining
- * refused; each in light, dark, AMOLED, high contrast, right to left, a 700 dp window and 200% font scale; then a phone
- * in landscape and a live stream in picture-in-picture. Brand colors.
+ * participants, sending the camera (and offered it), muted by an administrator (Raise hand), a live stream, ended, the
+ * microphone's rationale and joining refused; each in light, dark, AMOLED, high contrast, right to left, a 700 dp
+ * window and 200% font scale; then a phone in landscape and a live stream in picture-in-picture. Brand colors.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -67,6 +67,32 @@ class GroupCallScreenshotTest {
     @Test
     @Config(fontScale = 2f)
     fun connectedFontScale200() = capture(GroupCallPreviewStates.connected)
+
+    @Test
+    fun cameraOfferedLight() = capture(GroupCallPreviewStates.cameraOffered)
+
+    @Test
+    fun cameraLight() = capture(GroupCallPreviewStates.camera)
+
+    @Test
+    fun cameraDark() = capture(GroupCallPreviewStates.camera, ThemeMode.Dark)
+
+    @Test
+    fun cameraAmoled() = capture(GroupCallPreviewStates.camera, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun cameraHighContrast() = capture(GroupCallPreviewStates.camera, contrast = Contrast.High)
+
+    @Test
+    fun cameraRtl() = capture(GroupCallPreviewStates.camera, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun cameraMedium() = capture(GroupCallPreviewStates.camera)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun cameraFontScale200() = capture(GroupCallPreviewStates.camera)
 
     @Test
     fun raiseHandLight() = capture(GroupCallPreviewStates.raiseHand)
