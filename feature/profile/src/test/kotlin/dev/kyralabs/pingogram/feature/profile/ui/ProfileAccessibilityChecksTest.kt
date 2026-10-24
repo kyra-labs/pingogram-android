@@ -12,6 +12,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.EditChatInfoScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsScreen
+import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.actions.RecentActionsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.preview.ChatInfoPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsScreen
@@ -72,6 +74,9 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun memberRights() = check { MemberRightsScreen(ChatInfoPreviewData.adminRights, {}, {}) }
+
+    @Test
+    fun recentActions() = check { RecentActionsScreen(RecentActionsPreviewData.content, {}, {}) }
 
     @Test
     fun transferOwnership() =

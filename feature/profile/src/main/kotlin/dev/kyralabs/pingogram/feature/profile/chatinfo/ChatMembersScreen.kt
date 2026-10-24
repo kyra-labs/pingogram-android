@@ -389,7 +389,7 @@ private fun MembersError(
  * whenever items were added and the end is still near; read from the list's layout, outside its items.
  */
 @Composable
-private fun LoadMoreEffect(
+internal fun LoadMoreEffect(
     listState: LazyListState,
     canLoadMore: Boolean,
     onLoadMore: () -> Unit,

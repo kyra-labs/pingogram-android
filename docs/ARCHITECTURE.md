@@ -616,6 +616,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     every link's at once (`getChatJoinRequests` with an empty link, pages of 50 after the last request), approved or
     dismissed one by one (`processChatJoinRequest`) or all together (`processChatJoinRequests`). How many wait is
     `GroupInfo.pendingJoinRequests` (`chat.pending_join_requests`, then `updateChatPendingJoinRequests`).
+  - `ChatEventLogRepository` (`TdlibChatEventLogRepository`): the recent actions of a supergroup or channel, which its
+    administrators read (`getChatEventLog`, the last 48 hours, pages of 50 before the last action, no query, filtered
+    by `ChatEventFilter`s), mapped to `ChatEvent`s (who, when, a `ChatEventAction` of the kinds Pingogram words, the
+    rest `Other`). `feature:profile`'s `RecentActionsRoute(chatId)` (`RecentActionsViewModel`: the chips in saved state,
+    names from `UserRepository` and `ChatRepository`, once per person or chat) shows them.
 
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
