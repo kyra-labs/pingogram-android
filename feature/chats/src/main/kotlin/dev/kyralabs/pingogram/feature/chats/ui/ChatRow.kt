@@ -60,8 +60,10 @@ import kotlin.math.abs
  * A chat in the list with its swipe actions (`REQUIREMENTS.md` FR-L4, FR-L8; `docs/DESIGN_SYSTEM.md` §5–6, §9): a
  * [SwipeToDismissBox] around the [ChatListItem].
  *
- * - **Swipes**: start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]); end to
- *   start archives it, or unarchives it in the archive ([endSwipeAction]). Both mirror in right-to-left layouts. The
+ * - **Swipes**: what Appearance → Chat list → Swipe actions picked ([LocalChatSwipes], [rowActionFor]), by default
+ *   start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]), and end to start
+ *   archives it, or unarchives it in the archive ([endSwipeAction]); a side set to nothing, or whose action the chat
+ *   does not have (muting Saved Messages), does not swipe. Both mirror in right-to-left layouts. The
  *   row never stays dismissed: past the threshold the action runs, with a `Confirm` haptic on Android 14 and later,
  *   and the row springs back. An archived chat then leaves the list through TDLib's update and `animateItem`; in a
  *   folder that keeps archived chats it stays, its swipe turned to unarchive. One swipe runs one action
@@ -86,8 +88,9 @@ internal fun ChatRow(
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val start = item.startSwipeAction
-    val end = item.endSwipeAction
+    val swipes = LocalChatSwipes.current
+    val start = item.rowActionFor(swipes.start)
+    val end = item.rowActionFor(swipes.end)
     val threshold = SwipeToDismissBoxDefaults.positionalThreshold
     // Not rememberSwipeToDismissBoxState, which saves the state: a row that left the list while springing back (an
     // archived chat) would come back with Undo swiped away, and run its swipe again at once.
@@ -103,7 +106,9 @@ internal fun ChatRow(
             SwipeBackground(state, start, end, iconScale, SwipeFeedback(threshold, iconSpec))
         },
         modifier = modifier,
-        gesturesEnabled = !selectionMode,
+        enableDismissFromStartToEnd = start != null,
+        enableDismissFromEndToStart = end != null,
+        gesturesEnabled = !selectionMode && (start != null || end != null),
         onDismiss = rememberOnSwiped(state, item.id, start, end, onEvent),
     ) {
         ChatListItem(
@@ -148,8 +153,8 @@ internal fun ChatRow(
 private fun rememberOnSwiped(
     state: SwipeToDismissBoxState,
     chatId: Long,
-    start: ChatRowAction,
-    end: ChatRowAction,
+    start: ChatRowAction?,
+    end: ChatRowAction?,
     onEvent: (ChatListEvent) -> Unit,
 ): (SwipeToDismissBoxValue) -> Unit {
     val scope = rememberCoroutineScope()
@@ -190,8 +195,8 @@ private fun rememberOnSwiped(
 @Composable
 private fun SwipeBackground(
     state: SwipeToDismissBoxState,
-    start: ChatRowAction,
-    end: ChatRowAction,
+    start: ChatRowAction?,
+    end: ChatRowAction?,
     iconScale: Animatable<Float, AnimationVector1D>,
     feedback: SwipeFeedback,
 ) {
@@ -222,18 +227,24 @@ private fun SwipeBackground(
             },
     ) {
         if (swiping) {
-            SwipeActionLabel(
-                action = start,
-                color = startColors.content,
-                iconScale = iconScale,
-                modifier = Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
-            )
-            SwipeActionLabel(
-                action = end,
-                color = endColors.content,
-                iconScale = iconScale,
-                modifier = Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
-            )
+            start?.let {
+                SwipeActionLabel(
+                    action = it,
+                    color = startColors.content,
+                    iconScale = iconScale,
+                    modifier =
+                        Modifier.align(Alignment.CenterStart).revealedBy(state, SwipeToDismissBoxValue.StartToEnd),
+                )
+            }
+            end?.let {
+                SwipeActionLabel(
+                    action = it,
+                    color = endColors.content,
+                    iconScale = iconScale,
+                    modifier =
+                        Modifier.align(Alignment.CenterEnd).revealedBy(state, SwipeToDismissBoxValue.EndToStart),
+                )
+            }
         }
     }
 }
@@ -282,18 +293,25 @@ private data class SwipeFeedback(
     val iconSpec: FiniteAnimationSpec<Float>,
 )
 
-/** The colors behind a swipe: `secondaryContainer` for read and unread, `tertiaryContainer` for archive. */
+/**
+ * The colors behind a swipe: `tertiaryContainer` for archive and unarchive, `errorContainer` for delete,
+ * `secondaryContainer` for the others (none behind a side that does not swipe).
+ */
 private class SwipeColors(
     val container: Color,
     val content: Color,
 )
 
 @Composable
-private fun ChatRowAction.swipeColors(): SwipeColors {
+private fun ChatRowAction?.swipeColors(): SwipeColors {
     val colors = MaterialTheme.colorScheme
     return when (this) {
         ChatRowAction.Archive, ChatRowAction.Unarchive -> {
             SwipeColors(colors.tertiaryContainer, colors.onTertiaryContainer)
+        }
+
+        ChatRowAction.Delete -> {
+            SwipeColors(colors.errorContainer, colors.onErrorContainer)
         }
 
         else -> {

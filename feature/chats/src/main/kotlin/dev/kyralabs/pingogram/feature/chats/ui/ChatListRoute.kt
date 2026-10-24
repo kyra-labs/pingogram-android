@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -112,19 +113,23 @@ private fun ChatListDestination(
     openChatId: Long? = null,
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
+    swipesViewModel: ChatSwipesViewModel = hiltViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val swipes by swipesViewModel.swipes.collectAsStateWithLifecycle()
     ChatListEffects(viewModel.effects, snackbarHostState, navigation, onEvent = viewModel::onEvent)
-    ChatListScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        onBack = navigation.onBack,
-        openChatId = openChatId,
-        header = header,
-        stories = stories,
-    )
+    CompositionLocalProvider(LocalChatSwipes provides swipes) {
+        ChatListScreen(
+            state = state,
+            onEvent = viewModel::onEvent,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            onBack = navigation.onBack,
+            openChatId = openChatId,
+            header = header,
+            stories = stories,
+        )
+    }
 }
 
 /**

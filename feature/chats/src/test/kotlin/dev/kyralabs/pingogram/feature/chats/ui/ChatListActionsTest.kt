@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatAction
 import dev.kyralabs.pingogram.core.domain.model.DeleteChatOptions
+import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.chat
@@ -87,6 +88,24 @@ class ChatListActionsTest : ChatListViewModelHarness() {
     fun `swiping a read chat marks it as unread`() =
         runTest {
             assertEquals(MarkAsUnread, rowOf(chat(id = 2)).startSwipeAction)
+        }
+
+    @Test
+    fun `chosen swipes act as the row allows, and nothing does not swipe`() =
+        runTest {
+            val muted = rowOf(chat(id = 2, pinnedIn = listOf(ChatListType.Main), isMuted = true))
+
+            assertEquals(Unpin, muted.rowActionFor(SwipeAction.Pin))
+            assertEquals(Unmute, muted.rowActionFor(SwipeAction.Mute))
+            assertEquals(Delete, muted.rowActionFor(SwipeAction.Delete))
+            assertEquals(Pin, rowOf(chat(id = 3)).rowActionFor(SwipeAction.Pin))
+            assertNull(muted.rowActionFor(SwipeAction.None))
+        }
+
+    @Test
+    fun `Saved Messages has no mute swipe`() =
+        runTest {
+            assertNull(rowOf(chat(id = ME)).rowActionFor(SwipeAction.Mute))
         }
 
     // Running them
