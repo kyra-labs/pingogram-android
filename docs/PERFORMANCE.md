@@ -351,6 +351,13 @@ regresses by more than 10%.
     phone, frames that bring no new row already cost 6.0 ms at P50, against about 1.5 ms of composing and measuring on
     the JVM: most of a phone's frame is drawing and the RenderThread, which only a Perfetto trace of the benchmark can
     break down.
+- Share button beside channel posts (2026-10-24, `ChatScrollCostTest`'s channel pair: 2,000 posts, each with the button
+  or without it, interleaved, the shared 4-core machine under other sessions' builds): the button adds about a tenth to
+  a scroll frame's P90 (5.5–6.2 ms against 4.8–5.6 ms over three pairs), little to P50 and P99, in channels only. A
+  clickable circle without Material's button and a button without its press morph cost about as much, within the
+  machine's noise, so the button stays Material's: the cost is a second control per post. Every button shares one
+  painter and its colors (`ShareButtonStyle`). The conversation benchmark scrolls Saved Messages, which has none; a
+  channel's scroll on the owner's phone tells whether it holds there.
 - JankStats in debug builds logging frames > 16 ms with the current screen route.
 - `androidx.tracing` sections: `openChat`, `applyUpdates`, `buildBubble`, `decodeSticker`.
 - Perfetto config committed under `tools/perfetto/`; `docs/adr/` records every budget change.
