@@ -12,6 +12,12 @@ interface CallForeground {
      */
     fun start(withMicrophone: Boolean)
 
+    /**
+     * Runs the service as `mediaProjection` too, or no longer (`docs/adr/0026-screen-sharing.md`), and returns once it
+     * does: Android lets a screen's capture start only then. False where Android refused, or it took too long.
+     */
+    suspend fun setScreenCapture(on: Boolean): Boolean
+
     fun stop()
 }
 

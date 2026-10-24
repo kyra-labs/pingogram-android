@@ -58,18 +58,32 @@ class CallNotificationBuilder
 
         /**
          * The call the user is in: [status] says where it is ("Ringing…", "Connecting…"); [connectedAtWallMillis], once
-         * connected, starts the timer.
+         * connected, starts the timer. With [stopSharing], while the user shares the screen, "Stop sharing" beside
+         * "Hang up" (`docs/adr/0026-screen-sharing.md`).
          */
+        @Suppress("LongParameterList") // The call, what it says, its timer and the notification's three actions.
         suspend fun ongoing(
             userId: Long,
             status: String,
             connectedAtWallMillis: Long?,
             content: PendingIntent,
             hangUp: PendingIntent,
+            stopSharing: PendingIntent? = null,
         ): Notification =
             base(PingogramChannel.OngoingCalls, content)
                 .setStyle(NotificationCompat.CallStyle.forOngoingCall(person(userId), hangUp))
-                .setContentText(status)
+                .apply {
+                    if (stopSharing != null) {
+                        addAction(
+                            NotificationCompat.Action
+                                .Builder(
+                                    R.drawable.ic_stop_screen_share,
+                                    context.getString(R.string.call_notification_stop_sharing),
+                                    stopSharing,
+                                ).build(),
+                        )
+                    }
+                }.setContentText(status)
                 .setSilent(true)
                 .setOnlyAlertOnce(true)
                 .apply {

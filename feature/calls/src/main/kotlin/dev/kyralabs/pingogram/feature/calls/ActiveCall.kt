@@ -53,6 +53,10 @@ data class CallVideo(
     /** The device has a front and a back camera. */
     val canSwitchCamera: Boolean = false,
     val remote: RemoteVideo = RemoteVideo.Off,
+    /** The user shares the screen in place of the camera (`docs/adr/0026-screen-sharing.md`). */
+    val isSharingScreen: Boolean = false,
+    /** The other side's [remote] video is their shared screen: shown whole, not cropped like a face. */
+    val remoteIsScreen: Boolean = false,
 )
 
 enum class CameraFacing {

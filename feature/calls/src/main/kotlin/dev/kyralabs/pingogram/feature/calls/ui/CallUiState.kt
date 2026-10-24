@@ -63,6 +63,12 @@ data class CallVideoUi(
     val remote: RemoteVideo = RemoteVideo.Off,
     /** The device has a camera: the panel offers one. */
     val hasCamera: Boolean = false,
+    /** The device can share its screen: the top bar offers it while the call is connected. */
+    val canShareScreen: Boolean = false,
+    /** The user shares the screen (`docs/adr/0026-screen-sharing.md`): the "You're sharing your screen" pill shows. */
+    val isSharingScreen: Boolean = false,
+    /** The other side's video is their shared screen: fitted to the window, not cropped. */
+    val remoteIsScreen: Boolean = false,
 ) {
     /** Either side's video shows: the screen lays out as a video call. */
     val shows: Boolean get() = camera != null || remote != RemoteVideo.Off
@@ -124,6 +130,14 @@ sealed interface CallEvent {
     /** The other camera: front after back, and back. */
     data object SwitchCamera : CallEvent
 
+    /** Shares the screen (Android's consent dialog first) or stops sharing it. */
+    data object ToggleScreenSharing : CallEvent
+
+    /** Android's consent dialog closed: the user agreed ([granted]; its result reached the engine) or not. */
+    data class ScreenSharingResult(
+        val granted: Boolean,
+    ) : CallEvent
+
     /** Android answered the camera's permission request, as [MicrophoneResult] the microphone's. */
     data class CameraResult(
         val granted: Boolean,
@@ -153,6 +167,9 @@ sealed interface CallEvent {
 sealed interface CallEffect {
     /** Ask Android for the camera. */
     data object RequestCamera : CallEffect
+
+    /** Show Android's consent dialog for capturing the screen. */
+    data object RequestScreenCapture : CallEffect
 
     /** Android no longer asks for the camera: open the app's settings, where the user can allow it. */
     data object OpenSettings : CallEffect

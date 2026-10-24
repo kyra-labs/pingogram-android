@@ -182,8 +182,11 @@ fun CallScreen(
     }
 }
 
-/** Which video a [CallVideo] draws: the other person's, or the user's own camera (the self-view). */
-enum class CallVideoSlot { Remote, Self }
+/**
+ * Which video a [CallVideo] draws: the other person's camera, their shared screen (fitted, not cropped), or the user's
+ * own camera (the self-view).
+ */
+enum class CallVideoSlot { Remote, RemoteScreen, Self }
 
 /**
  * Draws a call's video in its bounds, filling them: the call activity's renderer ([CallVideoView]), a tonal
@@ -194,7 +197,7 @@ typealias CallVideo = @Composable (slot: CallVideoSlot, mirror: Boolean, modifie
 internal val PlaceholderVideo: CallVideo = { slot, _, modifier ->
     val color =
         when (slot) {
-            CallVideoSlot.Remote -> MaterialTheme.colorScheme.surfaceContainerHighest
+            CallVideoSlot.Remote, CallVideoSlot.RemoteScreen -> MaterialTheme.colorScheme.surfaceContainerHighest
             CallVideoSlot.Self -> MaterialTheme.colorScheme.secondaryContainer
         }
     Box(modifier.background(color))
@@ -208,7 +211,7 @@ private fun InCall(
     onMessage: (userId: Long) -> Unit,
 ) {
     CallLayout(
-        top = { MinimizeButton(onMinimize) },
+        top = { CallTopBar(state, onEvent, onMinimize, overlay = false) },
         header = {
             CallHeader(
                 name = state.person.name,
@@ -223,6 +226,7 @@ private fun InCall(
                             shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
                                 fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
                     ) { KeyEmojis(state.emojis, state.person.name) }
+                    SharingPill(state, onEvent)
                 },
             )
         },
@@ -350,18 +354,22 @@ private fun VideoInCall(
     onMinimize: () -> Unit,
     video: CallVideo,
 ) {
-    val remote = state.video.remote != RemoteVideo.Off
+    val slot = state.video.mainSlot()
     val front = state.video.camera == CameraFacing.Front
     val name = state.person.name.ifBlank { stringResource(R.string.call_someone) }
-    val remoteDescription = stringResource(R.string.call_remote_video, name)
-    val selfDescription = stringResource(R.string.call_self_view)
+    val description =
+        when (slot) {
+            CallVideoSlot.Remote -> stringResource(R.string.call_remote_video, name)
+            CallVideoSlot.RemoteScreen -> stringResource(R.string.call_remote_screen, name)
+            CallVideoSlot.Self -> stringResource(R.string.call_self_view)
+        }
     Box(Modifier.fillMaxSize()) {
         video(
-            if (remote) CallVideoSlot.Remote else CallVideoSlot.Self,
-            !remote && front,
+            slot,
+            slot == CallVideoSlot.Self && front,
             Modifier
                 .fillMaxSize()
-                .semantics { contentDescription = if (remote) remoteDescription else selfDescription },
+                .semantics { contentDescription = description },
         )
         if (state.video.remote == RemoteVideo.Paused) {
             OverlayPill(Modifier.align(Alignment.Center)) {
@@ -396,8 +404,9 @@ private fun VideoOverlay(
             }
         }
         val top: @Composable () -> Unit = {
-            Box(Modifier.fillMaxWidth()) { MinimizeButton(onMinimize, overlay = true) }
+            CallTopBar(state, onEvent, onMinimize, overlay = true)
             VideoHeader(state, name)
+            SharingPill(state, onEvent)
         }
         if (compactHeight) {
             Row(
@@ -448,17 +457,70 @@ private fun PictureInPicture(
     state: CallUiState.InCall,
     video: CallVideo,
 ) {
-    val remote = state.video.remote != RemoteVideo.Off
+    val slot = state.video.mainSlot()
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (state.video.shows) {
-            video(
-                if (remote) CallVideoSlot.Remote else CallVideoSlot.Self,
-                !remote && state.video.camera == CameraFacing.Front,
-                Modifier.fillMaxSize(),
-            )
+            video(slot, slot == CallVideoSlot.Self && state.video.camera == CameraFacing.Front, Modifier.fillMaxSize())
         } else {
             CallAvatar(state.person, minOf(maxWidth, maxHeight) * AVATAR_WIDTH_FRACTION, ringing = false, large = true)
         }
+    }
+}
+
+/** The video the window shows: the other person's screen or camera while they send one, else the user's camera. */
+private fun CallVideoUi.mainSlot(): CallVideoSlot =
+    when {
+        remote == RemoteVideo.Off -> CallVideoSlot.Self
+        remoteIsScreen -> CallVideoSlot.RemoteScreen
+        else -> CallVideoSlot.Remote
+    }
+
+/**
+ * "Back to the app" at the start, and "Share screen" at the end while the call is connected and not on hold, or while
+ * the user shares (`docs/adr/0026-screen-sharing.md`).
+ */
+@Composable
+private fun CallTopBar(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+    onMinimize: () -> Unit,
+    overlay: Boolean,
+) {
+    Box(Modifier.fillMaxWidth()) {
+        MinimizeButton(onMinimize, overlay = overlay)
+        val offered =
+            (state.video.canShareScreen && state.stage == CallStage.Connected && !state.isOnHold) ||
+                state.video.isSharingScreen
+        if (offered) {
+            ShareScreenButton(
+                sharing = state.video.isSharingScreen,
+                onToggle = { onEvent(CallEvent.ToggleScreenSharing) },
+                overlay = overlay,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+    }
+}
+
+/** "You're sharing your screen" with "Stop", growing in under the header while the user shares. */
+@Composable
+private fun SharingPill(
+    state: CallUiState.InCall,
+    onEvent: (CallEvent) -> Unit,
+) {
+    AnimatedVisibility(
+        visible = state.video.isSharingScreen,
+        enter =
+            expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+        exit =
+            shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
+    ) {
+        ScreenSharingPill(
+            onStop = { onEvent(CallEvent.ToggleScreenSharing) },
+            modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+        )
     }
 }
 
