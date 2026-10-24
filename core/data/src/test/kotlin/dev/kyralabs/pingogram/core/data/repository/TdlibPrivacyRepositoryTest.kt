@@ -84,6 +84,10 @@ class TdlibPrivacyRepositoryTest {
                         TdApi.UserPrivacySettingShowProfilePhoto::class.java
                     }
 
+                    PrivacySetting.Birthdate -> {
+                        TdApi.UserPrivacySettingShowBirthdate::class.java
+                    }
+
                     PrivacySetting.ForwardedMessages -> {
                         TdApi.UserPrivacySettingShowLinkInForwardedMessages::class.java
                     }

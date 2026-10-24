@@ -11,6 +11,7 @@ internal fun PrivacySetting.toTdPrivacySetting(): TdApi.UserPrivacySetting =
         PrivacySetting.PhoneNumber -> TdApi.UserPrivacySettingShowPhoneNumber()
         PrivacySetting.LastSeen -> TdApi.UserPrivacySettingShowStatus()
         PrivacySetting.ProfilePhoto -> TdApi.UserPrivacySettingShowProfilePhoto()
+        PrivacySetting.Birthdate -> TdApi.UserPrivacySettingShowBirthdate()
         PrivacySetting.ForwardedMessages -> TdApi.UserPrivacySettingShowLinkInForwardedMessages()
         PrivacySetting.Calls -> TdApi.UserPrivacySettingAllowCalls()
         PrivacySetting.ChatInvites -> TdApi.UserPrivacySettingAllowChatInvites()
@@ -23,6 +24,7 @@ internal fun TdApi.UserPrivacySetting.toPrivacySetting(): PrivacySetting? =
         is TdApi.UserPrivacySettingShowPhoneNumber -> PrivacySetting.PhoneNumber
         is TdApi.UserPrivacySettingShowStatus -> PrivacySetting.LastSeen
         is TdApi.UserPrivacySettingShowProfilePhoto -> PrivacySetting.ProfilePhoto
+        is TdApi.UserPrivacySettingShowBirthdate -> PrivacySetting.Birthdate
         is TdApi.UserPrivacySettingShowLinkInForwardedMessages -> PrivacySetting.ForwardedMessages
         is TdApi.UserPrivacySettingAllowCalls -> PrivacySetting.Calls
         is TdApi.UserPrivacySettingAllowChatInvites -> PrivacySetting.ChatInvites

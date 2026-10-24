@@ -176,6 +176,7 @@ class PrivacySecurityViewModelTest {
                     PrivacySetting.LastSeen to
                         PrivacyRules(PrivacyChoice.Everybody, PrivacyExceptions(restrictedUserCount = 2)),
                     PrivacySetting.ProfilePhoto to everybody,
+                    PrivacySetting.Birthdate to everybody,
                     PrivacySetting.ForwardedMessages to everybody,
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
                     PrivacySetting.ChatInvites to everybody,

@@ -206,6 +206,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
   login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
   state, never the code.
+- **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
+  its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
+  bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through
+  `PrivacyRepository`, whose page Privacy and security lists too.
 - **Login email and auto-delete** (FR-S1, Account): `core:domain`'s `LoginEmailRepository`
   (`TdlibLoginEmailRepository`, `core:data`, no cache) reads the login email as Telegram's pattern of it
   (`getPasswordState`'s `login_email_address_pattern`; Telegram lets an account change it only once it set one, so

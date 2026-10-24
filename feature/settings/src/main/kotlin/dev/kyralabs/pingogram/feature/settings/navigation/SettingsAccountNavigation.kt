@@ -1,11 +1,13 @@
 package dev.kyralabs.pingogram.feature.settings.navigation
 
 import androidx.navigation.NavGraphBuilder
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.navigation.AutoDeleteRoute
 import dev.kyralabs.pingogram.core.navigation.ChangePhoneNumberRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
 import dev.kyralabs.pingogram.core.navigation.EditProfileRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
+import dev.kyralabs.pingogram.core.navigation.PrivacySettingRoute
 import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountRoute as DeleteAccountScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.AutoDeleteRoute as AutoDeleteScreenRoute
@@ -26,6 +28,7 @@ internal fun NavGraphBuilder.accountPages(
             onBack = onBack,
             onSaved = onProfileSaved,
             onChangeNumber = { onOpen(ChangePhoneNumberRoute) },
+            onOpenBirthdatePrivacy = { onOpen(PrivacySettingRoute(PrivacySetting.Birthdate.name)) },
         )
     }
     settingsPage<ChangePhoneNumberRoute> { ChangePhoneNumberScreenRoute(onBack = onBack) }

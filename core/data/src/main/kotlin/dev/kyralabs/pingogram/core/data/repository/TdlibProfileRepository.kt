@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
 import dev.kyralabs.pingogram.core.domain.model.ProfileLink
@@ -59,6 +60,7 @@ class TdlibProfileRepository
                     lastName = me.lastName.orEmpty(),
                     username = me.usernames?.editableUsername.orEmpty(),
                     bio = info.bio?.text.orEmpty(),
+                    birthdate = info.birthdate?.toBirthdate(),
                 )
             }
         }
@@ -77,6 +79,11 @@ class TdlibProfileRepository
             client.request(TdApi.SetUsername(username)).map {}
 
         override suspend fun setBio(bio: String): Outcome<Unit> = client.request(TdApi.SetBio(bio)).map {}
+
+        override suspend fun setBirthdate(birthdate: Birthdate?): Outcome<Unit> =
+            client
+                .request(TdApi.SetBirthdate(birthdate?.let { TdApi.Birthdate(it.day, it.month, it.year ?: 0) }))
+                .map {}
 
         override suspend fun setProfilePhoto(
             path: String,
@@ -134,3 +141,6 @@ private data class ProfileOptions(
 
 private const val MY_ID_OPTION = "my_id"
 private const val BIO_LENGTH_MAX_OPTION = "bio_length_max"
+
+/** TDLib's birthday as Pingogram's: a year of 0 means the user left it out. */
+private fun TdApi.Birthdate.toBirthdate() = Birthdate(day, month, year.takeIf { it > 0 })
