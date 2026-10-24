@@ -18,6 +18,7 @@ data class EditableProfile(
     val username: String,
     val bio: String,
     val birthdate: Birthdate? = null,
+    val personalChatId: Long = 0,
 ) {
     override fun toString() = "EditableProfile(…)"
 }

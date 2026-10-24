@@ -217,6 +217,10 @@ data object ActiveSessionsRoute
 @Serializable
 data object ConnectedWebsitesRoute
 
+/** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
+@Serializable
+data object PersonalChannelRoute
+
 /** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object PasscodeLockRoute

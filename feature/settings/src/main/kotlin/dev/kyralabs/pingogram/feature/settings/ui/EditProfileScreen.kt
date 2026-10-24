@@ -54,6 +54,7 @@ internal fun EditProfileRoute(
     modifier: Modifier = Modifier,
     onChangeNumber: () -> Unit = {},
     onOpenBirthdatePrivacy: () -> Unit = {},
+    onOpenPersonalChannel: () -> Unit = {},
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -91,6 +92,7 @@ internal fun EditProfileRoute(
         modifier = modifier,
         onChangeNumber = onChangeNumber,
         onOpenBirthdatePrivacy = onOpenBirthdatePrivacy,
+        onOpenPersonalChannel = onOpenPersonalChannel,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -99,8 +101,9 @@ internal fun EditProfileRoute(
  * Editing the user's own profile (`REQUIREMENTS.md` FR-S1, Account): the photo ([ProfilePhotoEditor]), then the
  * names, the username and the bio in M3 outlined text fields ([NameSection], [UsernameSection], [BioSection]), each
  * with its limit and what is wrong below it, in the rows of segmented groups as on every settings page, and the phone
- * birthday with who may see it ([BirthdaySection], [onOpenBirthdatePrivacy]) and the phone number with "Change"
- * ([PhoneNumberSection], [onChangeNumber]). "Save" in the
+ * birthday with who may see it ([BirthdaySection], [onOpenBirthdatePrivacy]), the personal channel's row
+ * ([PersonalChannelSection], [onOpenPersonalChannel]) and the phone number with "Change" ([PhoneNumberSection],
+ * [onChangeNumber]). "Save" in the
  * top bar saves what changed; it is enabled once something changed and everything is valid, and shows progress while
  * saving.
  *
@@ -117,6 +120,7 @@ internal fun EditProfileScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onChangeNumber: () -> Unit = {},
     onOpenBirthdatePrivacy: () -> Unit = {},
+    onOpenPersonalChannel: () -> Unit = {},
 ) {
     val content = state as? EditProfileUiState.Content
     SettingsPageScaffold(
@@ -166,6 +170,7 @@ internal fun EditProfileScreen(
                     onPick = { onEvent(EditProfileEvent.BirthdateChanged(it)) },
                     onOpenPrivacy = onOpenBirthdatePrivacy,
                 )
+                PersonalChannelSection(enabled = !state.isSaving, onOpen = onOpenPersonalChannel)
                 PhoneNumberSection(state.account?.phoneNumber.orEmpty(), onChangeNumber)
             }
         }

@@ -172,6 +172,7 @@ internal fun ActionPill(
  * - **Phone**: formatted for its country, left to right; tapping opens the dialer, a long press or the trailing button
  *   copies it.
  * - **Birthday**, formatted by the view model.
+ * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
  */
@@ -199,7 +200,27 @@ internal fun ProfileInfoGroup(
                 }
             }
     }
+    info.personalChannel?.let { channel ->
+        rows += ProfileRow("personalChannel") { shapes -> PersonalChannelRow(channel, shapes, onEvent) }
+    }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
+}
+
+/** The personal channel: its title (user content) over "Channel"; a tap opens its chat. */
+@Composable
+private fun PersonalChannelRow(
+    channel: PersonalChannel,
+    shapes: ListItemShapes,
+    onEvent: (ProfileEvent) -> Unit,
+) {
+    SegmentedListItem(
+        onClick = { onEvent(ProfileEvent.OpenPersonalChannel(channel.chatId)) },
+        shapes = shapes,
+        colors = profileRowColors(),
+        supportingContent = { Text(stringResource(R.string.profile_personal_channel)) },
+    ) {
+        Text(channel.title, style = MaterialTheme.typography.bodyLarge.userContent)
+    }
 }
 
 @Composable
