@@ -267,6 +267,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `SecretChatLinkPreviews` gives the texts sent to a chat their `linkPreviewOptions` (disabled in a secret chat while
   the setting is off, `getChat` telling the chat's type), used by `TdlibMessageRepository.sendText`, the share sheet's
   texts and a notification's reply. `feature:settings`' `SecretChatPreviewsViewModel` holds the switch.
+- **Hiding phone numbers** (Privacy and security, for sharing the screen or streaming): `core:domain`'s
+  `PhoneNumberVisibilityRepository` (`DataStorePhoneNumberVisibilityRepository`, the settings file, off by default).
+  `MainActivity` provides it as `core:ui`'s `LocalPhoneNumbersHidden` (true until read, so no number shows before it
+  is known), and every screen that shows a number passes its formatted number through `phoneNumberToShow`, which keeps
+  the calling code and the separators and turns the other digits into dots (`maskPhoneNumber`). What is copied, dialled
+  or sent keeps the number; fields where the user types one show what is typed. `feature:settings`'
+  `PhoneNumberVisibilityViewModel` holds the switch.
 - **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
   (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
   logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,

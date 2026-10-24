@@ -66,6 +66,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -288,7 +289,7 @@ private fun ColumnScope.ContactHeader(state: EditContactUiState.Content) {
     val phone =
         remember(state.phoneNumber) {
             state.phoneNumber.ifBlank { null }?.let { formatPhoneNumber(it, Locale.getDefault().country) }
-        }
+        }?.let { phoneNumberToShow(it) }
     Column(
         modifier = Modifier.align(Alignment.CenterHorizontally).semantics(mergeDescendants = true) {},
         horizontalAlignment = Alignment.CenterHorizontally,

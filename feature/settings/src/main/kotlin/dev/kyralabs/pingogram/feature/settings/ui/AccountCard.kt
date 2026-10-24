@@ -30,6 +30,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -138,7 +139,10 @@ private fun AccountAvatar(account: AccountUiModel) {
 private fun AccountDetails(account: AccountUiModel) {
     Column {
         if (account.phoneNumber.isNotEmpty()) {
-            Text(text = account.phoneNumber, style = MaterialTheme.typography.bodyLarge.numericContent)
+            Text(
+                text = phoneNumberToShow(account.phoneNumber),
+                style = MaterialTheme.typography.bodyLarge.numericContent,
+            )
         }
         account.username?.let { username ->
             Text(

@@ -9,17 +9,19 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreDoubleTapSettingsRepositor
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that conversations read: the composer's, the bars' and the
- * link previews'.
+ * link previews', and whether phone numbers show on screen.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -41,4 +43,9 @@ interface ChatPreferencesModule {
 
     @Binds
     fun linkPreviewSettingsRepository(repository: DataStoreLinkPreviewSettingsRepository): LinkPreviewSettingsRepository
+
+    @Binds
+    fun phoneNumberVisibilityRepository(
+        repository: DataStorePhoneNumberVisibilityRepository,
+    ): PhoneNumberVisibilityRepository
 }

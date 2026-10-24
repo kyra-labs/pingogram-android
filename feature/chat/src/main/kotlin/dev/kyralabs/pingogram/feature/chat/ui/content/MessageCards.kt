@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
@@ -93,7 +94,8 @@ internal fun MessageContact(
             .joinToString(" ")
             .ifBlank { stringResource(UiR.string.preview_contact) }
     val country = LocalConfiguration.current.locales[0].country
-    val phone = remember(contact.phoneNumber, country) { formatPhoneNumber(contact.phoneNumber, country) }
+    val phone =
+        phoneNumberToShow(remember(contact.phoneNumber, country) { formatPhoneNumber(contact.phoneNumber, country) })
     Row(
         modifier = modifier.semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),

@@ -17,6 +17,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
   are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
   long panoramas, which Telegram refuses as photos, now go as files too.
+- Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
+  Pingogram (your account, profiles, contacts, shared contacts) with its country code only, "+44 •••• ••••••", for
+  sharing your screen or streaming. Copying and calling still use the whole number. Off by default.
 - Link previews in secret chats: off by default, and a switch in Privacy and security turns them on. Telegram's
   servers make link previews, so they would see the links sent in a secret chat.
 - Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other

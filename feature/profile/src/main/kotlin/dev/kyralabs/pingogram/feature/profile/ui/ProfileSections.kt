@@ -42,6 +42,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.mentionTarget
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.rememberFormattedTextStyles
 import dev.kyralabs.pingogram.core.ui.text.toAnnotatedString
 import dev.kyralabs.pingogram.core.ui.text.userContent
@@ -299,7 +300,7 @@ private fun PhoneRow(
     onEvent: (ProfileEvent) -> Unit,
 ) {
     val country = LocalConfiguration.current.locales[0].country
-    val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
+    val formatted = phoneNumberToShow(remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) })
     val call = stringResource(R.string.profile_call)
     SegmentedListItem(
         onClick = { onEvent(ProfileEvent.CallPhone) },

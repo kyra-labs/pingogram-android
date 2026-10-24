@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -222,7 +223,7 @@ private fun blockedSenderDetail(item: BlockedSenderItem): (@Composable () -> Uni
             {
                 val country = LocalConfiguration.current.locales[0].country
                 val formatted = remember(phoneNumber, country) { formatPhoneNumber(phoneNumber, country) }
-                Text(text = formatted, style = LocalTextStyle.current.numericContent)
+                Text(text = phoneNumberToShow(formatted), style = LocalTextStyle.current.numericContent)
             }
         }
 
