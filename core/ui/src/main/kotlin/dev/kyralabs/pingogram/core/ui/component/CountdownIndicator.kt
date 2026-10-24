@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui.components
+package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import dev.kyralabs.pingogram.feature.auth.ui.countdownFraction
+import dev.kyralabs.pingogram.core.ui.time.countdownFraction
 
 /**
  * A countdown's progress, determinate and wavy (`docs/DESIGN_SYSTEM.md` §5): a [CircularWavyProgressIndicator] whose
@@ -21,7 +21,7 @@ import dev.kyralabs.pingogram.feature.auth.ui.countdownFraction
  * from screen readers: the countdown's text says the same, at most every 15 seconds. [content] sits in its middle.
  */
 @Composable
-internal fun CountdownIndicator(
+fun CountdownIndicator(
     secondsLeft: Long,
     totalSeconds: Long,
     modifier: Modifier = Modifier,

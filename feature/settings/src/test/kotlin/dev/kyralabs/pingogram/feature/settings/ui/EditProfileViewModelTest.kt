@@ -125,7 +125,7 @@ class EditProfileViewModelTest {
 
             assertEquals(saved, content.saved)
             assertEquals(saved, content.fields)
-            assertEquals(ProfileAccount(userId = 42, name = "Ada Lovelace", photo = null), content.account)
+            assertEquals(ProfileAccount(42, "Ada Lovelace", photo = null, phoneNumber = "9996621234"), content.account)
             assertEquals(70, content.bioLengthMax)
             assertEquals(UsernameStatus.Unchanged, content.usernameStatus)
             assertFalse(content.hasChanges)

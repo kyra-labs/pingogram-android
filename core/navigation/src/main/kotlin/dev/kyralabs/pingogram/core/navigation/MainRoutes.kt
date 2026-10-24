@@ -44,6 +44,13 @@ data object SettingsRoute
 @Serializable
 data object EditProfileRoute
 
+/**
+ * Changing the account's phone number (`REQUIREMENTS.md` FR-S1): what it does, the new number, the code Telegram sends
+ * to it, pushed above [EditProfileRoute].
+ */
+@Serializable
+data object ChangePhoneNumberRoute
+
 /** The user's chat folders (`REQUIREMENTS.md` FR-L3), their order and the folders Telegram suggests. */
 @Serializable
 data object ChatFoldersRoute

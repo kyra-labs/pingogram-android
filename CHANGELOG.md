@@ -58,6 +58,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   then starting a new line.
 - GIFs in the sticker panel: a third tab shows your saved GIFs and searches GIFs as you type, through the bot
   Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
+- Change number: Edit profile shows your phone number with "Change", which moves your account to a new number with
+  the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

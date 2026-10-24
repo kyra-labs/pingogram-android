@@ -77,6 +77,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "PHONE_NUMBER_EMPTY" to DomainError.PhoneNumberInvalid,
         "PHONE_NUMBER_BANNED" to DomainError.PhoneNumberBanned,
         "PHONE_NUMBER_FLOOD" to DomainError.PhoneNumberFlood,
+        // account.sendChangePhoneCode for a number another account has.
+        "PHONE_NUMBER_OCCUPIED" to DomainError.PhoneNumberOccupied,
         "PHONE_CODE_INVALID" to DomainError.CodeInvalid,
         "PHONE_CODE_EMPTY" to DomainError.CodeInvalid,
         "CODE_INVALID" to DomainError.CodeInvalid,

@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.auth.ui
+package dev.kyralabs.pingogram.core.ui.phone
 
 import dev.kyralabs.pingogram.core.domain.model.Country
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -72,15 +72,5 @@ class PhoneNumbersTest {
         assertEquals(0, formatted.originalOffset(0))
         assertEquals(3, formatted.originalOffset(5))
         assertEquals(5, formatted.originalOffset(8))
-    }
-
-    @Test
-    fun `a plausible email address has one at sign with text on both sides`() {
-        assertTrue(isPlausibleEmailAddress("ada@example.org"))
-        assertFalse(isPlausibleEmailAddress("ada.example.org"))
-        assertFalse(isPlausibleEmailAddress("@example.org"))
-        assertFalse(isPlausibleEmailAddress("ada@"))
-        assertFalse(isPlausibleEmailAddress("a@b@example.org"))
-        assertFalse(isPlausibleEmailAddress("ada @example.org"))
     }
 }

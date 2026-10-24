@@ -31,6 +31,12 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
+import dev.kyralabs.pingogram.core.ui.phone.CountryField
+import dev.kyralabs.pingogram.core.ui.phone.CountryPickerSheet
+import dev.kyralabs.pingogram.core.ui.phone.CountryUiModel
+import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberFields
+import dev.kyralabs.pingogram.core.ui.phone.formatNationalNumber
+import dev.kyralabs.pingogram.core.ui.phone.numberFormatOf
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorText
@@ -91,116 +97,23 @@ fun PhoneNumberScreen(
             isPickerOpen = state.countryPicker != null,
             onOpenPicker = { onEvent(AuthEvent.OpenCountryPicker) },
         )
-        PhoneNumberFields(state = state, onEvent = onEvent, onDone = submit)
-    }
-    state.countryPicker?.let { CountryPickerSheet(state = it, onEvent = onEvent) }
-}
-
-/**
- * The country as a read-only filled text field with the exposed dropdown arrow (`docs/DESIGN_SYSTEM.md` §6: text
- * fields), like the number fields beside it. Tapping it, or activating it with a screen reader, opens the country
- * picker sheet instead of a menu; the arrow turns while the sheet is open.
- */
-@Composable
-private fun CountryField(
-    country: CountryUiModel?,
-    isPickerOpen: Boolean,
-    onOpenPicker: () -> Unit,
-) {
-    ExposedDropdownMenuBox(expanded = isPickerOpen, onExpandedChange = { if (it) onOpenPicker() }) {
-        TextField(
-            value = country?.name.orEmpty(),
-            onValueChange = {},
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-            readOnly = true,
-            label = { Text(stringResource(R.string.auth_country)) },
-            placeholder = { Text(stringResource(R.string.auth_country_choose)) },
-            leadingIcon =
-                country?.let {
-                    {
-                        Text(
-                            text = it.flagEmoji,
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.clearAndSetSemantics {},
-                        )
-                    }
-                },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPickerOpen) },
-            singleLine = true,
+        PhoneNumberFields(
+            callingCode = state.callingCode,
+            number = state.number,
+            numberFormat = state.numberFormat,
+            error = state.error?.let { errorText(it) },
+            onCallingCodeChange = { onEvent(AuthEvent.CallingCodeChanged(it)) },
+            onNumberChange = { onEvent(AuthEvent.PhoneNumberChanged(it)) },
+            onDone = submit,
         )
     }
-}
-
-@Composable
-private fun PhoneNumberFields(
-    state: AuthStepUiState.PhoneNumber,
-    onEvent: (AuthEvent) -> Unit,
-    onDone: () -> Unit,
-) {
-    val transformation = remember(state.numberFormat) { PhoneNumberVisualTransformation(state.numberFormat) }
-    // A phone number reads left to right in every language: "+44 7911 123456", the calling code first.
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        PhoneNumberRow(state, transformation, onEvent, onDone)
-    }
-}
-
-@Composable
-private fun PhoneNumberRow(
-    state: AuthStepUiState.PhoneNumber,
-    transformation: PhoneNumberVisualTransformation,
-    onEvent: (AuthEvent) -> Unit,
-    onDone: () -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-        TextField(
-            value = state.callingCode,
-            onValueChange = { onEvent(AuthEvent.CallingCodeChanged(it)) },
-            modifier = Modifier.weight(CALLING_CODE_WEIGHT).semantics { contentType = ContentType.PhoneCountryCode },
-            label = { Text(stringResource(R.string.auth_calling_code)) },
-            prefix = { Text("+") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
+    state.countryPicker?.let { picker ->
+        CountryPickerSheet(
+            state = picker,
+            onQueryChange = { onEvent(AuthEvent.CountryQueryChanged(it)) },
+            onSelect = { onEvent(AuthEvent.CountrySelected(it)) },
+            onDismiss = { onEvent(AuthEvent.CloseCountryPicker) },
         )
-        val error = state.error?.let { errorText(it) }
-        TextField(
-            value = state.number,
-            onValueChange = { onEvent(AuthEvent.PhoneNumberChanged(it)) },
-            modifier =
-                Modifier
-                    .weight(NUMBER_WEIGHT)
-                    .fieldError(error)
-                    .semantics { contentType = ContentType.PhoneNumberNational },
-            label = { Text(stringResource(R.string.auth_phone_number)) },
-            placeholder = state.numberFormat?.let { format -> { Text(format.replace('-', '0')) } },
-            isError = error != null,
-            supportingText = error?.let { { Text(it) } },
-            visualTransformation = transformation,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onDone() }),
-        )
-    }
-}
-
-private const val CALLING_CODE_WEIGHT = 1f
-private const val NUMBER_WEIGHT = 2.5f
-
-/** Shows the national number grouped by TDLib's format ([numberFormatOf]) while the state keeps digits only. */
-internal data class PhoneNumberVisualTransformation(
-    private val format: String?,
-) : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val formatted = formatNationalNumber(text.text, format)
-        val offsets =
-            object : OffsetMapping {
-                override fun originalToTransformed(offset: Int) = formatted.transformedOffset(offset)
-
-                override fun transformedToOriginal(offset: Int) = formatted.originalOffset(offset)
-            }
-        return TransformedText(AnnotatedString(formatted.text), offsets)
     }
 }
 

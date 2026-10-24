@@ -421,4 +421,5 @@ private fun User.toProfileAccount() =
         userId = id,
         name = listOf(firstName, lastName).filter(String::isNotBlank).joinToString(" "),
         photo = profilePhoto,
+        phoneNumber = phoneNumber,
     )

@@ -38,6 +38,15 @@ class EditProfileScreenScreenshotTest {
     @Config(qualifiers = EXPANDED)
     fun expandedLight() = capture("expandedLight", ThemeMode.Light, SettingsPreviewData.editProfileWithPhoto)
 
+    // Tall enough for the whole page, the phone number last.
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun wholePageLight() = capture("wholePageLight", ThemeMode.Light, SettingsPreviewData.editProfileWithPhoto)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun wholePageDark() = capture("wholePageDark", ThemeMode.Dark, SettingsPreviewData.editProfileWithPhoto)
+
     @Test
     @Config(fontScale = FONT_SCALE_200)
     fun fontScale200() = capture("fontScale200", ThemeMode.Light, SettingsPreviewData.editProfileWithPhoto)

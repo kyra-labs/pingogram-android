@@ -3,9 +3,9 @@ package dev.kyralabs.pingogram.feature.auth.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
-import dev.kyralabs.pingogram.core.domain.model.Country
 import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
-import dev.kyralabs.pingogram.core.domain.model.PhoneNumberInfo
+import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
+import dev.kyralabs.pingogram.core.ui.time.secondsLeft
 
 /**
  * Everything [AuthViewModel] knows: TDLib's [step], what the user typed (kept across steps, so "change number" finds
@@ -26,30 +26,12 @@ internal data class AuthModel(
     val floodWaitSeconds: Long? = null,
     /** The whole flood wait, for its progress: the seconds Telegram asked to wait. */
     val floodWaitTotalSeconds: Long = 0,
-    val phone: PhoneForm = PhoneForm(),
+    val phone: PhoneNumberForm = PhoneNumberForm(),
     val code: CodeForm = CodeForm(),
     val password: PasswordForm = PasswordForm(),
     val registration: RegistrationForm = RegistrationForm(),
     val email: EmailForm = EmailForm(),
 )
-
-internal data class PhoneForm(
-    val countries: List<Country> = emptyList(),
-    val callingCode: String = "",
-    val number: String = "",
-    val countryIso: String? = null,
-    val numberFormat: String? = null,
-    val error: DomainError? = null,
-    val isPickerOpen: Boolean = false,
-    val pickerQuery: String = "",
-    /** The country of the IP address was looked up for this session (once, and only for an empty calling code). */
-    val isCountryDetected: Boolean = false,
-) {
-    val country: Country? get() = countryIso?.let { iso -> countries.find { it.isoCode == iso } }
-
-    /** The number as sent to TDLib: `+`, calling code and national number. */
-    val internationalNumber: String get() = "+$callingCode$number"
-}
 
 internal data class CodeForm(
     val code: String = "",
@@ -159,25 +141,11 @@ private fun AuthStep.WaitEmailCode.resetSecondsLeft(): Long? =
 
 /** Nothing typed during a login outlives it; only the country list stays (the current country is looked up again). */
 private fun AuthModel.cleared() =
-    AuthModel(step = step, connection = connection, phone = PhoneForm(countries = phone.countries))
+    AuthModel(step = step, connection = connection, phone = PhoneNumberForm(countries = phone.countries))
 
 /** Back at phone number entry: nothing is on top of it, and an earlier password attempt is gone. */
 private fun AuthModel.atPhoneNumber() =
     copy(editingPhone = false, editingEmail = false, restarting = false, password = PasswordForm())
-
-/**
- * The number format and country for TDLib's [info] about the current number. A country the user picked stays while
- * the number is still empty (+1 is both Canada and the United States); after that the number decides.
- */
-internal fun PhoneForm.withPhoneNumberInfo(info: PhoneNumberInfo): PhoneForm {
-    if (info.callingCode != callingCode) return copy(numberFormat = null)
-    val detected = info.country?.isoCode
-    val keepSelection = number.isEmpty() && country?.callingCodes?.contains(callingCode) == true
-    return copy(
-        numberFormat = numberFormatOf(info.formattedNumber),
-        countryIso = if (detected == null || keepSelection) countryIso else detected,
-    )
-}
 
 /** Errors shown next to a field (or handled by the screen's state); any other error goes to a snackbar. */
 internal enum class ErrorField(

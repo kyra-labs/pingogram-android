@@ -8,9 +8,11 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
@@ -72,6 +74,14 @@ class SettingsAccessibilityChecksTest {
                 onBack = {},
             )
         }
+
+    @Test
+    fun changePhoneNumber() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.number, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun changePhoneNumberCode() =
+        check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.code, onEvent = {}, onBack = {}) }
 
     @Test
     fun deleteAccount() =

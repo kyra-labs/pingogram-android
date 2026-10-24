@@ -196,6 +196,16 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `feature:settings` shows the state on `TwoStepVerificationRoute` and runs each change on a `TwoStepVerificationFlowRoute`
   pushed above it (`TwoStepVerificationFlowViewModel`, steps on one page, what was typed never in saved state), which
   leaves its result in the page's saved state (`popBackStackAfterTwoStepVerification`) for a snackbar there.
+- **Changing the phone number** (FR-S1, Account): `core:domain`'s `PhoneNumberChangeRepository`
+  (`TdlibPhoneNumberChangeRepository`, `core:data`, no cache: TDLib keeps the pending change and announces the new
+  number with `updateUser`) sends the code (`sendPhoneNumberCode` with `phoneNumberCodeTypeChange` and the login's code
+  settings: no flash or missed calls, no SMS Retriever, no Firebase), asks for it again (`resendPhoneNumberCode`) and
+  checks it (`checkPhoneNumberCode`), waiting as long as authentication requests; another account's number fails with
+  `DomainError.PhoneNumberOccupied`. `feature:settings`' `ChangePhoneNumberRoute` (`ChangePhoneNumberViewModel`, above
+  Edit profile, whose "Phone number" row opens it) types the number as sign-in does, with what both share in `core:ui`'s
+  `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
+  login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
+  state, never the code.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

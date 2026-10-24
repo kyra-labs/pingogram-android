@@ -60,7 +60,6 @@ import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUs
 import dev.kyralabs.pingogram.feature.settings.ui.ChatAppearanceRoute as ChatAppearanceScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.ColorThemeRoute as ColorThemeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.DataStorageRoute as DataStorageScreenRoute
-import dev.kyralabs.pingogram.feature.settings.ui.EditProfileRoute as EditProfileScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.LanguageRoute as LanguageScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationExceptionsRoute as NotificationExceptionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as NotificationSettingsScreenRoute
@@ -160,7 +159,8 @@ private fun NavGraphBuilder.stickerPages(
 /**
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [LanguageRoute], [AboutRoute] and
- * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]: [ColorThemeRoute]
+ * [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
+ * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute]
  * and [ChatAppearanceRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the
  * sheet of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
  * above Notifications, [AutoDownloadRoute] above Data and storage,
@@ -184,7 +184,7 @@ fun NavGraphBuilder.settingsPages(
     onTwoStepVerificationDone: (TwoStepVerificationResult) -> Unit,
     onScanQrCode: (forDeviceLogin: Boolean) -> Unit,
 ) {
-    settingsPage<EditProfileRoute> { EditProfileScreenRoute(onBack = onBack, onSaved = onProfileSaved) }
+    accountPages(onOpen, onBack, onProfileSaved)
     appearancePages(onOpen, onBack)
     folderPages(onOpen, onBack)
     stickerPages(onOpen, onBack)
@@ -300,7 +300,7 @@ private fun NavGraphBuilder.twoStepVerificationPages(
  * A settings page of route [T]: [content], with its back button unless it is the page the detail pane of
  * [SettingsListDetail] shows beside Settings home ([LocalSettingsPageWithoutBack]).
  */
-private inline fun <reified T : Any> NavGraphBuilder.settingsPage(
+internal inline fun <reified T : Any> NavGraphBuilder.settingsPage(
     noinline content: @Composable (NavBackStackEntry) -> Unit,
 ) {
     composable<T> { entry ->
