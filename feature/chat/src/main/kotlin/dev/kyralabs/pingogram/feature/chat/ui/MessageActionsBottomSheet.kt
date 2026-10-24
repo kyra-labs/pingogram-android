@@ -241,6 +241,8 @@ internal val MessageAction.label: Int
             MessageAction.Pin -> R.string.message_action_pin
             MessageAction.PinForSelf -> R.string.message_action_pin_for_self
             MessageAction.Unpin -> R.string.message_action_unpin
+            MessageAction.RetractVote -> R.string.message_action_retract_vote
+            MessageAction.StopPoll -> R.string.message_action_stop_poll
             MessageAction.SaveToDownloads -> R.string.message_action_save_to_downloads
             MessageAction.Select -> R.string.message_action_select
             MessageAction.Report -> R.string.message_action_report
@@ -258,6 +260,8 @@ internal val MessageAction.icon: Int
             MessageAction.Edit -> UiR.drawable.ic_edit
             MessageAction.Pin, MessageAction.PinForSelf -> UiR.drawable.ic_push_pin
             MessageAction.Unpin -> UiR.drawable.ic_keep_off
+            MessageAction.RetractVote -> UiR.drawable.ic_history
+            MessageAction.StopPoll -> R.drawable.ic_block
             MessageAction.SaveToDownloads -> UiR.drawable.ic_download
             MessageAction.Select -> UiR.drawable.ic_check_circle
             MessageAction.Report -> UiR.drawable.ic_error
@@ -277,6 +281,8 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Pin -> ChatEvent.Pin(messageId)
         MessageAction.PinForSelf -> ChatEvent.Pin(messageId, onlyForSelf = true)
         MessageAction.Unpin -> ChatEvent.Unpin(messageId)
+        MessageAction.RetractVote -> PollEvent.RetractVote(messageId)
+        MessageAction.StopPoll -> PollEvent.StopPoll(messageId)
         MessageAction.SaveToDownloads -> SelectionEvent.SaveToDownloads(messageId)
         MessageAction.Select -> SelectionEvent.Select(messageId)
         MessageAction.Report -> SelectionEvent.Report(messageId)

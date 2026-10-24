@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Voting in polls, their results and who voted (REQUIREMENTS.md FR-C4). The poll's own labels are in
+     strings_message_content.xml. -->
+<resources>
+    <!-- The button under a poll with several answers that sends the checked ones; also what tapping an answer does,
+         for screen readers. -->
+    <string name="poll_vote">Vote</string>
+    <!-- The button under a public poll's results that opens who voted for what. -->
+    <string name="poll_view_votes">View votes</string>
+    <!-- Screen readers' actions on a poll. %1$s is an answer's text. -->
+    <string name="poll_vote_for">Vote for %1$s</string>
+    <string name="poll_check">Choose %1$s</string>
+    <string name="poll_uncheck">Unchoose %1$s</string>
+    <!-- For screen readers: an answer with its share of the votes. %1$d is a percentage, %2$s the number of votes with
+         the digits of the user's language. -->
+    <plurals name="poll_option_share">
+        <item quantity="one">%1$d%%, %2$s vote</item>
+        <item quantity="other">%1$d%%, %2$s votes</item>
+    </plurals>
+    <!-- For screen readers: an answer checked before "Vote". -->
+    <string name="poll_option_checked">chosen</string>
+    <!-- For screen readers: an answer whose vote is on its way to Telegram. -->
+    <string name="poll_option_sending">sending your vote</string>
+    <!-- Why the user can't vote, under the answers. -->
+    <string name="poll_restricted_members">Only members of the chat can vote</string>
+    <string name="poll_restricted_country">Voting isn\'t available in your country</string>
+    <string name="poll_restricted_scheduled">Voting starts once the message is sent</string>
+    <string name="poll_restricted_other">You can\'t vote in this poll</string>
+    <!-- Above a quiz's explanation, shown once the user answered it. -->
+    <string name="poll_explanation">Explanation</string>
+
+    <!-- The message actions of a poll. -->
+    <string name="message_action_retract_vote">Retract vote</string>
+    <string name="message_action_stop_poll">Stop poll</string>
+    <!-- The question before a poll is stopped. -->
+    <string name="poll_stop_title">Stop poll?</string>
+    <string name="poll_stop_text">No one will be able to vote any more, and everyone sees the final results. You can\'t open it again.</string>
+    <string name="poll_stop_confirm">Stop poll</string>
+    <string name="poll_stop_cancel">Cancel</string>
+
+    <!-- The sheet of who voted for each answer of a public poll. -->
+    <string name="poll_voters_title">Votes</string>
+    <string name="poll_voters_more">Show more</string>
+    <string name="poll_voters_error">Couldn\'t load these votes</string>
+    <string name="poll_voters_retry">Try again</string>
+</resources>

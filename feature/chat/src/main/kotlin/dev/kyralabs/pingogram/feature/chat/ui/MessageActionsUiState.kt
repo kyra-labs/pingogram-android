@@ -117,6 +117,12 @@ enum class MessageAction {
 
     Unpin,
 
+    /** Take the user's vote in its poll back (`ChatPolls`), where the poll allows it. */
+    RetractVote,
+
+    /** Close its poll for everyone, after a question (`ChatPolls`): its author only. */
+    StopPoll,
+
     /** Copy its file (an album's every file) into the public Downloads collection. */
     SaveToDownloads,
 

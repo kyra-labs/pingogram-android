@@ -147,6 +147,8 @@ class TdErrorMappingTest {
                 Arguments.of(400, "USERS_TOO_MUCH", DomainError.ChatFull),
                 Arguments.of(400, "AUTH_TOKEN_EXPIRED", DomainError.QrLoginExpired),
                 Arguments.of(400, "AUTH_TOKEN_ALREADY_ACCEPTED", DomainError.QrLoginExpired),
+                Arguments.of(400, "MESSAGE_POLL_CLOSED", DomainError.PollClosed),
+                Arguments.of(400, "Can't answer closed poll", DomainError.PollClosed),
             )
     }
 }

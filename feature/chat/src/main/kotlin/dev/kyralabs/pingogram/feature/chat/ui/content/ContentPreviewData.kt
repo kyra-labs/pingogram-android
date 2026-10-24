@@ -24,8 +24,11 @@ import dev.kyralabs.pingogram.core.domain.model.PhotoSize
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.domain.model.TextEntity
+import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.domain.model.Thumbnail
 import dev.kyralabs.pingogram.core.domain.model.ThumbnailFormat
 import dev.kyralabs.pingogram.core.domain.model.Venue
@@ -224,8 +227,10 @@ internal object ContentPreviewData {
 
     /**
      * A poll on the best season. [voted] shows the results with the user's answer; [quiz] makes it a quiz whose
-     * correct answer is autumn, answered with [chosenIndex].
+     * correct answer is autumn, answered with [chosenIndex], explained once answered. [publicVoters] lets the voters be
+     * listed, [restriction] keeps the user from voting, [sendingIndex] is a vote on its way to Telegram.
      */
+    @Suppress("LongParameterList") // One flag per state the previews and goldens show.
     fun poll(
         voted: Boolean,
         quiz: Boolean = false,
@@ -233,6 +238,9 @@ internal object ContentPreviewData {
         chosenIndex: Int = 2,
         multipleAnswers: Boolean = false,
         anonymous: Boolean = true,
+        publicVoters: Boolean = false,
+        restriction: PollVoteRestriction? = null,
+        sendingIndex: Int? = null,
     ): MessageContent.Poll {
         val seeResults = voted || closed
         val options =
@@ -244,6 +252,7 @@ internal object ContentPreviewData {
                     votePercentage = if (seeResults) SeasonPercentages[index] else 0,
                     isChosen = voted && index == chosenIndex,
                     isCorrect = quiz && seeResults && index == QUIZ_CORRECT_INDEX,
+                    isBeingChosen = index == sendingIndex,
                 )
             }
         return MessageContent.Poll(
@@ -257,15 +266,29 @@ internal object ContentPreviewData {
                         ),
                     options = options.toImmutableList(),
                     totalVoterCount = if (voted || closed) SeasonVotes.sumOf { it.second } else POLL_VOTERS_BEFORE,
-                    isAnonymous = anonymous,
+                    isAnonymous = anonymous && !publicVoters,
                     allowsMultipleAnswers = multipleAnswers,
                     canSeeResults = seeResults,
                     isClosed = closed,
-                    type = if (quiz) PollType.Quiz(FormattedText.Empty) else PollType.Regular,
+                    type =
+                        if (quiz) {
+                            PollType.Quiz(if (seeResults) QuizExplanation else FormattedText.Empty)
+                        } else {
+                            PollType.Regular
+                        },
+                    canGetVoters = publicVoters,
+                    allowsRevoting = !quiz,
+                    voteRestriction = restriction ?: PollVoteRestriction.Closed.takeIf { closed },
                 ),
             description = FormattedText.Empty,
         )
     }
+
+    private val QuizExplanation =
+        FormattedText(
+            "In the north the September equinox starts autumn.",
+            persistentListOf(TextEntity(offset = 17, length = 17, type = TextEntityType.Bold)),
+        )
 
     // Landscape, portrait, square, wide and tall, so albums mix shapes.
     private val AlbumShapes =

@@ -91,6 +91,7 @@ abstract class ChatViewModelHarness {
     internal val chatSearch = FakeChatSearchRepository()
     internal val groupMembers = FakeGroupInfoRepository()
     protected val customEmoji = FakeCustomEmojiRepository()
+    protected val polls = FakePollRepository()
 
     /** Every message logged, in order. */
     protected val logged = mutableListOf<String>()
@@ -155,6 +156,7 @@ abstract class ChatViewModelHarness {
                     TranslationRepositories(translations, languageDetector, appLanguage, hiddenTranslateBars),
                 searchRepositories = ChatSearchRepositories(chatSearch, groupMembers),
                 customEmojiRepository = customEmoji,
+                pollRepository = polls,
                 log = { logged += it },
                 initialMessageId = messageId,
                 recordingClock = { testScheduler.currentTime },

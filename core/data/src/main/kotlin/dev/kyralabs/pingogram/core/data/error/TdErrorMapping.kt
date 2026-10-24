@@ -158,6 +158,8 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         // Calls: phone.requestCall, phone.acceptCall.
         "USER_PRIVACY_RESTRICTED" to DomainError.CallPrivacyRestricted,
         "PARTICIPANT_VERSION_OUTDATED" to DomainError.CallPeerOutdated,
+        // Polls: messages.sendVote in a poll that was closed meanwhile.
+        "MESSAGE_POLL_CLOSED" to DomainError.PollClosed,
     )
 
 /**
@@ -187,6 +189,8 @@ private val TDLIB_MESSAGES: Map<String, DomainError> =
         "Title must be non-empty" to DomainError.TitleInvalid,
         // checkChatInviteLink and joinChatByInviteLink with a link that is no invite link (LinkManager).
         "Wrong invite link" to DomainError.InviteLinkInvalid,
+        // setPollAnswer in a poll TDLib knows is closed (PollManager::set_poll_answer).
+        "Can't answer closed poll" to DomainError.PollClosed,
     )
 
 /**

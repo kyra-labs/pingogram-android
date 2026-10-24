@@ -97,5 +97,6 @@ private fun DomainError.messageRes(): Int =
         DomainError.QrLoginExpired -> R.string.error_qr_login_expired
         DomainError.CallPrivacyRestricted -> R.string.error_call_privacy_restricted
         DomainError.CallPeerOutdated -> R.string.error_call_peer_outdated
+        DomainError.PollClosed -> R.string.error_poll_closed
         is DomainError.FloodWait, is DomainError.Unknown, DomainError.Silent -> R.string.error_unknown
     }
