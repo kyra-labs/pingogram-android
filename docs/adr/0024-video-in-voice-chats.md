@@ -34,15 +34,18 @@ voice chats and live streams without it. What the pinned versions offer:
   `addIncomingVideo`; the others are not received at all, so a large video chat costs no more than four. Four 720p
   videos are about the bandwidth and the JNI copies of four 1:1 calls; until the device measurement, four is the
   ceiling the screen can show at a useful size on a phone anyway (a 2 × 2 grid), and larger windows keep it.
-- **The grid**: the videos take the participants list's place at the top of the screen: one video full width, two side
-  by side (a column on a phone), three and four as 2 × 2 (`LazyVerticalGrid` with fixed columns, 16:9 cells on wide
-  windows, 3:4 on phones in portrait), each a `large`-rounded tile with the name and mute state on a `mediaOverlay`
-  pill. The participants list follows below it as today. A pinned participant takes the whole video area, the others in
-  a row of small tiles beneath it.
-- **Pinning**: a tile's long press, or the participant row's menu, pins or unpins; one pinned at a time, kept in the
-  view model's saved state, on this device only (Telegram has no pin for others to see).
-- **Picture-in-picture** as live streams: leaving the screen while videos show moves it into picture-in-picture with
-  the pinned or first speaking video.
+- **The grid**: the videos head the participants list and scroll away with it, at most `contentMaxWidth` wide: the
+  pinned video across the width at 16:9, then the others two to a row, square, the user's own camera (the self-view)
+  last among them; a single video alone takes the width at 16:9. Each tile has `large` corners and the participant's
+  name on a `mediaOverlay` pill, a `primary` outline while they speak, and "Video paused" while they hold it back. The
+  participants list follows below it as before. Two columns hold four videos and the self-view at a useful size on a
+  phone, and larger windows keep them within `contentMaxWidth`. Without others' videos the self-view stays where it was,
+  above the participants.
+- **Pinning**: a tap on a tile pins it, a tap on the pinned one unpins it (a long press would hide the action from those
+  who don't know it); one pinned at a time, on this device only (Telegram has no pin for others to see). The voice chat
+  keeps it (`GroupCallManager`) for as long as it lasts, so a rotated or recreated screen shows it again.
+- **Picture-in-picture** as live streams: leaving the screen while others' videos show moves it into picture-in-picture
+  with the pinned or first video, at 16:9.
 - **The frame path**: one `VideoFrameSink` per subscribed SSRC, each tile its own `CallVideoView`; frames of SSRCs
   without a sink are dropped before the copy. The trace sections of `CallTrace` count group frames too, and
   `tools/perfetto/video-call.*` records a video chat the same way.
@@ -54,4 +57,4 @@ voice chats and live streams without it. What the pinned versions offer:
 - The cap of four is a number for the device measurement to confirm or change; `docs/PERFORMANCE.md` §9 gets the steps
   for a video chat.
 - Screen sharing stays out until the owner approves MediaProjection (item 8): a participant's shared screen is a second
-  video (`screen_sharing_video_info`) Pingogram does not receive yet; the participant row says "Sharing screen".
+  video (`screen_sharing_video_info`) Pingogram does not receive yet.

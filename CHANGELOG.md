@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Voice chats: the others' videos show above the participants, up to four at once: the one you pinned first, then
+  those speaking. Tap a video to pin it across the width, and again to unpin it. Leaving the screen keeps the pinned
+  or first video in picture-in-picture.
 - Voice chats: where the voice chat allows video, a Camera button sends your camera, and your own picture shows above
   the participants with "Switch camera" on it. Pingogram asks for the camera when you first turn it on. It sends less on
   mobile data and roaming, and stops while the call is on hold.

@@ -2,9 +2,11 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatVideoChat
+import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallSpeaker
 import dev.kyralabs.pingogram.core.domain.model.GroupCallStream
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
+import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -98,6 +100,34 @@ class TdlibGroupCallRepositoryTest {
 
             client.emit(TdApi.UpdateGroupCallParticipant(5, participant(3, order = "")))
             assertEquals(listOf(2L, 1L), repository.participants(5).first().map { it.userId() })
+        }
+
+    @Test
+    fun `a participant's camera comes with its endpoint and source groups, and without an endpoint as none`() =
+        runTest {
+            val repository = repository()
+            val camera =
+                TdApi.GroupCallParticipantVideoInfo(
+                    arrayOf(TdApi.GroupCallVideoSourceGroup("SIM", intArrayOf(11, 12))),
+                    "endpoint-1",
+                    true,
+                )
+            client.emit(TdApi.UpdateGroupCallParticipant(5, participant(1, order = "2").also { it.videoInfo = camera }))
+            val noEndpoint = TdApi.GroupCallParticipantVideoInfo(arrayOf(), "", false)
+            client.emit(
+                TdApi.UpdateGroupCallParticipant(5, participant(2, order = "1").also { it.videoInfo = noEndpoint }),
+            )
+
+            val (first, second) = repository.participants(5).first()
+            assertEquals(
+                GroupCallParticipantVideo(
+                    "endpoint-1",
+                    persistentListOf(GroupCallVideoSourceGroup("SIM", persistentListOf(11, 12))),
+                    isPaused = true,
+                ),
+                first.video,
+            )
+            assertNull(second.video)
         }
 
     @Test

@@ -102,6 +102,7 @@ fun GroupCallScreen(
     modifier: Modifier = Modifier,
     video: StreamVideo = PlaceholderStream,
     selfVideo: CallVideo = PlaceholderVideo,
+    participantVideo: ParticipantVideo = PlaceholderParticipantVideo,
     pictureInPicture: Boolean = false,
 ) {
     // A Surface, so text and icons take the window's content color.
@@ -113,17 +114,18 @@ fun GroupCallScreen(
                 onMinimize,
                 onRequestMicrophone,
                 onOpenSettings,
-                GroupCallVideos(video, selfVideo),
+                GroupCallVideos(video, selfVideo, participantVideo),
                 pictureInPicture,
             )
         }
     }
 }
 
-/** What draws a voice chat's videos: a live stream's, and the user's own camera (the self-view). */
+/** What draws a voice chat's videos: a live stream's, the user's own camera (the self-view) and the others'. */
 private class GroupCallVideos(
     val stream: StreamVideo,
     val self: CallVideo,
+    val participants: ParticipantVideo,
 )
 
 @Composable
@@ -161,8 +163,12 @@ private fun BoxScope.GroupCallContent(
         }
 
         is GroupCallUiState.InCall -> {
+            val first = state.video.remote.firstOrNull()
             if (pictureInPicture && state.isStream) {
                 videos.stream(Modifier.fillMaxSize())
+            } else if (pictureInPicture && first != null) {
+                // The pinned video, or the first: the one the grid shows first.
+                videos.participants(first.endpointId, Modifier.fillMaxSize())
             } else {
                 InGroupCall(state, onEvent, onMinimize, videos)
             }
@@ -181,12 +187,13 @@ private fun InGroupCall(
     Column(Modifier.fillMaxSize()) {
         Header(state, onMinimize)
         val camera = state.video.camera
-        if (camera != null && !state.isStream) {
-            // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md).
+        if (camera != null && !state.isStream && state.video.remote.isEmpty()) {
+            // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md); with the others'
+            // videos it joins their grid.
             SelfView(
                 mirror = camera == CameraFacing.Front,
                 canSwitch = state.video.canSwitchCamera,
-                landscape = true,
+                aspectRatio = SELF_VIEW_ASPECT_LANDSCAPE,
                 video = videos.self,
                 onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
                 modifier =
@@ -206,7 +213,7 @@ private fun InGroupCall(
                         .clip(MaterialTheme.shapes.large),
                 )
             } else {
-                Participants(state)
+                Participants(state, videos, onEvent)
             }
         }
         if (state.hasControls) Controls(state, onEvent)
@@ -278,9 +285,13 @@ private fun endText(reason: GroupCallEndReason): String =
         is GroupCallEndReason.Failed -> errorText(reason.error)
     }
 
-/** The participants: a keyed list of rows, the user's own among them. */
+/** The participants: their videos first where any are received, then a keyed list of rows, the user's among them. */
 @Composable
-private fun Participants(state: GroupCallUiState.InCall) {
+private fun Participants(
+    state: GroupCallUiState.InCall,
+    videos: GroupCallVideos,
+    onEvent: (GroupCallEvent) -> Unit,
+) {
     val spacing = MaterialTheme.spacing
     LazyColumn(
         modifier =
@@ -290,6 +301,19 @@ private fun Participants(state: GroupCallUiState.InCall) {
         contentPadding = PaddingValues(horizontal = spacing.small, vertical = spacing.small),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (state.video.remote.isNotEmpty()) {
+            item(key = "videos", contentType = "videos") {
+                VideoGrid(
+                    state,
+                    videos.participants,
+                    videos.self,
+                    onEvent,
+                    Modifier
+                        .widthIn(max = MaterialTheme.sizes.contentMaxWidth)
+                        .padding(horizontal = spacing.small, vertical = spacing.small),
+                )
+            }
+        }
         items(state.participants, key = { it.key }, contentType = { "participant" }) { participant ->
             ParticipantRow(participant, Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth).animateItem())
         }

@@ -19,6 +19,7 @@ import io.github.pytgcalls.media.StreamMode
 import io.github.pytgcalls.media.VideoDescription
 import io.github.pytgcalls.models.Frame
 import io.github.pytgcalls.models.MediaSegmentPartStatus
+import io.github.pytgcalls.models.SsrcGroup
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -355,6 +356,14 @@ class NtgCallsEngine
             private var camera: CallCamera? = null
             private var quality = VideoQuality.High
 
+            /** The other participants' videos received, by endpoint, with the SSRC their frames carry. */
+            private val received = mutableMapOf<String, Long>()
+
+            /** SSRC to endpoint, read on NTgCalls' threads. */
+            @Volatile private var endpoints: Map<Long, String> = emptyMap()
+
+            @Volatile private var incomingSinks: Map<String, VideoFrameSink> = emptyMap()
+
             /** The microphone, and the camera while one sends (`docs/adr/0024-video-in-voice-chats.md`). */
             fun capture() = MediaDescription(microphoneSource, null, camera?.toVideoSource(quality), null)
 
@@ -373,6 +382,10 @@ class NtgCallsEngine
                 mode: StreamMode,
                 frames: List<Frame>,
             ) {
+                if (mode == StreamMode.PLAYBACK && endpoints.isNotEmpty()) {
+                    onIncomingFrames(frames)
+                    return
+                }
                 val sink = (if (mode == StreamMode.CAPTURE) selfSink else videoSink) ?: return
                 for (frame in frames) {
                     val data = frame.frame_data ?: continue
@@ -451,6 +464,39 @@ class NtgCallsEngine
                 selfSink = sink
             }
 
+            /** The other participants' frames, each to its endpoint's sink; a stream's frames to [videoSink]. */
+            private fun onIncomingFrames(frames: List<Frame>) {
+                val sinks = incomingSinks
+                for (frame in frames) {
+                    val data = frame.frame_data
+                    val sink = endpoints[frame.ssrc]?.let(sinks::get) ?: videoSink
+                    if (data != null && sink != null) {
+                        sink.onFrame(frame.data, data.width, data.height, data.rotation.toDegrees())
+                    }
+                }
+            }
+
+            override suspend fun receiveVideos(videos: List<IncomingVideo>) =
+                engineCall("receive the participants' videos") {
+                    val wanted = videos.associateBy { it.endpointId }
+                    for (endpoint in received.keys - wanted.keys) {
+                        calls().removeIncomingVideo(id, endpoint)
+                        received.remove(endpoint)
+                    }
+                    for ((endpoint, video) in wanted) {
+                        if (endpoint in received) continue
+                        val groups = video.sourceGroups.map { SsrcGroup(it.semantics, it.sourceIds) }
+                        val ssrc = calls().addIncomingVideo(id, video.participantId, endpoint, groups)
+                        // An SSRC is an unsigned 32-bit number: NTgCalls returns an int, frames carry a long.
+                        received[endpoint] = ssrc.toLong() and UNSIGNED_INT_MASK
+                    }
+                    endpoints = received.entries.associate { (endpoint, ssrc) -> ssrc to endpoint }
+                }
+
+            override fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>) {
+                incomingSinks = sinks
+            }
+
             override suspend fun close() {
                 if (mutableState.value == CallMediaState.Closed) return
                 withContext(engineThread) {
@@ -463,6 +509,8 @@ class NtgCallsEngine
                 mutableState.value = CallMediaState.Closed
                 videoSink = null
                 selfSink = null
+                incomingSinks = emptyMap()
+                endpoints = emptyMap()
                 groupSessions.remove(id)
                 requests.close()
             }
@@ -489,5 +537,7 @@ class NtgCallsEngine
 
             /** The other side's video, as it comes: width, height and frame rate 0 are NTgCalls' "as sent". */
             val REMOTE_VIDEO = VideoDescription(MediaSource.EXTERNAL, 0, 0, 0, "", true)
+
+            const val UNSIGNED_INT_MASK = 0xFFFF_FFFFL
         }
     }

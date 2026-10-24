@@ -41,6 +41,9 @@ class GroupCallAccessibilityChecksTest {
     fun camera() = check(GroupCallPreviewStates.camera)
 
     @Test
+    fun videos() = check(GroupCallPreviewStates.videos)
+
+    @Test
     fun raiseHand() = check(GroupCallPreviewStates.raiseHand)
 
     @Test

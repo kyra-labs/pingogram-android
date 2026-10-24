@@ -14,9 +14,10 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the voice chat's screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): joining, connected with its
- * participants, sending the camera (and offered it), muted by an administrator (Raise hand), a live stream, ended, the
- * microphone's rationale and joining refused; each in light, dark, AMOLED, high contrast, right to left, a 700 dp
- * window and 200% font scale; then a phone in landscape and a live stream in picture-in-picture. Brand colors.
+ * participants, sending the camera (and offered it), others' videos (a pinned one, one alone), muted by an
+ * administrator (Raise hand), a live stream, ended, the microphone's rationale and joining refused; each in light,
+ * dark, AMOLED, high contrast, right to left, a 700 dp window and 200% font scale; then a phone in landscape and a live
+ * stream in picture-in-picture. Brand colors.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -93,6 +94,36 @@ class GroupCallScreenshotTest {
     @Test
     @Config(fontScale = 2f)
     fun cameraFontScale200() = capture(GroupCallPreviewStates.camera)
+
+    @Test
+    fun videosLight() = capture(GroupCallPreviewStates.videos)
+
+    @Test
+    fun videosDark() = capture(GroupCallPreviewStates.videos, ThemeMode.Dark)
+
+    @Test
+    fun videosAmoled() = capture(GroupCallPreviewStates.videos, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun videosHighContrast() = capture(GroupCallPreviewStates.videos, contrast = Contrast.High)
+
+    @Test
+    fun videosRtl() = capture(GroupCallPreviewStates.videos, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun videosMedium() = capture(GroupCallPreviewStates.videos)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun videosFontScale200() = capture(GroupCallPreviewStates.videos)
+
+    @Test
+    @Config(qualifiers = "w891dp-h411dp-xxhdpi")
+    fun videosLandscape() = capture(GroupCallPreviewStates.videos)
+
+    @Test
+    fun videoLight() = capture(GroupCallPreviewStates.video)
 
     @Test
     fun raiseHandLight() = capture(GroupCallPreviewStates.raiseHand)
