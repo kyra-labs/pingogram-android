@@ -17,7 +17,8 @@ import kotlinx.coroutines.launch
  * the device ([show]), on a [VideoPlayer]. [state] is the item in the player.
  *
  * - **The current item** plays as soon as it is shown ([show]) and the screen is started: a video once, a GIF in a
- *   silent loop. Another item stops it; nothing replaces it for a photo or a file still downloading.
+ *   silent loop. Another item stops it; nothing replaces it for a photo or a file still downloading. Without autoplay
+ *   ([setAutoplay], power saving) it waits for [playPause] instead ([VideoPlayback.waitsForTap]).
  * - **Play and pause** ([playPause]) toggle the video; after its end it plays again from the start. [seek] moves it.
  * - **The screen stopping** ([setStarted]) pauses what plays; starting again plays a GIF on, and a video that has
  *   not played yet, but leaves a paused video paused.
@@ -42,6 +43,7 @@ internal class MediaPlayback(
     private var session: Session? = null
     private val ticker = ProgressTicker(player, scope)
     private var isStarted = false
+    private var autoplay = true
 
     /** Where a message's video is to start ([startAt]), until it does. */
     private var startPosition: Pair<Long, Long>? = null
@@ -95,7 +97,15 @@ internal class MediaPlayback(
         if (target == null) return
         val session = Session(target)
         this.session = session
-        if (isStarted) start(session) else publish()
+        if (isStarted && autoplay) start(session) else publish()
+    }
+
+    /** Whether the current item plays as it is shown; turned back on, one waiting for a tap plays. */
+    fun setAutoplay(on: Boolean) {
+        if (on == autoplay) return
+        autoplay = on
+        val current = session ?: return
+        if (on && isStarted && !current.hasStarted) start(current) else publish()
     }
 
     /** The screen was started or stopped. */
@@ -105,15 +115,19 @@ internal class MediaPlayback(
         val current = session ?: return
         when {
             !started -> pause(current)
-            !current.hasStarted -> start(current)
+            !current.hasStarted -> if (autoplay) start(current)
             current.target.kind == VideoKind.Gif -> resume(current)
         }
     }
 
-    /** Plays or pauses the video in the player. */
+    /** Plays or pauses the video in the player, or plays the item waiting for a tap. */
     fun playPause() {
-        val current = session?.takeIf { it.hasStarted } ?: return
-        if (current.isPlaying) pause(current) else resume(current)
+        val current = session ?: return
+        when {
+            !current.hasStarted -> if (isStarted) start(current)
+            current.isPlaying -> pause(current)
+            else -> resume(current)
+        }
     }
 
     /** Moves the video in the player to [fraction] (0–1) of its length, shown at once. */
@@ -193,7 +207,14 @@ internal class MediaPlayback(
     private fun publish() {
         mutableState.value =
             session?.let {
-                VideoPlayback(it.target.messageId, it.isPlaying, it.showsFrame, it.readProgress, it.readBuffered)
+                VideoPlayback(
+                    messageId = it.target.messageId,
+                    isPlaying = it.isPlaying,
+                    showsFrame = it.showsFrame,
+                    progress = it.readProgress,
+                    buffered = it.readBuffered,
+                    waitsForTap = !it.hasStarted && !autoplay,
+                )
             }
     }
 }
