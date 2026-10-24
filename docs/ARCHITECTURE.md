@@ -707,6 +707,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  A voice message holds a transient audio focus of its own (`SpeechFocus`, `AUDIOFOCUS_GAIN_TRANSIENT`, paused rather
+  than ducked), so another app's music pauses for it and plays on after; music keeps ExoPlayer's permanent focus.
+  Calls without Telecom take the focus as a call (`AudioManagerCall`), so a playing voice message or video pauses.
   Raise to listen (`RaiseToListen`, beside it): while voice messages play, the proximity sensor (no permission) moves
   a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
   proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go

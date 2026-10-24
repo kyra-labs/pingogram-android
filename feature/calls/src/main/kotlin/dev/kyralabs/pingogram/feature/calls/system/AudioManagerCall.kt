@@ -1,7 +1,9 @@
 package dev.kyralabs.pingogram.feature.calls.system
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -14,7 +16,9 @@ import kotlinx.collections.immutable.toImmutableList
 /**
  * A call's audio where Telecom takes no call (`TelecomCallSystem`): the audio mode set to voice communication while it
  * is connected, and the route picked directly: Android 12+ `setCommunicationDevice` (earpiece, speaker, wired headset,
- * Bluetooth), before 12 the speakerphone on or off. Restored when the call ends.
+ * Bluetooth), before 12 the speakerphone on or off. It holds the audio focus as a call (`AUDIOFOCUS_GAIN_TRANSIENT`
+ * for voice communication), as Telecom does for its calls, so music and voice messages pause meanwhile. Restored when
+ * the call ends.
  */
 internal class AudioManagerCall(
     context: Context,
@@ -23,6 +27,7 @@ internal class AudioManagerCall(
 
     private var started = false
     private var selected: AudioRoute? = null
+    private var focus: AudioFocusRequest? = null
 
     val audio: CallAudio
         get() {
@@ -34,6 +39,19 @@ internal class AudioManagerCall(
     fun start() {
         if (started) return
         started = true
+        val request =
+            AudioFocusRequest
+                .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                .setAudioAttributes(
+                    AudioAttributes
+                        .Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build(),
+                ).build()
+        // The call goes on without the focus: it only quiets other apps.
+        audioManager.requestAudioFocus(request)
+        focus = request
         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
         selected?.let(::apply)
     }
@@ -53,6 +71,8 @@ internal class AudioManagerCall(
             audioManager.isSpeakerphoneOn = false
         }
         audioManager.mode = AudioManager.MODE_NORMAL
+        focus?.let(audioManager::abandonAudioFocusRequest)
+        focus = null
     }
 
     private fun apply(route: AudioRoute) {
