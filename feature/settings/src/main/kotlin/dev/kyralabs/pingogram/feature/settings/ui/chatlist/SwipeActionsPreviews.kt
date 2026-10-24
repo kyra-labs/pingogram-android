@@ -22,6 +22,14 @@ private fun SwipeActionsScreenChangedPreview() {
 
 @PingogramPreviews
 @Composable
+private fun SwipeActionsScreenChangesFolderPreview() {
+    PingogramPreview {
+        SwipeActionsScreen(SwipeActionsPreviewStates.changesFolder, onEvent = {}, onBack = {})
+    }
+}
+
+@PingogramPreviews
+@Composable
 private fun SwipeActionsScreenLoadingPreview() {
     PingogramPreview {
         SwipeActionsScreen(SwipeActionsPreviewStates.loading, onEvent = {}, onBack = {})

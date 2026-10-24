@@ -19,6 +19,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   long panoramas, which Telegram refuses as photos, now go as files too.
 - Swipe actions: Appearance → Chat list → Swipe actions picks what swiping a chat right and left does: mark as read or
   unread, archive, pin, mute, delete (which asks first), or nothing. Swiping still marks as read and archives at first.
+  Or turn on "Swipe to change folders": the whole chat list then follows your finger sideways, and letting go past a
+  third of the screen shows the folder tab on the left (swiping right) or on the right (swiping left), its chats
+  sliding in. Chats themselves don't swipe meanwhile; their actions stay in the selection toolbar.
 - Hide stories: Appearance → Chat list → "Show stories" turns the story rings above the chat list off. While they are
   off, Pingogram loads no stories for the list.
 - Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in

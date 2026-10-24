@@ -36,4 +36,15 @@ class ChatSwipesViewModelTest {
                 assertEquals(ChatSwipes(SwipeAction.Pin, SwipeAction.None), awaitItem())
             }
         }
+
+    @Test
+    fun `follows whether swiping the list changes the folder`() =
+        runTest {
+            ChatSwipesViewModel(settings).swipes.test {
+                assertEquals(false, awaitItem().changesFolder)
+
+                settings.settings.value = ChatListSettings(swipeChangesFolder = true)
+                assertEquals(ChatSwipes(changesFolder = true), awaitItem())
+            }
+        }
 }

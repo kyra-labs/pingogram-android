@@ -1191,6 +1191,12 @@
     <string name="settings_swipe_actions_summary_rtl">Left: %1$s · Right: %2$s</string>
     <string name="settings_swipe_right">Swipe right</string>
     <string name="settings_swipe_left">Swipe left</string>
+    <string name="settings_swipe_folders">Folders</string>
+    <string name="settings_swipe_changes_folder">Swipe to change folders</string>
+    <string name="settings_swipe_changes_folder_summary">Swipe the chat list sideways to show the next folder</string>
+    <string name="settings_swipe_changes_folder_footer">Swiping right shows the folder tab on the left, swiping left the one on the right. Chats don\'t swipe while this is on; their actions stay in the selection toolbar.</string>
+    <!-- Appearance's "Swipe actions" row while swiping the list changes the folder. -->
+    <string name="settings_swipe_actions_summary_folders">Change folders</string>
     <string name="settings_swipe_actions_footer">Screen readers offer every action on a chat, whatever the swipes do. Deleting always asks first.</string>
     <string name="settings_swipe_action_read">Mark as read or unread</string>
     <string name="settings_swipe_action_archive">Archive or unarchive</string>

@@ -8,5 +8,8 @@ internal object SwipeActionsPreviewStates {
 
     val changed = SwipeActionsUiState.Content(start = SwipeAction.Pin, end = SwipeAction.None)
 
+    val changesFolder =
+        SwipeActionsUiState.Content(start = SwipeAction.Read, end = SwipeAction.Archive, changesFolder = true)
+
     val loading = SwipeActionsUiState.Loading
 }

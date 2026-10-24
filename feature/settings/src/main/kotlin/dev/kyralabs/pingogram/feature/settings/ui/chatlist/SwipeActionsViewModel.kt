@@ -19,15 +19,22 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** What the Swipe actions page shows: nothing until the settings are read, then each side's action. */
+/**
+ * What the Swipe actions page shows: nothing until the settings are read, then whether swiping changes the folder and
+ * each side's action.
+ */
 @Immutable
 sealed interface SwipeActionsUiState {
     data object Loading : SwipeActionsUiState
 
-    /** What a swipe toward the end ([start], from the start edge) and toward the start ([end]) does. */
+    /**
+     * What a swipe toward the end ([start], from the start edge) and toward the start ([end]) does, unless
+     * [changesFolder], where swiping the list shows the folder tab beside the selected one and rows do not swipe.
+     */
     data class Content(
         val start: SwipeAction,
         val end: SwipeAction,
+        val changesFolder: Boolean = false,
     ) : SwipeActionsUiState
 }
 
@@ -40,6 +47,11 @@ sealed interface SwipeActionsEvent {
         val side: SwipeSide,
         val action: SwipeAction,
     ) : SwipeActionsEvent
+
+    /** "Swipe to change folders" turned on or off. */
+    data class SetChangesFolder(
+        val changes: Boolean,
+    ) : SwipeActionsEvent
 }
 
 sealed interface SwipeActionsEffect {
@@ -50,8 +62,8 @@ sealed interface SwipeActionsEffect {
 }
 
 /**
- * Settings → Appearance → Chat list → "Swipe actions" (`docs/audit/feature-gaps-octogram.md`, P2): what swiping a
- * chat row does toward each side, kept on the device ([ChatListSettingsRepository]) and saved at once. The page shows
+ * Settings → Appearance → Chat list → "Swipe actions" (`docs/audit/feature-gaps-octogram.md`, P2): whether swiping
+ * the chat list changes the folder, else what swiping a chat row does toward each side, kept on the device ([ChatListSettingsRepository]) and saved at once. The page shows
  * what is saved, so a choice that cannot be saved changes nothing but a snackbar. Nothing to restore after process
  * death.
  */
@@ -63,8 +75,9 @@ class SwipeActionsViewModel
     ) : ViewModel() {
         val uiState: StateFlow<SwipeActionsUiState> =
             repository.settings
-                .map<_, SwipeActionsUiState> { SwipeActionsUiState.Content(it.startSwipe, it.endSwipe) }
-                .stateIn(
+                .map<_, SwipeActionsUiState> {
+                    SwipeActionsUiState.Content(it.startSwipe, it.endSwipe, it.swipeChangesFolder)
+                }.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
                     SwipeActionsUiState.Loading,
@@ -76,6 +89,15 @@ class SwipeActionsViewModel
         fun onEvent(event: SwipeActionsEvent) {
             when (event) {
                 is SwipeActionsEvent.Choose -> choose(event.side, event.action)
+                is SwipeActionsEvent.SetChangesFolder -> setChangesFolder(event.changes)
+            }
+        }
+
+        private fun setChangesFolder(changes: Boolean) {
+            viewModelScope.launch {
+                repository
+                    .setSwipeChangesFolder(changes)
+                    .onFailure { effectChannel.trySend(SwipeActionsEffect.ShowError(it)) }
             }
         }
 

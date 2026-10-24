@@ -24,6 +24,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.RadioItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsLoading
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPageScaffold
+import dev.kyralabs.pingogram.feature.settings.ui.SwitchItem
 import kotlinx.coroutines.launch
 
 /** The Swipe actions page: hoists [SwipeActionsViewModel]; a choice that cannot be saved is a snackbar. */
@@ -51,9 +52,10 @@ internal fun SwipeActionsRoute(
 
 /**
  * Settings → Appearance → Chat list → "Swipe actions" (`docs/DESIGN_SYSTEM.md` §6, "Swipe actions"), a settings
- * page without row icons: "Swipe right" and "Swipe left" ("Swipe left" first in right-to-left layouts, where a swipe
- * toward the end goes left), each a radio group of what the swipe does, with a `SegmentTick` per pick; the footer says
- * that screen readers offer every action of a chat whatever the swipes do.
+ * page without row icons: first "Swipe to change folders" as a switch row, its footer saying what it does; then
+ * "Swipe right" and "Swipe left" ("Swipe left" first in right-to-left layouts, where a swipe toward the end goes left),
+ * each a radio group of what the swipe does, with a `SegmentTick` per pick, disabled while swiping changes the folder;
+ * the footer says that screen readers offer every action of a chat whatever the swipes do.
  */
 @Composable
 internal fun SwipeActionsScreen(
@@ -75,10 +77,25 @@ internal fun SwipeActionsScreen(
             }
 
             is SwipeActionsUiState.Content -> {
-                SwipeGroup(SwipeSide.End, state.start, footer = null, onEvent)
+                SettingsGroup(
+                    title = stringResource(R.string.settings_swipe_folders),
+                    footer = stringResource(R.string.settings_swipe_changes_folder_footer),
+                ) {
+                    item { shapes ->
+                        SwitchItem(
+                            title = stringResource(R.string.settings_swipe_changes_folder),
+                            summary = stringResource(R.string.settings_swipe_changes_folder_summary),
+                            checked = state.changesFolder,
+                            shapes = shapes,
+                            onCheckedChange = { onEvent(SwipeActionsEvent.SetChangesFolder(it)) },
+                        )
+                    }
+                }
+                SwipeGroup(SwipeSide.End, state.start, enabled = !state.changesFolder, footer = null, onEvent)
                 SwipeGroup(
                     SwipeSide.Start,
                     state.end,
+                    enabled = !state.changesFolder,
                     footer = stringResource(R.string.settings_swipe_actions_footer),
                     onEvent,
                 )
@@ -87,11 +104,12 @@ internal fun SwipeActionsScreen(
     }
 }
 
-/** The actions a swipe toward [side] can do, the [chosen] one selected. */
+/** The actions a swipe toward [side] can do, the [chosen] one selected; none can be picked unless [enabled]. */
 @Composable
 private fun SwipeGroup(
     side: SwipeSide,
     chosen: SwipeAction,
+    enabled: Boolean,
     footer: String?,
     onEvent: (SwipeActionsEvent) -> Unit,
 ) {
@@ -106,7 +124,7 @@ private fun SwipeGroup(
                 RadioItem(
                     label = stringResource(action.labelRes()),
                     selected = action == chosen,
-                    enabled = true,
+                    enabled = enabled,
                     shapes = shapes,
                     onClick = {
                         if (action != chosen) {

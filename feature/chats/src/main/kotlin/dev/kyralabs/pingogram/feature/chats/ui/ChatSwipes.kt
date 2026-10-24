@@ -16,12 +16,14 @@ import javax.inject.Inject
 
 /**
  * What swiping a chat row does (Appearance → Chat list → Swipe actions): toward the end ([start], from the start
- * edge) and toward the start ([end]). The defaults are read and archive, until the settings are read.
+ * edge) and toward the start ([end]). The defaults are read and archive, until the settings are read. With
+ * [changesFolder], rows do not swipe: swiping the list shows the folder tab beside the selected one ([folderSwipe]).
  */
 @Immutable
 data class ChatSwipes(
     val start: SwipeAction = SwipeAction.Read,
     val end: SwipeAction = SwipeAction.Archive,
+    val changesFolder: Boolean = false,
 )
 
 /**
@@ -39,7 +41,7 @@ class ChatSwipesViewModel
     ) : ViewModel() {
         val swipes: StateFlow<ChatSwipes> =
             repository.settings
-                .map { ChatSwipes(it.startSwipe, it.endSwipe) }
+                .map { ChatSwipes(it.startSwipe, it.endSwipe, it.swipeChangesFolder) }
                 .distinctUntilChanged()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ChatSwipes())
 

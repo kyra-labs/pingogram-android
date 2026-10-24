@@ -29,4 +29,10 @@ class FakeChatListSettingsRepository(
         settings.value = settings.value.copy(startSwipe = start, endSwipe = end)
         return Outcome.Success(Unit)
     }
+
+    override suspend fun setSwipeChangesFolder(changes: Boolean): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
+        settings.value = settings.value.copy(swipeChangesFolder = changes)
+        return Outcome.Success(Unit)
+    }
 }

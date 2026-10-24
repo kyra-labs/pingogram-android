@@ -78,4 +78,21 @@ class SwipeActionsViewModelTest {
             assertEquals(SwipeActionsUiState.Content(SwipeAction.Read, SwipeAction.Archive), viewModel.uiState.value)
             assertTrue(effects.single() is SwipeActionsEffect.ShowError)
         }
+
+    @Test
+    fun `swiping to change folders turns on and off, the swipes kept`() =
+        runTest(dispatcher) {
+            val viewModel = viewModel()
+
+            send(viewModel, SwipeActionsEvent.SetChangesFolder(true))
+
+            assertEquals(true, repository.settings.value.swipeChangesFolder)
+            assertEquals(
+                SwipeActionsUiState.Content(SwipeAction.Read, SwipeAction.Archive, changesFolder = true),
+                viewModel.uiState.value,
+            )
+
+            send(viewModel, SwipeActionsEvent.SetChangesFolder(false))
+            assertEquals(false, repository.settings.value.swipeChangesFolder)
+        }
 }

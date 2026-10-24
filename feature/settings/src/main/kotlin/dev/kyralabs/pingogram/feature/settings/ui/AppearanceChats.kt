@@ -167,8 +167,9 @@ internal fun ChatListGroup(
 
 /** "Right: Read · Left: Archive", the sides as the layout's direction puts them. */
 @Composable
-private fun swipeActionsSummary(chatList: ChatListSettings): String =
-    stringResource(
+private fun swipeActionsSummary(chatList: ChatListSettings): String {
+    if (chatList.swipeChangesFolder) return stringResource(R.string.settings_swipe_actions_summary_folders)
+    return stringResource(
         if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
             R.string.settings_swipe_actions_summary
         } else {
@@ -177,6 +178,7 @@ private fun swipeActionsSummary(chatList: ChatListSettings): String =
         stringResource(chatList.startSwipe.shortLabelRes()),
         stringResource(chatList.endSwipe.shortLabelRes()),
     )
+}
 
 /** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
 @Composable

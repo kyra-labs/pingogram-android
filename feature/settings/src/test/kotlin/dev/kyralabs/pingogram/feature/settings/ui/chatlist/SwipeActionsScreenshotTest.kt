@@ -38,6 +38,9 @@ class SwipeActionsScreenshotTest {
     fun changedLight() = capture("changedLight", ThemeMode.Light, SwipeActionsPreviewStates.changed)
 
     @Test
+    fun changesFolderLight() = capture("changesFolderLight", ThemeMode.Light, SwipeActionsPreviewStates.changesFolder)
+
+    @Test
     @Config(qualifiers = COMPACT)
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, SwipeActionsPreviewStates.loading)
 

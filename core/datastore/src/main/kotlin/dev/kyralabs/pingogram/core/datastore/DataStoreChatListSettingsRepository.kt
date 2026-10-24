@@ -39,6 +39,7 @@ class DataStoreChatListSettingsRepository
                         showStories = preferences[SHOW_STORIES] ?: defaults.showStories,
                         startSwipe = swipeActionOf(preferences[START_SWIPE]) ?: defaults.startSwipe,
                         endSwipe = swipeActionOf(preferences[END_SWIPE]) ?: defaults.endSwipe,
+                        swipeChangesFolder = preferences[SWIPE_CHANGES_FOLDER] ?: defaults.swipeChangesFolder,
                     )
                 }.distinctUntilChanged()
 
@@ -52,6 +53,9 @@ class DataStoreChatListSettingsRepository
                 it[START_SWIPE] = start.name
                 it[END_SWIPE] = end.name
             }
+
+        override suspend fun setSwipeChangesFolder(changes: Boolean): Outcome<Unit> =
+            save { it[SWIPE_CHANGES_FOLDER] = changes }
 
         private suspend fun save(change: (MutablePreferences) -> Unit): Outcome<Unit> =
             try {
@@ -68,3 +72,4 @@ private fun swipeActionOf(name: String?): SwipeAction? = SwipeAction.entries.fir
 private val SHOW_STORIES = booleanPreferencesKey("chat_list.show_stories")
 private val START_SWIPE = stringPreferencesKey("chat_list.swipe_start")
 private val END_SWIPE = stringPreferencesKey("chat_list.swipe_end")
+private val SWIPE_CHANGES_FOLDER = booleanPreferencesKey("chat_list.swipe_changes_folder")

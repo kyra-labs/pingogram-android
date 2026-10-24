@@ -93,6 +93,20 @@ class DataStoreChatListSettingsRepositoryTest {
         }
 
     @Test
+    fun `swiping changes the folder only once turned on, keeping the swipes`() =
+        runTest {
+            val repository = DataStoreChatListSettingsRepository(dataStore())
+            repository.setSwipeActions(SwipeAction.Pin, SwipeAction.Mute)
+
+            assertEquals(Outcome.Success(Unit), repository.setSwipeChangesFolder(true))
+
+            assertEquals(
+                ChatListSettings(startSwipe = SwipeAction.Pin, endSwipe = SwipeAction.Mute, swipeChangesFolder = true),
+                repository.settings.first(),
+            )
+        }
+
+    @Test
     fun `an action this version does not know reads as the default`() =
         runTest {
             val store = dataStore()

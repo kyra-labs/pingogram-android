@@ -63,7 +63,8 @@ import kotlin.math.abs
  * - **Swipes**: what Appearance → Chat list → Swipe actions picked ([LocalChatSwipes], [rowActionFor]), by default
  *   start to end marks the chat as read, or as unread with nothing unread ([startSwipeAction]), and end to start
  *   archives it, or unarchives it in the archive ([endSwipeAction]); a side set to nothing, or whose action the chat
- *   does not have (muting Saved Messages), does not swipe. Both mirror in right-to-left layouts. The
+ *   does not have (muting Saved Messages), does not swipe; while swiping changes the folder
+ *   ([ChatSwipes.changesFolder]), no row swipes, as the whole list moves. Both mirror in right-to-left layouts. The
  *   row never stays dismissed: past the threshold the action runs, with a `Confirm` haptic on Android 14 and later,
  *   and the row springs back. An archived chat then leaves the list through TDLib's update and `animateItem`; in a
  *   folder that keeps archived chats it stays, its swipe turned to unarchive. One swipe runs one action
@@ -108,7 +109,7 @@ internal fun ChatRow(
         modifier = modifier,
         enableDismissFromStartToEnd = start != null,
         enableDismissFromEndToStart = end != null,
-        gesturesEnabled = !selectionMode && (start != null || end != null),
+        gesturesEnabled = !selectionMode && !swipes.changesFolder && (start != null || end != null),
         onDismiss = rememberOnSwiped(state, item.id, start, end, onEvent),
     ) {
         ChatListItem(
