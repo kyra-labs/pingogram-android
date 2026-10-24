@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.media.story
 
 import androidx.compose.runtime.mutableFloatStateOf
+import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.coroutines.CoroutineScope
@@ -117,7 +118,7 @@ internal class StoryTimeline(
             }
 
             is TimelineTarget.Video -> {
-                if (session.hasStarted) player.resume() else player.play(target.path, VideoKind.Video)
+                if (session.hasStarted) player.resume() else player.play(PlaySource.File(target.path), VideoKind.Video)
             }
         }
         session.hasStarted = true
