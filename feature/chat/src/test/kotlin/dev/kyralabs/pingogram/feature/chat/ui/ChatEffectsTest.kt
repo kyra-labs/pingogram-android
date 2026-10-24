@@ -169,6 +169,17 @@ class ChatEffectsTest {
     }
 
     @Test
+    fun `a quiz's answer is a confirm haptic when right and a reject one when wrong`() {
+        setEffects()
+
+        effects.trySend(PollEffect.QuizAnswered(correct = true))
+        effects.trySend(PollEffect.QuizAnswered(correct = false))
+        composeRule.waitForIdle()
+
+        assertEquals(listOf(HapticFeedbackType.Confirm, HapticFeedbackType.Reject), performedHaptics)
+    }
+
+    @Test
     fun `an action that is not allowed is a snackbar`() {
         setEffects()
 

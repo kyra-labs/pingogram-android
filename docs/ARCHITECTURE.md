@@ -442,6 +442,21 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   whenever neither the system keyboard nor the emoji panel is up, unless the user put it away (`BotKeyboardState`,
   saved: the toggle, the field, the emoji button, back, a one-time keyboard's tap), which a persistent keyboard ignores
   except after a one-time tap. While an inline query shows its results (Inline bots), the keyboard steps aside.
+- **Polls** (FR-C4): `core:domain`'s `PollRepository` (`TdlibPollRepository`, `core:data`, no cache) votes
+  (`setPollAnswer`, the options' 0-based indexes in TDLib's order, `PollOption.index`; none takes the vote back), stops a
+  poll (`stopPoll`) and pages an answer's voters (`getPollVoters`, 20 a page), each on a tap of the user's. TDLib marks a
+  vote on its way at once (`pollOption.is_being_chosen`) and announces every change of a poll with `updatePoll`, which
+  names no chat: `HistoryCache` replaces the poll of every loaded message that shows it, in every window and among the
+  replied messages, also while a page loads (`HistoryChange.ReplacePoll`), so a poll forwarded into several chats stays
+  current everywhere. `Poll` carries what the UI offers: `canVote` (open, no `voteRestriction`, not voted), `canRetractVote`
+  (`allows_revoting`, never a quiz), `canGetVoters`. `feature:chat`'s `ChatPolls` (a part of `ChatViewModel`, `poll/`)
+  sends the votes, keeps the answers checked before "Vote" (by message, in the saved state, copied into their bubbles
+  only, `withPollChoices`), sends a quiz's `PollEffect.QuizAnswered` once the poll shows the answer (the `Confirm` or
+  `Reject` haptic), and holds the question before a stop (`stopPollDialog`) and the voters' sheet (`pollVotersSheet`,
+  the users named from `UserRepository`), both kept out of `ChatUiState`. "Retract vote" and "Stop poll" are message
+  actions (`ChatMessageActions`), checked against `getMessageProperties` like the others: stopping needs
+  `can_be_edited`. The bubble draws its bars with a `Modifier.Node` (`pollBar`) that animates the share in the draw
+  phase; screen readers hear the answers in the bubble's description and vote through its custom actions.
 - **ViewModels** expose a single `StateFlow<UiState>` (sealed: `Loading`, `Content`, `Error`,
   `Empty`) and accept events through plain functions. Side effects (navigation, snackbars) go
   through a `Channel<Effect>` consumed with `LaunchedEffect`. ViewModels are `@HiltViewModel`,

@@ -59,6 +59,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.Playback
 import dev.kyralabs.pingogram.feature.chat.ui.content.edgeToEdgeWidth
 import dev.kyralabs.pingogram.feature.chat.ui.content.isBare
 import dev.kyralabs.pingogram.feature.chat.ui.content.isEdgeToEdge
+import dev.kyralabs.pingogram.feature.chat.ui.poll.pollActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -237,9 +238,10 @@ internal fun BubbleRowContent(
 
 /**
  * The screen reader's custom actions of [bubble], sending their events: [replyAction], [threadAction],
- * [contentActions], [messageShortcuts], showing the original of a translated text, the buttons a bot attached
- * ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the bubble shows "+N", and the
- * selecting it, then the actions sheet, last. Cancelling the [uploads] comes first, while there are some.
+ * [contentActions], [messageShortcuts], showing the original of a translated text, voting in a poll ([pollActions]),
+ * the buttons a bot attached ([botButtonActions]), a toggle per reaction but the paid one, all reactions where the
+ * bubble shows "+N", and the selecting it, then the actions sheet, last. Cancelling the [uploads] comes first,
+ * while there are some.
  */
 @Suppress("LongParameterList") // The bubble and the states its actions depend on, and where they send events.
 private fun bubbleActions(
@@ -276,6 +278,7 @@ private fun bubbleActions(
         bubble.keyboard?.let { botButtonActions(resources, it) }.orEmpty().map { (label, event) ->
             action(label, event)
         }
+    val poll = pollActions(resources, bubble).map { (label, event) -> action(label, event) }
     val select = action(resources.getString(R.string.selection_start), SelectionEvent.Select(bubble.id))
     val reactions =
         bubble.reactions.filter { it.label != ReactionLabel.Paid }.map { chip ->
@@ -294,7 +297,7 @@ private fun bubbleActions(
             resources.getString(it.label),
             it.event,
         )
-    } + original + buttons + reactions + allReactions +
+    } + original + poll + buttons + reactions + allReactions +
         select +
         action(resources.getString(R.string.message_actions), ChatEvent.ShowMessageActions(bubble.id))
 }

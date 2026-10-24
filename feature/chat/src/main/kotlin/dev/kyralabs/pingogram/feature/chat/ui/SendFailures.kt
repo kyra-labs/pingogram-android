@@ -44,3 +44,15 @@ internal fun HapticFeedback.rejectSend(): String {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) performHapticFeedback(HapticFeedbackType.Reject)
     return ""
 }
+
+/**
+ * The haptic of a quiz's answer once Telegram took it ([PollEffect.QuizAnswered], `docs/DESIGN_SYSTEM.md` §5):
+ * `Confirm` for a [correct] one, `Reject` for a wrong one, on Android 14 and later, which have them. Returns the
+ * snackbar's text: none.
+ */
+internal fun HapticFeedback.quizAnswered(correct: Boolean): String {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        performHapticFeedback(if (correct) HapticFeedbackType.Confirm else HapticFeedbackType.Reject)
+    }
+    return ""
+}

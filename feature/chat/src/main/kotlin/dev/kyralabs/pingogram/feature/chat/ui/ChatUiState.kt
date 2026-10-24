@@ -278,6 +278,8 @@ sealed interface ChatItem {
      *   (`REQUIREMENTS.md` FR-C3); null while the bubble shows its own text.
      * @property searchMatch the words its text marks as the result the search in the chat shows (`REQUIREMENTS.md`
      *   §5.9); null for every other bubble, and while there is no search.
+     * @property pollChoices the answers checked in its poll with several answers, not sent yet (`PollEvent.Toggle`);
+     *   null for every other bubble, and while none is checked.
      */
     data class Bubble(
         val id: Long,
@@ -310,6 +312,7 @@ sealed interface ChatItem {
         val keyboard: BotKeyboard? = null,
         val translation: BubbleTranslation? = null,
         val searchMatch: MatchHighlight? = null,
+        val pollChoices: ImmutableSet<Int>? = null,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 
