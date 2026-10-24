@@ -339,6 +339,7 @@ private fun MediaPager(
             files = content.files,
             playback = content.playback?.takeIf { it.messageId == item.messageId },
             onTap = onTap,
+            onPlay = { onEvent(MediaViewerEvent.PlayPause) },
             videoSurface = videoSurface,
             modifier =
                 Modifier.pageSemantics(

@@ -110,7 +110,7 @@ class SettingsListDetailScreenshotTest {
 
     private fun row(
         @StringRes title: Int,
-    ) = composeRule.onNode(hasText(string(title)) and hasClickAction())
+    ) = composeRule.onNode(hasText(string(title)) and hasClickAction()).performScrollTo()
 
     /** The screens get their state from a background dispatcher. */
     private fun await(matcher: SemanticsMatcher) {

@@ -201,6 +201,7 @@ data class MediaCount(
  * The video or GIF of message [messageId] in the player: playing or paused as [isPlaying] says, and [showsFrame] once
  * its first frame is on the surface, which uncovers it. How far a video has played is snapshot state that [progress]
  * reads (0–1), so the position moving re-emits nothing: only what reads it in the draw or layout phase follows it.
+ * [waitsForTap] while power saving keeps it from playing by itself, until its play button is tapped.
  */
 @Stable
 data class VideoPlayback(
@@ -210,6 +211,7 @@ data class VideoPlayback(
     val progress: () -> Float,
     /** How far the player has the video, 0–1, read in the seek bar's draw phase. */
     val buffered: () -> Float = progress,
+    val waitsForTap: Boolean = false,
 )
 
 /** What the user and the screen's lifecycle do in the viewer, sent to [MediaViewerViewModel.onEvent]. */
