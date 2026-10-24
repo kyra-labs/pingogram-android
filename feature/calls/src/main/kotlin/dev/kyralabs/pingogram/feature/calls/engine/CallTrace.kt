@@ -4,8 +4,9 @@ import android.os.Build
 import android.os.Trace
 
 /**
- * Trace sections and counters of a video call's frame path (`docs/PERFORMANCE.md` §9, "Video calls"), which
- * `tools/perfetto/video-call.pbtxt` records. They cost a check of a flag while no trace records the app.
+ * Trace sections and counters of a video call's frame path and a conference call's encryption (`docs/PERFORMANCE.md`
+ * §9, "Video calls"), which `tools/perfetto/video-call.pbtxt` records. They cost a check of a flag while no trace
+ * records the app.
  */
 internal object CallTrace {
     /** NTgCalls hands a batch of frames over from its thread, through JNI, to the sinks. */
@@ -13,6 +14,12 @@ internal object CallTrace {
 
     /** A frame copied into a direct buffer and queued for its renderer. */
     const val FRAME_COPY = "callFrameCopy"
+
+    /** A conference call's frame encrypted by TDLib, on WebRTC's thread (`docs/adr/0025-conference-calls.md`). */
+    const val ENCRYPT = "callEncrypt"
+
+    /** A conference call's frame decrypted by TDLib, on WebRTC's thread. */
+    const val DECRYPT = "callDecrypt"
 
     inline fun <T> section(
         name: String,

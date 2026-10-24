@@ -76,13 +76,15 @@ the catalog's `ntgcalls = "<commit>-pingogram1"`) and their source.
 - Pingogram's NTgCalls is no longer upstream's build: each bump of `NTGCALLS_COMMIT` applies the patches again, and
   `git apply` fails the workflow where upstream changed the lines they touch.
 - A frame's trip is a JNI call, a request to TDLib and its answer, on WebRTC's encoder and decoder threads: about 50
-  audio frames a second per speaker and 30 video frames per video, each a few hundred bytes to a few kilobytes. It is
-  measured as the 1:1 frame path is (`docs/PERFORMANCE.md` §9) before conference calls ship.
+  audio frames a second per speaker and 30 video frames per video, each a few hundred bytes to a few kilobytes. Its
+  trace sections (`callEncrypt`, `callDecrypt`) are recorded as the 1:1 frame path is (`docs/PERFORMANCE.md` §9) on
+  the owner's phone before 1.0; joining by link ships in the pre-releases before that.
 - The work in Pingogram: `GroupCallRepository.createConference` / `joinConference` (`createGroupCall`,
   `joinGroupCall`), a `LinkTarget.GroupCall(link)` that opens the voice chat screen (asking before it joins, as the join
   sheet does), the verification emojis on that screen, the upgrade path in `CallManager` (`callDiscardReasonUpgradeToGroupCall`
   opening the conference, "Add people" through `inviteGroupCallParticipant`), and `messageGroupCall` in the chat and in
   Recent calls.
 - The same patching serves audio levels (ADR 0023) and the engine's log (`sendCallLog`) later, if the owner wants them.
-- Until the patched AAR is pinned, a `t.me/call/…` link stays one Pingogram does not open (`LinkTarget.Unsupported`,
-  "Open in browser"), and a one-to-one call the other side upgrades ends as hung up.
+- Shipped first: joining by a `t.me/call/…` link (`LinkTarget.GroupCall`, the voice chat screen asking "Join the
+  group call?" before it joins, the emojis under its header). Until the upgrade path is in, a one-to-one call the other
+  side upgrades ends as hung up, and invitations (`messageGroupCall`) show as unsupported messages.

@@ -81,10 +81,10 @@ material3 = "1.5.0-beta01"
 media3 = "1.11.1"
 # pytgcalls/ntgcalls commit (NTgCalls 3.0.5), the call engine (docs/adr/0015-call-media-engine.md); keep in sync with
 # .github/workflows/ntgcalls.yml → NTGCALLS_COMMIT
-ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f"
+ntgcalls = "e8ab467185017827625f664d024824947b5c5d5f-pingogram1"
 # SHA-256 of ntgcalls-<first 10 chars of the commit>.aar from SHA256SUMS.txt of that GitHub release, verified by
 # build-logic (pingogram.ntgcalls) like tdlibAarSha256; pingogram.ntgcalls.aar replaces it with a self-built AAR.
-ntgcallsAarSha256 = "18d37addf4c714e4ab1a033f1d7d19c76e982b764450585a2f96c8382d379b4f"
+ntgcallsAarSha256 = "9dd9b2fce089bcff8382930a88c377ba224e4ea09dc107063058b55a45193f2c"
 robolectric = "4.17"
 roborazzi = "1.76.0"
 # tdlib/td commit (TDLib 1.8.68); keep in sync with .github/workflows/tdlib.yml → TDLIB_COMMIT

@@ -126,6 +126,15 @@ internal object GroupCallPreviewStates {
     val microphone = GroupCallUiState.NeedsMicrophone(chat, canAsk = true)
 
     val unavailable = GroupCallUiState.Unavailable(chat, isBusy = true)
+
+    val confirmConference = GroupCallUiState.ConfirmConference
+
+    val conference =
+        connected.copy(
+            chat = GroupCallChat(chatId = 0, title = "", photo = null),
+            isConference = true,
+            emojis = persistentListOf("🐝", "🌵", "🎈", "🦊"),
+        )
 }
 
 @Composable
@@ -184,3 +193,11 @@ private fun GroupCallMicrophonePreview() = Preview(GroupCallPreviewStates.microp
 @PingogramPreviews
 @Composable
 private fun GroupCallUnavailablePreview() = Preview(GroupCallPreviewStates.unavailable)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallConfirmConferencePreview() = Preview(GroupCallPreviewStates.confirmConference)
+
+@PingogramPreviews
+@Composable
+private fun GroupCallConferencePreview() = Preview(GroupCallPreviewStates.conference)

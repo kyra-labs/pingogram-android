@@ -1,7 +1,7 @@
 # Perfetto config for a 5-minute video call (docs/PERFORMANCE.md §9, "Video calls").
 # Records the CPU time of every thread of Pingogram, its memory (RSS, anonymous, swap) once a second, the CPU
 # frequencies, the battery current and the app's own trace sections and counters (callFrames, callFrameCopy,
-# Remote.fps, Self.fps), for 5 minutes.
+# callEncrypt, callDecrypt, Remote.fps, Self.fps), for 5 minutes.
 # Run it with tools/perfetto/video-call.sh. Nothing in it reads messages, names or the call's media.
 
 buffers {

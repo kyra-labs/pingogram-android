@@ -15,9 +15,10 @@ import org.robolectric.annotation.Config
 /**
  * Goldens of the voice chat's screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): joining, connected with its
  * participants, sending the camera (and offered it), others' videos (a pinned one, one alone), sharing the screen
- * and others' screens, muted by an administrator (Raise hand), a live stream, ended, the microphone's rationale and
- * joining refused; each in light, dark, AMOLED, high contrast, right to left, a 700 dp window and 200% font scale; then
- * a phone in landscape and a live stream in picture-in-picture. Brand colors.
+ * and others' screens, muted by an administrator (Raise hand), a live stream, ended, the microphone's rationale,
+ * joining refused, a conference call's link and a conference call; each in light, dark, AMOLED, high contrast, right
+ * to left, a 700 dp window and 200% font scale; then a phone in landscape and a live stream in picture-in-picture.
+ * Brand colors.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -265,6 +266,53 @@ class GroupCallScreenshotTest {
     @Test
     @Config(fontScale = 2f)
     fun unavailableFontScale200() = capture(GroupCallPreviewStates.unavailable)
+
+    @Test
+    fun confirmConferenceLight() = capture(GroupCallPreviewStates.confirmConference)
+
+    @Test
+    fun confirmConferenceDark() = capture(GroupCallPreviewStates.confirmConference, ThemeMode.Dark)
+
+    @Test
+    fun confirmConferenceAmoled() = capture(GroupCallPreviewStates.confirmConference, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun confirmConferenceHighContrast() = capture(GroupCallPreviewStates.confirmConference, contrast = Contrast.High)
+
+    @Test
+    fun confirmConferenceRtl() =
+        capture(GroupCallPreviewStates.confirmConference, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun confirmConferenceMedium() = capture(GroupCallPreviewStates.confirmConference)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun confirmConferenceFontScale200() = capture(GroupCallPreviewStates.confirmConference)
+
+    @Test
+    fun conferenceLight() = capture(GroupCallPreviewStates.conference)
+
+    @Test
+    fun conferenceDark() = capture(GroupCallPreviewStates.conference, ThemeMode.Dark)
+
+    @Test
+    fun conferenceAmoled() = capture(GroupCallPreviewStates.conference, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun conferenceHighContrast() = capture(GroupCallPreviewStates.conference, contrast = Contrast.High)
+
+    @Test
+    fun conferenceRtl() = capture(GroupCallPreviewStates.conference, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun conferenceMedium() = capture(GroupCallPreviewStates.conference)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun conferenceFontScale200() = capture(GroupCallPreviewStates.conference)
 
     @Test
     @Config(qualifiers = "w891dp-h411dp-xxhdpi")

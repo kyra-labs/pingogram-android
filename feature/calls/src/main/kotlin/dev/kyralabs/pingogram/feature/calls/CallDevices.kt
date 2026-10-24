@@ -42,7 +42,7 @@ fun interface CallerNames {
     suspend fun name(userId: Long): String
 }
 
-/** The title of a voice chat's chat, as the system's UI, a car or a watch shows it. */
+/** The title of a voice chat's chat, as the system's UI, a car or a watch shows it; chat 0 is a conference call's. */
 fun interface ChatTitles {
     suspend fun title(chatId: Long): String
 }

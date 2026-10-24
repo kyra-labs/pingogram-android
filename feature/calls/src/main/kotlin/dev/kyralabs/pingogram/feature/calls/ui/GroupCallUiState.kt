@@ -17,6 +17,9 @@ sealed interface GroupCallUiState {
     /** No voice chat: the screen closes. */
     data object Closed : GroupCallUiState
 
+    /** A conference call's link opened the screen: it asks before it joins (`docs/adr/0025-conference-calls.md`). */
+    data object ConfirmConference : GroupCallUiState
+
     /**
      * Before joining: the microphone permission is missing, which a voice chat needs to speak. The screen says why,
      * then asks Android ([canAsk]) or, after a final refusal, offers the app's settings.
@@ -38,6 +41,9 @@ sealed interface GroupCallUiState {
     data class InCall(
         val chat: GroupCallChat,
         val stage: GroupCallStage,
+        /** A conference call (`docs/adr/0025-conference-calls.md`): no chat, and [emojis] to compare. */
+        val isConference: Boolean = false,
+        val emojis: ImmutableList<String> = persistentListOf(),
         /** "01:23" once connected. */
         val duration: String? = null,
         /** How many are in it; null while TDLib has not said. */
@@ -172,6 +178,12 @@ sealed interface GroupCallEvent {
 
     /** "Not now" before the permission request: nothing is joined. */
     data object DismissMicrophone : GroupCallEvent
+
+    /** "Join" on a conference call's link. */
+    data object JoinConference : GroupCallEvent
+
+    /** "Not now" on a conference call's link: nothing is joined, and the screen closes. */
+    data object DeclineConference : GroupCallEvent
 
     /** Turns the camera on (asking for the permission first where needed) or off. */
     data object ToggleCamera : GroupCallEvent
