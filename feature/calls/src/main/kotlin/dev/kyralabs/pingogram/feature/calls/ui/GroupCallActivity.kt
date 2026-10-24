@@ -31,6 +31,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -45,8 +46,11 @@ import javax.inject.Inject
  * chat goes on, which its notification brings back. A live stream goes on in picture-in-picture instead, with "Leave".
  */
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Android's callbacks and the window's: picture-in-picture, settings, screen capture.
 class GroupCallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: GroupCallViewModel by viewModels()
 
@@ -72,12 +76,13 @@ class GroupCallActivity : ComponentActivity() {
         CallVideoView(name = slot.name, mirror = mirror, onSink = viewModel::setSelfVideoSink, modifier = modifier)
     }
 
-    private val participantVideo: ParticipantVideo = { endpointId, modifier ->
+    private val participantVideo: ParticipantVideo = { endpointId, fit, modifier ->
         CallVideoView(
             name = "Participant $endpointId",
             mirror = false,
             onSink = { viewModel.setParticipantVideoSink(endpointId, it) },
             modifier = modifier,
+            fit = fit,
         )
     }
 
@@ -103,14 +108,12 @@ class GroupCallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
                 }
+            val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-
-                        // Voice chats do not offer screen sharing yet: their view model never asks.
-                        CallEffect.RequestScreenCapture -> Unit
-
+                        CallEffect.RequestScreenCapture -> screenCapture()
                         CallEffect.OpenSettings -> openAppSettings()
                     }
                 }
@@ -135,6 +138,8 @@ class GroupCallActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted))
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,

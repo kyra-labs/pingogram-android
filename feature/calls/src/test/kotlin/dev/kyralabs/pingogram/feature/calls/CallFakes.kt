@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.feature.calls.engine.CallSession
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallMode
 import dev.kyralabs.pingogram.feature.calls.engine.GroupCallSession
 import dev.kyralabs.pingogram.feature.calls.engine.IncomingVideo
+import dev.kyralabs.pingogram.feature.calls.engine.Presentation
 import dev.kyralabs.pingogram.feature.calls.engine.RemoteVideo
 import dev.kyralabs.pingogram.feature.calls.engine.SegmentResult
 import dev.kyralabs.pingogram.feature.calls.engine.StreamRequest
@@ -192,6 +193,32 @@ class FakeGroupCallSession(
 
     var params: String? = null
     var onHold = false
+
+    /** The presentation: whether it opens, its parameters once connected (null: none), and "closed" once stopped. */
+    var opensPresentation = true
+    var presentationParams: String? = null
+    val presentationEvents = mutableListOf<String>()
+    val endScreen = Channel<Unit>(Channel.UNLIMITED)
+    override val screenEnded: Flow<Unit> = endScreen.receiveAsFlow()
+
+    override suspend fun startPresentation(): Presentation? {
+        presentationEvents += "open"
+        return Presentation("{\"ssrc\":$PRESENTATION_SOURCE}", PRESENTATION_SOURCE).takeIf { opensPresentation }
+    }
+
+    override suspend fun connectPresentation(
+        params: String,
+        quality: VideoQuality,
+    ) {
+        presentationEvents += "connect"
+        presentationParams = params
+    }
+
+    override suspend fun stopPresentation() {
+        presentationEvents += "stop"
+        presentationParams = null
+    }
+
     var closed = false
     var videoSink: VideoFrameSink? = null
     val times = mutableListOf<Long>()
@@ -263,6 +290,7 @@ class FakeGroupCallSession(
 
     companion object {
         const val AUDIO_SOURCE = 1234
+        const val PRESENTATION_SOURCE = 5678
     }
 }
 

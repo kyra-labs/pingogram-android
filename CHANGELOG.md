@@ -20,7 +20,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
-  shares theirs, it fills the window without being cut off.
+  shares theirs, it fills the window without being cut off. Voice chats too: "Share screen" in the voice chat's
+  header shares your screen beside your camera, and others' shared screens show first among the videos.
 - Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
   turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
   opens a sheet that shows the proxy and connects through it only when you tap "Connect".

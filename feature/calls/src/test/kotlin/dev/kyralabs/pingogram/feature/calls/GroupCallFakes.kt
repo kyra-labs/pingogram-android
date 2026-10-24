@@ -121,6 +121,24 @@ class FakeGroupCallRepository : GroupCallRepository {
         return Outcome.Success(Unit)
     }
 
+    /** Each screen sharing started (its audio source) and ended (-1); what starting answers. */
+    val screenSharing = mutableListOf<Int>()
+    var screenSharingResult: Outcome<String> = Outcome.Success("{\"presentation\":{}}")
+
+    override suspend fun startScreenSharing(
+        id: Int,
+        audioSourceId: Int,
+        payload: String,
+    ): Outcome<String> {
+        screenSharing += audioSourceId
+        return screenSharingResult
+    }
+
+    override suspend fun endScreenSharing(id: Int): Outcome<Unit> {
+        screenSharing += -1
+        return Outcome.Success(Unit)
+    }
+
     override suspend fun setHandRaised(
         id: Int,
         participant: MessageSender,

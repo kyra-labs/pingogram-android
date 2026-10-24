@@ -257,6 +257,31 @@ class GroupCallViewModelTest {
         }
 
     @Test
+    fun `share screen asks Android first, shares once agreed, and stops`() =
+        runTest(dispatcher) {
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN)
+            engine.groupSessions
+                .single()
+                .state.value = CallMediaState.Connected
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+
+            viewModel.onEvent(GroupCallEvent.ToggleScreenSharing)
+            runCurrent()
+            assertEquals(listOf<CallEffect>(CallEffect.RequestScreenCapture), effects)
+
+            viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted = true))
+            runCurrent()
+            assertTrue((viewModel.uiState.value as GroupCallUiState.InCall).video.isSharingScreen)
+
+            viewModel.onEvent(GroupCallEvent.ToggleScreenSharing)
+            runCurrent()
+            assertFalse((viewModel.uiState.value as GroupCallUiState.InCall).video.isSharingScreen)
+            assertEquals(-1, repository.screenSharing.last())
+        }
+
+    @Test
     fun `no camera is offered without one on the device`() =
         runTest(dispatcher) {
             camera.hasCamera = false

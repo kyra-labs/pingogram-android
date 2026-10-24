@@ -14,10 +14,10 @@ import org.robolectric.annotation.Config
 
 /**
  * Goldens of the voice chat's screen (`docs/TESTING.md`, `docs/DESIGN_SYSTEM.md` §12): joining, connected with its
- * participants, sending the camera (and offered it), others' videos (a pinned one, one alone), muted by an
- * administrator (Raise hand), a live stream, ended, the microphone's rationale and joining refused; each in light,
- * dark, AMOLED, high contrast, right to left, a 700 dp window and 200% font scale; then a phone in landscape and a live
- * stream in picture-in-picture. Brand colors.
+ * participants, sending the camera (and offered it), others' videos (a pinned one, one alone), sharing the screen
+ * and others' screens, muted by an administrator (Raise hand), a live stream, ended, the microphone's rationale and
+ * joining refused; each in light, dark, AMOLED, high contrast, right to left, a 700 dp window and 200% font scale; then
+ * a phone in landscape and a live stream in picture-in-picture. Brand colors.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -124,6 +124,32 @@ class GroupCallScreenshotTest {
 
     @Test
     fun videoLight() = capture(GroupCallPreviewStates.video)
+
+    @Test
+    fun sharingScreenLight() = capture(GroupCallPreviewStates.sharingScreen)
+
+    @Test
+    fun sharingScreenDark() = capture(GroupCallPreviewStates.sharingScreen, ThemeMode.Dark)
+
+    @Test
+    fun sharingScreenAmoled() = capture(GroupCallPreviewStates.sharingScreen, ThemeMode.Dark, amoled = true)
+
+    @Test
+    fun sharingScreenHighContrast() = capture(GroupCallPreviewStates.sharingScreen, contrast = Contrast.High)
+
+    @Test
+    fun sharingScreenRtl() = capture(GroupCallPreviewStates.sharingScreen, layoutDirection = LayoutDirection.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun sharingScreenMedium() = capture(GroupCallPreviewStates.sharingScreen)
+
+    @Test
+    @Config(fontScale = 2f)
+    fun sharingScreenFontScale200() = capture(GroupCallPreviewStates.sharingScreen)
+
+    @Test
+    fun screensLight() = capture(GroupCallPreviewStates.screens)
 
     @Test
     fun raiseHandLight() = capture(GroupCallPreviewStates.raiseHand)
