@@ -42,6 +42,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
+import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -220,6 +222,10 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun quickReaction() = check { QuickReactionScreen(QuickReactionPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun connectedWebsites() =
+        check { ConnectedWebsitesScreen(ConnectedWebsitesPreviewStates.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }

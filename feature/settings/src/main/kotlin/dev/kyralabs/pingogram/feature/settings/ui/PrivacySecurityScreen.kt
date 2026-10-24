@@ -193,22 +193,7 @@ private fun SecuritySection(
     val numbers = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0])
     SettingsGroup(title = stringResource(R.string.settings_section_security)) {
         item { shapes ->
-            PageItem(
-                title = stringResource(R.string.settings_blocked_users),
-                summary =
-                    if (state.blockedCount == 0) {
-                        stringResource(R.string.settings_blocked_users_none)
-                    } else {
-                        pluralStringResource(
-                            R.plurals.settings_blocked_users_count,
-                            state.blockedCount,
-                            numbers.format(state.blockedCount),
-                        )
-                    },
-                icon = R.drawable.ic_block,
-                shapes = shapes,
-                onClick = { onOpen(PrivacySecurityPage.BlockedUsers) },
-            )
+            BlockedUsersItem(state.blockedCount, numbers, shapes) { onOpen(PrivacySecurityPage.BlockedUsers) }
         }
         item { shapes ->
             PageItem(
@@ -222,6 +207,15 @@ private fun SecuritySection(
                 icon = R.drawable.ic_devices,
                 shapes = shapes,
                 onClick = { onOpen(PrivacySecurityPage.ActiveSessions) },
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_websites),
+                summary = stringResource(R.string.settings_websites_summary),
+                icon = R.drawable.ic_public,
+                shapes = shapes,
+                onClick = { onOpen(PrivacySecurityPage.Websites) },
             )
         }
         item { shapes ->

@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatStatisticsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
@@ -103,6 +104,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
+import dev.kyralabs.pingogram.core.domain.repository.ConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
@@ -307,6 +309,9 @@ interface RepositoryModule {
 
     @Binds
     fun quickReactionRepository(repository: TdlibQuickReactionRepository): QuickReactionRepository
+
+    @Binds
+    fun connectedWebsiteRepository(repository: TdlibConnectedWebsiteRepository): ConnectedWebsiteRepository
 
     @Binds
     fun proxyRepository(repository: TdlibProxyRepository): ProxyRepository
