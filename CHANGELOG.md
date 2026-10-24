@@ -13,6 +13,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
   seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
   the viewer where it left off. Secret chats' videos stay in the viewer.
+- Send photos without compression: the attach preview's "Send without compression" sends photos and videos from the
+  gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
+  are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
+  long panoramas, which Telegram refuses as photos, now go as files too.
 - Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
   whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
   reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
