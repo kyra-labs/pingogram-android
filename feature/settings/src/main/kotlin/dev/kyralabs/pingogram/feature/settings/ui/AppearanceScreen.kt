@@ -115,7 +115,7 @@ internal fun AppearanceScreen(
             is AppearanceUiState.Content -> {
                 AppearanceSettingsContent(
                     state.settings,
-                    ChatsSettings(state.sendWithCtrlEnter, state.raiseToListen),
+                    ChatsSettings(state.sendKeys, state.raiseToListen),
                     onEvent,
                     AppearancePages(onOpenColorTheme, onOpenChatAppearance),
                     dynamicColorAvailable,

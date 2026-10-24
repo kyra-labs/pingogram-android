@@ -323,6 +323,8 @@ internal fun ChatAdministrationGroup(
             },
             page("actions", R.string.recent_actions, ChatInfoPage.RecentActions)
                 .takeIf { administration.canViewRecentActions },
+            page("statistics", R.string.statistics, ChatInfoPage.Statistics)
+                .takeIf { administration.canViewStatistics },
             page("links", R.string.chat_info_invite_links, ChatInfoPage.InviteLinks)
                 .takeIf { administration.canManageInviteLinks },
             administration.joinRequestCount?.let { count ->

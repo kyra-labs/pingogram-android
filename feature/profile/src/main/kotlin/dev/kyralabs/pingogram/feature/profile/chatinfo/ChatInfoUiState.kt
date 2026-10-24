@@ -108,12 +108,13 @@ data class ChatAdministration(
     val isChannel: Boolean = false,
     val joinRequestCount: Int? = null,
     val canViewRecentActions: Boolean = false,
+    val canViewStatistics: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
-                joinRequestCount == null && !canViewRecentActions
+                joinRequestCount == null && !canViewRecentActions && !canViewStatistics
 }
 
 /**
@@ -256,6 +257,9 @@ enum class ChatInfoPage {
 
     /** What administrators and members did in the last 48 hours, for supergroups and channels. */
     RecentActions,
+
+    /** The numbers and charts Telegram gives administrators of larger supergroups and channels. */
+    Statistics,
 
     /** The boosts of a channel or supergroup, read only (`REQUIREMENTS.md` FR-P5). */
     Boosts,

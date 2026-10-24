@@ -66,7 +66,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
   `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
-  `ComposerSettingsRepository`, the composer's send key, which Appearance → Chats sets). Preferences rather than Proto
+  `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Appearance → Chats and
+  handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`). Preferences rather than Proto
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
@@ -621,6 +622,13 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
     by `ChatEventFilter`s), mapped to `ChatEvent`s (who, when, a `ChatEventAction` of the kinds Pingogram words, the
     rest `Other`). `feature:profile`'s `RecentActionsRoute(chatId)` (`RecentActionsViewModel`: the chips in saved state,
     names from `UserRepository` and `ChatRepository`, once per person or chat) shows them.
+  - `ChatStatisticsRepository` (`TdlibChatStatisticsRepository`): `getChatStatistics` (`is_dark` false: the theme
+    colors the charts) into `ChatStatistics` (the period's values against the period before, the graphs, a supergroup's
+    top senders), and `getStatisticalGraph` for the graphs Telegram gives as a token. Their data is Telegram's chart JSON,
+    which `chartOf` reads with the platform's `org.json` into a `Chart` (x values, named series, line, bar or area,
+    stacked, shares of the whole). `GroupDetails.canGetStatistics` says whether the user may ask. `feature:profile`'s
+    `ChatStatisticsRoute(chatId)` (`StatisticsViewModel`: the tokens' graphs three at a time, numbers and days formatted
+    in the user's language by `StatisticsFormat`) draws them on a canvas (`StatisticsChart`), no chart library.
 
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.

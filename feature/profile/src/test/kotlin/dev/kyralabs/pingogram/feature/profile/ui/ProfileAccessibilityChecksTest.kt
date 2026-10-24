@@ -20,6 +20,8 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.requests.JoinRequestsScre
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsPreviewData
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsScreen
 import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.DiscussionPickerContent
+import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsPreviewData
+import dev.kyralabs.pingogram.feature.profile.chatinfo.stats.StatisticsScreen
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -77,6 +79,9 @@ class ProfileAccessibilityChecksTest {
 
     @Test
     fun recentActions() = check { RecentActionsScreen(RecentActionsPreviewData.content, {}, {}) }
+
+    @Test
+    fun statistics() = check { StatisticsScreen(StatisticsPreviewData.supergroup, {}, {}) }
 
     @Test
     fun transferOwnership() =
