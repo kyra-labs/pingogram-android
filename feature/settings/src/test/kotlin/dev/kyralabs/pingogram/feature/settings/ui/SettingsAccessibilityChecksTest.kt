@@ -13,6 +13,8 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.AutoDeleteScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
@@ -224,6 +226,9 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun quickReaction() = check { QuickReactionScreen(QuickReactionPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun swipeActions() = check { SwipeActionsScreen(SwipeActionsPreviewStates.content, onEvent = {}, onBack = {}) }
 
     @Test
     fun connectedWebsites() =

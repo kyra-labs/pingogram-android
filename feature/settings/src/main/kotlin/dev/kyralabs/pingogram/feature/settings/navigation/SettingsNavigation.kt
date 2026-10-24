@@ -47,6 +47,7 @@ import dev.kyralabs.pingogram.core.navigation.SettingsRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
 import dev.kyralabs.pingogram.core.navigation.StickerSetRoute
 import dev.kyralabs.pingogram.core.navigation.StickersRoute
+import dev.kyralabs.pingogram.core.navigation.SwipeActionsRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationFlowRoute
 import dev.kyralabs.pingogram.core.navigation.TwoStepVerificationRoute
 import dev.kyralabs.pingogram.core.ui.component.NoDialogWindowDim
@@ -70,6 +71,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsRoute as N
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryRoute as OpenSourceLibraryScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesRoute as OpenSourceLicensesScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingRoute as PowerSavingScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsRoute as SwipeActionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditRoute as ChatFolderEditScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersRoute as ChatFoldersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsRoute as ReactionNotificationsScreenRoute
@@ -107,7 +109,10 @@ fun NavGraphBuilder.settingsScreen(
     }
 }
 
-/** Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance and Double-tap to react. */
+/**
+ * Appearance and the pages it opens with [onOpen]: the Theme page, Chat appearance, Double-tap to react and Swipe
+ * actions.
+ */
 private fun NavGraphBuilder.appearancePages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
@@ -117,12 +122,14 @@ private fun NavGraphBuilder.appearancePages(
             onOpenColorTheme = { onOpen(ColorThemeRoute) },
             onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
             onOpenQuickReaction = { onOpen(QuickReactionRoute) },
+            onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
             onBack = onBack,
         )
     }
     settingsPage<ColorThemeRoute> { ColorThemeScreenRoute(onBack = onBack) }
     settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
     settingsPage<QuickReactionRoute> { QuickReactionScreenRoute(onBack = onBack) }
+    settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
 }
 
 /** Chat folders and the folder editor above it. */
@@ -166,9 +173,9 @@ private fun NavGraphBuilder.stickerPages(
  * Adds the settings pages pushed above the Settings tab: [EditProfileRoute], [AppearanceRoute], [ChatFoldersRoute],
  * [StickersRoute], [NotificationSettingsRoute], [DataStorageRoute], [PowerSavingRoute], [LanguageRoute],
  * [AboutRoute] and [PrivacySecurityRoute], and the ones these push above themselves, which they open with [onOpen]:
- * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute], [ChatAppearanceRoute] and [QuickReactionRoute]
- * above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet of a sticker set
- * ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
+ * [ChangePhoneNumberRoute] above Edit profile, [ColorThemeRoute], [ChatAppearanceRoute], [QuickReactionRoute] and
+ * [SwipeActionsRoute] above Appearance, [ChatFolderEditRoute] above Chat folders, [StickerSetListRoute] and the sheet
+ * of a sticker set ([StickerSetRoute], a dialog destination) above Stickers, [NotificationExceptionsRoute]
  * above Notifications, [AutoDownloadRoute], [NetworkUsageRoute] and [ProxiesRoute] above Data and storage,
  * [EditProxyRoute] above the proxies, the sheet of a proxy link ([ProxyLinkRoute], a dialog destination),
  * [PrivacySettingRoute], [BlockedUsersRoute], [ActiveSessionsRoute], [TwoStepVerificationRoute], [PasscodeLockRoute]
