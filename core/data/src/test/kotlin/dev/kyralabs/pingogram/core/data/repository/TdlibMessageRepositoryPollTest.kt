@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.PollFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -24,7 +25,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositoryPollTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     /** getChatHistory answers with [byChat]'s messages of the chat asked for. */
     private fun serve(byChat: Map<Long, List<TdApi.Message>>) =
