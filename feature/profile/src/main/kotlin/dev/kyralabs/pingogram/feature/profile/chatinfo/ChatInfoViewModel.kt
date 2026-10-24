@@ -421,6 +421,8 @@ class ChatInfoViewModel internal constructor(
                     canEditSettings = rights.canChangeInfo || info.myRole is MemberRole.Owner,
                     isChannel = info.kind == GroupKind.Channel,
                     joinRequestCount = info.pendingJoinRequests.takeIf { it > 0 && rights.canInviteUsers },
+                    // Every administrator of a supergroup or channel may read its recent actions.
+                    canViewRecentActions = info.kind != GroupKind.BasicGroup,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

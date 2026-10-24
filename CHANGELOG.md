@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Recent actions: administrators of supergroups and channels see what administrators and members did in the last 48
+  hours (messages edited, deleted or pinned, people joining, leaving, promoted or restricted, changes to the info,
+  settings and invite links, voice chats), from the info page's Administration, filtered by kind with chips.
 - Transfer ownership: the owner of a supergroup or channel makes an administrator or member the owner from their
   rights page. Pingogram first asks Telegram whether it may be done now (it needs a 2-step verification password that
   is not new, on a device logged in for a while), then asks for that password in a question that says what changes.

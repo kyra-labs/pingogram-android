@@ -107,12 +107,13 @@ data class ChatAdministration(
     val canEditSettings: Boolean = false,
     val isChannel: Boolean = false,
     val joinRequestCount: Int? = null,
+    val canViewRecentActions: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
                 bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings &&
-                joinRequestCount == null
+                joinRequestCount == null && !canViewRecentActions
 }
 
 /**
@@ -252,6 +253,9 @@ enum class ChatInfoPage {
 
     /** The people waiting for an administrator to let them join. */
     JoinRequests,
+
+    /** What administrators and members did in the last 48 hours, for supergroups and channels. */
+    RecentActions,
 
     /** The boosts of a channel or supergroup, read only (`REQUIREMENTS.md` FR-P5). */
     Boosts,
