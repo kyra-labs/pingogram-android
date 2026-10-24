@@ -33,6 +33,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
@@ -50,16 +51,18 @@ internal fun PrivacySecurityRoute(
     viewModel: PrivacySecurityViewModel = hiltViewModel(),
     contactSyncViewModel: ContactSyncSettingViewModel = hiltViewModel(),
     secretChatPreviewsViewModel: SecretChatPreviewsViewModel = hiltViewModel(),
+    phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
     val controls by contactSyncViewModel.contactSync.controls.collectAsStateWithLifecycle()
     val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
+    val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
-    LaunchedEffect(secretChatPreviewsViewModel) {
-        secretChatPreviewsViewModel.errors.collect { error ->
+    LaunchedEffect(secretChatPreviewsViewModel, phoneNumberVisibilityViewModel) {
+        merge(secretChatPreviewsViewModel.errors, phoneNumberVisibilityViewModel.errors).collect { error ->
             launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
         }
     }
@@ -84,6 +87,8 @@ internal fun PrivacySecurityRoute(
         onContactSyncChange = contactSyncViewModel::onCheckedChange,
         secretChatPreviews = secretChatPreviews,
         onSecretChatPreviewsChange = secretChatPreviewsViewModel::onCheckedChange,
+        phoneNumbersHidden = phoneNumbersHidden,
+        onPhoneNumbersHiddenChange = phoneNumberVisibilityViewModel::onCheckedChange,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -95,6 +100,8 @@ internal fun PrivacySecurityRoute(
  *   summary, on while sync is on or paused for the permission ([onContactSyncChange]);
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
+ * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
+ *   code only (`core:ui`'s `phoneNumberToShow`);
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
  * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
@@ -112,6 +119,8 @@ internal fun PrivacySecurityScreen(
     onContactSyncChange: (Boolean) -> Unit = {},
     secretChatPreviews: Boolean? = null,
     onSecretChatPreviewsChange: (Boolean) -> Unit = {},
+    phoneNumbersHidden: Boolean? = null,
+    onPhoneNumbersHiddenChange: (Boolean) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     SettingsPageScaffold(
@@ -133,6 +142,7 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
+                OnScreenSection(phoneNumbersHidden, onPhoneNumbersHiddenChange)
                 SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,

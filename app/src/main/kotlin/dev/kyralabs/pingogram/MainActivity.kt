@@ -31,6 +31,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
+import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
@@ -38,6 +39,7 @@ import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
 import dev.kyralabs.pingogram.core.ui.sticker.AnimatedStickers
 import dev.kyralabs.pingogram.core.ui.sticker.LocalAnimatedStickers
+import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.Calls
@@ -131,6 +133,10 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var calls: Calls
 
+    /** Whether phone numbers are hidden on screen ([LocalPhoneNumbersHidden], Privacy and security). */
+    @Inject
+    lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
@@ -177,6 +183,8 @@ class MainActivity : ComponentActivity() {
                 val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
                 val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
+                // Hidden until the setting is read (a few milliseconds), so a shared screen never shows a number.
+                val phoneNumbersHidden by phoneNumberVisibility.hidden.collectAsStateWithLifecycle(initialValue = true)
                 val locked = lock == LockState.Locked
                 val secureRequests = remember { SecureWindowRequests() }
                 SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
@@ -190,6 +198,7 @@ class MainActivity : ComponentActivity() {
                         LocalCallStarter provides calls,
                         // A chat's voice chat bar and its info page's voice chat row (feature:calls).
                         LocalVoiceChats provides calls,
+                        LocalPhoneNumbersHidden provides phoneNumbersHidden,
                     ) {
                         LockableApp(
                             locked = locked,

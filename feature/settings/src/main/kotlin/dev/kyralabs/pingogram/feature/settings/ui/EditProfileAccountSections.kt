@@ -16,6 +16,7 @@ import androidx.core.os.ConfigurationCompat
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.feature.settings.R
 
 // The parts of Edit profile that open pages of their own: the personal channel, and the account's phone number
@@ -33,7 +34,7 @@ internal fun PhoneNumberSection(
 ) {
     if (phoneNumber.isEmpty()) return
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0]
-    val formatted = formatPhoneNumber(phoneNumber, locale?.country.orEmpty())
+    val formatted = phoneNumberToShow(formatPhoneNumber(phoneNumber, locale?.country.orEmpty()))
     FieldGroup(title = stringResource(R.string.settings_section_profile_phone)) {
         val label = stringResource(R.string.settings_edit_profile_change_number_label, formatted.bidiIsolated())
         SegmentedListItem(

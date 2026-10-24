@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.feature.profile.ui
 
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.ui.text.LocalPhoneNumbersHidden
 import dev.kyralabs.pingogram.feature.profile.ui.preview.ProfilePreviewData
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,6 +63,10 @@ class ProfileScreenScreenshotTest {
     @Test
     fun photosScrolled() = capture(ScreenshotVariant.Light, scrolledTo = MEDIA_OF_CONTENT)
 
+    /** "Hide phone numbers" on: the number shows its calling code only. */
+    @Test
+    fun phoneNumberHidden() = capture(ScreenshotVariant.Light, numbersHidden = true)
+
     @Test
     fun error() = capture(ScreenshotVariant.Light, ProfileUiState.Error(DomainError.NotFound))
 
@@ -69,8 +75,13 @@ class ProfileScreenScreenshotTest {
         state: ProfileUiState = ProfilePreviewData.content,
         media: SharedMediaUiState = ProfilePreviewData.media,
         scrolledTo: Int = 0,
+        numbersHidden: Boolean = false,
     ) = captureRoboImage {
-        ScreenshotTheme(variant) { Screen(state, media, scrolledTo) }
+        ScreenshotTheme(variant) {
+            CompositionLocalProvider(
+                LocalPhoneNumbersHidden provides numbersHidden,
+            ) { Screen(state, media, scrolledTo) }
+        }
     }
 
     @Composable

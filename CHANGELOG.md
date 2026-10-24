@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
+  Pingogram (your account, profiles, contacts, shared contacts) with its country code only, "+44 •••• ••••••", for
+  sharing your screen or streaming. Copying and calling still use the whole number. Off by default.
 - Link previews in secret chats: off by default, and a switch in Privacy and security turns them on. Telegram's
   servers make link previews, so they would see the links sent in a secret chat.
 - Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other

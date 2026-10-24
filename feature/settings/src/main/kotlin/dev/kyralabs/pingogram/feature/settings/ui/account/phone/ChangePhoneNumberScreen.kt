@@ -70,6 +70,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.verificationCode
 import dev.kyralabs.pingogram.core.ui.time.announcedCountdownSeconds
@@ -364,9 +365,9 @@ private fun ColumnScope.DoneStep(
     StepActions(state, primary = stringResource(R.string.settings_account_flow_done), onPrimary = onDone)
 }
 
-/** A number as Telegram has it (digits), formatted for its calling code ("+44 7911 123456"). */
+/** A number as Telegram has it (digits), formatted for its calling code ("+44 7911 123456"), hidden on request. */
 @Composable
 private fun displayNumber(number: String): String {
     val locale = ConfigurationCompat.getLocales(LocalConfiguration.current)[0]
-    return formatPhoneNumber(number, locale?.country.orEmpty())
+    return phoneNumberToShow(formatPhoneNumber(number, locale?.country.orEmpty()))
 }
