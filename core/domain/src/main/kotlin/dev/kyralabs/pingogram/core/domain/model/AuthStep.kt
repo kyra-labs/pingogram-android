@@ -186,3 +186,13 @@ data class LoginCodeInfo(
 ) {
     override fun toString() = "LoginCodeInfo(type=$type, nextType=$nextType, timeoutSeconds=$timeoutSeconds)"
 }
+
+/**
+ * Where Telegram sent an email code: to [addressPattern] ("a••••@g••••.com"), [length] characters long (0: unknown).
+ */
+data class EmailCodeInfo(
+    val addressPattern: String,
+    val length: Int,
+) {
+    override fun toString() = "EmailCodeInfo(length=$length)"
+}

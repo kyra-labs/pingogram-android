@@ -206,6 +206,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
   login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
   state, never the code.
+- **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
+  its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
+  bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through
+  `PrivacyRepository`, whose page Privacy and security lists too.
+- **Login email and auto-delete** (FR-S1, Account): `core:domain`'s `LoginEmailRepository`
+  (`TdlibLoginEmailRepository`, `core:data`, no cache) reads the login email as Telegram's pattern of it
+  (`getPasswordState`'s `login_email_address_pattern`; Telegram lets an account change it only once it set one, so
+  Privacy and security shows the row only then), sets a new one (`setLoginEmailAddress`), sends its code again
+  (`resendLoginEmailAddressCode`) and checks it (`checkLoginEmailAddressCode`). `feature:settings`' `LoginEmailRoute`
+  (`LoginEmailViewModel`) runs it as Change number does, sharing its step parts (`account/FlowStepState.kt`:
+  `FlowStepState`, `StepText`, `StepActions`); the address typed is in its saved state, never the code.
+  `AccountRepository` also reads and sets the self-destruct timer of new chats (`getDefaultMessageAutoDeleteTime`,
+  `setDefaultMessageAutoDeleteTime`), which `AutoDeleteRoute` (`AutoDeleteViewModel`) offers as Telegram's choices
+  (off, a day, a week, a month, and a value another app set), saving a pick at once and taking it back on a refusal.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

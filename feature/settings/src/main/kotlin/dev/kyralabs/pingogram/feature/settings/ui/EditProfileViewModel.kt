@@ -6,11 +6,15 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
+import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
+import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UsernameCheck
 import dev.kyralabs.pingogram.core.domain.model.usernameProblem
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
+import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
@@ -23,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -35,15 +40,18 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * The Edit profile page (`REQUIREMENTS.md` FR-S1, Account): the user's photo, names, username and bio.
+ * The Edit profile page (`REQUIREMENTS.md` FR-S1, Account): the user's photo, names, username, bio and birthday.
  *
  * - **Fields**: typed text is checked as it comes against Telegram's limits (names up to 64 characters, the first one
  *   required; the bio up to TDLib's `bio_length_max`). A new username is checked for its form at once and, after
  *   [USERNAME_CHECK_DELAY] without typing, with Telegram; a check still running when the username changes again is
  *   cancelled. What was typed survives process death through the [SavedStateHandle], as does an open confirmation.
  * - **Save** sends only what changed: the username first, as it is the likeliest to be refused, then the names, then
- *   the bio. Removing the username asks first. A failure stops there, keeps what was saved so far, and shows why; a
- *   refused username shows below its field too. Once everything is saved the page leaves ([EditProfileEffect.Saved]).
+ *   the bio, then the birthday. Removing the username asks first. A failure stops there, keeps what was saved so far,
+ *   and shows why; a refused username shows below its field too. Once everything is saved the page leaves
+ *   ([EditProfileEffect.Saved]).
+ * - **Birthday**: picked or removed in its dialog, saved with the rest; who may see it ([PrivacySetting.Birthdate]) is
+ *   read once and followed through [PrivacyRepository.changes], so a change on its page shows here on return.
  * - **Back** with unsaved changes asks whether to discard them; while saving it waits.
  * - **Photo**: a picked image is copied into the upload cache, upright, without metadata and scaled down
  *   ([PickedPhotoRepository]), uploaded with its progress, and the copy deleted once TDLib answered. Leaving meanwhile
@@ -63,6 +71,7 @@ class EditProfileViewModel
         private val profileRepository: ProfileRepository,
         userRepository: UserRepository,
         private val photoRepository: PickedPhotoRepository,
+        privacyRepository: PrivacyRepository,
     ) : ViewModel() {
         private val mutableUiState = MutableStateFlow<EditProfileUiState>(EditProfileUiState.Loading)
         val uiState: StateFlow<EditProfileUiState> = mutableUiState.asStateFlow()
@@ -72,6 +81,9 @@ class EditProfileViewModel
 
         /** The latest avatar, kept for the content shown once the profile loaded. */
         private var account: ProfileAccount? = null
+
+        /** Who may see the birthday, kept as [account] is. */
+        private var birthdatePrivacy: PrivacyRules? = null
 
         private var loadJob: Job? = null
         private var usernameCheckJob: Job? = null
@@ -91,6 +103,14 @@ class EditProfileViewModel
             profileRepository.bioLengthMax
                 .onEach { max -> updateContent { it.copy(bioLengthMax = max) } }
                 .launchIn(viewModelScope)
+            privacyRepository.changes
+                .filter { it.setting == PrivacySetting.Birthdate }
+                .onEach { showBirthdatePrivacy(it.rules) }
+                .launchIn(viewModelScope)
+            viewModelScope.launch {
+                val rules = privacyRepository.rules(PrivacySetting.Birthdate)
+                if (rules is Outcome.Success && birthdatePrivacy == null) showBirthdatePrivacy(rules.value)
+            }
             load()
         }
 
@@ -104,6 +124,8 @@ class EditProfileViewModel
 
                 // Telegram's bio is one paragraph: TDLib turns line breaks into spaces, so they are typed as such.
                 is EditProfileEvent.BioChanged -> edit(KEY_BIO, event.value.replace('\n', ' ')) { copy(bio = it) }
+
+                is EditProfileEvent.BirthdateChanged -> editBirthdate(event.birthdate)
 
                 EditProfileEvent.Save -> save()
 
@@ -141,6 +163,12 @@ class EditProfileViewModel
                     lastName = savedStateHandle[KEY_LAST_NAME] ?: saved.lastName,
                     username = savedStateHandle[KEY_USERNAME] ?: saved.username,
                     bio = savedStateHandle[KEY_BIO] ?: saved.bio,
+                    birthdate =
+                        if (KEY_BIRTHDATE in savedStateHandle) {
+                            savedStateHandle.get<IntArray>(KEY_BIRTHDATE)?.toBirthdate()
+                        } else {
+                            saved.birthdate
+                        },
                 )
             val dialog =
                 savedStateHandle.get<String>(KEY_DIALOG)?.let { name ->
@@ -153,6 +181,7 @@ class EditProfileViewModel
                     fields = fields,
                     bioLengthMax = profileRepository.bioLengthMax.value,
                     dialog = dialog,
+                    birthdatePrivacy = birthdatePrivacy,
                 )
             checkUsername(fields.username, afterTyping = false)
         }
@@ -166,6 +195,18 @@ class EditProfileViewModel
             if (content.isSaving) return
             savedStateHandle[key] = value
             mutableUiState.value = content.copy(fields = content.fields.transform(value))
+        }
+
+        private fun editBirthdate(birthdate: Birthdate?) {
+            val content = content ?: return
+            if (content.isSaving) return
+            savedStateHandle[KEY_BIRTHDATE] = birthdate.toIntArray()
+            mutableUiState.value = content.copy(fields = content.fields.copy(birthdate = birthdate))
+        }
+
+        private fun showBirthdatePrivacy(rules: PrivacyRules) {
+            birthdatePrivacy = rules
+            updateContent { it.copy(birthdatePrivacy = rules) }
         }
 
         private fun editUsername(value: String) {
@@ -228,6 +269,7 @@ class EditProfileViewModel
                     ProfileChange.Username.takeIf { content.usernameChanged },
                     ProfileChange.Name.takeIf { content.nameChanged },
                     ProfileChange.Bio.takeIf { content.bioChanged },
+                    ProfileChange.Birthdate.takeIf { content.birthdateChanged },
                 )
             viewModelScope.launch {
                 for (change in changes) {
@@ -246,6 +288,10 @@ class EditProfileViewModel
 
                             ProfileChange.Bio -> {
                                 profileRepository.setBio(fields.bio.trim())
+                            }
+
+                            ProfileChange.Birthdate -> {
+                                profileRepository.setBirthdate(fields.birthdate)
                             }
                         }
                     when (outcome) {
@@ -383,6 +429,7 @@ class EditProfileViewModel
             private const val KEY_LAST_NAME = "editProfile.lastName"
             private const val KEY_USERNAME = "editProfile.username"
             private const val KEY_BIO = "editProfile.bio"
+            private const val KEY_BIRTHDATE = "editProfile.birthdate"
             private const val KEY_DIALOG = "editProfile.dialog"
         }
     }
@@ -392,6 +439,7 @@ private enum class ProfileChange {
     Username,
     Name,
     Bio,
+    Birthdate,
 }
 
 /** This content after [change] of [fields] was saved: TDLib has it as sent. */
@@ -411,10 +459,23 @@ private fun EditProfileUiState.Content.withSaved(
         ProfileChange.Bio -> {
             copy(saved = saved.copy(bio = fields.bio.trim()))
         }
+
+        ProfileChange.Birthdate -> {
+            copy(saved = saved.copy(birthdate = fields.birthdate))
+        }
     }
 
 private fun EditableProfile.toFields() =
-    ProfileFields(firstName = firstName, lastName = lastName, username = username, bio = bio)
+    ProfileFields(firstName = firstName, lastName = lastName, username = username, bio = bio, birthdate = birthdate)
+
+/** A birthday for the saved state: day, month and year (0 for none); empty for no birthday. */
+private fun Birthdate?.toIntArray(): IntArray = if (this == null) IntArray(0) else intArrayOf(day, month, year ?: 0)
+
+/** The birthday [toIntArray] saved; null for an empty array, which stands for none. */
+private fun IntArray.toBirthdate(): Birthdate? =
+    if (size == BIRTHDATE_FIELDS) Birthdate(this[0], this[1], this[2].takeIf { it > 0 }) else null
+
+private const val BIRTHDATE_FIELDS = 3
 
 private fun User.toProfileAccount() =
     ProfileAccount(

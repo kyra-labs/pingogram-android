@@ -15,6 +15,7 @@
     <string name="error_phone_number_banned">This phone number is banned from Telegram.</string>
     <string name="error_phone_number_flood">Too many login attempts for this number. Try again later.</string>
     <string name="error_phone_number_occupied">Another Telegram account already uses this number.</string>
+    <string name="error_birthdate_invalid">Telegram doesn\'t accept this date as a birthday.</string>
     <string name="error_code_invalid">Wrong code. Check it and try again.</string>
     <string name="error_code_expired">This code has expired. Request a new one.</string>
     <string name="error_password_invalid">Wrong password.</string>

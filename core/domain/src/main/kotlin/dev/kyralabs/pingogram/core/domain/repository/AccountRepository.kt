@@ -24,4 +24,13 @@ interface AccountRepository {
         reason: String,
         password: String,
     ): Outcome<Unit>
+
+    /**
+     * The self-destruct timer of the chats the user starts from now on, in seconds (0: off): Telegram sets it on each
+     * new private chat, group and channel the user creates.
+     */
+    suspend fun defaultMessageAutoDeleteTime(): Outcome<Int>
+
+    /** Sets the self-destruct timer of new chats to [seconds] (0: off); chats that exist keep theirs. */
+    suspend fun setDefaultMessageAutoDeleteTime(seconds: Int): Outcome<Unit>
 }

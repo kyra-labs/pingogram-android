@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
+import dev.kyralabs.pingogram.core.ui.text.isPlausibleEmailAddress
 import dev.kyralabs.pingogram.core.ui.time.timeLeft
 import dev.kyralabs.pingogram.core.ui.time.wholeSecondsRoundedUp
 import kotlinx.coroutines.Job

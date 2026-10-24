@@ -48,6 +48,26 @@ class TdlibAccountRepositoryTest {
         }
 
     @Test
+    fun `reads and sets the self-destruct timer of new chats`() =
+        runTest {
+            client.on(
+                TdApi.GetDefaultMessageAutoDeleteTime::class,
+                TdResult.Success(TdApi.MessageAutoDeleteTime(86_400)),
+            )
+            client.on(TdApi.SetDefaultMessageAutoDeleteTime::class, TdResult.Success(TdApi.Ok()))
+
+            assertEquals(Outcome.Success(86_400), repository.defaultMessageAutoDeleteTime())
+            assertEquals(Outcome.Success(Unit), repository.setDefaultMessageAutoDeleteTime(604_800))
+            assertEquals(
+                604_800,
+                client
+                    .sentOf<TdApi.SetDefaultMessageAutoDeleteTime>()
+                    .single()
+                    .messageAutoDeleteTime.time,
+            )
+        }
+
+    @Test
     fun `a wrong password fails as such`() =
         runTest {
             client.on(TdApi.DeleteAccount::class, TdResult.Failure(TdError(400, "PASSWORD_HASH_INVALID")))

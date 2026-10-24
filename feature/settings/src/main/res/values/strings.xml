@@ -208,6 +208,7 @@
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>
+    <string name="settings_privacy_birthdate">Birthday</string>
     <string name="settings_privacy_forwarded_messages">Forwarded messages</string>
     <string name="settings_privacy_calls">Calls</string>
     <string name="settings_privacy_chat_invites">Invitations to groups and channels</string>
@@ -321,6 +322,7 @@
     <string name="settings_privacy_phone_number_question">Who can see my phone number</string>
     <string name="settings_privacy_last_seen_question">Who can see when I was last online</string>
     <string name="settings_privacy_profile_photo_question">Who can see my profile photos</string>
+    <string name="settings_privacy_birthdate_question">Who can see my birthday</string>
     <string name="settings_privacy_forwarded_messages_question">Whose forwards of my messages link to my account</string>
     <string name="settings_privacy_calls_question">Who can call me</string>
     <string name="settings_privacy_chat_invites_question">Who can add me to groups and channels</string>
@@ -691,19 +693,60 @@
         <item quantity="other">Without a username, this code works for %1$s more hours.</item>
     </plurals>
 
+    <!-- The login email (FR-S1), a page above Privacy and security. %1$s: Telegram's pattern of an address. -->
+    <string name="settings_login_email">Login email</string>
+    <string name="settings_login_email_loading">Loading the login email</string>
+    <string name="settings_login_email_current">Your login email is %1$s.</string>
+    <string name="settings_login_email_none">This account has no login email. Telegram asks for one when you log in, if it wants one, and you can change it here after that.</string>
+    <string name="settings_login_email_intro">Telegram can send your login codes to this address instead of by SMS. To change it, Telegram sends a code to the new address.</string>
+    <string name="settings_login_email_change">Change email</string>
+    <string name="settings_login_email_new">Enter the new address. Telegram sends a code to it.</string>
+    <string name="settings_login_email_label">Email address</string>
+    <string name="settings_login_email_code_sent">We sent a code to %1$s.</string>
+    <string name="settings_login_email_resend">Send the code again</string>
+    <string name="settings_login_email_resent">A new code is on its way</string>
+    <string name="settings_login_email_done_title">Login email changed</string>
+    <string name="settings_login_email_done_text">Telegram sends login codes to %1$s from now on.</string>
+    <!-- The self-destruct timer of new chats (FR-S1), a page above Privacy and security. -->
+    <string name="settings_auto_delete">Auto-delete messages</string>
+    <string name="settings_auto_delete_loading">Loading the auto-delete timer</string>
+    <string name="settings_auto_delete_section">Delete messages in new chats after</string>
+    <string name="settings_auto_delete_footer">Chats you start from now on get this timer: their messages are deleted for everyone once it runs out. Chats you have already keep theirs, which you can change in each chat.</string>
+    <string name="settings_auto_delete_off">Off</string>
+    <string name="settings_auto_delete_day">1 day</string>
+    <string name="settings_auto_delete_week">1 week</string>
+    <string name="settings_auto_delete_month">1 month</string>
+    <plurals name="settings_auto_delete_days">
+        <item quantity="one">%s day</item>
+        <item quantity="other">%s days</item>
+    </plurals>
+    <!-- The progress of a request in the account's flows (Change number, Login email), for screen readers. -->
+    <string name="settings_account_flow_busy">Waiting for Telegram</string>
     <!-- Changing the account's phone number (FR-S1), a page above Edit profile. %1$s: a phone number. -->
     <string name="settings_change_number_title">Change number</string>
     <string name="settings_change_number_current">Your number is %1$s.</string>
     <string name="settings_change_number_intro">Your account, chats, contacts and media stay as they are and move to the new number. Telegram sends a code to the new number to check that it\'s yours. Who can see your number stays as your privacy settings say.</string>
     <string name="settings_change_number_start">Change number</string>
     <string name="settings_change_number_new">Enter your new number. Telegram sends it a code.</string>
-    <string name="settings_change_number_next">Next</string>
+    <string name="settings_account_flow_next">Next</string>
     <string name="settings_change_number_wrong_number">Wrong number?</string>
-    <string name="settings_change_number_busy">Waiting for Telegram</string>
     <string name="settings_change_number_done_title">Number changed</string>
     <string name="settings_change_number_done_text">Your number is now %1$s.</string>
-    <string name="settings_change_number_done">Done</string>
+    <string name="settings_account_flow_done">Done</string>
     <!-- Edit profile's phone number group: its header, and the button that opens Change number. -->
+    <string name="settings_section_profile_birthday">Birthday</string>
+    <string name="settings_edit_profile_birthday_none">No birthday</string>
+    <string name="settings_edit_profile_birthday_add">Add</string>
+    <string name="settings_edit_profile_birthday_change">Change</string>
+    <!-- For screen readers: the "Add" button of the birthday row. -->
+    <string name="settings_edit_profile_birthday_add_label">Add birthday</string>
+    <!-- For screen readers: the "Change" button of the birthday row; %1$s is the birthday, "December 10". -->
+    <string name="settings_edit_profile_birthday_change_label">Change birthday %1$s</string>
+    <string name="settings_edit_profile_birthday_privacy">Who can see it</string>
+    <string name="settings_edit_profile_birthday_show_year">Show the year</string>
+    <string name="settings_edit_profile_birthday_remove">Remove</string>
+    <string name="settings_edit_profile_birthday_cancel">Cancel</string>
+    <string name="settings_edit_profile_birthday_done">Done</string>
     <string name="settings_section_profile_phone">Phone number</string>
     <string name="settings_edit_profile_change_number">Change</string>
     <!-- The same button for screen readers: %1$s the phone number. -->

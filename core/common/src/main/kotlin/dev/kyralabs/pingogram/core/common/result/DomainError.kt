@@ -54,6 +54,9 @@ sealed interface DomainError {
     /** Another account has the number (`PHONE_NUMBER_OCCUPIED`), when changing the account's number to it. */
     data object PhoneNumberOccupied : DomainError
 
+    /** Telegram does not take the date as a birthday (`BIRTHDAY_INVALID`): in the future, or too long ago. */
+    data object BirthdateInvalid : DomainError
+
     /** A login, email or password recovery code is wrong or empty. */
     data object CodeInvalid : DomainError
 

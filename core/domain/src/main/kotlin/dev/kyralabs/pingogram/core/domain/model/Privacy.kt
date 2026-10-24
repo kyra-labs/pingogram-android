@@ -2,7 +2,7 @@ package dev.kyralabs.pingogram.core.domain.model
 
 /**
  * A privacy setting of the account (`REQUIREMENTS.md` FR-S1, Privacy and security): who can see or do something. The
- * ones Pingogram shows, in its order. TDLib has more (bio, birthdate, finding by phone number, peer-to-peer calls,
+ * ones Pingogram shows, in its order. TDLib has more (bio, finding by phone number, peer-to-peer calls,
  * gifts, paid messages); Pingogram leaves them as they are.
  */
 enum class PrivacySetting {
@@ -14,6 +14,9 @@ enum class PrivacySetting {
 
     /** Who can see the profile photos. */
     ProfilePhoto,
+
+    /** Who can see the birthday, where the user set one (Edit profile). */
+    Birthdate,
 
     /** Whether messages forwarded from the user link to their account. */
     ForwardedMessages,

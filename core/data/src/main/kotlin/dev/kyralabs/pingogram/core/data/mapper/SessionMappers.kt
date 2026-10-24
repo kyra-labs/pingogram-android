@@ -76,4 +76,5 @@ internal fun TdApi.PasswordState.toTwoStepVerificationState() =
         pendingRecoveryEmailPattern = recoveryEmailAddressCodeInfo?.emailAddressPattern?.takeIf { it.isNotBlank() },
         pendingResetDate = pendingResetDate.takeIf { it > 0 }?.toLong(),
         passwordHint = passwordHint.orEmpty(),
+        loginEmailPattern = loginEmailAddressPattern?.takeIf { it.isNotBlank() },
     )

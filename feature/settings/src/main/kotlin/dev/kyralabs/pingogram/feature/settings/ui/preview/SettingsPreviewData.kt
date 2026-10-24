@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.preview
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
+import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
@@ -120,6 +121,7 @@ internal object SettingsPreviewData {
                     PrivacySetting.PhoneNumber to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.LastSeen to contactsWithExceptions,
                     PrivacySetting.ProfilePhoto to PrivacyRules(PrivacyChoice.Everybody),
+                    PrivacySetting.Birthdate to PrivacyRules(PrivacyChoice.Contacts),
                     PrivacySetting.ForwardedMessages to PrivacyRules(PrivacyChoice.Everybody),
                     PrivacySetting.Calls to PrivacyRules(PrivacyChoice.Nobody),
                     PrivacySetting.ChatInvites to PrivacyRules(PrivacyChoice.Contacts),
@@ -129,6 +131,8 @@ internal object SettingsPreviewData {
             sessionCount = 4,
             twoStepVerification =
                 TwoStepVerificationSummary(UiText.resource(R.string.settings_two_step_verification_on_recovery_email)),
+            loginEmailPattern = "a****@e******.org",
+            defaultAutoDeleteSeconds = 604_800,
         )
 
     val twoStepOn = TwoStepVerificationUiState.Content(hasPassword = true, hasRecoveryEmail = true)
@@ -270,13 +274,20 @@ internal object SettingsPreviewData {
     // Edit profile
 
     private val savedProfile =
-        ProfileFields(firstName = "Ada", lastName = "Lovelace", username = "ada", bio = "Poetical scientist.")
+        ProfileFields(
+            firstName = "Ada",
+            lastName = "Lovelace",
+            username = "ada",
+            bio = "Poetical scientist.",
+            birthdate = Birthdate(day = 10, month = 12, year = 1990),
+        )
 
     /** The profile as TDLib has it, nothing changed yet; the avatar shows its placeholder, as in [account]. */
     val editProfile =
         EditProfileUiState.Content(
             account = ProfileAccount(account.userId, account.name, photo = null, phoneNumber = "447911123456"),
             saved = savedProfile,
+            birthdatePrivacy = PrivacyRules(PrivacyChoice.Contacts),
         )
 
     /**

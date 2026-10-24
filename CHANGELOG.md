@@ -64,6 +64,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   Telegram uses for it. Tap one to send it; touch and hold a saved one to remove it.
 - Change number: Edit profile shows your phone number with "Change", which moves your account to a new number with
   the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
+- Birthday: Edit profile adds, changes or removes your birthday, with or without its year, and shows who can see it;
+  "Birthday" joins the privacy settings in Privacy and security.
+- Login email: Privacy and security → Account shows the email Telegram can send your login codes to, and changes it
+  with a code sent to the new address.
+- Auto-delete messages: Privacy and security → Account sets a timer for the chats you start from then on (off, a day,
+  a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,

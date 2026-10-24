@@ -19,6 +19,8 @@ data class TwoStepVerificationState(
     val pendingRecoveryEmailPattern: String? = null,
     val pendingResetDate: Long? = null,
     val passwordHint: String = "",
+    /** Telegram's pattern of the login email ("a••••@g••••.com"), or null when the account has none. */
+    val loginEmailPattern: String? = null,
 ) {
     override fun toString() =
         "TwoStepVerificationState(hasPassword=$hasPassword, hasRecoveryEmail=$hasRecoveryEmail, " +

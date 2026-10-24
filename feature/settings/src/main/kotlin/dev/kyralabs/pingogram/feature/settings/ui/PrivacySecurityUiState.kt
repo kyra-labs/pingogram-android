@@ -34,6 +34,10 @@ sealed interface PrivacySecurityUiState {
         val twoStepVerification: TwoStepVerificationSummary,
         val passcodeLock: Boolean = false,
         val accountTtlDays: Int = DEFAULT_ACCOUNT_TTL_DAYS,
+        /** Telegram's pattern of the login email, or null when the account has none. */
+        val loginEmailPattern: String? = null,
+        /** The self-destruct timer of new chats, in seconds (0: off). */
+        val defaultAutoDeleteSeconds: Int = 0,
     ) : PrivacySecurityUiState
 }
 
@@ -75,6 +79,10 @@ sealed interface PrivacySecurityPage {
     data object PasscodeLock : PrivacySecurityPage
 
     data object DeleteAccount : PrivacySecurityPage
+
+    data object LoginEmail : PrivacySecurityPage
+
+    data object AutoDelete : PrivacySecurityPage
 }
 
 /** Telegram's default period before it deletes an unused account: 6 months. */

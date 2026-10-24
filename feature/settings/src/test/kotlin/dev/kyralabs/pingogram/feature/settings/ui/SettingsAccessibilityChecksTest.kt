@@ -8,10 +8,13 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.autodelete.AutoDeleteScreen
+import dev.kyralabs.pingogram.feature.settings.ui.account.email.LoginEmailScreen
 import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumberScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
@@ -82,6 +85,18 @@ class SettingsAccessibilityChecksTest {
     @Test
     fun changePhoneNumberCode() =
         check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.code, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun loginEmailAddress() =
+        check { LoginEmailScreen(state = AccountPagePreviewStates.loginEmailAddress, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun loginEmailCode() =
+        check { LoginEmailScreen(state = AccountPagePreviewStates.loginEmailCode, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun autoDelete() =
+        check { AutoDeleteScreen(state = AccountPagePreviewStates.autoDelete, onEvent = {}, onBack = {}) }
 
     @Test
     fun deleteAccount() =
