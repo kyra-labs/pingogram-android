@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Contact joined Telegram: a switch in Settings → Notifications turns off the message Telegram sends when one of your
+  contacts joins. It belongs to your Telegram account, so your other apps follow it.
 - Websites: Privacy and security → Websites lists the sites you logged in to with Telegram, with the bot, browser and
   where and when each was last used, and logs one or all of them out (each asks first).
 - Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →

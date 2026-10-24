@@ -1137,4 +1137,6 @@
     <string name="settings_website_dialog_title">Log out of this website?</string>
     <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
     <string name="settings_website_parts">%1$s · %2$s</string>
+    <string name="settings_contact_joined">Contact joined Telegram</string>
+    <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
 </resources>

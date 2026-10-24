@@ -101,6 +101,37 @@ internal fun NotificationSettingsRoute(
     )
 }
 
+/** A group per kind of chat once their settings are read, or why they are not. */
+@Composable
+private fun ScopeGroups(
+    state: NotificationSettingsUiState,
+    onEvent: (NotificationSettingsEvent) -> Unit,
+    onOpen: (NotificationSettingsPage) -> Unit,
+) {
+    when (val scopes = state.scopes) {
+        ScopeSettingsState.Loading -> {
+            SettingsLoading(stringResource(R.string.settings_notifications_loading))
+        }
+
+        is ScopeSettingsState.Error -> {
+            SettingsError(scopes.error, onRetry = { onEvent(NotificationSettingsEvent.Retry) })
+        }
+
+        is ScopeSettingsState.Content -> {
+            for (scope in NotificationScope.entries) {
+                val settings = scopes.settings[scope] ?: continue
+                ScopeGroup(
+                    scope = scope,
+                    settings = settings,
+                    channelBlocked = scope in state.blockedChannels,
+                    onEvent = onEvent,
+                    onOpenExceptions = { onOpen(NotificationSettingsPage.Exceptions(scope)) },
+                )
+            }
+        }
+    }
+}
+
 /**
  * Notifications (`REQUIREMENTS.md` FR-S1, FR-N1; `docs/DESIGN_SYSTEM.md` §6, "Settings rows"):
  * - when Android shows none of Pingogram's notifications, a banner first that turns them on ([NotificationsOffItem]);
@@ -133,29 +164,12 @@ internal fun NotificationSettingsScreen(
                 }
             }
         }
-        when (val scopes = state.scopes) {
-            ScopeSettingsState.Loading -> {
-                SettingsLoading(stringResource(R.string.settings_notifications_loading))
-            }
-
-            is ScopeSettingsState.Error -> {
-                SettingsError(scopes.error, onRetry = { onEvent(NotificationSettingsEvent.Retry) })
-            }
-
-            is ScopeSettingsState.Content -> {
-                for (scope in NotificationScope.entries) {
-                    val settings = scopes.settings[scope] ?: continue
-                    ScopeGroup(
-                        scope = scope,
-                        settings = settings,
-                        channelBlocked = scope in state.blockedChannels,
-                        onEvent = onEvent,
-                        onOpenExceptions = { onOpen(NotificationSettingsPage.Exceptions(scope)) },
-                    )
-                }
-            }
-        }
-        ReactionsGroup(onClick = { onOpen(NotificationSettingsPage.Reactions) })
+        ScopeGroups(state, onEvent, onOpen)
+        ReactionsGroup(
+            contactJoined = state.contactJoined,
+            onOpenReactions = { onOpen(NotificationSettingsPage.Reactions) },
+            onContactJoinedChange = { onEvent(NotificationSettingsEvent.SetContactJoined(it)) },
+        )
         if (state.isKeepConnectedOffered) {
             KeepConnectedGroup(
                 enabled = state.keepConnected,
