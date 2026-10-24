@@ -1,9 +1,11 @@
 package dev.kyralabs.pingogram.feature.chat.ui.content
 
 import androidx.annotation.StringRes
+import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.PollOption
 import dev.kyralabs.pingogram.core.domain.model.PollType
+import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.feature.chat.R
 
 /** The line under a poll's question that says what kind of poll it is, or that it is closed. */
@@ -60,3 +62,52 @@ internal fun pollShare(option: PollOption): Float =
     option.votePercentage.coerceIn(0, MAX_PERCENT) / MAX_PERCENT.toFloat()
 
 private const val MAX_PERCENT = 100
+
+/**
+ * Whether the poll shows its results rather than the answers to vote for: once the user may see them, unless they can
+ * still vote (the poll's creator, before voting) or their vote is on its way.
+ */
+internal val Poll.showsResults: Boolean get() = canSeeResults && !canVote && !isVoting
+
+/** Whether the results offer "View votes": a public poll whose voters TDLib lists, someone having voted. */
+internal val Poll.showsVoters: Boolean
+    get() = showsResults && !isAnonymous && canGetVoters && totalVoterCount > 0
+
+/**
+ * Why the user cannot vote, while the poll shows no results; null where they can, once it shows its results, or once
+ * it is closed ("Final results" says so).
+ */
+@StringRes
+internal fun pollRestriction(poll: Poll): Int? {
+    if (poll.showsResults || poll.isClosed) return null
+    return when (poll.voteRestriction) {
+        null, PollVoteRestriction.Closed -> null
+        is PollVoteRestriction.MembershipRequired -> R.string.poll_restricted_members
+        is PollVoteRestriction.CountryRestricted -> R.string.poll_restricted_country
+        PollVoteRestriction.Scheduled, PollVoteRestriction.NotSent -> R.string.poll_restricted_scheduled
+        PollVoteRestriction.Other -> R.string.poll_restricted_other
+    }
+}
+
+/** A quiz's explanation, once the user answered it or it closed; null before, for polls and when there is none. */
+internal fun pollExplanation(poll: Poll): FormattedText? =
+    (poll.type as? PollType.Quiz)?.explanation?.takeIf { it.text.isNotEmpty() && (poll.hasVoted || poll.isClosed) }
+
+/** What a tap in a poll asks for, which the bubble turns into its message's event. */
+internal sealed interface PollAction {
+    /** Vote for answer [optionIndex] (`PollOption.index`) at once: a poll with one answer per voter. */
+    data class Vote(
+        val optionIndex: Int,
+    ) : PollAction
+
+    /** Check or uncheck answer [optionIndex] of a poll with several answers. */
+    data class Toggle(
+        val optionIndex: Int,
+    ) : PollAction
+
+    /** Send the checked answers. */
+    data object Submit : PollAction
+
+    /** Open the voters' sheet. */
+    data object ShowVoters : PollAction
+}

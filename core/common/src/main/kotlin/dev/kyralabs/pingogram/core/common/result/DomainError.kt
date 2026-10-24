@@ -202,4 +202,9 @@ sealed interface DomainError {
 
     /** The other person's app is too old for calls with this one (`PARTICIPANT_VERSION_OUTDATED`). */
     data object CallPeerOutdated : DomainError
+
+    // Polls (REQUIREMENTS.md FR-C4).
+
+    /** The poll was closed meanwhile: no one may vote in it or change a vote (`MESSAGE_POLL_CLOSED`). */
+    data object PollClosed : DomainError
 }

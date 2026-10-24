@@ -198,7 +198,7 @@ internal fun ConversationRoute(
  * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
  * once it is refused, and say to hold the button or that recording failed.
  * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
- * (`docs/DESIGN_SYSTEM.md` §5).
+ * (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm` (right) or `Reject` (wrong).
  */
 @Suppress(
     // One branch per effect, all in one place: the compiler sees none is missed.
@@ -282,6 +282,10 @@ internal fun ChatEffects(
 
                     ChatEffect.SendFailed -> {
                         haptics.rejectSend()
+                    }
+
+                    is PollEffect.QuizAnswered -> {
+                        haptics.quizAnswered(effect.correct)
                     }
                 }
             if (message.isNotEmpty()) {

@@ -102,6 +102,8 @@ import androidx.compose.ui.unit.dp
  *   whatever the colors of its edge pixels.
  * @property pinnedIndicator the width of the pinned messages bar's segments, one per pinned message, that show which
  *   one the bar shows.
+ * @property pollBar the thickness of the bar under a poll's answer that shows its share of the votes, as Material's
+ *   linear progress indicator.
  */
 @Immutable
 data class PingogramSizes(
@@ -163,6 +165,7 @@ data class PingogramSizes(
     val leadingIconContainer: Dp = 40.dp,
     val keyImageOutline: Dp = 2.dp,
     val pinnedIndicator: Dp = 3.dp,
+    val pollBar: Dp = 4.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.ui.sticker.CustomEmojiRenderer
 import dev.kyralabs.pingogram.core.ui.sticker.LocalCustomEmoji
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.content.ContentPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
@@ -153,6 +154,22 @@ class ChatRecompositionTest {
     }
 
     @Test
+    fun `new votes in a poll compose only its bubble, once, while its bars animate in the draw phase`() {
+        val before =
+            messages(MESSAGES).withNewest(pollBubble(MESSAGES + 2L, votes = 12)).withNewest(
+                pollBubble(MESSAGES + 1L, votes = 30),
+            )
+        setScreen(before)
+
+        state = before.replacing(pollBubble(MESSAGES + 1L, votes = 50))
+        repeat(SETTLE_FRAMES) { frame() }
+
+        val functions = counter.recomposedOwnFunctions
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith(".MessageBubbleRow") })
+        assertEquals(functions.toString(), 1, functions.count { it.endsWith("MessagePollKt.MessagePoll") })
+    }
+
+    @Test
     fun `someone starting to type composes the top bar's title and none of the bubbles`() {
         val before = messages(MESSAGES)
         setScreen(before)
@@ -258,6 +275,28 @@ class ChatRecompositionTest {
             reactions = if (id % 5 == 0L) ChatPreviewData.reactions(thumbsUp, heart) else persistentListOf(),
         )
 
+    /** A public poll's results with [votes] for its second answer, as message [id]. */
+    private fun pollBubble(
+        id: Long,
+        votes: Int,
+    ): ChatItem.Bubble {
+        val content = ContentPreviewData.poll(voted = true, publicVoters = true)
+        val total = content.poll.totalVoterCount - content.poll.options[1].voterCount + votes
+        val options =
+            content.poll.options.map { option ->
+                val count = if (option.index == 1) votes else option.voterCount
+                option.copy(voterCount = count, votePercentage = count * PERCENT / total)
+            }
+        val poll = content.copy(poll = content.poll.copy(options = options.toImmutableList(), totalVoterCount = total))
+        return ChatPreviewData.bubble(
+            id = id,
+            text = "",
+            time = "9:41 AM",
+            sender = UiText.Plain("Ada"),
+            content = poll,
+        )
+    }
+
     private fun ChatItem.Bubble.withCustomEmoji(): ChatItem.Bubble =
         copy(
             text = if (id % 3 == 0L) CustomEmojiFakes.text("${text.text} ⭐", "⭐" to CustomEmojiFakes.STAR) else text,
@@ -287,6 +326,7 @@ class ChatRecompositionTest {
     private companion object {
         const val MESSAGES = 200
         const val RUN = 3
+        const val PERCENT = 100
         const val ENTRIES_ON_SCREEN = 10
 
         const val SCROLL_FRAMES = 120
@@ -321,6 +361,7 @@ class ChatRecompositionTest {
                 "BubblePartsKt",
                 "BubbleMetaKt",
                 "MessageContentBodyKt",
+                "MessagePollKt",
                 "ChatPillsKt",
                 "SponsoredMessageCardKt",
             )

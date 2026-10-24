@@ -8,7 +8,9 @@ import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
+import dev.kyralabs.pingogram.core.domain.model.Poll
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -55,6 +57,8 @@ import kotlinx.coroutines.launch
  *   deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is
  *   forwarded, selected, reported, saved and deleted, and its failed items resent, as a whole. Selection mode deletes
  *   its messages through [askDelete], and ends through [onSelectionDeleted] once they go.
+ * - **Polls**: taking a vote back and stopping a poll (after its question) go to [onRetractVote] and [onStopPoll]
+ *   (`ChatPolls`).
  * - **Reactions** ([toggleReaction]), from the quick row, the picker or a bubble, go on or come off the message as the
  *   user had chosen them, without asking: TDLib refuses a reaction it does not offer.
  * - Failures go out as [ChatEffect.ShowError] snackbars.
@@ -76,6 +80,8 @@ internal class ChatMessageActions(
     private val onSave: (List<Message>) -> Unit = {},
     private val onSelectionDeleted: () -> Unit = {},
     private val translationAction: suspend (Message) -> MessageAction? = { null },
+    private val onRetractVote: (messageId: Long) -> Unit = {},
+    private val onStopPoll: (messageId: Long) -> Unit = {},
 ) {
     private val mutableSheet = MutableStateFlow<MessageActionsSheet?>(null)
     private val mutableDeleteDialog = MutableStateFlow<DeleteMessagesDialog?>(null)
@@ -176,6 +182,12 @@ internal class ChatMessageActions(
 
     fun unpin(messageId: Long) =
         act(messageId, MessageAction.Unpin) { _, _, _ -> request { repository.unpin(chatId, messageId) } }
+
+    /** Takes the user's vote in the poll of message [messageId] back, through [onRetractVote]. */
+    fun retractVote(messageId: Long) = act(messageId, MessageAction.RetractVote) { _, _, _ -> onRetractVote(messageId) }
+
+    /** Asks before stopping the poll of message [messageId], through [onStopPoll]. */
+    fun stopPoll(messageId: Long) = act(messageId, MessageAction.StopPoll) { _, _, _ -> onStopPoll(messageId) }
 
     /** Asks before deleting message [messageId], an album's every item, for whom TDLib allows. */
     fun delete(messageId: Long) =
@@ -405,9 +417,26 @@ internal fun ActionContext.actionsOf(
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
         if (properties.canBeForwarded) add(MessageAction.Forward)
         if (properties.canBeEdited && canWrite && message.editTarget != null) add(MessageAction.Edit)
+        addAll(pollActions(message, properties))
         if (properties.canBePinned) addAll(pinActions(message))
         addAll(laterActions(message, properties))
     }
+
+/**
+ * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), and stopping an open poll
+ * where TDLib lets the user edit the message (td_api.tl: `stopPoll` needs `can_be_edited`), which only its author and
+ * the chat's editors can.
+ */
+private fun pollActions(
+    message: Message,
+    properties: MessageProperties,
+): List<MessageAction> {
+    val poll = (message.content as? MessageContent.Poll)?.poll ?: return emptyList()
+    return listOfNotNull(
+        MessageAction.RetractVote.takeIf { poll.canRetractVote },
+        MessageAction.StopPoll.takeIf { properties.canBeEdited && !poll.isClosed },
+    )
+}
 
 /** Saving [message]'s files where the chat lets it be saved, selecting, reporting and deleting where TDLib allows. */
 private fun ActionContext.laterActions(

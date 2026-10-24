@@ -27,6 +27,7 @@ import coil3.request.ImageRequest
 import dev.kyralabs.pingogram.core.domain.model.ExpiredMedia
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
+import dev.kyralabs.pingogram.core.domain.model.PollVoteRestriction
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.ui.image.TdlibFileImage
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -35,6 +36,7 @@ import dev.kyralabs.pingogram.core.ui.theme.BubbleColors
 import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.ui.MediaDownloads
+import kotlinx.collections.immutable.persistentSetOf
 import java.io.File
 
 /** Which bubbles a [ContentSample] is shown in. */
@@ -67,7 +69,9 @@ internal class ContentSample(
  * for a tap on its download button, albums of 2, 3, 4, 7 and 10 (3 also waiting for taps),
  * video, GIF, stickers (still, animated, and one without an emoji still loading), voice messages idle, playing and
  * downloading, a video message, music, files in their three download states, location, venue, contact, polls before
- * and after voting, a quiz, a closed poll, a die, an animated emoji, game and invoice, story and expired media.
+ * and after voting, a quiz answered right and wrong, a closed poll, answers checked before "Vote" (a vote on its
+ * way is in `PollScreenshotTest`, whose clock holds its loading indicator still), a public poll's results, a poll the
+ * user may not vote in, a die, an animated emoji, game and invoice, story and expired media.
  */
 internal val ContentSamples: List<ContentSample> =
     listOf(
@@ -192,6 +196,22 @@ internal val ContentSamples: List<ContentSample> =
         },
         ContentSample("pollClosed", SampleBubbles.Both) { colors, outgoing ->
             MessagePoll(ContentPreviewData.poll(voted = outgoing, closed = true), colors = colors)
+        },
+        ContentSample("pollChecked", SampleBubbles.Both) { colors, _ ->
+            MessagePoll(
+                ContentPreviewData.poll(voted = false, multipleAnswers = true),
+                colors = colors,
+                choices = persistentSetOf(1, 2),
+            )
+        },
+        ContentSample("pollPublicResults", SampleBubbles.Both) { colors, _ ->
+            MessagePoll(ContentPreviewData.poll(voted = true, publicVoters = true), colors = colors)
+        },
+        ContentSample("pollRestricted", SampleBubbles.Both) { colors, _ ->
+            MessagePoll(
+                ContentPreviewData.poll(voted = false, restriction = PollVoteRestriction.MembershipRequired(1)),
+                colors = colors,
+            )
         },
         ContentSample("dice", SampleBubbles.None) { _, _ ->
             MessageDice(MessageContent.Dice(emoji = "🎲", value = DICE_VALUE))
