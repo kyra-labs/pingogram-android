@@ -5,6 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
+import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationRepository
@@ -13,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
+import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
@@ -41,6 +43,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCustomEmojiRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
@@ -88,6 +91,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
+import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
@@ -117,6 +121,7 @@ import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
+import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
@@ -138,6 +143,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PersonalChannelRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PickedPhotoRepository
 import dev.kyralabs.pingogram.core.domain.repository.PinnedMessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
@@ -188,6 +194,9 @@ interface RepositoryModule {
 
     @Binds
     fun fileRepository(repository: TdlibFileRepository): FileRepository
+
+    @Binds
+    fun fileStreamRepository(repository: TdlibFileStreamRepository): FileStreamRepository
 
     @Binds
     fun transferRepository(repository: TdlibTransferRepository): TransferRepository
@@ -392,6 +401,12 @@ interface RepositoryModule {
 
     @Binds
     fun autoDownloadPolicy(policy: DefaultAutoDownloadPolicy): AutoDownloadPolicy
+
+    @Binds
+    fun batterySaverRepository(repository: AndroidBatterySaverRepository): BatterySaverRepository
+
+    @Binds
+    fun powerSavingPolicy(policy: DefaultPowerSavingPolicy): PowerSavingPolicy
 
     @Binds
     fun linkRepository(repository: TdlibLinkRepository): LinkRepository

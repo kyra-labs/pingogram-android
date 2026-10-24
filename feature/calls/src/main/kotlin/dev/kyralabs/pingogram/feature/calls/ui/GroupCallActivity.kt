@@ -30,10 +30,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -49,6 +51,8 @@ import javax.inject.Inject
 @Suppress("TooManyFunctions") // Android's callbacks and the window's: picture-in-picture, settings, screen capture.
 class GroupCallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject lateinit var powerSaving: PowerSavingPolicy
 
     @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
@@ -92,8 +96,13 @@ class GroupCallActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, backToPictureInPicture)
         val appearance =
             appearanceRepository.appearance.stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), null)
+        val stillAnimations =
+            powerSaving.inEffect
+                .map { it.stillCalls }
+                .stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), false)
         setContent {
             val settings by appearance.collectAsStateWithLifecycle()
+            val still by stillAnimations.collectAsStateWithLifecycle()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val permissions =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
@@ -122,7 +131,7 @@ class GroupCallActivity : ComponentActivity() {
             val watching = (state as? GroupCallUiState.InCall)?.let { it.watches() && it.hasControls } == true
             LaunchedEffect(watching) { updatePictureInPicture(watching) }
             settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings) {
+                CallTheme(appearanceSettings, stillAnimations = still) {
                     GroupCallScreen(
                         state = state,
                         onEvent = viewModel::onEvent,

@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.WavyProgressIndicatorDefaults
@@ -28,6 +31,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -47,6 +51,7 @@ import dev.kyralabs.pingogram.feature.media.ui.zoom.ZoomState
 import dev.kyralabs.pingogram.feature.media.ui.zoom.detectZoomGestures
 import dev.kyralabs.pingogram.feature.media.ui.zoom.fittedSize
 import kotlinx.collections.immutable.ImmutableMap
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * One page of the viewer: [item]'s media fitted in the page, centered, on the screen's background.
@@ -58,7 +63,8 @@ import kotlinx.collections.immutable.ImmutableMap
  *   while zoomed ([ZoomState], drawn in the draw phase).
  * - **Videos and GIFs**: the blurred minithumbnail and the thumbnail, with the download's progress, until the file is
  *   on the device; once the item is in the player ([playback]), [videoSurface] under them, uncovered when the first
- *   frame shows. The screen stays on while a video plays.
+ *   frame shows. The screen stays on while a video plays. While power saving keeps it from playing by itself
+ *   ([VideoPlayback.waitsForTap]), a play button over it calls [onPlay].
  * - **Spoilers** ([MediaItem.isHidden]) show only the blurred minithumbnail and "Tap to show".
  * - **Container transform**: the fitted media shares its bounds with the bubble of the same message in the
  *   conversation ([sharedMediaViewerBounds]), growing out of it as the viewer opens and shrinking back into it as it
@@ -69,12 +75,14 @@ import kotlinx.collections.immutable.ImmutableMap
  * A tap calls [onTap] (the screen toggles its chrome, or shows the spoiler); a double tap waits for the second tap only
  * where it zooms. Screen readers get no semantics from here: the pager describes the page.
  */
+@Suppress("LongParameterList") // The item, its files and its player, its two taps, the video's surface and the zoom.
 @Composable
 internal fun MediaPage(
     item: MediaItem,
     files: ImmutableMap<Int, FileState>,
     playback: VideoPlayback?,
     onTap: () -> Unit,
+    onPlay: () -> Unit,
     videoSurface: @Composable (Modifier) -> Unit,
     modifier: Modifier = Modifier,
     zoom: ZoomState? = null,
@@ -102,10 +110,13 @@ internal fun MediaPage(
         ) {
             MediaLayers(item, files, playback, videoSurface, fittedDp)
         }
-        if (item.isHidden) {
-            SpoilerLabel(Modifier.align(Alignment.Center))
-        } else {
-            DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
+        when {
+            item.isHidden -> SpoilerLabel(Modifier.align(Alignment.Center))
+
+            playback?.waitsForTap == true -> PlayButton(onPlay, Modifier.align(Alignment.Center))
+
+            // A streamed video plays before its file is complete: the seek bar shows what came, not this.
+            playback?.showsFrame != true -> DownloadProgress(files[media.fileId], Modifier.align(Alignment.Center))
         }
     }
 }
@@ -224,6 +235,34 @@ private fun DownloadProgress(
         CircularWavyProgressIndicator(
             progress = { progress },
             modifier = Modifier.size(WavyProgressIndicatorDefaults.CircularContainerSize),
+        )
+    }
+}
+
+/**
+ * Play, over a video or GIF that power saving keeps from playing by itself: a large filled icon button on
+ * `mediaOverlay`, as the conversation's download button over a photo left for a tap.
+ */
+@Composable
+private fun PlayButton(
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.pingogramColors
+    FilledIconButton(
+        onClick = onPlay,
+        modifier = modifier.size(IconButtonDefaults.largeContainerSize()),
+        shapes = IconButtonDefaults.shapes(),
+        colors =
+            IconButtonDefaults.filledIconButtonColors(
+                containerColor = colors.mediaOverlay,
+                contentColor = colors.onMediaOverlay,
+            ),
+    ) {
+        Icon(
+            painter = painterResource(UiR.drawable.ic_play_arrow_filled),
+            contentDescription = stringResource(R.string.media_play),
+            modifier = Modifier.size(IconButtonDefaults.largeIconSize),
         )
     }
 }

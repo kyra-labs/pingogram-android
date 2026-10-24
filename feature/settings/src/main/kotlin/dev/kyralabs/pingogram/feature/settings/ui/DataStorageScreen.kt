@@ -12,14 +12,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
+import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
+import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
@@ -29,6 +37,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Data and storage page: hoists [DataStorageViewModel] and shows its results in snackbars: how much clearing the
@@ -112,6 +121,9 @@ internal fun DataStorageScreen(
         state.autoDownload?.let { settings ->
             AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
         }
+        state.photosInOriginalQuality?.let { original ->
+            SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }
+        }
         NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
@@ -155,6 +167,38 @@ internal fun DataStorageScreen(
             onConfirm = { onEvent(DataStorageEvent.ConfirmClearCache) },
             onDismiss = { onEvent(DataStorageEvent.DismissClearCache) },
         )
+    }
+}
+
+/**
+ * "Sending": whether picked photos and videos go without compression by default, as files with their metadata removed;
+ * the attach preview changes it per send.
+ */
+@Composable
+private fun SendingGroup(
+    original: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    val haptics = LocalHapticFeedback.current
+    SettingsGroup(title = stringResource(R.string.settings_section_sending)) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_photos_original),
+                shapes = shapes,
+                icon = UiR.drawable.ic_image,
+                supportingContent = { Text(stringResource(R.string.settings_photos_original_summary)) },
+                trailingContent = { CheckSwitch(checked = original) },
+                onClick = {
+                    haptics.performToggle(!original)
+                    onChange(!original)
+                },
+                modifier =
+                    Modifier.semantics {
+                        role = Role.Switch
+                        toggleableState = ToggleableState(original)
+                    },
+            )
+        }
     }
 }
 

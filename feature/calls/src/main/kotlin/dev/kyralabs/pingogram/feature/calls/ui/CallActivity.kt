@@ -37,6 +37,7 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
@@ -44,6 +45,7 @@ import dev.kyralabs.pingogram.feature.calls.R
 import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -63,9 +65,18 @@ import javax.inject.Inject
 class CallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
 
+    @Inject lateinit var powerSaving: PowerSavingPolicy
+
     @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: CallViewModel by viewModels()
+
+    /** Whether power saving keeps the call screen's animations still. */
+    private val stillAnimations by lazy {
+        powerSaving.inEffect
+            .map { it.stillCalls }
+            .stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), false)
+    }
 
     private var inPictureInPicture by mutableStateOf(false)
 
@@ -125,7 +136,7 @@ class CallActivity : ComponentActivity() {
             val videoShows = (state as? CallUiState.InCall)?.video?.shows == true
             LaunchedEffect(videoShows) { updatePictureInPicture(videoShows) }
             settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings) {
+                CallTheme(appearanceSettings, stillAnimations = stillAnimations.collectAsStateWithLifecycle().value) {
                     CallScreen(
                         state = state,
                         onEvent = viewModel::onEvent,

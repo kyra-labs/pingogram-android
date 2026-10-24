@@ -103,6 +103,7 @@ class MediaViewerScreenshotTest(
             mapOf(
                 "photo" to Shot(MediaPreviewData.photo),
                 "video" to Shot(MediaPreviewData.video),
+                "videoWaitingForTap" to Shot(MediaPreviewData.videoWaitingForTap),
                 "downloading" to Shot(MediaPreviewData.downloading, imagesLoading = true),
                 "chromeHidden" to Shot(MediaPreviewData.photo, hideChrome = true),
                 "error" to Shot(MediaPreviewData.error),

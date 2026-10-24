@@ -101,6 +101,20 @@ class DataStoreComposerSettingsRepositoryTest {
             )
         }
 
+    @Test
+    fun `photos go compressed until original quality is turned on, apart from the send key`() =
+        runTest {
+            val repository = DataStoreComposerSettingsRepository(dataStore())
+
+            repository.sendPhotosInOriginalQuality.test {
+                assertEquals(false, awaitItem())
+
+                assertEquals(Outcome.Success(Unit), repository.setSendPhotosInOriginalQuality(true))
+                assertEquals(true, awaitItem())
+            }
+            assertEquals(SendKeys(), repository.sendKeys.first())
+        }
+
     /** A settings file that can be neither read nor written, as on a failing disk. */
     private class FailingDataStore : DataStore<Preferences> {
         override val data: Flow<Preferences> = flow { throw IOException("Disk unavailable") }

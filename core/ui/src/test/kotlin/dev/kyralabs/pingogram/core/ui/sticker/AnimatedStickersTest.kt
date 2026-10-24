@@ -2,12 +2,16 @@ package dev.kyralabs.pingogram.core.ui.sticker
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import androidx.compose.ui.platform.WindowInfo
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.DownloadPriority
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -104,6 +108,39 @@ class AnimatedStickersTest {
             assertSame(small, smallAgain)
             assertEquals(128, large.width)
             assertEquals(2, decodes)
+        }
+
+    @Test
+    fun `power saving holds stickers still, and they play on once it is off`() =
+        runTest {
+            val still = MutableStateFlow(true)
+            val saving = AnimatedStickers(files, decoder, renderDispatcher = Dispatchers.Unconfined, still = still)
+            files.state.value = FileState.Downloaded(pulseTgs(folder.root).path, size = 100)
+            val draws = MutableStateFlow(0L)
+            var shown = 0
+            val player =
+                StickerPlayer(saving, checkNotNull(saving.animation(FILE_ID)), 64, 64, draws) {
+                    shown++
+                    draws.value++
+                }
+            val window =
+                object : WindowInfo {
+                    override val isWindowFocused = true
+                }
+            val playing = launch { player.playOnScreen(window) { draws.value++ } }
+
+            advanceTimeBy(1_000)
+            assertEquals(0, shown)
+            still.value = false
+            advanceTimeBy(1_000)
+            assertTrue(shown > 1)
+            still.value = true
+            advanceTimeBy(100)
+            val stopped = shown
+            advanceTimeBy(1_000)
+
+            assertEquals(stopped, shown)
+            playing.cancel()
         }
 
     private companion object {

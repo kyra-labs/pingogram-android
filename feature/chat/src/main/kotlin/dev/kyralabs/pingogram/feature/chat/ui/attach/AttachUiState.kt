@@ -67,6 +67,10 @@ data class AttachPreview(
     val kind: AttachmentKind,
     val items: ImmutableList<PreviewItem>,
     val canSchedule: Boolean = true,
+    /** Picked photos or videos may go without compression ([original]): some came from the gallery. */
+    val offersOriginal: Boolean = false,
+    /** They go without compression: as files, at their size, their metadata removed. */
+    val original: Boolean = false,
 ) {
     /** Every item is ready to send. */
     val isReady: Boolean get() = items.isNotEmpty() && items.none { it is PreviewItem.Preparing }

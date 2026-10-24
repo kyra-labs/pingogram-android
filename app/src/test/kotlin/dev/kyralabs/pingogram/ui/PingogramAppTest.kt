@@ -239,7 +239,7 @@ class PingogramAppTest {
 
         tab(R.string.nav_settings).assertIsSelected()
         tab(R.string.nav_chats).assertIsNotSelected()
-        text(SettingsR.string.settings_log_out).assertIsDisplayed()
+        text(SettingsR.string.settings_log_out).performScrollTo().assertIsDisplayed()
     }
 
     // Search (FR-L6)
@@ -365,7 +365,7 @@ class PingogramAppTest {
         setApp()
         tab(R.string.nav_settings).performClick()
 
-        text(SettingsR.string.settings_data_storage).performClick()
+        text(SettingsR.string.settings_data_storage).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<DataStorageRoute>() == true)
@@ -374,7 +374,7 @@ class PingogramAppTest {
         composeRule.waitForIdle()
         tab(R.string.nav_settings).assertIsSelected()
 
-        text(SettingsR.string.settings_about).performClick()
+        text(SettingsR.string.settings_about).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<AboutRoute>() == true)
@@ -382,7 +382,7 @@ class PingogramAppTest {
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
 
-        text(SettingsR.string.settings_language).performClick()
+        text(SettingsR.string.settings_language).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<LanguageRoute>() == true)
@@ -393,7 +393,7 @@ class PingogramAppTest {
         pressBack()
         tab(R.string.nav_settings).assertIsSelected()
 
-        text(SettingsR.string.settings_appearance).performClick()
+        text(SettingsR.string.settings_appearance).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         assertTrue(navController.currentDestination?.hasRoute<AppearanceRoute>() == true)
@@ -409,7 +409,7 @@ class PingogramAppTest {
     fun `about opens the open-source licenses, and they open a library's page with its license`() {
         setApp()
         tab(R.string.nav_settings).performClick()
-        text(SettingsR.string.settings_about).performClick()
+        text(SettingsR.string.settings_about).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
 
         text(SettingsR.string.settings_about_licenses).performScrollTo().performClick()

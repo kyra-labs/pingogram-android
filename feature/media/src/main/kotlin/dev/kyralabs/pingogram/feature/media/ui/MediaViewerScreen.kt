@@ -98,6 +98,7 @@ internal fun MediaViewerScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     videoSurface: @Composable (Modifier) -> Unit = {},
+    canPictureInPicture: Boolean = false,
 ) {
     PingogramDarkTheme {
         val content = state as? MediaViewerUiState.Content
@@ -126,6 +127,7 @@ internal fun MediaViewerScreen(
                                 content.playback,
                                 onEvent,
                                 actions = actionsOf(content, onEvent),
+                                canPictureInPicture = canPictureInPicture,
                             )
                         }
                     }
@@ -136,7 +138,10 @@ internal fun MediaViewerScreen(
                 // The media is full bleed; the chrome takes its own insets.
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
             ) { innerPadding ->
-                DismissibleContent(dismiss, zoom, height, onBack) {
+                // A swipe up takes a playing video into picture-in-picture instead of closing the viewer.
+                val swipeUp = { onEvent(MediaViewerEvent.PictureInPicture) }
+                val exits = DismissExits(height, onBack, swipeUp.takeIf { canPictureInPicture && content.playsVideo })
+                DismissibleContent(dismiss, zoom, exits) {
                     ViewerContent(state, chrome, zoom, onEvent, videoSurface, Modifier.padding(innerPadding))
                 }
             }
@@ -187,16 +192,25 @@ internal class ChromeState(
 }
 
 /**
- * [content] following [dismiss]: shrunk by a predictive back gesture, and moved by a vertical drag, which closes the
- * viewer ([onBack]) past a threshold of the page's [height] or with a fling, else springs back on the motion scheme's
- * default spatial spring. No drag while the photo is zoomed in ([zoom]): it pans the photo then.
+ * Where a drag of the page leaves to: down past a threshold of the page's [height], or with a fling, closes the viewer
+ * ([onBack]); up hands the playing video to picture-in-picture ([onSwipeUp]) where it can, else it closes too.
+ */
+private class DismissExits(
+    val height: Float,
+    val onBack: () -> Unit,
+    val onSwipeUp: (() -> Unit)?,
+)
+
+/**
+ * [content] following [dismiss]: shrunk by a predictive back gesture, and moved by a vertical drag, which leaves
+ * through [exits], else springs back on the motion scheme's default spatial spring. No drag while the photo is zoomed
+ * in ([zoom]): it pans the photo then.
  */
 @Composable
 private fun DismissibleContent(
     dismiss: DismissState,
     zoom: ZoomState,
-    height: Float,
-    onBack: () -> Unit,
+    exits: DismissExits,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -213,7 +227,9 @@ private fun DismissibleContent(
                     orientation = Orientation.Vertical,
                     enabled = !zoomed && !dismiss.isDismissed,
                     onDragStarted = { dismiss.onDragStarted() },
-                    onDragStopped = { velocity -> dismiss.onDragStopped(velocity, height, settle, scope, onBack) },
+                    onDragStopped = { velocity ->
+                        dismiss.onDragStopped(velocity, exits.height, settle, scope, exits.onSwipeUp, exits.onBack)
+                    },
                 ),
         content = content,
     )
@@ -323,6 +339,7 @@ private fun MediaPager(
             files = content.files,
             playback = content.playback?.takeIf { it.messageId == item.messageId },
             onTap = onTap,
+            onPlay = { onEvent(MediaViewerEvent.PlayPause) },
             videoSurface = videoSurface,
             modifier =
                 Modifier.pageSemantics(

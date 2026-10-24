@@ -129,6 +129,12 @@ private val GeneralPages =
             R.drawable.ic_storage,
         ),
         GeneralPage(
+            SettingsPage.PowerSaving,
+            R.string.settings_power_saving,
+            R.string.settings_power_saving_summary,
+            R.drawable.ic_energy_savings_leaf,
+        ),
+        GeneralPage(
             SettingsPage.Language,
             R.string.settings_language,
             R.string.settings_language_summary,

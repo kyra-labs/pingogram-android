@@ -161,6 +161,13 @@ internal object MediaPreviewData {
             playback = VideoPlayback(VIDEO, isPlaying = true, showsFrame = false, progress = { VIDEO_PROGRESS }),
         )
 
+    /** The video while power saving keeps it from playing by itself: its play button waits for a tap. */
+    val videoWaitingForTap: MediaViewerUiState.Content =
+        video.copy(
+            playback =
+                VideoPlayback(VIDEO, isPlaying = false, showsFrame = false, progress = { 0f }, waitsForTap = true),
+        )
+
     /** A spoiler not revealed yet. */
     val spoiler: MediaViewerUiState.Content = photo.copy(currentIndex = 3)
 
@@ -216,6 +223,7 @@ internal class MediaViewerPreviewStates : PreviewParameterProvider<MediaViewerUi
                 deleteConfirmation,
                 sharing,
                 video,
+                videoWaitingForTap,
                 downloading,
                 spoiler,
                 loading,
