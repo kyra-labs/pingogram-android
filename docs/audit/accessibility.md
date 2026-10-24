@@ -105,7 +105,7 @@ A1, A3 and A4 are done (the keyboard and mouse pull request): their rows say wha
 | A11 | `ChatListTopBar.kt` (`ConnectionPill`); the conversation and the media viewer | Screen readers hear "Connecting…" but not that the connection is back. The conversation and the viewer show no connection state | §9 live region for the connection | Announce "Connected" once when it is ready again; the pill or the subtitle in the conversation's top bar |
 | A12 | `feature/media/…/ui/MediaChrome.kt` (caption) | An expandable caption without a role or an expanded / collapsed state | §9 roles on custom toggles | `Role.Button` and `expand` / `collapse` semantics |
 | A13 | `feature/chats/…/ui/SearchPeople.kt` (`Person`) | A fixed-width column with one line of name: names are cut at 200% font | §6.3 font scale | Scale the width with the font, or two lines |
-| A14 | `FolderTabs.kt`, `panel/EmojiPanel.kt`, `PanelSections.kt` | Toggle buttons with `Role.Tab` may announce "checked" on a tab | §9 | Check with TalkBack; `selected` semantics for tabs |
+| A14 | `FolderTabs.kt`, `panel/EmojiPanel.kt`, `PanelSections.kt` | Toggle buttons with `Role.Tab` may announce "checked" on a tab | §9 | Check with TalkBack; `selected` semantics for tabs. The panel's tabs are done (2026-10-23): each toggle button sits in a node with `clearAndSetSemantics { role = Tab; selected; onClick }` (`panelTab`, `PanelTabSemanticsTest`) |
 | A15 | `attach/MediaPreviewItem.kt` | The remove button is `extraSmallContainerSize()`. Its touch target needs checking on a device | §6.3 48 dp | `minimumInteractiveComponentSize()` if needed |
 
 `assertAccessible()` (`core:testing`) is ready for the chat screens' tests as well.

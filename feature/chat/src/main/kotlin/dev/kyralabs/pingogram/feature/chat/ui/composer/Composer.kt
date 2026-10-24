@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -104,8 +105,9 @@ import java.time.Instant
  * [onVoiceEvent]). Where the user can choose who they send as, that sender's avatar comes first and opens the send-as
  * picker through [onSendAs]. The smiley at the end of the field opens the emoji and sticker panel ([EmojiPanel],
  * showing [panel]) in the keyboard's place ([PanelArea], [panelState]): its emoji go into the text at the cursor, its
- * stickers are sent through [onSendSticker], and what it loads goes to [onPanelEvent]. In a public group or channel
- * the user is not in, a filled "Join" button takes the composer's place ([JoinButton], [onJoin]).
+ * stickers are sent through [onSendSticker], its GIFs through [onSendAnimation], and what it loads goes to
+ * [onPanelEvent]. In a public group or channel the user is not in, a filled "Join" button takes the composer's place
+ * ([JoinButton], [onJoin]).
  *
  * Where the chat's bots offer commands or a menu ([bots]), their button starts the pill ([BotMenuButton]) and the
  * attach "+" moves to its end, in the gallery's place; while a command is typed, the commands it starts show above
@@ -135,6 +137,7 @@ internal fun ChatBottomBar(
     panel: EmojiPanelUiState = EmojiPanelUiState(),
     onPanelEvent: (EmojiPanelEvent) -> Unit = {},
     onSendSticker: (Sticker) -> Unit = {},
+    onSendAnimation: (Animation) -> Unit = {},
     panelState: ComposerPanelState = rememberComposerPanelState(),
     onJoin: () -> Unit = {},
     bots: BotInput = BotInput(),
@@ -197,7 +200,8 @@ internal fun ChatBottomBar(
                     PanelPlace(panelState, botKeyboard, bots.onKeyboardPress) {
                         // Not while editing: a sticker would be a new message.
                         val stickers = composer.attachOptions.isNotEmpty()
-                        ComposerEmojiPanel(panelState, panel, text, onPanelEvent, onSendSticker, stickers)
+                        val sends = PanelSends(onSendSticker, onSendAnimation)
+                        ComposerEmojiPanel(panelState, panel, text, onPanelEvent, sends, stickers)
                     }
                 }
             }

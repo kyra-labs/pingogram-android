@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui.panel
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.EmojiGroup
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -9,9 +10,12 @@ import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /** A sticker of set [setId] with file [fileId]. */
 internal fun sticker(
@@ -78,3 +82,29 @@ internal class FakeStickerRepository : StickerRepository {
         return setContents[setId] ?: Outcome.Failure(DomainError.NotFound)
     }
 }
+
+/**
+ * Saved GIFs as tests set them ([saved], none at first; [onSaved] for a failure), the GIF search bot's username
+ * ([searchBot], "gif"), and the GIFs removed.
+ */
+internal class FakeSavedGifRepository : SavedGifRepository {
+    val saved = MutableStateFlow<List<Animation>>(emptyList())
+    var onSaved: Outcome<List<Animation>>? = null
+    var searchBot: String? = "gif"
+    val removed = mutableListOf<Animation>()
+
+    override fun savedGifs(): Flow<Outcome<List<Animation>>> =
+        onSaved?.let { failure -> flowOf(failure) } ?: saved.map { Outcome.Success(it) }
+
+    override suspend fun removeSaved(gif: Animation): Outcome<Unit> {
+        removed += gif
+        saved.value -= gif
+        return Outcome.Success(Unit)
+    }
+
+    override suspend fun searchBotUsername(): Outcome<String?> = Outcome.Success(searchBot)
+}
+
+/** A GIF whose file is [fileId]. */
+internal fun gif(fileId: Int) =
+    Animation(2, 320, 240, "video/mp4", minithumbnail = null, thumbnail = null, file = FileRef(fileId, 100))

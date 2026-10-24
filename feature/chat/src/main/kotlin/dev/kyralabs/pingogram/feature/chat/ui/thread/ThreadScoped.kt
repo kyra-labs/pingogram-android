@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.thread
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.Animation
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.Contact
@@ -111,6 +112,13 @@ internal class TopicAttachmentRepository(
         options: SendOptions,
         replyToMessageId: Long?,
     ) = attachments.sendSticker(chatId, sticker, options.copy(topic = topic), replyToMessageId)
+
+    override suspend fun sendAnimation(
+        chatId: Long,
+        animation: Animation,
+        options: SendOptions,
+        replyToMessageId: Long?,
+    ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyToMessageId)
 
     override suspend fun sendPoll(
         chatId: Long,

@@ -142,18 +142,18 @@ internal fun SectionRow(
         contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.small),
     ) {
         items(count, key = { it }) { index ->
-            val label = description(index)
-            IconToggleButton(
-                checked = index == selected,
-                onCheckedChange = { scope.launch { gridState.scrollToItem(starts[index]) } },
-                shapes = IconButtonDefaults.toggleableShapes(),
-                modifier =
-                    Modifier.semantics {
-                        role = Role.Tab
-                        contentDescription = label
-                    },
-                colors = colors,
-            ) { icon(index) }
+            val select = {
+                scope.launch { gridState.scrollToItem(starts[index]) }
+                Unit
+            }
+            Box(Modifier.panelTab(description(index), selected = index == selected, onSelect = select)) {
+                IconToggleButton(
+                    checked = index == selected,
+                    onCheckedChange = { select() },
+                    shapes = IconButtonDefaults.toggleableShapes(),
+                    colors = colors,
+                ) { icon(index) }
+            }
         }
     }
 }
