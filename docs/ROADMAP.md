@@ -136,3 +136,5 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 
 Group video calls, Premium features surface, custom emoji packs management, chat themes/wallpapers (images), bot
 reply keyboards and web apps (Mini Apps WebView), payments, business features, Wear OS companion.
+
+Features other clients have, with verdicts and priorities: `docs/audit/feature-gaps-octogram.md` (2026-10-24).
