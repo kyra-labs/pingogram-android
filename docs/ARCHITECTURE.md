@@ -602,6 +602,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
 
+  - `ChatSettingsRepository` (`TdlibChatSettingsRepository`): a group's or channel's own settings, `getChat`
+    (reactions, protected content), `getSupergroup` (signatures, topics, the user's role) and `getSupergroupFullInfo`
+    (the linked chat) or `getBasicGroup`, each followed by its updates while collected; it sets them
+    (`setChatAvailableReactions`, `toggleChatHasProtectedContent`, `toggleSupergroupSignMessages`,
+    `toggleSupergroupIsForum`, `setChatDiscussionGroup` from `getSuitableDiscussionChats`) and upgrades a basic group
+    (`upgradeBasicGroupChatToSupergroupChat`). The emoji Telegram offers as reactions come once at TDLib's start
+    (`updateActiveEmojiReactions`), so it is a `TdlibUpdateCache` for them.
+
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
 - Pages (`feature:profile` `chatinfo/`, each with its view model, routes in `core:navigation`): the info page
@@ -610,7 +618,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatMembersRoute(chatId, filter)`, `ChatMembersViewModel`: the filters the user's rights allow, paging, a search
   after a pause, the actions each member's role and the user's rights allow), a member's rights
   (`MemberRightsRoute(chatId, userId, restrict)`: promoting only with rights the user has, restricting only within the
-  chat's defaults), the photo, name and description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
+  chat's defaults), the settings (`ChatSettingsRoute`, `ChatSettingsViewModel`: each change one request, the page
+  following Telegram's answer through the repository's flow; upgrading opens the new supergroup), the photo, name and
+  description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
   saving the texts, following `ChatRepository.chat` for the new one), the permissions and slow mode
   (`ChatPermissionsRoute`), and the invite links (`InviteLinksRoute`, `EditInviteLinkRoute(chatId, link?)`). What a
   view model types or chooses is kept in its `SavedStateHandle`. A page that changed members or links leaves a flag in

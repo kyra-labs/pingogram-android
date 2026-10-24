@@ -462,6 +462,15 @@ data class ChatPermissionsRoute(
     val chatId: Long,
 )
 
+/**
+ * The settings of group or channel [chatId] (reactions, saving content, signatures, topics, the discussion group,
+ * upgrading), pushed above its info page.
+ */
+@Serializable
+data class ChatSettingsRoute(
+    val chatId: Long,
+)
+
 /** The invite links of group or channel [chatId], pushed above its info page. */
 @Serializable
 data class InviteLinksRoute(

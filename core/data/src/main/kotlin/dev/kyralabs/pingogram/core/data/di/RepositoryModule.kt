@@ -29,6 +29,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatJoinRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatSearchRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
@@ -91,6 +92,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
@@ -270,6 +272,9 @@ interface RepositoryModule {
 
     @Binds
     fun loginEmailRepository(repository: TdlibLoginEmailRepository): LoginEmailRepository
+
+    @Binds
+    fun chatSettingsRepository(repository: TdlibChatSettingsRepository): ChatSettingsRepository
 
     @Binds
     fun proxyRepository(repository: TdlibProxyRepository): ProxyRepository

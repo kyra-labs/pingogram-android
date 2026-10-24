@@ -311,6 +311,11 @@ internal fun ChatAdministrationGroup(
     val rows =
         listOfNotNull(
             page("edit", R.string.chat_info_edit, ChatInfoPage.EditInfo).takeIf { administration.canEditInfo },
+            page(
+                "settings",
+                if (administration.isChannel) R.string.chat_settings_channel else R.string.chat_settings_group,
+                ChatInfoPage.Settings,
+            ).takeIf { administration.canEditSettings },
             page("permissions", R.string.chat_info_permissions, ChatInfoPage.Permissions)
                 .takeIf { administration.canEditPermissions },
             administration.administratorCount?.let {

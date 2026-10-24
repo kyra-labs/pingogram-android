@@ -233,7 +233,7 @@ private fun <T> ChoiceGroup(
 
 /** One choice: the selectable segmented list item with a leading `RadioButton`, which screen readers hear as one. */
 @Composable
-private fun RadioRow(
+internal fun RadioRow(
     label: String,
     selected: Boolean,
     enabled: Boolean,
