@@ -11,6 +11,8 @@ import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
@@ -30,13 +32,14 @@ sealed interface AppearanceUiState {
     data object Loading : AppearanceUiState
 
     /**
-     * The [settings], which Enter sends the composer's messages ([sendKeys]) and how voice messages play at the ear
-     * ([raiseToListen]).
+     * The [settings], which Enter sends the composer's messages ([sendKeys]), how voice messages play at the ear
+     * ([raiseToListen]) and whether the chat list shows story rings ([chatList]).
      */
     data class Content(
         val settings: AppearanceSettings,
         val sendKeys: SendKeys = SendKeys(),
         val raiseToListen: RaiseToListenSettings = RaiseToListenSettings(),
+        val chatList: ChatListSettings = ChatListSettings(),
     ) : AppearanceUiState
 }
 
@@ -68,6 +71,11 @@ sealed interface AppearanceEvent {
     data class SetPauseWhenLowered(
         val enabled: Boolean,
     ) : AppearanceEvent
+
+    /** "Show stories" turned on or off. */
+    data class SetShowStories(
+        val show: Boolean,
+    ) : AppearanceEvent
 }
 
 /** One-off side effects of [AppearanceViewModel], handled once by its route. */
@@ -81,8 +89,9 @@ sealed interface AppearanceEffect {
 /**
  * The Appearance page (`REQUIREMENTS.md` FR-S2): the saved settings, and saving each change. The page shows what is
  * saved, which the app's theme follows too, so a change shows on the page and in the theme at once, and a change that
- * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chats" group
- * also holds the composer's send key ([ComposerSettingsRepository]) and raise to listen ([PlaybackSettingsRepository]).
+ * cannot be saved changes neither. Nothing to restore after process death: the settings are saved. Its "Chat list"
+ * group holds whether story rings show ([ChatListSettingsRepository]), and its "Chats" group the composer's send key
+ * ([ComposerSettingsRepository]) and raise to listen ([PlaybackSettingsRepository]).
  */
 @HiltViewModel
 class AppearanceViewModel
@@ -91,13 +100,15 @@ class AppearanceViewModel
         private val appearanceRepository: AppearanceRepository,
         private val composerSettingsRepository: ComposerSettingsRepository,
         private val playbackSettingsRepository: PlaybackSettingsRepository,
+        private val chatListSettingsRepository: ChatListSettingsRepository,
     ) : ViewModel() {
         val uiState: StateFlow<AppearanceUiState> =
-            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, AppearanceUiState>(
+            combine<AppearanceSettings, SendKeys, RaiseToListenSettings, ChatListSettings, AppearanceUiState>(
                 appearanceRepository.appearance,
                 composerSettingsRepository.sendKeys,
                 playbackSettingsRepository.raiseToListen,
-            ) { settings, keys, raise -> AppearanceUiState.Content(settings, keys, raise) }
+                chatListSettingsRepository.settings,
+            ) { settings, keys, raise, chatList -> AppearanceUiState.Content(settings, keys, raise, chatList) }
                 .stateIn(viewModelScope, SharingStarted.Eagerly, AppearanceUiState.Loading)
 
         private val effectChannel = Channel<AppearanceEffect>(Channel.BUFFERED)
@@ -129,6 +140,10 @@ class AppearanceViewModel
 
                         is AppearanceEvent.SetPauseWhenLowered -> {
                             playbackSettingsRepository.setPauseWhenLowered(event.enabled)
+                        }
+
+                        is AppearanceEvent.SetShowStories -> {
+                            chatListSettingsRepository.setShowStories(event.show)
                         }
                     }
                 saved.onFailure { effectChannel.trySend(AppearanceEffect.ShowError(it)) }

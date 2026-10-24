@@ -7,6 +7,8 @@ import dev.kyralabs.pingogram.core.domain.model.ActiveStories
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.StoryInfo
 import dev.kyralabs.pingogram.core.domain.model.StoryList
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.testing.FakeChatListSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeStoryRepository
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures
 import dev.kyralabs.pingogram.feature.chats.ui.FakeChatRepository
@@ -26,12 +28,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-/** The story rings above the chat list: their order, names, read state, loading once and paging. */
+/** The story rings above the chat list: their order, names, read state, loading once, paging and hiding them. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoryRingsViewModelTest {
     private val stories = FakeStoryRepository()
     private val chats = FakeChatRepository()
     private val users = FakeUserRepository()
+    private val chatListSettings = FakeChatListSettingsRepository()
 
     @BeforeEach
     fun setUp() {
@@ -43,7 +46,7 @@ class StoryRingsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel() = StoryRingsViewModel(stories, chats, users)
+    private fun viewModel() = StoryRingsViewModel(stories, chats, users, chatListSettings)
 
     private fun active(
         chatId: Long,
@@ -166,5 +169,39 @@ class StoryRingsViewModelTest {
                 viewModel.uiState.value.rings
                     .isEmpty(),
             )
+        }
+
+    @Test
+    fun `hidden stories show no rings and load nothing`() =
+        runTest {
+            chatListSettings.settings.value = ChatListSettings(showStories = false)
+            chats.setChats(ChatListType.Main, ChatListFixtures.chat(id = 2, title = "Ada"))
+            stories.setActive(active(chatId = 2, order = 5))
+
+            viewModel().uiState.test {
+                assertTrue(awaitItem().rings.isEmpty())
+                runCurrent()
+                expectNoEvents()
+            }
+            assertTrue(stories.calls.isEmpty())
+        }
+
+    @Test
+    fun `turning stories on loads and shows the rings, and turning them off hides them`() =
+        runTest {
+            chatListSettings.settings.value = ChatListSettings(showStories = false)
+            chats.setChats(ChatListType.Main, ChatListFixtures.chat(id = 2, title = "Ada"))
+            stories.setActive(active(chatId = 2, order = 5))
+
+            viewModel().uiState.test {
+                assertTrue(awaitItem().rings.isEmpty())
+
+                chatListSettings.setShowStories(true)
+                assertEquals(listOf("Ada"), awaitItem().rings.map { it.name })
+                assertEquals(listOf("load:Main"), stories.calls)
+
+                chatListSettings.setShowStories(false)
+                assertTrue(awaitItem().rings.isEmpty())
+            }
         }
 }

@@ -313,7 +313,8 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   replying to the story (`inputMessageReplyToStory`). `activateStoryStealthMode` is never sent: every story shown is
   marked viewed. Areas, privacy settings, interactions, saving and posting are left out. `feature:chats` draws the rings
   as the chat list's first row (`StoryRingsViewModel`, `StoryRingsRow`, passed to `ChatListScreen` as its `stories`
-  slot, which the route gives only while there are rings and whose state the row reads in its own composition, so the
+  slot, none while Appearance → Chat list → "Show stories" is off: `core:domain`'s `ChatListSettingsRepository`,
+  `DataStoreChatListSettingsRepository`, the settings file, whose rings then load nothing, which the route gives only while there are rings and whose state the row reads in its own composition, so the
   rings changing recomposes nothing else). A ring opens `StoryViewerRoute(chatId, storyId?)` of `core:navigation`, a
   full-screen destination of `feature:media` (beside the media viewer, whose video player, images, caption and
   swipe-to-close it reuses; a module of its own would have needed copies of them, as features do not share code):

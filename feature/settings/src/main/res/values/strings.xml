@@ -1178,4 +1178,8 @@
     <string name="settings_section_on_screen">On screen</string>
     <string name="settings_hide_phone_numbers">Hide phone numbers</string>
     <string name="settings_hide_phone_numbers_summary">Shows only their country code everywhere in Pingogram, for sharing your screen or streaming</string>
+    <!-- Settings → Appearance → Chat list. -->
+    <string name="settings_section_chat_list">Chat list</string>
+    <string name="settings_show_stories">Show stories</string>
+    <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
 </resources>

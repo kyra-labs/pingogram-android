@@ -86,9 +86,10 @@ internal fun AppearanceRoute(
  * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): light or dark (system, light or dark, as a
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
- * the contrast level; then under "Chats" a row that opens the Chat appearance page ([onOpenChatAppearance]: message
- * text size, bubble corners, wallpaper) with their summary, a row that opens Double-tap to react
- * ([onOpenQuickReaction]), and which Enter sends on a hardware and on the on-screen keyboard.
+ * the contrast level; then under "Chat list" whether story rings show above the chats; then under "Chats" a row that
+ * opens the Chat appearance page ([onOpenChatAppearance]: message text size, bubble corners, wallpaper) with their
+ * summary, a row that opens Double-tap to react ([onOpenQuickReaction]), and which Enter sends on a hardware and on
+ * the on-screen keyboard.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -119,7 +120,7 @@ internal fun AppearanceScreen(
             is AppearanceUiState.Content -> {
                 AppearanceSettingsContent(
                     state.settings,
-                    ChatsSettings(state.sendKeys, state.raiseToListen),
+                    ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList),
                     onEvent,
                     AppearancePages(onOpenColorTheme, onOpenChatAppearance, onOpenQuickReaction),
                     dynamicColorAvailable,
@@ -186,6 +187,7 @@ private fun AppearanceSettingsContent(
             )
         }
     }
+    ChatListGroup(chats.chatList, onEvent)
     ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance, pages.onOpenQuickReaction)
 }
 

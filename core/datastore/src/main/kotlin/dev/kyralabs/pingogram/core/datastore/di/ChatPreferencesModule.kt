@@ -4,6 +4,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.datastore.DataStoreChatListSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreComposerSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
@@ -11,6 +12,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsReposit
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
@@ -20,8 +22,8 @@ import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityReposi
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 
 /**
- * The repositories of the settings file ([DataStoreModule]) that conversations read: the composer's, the bars' and the
- * link previews', and whether phone numbers show on screen.
+ * The repositories of the settings file ([DataStoreModule]) that conversations and the chat list read: the composer's,
+ * the bars' and the link previews', whether phone numbers show on screen, and the chat list's own settings.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -48,4 +50,7 @@ interface ChatPreferencesModule {
     fun phoneNumberVisibilityRepository(
         repository: DataStorePhoneNumberVisibilityRepository,
     ): PhoneNumberVisibilityRepository
+
+    @Binds
+    fun chatListSettingsRepository(repository: DataStoreChatListSettingsRepository): ChatListSettingsRepository
 }

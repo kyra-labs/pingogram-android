@@ -27,6 +27,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.Contrast
 import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
 import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -120,11 +121,34 @@ private fun HardwareEnterItem(
     )
 }
 
-/** The "Chats" group's settings beside the appearance: which Enter sends a message, and raise to listen. */
+/**
+ * The settings of the "Chat list" and "Chats" groups beside the appearance: which Enter sends a message, raise to
+ * listen, and the chat list's own.
+ */
 internal class ChatsSettings(
     val sendKeys: SendKeys,
     val raiseToListen: RaiseToListenSettings,
+    val chatList: ChatListSettings = ChatListSettings(),
 )
+
+/** The "Chat list" group: "Show stories", whether the story rings show above the chats (they load only then). */
+@Composable
+internal fun ChatListGroup(
+    chatList: ChatListSettings,
+    onEvent: (AppearanceEvent) -> Unit,
+) {
+    SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
+        item { shapes ->
+            SwitchItem(
+                title = stringResource(R.string.settings_show_stories),
+                summary = stringResource(R.string.settings_show_stories_summary),
+                checked = chatList.showStories,
+                shapes = shapes,
+                onCheckedChange = { onEvent(AppearanceEvent.SetShowStories(it)) },
+            )
+        }
+    }
+}
 
 /** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */
 @Composable
