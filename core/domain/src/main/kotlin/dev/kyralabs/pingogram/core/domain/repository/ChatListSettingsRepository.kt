@@ -4,8 +4,9 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import kotlinx.coroutines.flow.Flow
 
 /**
- * How the chat list looks (Appearance → Chat list), kept on this device: whether the story rings show above the chats
- * ([ChatListSettings.showStories], on by default). Stories themselves stay with Telegram; hiding the rings loads none.
+ * How the chat list looks and acts (Appearance → Chat list), kept on this device: whether the story rings show above
+ * the chats ([ChatListSettings.showStories], on by default; hiding them loads none), and what swiping a row does
+ * toward each side ([ChatListSettings.startSwipe], [ChatListSettings.endSwipe]).
  */
 interface ChatListSettingsRepository {
     /** The settings, then every change. Never fails: unreadable settings read as the defaults. */
@@ -13,9 +14,34 @@ interface ChatListSettingsRepository {
 
     /** Saves whether the rings show; fails with `DomainError.Unknown` if it cannot be written (a full disk). */
     suspend fun setShowStories(show: Boolean): Outcome<Unit>
+
+    /** Saves the two swipes' actions; fails as [setShowStories] does. */
+    suspend fun setSwipeActions(
+        start: SwipeAction,
+        end: SwipeAction,
+    ): Outcome<Unit>
 }
 
-/** The chat list's own settings: whether the story rings show above the chats. */
+/**
+ * The chat list's own settings: whether the story rings show above the chats, and what a swipe toward the end
+ * ([startSwipe], from the start edge) and toward the start ([endSwipe]) does; both mirror in right-to-left layouts.
+ */
 data class ChatListSettings(
     val showStories: Boolean = true,
+    val startSwipe: SwipeAction = SwipeAction.Read,
+    val endSwipe: SwipeAction = SwipeAction.Archive,
 )
+
+/**
+ * What swiping a chat row does. Each acts as its row allows: [Read] marks a chat as read, or as unread with nothing
+ * unread; [Archive], [Pin] and [Mute] turn into unarchive, unpin and unmute where they apply; [Delete] asks first;
+ * [None] leaves the row still. A chat that cannot be muted (Saved Messages) has no [Mute] swipe.
+ */
+enum class SwipeAction {
+    Read,
+    Archive,
+    Pin,
+    Mute,
+    Delete,
+    None,
+}

@@ -3,10 +3,14 @@ package dev.kyralabs.pingogram.core.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.repository.ChatListSettings
+import dev.kyralabs.pingogram.core.domain.repository.SwipeAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -72,6 +76,29 @@ class DataStoreChatListSettingsRepositoryTest {
             assertTrue(repository.settings.first().showStories)
             val saved = repository.setShowStories(false)
             assertTrue((saved as Outcome.Failure).error is DomainError.Unknown)
+        }
+
+    @Test
+    fun `swipes read and archive until changed, and a change saves both`() =
+        runTest {
+            val repository = DataStoreChatListSettingsRepository(dataStore())
+            assertEquals(ChatListSettings(), repository.settings.first())
+
+            assertEquals(Outcome.Success(Unit), repository.setSwipeActions(SwipeAction.Pin, SwipeAction.None))
+
+            assertEquals(
+                ChatListSettings(startSwipe = SwipeAction.Pin, endSwipe = SwipeAction.None),
+                repository.settings.first(),
+            )
+        }
+
+    @Test
+    fun `an action this version does not know reads as the default`() =
+        runTest {
+            val store = dataStore()
+            store.edit { it[stringPreferencesKey("chat_list.swipe_start")] = "Teleport" }
+
+            assertEquals(SwipeAction.Read, DataStoreChatListSettingsRepository(store).settings.first().startSwipe)
         }
 
     /** A settings file that can be neither read nor written, as on a failing disk. */

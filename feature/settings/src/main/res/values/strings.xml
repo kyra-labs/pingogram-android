@@ -1157,4 +1157,26 @@
     <string name="settings_section_chat_list">Chat list</string>
     <string name="settings_show_stories">Show stories</string>
     <string name="settings_show_stories_summary">Story rings above your chats. Turned off, Pingogram loads no stories there</string>
+    <!-- Settings → Appearance → Chat list → Swipe actions. -->
+    <string name="settings_swipe_actions">Swipe actions</string>
+    <string name="settings_swipe_actions_loading">Loading swipe actions</string>
+    <!-- The swipe actions in Appearance's row, in left-to-right layouts; e.g. "Right: Read · Left: Archive". -->
+    <string name="settings_swipe_actions_summary">Right: %1$s · Left: %2$s</string>
+    <!-- The same in right-to-left layouts, where a swipe toward the end goes left; %1$s is still that swipe's action. -->
+    <string name="settings_swipe_actions_summary_rtl">Left: %1$s · Right: %2$s</string>
+    <string name="settings_swipe_right">Swipe right</string>
+    <string name="settings_swipe_left">Swipe left</string>
+    <string name="settings_swipe_actions_footer">Screen readers offer every action on a chat, whatever the swipes do. Deleting always asks first.</string>
+    <string name="settings_swipe_action_read">Mark as read or unread</string>
+    <string name="settings_swipe_action_archive">Archive or unarchive</string>
+    <string name="settings_swipe_action_pin">Pin or unpin</string>
+    <string name="settings_swipe_action_mute">Mute or unmute</string>
+    <string name="settings_swipe_action_delete">Delete</string>
+    <string name="settings_swipe_action_none">Nothing</string>
+    <string name="settings_swipe_short_read">Read</string>
+    <string name="settings_swipe_short_archive">Archive</string>
+    <string name="settings_swipe_short_pin">Pin</string>
+    <string name="settings_swipe_short_mute">Mute</string>
+    <string name="settings_swipe_short_delete">Delete</string>
+    <string name="settings_swipe_short_none">Nothing</string>
 </resources>

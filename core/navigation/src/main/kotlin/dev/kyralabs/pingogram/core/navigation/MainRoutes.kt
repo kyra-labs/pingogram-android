@@ -300,6 +300,10 @@ data object ReactionNotificationsRoute
 @Serializable
 data object QuickReactionRoute
 
+/** What swiping a chat row does toward each side, pushed above [AppearanceRoute]. */
+@Serializable
+data object SwipeActionsRoute
+
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
  * button of the navigation bar or rail.

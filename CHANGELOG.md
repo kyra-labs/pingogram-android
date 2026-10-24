@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Swipe actions: Appearance → Chat list → Swipe actions picks what swiping a chat right and left does: mark as read or
+  unread, archive, pin, mute, delete (which asks first), or nothing. Swiping still marks as read and archives at first.
 - Hide stories: Appearance → Chat list → "Show stories" turns the story rings above the chat list off. While they are
   off, Pingogram loads no stories for the list.
 - Privacy: hide phone numbers. Settings → Privacy and security → "Hide phone numbers" shows every number in
