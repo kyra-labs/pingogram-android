@@ -116,9 +116,11 @@ internal fun ConversationRoute(
             it.create(chatId)
         },
     sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
+    doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
+    val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
@@ -153,7 +155,11 @@ internal fun ConversationRoute(
     )
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
-    CompositionLocalProvider(LocalCustomEmoji provides customEmoji, LocalSendKeys provides sendKeys) {
+    CompositionLocalProvider(
+        LocalCustomEmoji provides customEmoji,
+        LocalSendKeys provides sendKeys,
+        LocalDoubleTapReaction provides doubleTap,
+    ) {
         ChatScreen(
             state = state,
             onEvent = viewModel::onEvent,

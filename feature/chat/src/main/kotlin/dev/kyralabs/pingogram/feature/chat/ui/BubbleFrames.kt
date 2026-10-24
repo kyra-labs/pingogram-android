@@ -1,7 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
@@ -94,7 +92,8 @@ internal fun WithReactionBadges(
  * bot attached to it ([BotKeyboardButtons]) and the link to its thread ([ThreadButton]: "12 comments", "3 replies").
  * Where the group
  * shows its time on its last bubble only, a tap that nothing inside takes (links, media, quotes and badges keep
- * theirs) shows or hides this one's ([ChatEvent.ToggleTime]).
+ * theirs) shows or hides this one's ([ChatEvent.ToggleTime]); a double tap adds the quick reaction where the settings
+ * allow it ([bubbleTaps], [rememberDoubleTapReaction]).
  */
 @Suppress("LongParameterList") // The bubble, its frame and the badges' state, and where they send events.
 @Composable
@@ -126,7 +125,8 @@ internal fun BubbleStack(
             )
         }
     }
-    val stackModifier = if (bubble.position.joinsNext) modifier.onTap(bubble.id, onEvent) else modifier
+    val onDoubleTap = rememberDoubleTapReaction(bubble, reactions, onEvent)
+    val stackModifier = modifier.bubbleTaps(bubble.id, bubble.position.joinsNext, onDoubleTap, onEvent)
     val thread = bubble.thread
     val keyboard = bubble.keyboard
     when {
@@ -175,12 +175,6 @@ private fun KeyboardAndThread(
         if (thread != null) ThreadButton(thread, onOpen = { onEvent(ChatEvent.OpenThread(thread.messageId)) })
     }
 }
-
-/** Shows or hides the time of the bubble of message [messageId] when tapped where nothing inside takes the tap. */
-private fun Modifier.onTap(
-    messageId: Long,
-    onEvent: (ChatEvent) -> Unit,
-): Modifier = pointerInput(messageId, onEvent) { detectTapGestures { onEvent(ChatEvent.ToggleTime(messageId)) } }
 
 /**
  * [bubble] (with its reaction badges) and [footer] below it, a gap of `spacing.extraSmall` apart, on the bubble's side
