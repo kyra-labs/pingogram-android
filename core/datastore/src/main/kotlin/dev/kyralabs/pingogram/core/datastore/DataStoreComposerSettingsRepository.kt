@@ -20,7 +20,7 @@ import javax.inject.Singleton
 /**
  * [ComposerSettingsRepository] in the app's settings, a Preferences DataStore ([SettingsDataStore]). A file that cannot
  * be read and missing keys read as the defaults. "Send with Ctrl+Enter", the setting before (2026-10-23), still counts
- * until the first save: on, it means a hardware keyboard's Enter does not send.
+ * until the first save: on, it means a hardware keyboard's Enter does not send. Photos go compressed by default.
  */
 @Singleton
 class DataStoreComposerSettingsRepository
@@ -50,6 +50,20 @@ class DataStoreComposerSettingsRepository
             } catch (error: IOException) {
                 Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
             }
+
+        override val sendPhotosInOriginalQuality: Flow<Boolean> =
+            dataStore.data
+                .catch { error -> if (error is IOException) emit(emptyPreferences()) else throw error }
+                .map { it[SEND_PHOTOS_ORIGINAL] ?: false }
+                .distinctUntilChanged()
+
+        override suspend fun setSendPhotosInOriginalQuality(enabled: Boolean): Outcome<Unit> =
+            try {
+                dataStore.edit { it[SEND_PHOTOS_ORIGINAL] = enabled }
+                Outcome.Success(Unit)
+            } catch (error: IOException) {
+                Outcome.Failure(DomainError.Unknown(code = 0, message = "Settings not saved: ${error.message}"))
+            }
     }
 
 // The keys in the settings file; renaming them loses what users saved under them.
@@ -58,3 +72,4 @@ private val ENTER_SENDS_ON_SCREEN = booleanPreferencesKey("composer.enter_sends_
 
 /** The setting before [ENTER_SENDS_HARDWARE], read until the first save, which removes it. */
 private val SEND_WITH_CTRL_ENTER = booleanPreferencesKey("composer.send_with_ctrl_enter")
+private val SEND_PHOTOS_ORIGINAL = booleanPreferencesKey("composer.send_photos_original")

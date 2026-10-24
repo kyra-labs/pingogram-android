@@ -730,6 +730,9 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  A voice message holds a transient audio focus of its own (`SpeechFocus`, `AUDIOFOCUS_GAIN_TRANSIENT`, paused rather
+  than ducked), so another app's music pauses for it and plays on after; music keeps ExoPlayer's permanent focus.
+  Calls without Telecom take the focus as a call (`AudioManagerCall`), so a playing voice message or video pauses.
   Raise to listen (`RaiseToListen`, beside it): while voice messages play, the proximity sensor (no permission) moves
   a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
   proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go
@@ -748,6 +751,20 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   offset, limit, synchronous=false)` and observes `updateFile`. A `FileRepository` dedups
   requests and exposes `Flow<FileState>` (`NotDownloaded`, `Downloading(progress)`,
   `Downloaded(path)`).
+- Streaming (`docs/adr/0028-streaming-media.md`): `core:domain`'s `FileStreamRepository` (`TdlibFileStreamRepository`,
+  `core:data`, no cache) waits until a range of a file is on the device, downloading from its offset at visible
+  priority (`downloadFile` with `limit` 0) unless a download it started covers it, and stops that download
+  (`cancelDownloadFile`) when the reader leaves; TDLib keeps what came. `core:ui`'s `TdlibDataSource` is a Media3
+  `DataSource` over it for `tdlib-file://<file id>` URIs, waiting on the player's loading thread (20 s at most) and
+  reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
+  it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
+  stream. The seek bar shows the player's buffered position.
+- Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
+  not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
+  position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player
+  of its own from there, the window's play or pause reaching it through `PipActionReceiver`. Expanding the window gives
+  the video back, and `ReturnFromPictureInPictureEffect` (in `:app`'s `PingogramNavHost`) opens the viewer again at it,
+  where `MediaPlayback.startAt` takes up the position. Secret chats' media stays in the viewer's secure window.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
   `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
   `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
@@ -803,6 +820,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
   `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
   download button.
+- Power saving (Settings → Power saving): `core:domain`'s `PowerSavingSettings` (the mode: off, with Battery Saver,
+  always; the parts it turns off: animated stickers and custom emoji, autoplay, call screen animations) are kept in
+  DataStore (`DataStorePowerSavingRepository`, bound in its own `PowerSavingModule`), `AndroidBatterySaverRepository`
+  (`core:data`) follows `PowerManager.isPowerSaveMode` through `ACTION_POWER_SAVE_MODE_CHANGED`, and
+  `DefaultPowerSavingPolicy` combines both into what is turned off now (`PowerSavingPolicy.inEffect`, `PowerSaving`).
+  Three places follow it: `:app`'s `AnimatedStickersModule` hands `AnimatedStickers` a `still` flow, which holds every
+  sticker and custom emoji at its first frame (`StickerPlayer`); `MediaViewerViewModel` turns `MediaPlayback`'s
+  autoplay off, so the current video or GIF waits for its play button (`VideoPlayback.waitsForTap`); `CallActivity`
+  and `GroupCallActivity` pass it to `CallTheme`, whose `LocalStillCallAnimations` holds the ringing avatar's turn and
+  the speaking rings' fades still. `feature:settings`' `PowerSavingRoute` (`PowerSavingViewModel`) sets it. Reduced
+  motion stays the system's.
 - Background transfers (FR-N4, `docs/adr/0009-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
@@ -824,6 +852,13 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Without compression (`AttachmentKind.Original`, the attach preview's switch, its default `ComposerSettingsRepository.sendPhotosInOriginalQuality`
+  in Data and storage): `ChatAttachments` keeps the gallery's URIs of the preview's items and, on sending, prepares
+  each again as a file. `AttachmentPreparer` copies a JPEG's image data byte for byte without its metadata
+  (`JpegMetadata`: every application segment but JFIF and every comment taken out, the EXIF orientation written back
+  alone), and writes any other photo anew as a JPEG at its size (at most `ORIGINAL_MAX_SIDE`, 8192 px) and quality 100;
+  videos go as they are. A photo whose metadata cannot be taken out is not sent so: its compressed copy goes instead.
+  A photo more than 20 times as long as wide (td_api.tl `inputPhoto`'s limit) goes as such a file either way.
 - Picked photos (Edit profile, a new group or channel, a group's or channel's info): `core:domain`'s
   `PickedPhotoRepository` (`AndroidPickedPhotoRepository`, `core:data`) is the one place that prepares them, as picked
   photos are prepared for sending (`AttachmentPreparer`: copied into `uploads/`, decoded and written anew as an

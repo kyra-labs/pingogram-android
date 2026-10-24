@@ -247,10 +247,10 @@ class SettingsListDetailTest {
         composeRule.waitForIdle()
     }
 
-    /** A row of Settings home, which opens a page. */
+    /** A row of Settings home, which opens a page, scrolled into view. */
     private fun row(
         @StringRes title: Int,
-    ): SemanticsNodeInteraction = composeRule.onNode(hasText(string(title)) and hasClickAction())
+    ): SemanticsNodeInteraction = composeRule.onNode(hasText(string(title)) and hasClickAction()).performScrollTo()
 
     private fun awaitText(
         @StringRes id: Int,

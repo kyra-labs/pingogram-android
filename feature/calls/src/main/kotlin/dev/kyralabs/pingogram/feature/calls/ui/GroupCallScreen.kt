@@ -7,6 +7,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -383,8 +384,9 @@ private fun Participants(
 }
 
 /**
- * A participant: their avatar, ringed in `primary` while they speak (the ring fades in the draw phase), their name and
- * what they are doing, and a symbol of it at the end. Screen readers hear one item.
+ * A participant: their avatar, ringed in `primary` while they speak (the ring fades in the draw phase, at once while
+ * power saving holds the call screens still, [LocalStillCallAnimations]), their name and what they are doing, and a
+ * symbol of it at the end. Screen readers hear one item.
  */
 @Composable
 private fun ParticipantRow(
@@ -393,7 +395,8 @@ private fun ParticipantRow(
 ) {
     val colors = MaterialTheme.colorScheme
     val speaking = participant.state == ParticipantState.Speaking
-    val ring by animateFloatAsState(if (speaking) 1f else 0f, MaterialTheme.motionScheme.fastEffectsSpec())
+    val ringSpec = if (LocalStillCallAnimations.current) snap() else MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val ring by animateFloatAsState(if (speaking) 1f else 0f, ringSpec)
     val ringWidth = MaterialTheme.sizes.avatarRing
     val name =
         participant.name.ifBlank { stringResource(R.string.call_someone) }.let {

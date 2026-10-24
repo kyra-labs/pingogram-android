@@ -160,6 +160,9 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 lottie = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+# DataSource, for playing TDLib files while they download (core:ui's TdlibDataSource, docs/adr/0028-streaming-media.md):
+# media3-exoplayer depends on it already, so it adds nothing to the app.
+media3-datasource = { group = "androidx.media3", name = "media3-datasource", version.ref = "media3" }
 # PlayerSurface for the media viewer's videos: Compose only, on media3-common, no View widgets.
 media3-ui-compose = { group = "androidx.media3", name = "media3-ui-compose", version.ref = "media3" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
