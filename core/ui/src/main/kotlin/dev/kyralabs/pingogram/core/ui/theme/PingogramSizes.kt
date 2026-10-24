@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
  *   reactions, at 100% font scale.
  * @property swipeReplyDistance how far a bubble is swiped toward the end to reply to it: released past it, the reply
  *   starts.
+ * @property nextChatPullDistance how far a read channel is pulled up past its newest post to open the next unread
+ *   channel: released past it, that channel opens.
  * @property messageMenuBlur the blur radius of the conversation behind a message lifted for its actions (API 31+).
  * @property messageMenuMinWindowHeight the shortest window that lifts a long-pressed message with its menu beside it;
  *   shorter ones (phones in landscape) show its actions in a bottom sheet. Material's lower bound of medium heights.
@@ -135,6 +137,7 @@ data class PingogramSizes(
     val reactionBadgeRing: Dp = 2.dp,
     val reactionTile: Dp = 64.dp,
     val swipeReplyDistance: Dp = 64.dp,
+    val nextChatPullDistance: Dp = 96.dp,
     val messageMenuBlur: Dp = 16.dp,
     val messageMenuMinWindowHeight: Dp = 480.dp,
     val mediaMaxWidth: Dp = 320.dp,

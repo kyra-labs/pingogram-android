@@ -303,6 +303,14 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
+    /**
+     * A pull past the newest post of a read channel, or a screen reader's action, asks to open channel [chatId], the
+     * next unread one ([ChatViewModel.nextChannel]), in this one's place.
+     */
+    data class OpenNextChannel(
+        val chatId: Long,
+    ) : ChatEvent
+
     /** Send the failed message [messageId] again (an album's failed items). */
     data class Resend(
         val messageId: Long,

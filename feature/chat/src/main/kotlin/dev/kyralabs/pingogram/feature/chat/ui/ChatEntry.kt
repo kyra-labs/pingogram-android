@@ -19,7 +19,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
  * known, a frame or two, it draws the conversation's own first frame (its top bar and empty sheet), so the screen does
  * not change as it decides. Profiles (a private chat's title, a sender, a mention) open through [onOpenProfile],
  * a group's or channel's info page (its title) through [onOpenChatInfo]. With [focusComposer], the conversation's
- * composer takes the focus once it shows.
+ * composer takes the focus once it shows. The next unread channel, which a read channel offers, opens through
+ * [onOpenNextChat] in this chat's place, or through [onOpenChat] without it.
  */
 @Suppress("LongParameterList") // The chat and where in it, and what it opens elsewhere.
 @Composable
@@ -35,6 +36,7 @@ internal fun ChatRoute(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
 ) {
     val conversation: @Composable (MessageTopic?) -> Unit = { shown ->
         ConversationRoute(
@@ -49,6 +51,7 @@ internal fun ChatRoute(
             onOpenProfile,
             onOpenChatInfo,
             focusComposer = focusComposer,
+            onOpenNextChat = onOpenNextChat,
         )
     }
     if (topic != null) {
