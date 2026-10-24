@@ -597,7 +597,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
     `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
     to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
-    restricting, banning, lifting), and clearing the history (`deleteChatHistory` for the user only). Leaving and
+    restricting, banning, lifting), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
+    with the 2-step verification password, waiting as long as authentication requests; the password only in the view
+    model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.

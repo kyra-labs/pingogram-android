@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.MemberPermissions
 import dev.kyralabs.pingogram.core.domain.model.MemberRole
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 
 /**
  * What administrators change in a group or channel (`REQUIREMENTS.md` FR-P3), and clearing its history (FR-P4): one
@@ -55,7 +56,7 @@ interface GroupAdministrationRepository {
     /**
      * Gives [member] of chat [chatId] [role]: promotes them with administrator rights, takes the rights away
      * ([MemberRole.Member]), restricts, removes and bans ([MemberRole.Banned]), or lets a banned user back
-     * ([MemberRole.Left]). Ownership is not transferred here.
+     * ([MemberRole.Left]). Ownership is transferred with [transferOwnership].
      */
     suspend fun setMemberRole(
         chatId: Long,
@@ -65,4 +66,17 @@ interface GroupAdministrationRepository {
 
     /** Deletes the history of chat [chatId] for the current user only, keeping the chat in the lists. */
     suspend fun clearHistory(chatId: Long): Outcome<Unit>
+
+    /** Whether the user may transfer the ownership of a chat now, and why not (`canTransferOwnership`). */
+    suspend fun ownershipTransferCheck(): Outcome<OwnershipTransferCheck>
+
+    /**
+     * Makes user [userId] the owner of supergroup or channel [chatId], checking the current user's 2-step verification
+     * [password] (`DomainError.PasswordInvalid` when wrong). The current user stays an administrator.
+     */
+    suspend fun transferOwnership(
+        chatId: Long,
+        userId: Long,
+        password: String,
+    ): Outcome<Unit>
 }
