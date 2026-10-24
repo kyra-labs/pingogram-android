@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactJoinedRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationSettingsRepository
 import dev.kyralabs.pingogram.core.domain.model.NotificationPrompt
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
@@ -78,6 +79,7 @@ class NotificationSettingsViewModelTest {
             TdlibNotificationSettingsRepository(client, FakeWallClock(TEST_NOW)),
             keepConnected,
             prompt,
+            TdlibContactJoinedRepository(client),
             pushDelivery,
         ).also { runCurrent() }
 
@@ -303,6 +305,39 @@ class NotificationSettingsViewModelTest {
 
             assertFalse(viewModel.state.isKeepConnectedOffered)
             assertFalse(keepConnected.keepConnected.value)
+        }
+
+    // Contact joined Telegram
+
+    @Test
+    fun `contact joined shows the account's option and sets it`() =
+        runTest {
+            client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueBoolean(true)))
+            client.on(TdApi.SetOption::class, TdResult.Success(TdApi.Ok()))
+            val viewModel = viewModel()
+            assertEquals(false, viewModel.state.contactJoined)
+
+            send(viewModel, NotificationSettingsEvent.SetContactJoined(true))
+
+            assertEquals(true, viewModel.state.contactJoined)
+            val sent = client.sentOf<TdApi.SetOption>().single()
+            assertEquals("disable_contact_registered_notifications", sent.name)
+            assertFalse((sent.value as TdApi.OptionValueBoolean).value)
+        }
+
+    @Test
+    fun `contact joined that Telegram refuses flips back and says why`() =
+        runTest {
+            client.on(TdApi.GetOption::class, TdResult.Success<TdApi.OptionValue>(TdApi.OptionValueEmpty()))
+            client.on(TdApi.SetOption::class, TdResult.Failure(TdError(429, "Too Many Requests: retry after 5")))
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertEquals(true, viewModel.state.contactJoined)
+
+            send(viewModel, NotificationSettingsEvent.SetContactJoined(false))
+
+            assertEquals(true, viewModel.state.contactJoined)
+            assertTrue((effects.single() as NotificationSettingsEffect.ShowError).error is DomainError.FloodWait)
         }
 
     // Reset

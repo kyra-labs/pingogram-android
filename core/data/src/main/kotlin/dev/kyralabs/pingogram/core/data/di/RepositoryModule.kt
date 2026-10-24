@@ -37,6 +37,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatStatisticsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibConnectionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibContactJoinedRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
@@ -109,6 +110,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatStatisticsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectedWebsiteRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ContactJoinedRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
@@ -316,6 +318,9 @@ interface RepositoryModule {
 
     @Binds
     fun connectedWebsiteRepository(repository: TdlibConnectedWebsiteRepository): ConnectedWebsiteRepository
+
+    @Binds
+    fun contactJoinedRepository(repository: TdlibContactJoinedRepository): ContactJoinedRepository
 
     @Binds
     fun proxyRepository(repository: TdlibProxyRepository): ProxyRepository

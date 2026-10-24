@@ -237,17 +237,35 @@ private const val PINNED = "pinned"
 private const val SOUND = "sound"
 private const val EXCEPTIONS = "exceptions"
 
-/** "Reactions", a row of its own that opens whom the account hears of reactions and poll votes from. */
+/**
+ * "Reactions", the row that opens whom the account hears of reactions and poll votes from, and "Contact joined
+ * Telegram" as a switch row once TDLib has said whether it is on ([contactJoined]).
+ */
 @Composable
-internal fun ReactionsGroup(onClick: () -> Unit) {
+internal fun ReactionsGroup(
+    contactJoined: Boolean?,
+    onOpenReactions: () -> Unit,
+    onContactJoinedChange: (Boolean) -> Unit,
+) {
     SettingsGroup {
         item { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_reactions),
                 shapes = shapes,
                 supportingContent = { Text(stringResource(R.string.settings_reactions_summary)) },
-                onClick = onClick,
+                onClick = onOpenReactions,
             )
+        }
+        if (contactJoined != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_contact_joined),
+                    summary = stringResource(R.string.settings_contact_joined_summary),
+                    checked = contactJoined,
+                    shapes = shapes,
+                    onCheckedChange = onContactJoinedChange,
+                )
+            }
         }
     }
 }

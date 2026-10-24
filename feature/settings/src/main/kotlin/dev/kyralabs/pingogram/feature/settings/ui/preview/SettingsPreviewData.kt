@@ -426,6 +426,7 @@ internal object SettingsPreviewData {
                     ),
                 ),
             isKeepConnectedOffered = true,
+            contactJoined = true,
         )
 
     /** Android shows no notification of Pingogram, and the channels' channel is off. */
