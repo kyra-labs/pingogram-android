@@ -95,6 +95,10 @@ the release workflow so the owner can install and test on a phone.
 - [x] Group voice chats: join, speak, mute, raise hand, leave; start one as an admin (`docs/adr/0023-group-voice-chats-and-live-streams.md`;
       who is speaking from Telegram's recent speakers until the owner decides on audio levels)
 - [x] Live streams: watching, with picture-in-picture (ADR 0023)
+- [x] Conference calls: joining by a `t.me/call` link, with the emojis to compare (`docs/adr/0025-conference-calls.md`,
+      NTgCalls patched for TDLib's encryption)
+- [ ] Conference calls: upgrading a 1:1 call, inviting, invitations in chats and Recent calls; the per-frame
+      encryption measured on a device (`docs/PERFORMANCE.md` §9)
 
 ## M6 — Polish → `v1.0.0`
 

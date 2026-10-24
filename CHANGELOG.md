@@ -20,6 +20,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Chats: raise to listen. While a voice message plays, holding the phone to your ear plays it through the earpiece with
   the screen off; lowering it plays on through the speaker, or pauses if you turn on "Pause when lowered". Never with
   headphones, Bluetooth or during a call. Settings → Appearance → Chats, on by default.
+- Group calls by link: a `t.me/call/…` link opens Telegram's new end-to-end encrypted group calls. Pingogram asks
+  "Join the group call?" first, then joins with your microphone off, and shows the call's four emojis under its title,
+  which everyone in it sees the same while the call is secure. The rest works as in voice chats.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
