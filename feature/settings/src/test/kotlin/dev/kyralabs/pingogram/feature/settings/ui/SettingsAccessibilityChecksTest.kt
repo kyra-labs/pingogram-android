@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
 import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewS
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.NetworkUsagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.PrivacyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ProxyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
@@ -206,6 +208,9 @@ class SettingsAccessibilityChecksTest {
     fun editProxyErrors() = check { EditProxyScreen(ProxyPreviewStates.mtprotoErrors, onEvent = {}, onBack = {}) }
 
     @Test
+    fun networkUsage() = check { NetworkUsageScreen(NetworkUsagePreviewStates.wifi, onEvent = {}, onBack = {}) }
+
+    @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }
 
     @Test
@@ -242,6 +247,7 @@ class SettingsAccessibilityChecksTest {
                 onEvent = {},
                 onOpenAutoDownload = {},
                 onOpenProxies = {},
+                onOpenNetworkUsage = {},
                 onBack = {},
             )
         }

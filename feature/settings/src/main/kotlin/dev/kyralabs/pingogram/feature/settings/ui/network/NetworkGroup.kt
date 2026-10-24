@@ -8,11 +8,12 @@ import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsGroup
 
-/** "Network": the proxy in use, a row that opens the proxies ([onOpenProxies]). */
+/** "Network": the proxy in use, a row that opens the proxies ([onOpenProxies]), and network usage. */
 @Composable
 internal fun NetworkGroup(
     proxy: SavedProxy?,
     onOpenProxies: () -> Unit,
+    onOpenNetworkUsage: () -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_network)) {
         item { shapes ->
@@ -22,6 +23,15 @@ internal fun NetworkGroup(
                 icon = R.drawable.ic_vpn_lock,
                 shapes = shapes,
                 onClick = onOpenProxies,
+            )
+        }
+        item { shapes ->
+            PageItem(
+                title = stringResource(R.string.settings_network_usage),
+                summary = stringResource(R.string.settings_network_usage_summary),
+                icon = R.drawable.ic_data_usage,
+                shapes = shapes,
+                onClick = onOpenNetworkUsage,
             )
         }
     }
