@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.calls.engine
 
 import dev.kyralabs.pingogram.core.domain.model.CallConnection
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
+import dev.kyralabs.pingogram.core.domain.model.ConferenceChannel
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoSourceGroup
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
@@ -43,6 +44,34 @@ interface CallEngine {
         groupCallId: Int,
         muted: Boolean,
     ): GroupCallSession
+
+    /**
+     * Opens the microphone and the speaker for a conference call (`docs/adr/0025-conference-calls.md`) and makes its
+     * join payload, which TDLib's `createGroupCall` and `joinGroupCall` take. TDLib keeps the call's blockchain: every
+     * frame the engine sends or receives goes through [encryption]. A voice chat's session otherwise, closed the same
+     * way.
+     */
+    suspend fun createConference(
+        muted: Boolean,
+        encryption: ConferenceEncryption,
+    ): GroupCallSession
+}
+
+/**
+ * The encryption of a conference call's frames, done by TDLib (`encryptGroupCallData`, `decryptGroupCallData`). Called
+ * on the engine's threads for every frame, which wait for the answer; null drops the frame.
+ */
+interface ConferenceEncryption {
+    fun encrypt(
+        channel: ConferenceChannel,
+        data: ByteArray,
+        unencryptedPrefix: Int,
+    ): ByteArray?
+
+    fun decrypt(
+        userId: Long,
+        data: ByteArray,
+    ): ByteArray?
 }
 
 /** One voice chat or live stream of a [CallEngine]: created, then [connect]ed with what Telegram answered. */
@@ -110,9 +139,46 @@ interface GroupCallSession {
     /** Where each received video's frames go, by endpoint, on the engine's threads. Not suspending. */
     fun setIncomingVideoSinks(sinks: Map<String, VideoFrameSink>)
 
+    /**
+     * Opens the presentation, the shared screen's own connection (`docs/adr/0026-screen-sharing.md`), and returns its
+     * join payload for TDLib's `startGroupCallScreenSharing`; null where the engine could not. The user's consent must
+     * have reached the engine ([ScreenCaptureConsent]).
+     */
+    suspend fun startPresentation(): Presentation?
+
+    /**
+     * Connects the presentation with TDLib's [params] (JSON) and starts sending the screen at most at [quality]; the
+     * call service must run as `mediaProjection` by then.
+     */
+    suspend fun connectPresentation(
+        params: String,
+        quality: VideoQuality,
+    )
+
+    /** Stops sending the screen and closes the presentation. Idempotent. */
+    suspend fun stopPresentation()
+
+    /** Emits when the screen's capture ended by itself: the system's chip, or the projection taken back. */
+    val screenEnded: Flow<Unit>
+
+    /**
+     * The audio sources (SSRCs) a conference call receives without knowing whose they are, which [mapSources] answers:
+     * decrypting a frame needs its sender. Never for a voice chat.
+     */
+    val unknownSources: Flow<List<Int>>
+
+    /** Tells a conference call whose its audio sources are: user ids by SSRC. */
+    suspend fun mapSources(sources: Map<Int, Long>)
+
     /** Leaves the media and frees the microphone and the speaker. Idempotent. */
     suspend fun close()
 }
+
+/** A voice chat's presentation, before it connects: its join payload (JSON) and the audio source (SSRC) in it. */
+data class Presentation(
+    val payload: String,
+    val audioSourceId: Int,
+)
 
 /** Another participant's video to receive in a voice chat: who sends it and what the engine subscribes to. */
 data class IncomingVideo(

@@ -17,14 +17,19 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.PowerSaving
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.MediaViewerRoute
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
+import dev.kyralabs.pingogram.feature.media.pip.PictureInPictureVideos
+import dev.kyralabs.pingogram.feature.media.pip.PipVideo
+import dev.kyralabs.pingogram.feature.media.ui.player.PlaySource
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoKind
 import dev.kyralabs.pingogram.feature.media.ui.player.VideoPlayer
 import kotlinx.collections.immutable.ImmutableList
@@ -79,7 +84,8 @@ import javax.inject.Inject
  *   cancelled. The files of the shown item and its neighbours are followed into [MediaViewerUiState.Content.files].
  * - **Playback** ([MediaPlayback]): the current item's video or GIF plays on the one [VideoPlayer] once its file is
  *   on the device and the screen is started; it pauses when the page changes or the screen stops, and the player is
- *   released with the view model.
+ *   released with the view model. While power saving turns autoplay off (`PowerSaving.noAutoplay`), it waits for a
+ *   tap on its play button instead.
  * - **Spoilers**: hidden until tapped ([MediaViewerEvent.RevealSpoiler]), except the opened item's.
  * - **Share, Save and Copy** ([MediaSharing]): offered where Telegram lets the content leave it; the current item's
  *   file goes to the share sheet ([MediaViewerEffect.ShareFile]), into the gallery through the
@@ -95,9 +101,10 @@ import javax.inject.Inject
  *   and the 12- or 24-hour setting of the moment. The state runs while the screen collects it, and 5 s after.
  *
  * It takes one repository per kind of data, plus the player, file actions, clock, dispatcher, scope, language and
- * time patterns that tests replace, hence `LongParameterList` is suppressed.
+ * time patterns that tests replace, hence `LongParameterList` is suppressed; and one function per kind of work it does
+ * itself (loading, paging, spoilers, deletions, picture-in-picture), hence `TooManyFunctions`.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MediaViewerViewModel internal constructor(
@@ -115,6 +122,8 @@ class MediaViewerViewModel internal constructor(
     locale: () -> Locale,
     private val videoPlayer: VideoPlayer,
     sharedStorage: SharedStorageRepository,
+    private val pictureInPicture: PictureInPictureVideos,
+    powerSaving: Flow<PowerSaving> = flowOf(PowerSaving.None),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -130,6 +139,8 @@ class MediaViewerViewModel internal constructor(
         @ApplicationScope applicationScope: CoroutineScope,
         videoPlayer: VideoPlayer,
         sharedStorage: SharedStorageRepository,
+        pictureInPicture: PictureInPictureVideos,
+        powerSaving: PowerSavingPolicy,
     ) : this(
         savedStateHandle.toRoute<MediaViewerRoute>(),
         savedStateHandle,
@@ -145,6 +156,8 @@ class MediaViewerViewModel internal constructor(
         Locale::getDefault,
         videoPlayer,
         sharedStorage,
+        pictureInPicture,
+        powerSaving.inEffect,
     )
 
     private val chatId = route.chatId
@@ -196,7 +209,10 @@ class MediaViewerViewModel internal constructor(
         }
 
     private val playback =
-        MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }
+        MediaPlayback(videoPlayer, viewModelScope) { effectChannel.trySend(MediaViewerEffect.PlaybackFailed) }.apply {
+            // Picture-in-picture gave this video back: it plays on from where the window left it.
+            pictureInPicture.takeReturn(chatId, route.messageId)?.let { startAt(it.messageId, it.positionMillis) }
+        }
 
     /** The last [files], whose states carry over while the next ones are subscribed; main thread only. */
     private var knownFiles: Map<Int, FileState> = emptyMap()
@@ -276,6 +292,7 @@ class MediaViewerViewModel internal constructor(
             downloads.cancelAll(files.value, applicationScope)
         }
         viewModelScope.launch { mediaRepository.deletedMessages(chatId).collect(::onDeleted) }
+        viewModelScope.launch { powerSaving.collect { playback.setAutoplay(!it.noAutoplay) } }
         viewModelScope.launch {
             combine(viewer, files, ::Pair).collect { (viewer, files) -> focus(viewer, files) }
         }
@@ -308,20 +325,16 @@ class MediaViewerViewModel internal constructor(
                 playback.playPause()
             }
 
+            MediaViewerEvent.PictureInPicture -> {
+                toPictureInPicture()
+            }
+
             is MediaViewerEvent.Seek -> {
                 playback.seek(event.fraction)
             }
 
-            MediaViewerEvent.Share -> {
-                sharing.start(MediaAction.Share)
-            }
-
-            MediaViewerEvent.Save -> {
-                sharing.start(MediaAction.Save)
-            }
-
-            MediaViewerEvent.Copy -> {
-                sharing.start(MediaAction.Copy)
+            MediaViewerEvent.Share, MediaViewerEvent.Save, MediaViewerEvent.Copy -> {
+                event.mediaAction?.let(sharing::start)
             }
 
             MediaViewerEvent.Delete -> {
@@ -357,6 +370,33 @@ class MediaViewerViewModel internal constructor(
                 sharing.permission.onResult(event.granted)
             }
         }
+    }
+
+    /**
+     * Hands the video playing to picture-in-picture ([PictureInPictureVideos]), which plays on from its position, and
+     * closes the viewer. Never a secret chat's media, which only its window, kept secure, may show.
+     */
+    private fun toPictureInPicture() {
+        val clip =
+            viewer.value.window
+                ?.messages
+                ?.firstOrNull { it.id == viewer.value.currentId }
+                ?.content
+                ?.toViewerMedia() as? ViewerMedia.Clip
+        // The player hands the video over only once the clip may leave the window.
+        val (media, handOff) =
+            clip?.takeUnless { isSecretChat.value }?.let { c -> playback.handOff()?.let { c to it } } ?: return
+        pictureInPicture.start(
+            PipVideo(
+                chatId = chatId,
+                messageId = handOff.target.messageId,
+                source = handOff.target.source,
+                positionMillis = handOff.positionMillis,
+                width = media.video.width,
+                height = media.video.height,
+            ),
+        )
+        effectChannel.trySend(MediaViewerEffect.OpenPictureInPicture)
     }
 
     /** The settled page's item becomes the current one; a side that failed is tried again as the user moves on. */
@@ -481,10 +521,16 @@ class MediaViewerViewModel internal constructor(
             deletion.focus(null)
             return
         }
-        downloads.focus(window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 }, index, files)
         val message = window.messages[index]
         val media = message.content.toViewerMedia()
-        playback.show(media?.playTarget(message.id, files))
+        val target = media?.playTarget(message.id, files)
+        downloads.focus(
+            window.messages.map { it.content.toViewerMedia()?.fileId ?: 0 },
+            index,
+            files,
+            streamed = (target?.source as? PlaySource.Stream)?.fileId,
+        )
+        playback.show(target)
         sharing.focus(media?.let { MediaSharing.Target(message.id, it) }, files)
         deletion.focus(message.id)
     }
@@ -638,17 +684,36 @@ private fun SendChannel<MediaViewerEffect>.showError(error: DomainError) {
     if (error != DomainError.Silent) trySend(MediaViewerEffect.ShowError(error))
 }
 
-/** What the player plays for this media: a video's or GIF's file once it is on the device; nothing for a photo. */
+/**
+ * What the player plays for this media: a video that supports it as it streams, whether on the device or not, so the
+ * target stays the same as it downloads (`docs/adr/0028-streaming-media.md`); another video's or a GIF's file once it
+ * is on the device; nothing for a photo.
+ */
 private fun ViewerMedia.playTarget(
     messageId: Long,
     files: Map<Int, FileState>,
 ): PlayTarget? {
-    val path = (files[fileId] as? FileState.Downloaded)?.path
+    val downloaded = (files[fileId] as? FileState.Downloaded)?.path?.let(PlaySource::File)
     return when {
-        path == null -> null
-        this is ViewerMedia.Clip -> PlayTarget(messageId, path, VideoKind.Video, video.duration * MILLIS_PER_SECOND)
-        this is ViewerMedia.Gif -> PlayTarget(messageId, path, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
-        else -> null
+        this is ViewerMedia.Clip && video.supportsStreaming -> {
+            PlayTarget(messageId, PlaySource.Stream(fileId), VideoKind.Video, video.duration * MILLIS_PER_SECOND)
+        }
+
+        downloaded == null -> {
+            null
+        }
+
+        this is ViewerMedia.Clip -> {
+            PlayTarget(messageId, downloaded, VideoKind.Video, video.duration * MILLIS_PER_SECOND)
+        }
+
+        this is ViewerMedia.Gif -> {
+            PlayTarget(messageId, downloaded, VideoKind.Gif, animation.duration * MILLIS_PER_SECOND)
+        }
+
+        else -> {
+            null
+        }
     }
 }
 

@@ -311,13 +311,32 @@ internal fun ChatAdministrationGroup(
     val rows =
         listOfNotNull(
             page("edit", R.string.chat_info_edit, ChatInfoPage.EditInfo).takeIf { administration.canEditInfo },
+            page(
+                "settings",
+                if (administration.isChannel) R.string.chat_settings_channel else R.string.chat_settings_group,
+                ChatInfoPage.Settings,
+            ).takeIf { administration.canEditSettings },
             page("permissions", R.string.chat_info_permissions, ChatInfoPage.Permissions)
                 .takeIf { administration.canEditPermissions },
             administration.administratorCount?.let {
                 members("admins", R.string.chat_info_administrators, MemberFilter.Administrators, it)
             },
+            page("actions", R.string.recent_actions, ChatInfoPage.RecentActions)
+                .takeIf { administration.canViewRecentActions },
+            page("statistics", R.string.statistics, ChatInfoPage.Statistics)
+                .takeIf { administration.canViewStatistics },
             page("links", R.string.chat_info_invite_links, ChatInfoPage.InviteLinks)
                 .takeIf { administration.canManageInviteLinks },
+            administration.joinRequestCount?.let { count ->
+                ProfileRow("requests") { shapes ->
+                    ChatInfoActionRow(
+                        text = stringResource(R.string.join_requests),
+                        shapes = shapes,
+                        onClick = { onEvent(ChatInfoEvent.Open(ChatInfoPage.JoinRequests)) },
+                        detail = numbers.format(count),
+                    )
+                }
+            },
             administration.restrictedCount?.let {
                 members("restricted", R.string.chat_info_restricted, MemberFilter.Restricted, it)
             },

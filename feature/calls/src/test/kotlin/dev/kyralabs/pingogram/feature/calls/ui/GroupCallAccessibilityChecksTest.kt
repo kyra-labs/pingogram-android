@@ -44,6 +44,12 @@ class GroupCallAccessibilityChecksTest {
     fun videos() = check(GroupCallPreviewStates.videos)
 
     @Test
+    fun sharingScreen() = check(GroupCallPreviewStates.sharingScreen)
+
+    @Test
+    fun screens() = check(GroupCallPreviewStates.screens)
+
+    @Test
     fun raiseHand() = check(GroupCallPreviewStates.raiseHand)
 
     @Test
@@ -54,6 +60,12 @@ class GroupCallAccessibilityChecksTest {
 
     @Test
     fun unavailable() = check(GroupCallPreviewStates.unavailable)
+
+    @Test
+    fun confirmConference() = check(GroupCallPreviewStates.confirmConference)
+
+    @Test
+    fun conference() = check(GroupCallPreviewStates.conference)
 
     private fun check(state: GroupCallUiState) {
         composeRule.setContent { PingogramTheme(dynamicColor = false) { GroupCallScreen(state, {}, {}, {}, {}) } }

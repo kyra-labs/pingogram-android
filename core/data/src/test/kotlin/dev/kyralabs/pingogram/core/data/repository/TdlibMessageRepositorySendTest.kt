@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -29,7 +30,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositorySendTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     private fun answerSend(answer: TdResult<TdApi.Message> = TdResult.Success(message(id = SENDING_ID))) =
         client.on(TdApi.SendMessage::class, answer)

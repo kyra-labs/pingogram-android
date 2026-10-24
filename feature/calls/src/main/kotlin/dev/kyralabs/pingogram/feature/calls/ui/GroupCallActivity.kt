@@ -30,9 +30,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
+import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.feature.calls.R
+import dev.kyralabs.pingogram.feature.calls.engine.ScreenCaptureConsent
 import dev.kyralabs.pingogram.feature.calls.service.CallActionReceiver
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -45,8 +48,13 @@ import javax.inject.Inject
  * chat goes on, which its notification brings back. A live stream goes on in picture-in-picture instead, with "Leave".
  */
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Android's callbacks and the window's: picture-in-picture, settings, screen capture.
 class GroupCallActivity : ComponentActivity() {
     @Inject lateinit var appearanceRepository: AppearanceRepository
+
+    @Inject lateinit var powerSaving: PowerSavingPolicy
+
+    @Inject lateinit var screenCaptureConsent: ScreenCaptureConsent
 
     private val viewModel: GroupCallViewModel by viewModels()
 
@@ -72,12 +80,13 @@ class GroupCallActivity : ComponentActivity() {
         CallVideoView(name = slot.name, mirror = mirror, onSink = viewModel::setSelfVideoSink, modifier = modifier)
     }
 
-    private val participantVideo: ParticipantVideo = { endpointId, modifier ->
+    private val participantVideo: ParticipantVideo = { endpointId, fit, modifier ->
         CallVideoView(
             name = "Participant $endpointId",
             mirror = false,
             onSink = { viewModel.setParticipantVideoSink(endpointId, it) },
             modifier = modifier,
+            fit = fit,
         )
     }
 
@@ -87,8 +96,13 @@ class GroupCallActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, backToPictureInPicture)
         val appearance =
             appearanceRepository.appearance.stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), null)
+        val stillAnimations =
+            powerSaving.inEffect
+                .map { it.stillCalls }
+                .stateIn(lifecycleScope, SharingStarted.WhileSubscribed(), false)
         setContent {
             val settings by appearance.collectAsStateWithLifecycle()
+            val still by stillAnimations.collectAsStateWithLifecycle()
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             val permissions =
                 rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
@@ -103,14 +117,12 @@ class GroupCallActivity : ComponentActivity() {
                         ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                     viewModel.onEvent(GroupCallEvent.CameraResult(granted, canAskAgain))
                 }
+            val screenCapture = rememberScreenCaptureRequest(screenCaptureConsent, ::onScreenCaptureResult)
             LaunchedEffect(Unit) {
                 viewModel.effects.collect { effect ->
                     when (effect) {
                         CallEffect.RequestCamera -> camera.launch(Manifest.permission.CAMERA)
-
-                        // Voice chats do not offer screen sharing yet: their view model never asks.
-                        CallEffect.RequestScreenCapture -> Unit
-
+                        CallEffect.RequestScreenCapture -> screenCapture()
                         CallEffect.OpenSettings -> openAppSettings()
                     }
                 }
@@ -119,7 +131,7 @@ class GroupCallActivity : ComponentActivity() {
             val watching = (state as? GroupCallUiState.InCall)?.let { it.watches() && it.hasControls } == true
             LaunchedEffect(watching) { updatePictureInPicture(watching) }
             settings?.let { appearanceSettings ->
-                CallTheme(appearanceSettings) {
+                CallTheme(appearanceSettings, stillAnimations = still) {
                     GroupCallScreen(
                         state = state,
                         onEvent = viewModel::onEvent,
@@ -135,6 +147,8 @@ class GroupCallActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun onScreenCaptureResult(granted: Boolean) = viewModel.onEvent(GroupCallEvent.ScreenSharingResult(granted))
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
@@ -207,6 +221,7 @@ class GroupCallActivity : ComponentActivity() {
 
         const val EXTRA_ACTION = "action"
         const val EXTRA_CHAT_ID = "chat_id"
+        const val EXTRA_LINK = "link"
 
         /** Shows the voice chat the user is in. */
         const val ACTION_SHOW = "dev.kyralabs.pingogram.calls.SHOW_VOICE_CHAT"
@@ -217,6 +232,9 @@ class GroupCallActivity : ComponentActivity() {
         /** Starts a voice chat in [EXTRA_CHAT_ID] and joins it. */
         const val ACTION_START = "dev.kyralabs.pingogram.calls.START_VOICE_CHAT"
 
+        /** Joins the conference call of the `t.me/call` link [EXTRA_LINK] (`docs/adr/0025-conference-calls.md`). */
+        const val ACTION_JOIN_CONFERENCE = "dev.kyralabs.pingogram.calls.JOIN_CONFERENCE"
+
         /** Joins chat [chatId]'s voice chat ([start]: starts one first) and shows it. */
         fun open(
             context: Context,
@@ -226,6 +244,14 @@ class GroupCallActivity : ComponentActivity() {
             context.startActivity(
                 intent(context, if (start) ACTION_START else ACTION_JOIN).putExtra(EXTRA_CHAT_ID, chatId),
             )
+        }
+
+        /** Joins the conference call of [link] and shows it. */
+        fun openConference(
+            context: Context,
+            link: String,
+        ) {
+            context.startActivity(intent(context, ACTION_JOIN_CONFERENCE).putExtra(EXTRA_LINK, link))
         }
 
         internal fun pendingIntent(

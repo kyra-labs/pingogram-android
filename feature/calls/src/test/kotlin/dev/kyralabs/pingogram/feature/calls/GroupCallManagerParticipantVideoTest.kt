@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test
 /** The others' videos in a voice chat: which are received, pinning, and where their frames go (ADR 0024). */
 class GroupCallManagerParticipantVideoTest {
     private val repository = FakeGroupCallRepository()
+    private val conferences = FakeConferenceCallRepository()
     private val engine = FakeCallEngine()
 
     private fun TestScope.manager() =
         GroupCallManager(
             repository,
+            conferences,
             engine,
             FakeCallSystem(),
             FakeCallForeground(),

@@ -66,7 +66,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
   `DataStoreAppearanceRepository` for `AppearanceRepository` (and `DataStoreComposerSettingsRepository` for
-  `ComposerSettingsRepository`, the composer's send key, which Appearance → Chats sets). Preferences rather than Proto
+  `ComposerSettingsRepository`, which Enter sends the composer's message (`SendKeys`), set in Appearance → Chats and
+  handed to the conversation's fields by `feature:chat`'s `SendKeysViewModel` through `LocalSendKeys`;
+  `DataStoreDoubleTapSettingsRepository` for `DoubleTapSettingsRepository`, on which messages a double tap adds the
+  quick reaction, which is the account's: `QuickReactionRepository`, `TdlibQuickReactionRepository` in `core:data`, a
+  `TdlibUpdateCache` of `updateDefaultReactionType`, set with `setDefaultReactionType`; both chosen in Appearance →
+  Chats → Double-tap to react (`QuickReactionRoute`, `QuickReactionViewModel`) and handed to the conversation's
+  bubbles by `feature:chat`'s `DoubleTapViewModel` through `LocalDoubleTapReaction`, the reaction itself going through
+  `ChatEvent.ToggleReaction` as a tapped badge's does). Preferences rather than Proto
   DataStore: Proto needs the protobuf Gradle plugin and `protobuf-javalite`, which the project does
   not use, for a handful of typed keys. Enums are stored by name; unreadable or unknown values read
   as the defaults, and a write that fails reaches the ViewModel as an `Outcome.Failure`.
@@ -247,6 +254,25 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   download treats them) and `DataKind` (TDLib's file types summed up), and resets them (`resetNetworkStatistics`).
   `feature:settings`' `NetworkUsageRoute` (`NetworkUsageViewModel`: the network the device uses first, the one chosen in
   saved state) shows them above Data and storage.
+- **Personal channel** (Edit profile): `core:domain`'s `PersonalChannelRepository` (`TdlibPersonalChannelRepository`,
+  no cache: `getSuitablePersonalChats`, `setPersonalChat` with 0 for none), the one shown read with the editable profile
+  (`userFullInfo.personal_chat_id`); `feature:settings`' `PersonalChannelRoute` (`PersonalChannelViewModel`, the titles
+  from `ChatRepository`) above Edit profile. Other users' profiles read it from `UserFullInfo.personalChatId` and the
+  chat from `ChatRepository` (`getChat` where TDLib has not announced it).
+- **Contact joined Telegram** (Settings → Notifications): `core:domain`'s `ContactJoinedRepository`
+  (`TdlibContactJoinedRepository`, `core:data`, no cache) reads TDLib's option `disable_contact_registered_notifications`
+  with `getOption` per collection, follows its `updateOption`, and sets it with `setOption`.
+- **Link previews in secret chats** (Privacy and security, off by default): `core:domain`'s
+  `LinkPreviewSettingsRepository` (`DataStoreLinkPreviewSettingsRepository`, the settings file). `core:data`'s
+  `SecretChatLinkPreviews` gives the texts sent to a chat their `linkPreviewOptions` (disabled in a secret chat while
+  the setting is off, `getChat` telling the chat's type), used by `TdlibMessageRepository.sendText`, the share sheet's
+  texts and a notification's reply. `feature:settings`' `SecretChatPreviewsViewModel` holds the switch.
+- **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
+  (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
+  logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,
+  `disconnectAllWebsites`). `feature:settings`' `ConnectedWebsitesRoute` (`ConnectedWebsitesViewModel`: the list loaded
+  again whenever the page shows, the bot named from `UserRepository`, the destructive question in saved state) is
+  pushed above Privacy and security.
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the
@@ -612,10 +638,37 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   - `GroupAdministrationRepository` (`TdlibGroupAdministrationRepository`): `setChatTitle`, `setChatDescription`,
     `setChatPhoto` (a photo prepared by `PickedPhotoRepository`, uploaded with its progress as Edit profile's, or null
     to remove it), `setChatPermissions`, `setChatSlowModeDelay`, `setChatMemberStatus` (promoting with `ChatAdministratorRights`,
-    restricting, banning, lifting), and clearing the history (`deleteChatHistory` for the user only). Leaving and
+    restricting, banning, lifting), transferring the ownership (`canTransferOwnership`, then `transferChatOwnership`
+    with the 2-step verification password, waiting as long as authentication requests; the password only in the view
+    model's memory), and clearing the history (`deleteChatHistory` for the user only). Leaving and
     deleting go through `ChatRepository.deleteChat` (`ChatDeletion`), as the chat list's do.
   - `InviteLinkRepository` (`TdlibInviteLinkRepository`): the user's links (`getChatInviteLinks` by creator, active or
     revoked), one link, creating, editing, revoking and deleting them.
+
+  - `ChatSettingsRepository` (`TdlibChatSettingsRepository`): a group's or channel's own settings, `getChat`
+    (reactions, protected content), `getSupergroup` (signatures, topics, the user's role) and `getSupergroupFullInfo`
+    (the linked chat) or `getBasicGroup`, each followed by its updates while collected; it sets them
+    (`setChatAvailableReactions`, `toggleChatHasProtectedContent`, `toggleSupergroupSignMessages`,
+    `toggleSupergroupIsForum`, `setChatDiscussionGroup` from `getSuitableDiscussionChats`) and upgrades a basic group
+    (`upgradeBasicGroupChatToSupergroupChat`). The emoji Telegram offers as reactions come once at TDLib's start
+    (`updateActiveEmojiReactions`), so it is a `TdlibUpdateCache` for them.
+
+  - `JoinRequestRepository` (`TdlibJoinRequestRepository`): the requests to join through links that need approval,
+    every link's at once (`getChatJoinRequests` with an empty link, pages of 50 after the last request), approved or
+    dismissed one by one (`processChatJoinRequest`) or all together (`processChatJoinRequests`). How many wait is
+    `GroupInfo.pendingJoinRequests` (`chat.pending_join_requests`, then `updateChatPendingJoinRequests`).
+  - `ChatEventLogRepository` (`TdlibChatEventLogRepository`): the recent actions of a supergroup or channel, which its
+    administrators read (`getChatEventLog`, the last 48 hours, pages of 50 before the last action, no query, filtered
+    by `ChatEventFilter`s), mapped to `ChatEvent`s (who, when, a `ChatEventAction` of the kinds Pingogram words, the
+    rest `Other`). `feature:profile`'s `RecentActionsRoute(chatId)` (`RecentActionsViewModel`: the chips in saved state,
+    names from `UserRepository` and `ChatRepository`, once per person or chat) shows them.
+  - `ChatStatisticsRepository` (`TdlibChatStatisticsRepository`): `getChatStatistics` (`is_dark` false: the theme
+    colors the charts) into `ChatStatistics` (the period's values against the period before, the graphs, a supergroup's
+    top senders), and `getStatisticalGraph` for the graphs Telegram gives as a token. Their data is Telegram's chart JSON,
+    which `chartOf` reads with the platform's `org.json` into a `Chart` (x values, named series, line, bar or area,
+    stacked, shares of the whole). `GroupDetails.canGetStatistics` says whether the user may ask. `feature:profile`'s
+    `ChatStatisticsRoute(chatId)` (`StatisticsViewModel`: the tokens' graphs three at a time, numbers and days formatted
+    in the user's language by `StatisticsFormat`) draws them on a canvas (`StatisticsChart`), no chart library.
 
   Telegram's refusals map to `DomainError`s of their own (`AdminRightsRequired`, `TitleInvalid`,
   `DescriptionTooLong`, `NotMutualContact`, `TooManyAdmins`), shown as snackbars or under their field.
@@ -625,7 +678,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatMembersRoute(chatId, filter)`, `ChatMembersViewModel`: the filters the user's rights allow, paging, a search
   after a pause, the actions each member's role and the user's rights allow), a member's rights
   (`MemberRightsRoute(chatId, userId, restrict)`: promoting only with rights the user has, restricting only within the
-  chat's defaults), the photo, name and description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
+  chat's defaults), the join requests (`JoinRequestsRoute`, `JoinRequestsViewModel`: a request leaves the list once
+  Telegram answered, "Dismiss all" asks first), the settings (`ChatSettingsRoute`, `ChatSettingsViewModel`: each change one request, the page
+  following Telegram's answer through the repository's flow; upgrading opens the new supergroup), the photo, name and
+  description (`EditChatInfoRoute`, `EditChatInfoViewModel`: the photo apart from
   saving the texts, following `ChatRepository.chat` for the new one), the permissions and slow mode
   (`ChatPermissionsRoute`), and the invite links (`InviteLinksRoute`, `EditInviteLinkRoute(chatId, link?)`). What a
   view model types or chooses is kept in its `SavedStateHandle`. A page that changed members or links leaves a flag in
@@ -679,6 +735,14 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
 - A conversation's audio player (`ExoAudioPlayer`, Media3) runs on a thread of its own: the main
   thread posts to it and reads the position from the player's last report (`PlaybackClock`), so
   no call, `release()` included (which waits for the codec and audio track), ever blocks a frame.
+  A voice message holds a transient audio focus of its own (`SpeechFocus`, `AUDIOFOCUS_GAIN_TRANSIENT`, paused rather
+  than ducked), so another app's music pauses for it and plays on after; music keeps ExoPlayer's permanent focus.
+  Calls without Telecom take the focus as a call (`AudioManagerCall`), so a playing voice message or video pauses.
+  Raise to listen (`RaiseToListen`, beside it): while voice messages play, the proximity sensor (no permission) moves
+  a raised phone to the earpiece (communication mode, the earpiece as communication device on Android 12+, the
+  proximity wake lock, the player's attributes for voice), never with headphones, Bluetooth or a call; it lets go
+  1.5 s after the last voice message, so the next one stays at the ear. Its settings are `core:domain`'s
+  `PlaybackSettingsRepository` (`DataStorePlaybackSettingsRepository`), which Appearance → Chats sets.
 - So does its voice recorder (`MediaVoiceRecorder`, the platform's `MediaRecorder`, behind `VoiceRecorder`): every
   call suspends while it runs on the recorder's thread, `cancel()` and `release()` are posted, as preparing, starting
   and stopping a recording wait for the audio input and the encoder (`docs/adr/0007-voice-recording.md`).
@@ -692,6 +756,20 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   offset, limit, synchronous=false)` and observes `updateFile`. A `FileRepository` dedups
   requests and exposes `Flow<FileState>` (`NotDownloaded`, `Downloading(progress)`,
   `Downloaded(path)`).
+- Streaming (`docs/adr/0028-streaming-media.md`): `core:domain`'s `FileStreamRepository` (`TdlibFileStreamRepository`,
+  `core:data`, no cache) waits until a range of a file is on the device, downloading from its offset at visible
+  priority (`downloadFile` with `limit` 0) unless a download it started covers it, and stops that download
+  (`cancelDownloadFile`) when the reader leaves; TDLib keeps what came. `core:ui`'s `TdlibDataSource` is a Media3
+  `DataSource` over it for `tdlib-file://<file id>` URIs, waiting on the player's loading thread (20 s at most) and
+  reading the partial file directly. The media viewer's `ExoVideoPlayer` plays videos that support streaming through
+  it as soon as they open (`PlaySource.Stream`), and its own downloads (`MediaDownloads`) leave such a file to the
+  stream. The seek bar shows the player's buffered position.
+- Picture-in-picture of a viewer's video: `feature:media`'s `VideoPipActivity` (its own task, out of the recent apps,
+  not exported), not `MainActivity`, which would resize with the window. The viewer hands the playing video with its
+  position to `PictureInPictureVideos` (a singleton, in memory) and closes; `VideoPipViewModel` plays it on a player
+  of its own from there, the window's play or pause reaching it through `PipActionReceiver`. Expanding the window gives
+  the video back, and `ReturnFromPictureInPictureEffect` (in `:app`'s `PingogramNavHost`) opens the viewer again at it,
+  where `MediaPlayback.startAt` takes up the position. Secret chats' media stays in the viewer's secure window.
 - Coil 3: custom `Fetcher` keyed by TDLib `fileId` that resolves the local path through
   `FileRepository`; thumbnails/minithumbnails shown while downloading (blurhash-like via
   `minithumbnail` bytes). The media viewer starts a photo from the largest copy of it already in Coil's memory cache
@@ -747,6 +825,17 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   of messages on screen that the rules allow download at prefetch priority, and photos load through Coil with
   `TdlibFileImage(download = false)` where the rules leave them for a tap, which only waits for the file, under a
   download button.
+- Power saving (Settings → Power saving): `core:domain`'s `PowerSavingSettings` (the mode: off, with Battery Saver,
+  always; the parts it turns off: animated stickers and custom emoji, autoplay, call screen animations) are kept in
+  DataStore (`DataStorePowerSavingRepository`, bound in its own `PowerSavingModule`), `AndroidBatterySaverRepository`
+  (`core:data`) follows `PowerManager.isPowerSaveMode` through `ACTION_POWER_SAVE_MODE_CHANGED`, and
+  `DefaultPowerSavingPolicy` combines both into what is turned off now (`PowerSavingPolicy.inEffect`, `PowerSaving`).
+  Three places follow it: `:app`'s `AnimatedStickersModule` hands `AnimatedStickers` a `still` flow, which holds every
+  sticker and custom emoji at its first frame (`StickerPlayer`); `MediaViewerViewModel` turns `MediaPlayback`'s
+  autoplay off, so the current video or GIF waits for its play button (`VideoPlayback.waitsForTap`); `CallActivity`
+  and `GroupCallActivity` pass it to `CallTheme`, whose `LocalStillCallAnimations` holds the ringing avatar's turn and
+  the speaking rings' fades still. `feature:settings`' `PowerSavingRoute` (`PowerSavingViewModel`) sets it. Reduced
+  motion stays the system's.
 - Background transfers (FR-N4, `docs/adr/0009-background-transfers.md`): `core:domain`'s `TransferRepository`
   (`TdlibTransferRepository`, `core:data`, a `TdlibUpdateCache`) counts what the user started and is still on its way:
   the file of each message being sent from this device (from its `updateNewMessage` to its send succeeding, failing or
@@ -768,6 +857,13 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Without compression (`AttachmentKind.Original`, the attach preview's switch, its default `ComposerSettingsRepository.sendPhotosInOriginalQuality`
+  in Data and storage): `ChatAttachments` keeps the gallery's URIs of the preview's items and, on sending, prepares
+  each again as a file. `AttachmentPreparer` copies a JPEG's image data byte for byte without its metadata
+  (`JpegMetadata`: every application segment but JFIF and every comment taken out, the EXIF orientation written back
+  alone), and writes any other photo anew as a JPEG at its size (at most `ORIGINAL_MAX_SIDE`, 8192 px) and quality 100;
+  videos go as they are. A photo whose metadata cannot be taken out is not sent so: its compressed copy goes instead.
+  A photo more than 20 times as long as wide (td_api.tl `inputPhoto`'s limit) goes as such a file either way.
 - Picked photos (Edit profile, a new group or channel, a group's or channel's info): `core:domain`'s
   `PickedPhotoRepository` (`AndroidPickedPhotoRepository`, `core:data`) is the one place that prepares them, as picked
   photos are prepared for sending (`AttachmentPreparer`: copied into `uploads/`, decoded and written anew as an
@@ -851,6 +947,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `updateScopeNotificationSettings` and `updateChatNotificationSettings`. Sounds stay with Android: the page opens each
   scope's channel (`PingogramChannel.of(scope)`) in the system settings. It shares the chat list's
   `NotificationPromptRepository` to ask for the permission while Android still shows its dialog.
+- Reaction notifications (Settings → Notifications → Reactions): `core:domain`'s `ReactionNotificationRepository`
+  (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per
+  start, `updateReactionNotificationSettings`, and has no function to read them) sets whom the account hears of
+  reactions and poll votes from (`setReactionNotificationSettings`, the sound Telegram keeps sent back as it was). TDLib
+  (a94b83d) refuses Telegram's reaction pushes (`REACT_*`, "unsupported"), so no reaction notification reaches
+  `NotificationRenderer`: the settings serve the account's other apps until TDLib passes them on.
 - Background delivery depends on the flavor (`PushDelivery`, bound in `app/src/foss` and `app/src/gms` with a
   `BackgroundConnection` that `PingogramApplication` starts). `foss`: the optional "Keep connected" foreground service
   (`KeepConnectedService`, type `specialUse`, its own low-importance "Connection" channel), run by
@@ -969,7 +1071,24 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   the screen in place of the camera (`CallSession.setScreen`: the stream sources' `screen` slot); hold pauses it,
   turning the camera on, Stop (the pill's or the notification's, `CallActionReceiver`) and the capture ending by itself
   (`screenEnded`, NTgCalls' `onStreamEnd`) stop it. The other side's screen comes as their video (`remoteIsScreen`),
-  drawn fitted (`CallVideoSlot.RemoteScreen`, `CallVideoView`'s `fit`).
+  drawn fitted (`CallVideoSlot.RemoteScreen`, `CallVideoView`'s `fit`). In voice chats `GroupCallManager.startScreenSharing`
+  opens the engine's presentation (`GroupCallSession.startPresentation`, NTgCalls' `initPresentation`), joins it with
+  `GroupCallRepository.startScreenSharing` (`startGroupCallScreenSharing`) and connects it
+  (`connectPresentation`), beside the camera; others' screens (`GroupCallParticipant.screen`,
+  `screen_sharing_video_info`) are received as their cameras are, first among the videos (`chooseVideos`).
+- **Conference calls** (`docs/adr/0025-conference-calls.md`): end-to-end encrypted group calls outside any chat.
+  `core:domain`'s `ConferenceCallRepository` (`TdlibConferenceCallRepository`, `core:data`, a `TdlibUpdateCache`:
+  `updateGroupCallVerificationState` and `updateGroupCallParticipants` come only as updates) joins one by its link
+  (`joinGroupCall` with `inputGroupCallLink`), follows its emojis and the users of its blockchain, and encrypts and
+  decrypts every frame (`encryptGroupCallData`, `decryptGroupCallData`, 100 ms at most, a late frame dropped). The
+  engine is NTgCalls patched by `tools/ntgcalls/` (`CallEngine.createConference`): its `ExternalEncryption` hands each
+  frame to `TdlibConferenceEncryption` on WebRTC's thread, which waits for TDLib, and asks whose an audio source is
+  (`GroupCallSession.unknownSources`), which `GroupCallManager.joinConference` answers from the participants'
+  `audioSourceId` (`mapSources`). Everything else is a voice chat's: `GroupCallManager` follows the call by the id
+  TDLib answered, with chat 0, and Telecom names it "Group call". A `t.me/call/…` link (`LinkTarget.GroupCall`) opens
+  the voice chat's screen through `core:ui`'s `VoiceChats.joinConference`, which asks before it joins
+  (`GroupCallUiState.ConfirmConference`, the answer in the saved state) and shows the emojis to compare under the
+  header. Upgrading a one-to-one call, inviting and invitations come later.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

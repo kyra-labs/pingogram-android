@@ -225,7 +225,7 @@ private fun InCall(
                         exit =
                             shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
                                 fadeOut(MaterialTheme.motionScheme.defaultEffectsSpec()),
-                    ) { KeyEmojis(state.emojis, state.person.name) }
+                    ) { KeyEmojis(state.emojis, keyExplanation(state.person.name)) }
                     SharingPill(state, onEvent)
                 },
             )
@@ -546,7 +546,7 @@ private fun VideoHeader(
         }
         if (state.emojis.isNotEmpty()) {
             Spacer(Modifier.height(MaterialTheme.spacing.small))
-            KeyEmojis(state.emojis, state.person.name)
+            KeyEmojis(state.emojis, keyExplanation(state.person.name))
         }
     }
 }
@@ -610,14 +610,19 @@ internal fun SelfView(
     }
 }
 
+/** What a call's key emojis are for: the same on [name]'s screen means the call is end-to-end encrypted. */
+@Composable
+private fun keyExplanation(name: String): String =
+    stringResource(R.string.call_key_explanation, name.ifBlank { stringResource(R.string.call_someone) })
+
 /**
  * The four emojis of the call's key in a pill; tapping it says what they are for. Read as one item: "Encryption key:
  * 😀 🐶 🍎 🚗".
  */
 @Composable
-private fun KeyEmojis(
+internal fun KeyEmojis(
     emojis: List<String>,
-    name: String,
+    explanation: String,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val description = stringResource(R.string.call_key_description, emojis.joinToString(" "))
@@ -644,7 +649,7 @@ private fun KeyEmojis(
         }
         if (expanded) {
             Text(
-                stringResource(R.string.call_key_explanation, name.ifBlank { stringResource(R.string.call_someone) }),
+                explanation,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -696,13 +701,13 @@ private fun CallAvatar(
 
 /**
  * The avatar's angle while [ringing]: a ninth of a turn (one lobe of the cookie) every [RING_TURN_MILLIS], read in the
- * draw phase. It stays where it is once the call is answered, at 0 with reduced motion, and where infinite animations
- * are off (UI tests).
+ * draw phase. It stays where it is once the call is answered, at 0 with reduced motion or power saving
+ * ([LocalStillCallAnimations]), and where infinite animations are off (UI tests).
  */
 @Composable
 private fun rememberRingTurn(ringing: Boolean): () -> Float {
     val rotation = remember { Animatable(0f) }
-    val animate = ringing && !isReducedMotion()
+    val animate = ringing && !isReducedMotion() && !LocalStillCallAnimations.current
     val spec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
     LaunchedEffect(animate, spec) {
         if (!animate) return@LaunchedEffect

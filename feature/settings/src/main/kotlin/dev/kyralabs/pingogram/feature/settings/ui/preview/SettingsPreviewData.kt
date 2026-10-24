@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.NewChatPrivacy
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
+import dev.kyralabs.pingogram.core.domain.model.PowerSavingMode
+import dev.kyralabs.pingogram.core.domain.model.PowerSavingPart
 import dev.kyralabs.pingogram.core.domain.model.PrivacyChoice
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptions
 import dev.kyralabs.pingogram.core.domain.model.PrivacyRules
@@ -36,6 +38,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryItem
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLibraryUiState
 import dev.kyralabs.pingogram.feature.settings.ui.OpenSourceLicensesUiState
+import dev.kyralabs.pingogram.feature.settings.ui.PowerSavingUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacyRulesState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityUiState
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingUiState
@@ -57,6 +60,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationUiS
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableSet
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** Sample states of the settings screens, for previews and screenshot tests. */
@@ -90,6 +94,7 @@ internal object SettingsPreviewData {
                 StorageUsageState.Content(
                     StorageUsage(filesSize = 1_534_000_000, fileCount = 3_456, databaseSize = 85_200_000),
                 ),
+            photosInOriginalQuality = false,
         )
 
     val storageError =
@@ -105,6 +110,23 @@ internal object SettingsPreviewData {
             network = AutoDownloadNetwork.Mobile,
             rules = AutoDownloadSettings.DefaultMobileRules,
             isDataSaverOn = true,
+        )
+
+    // Power saving
+
+    /** The defaults: with Battery Saver, which is off, every part turned off while on. */
+    val powerSaving =
+        PowerSavingUiState(
+            mode = PowerSavingMode.WithBatterySaver,
+            parts = PowerSavingPart.entries.toImmutableSet(),
+        )
+
+    /** Always on, autoplay left on. */
+    val powerSavingOn =
+        PowerSavingUiState(
+            mode = PowerSavingMode.Always,
+            parts = persistentSetOf(PowerSavingPart.AnimatedStickers, PowerSavingPart.CallAnimations),
+            isBatterySaverOn = true,
         )
 
     // Privacy and security
@@ -404,6 +426,7 @@ internal object SettingsPreviewData {
                     ),
                 ),
             isKeepConnectedOffered = true,
+            contactJoined = true,
         )
 
     /** Android shows no notification of Pingogram, and the channels' channel is off. */

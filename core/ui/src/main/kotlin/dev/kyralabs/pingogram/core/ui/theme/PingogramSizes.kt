@@ -104,6 +104,10 @@ import androidx.compose.ui.unit.dp
  *   one the bar shows.
  * @property pollBar the thickness of the bar under a poll's answer that shows its share of the votes, as Material's
  *   linear progress indicator.
+ * @property sliderInactiveTrackInset how far from the thumb's centre a Material 3 Expressive slider's inactive track
+ *   starts: half its 4 dp handle and the 6 dp gap beside it, where the media viewer's seek bar draws what is buffered.
+ * @property chartHeight the plot of a statistics chart, without its labels.
+ * @property chartLine the width of a statistics chart's lines.
  */
 @Immutable
 data class PingogramSizes(
@@ -166,6 +170,9 @@ data class PingogramSizes(
     val keyImageOutline: Dp = 2.dp,
     val pinnedIndicator: Dp = 3.dp,
     val pollBar: Dp = 4.dp,
+    val sliderInactiveTrackInset: Dp = 8.dp,
+    val chartHeight: Dp = 192.dp,
+    val chartLine: Dp = 2.dp,
 )
 
 val LocalPingogramSizes = staticCompositionLocalOf { PingogramSizes() }

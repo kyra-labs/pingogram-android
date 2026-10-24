@@ -18,7 +18,8 @@ import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.feature.settings.R
 
-// The parts of Edit profile about the account rather than the profile: its phone number (FR-S1, Account).
+// The parts of Edit profile that open pages of their own: the personal channel, and the account's phone number
+// (FR-S1, Account).
 
 /**
  * The account's [phoneNumber] (formatted, left to right) in a row of its own, ending in a "Change" [TextButton] that
@@ -49,6 +50,25 @@ internal fun PhoneNumberSection(
             },
         ) {
             Text(formatted, style = MaterialTheme.typography.bodyLarge.numericContent)
+        }
+    }
+}
+
+/** "Personal channel", a row of its own that opens which channel the profile shows ([onOpen]). */
+@Composable
+internal fun PersonalChannelSection(
+    enabled: Boolean,
+    onOpen: () -> Unit,
+) {
+    SettingsGroup {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_personal_channel),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.settings_personal_channel_summary)) },
+                onClick = onOpen,
+                enabled = enabled,
+            )
         }
     }
 }

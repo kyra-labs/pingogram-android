@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
@@ -39,7 +40,12 @@ class TdlibMessageRepositoryWindowTest {
     /** The run of messages TDLib has locally. */
     private var localIds: LongRange = LongRange.EMPTY
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     /**
      * Answers getChatHistory as TDLib does for [CHAT] with messages [ids]: from from_message_id (0: the newest) on,

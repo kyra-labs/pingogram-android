@@ -20,6 +20,10 @@ import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
@@ -35,9 +39,13 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsPickerContent
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetContent
+import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesScreen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -211,6 +219,21 @@ class SettingsAccessibilityChecksTest {
     fun networkUsage() = check { NetworkUsageScreen(NetworkUsagePreviewStates.wifi, onEvent = {}, onBack = {}) }
 
     @Test
+    fun reactionNotifications() =
+        check { ReactionNotificationsScreen(ReactionNotificationsPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun quickReaction() = check { QuickReactionScreen(QuickReactionPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun connectedWebsites() =
+        check { ConnectedWebsitesScreen(ConnectedWebsitesPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun personalChannel() =
+        check { PersonalChannelScreen(PersonalChannelPreviewStates.content, onEvent = {}, onBack = {}) }
+
+    @Test
     fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }
 
     @Test
@@ -254,6 +277,9 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun autoDownload() = check { AutoDownloadScreen(SettingsPreviewData.autoDownloadWiFi, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun powerSaving() = check { PowerSavingScreen(SettingsPreviewData.powerSaving, onEvent = {}, onBack = {}) }
 
     @Test
     fun activeSessions() = check { ActiveSessionsScreen(SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }

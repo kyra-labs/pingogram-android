@@ -71,6 +71,7 @@ enum class ProfileWarning {
  * @property usernames the active usernames without `@`, the first one to show first.
  * @property phoneNumber the phone number's digits, `+` first, as Telegram sends them; the row formats it.
  * @property birthday the birthday, formatted ("December 10, 1815", or "December 10" without a year).
+ * @property personalChannel the channel the user shows on their profile (td_api.tl `personal_chat_id`).
  */
 @Immutable
 data class ProfileInfo(
@@ -79,11 +80,20 @@ data class ProfileInfo(
     val usernames: ImmutableList<String> = persistentListOf(),
     val phoneNumber: String? = null,
     val birthday: String? = null,
+    val personalChannel: PersonalChannel? = null,
 ) {
-    val isEmpty: Boolean get() = bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null
+    val isEmpty: Boolean
+        get() = bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
 }
+
+/** A channel a user shows on their profile, by its chat [chatId] and [title]. */
+@Immutable
+data class PersonalChannel(
+    val chatId: Long,
+    val title: String,
+)
 
 /**
  * What the user can do on the profile. An action that does not apply is false (or null): nothing to block on one's
@@ -219,6 +229,11 @@ sealed interface ProfileEvent {
 
     /** The carousel reached its last loaded photos. */
     data object LoadMorePhotos : ProfileEvent
+
+    /** The personal channel's row was tapped: open its chat. */
+    data class OpenPersonalChannel(
+        val chatId: Long,
+    ) : ProfileEvent
 
     /** A mention in the bio was tapped: open who it names. */
     data class OpenMention(

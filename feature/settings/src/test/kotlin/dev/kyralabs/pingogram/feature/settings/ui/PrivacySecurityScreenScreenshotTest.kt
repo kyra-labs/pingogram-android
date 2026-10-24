@@ -59,6 +59,12 @@ class PrivacySecurityScreenScreenshotTest {
             ContactSyncStatus.NeedsPermission,
         )
 
+    /** The whole page, down to the Websites row and the secret chats' link previews, here allowed. */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun wholePageLight() =
+        capture("wholePageLight", ThemeMode.Light, SettingsPreviewData.privacySecurity, secretChatPreviews = true)
+
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, PrivacySecurityUiState.Loading)
 
@@ -85,7 +91,15 @@ class PrivacySecurityScreenScreenshotTest {
         themeMode: ThemeMode,
         state: PrivacySecurityUiState,
         contactSync: ContactSyncStatus = ContactSyncStatus.Off,
+        secretChatPreviews: Boolean = false,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        PrivacySecurityScreen(state = state, onEvent = {}, onOpen = {}, onBack = {}, contactSync = contactSync)
+        PrivacySecurityScreen(
+            state = state,
+            onEvent = {},
+            onOpen = {},
+            onBack = {},
+            contactSync = contactSync,
+            secretChatPreviews = secretChatPreviews,
+        )
     }
 }

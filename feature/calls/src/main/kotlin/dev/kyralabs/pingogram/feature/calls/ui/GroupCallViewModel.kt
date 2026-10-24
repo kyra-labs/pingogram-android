@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.feature.calls.ActiveGroupCall
@@ -62,6 +64,7 @@ class GroupCallViewModel
         private val savedStateHandle: SavedStateHandle,
         private val manager: GroupCallManager,
         private val repository: GroupCallRepository,
+        private val conferences: ConferenceCallRepository,
         private val chats: GroupCallChats,
         private val userRepository: UserRepository,
         private val microphone: MicrophoneAccess,
@@ -72,8 +75,14 @@ class GroupCallViewModel
         private val startChatId: Long? =
             savedStateHandle.get<Long>(GroupCallActivity.EXTRA_CHAT_ID)?.takeIf { it != 0L }
 
+        /** The `t.me/call` link of a conference call to join (`docs/adr/0025-conference-calls.md`). */
+        private val startLink: String? = savedStateHandle[GroupCallActivity.EXTRA_LINK]
+
         /** The permission step: whether Android would still ask; null while none shows. */
         private val permissionStep = MutableStateFlow<Boolean?>(null)
+
+        /** A conference call's link waits for "Join" (`docs/adr/0025-conference-calls.md`). */
+        private val confirming = MutableStateFlow(false)
 
         /** Why joining did not happen, shown for a moment: busy (true) or no voice chat (false). */
         private val unavailable = MutableStateFlow<Boolean?>(null)
@@ -89,9 +98,20 @@ class GroupCallViewModel
         val effects: Flow<CallEffect> = effectChannel.receiveAsFlow()
 
         val uiState: StateFlow<GroupCallUiState> =
-            combine(manager.call, permissionStep, unavailable, chat(), details()) { call, step, busy, chat, details ->
+            combine(
+                manager.call,
+                permissionStep,
+                unavailable,
+                shownChat(),
+                details(),
+            ) { call, step, busy, shown, details ->
+                val (chat, confirm) = shown
                 val shownChat = chat ?: GroupCallChat(call?.chatId ?: startChatId ?: 0, "", null)
                 when {
+                    confirm -> {
+                        GroupCallUiState.ConfirmConference
+                    }
+
                     step != null -> {
                         GroupCallUiState.NeedsMicrophone(shownChat, canAsk = step)
                     }
@@ -166,6 +186,18 @@ class GroupCallViewModel
                     onMicrophoneResult(event)
                 }
 
+                GroupCallEvent.JoinConference -> {
+                    if (!confirming.value) return
+                    savedStateHandle[KEY_CONFIRMED] = true
+                    confirming.value = false
+                    viewModelScope.launch { takeAction() }
+                }
+
+                GroupCallEvent.DeclineConference -> {
+                    savedStateHandle[KEY_DONE] = true
+                    confirming.value = false
+                }
+
                 GroupCallEvent.DismissMicrophone -> {
                     permissionStep.value = null
                     savedStateHandle[KEY_DONE] = true
@@ -181,6 +213,10 @@ class GroupCallViewModel
 
                 is GroupCallEvent.TogglePin -> {
                     togglePin(event.key)
+                }
+
+                GroupCallEvent.ToggleScreenSharing, is GroupCallEvent.ScreenSharingResult -> {
+                    onScreenSharing(event)
                 }
 
                 is GroupCallEvent.CameraResult -> {
@@ -208,6 +244,24 @@ class GroupCallViewModel
             }
         }
 
+        /** "Share screen" asks Android first; its answer starts sharing; while sharing, the button stops it. */
+        private fun onScreenSharing(event: GroupCallEvent) {
+            val call = manager.call.value ?: return
+            when {
+                event is GroupCallEvent.ScreenSharingResult -> {
+                    if (event.granted) viewModelScope.launch { manager.startScreenSharing() }
+                }
+
+                call.video.isSharingScreen -> {
+                    viewModelScope.launch { manager.stopScreenSharing() }
+                }
+
+                else -> {
+                    effectChannel.trySend(CallEffect.RequestScreenCapture)
+                }
+            }
+        }
+
         private fun togglePin(key: String) {
             val video = manager.call.value?.video ?: return
             val participant = video.remote.firstOrNull { it.participant.key() == key }?.participant ?: return
@@ -215,12 +269,12 @@ class GroupCallViewModel
         }
 
         private suspend fun takeAction() {
-            if (savedStateHandle.get<Boolean>(KEY_DONE) == true || startChatId == null) return
-            if (action != GroupCallActivity.ACTION_JOIN && action != GroupCallActivity.ACTION_START) return
-            if (microphone.isGranted()) {
-                join()
-            } else {
-                permissionStep.value = savedStateHandle.get<Boolean>(KEY_REFUSED) != true
+            val joins = action in JOIN_ACTIONS && (startChatId != null || startLink != null)
+            if (savedStateHandle.get<Boolean>(KEY_DONE) == true || !joins) return
+            when {
+                startLink != null && savedStateHandle.get<Boolean>(KEY_CONFIRMED) != true -> confirming.value = true
+                microphone.isGranted() -> join()
+                else -> permissionStep.value = savedStateHandle.get<Boolean>(KEY_REFUSED) != true
             }
         }
 
@@ -236,14 +290,27 @@ class GroupCallViewModel
         }
 
         private suspend fun join() {
-            val chatId = startChatId ?: return
+            val chatId = startChatId
+            val link = startLink
             savedStateHandle[KEY_DONE] = true
             val result =
-                if (action == GroupCallActivity.ACTION_START) {
-                    // A refusal (rights, a flood wait) reads as no voice chat: there is none to join.
-                    (manager.startVoiceChat(chatId) as? Outcome.Success)?.value ?: JoinResult.NoVoiceChat
-                } else {
-                    manager.join(chatId)
+                when {
+                    link != null -> {
+                        manager.joinConference(ConferenceTarget.Link(link))
+                    }
+
+                    chatId == null -> {
+                        return
+                    }
+
+                    action == GroupCallActivity.ACTION_START -> {
+                        // A refusal (rights, a flood wait) reads as no voice chat: there is none to join.
+                        (manager.startVoiceChat(chatId) as? Outcome.Success)?.value ?: JoinResult.NoVoiceChat
+                    }
+
+                    else -> {
+                        manager.join(chatId)
+                    }
                 }
             if (result != JoinResult.Joining) {
                 unavailable.value = result == JoinResult.Busy
@@ -251,6 +318,9 @@ class GroupCallViewModel
                 unavailable.value = null
             }
         }
+
+        /** The chat (as [chat]), and whether a conference call's link waits for "Join". */
+        private fun shownChat(): Flow<Pair<GroupCallChat?, Boolean>> = combine(chat(), confirming, ::Pair)
 
         /** The voice chat's chat, as TDLib knows it. */
         private fun chat(): Flow<GroupCallChat?> =
@@ -271,14 +341,18 @@ class GroupCallViewModel
                 .map { call -> call?.let { it.groupCallId to it.connectedAtMillis.takeIf { _ -> !it.isOver() } } }
                 .distinctUntilChanged()
                 .flatMapLatest { ids ->
-                    if (ids == null) {
+                    // A conference call has no id until it is joined.
+                    if (ids == null || ids.first == 0) {
                         flowOf(Details())
                     } else {
                         combine(
                             repository.groupCall(ids.first),
                             participantRows(ids.first),
                             duration(ids.second),
-                        ) { info, rows, duration -> Details(info?.participantCount, rows, duration) }
+                            conferences.verification(ids.first),
+                        ) { info, rows, duration, verification ->
+                            Details(info?.participantCount, rows, duration, verification?.emojis ?: persistentListOf())
+                        }
                     }
                 }
 
@@ -349,6 +423,8 @@ class GroupCallViewModel
             val participantCount: Int? = null,
             val participants: ImmutableList<GroupCallParticipantUi> = persistentListOf(),
             val duration: String? = null,
+            /** A conference call's emojis to compare; empty for a voice chat, and until the call is verified. */
+            val emojis: ImmutableList<String> = persistentListOf(),
         )
 
         private fun ActiveGroupCall.toUiState(
@@ -356,6 +432,8 @@ class GroupCallViewModel
             details: Details,
         ) = GroupCallUiState.InCall(
             chat = chat,
+            isConference = isConference,
+            emojis = details.emojis,
             stage =
                 when (val phase = phase) {
                     GroupCallPhase.Joining -> GroupCallStage.Joining
@@ -379,6 +457,8 @@ class GroupCallViewModel
                     camera = video.camera,
                     canSwitchCamera = video.canSwitchCamera,
                     remote = remoteVideos(details.participants),
+                    canShareScreen = video.canShareScreen,
+                    isSharingScreen = video.isSharingScreen,
                 ),
         )
 
@@ -395,13 +475,23 @@ class GroupCallViewModel
                             isPaused = remote.isPaused,
                             isPinned = remote.participant == video.pinned,
                             isSpeaking = row.state == ParticipantState.Speaking,
+                            isScreen = remote.isScreen,
                         )
                     }
                 }.toImmutableList()
 
         private companion object {
+            /** The actions that join (or start and join) a call. */
+            val JOIN_ACTIONS =
+                setOf(
+                    GroupCallActivity.ACTION_JOIN,
+                    GroupCallActivity.ACTION_START,
+                    GroupCallActivity.ACTION_JOIN_CONFERENCE,
+                )
+
             const val KEY_DONE = "group_call_action_done"
             const val KEY_REFUSED = "microphone_refused"
+            const val KEY_CONFIRMED = "conference_confirmed"
             const val KEY_CAMERA_REFUSED = "camera_refused"
             const val STOP_TIMEOUT_MS = 5_000L
             const val MILLIS_PER_SECOND = 1_000L

@@ -9,6 +9,8 @@ import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibConferenceCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
@@ -16,6 +18,8 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibGroupRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStoryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
@@ -82,6 +86,11 @@ interface UpdateCacheModule {
     @IntoSet
     fun groupCallCache(repository: TdlibGroupCallRepository): TdlibUpdateCache
 
+    /** TDLib announces a conference call's verification and its blockchain's members only by updates. */
+    @Binds
+    @IntoSet
+    fun conferenceCallCache(repository: TdlibConferenceCallRepository): TdlibUpdateCache
+
     @Binds
     @IntoSet
     fun profileCache(repository: TdlibProfileRepository): TdlibUpdateCache
@@ -95,6 +104,21 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun contactSyncCache(repository: TdlibContactSyncRepository): TdlibUpdateCache
+
+    /** For the emoji Telegram offers as reactions, which come once at TDLib's start. */
+    @Binds
+    @IntoSet
+    fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
+
+    /** For the reaction notification settings, which TDLib announces once per start and cannot be asked for. */
+    @Binds
+    @IntoSet
+    fun reactionNotificationCache(repository: TdlibReactionNotificationRepository): TdlibUpdateCache
+
+    /** For the quick reaction, which TDLib announces once per start and cannot be asked for. */
+    @Binds
+    @IntoSet
+    fun quickReactionCache(repository: TdlibQuickReactionRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds

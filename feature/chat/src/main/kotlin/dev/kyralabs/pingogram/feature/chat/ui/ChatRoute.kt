@@ -37,6 +37,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
+import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
+import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationViewModel
@@ -113,8 +115,12 @@ internal fun ConversationRoute(
         hiltViewModel<EmojiPanelViewModel, EmojiPanelViewModel.Factory>(key = "emoji-panel-$chatId") {
             it.create(chatId)
         },
+    sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
+    doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
+    val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
@@ -149,7 +155,11 @@ internal fun ConversationRoute(
     )
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
-    CompositionLocalProvider(LocalCustomEmoji provides customEmoji) {
+    CompositionLocalProvider(
+        LocalCustomEmoji provides customEmoji,
+        LocalSendKeys provides sendKeys,
+        LocalDoubleTapReaction provides doubleTap,
+    ) {
         ChatScreen(
             state = state,
             onEvent = viewModel::onEvent,

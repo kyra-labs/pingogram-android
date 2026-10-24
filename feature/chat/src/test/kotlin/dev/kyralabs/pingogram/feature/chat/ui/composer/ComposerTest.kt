@@ -2,11 +2,14 @@ package dev.kyralabs.pingogram.feature.chat.ui.composer
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -15,6 +18,7 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextInputSelection
@@ -22,7 +26,9 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.withKeyDown
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
@@ -65,10 +71,19 @@ class ComposerTest {
     private fun setComposer(
         text: ComposerText = ComposerText(),
         composer: ComposerUiState = ComposerUiState.Available(canSchedule = true),
+        sendKeys: SendKeys = SendKeys(),
     ): ComposerText {
         composeRule.setContent {
             PingogramTheme(dynamicColor = false) {
-                ChatBottomBar(composer, text, onSend = { sent += it }, onFocusChanged = { focus += it }, now = { now })
+                CompositionLocalProvider(LocalSendKeys provides sendKeys) {
+                    ChatBottomBar(
+                        composer,
+                        text,
+                        onSend = { sent += it },
+                        onFocusChanged = { focus += it },
+                        now = { now },
+                    )
+                }
             }
         }
         return text
@@ -124,6 +139,48 @@ class ComposerTest {
 
         assertEquals(emptyList<SendOptions>(), sent)
         assertEquals("Hi\n", text.state.text.toString())
+    }
+
+    @Test
+    fun `Ctrl+Enter starts a new line while Enter sends`() {
+        val text = setComposer()
+        field().performTextInput("Hi")
+
+        field().performKeyInput { withKeyDown(Key.CtrlLeft) { pressKey(Key.Enter) } }
+
+        assertEquals(emptyList<SendOptions>(), sent)
+        assertEquals("Hi\n", text.state.text.toString())
+    }
+
+    @Test
+    fun `with Enter not sending, Enter starts a new line and Ctrl+Enter sends`() {
+        val text = setComposer(sendKeys = SendKeys(hardwareKeyboard = false))
+        field().performTextInput("Hi")
+
+        field().performKeyInput { pressKey(Key.Enter) }
+        assertEquals("Hi\n", text.state.text.toString())
+        assertEquals(emptyList<SendOptions>(), sent)
+
+        field().performKeyInput { withKeyDown(Key.CtrlLeft) { pressKey(Key.Enter) } }
+        assertEquals(listOf(SendOptions()), sent)
+    }
+
+    @Test
+    fun `the on-screen keyboard's action sends only where it is set to`() {
+        setComposer(sendKeys = SendKeys(onScreenKeyboard = true))
+        field().performTextInput("Hi")
+        field().assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Send))
+
+        field().performImeAction()
+
+        assertEquals(listOf(SendOptions()), sent)
+    }
+
+    @Test
+    fun `the on-screen keyboard's Enter starts a new line by default`() {
+        setComposer()
+
+        field().assert(SemanticsMatcher.expectValue(SemanticsProperties.ImeAction, ImeAction.Default))
     }
 
     @Test

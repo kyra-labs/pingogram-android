@@ -3,9 +3,12 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.Contrast
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.RaiseToListenSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
+import dev.kyralabs.pingogram.core.testing.FakePlaybackSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -39,7 +42,10 @@ class AppearanceViewModelTest {
 
     private val composerSettings = FakeComposerSettingsRepository()
 
-    private fun TestScope.viewModel() = AppearanceViewModel(repository, composerSettings).also { runCurrent() }
+    private val playbackSettings = FakePlaybackSettingsRepository()
+
+    private fun TestScope.viewModel() =
+        AppearanceViewModel(repository, composerSettings, playbackSettings).also { runCurrent() }
 
     private fun TestScope.effectsOf(viewModel: AppearanceViewModel): List<AppearanceEffect> {
         val effects = mutableListOf<AppearanceEffect>()
@@ -138,15 +144,16 @@ class AppearanceViewModelTest {
         }
 
     @Test
-    fun `send with Ctrl+Enter is off at first, and turning it on saves and shows it`() =
+    fun `Enter sends on a keyboard and not on the screen at first, and a change saves and shows`() =
         runTest {
             repository.save(AppearanceSettings())
             val viewModel = viewModel()
-            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(SendKeys(), (viewModel.state as AppearanceUiState.Content).sendKeys)
 
-            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+            val changed = SendKeys(hardwareKeyboard = false, onScreenKeyboard = true)
+            send(viewModel, AppearanceEvent.SetSendKeys(changed))
 
-            assertEquals(true, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(changed, (viewModel.state as AppearanceUiState.Content).sendKeys)
         }
 
     @Test
@@ -157,9 +164,39 @@ class AppearanceViewModelTest {
             val viewModel = viewModel()
             val effects = effectsOf(viewModel)
 
-            send(viewModel, AppearanceEvent.SetSendWithCtrlEnter(true))
+            send(viewModel, AppearanceEvent.SetSendKeys(SendKeys(onScreenKeyboard = true)))
 
-            assertEquals(false, (viewModel.state as AppearanceUiState.Content).sendWithCtrlEnter)
+            assertEquals(SendKeys(), (viewModel.state as AppearanceUiState.Content).sendKeys)
+            assertTrue(effects.single() is AppearanceEffect.ShowError)
+        }
+
+    @Test
+    fun `raise to listen is on at first, and each of its switches saves and shows`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            val viewModel = viewModel()
+            assertEquals(RaiseToListenSettings(), (viewModel.state as AppearanceUiState.Content).raiseToListen)
+
+            send(viewModel, AppearanceEvent.SetPauseWhenLowered(true))
+            send(viewModel, AppearanceEvent.SetRaiseToListen(false))
+
+            assertEquals(
+                RaiseToListenSettings(enabled = false, pauseWhenLowered = true),
+                (viewModel.state as AppearanceUiState.Content).raiseToListen,
+            )
+        }
+
+    @Test
+    fun `raise to listen that cannot be saved stays as it was, with a snackbar`() =
+        runTest {
+            repository.save(AppearanceSettings())
+            playbackSettings.failure = DomainError.Unknown(0, "Disk full")
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, AppearanceEvent.SetRaiseToListen(false))
+
+            assertTrue((viewModel.state as AppearanceUiState.Content).raiseToListen.enabled)
             assertTrue(effects.single() is AppearanceEffect.ShowError)
         }
 }

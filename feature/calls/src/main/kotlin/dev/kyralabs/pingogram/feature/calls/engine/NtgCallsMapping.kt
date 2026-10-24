@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls.engine
 import dev.kyralabs.pingogram.core.domain.model.CallProtocol
 import dev.kyralabs.pingogram.core.domain.model.CallServer
 import dev.kyralabs.pingogram.core.domain.model.CallServerType
+import dev.kyralabs.pingogram.core.domain.model.ConferenceChannel
 import io.github.pytgcalls.ConnectionState
 import io.github.pytgcalls.VideoRotation
 import io.github.pytgcalls.media.StreamStatus
@@ -84,6 +85,24 @@ internal fun VideoRotation?.toDegrees(): Int =
 internal fun groupKey(groupCallId: Int): Long = GROUP_KEY_BASE + groupCallId
 
 private const val GROUP_KEY_BASE = 1L shl 32
+
+/**
+ * The NTgCalls id of the [n]th conference call made since the app started: a range of its own, above voice chats', as
+ * TDLib names the call only once it is joined (`docs/adr/0025-conference-calls.md`).
+ */
+internal fun conferenceKey(n: Int): Long = CONFERENCE_KEY_BASE + n
+
+private const val CONFERENCE_KEY_BASE = 2L shl 32
+
+/** NTgCalls' data channel of a conference frame: 1 the screen it shares, 0 the rest. */
+internal fun Int.toChannel(): ConferenceChannel =
+    if (this ==
+        1
+    ) {
+        ConferenceChannel.ScreenSharing
+    } else {
+        ConferenceChannel.Main
+    }
 
 /** The microphone's audio source (SSRC) in NTgCalls' join payload (`{"ssrc": 1234, …}`); 0 if it has none. */
 @Suppress("SwallowedException") // An unreadable payload has no SSRC; TDLib then refuses the join, which says so.

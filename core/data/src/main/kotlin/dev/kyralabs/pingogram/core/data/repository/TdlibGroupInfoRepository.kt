@@ -74,15 +74,15 @@ class TdlibGroupInfoRepository
                         send(Outcome.Failure(DomainError.NotFound))
                         return@channelFlow
                     }
-                val state = MutableStateFlow(GroupState(permissions = chat.permissions.toMemberPermissions()))
+                val state =
+                    MutableStateFlow(
+                        GroupState(
+                            permissions = chat.permissions.toMemberPermissions(),
+                            joinRequests = chat.pendingJoinRequests?.totalCount ?: 0,
+                        ),
+                    )
                 launch(start = CoroutineStart.UNDISPATCHED) {
-                    client.updates.collect { update ->
-                        if (update is TdApi.UpdateChatPermissions && update.chatId == chatId) {
-                            state.update { it.copy(permissions = update.permissions.toMemberPermissions()) }
-                        } else {
-                            source.reduce(update, state)
-                        }
-                    }
+                    client.updates.collect { update -> reduceChatUpdate(chatId, update, source, state) }
                 }
                 launch { state.update { it.withHead(client.request(source.groupRequest()).map(source::head)) } }
                 launch {
@@ -95,6 +95,28 @@ class TdlibGroupInfoRepository
                 }
                 state.collectLatest { current -> current.toOutcome()?.let { send(it) } }
             }
+
+        /** Applies [update] to [state]: the chat's own (permissions, join requests), or [source]'s group's. */
+        private suspend fun reduceChatUpdate(
+            chatId: Long,
+            update: TdApi.Update,
+            source: GroupSource,
+            state: MutableStateFlow<GroupState>,
+        ) {
+            when {
+                update is TdApi.UpdateChatPermissions && update.chatId == chatId -> {
+                    state.update { it.copy(permissions = update.permissions.toMemberPermissions()) }
+                }
+
+                update is TdApi.UpdateChatPendingJoinRequests && update.chatId == chatId -> {
+                    state.update { it.copy(joinRequests = update.pendingJoinRequests?.totalCount ?: 0) }
+                }
+
+                else -> {
+                    source.reduce(update, state)
+                }
+            }
+        }
 
         override suspend fun members(
             chatId: Long,
@@ -298,6 +320,7 @@ class TdlibGroupInfoRepository
                         slowModeDelay = fullInfo.slowModeDelay,
                         members = persistentListOf(),
                         primaryInviteLink = fullInfo.inviteLink?.toInviteLink(),
+                        canGetStatistics = fullInfo.canGetStatistics,
                     )
                 }
 
@@ -338,10 +361,12 @@ private data class GroupHead(
 )
 
 /** The group and its full info as far as read: null while on their way. */
+
 private data class GroupState(
     val head: Outcome<GroupHead>? = null,
     val details: Outcome<GroupDetails>? = null,
     val permissions: MemberPermissions = MemberPermissions.None,
+    val joinRequests: Int = 0,
 ) {
     /** A group read once keeps showing when a later read fails; a failure only stands in for none. */
     fun withHead(new: Outcome<GroupHead>): GroupState =
@@ -379,6 +404,7 @@ private data class GroupState(
                                 permissions
                             },
                         details = (details as? Outcome.Success)?.value,
+                        pendingJoinRequests = joinRequests,
                         detailsError = (details as? Outcome.Failure)?.error,
                     ),
                 )

@@ -74,6 +74,10 @@ regresses by more than 10%.
 - Files: `downloadFile(priority)` — 32 for visible media, 16 for prefetch, 1 for background;
   `cancelDownloadFile` when the item leaves the viewport by more than one screen; limit
   concurrent downloads to 4 (TDLib `setOption("…")` not needed — managed in `FileRepository`).
+- Streaming (`docs/adr/0028-streaming-media.md`): a video that plays as it downloads downloads from where it plays at
+  32, as visible media, and only while the player reads it: closing the viewer, turning the page or seeking elsewhere
+  stops it (`cancelDownloadFile`, what came stays). It holds Media3's default buffer (50 s of media at most) and no copy
+  of the file; each read that waits costs a `getFile` and, when it moves, a `downloadFile`.
 - Auto-download rules per network type (the default network from `ConnectivityManager`'s callback: Wi-Fi, mobile,
   roaming, metered; `TdlibNetworkTypeReporter` sends each new network to TDLib with `setNetworkType`); respect Android
   Data Saver (nothing downloads by itself on a metered network while it is on) and Battery Saver. Only the media of
@@ -188,6 +192,9 @@ regresses by more than 10%.
 - The home screen widget has no timer (`updatePeriodMillis` 0): it is redrawn when the chats change while the process
   runs and a widget is placed, 1 s after the last change (`docs/adr/0017-home-screen-widget.md`).
 - Respect Doze and App Standby buckets; never request battery-optimization exemptions by default.
+- Power saving (Settings → Power saving, with Battery Saver by default): while on, animated stickers and custom emoji
+  hold their first frame (no rendering thread work, no frame draws), videos and GIFs in the media viewer wait for a tap,
+  and the call screens' ringing avatar and speaking rings stand still. Each part can be left on.
 
 ## 7. Network & data
 
@@ -369,6 +376,12 @@ regresses by more than 10%.
   screen in front with the four videos and the self-view showing, and run step 3. Each video's frames go to their own
   renderer (`EglRenderer` threads named "Participant …"), so the trace shows what each costs; the four tell whether
   the cap of four holds on that phone.
+
+  A conference call (`docs/adr/0025-conference-calls.md`) waits for TDLib on WebRTC's threads for every frame it sends
+  (`callEncrypt`) and receives (`callDecrypt`), at most 100 ms each before the frame is dropped. Record one the same
+  way: open a `t.me/call/…` link from Telegram's app, join with three others who speak (one with the camera on), and
+  run step 3. The two sections' P90 and their count per second tell whether a frame's round trip keeps within an audio
+  frame's 20 ms on that phone.
 
   §1 has no budget for calls yet: the first results go here and set one.
 - LeakCanary in debug builds; a leak fails the nightly.

@@ -3,13 +3,18 @@ package dev.kyralabs.pingogram.feature.calls
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.domain.model.ConferenceJoinParameters
+import dev.kyralabs.pingogram.core.domain.model.ConferenceTarget
 import dev.kyralabs.pingogram.core.domain.model.GroupCall
 import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipant
+import dev.kyralabs.pingogram.core.domain.model.GroupCallParticipantVideo
 import dev.kyralabs.pingogram.core.domain.model.GroupCallVideoQuality
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.NetworkStatus
 import dev.kyralabs.pingogram.core.domain.model.NetworkType
 import dev.kyralabs.pingogram.core.domain.model.StreamSegment
+import dev.kyralabs.pingogram.core.domain.repository.ConferenceCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
 import dev.kyralabs.pingogram.feature.calls.engine.CallCamera
@@ -70,6 +75,7 @@ class GroupCallManager
     @Suppress("LongParameterList")
     internal constructor(
         private val repository: GroupCallRepository,
+        private val conferences: ConferenceCallRepository,
         private val engine: CallEngine,
         private val system: CallSystem,
         private val foreground: CallForeground,
@@ -111,6 +117,21 @@ class GroupCallManager
                 mutex.withLock {
                     if (live != null || !line.take(this)) return JoinResult.Busy
                     Live(chatId, videoChat.groupCallId, videoChat.defaultParticipant, callScope()).also { start(it) }
+                }
+            connect(call)
+            return JoinResult.Joining
+        }
+
+        /**
+         * Joins the conference call of [target] (`docs/adr/0025-conference-calls.md`: a `t.me/call` link, an
+         * invitation), muted. [JoinResult.Busy] while the user is in another call.
+         */
+        suspend fun joinConference(target: ConferenceTarget): JoinResult {
+            val call =
+                mutex.withLock {
+                    if (live != null || !line.take(this)) return JoinResult.Busy
+                    Live(chatId = 0, groupCallId = 0, joinAs = null, scope = callScope(), conference = target)
+                        .also { start(it) }
                 }
             connect(call)
             return JoinResult.Joining
@@ -210,6 +231,49 @@ class GroupCallManager
             }
         }
 
+        /**
+         * Shares the user's screen as the voice chat's presentation (`docs/adr/0026-screen-sharing.md`): the user
+         * agreed in Android's dialog, whose result reached the engine. The call service runs as `mediaProjection`
+         * first; then the engine opens the presentation, TDLib joins it (`startGroupCallScreenSharing`) and the screen
+         * goes out beside the camera. Not in a stream; where a step fails, nothing is shared.
+         */
+        @Suppress("ReturnCount") // Guards: nothing to share in, the service's type refused.
+        suspend fun startScreenSharing() {
+            val call =
+                mutex.withLock {
+                    live?.takeIf { it.phase == GroupCallPhase.Connected && !it.isStream && !it.sharingScreen }
+                } ?: return
+            val session = call.session ?: return
+            if (!foreground.setScreenCapture(true)) return
+            val presentation = session.startPresentation()
+            val joined =
+                presentation?.let { repository.startScreenSharing(call.groupCallId, it.audioSourceId, it.payload) }
+            if (joined is Outcome.Success) {
+                session.connectPresentation(joined.value, call.videoQuality())
+                mutex.withLock {
+                    call.sharingScreen = true
+                    if (live === call) publish()
+                }
+            } else {
+                session.stopPresentation()
+                foreground.setScreenCapture(false)
+            }
+        }
+
+        /** Stops sharing the screen: the user's Stop, the notification's, or the capture ending by itself. */
+        suspend fun stopScreenSharing() {
+            val call =
+                mutex.withLock {
+                    live?.takeIf { it.sharingScreen }?.also {
+                        it.sharingScreen = false
+                        publish()
+                    }
+                } ?: return
+            call.session?.stopPresentation()
+            repository.endScreenSharing(call.groupCallId)
+            foreground.setScreenCapture(false)
+        }
+
         /** Where the user's own camera's frames go (the self-view), or nowhere: the screen sets it while it shows. */
         fun setSelfVideoSink(sink: VideoFrameSink?) {
             live?.selfSink?.value = SinkHolder(sink)
@@ -249,7 +313,13 @@ class GroupCallManager
             publish()
             foreground.start(withMicrophone = false)
             call.scope.launch {
-                val request = SystemCallRequest.voiceChat(titles.title(call.chatId), call.chatId)
+                val title = titles.title(call.chatId)
+                val request =
+                    if (call.conference != null) {
+                        SystemCallRequest.conference(title)
+                    } else {
+                        SystemCallRequest.voiceChat(title, call.chatId)
+                    }
                 mutex.withLock {
                     if (live !== call || call.phase is GroupCallPhase.Ended) return@launch
                     val system = system.add(call.scope, request, listener(call))
@@ -264,6 +334,12 @@ class GroupCallManager
                     }
                 }
             }
+            // A conference call's id comes with its join: it is followed from there (connect).
+            if (call.conference == null) follow(call)
+        }
+
+        /** Follows [call]'s group call and participants as TDLib announces them. */
+        private fun follow(call: Live) {
             call.scope.launch {
                 repository.groupCall(call.groupCallId).collect { info -> mutex.withLock { onGroupCall(call, info) } }
             }
@@ -282,7 +358,14 @@ class GroupCallManager
 
         /** Creates the engine's call, joins through TDLib, then connects; not under the mutex. */
         private suspend fun connect(call: Live) {
-            val session = createSessionOrNull(call.groupCallId)
+            val session =
+                if (call.conference !=
+                    null
+                ) {
+                    createConferenceOrNull(call)
+                } else {
+                    createSessionOrNull(call.groupCallId)
+                }
             if (session == null) {
                 mutex.withLock { finish(call, GroupCallEndReason.Failed(ENGINE_FAILED)) }
                 return
@@ -300,14 +383,7 @@ class GroupCallManager
                 session.close()
                 return
             }
-            val joined =
-                repository.join(
-                    call.groupCallId,
-                    call.joinAs,
-                    session.audioSourceId,
-                    session.joinPayload,
-                    isMuted = true,
-                )
+            val joined = join(call, session)
             when (joined) {
                 is Outcome.Failure -> {
                     mutex.withLock { if (live === call) finish(call, GroupCallEndReason.Failed(joined.error)) }
@@ -321,10 +397,14 @@ class GroupCallManager
                     call.scope.launch { call.selfSink.collect { session.setSelfVideoSink(it.sink) } }
                     call.scope.launch { call.incoming.collect { session.receiveVideos(it) } }
                     call.scope.launch { call.videoSinks.collect { session.setIncomingVideoSinks(it) } }
+                    call.scope.launch { session.screenEnded.collect { stopScreenSharing() } }
                     call.scope.launch {
                         call.camera.collect { source ->
                             session.setCamera(source?.camera, source?.quality ?: VideoQuality.High)
                         }
+                    }
+                    if (call.conference != null) {
+                        call.scope.launch { session.unknownSources.collect { mutex.withLock { mapSources(call, it) } } }
                     }
                     session.connect(joined.value)
                     repository.loadParticipants(call.groupCallId, PARTICIPANTS_PAGE)
@@ -516,8 +596,10 @@ class GroupCallManager
         }
 
         /**
-         * The others' videos [call] receives: at most [MAX_RECEIVED_VIDEOS], the pinned one first, then those speaking,
-         * then by TDLib's order (`docs/adr/0024-video-in-voice-chats.md`); none in a stream. Publishes.
+         * The others' videos [call] receives: at most [MAX_RECEIVED_VIDEOS], the pinned participant's first (their
+         * shared screen before their camera), then shared screens, then the cameras of those speaking, then by TDLib's
+         * order (`docs/adr/0024-video-in-voice-chats.md`, `docs/adr/0026-screen-sharing.md`); none in a stream.
+         * Publishes.
          */
         private fun chooseVideos(call: Live) {
             val speaking =
@@ -531,22 +613,24 @@ class GroupCallManager
                     emptyList()
                 } else {
                     call.participants
-                        .filter { !it.isCurrentUser && it.video != null }
-                        .sortedWith(
-                            compareByDescending<GroupCallParticipant> { it.participant == call.pinned }
-                                .thenByDescending { it.isSpeaking || it.participant in speaking },
+                        .filter { !it.isCurrentUser }
+                        .flatMap { participant ->
+                            listOfNotNull(
+                                participant.screen?.let { ShownVideo(participant, it, isScreen = true) },
+                                participant.video?.let { ShownVideo(participant, it, isScreen = false) },
+                            )
+                        }.sortedWith(
+                            compareByDescending<ShownVideo> { it.participant.participant == call.pinned }
+                                .thenByDescending { it.isScreen }
+                                .thenByDescending {
+                                    it.participant.isSpeaking || it.participant.participant in speaking
+                                },
                         ).take(MAX_RECEIVED_VIDEOS)
                 }
             call.shownVideos = chosen
             call.incoming.value =
-                chosen.mapNotNull { participant ->
-                    participant.video?.let {
-                        IncomingVideo(
-                            participant.participant.id(),
-                            it.endpointId,
-                            it.sourceGroups,
-                        )
-                    }
+                chosen.map { (participant, video) ->
+                    IncomingVideo(participant.participant.id(), video.endpointId, video.sourceGroups)
                 }
             publish()
         }
@@ -599,6 +683,65 @@ class GroupCallManager
                 emptyList()
             }
 
+        /**
+         * Joins [call] through TDLib with [session]'s payload, answering the engine's connection parameters: a voice
+         * chat by its id, a conference call by its link or invitation, whose id then comes with the answer and is
+         * followed from there.
+         */
+        private suspend fun join(
+            call: Live,
+            session: GroupCallSession,
+        ): Outcome<String> {
+            val target = call.conference
+            if (target == null) {
+                return repository.join(call.groupCallId, call.joinAs, session.audioSourceId, session.joinPayload, true)
+            }
+            val parameters = ConferenceJoinParameters(session.audioSourceId, session.joinPayload, true, false)
+            return conferences.join(target, parameters).map { joined ->
+                mutex.withLock {
+                    call.groupCallId = joined.groupCallId
+                    call.encryption?.groupCallId = joined.groupCallId
+                    if (live === call) {
+                        publish()
+                        follow(call)
+                    }
+                }
+                joined.params
+            }
+        }
+
+        /**
+         * Tells the engine whose the audio sources [ssrcs] of conference [call] are, from the participants TDLib
+         * announced; those it does not know yet are asked for again by the engine.
+         */
+        private suspend fun mapSources(
+            call: Live,
+            ssrcs: List<Int>,
+        ) {
+            val session = call.session ?: return
+            val users =
+                call.participants
+                    .filter { it.audioSourceId in ssrcs }
+                    .mapNotNull { participant ->
+                        (participant.participant as? MessageSender.User)?.let { participant.audioSourceId to it.userId }
+                    }.toMap()
+            if (users.isNotEmpty()) session.mapSources(users)
+        }
+
+        /** The engine's conference call; null as for [createSessionOrNull]. */
+        @Suppress("TooGenericExceptionCaught", "SwallowedException") // Any failure ends the call with a reason.
+        private suspend fun createConferenceOrNull(call: Live): GroupCallSession? {
+            val encryption = TdlibConferenceEncryption(conferences)
+            call.encryption = encryption
+            return try {
+                engine.createConference(muted = true, encryption = encryption)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                null
+            }
+        }
+
         /** The engine's group call; null if its library could not load or the microphone could not open. */
         @Suppress("TooGenericExceptionCaught", "SwallowedException") // Any failure ends the voice chat with a reason.
         private suspend fun createSessionOrNull(groupCallId: Int): GroupCallSession? =
@@ -614,13 +757,20 @@ class GroupCallManager
 
         /** The voice chat the user is in, as the manager keeps it. */
         private class Live(
+            /** The voice chat's chat; 0 for a conference call, which has none. */
             val chatId: Long,
-            val groupCallId: Int,
+            /** TDLib's id of the call; a conference call's once its join answered, 0 before. */
+            var groupCallId: Int,
             /** Whom the user joins as: the chat's default (TDLib's choice for null). */
             val joinAs: MessageSender?,
             /** Everything of this voice chat runs in it; cancelled when it ends. */
             val scope: CoroutineScope,
+            /** How a conference call is reached; null for a chat's voice chat. */
+            val conference: ConferenceTarget? = null,
         ) {
+            /** A conference call's encryption, which needs the call's id once it is known. */
+            var encryption: TdlibConferenceEncryption? = null
+
             var phase: GroupCallPhase = GroupCallPhase.Joining
             var muted = true
             var microphoneStarted = false
@@ -645,6 +795,9 @@ class GroupCallManager
             var reconnected = false
             val camera = MutableStateFlow<CameraSource?>(null)
 
+            /** The user's screen goes out as the presentation. */
+            var sharingScreen = false
+
             /** Everyone TDLib announced, in its order. */
             var participants: List<GroupCallParticipant> = emptyList()
 
@@ -652,7 +805,7 @@ class GroupCallManager
             var pinned: MessageSender? = null
 
             /** The others' videos received, in the order they show. */
-            var shownVideos: List<GroupCallParticipant> = emptyList()
+            var shownVideos: List<ShownVideo> = emptyList()
             val incoming = MutableStateFlow<List<IncomingVideo>>(emptyList())
             val videoSinks = MutableStateFlow<Map<String, VideoFrameSink>>(emptyMap())
 
@@ -683,6 +836,7 @@ class GroupCallManager
                 ActiveGroupCall(
                     chatId = chatId,
                     groupCallId = groupCallId,
+                    isConference = conference != null,
                     phase = phase,
                     isStream = isStream,
                     isMuted = muted,
@@ -700,12 +854,17 @@ class GroupCallManager
                             canSwitchCamera = cameras.any { it.isFront } && cameras.any { !it.isFront },
                             remote =
                                 shownVideos
-                                    .mapNotNull { participant ->
-                                        participant.video?.let {
-                                            RemoteParticipantVideo(participant.participant, it.endpointId, it.isPaused)
-                                        }
+                                    .map { (participant, video, isScreen) ->
+                                        RemoteParticipantVideo(
+                                            participant.participant,
+                                            video.endpointId,
+                                            video.isPaused,
+                                            isScreen,
+                                        )
                                     }.toImmutableList(),
                             pinned = pinned,
+                            canShareScreen = phase == GroupCallPhase.Connected && !isStream,
+                            isSharingScreen = sharingScreen,
                         ),
                 )
         }
@@ -761,3 +920,10 @@ private fun MessageSender.id(): Long =
         is MessageSender.User -> userId
         is MessageSender.Chat -> chatId
     }
+
+/** A video a voice chat receives: [participant]'s camera or shared screen ([isScreen]). */
+private data class ShownVideo(
+    val participant: GroupCallParticipant,
+    val video: GroupCallParticipantVideo,
+    val isScreen: Boolean,
+)

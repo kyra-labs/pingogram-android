@@ -418,6 +418,12 @@ class ChatInfoViewModel internal constructor(
                         },
                     // Boosts are a supergroup's or channel's; basic groups have none.
                     canViewBoosts = info.kind != GroupKind.BasicGroup,
+                    canEditSettings = rights.canChangeInfo || info.myRole is MemberRole.Owner,
+                    isChannel = info.kind == GroupKind.Channel,
+                    joinRequestCount = info.pendingJoinRequests.takeIf { it > 0 && rights.canInviteUsers },
+                    // Every administrator of a supergroup or channel may read its recent actions.
+                    canViewRecentActions = info.kind != GroupKind.BasicGroup,
+                    canViewStatistics = details?.canGetStatistics == true,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

@@ -10,10 +10,65 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Media viewer: picture-in-picture. A video goes on in a small window over your other apps from the button beside its
+  seek bar, or by swiping it up, with play and pause in the window. Expanding the window brings the video back into
+  the viewer where it left off. Secret chats' videos stay in the viewer.
+- Send photos without compression: the attach preview's "Send without compression" sends photos and videos from the
+  gallery as files, at their full size and quality, so nothing is lost on the way. Their location and camera details
+  are still removed. Settings → Data and storage → "Send photos in original quality" turns it on for every send. Very
+  long panoramas, which Telegram refuses as photos, now go as files too.
+- Link previews in secret chats: off by default, and a switch in Privacy and security turns them on. Telegram's
+  servers make link previews, so they would see the links sent in a secret chat.
+- Personal channel: Edit profile → Personal channel shows one of your public channels on your profile, or none. Other
+  people's profiles show theirs under Info, and a tap opens it.
+- Contact joined Telegram: a switch in Settings → Notifications turns off the message Telegram sends when one of your
+  contacts joins. It belongs to your Telegram account, so your other apps follow it.
+- Websites: Privacy and security → Websites lists the sites you logged in to with Telegram, with the bot, browser and
+  where and when each was last used, and logs one or all of them out (each asks first).
+- Double-tap to react: double-tapping a message adds your quick reaction, or takes it back. Appearance → Chats →
+  Double-tap to react picks the quick reaction (it belongs to your Telegram account, so your other apps use it too) and
+  whether double taps react on others' messages, your own, or neither. A single tap still acts at once.
+- Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
+  whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
+  reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
+- Send with Enter: Appearance → Chats chooses which Enter sends a message. On a hardware keyboard Enter sends by
+  default, and Shift+Enter or Ctrl+Enter starts a new line; turned off, Ctrl+Enter sends instead. On the on-screen
+  keyboard Enter starts a new line by default; turned on, its Enter key becomes Send. This replaces "Send with
+  Ctrl+Enter", whose choice carries over.
+- Statistics: where Telegram offers them (administrators of larger supergroups and channels), the info page's
+  Administration opens the chat's statistics: members, messages, views and reactions against the period before, and
+  Telegram's charts (growth, joins and leaves, languages, activity by hour, views and interactions), drawn as lines,
+  bars or shares, and in groups the members who wrote the most.
+- Recent actions: administrators of supergroups and channels see what administrators and members did in the last 48
+  hours (messages edited, deleted or pinned, people joining, leaving, promoted or restricted, changes to the info,
+  settings and invite links, voice chats), from the info page's Administration, filtered by kind with chips.
+- Transfer ownership: the owner of a supergroup or channel makes an administrator or member the owner from their
+  rights page. Pingogram first asks Telegram whether it may be done now (it needs a 2-step verification password that
+  is not new, on a device logged in for a while), then asks for that password in a question that says what changes.
+- Join requests: where people asked to join through a link that needs approval, the info page's Administration shows
+  "Join requests" with how many wait. Its page lists them with their bio or the date, to add or dismiss one by one,
+  or all at once ("Dismiss all" asks first).
+- Power saving: Settings → Power saving turns off what plays by itself while Android's Battery Saver is on (or always,
+  or never). Animated stickers and emoji show their first frame, videos and GIFs in the media viewer wait for you to
+  tap play, and the call screens' animations stand still; each can be left on.
+- Media viewer: videos start playing while they download, as soon as there is enough to show, and the seek bar shows
+  how much has arrived. Seeking ahead downloads from there instead of everything before it, and leaving the video stops
+  its download. Videos sent in a way that cannot stream still play once downloaded.
+- Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
+  restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
+  group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a
+  question). The info page's "Group settings" / "Channel settings" opens it.
+- Chats: raise to listen. While a voice message plays, holding the phone to your ear plays it through the earpiece with
+  the screen off; lowering it plays on through the speaker, or pauses if you turn on "Pause when lowered". Never with
+  headphones, Bluetooth or during a call. Settings → Appearance → Chats, on by default.
+- Group calls by link: a `t.me/call/…` link opens Telegram's new end-to-end encrypted group calls. Pingogram asks
+  "Join the group call?" first, then joins with your microphone off, and shows the call's four emojis under its title,
+  which everyone in it sees the same while the call is secure. The rest works as in voice chats.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
-  shares theirs, it fills the window without being cut off.
+  shares theirs, it fills the window without being cut off. Voice chats too: "Share screen" in the voice chat's
+  header shares your screen beside your camera, and others' shared screens show first among the videos.
 - Proxies: Settings → Data and storage → Proxy adds, edits, checks and deletes SOCKS5, HTTP and MTProto proxies, and
   turns them on and off. Each shows how fast Telegram answers through it. A proxy link (`tg://proxy`, `t.me/socks`)
   opens a sheet that shows the proxy and connects through it only when you tap "Connect".
@@ -89,6 +144,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
+- Voice messages pause the music another app plays only while they play, and it plays on after them. A call pauses
+  a voice message or video that plays.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.

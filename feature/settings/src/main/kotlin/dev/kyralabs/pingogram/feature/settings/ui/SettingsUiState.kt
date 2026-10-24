@@ -48,6 +48,7 @@ enum class SettingsPage {
     Stickers,
     Notifications,
     DataStorage,
+    PowerSaving,
     Language,
     About,
     PrivacySecurity,

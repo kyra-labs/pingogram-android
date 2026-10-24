@@ -4,6 +4,10 @@
     <string name="call_someone">Someone</string>
     <!-- A voice chat's name while its chat's title is not known yet (Android's call list, a car, a watch). -->
     <string name="voice_chat">Voice chat</string>
+    <string name="group_call">Group call</string>
+    <string name="group_call_confirm_title">Join the group call?</string>
+    <string name="group_call_confirm_text">Anyone with its link can join. It is end-to-end encrypted, and you join with your microphone off.</string>
+    <string name="group_call_join">Join</string>
 
     <!-- The call's stage under the name (call screen, ongoing notification). -->
     <string name="call_status_requesting">Calling…</string>
@@ -30,6 +34,7 @@
     <string name="call_key_description">Encryption key: %1$s</string>
     <string name="call_key_explain">Explain the emojis</string>
     <!-- %1$s: the other person's name. -->
+    <string name="group_call_key_explanation">If everyone in the call sees the same emojis, it is end-to-end encrypted.</string>
     <string name="call_key_explanation">If %1$s sees the same emojis, your call is end-to-end encrypted.</string>
 
     <string name="call_minimize">Back to the app</string>

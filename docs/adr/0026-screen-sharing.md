@@ -39,8 +39,11 @@ What the pinned versions offer:
     Telegram's apps send it.
   - Turning the camera on stops the screen, and holding the call pauses it, as it does the camera.
   - The other side's shared screen shows in place of their camera, fitted to the window, not cropped like a face.
-- **Voice chats** (the next pull request): the same button and chip. The screen goes out as the presentation, beside
-  the camera; others' shared screens join the grid as tiles of their own.
+- **Voice chats**: the same button, at the end of the voice chat's header, and the same pill. The screen goes out as
+  the presentation, beside the camera (`initPresentation`, `startGroupCallScreenSharing`, the presentation's
+  `connect`), and stops with `stopPresentation` and `endGroupCallScreenSharing`. Others' shared screens join the
+  grid as tiles of their own, fitted rather than cropped, before the cameras: the pinned participant's first, then
+  screens, then those speaking; the cap of four videos counts them.
 - **While sharing**: under the call screen's header a pill says "You're sharing your screen" with a "Stop" button.
   The call's notification gets "Stop sharing". There is no preview of the shared screen: it would show itself inside
   itself.

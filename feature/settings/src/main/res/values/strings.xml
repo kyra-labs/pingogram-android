@@ -169,6 +169,31 @@
     <string name="settings_auto_download_footer">Stickers, profile photos and previews always download. Everything else downloads when you tap it.</string>
     <string name="settings_auto_download_data_saver">Data Saver is on</string>
     <string name="settings_auto_download_data_saver_summary">Media downloads only when you tap it, until you turn Data Saver off or let Pingogram use data freely in Android\'s settings</string>
+
+    <!-- Data and storage → Sending -->
+    <string name="settings_section_sending">Sending</string>
+    <string name="settings_photos_original">Send photos in original quality</string>
+    <string name="settings_photos_original_summary">Photos and videos from the gallery go as files, at their full size and quality, without their location or camera details. You can change it when you send them.</string>
+
+    <!-- Power saving -->
+    <string name="settings_power_saving">Power saving</string>
+    <string name="settings_power_saving_summary">Animations and videos that play by themselves</string>
+    <string name="settings_power_saving_section_mode">Turn on</string>
+    <string name="settings_power_saving_off">Off</string>
+    <string name="settings_power_saving_with_battery_saver">With Battery Saver</string>
+    <string name="settings_power_saving_battery_saver_on">Battery Saver is on now</string>
+    <string name="settings_power_saving_battery_saver_off">Battery Saver is off now</string>
+    <string name="settings_power_saving_always">Always</string>
+    <string name="settings_power_saving_mode_footer">Power saving stops what plays by itself, so the battery lasts longer.</string>
+    <string name="settings_power_saving_section_parts">While on</string>
+    <string name="settings_power_saving_stickers">Stop animated stickers and emoji</string>
+    <string name="settings_power_saving_stickers_summary">They show still, as their first frame</string>
+    <string name="settings_power_saving_autoplay">Stop autoplay</string>
+    <string name="settings_power_saving_autoplay_summary">Videos and GIFs wait for you to tap play</string>
+    <string name="settings_power_saving_calls">Stop call screen animations</string>
+    <string name="settings_power_saving_calls_summary">The avatar of a ringing call and the speaking rings stand still</string>
+    <string name="settings_power_saving_parts_footer">Android’s “Remove animations” setting works on its own too, whatever is set here.</string>
+
     <string name="settings_section_storage_usage">Storage usage</string>
     <!-- Spoken by screen readers for the progress indicator while the storage usage loads. -->
     <string name="settings_storage_usage_loading">Loading storage usage</string>
@@ -988,8 +1013,11 @@
     <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
     <string name="sticker_set_failed_title">Couldn’t open the stickers</string>
     <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
-    <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
-    <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware">Send with Enter on a keyboard</string>
+    <string name="settings_enter_sends_hardware_on">Shift+Enter or Ctrl+Enter starts a new line</string>
+    <string name="settings_enter_sends_hardware_off">Ctrl+Enter sends, Enter starts a new line</string>
+    <string name="settings_enter_sends_on_screen">Send with Enter on the screen keyboard</string>
+    <string name="settings_enter_sends_on_screen_summary">The on-screen keyboard’s Enter key becomes Send</string>
 
     <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
     <string name="settings_section_network">Network</string>
@@ -1086,4 +1114,65 @@
     <!-- Spoken by screen readers for the progress indicator while the statistics are reset. -->
     <string name="settings_network_usage_resetting">Resetting network usage</string>
     <string name="settings_network_usage_reset_done">Network usage reset</string>
+    <string name="settings_raise_to_listen">Raise to listen</string>
+    <string name="settings_raise_to_listen_summary">Hold the phone to your ear to hear voice messages through the earpiece</string>
+    <string name="settings_pause_when_lowered">Pause when lowered</string>
+    <string name="settings_pause_when_lowered_summary">Lowering the phone pauses the voice message instead of playing on aloud</string>
+    <!-- Settings → Notifications → Reactions. -->
+    <string name="settings_reactions">Reactions</string>
+    <string name="settings_reactions_summary">Reactions to your messages and stories, votes in your polls</string>
+    <string name="settings_reactions_loading">Loading reaction settings</string>
+    <string name="settings_reactions_messages">Reactions to my messages</string>
+    <string name="settings_reactions_stories">Reactions to my stories</string>
+    <string name="settings_reactions_poll_votes">Votes in my polls</string>
+    <string name="settings_reactions_everyone">Everyone</string>
+    <string name="settings_reactions_contacts">My contacts</string>
+    <string name="settings_reactions_nobody">Nobody</string>
+    <string name="settings_reactions_preview">Show the reaction</string>
+    <string name="settings_reactions_preview_summary">Notifications say who reacted and with which emoji</string>
+    <string name="settings_reactions_footer">These settings belong to your Telegram account, so your other apps follow them. Pingogram can’t show reaction notifications yet.</string>
+    <string name="settings_double_tap">Double-tap to react</string>
+    <string name="settings_double_tap_summary">Your quick reaction, and on which messages a double tap adds it</string>
+    <string name="settings_double_tap_loading">Loading reactions</string>
+    <string name="settings_quick_reaction">Quick reaction</string>
+    <string name="settings_quick_reaction_footer">Your quick reaction belongs to your Telegram account, so your other apps use it too.</string>
+    <string name="settings_quick_reaction_custom">Your quick reaction is a custom emoji, chosen in another app. Pick an emoji to use one of these instead.</string>
+    <string name="settings_double_tap_section">Double tap</string>
+    <string name="settings_double_tap_incoming">On others’ messages</string>
+    <string name="settings_double_tap_incoming_summary">Double-tap a message you received to react to it</string>
+    <string name="settings_double_tap_outgoing">On your messages</string>
+    <string name="settings_double_tap_outgoing_summary">Double-tap a message you sent to react to it</string>
+    <string name="settings_double_tap_footer">A double tap on a message you already reacted to with your quick reaction takes it back. A single tap still does what it did before, at once.</string>
+    <string name="settings_websites">Websites</string>
+    <string name="settings_websites_summary">Sites you logged in to with Telegram</string>
+    <string name="settings_websites_loading">Loading websites</string>
+    <string name="settings_section_websites">Logged in with Telegram</string>
+    <string name="settings_websites_footer">These websites used “Log in with Telegram”. Logging one out ends its access to your account; it keeps what it already received.</string>
+    <string name="settings_websites_none">You haven’t logged in to any website with Telegram. Sites where you use “Log in with Telegram” show here.</string>
+    <string name="settings_websites_disconnect_all">Log out of all websites</string>
+    <string name="settings_websites_disconnecting_all">Logging out of all websites</string>
+    <string name="settings_websites_all_disconnected">Logged out of all websites</string>
+    <string name="settings_websites_dialog_title">Log out of all websites?</string>
+    <string name="settings_websites_dialog_text">Every website you logged in to with Telegram loses access to your account.</string>
+    <string name="settings_websites_dialog_confirm">Log out all</string>
+    <string name="settings_website_disconnect_button">Log out</string>
+    <string name="settings_website_disconnect">Log out of %1$s</string>
+    <string name="settings_website_disconnecting">Logging out of %1$s</string>
+    <string name="settings_website_disconnected">Logged out of %1$s</string>
+    <string name="settings_website_dialog_title">Log out of this website?</string>
+    <string name="settings_website_dialog_text">%1$s loses access to your Telegram account.</string>
+    <string name="settings_website_parts">%1$s · %2$s</string>
+    <string name="settings_contact_joined">Contact joined Telegram</string>
+    <string name="settings_contact_joined_summary">A message when someone in your contacts joins. Your other apps follow this too.</string>
+    <string name="settings_personal_channel">Personal channel</string>
+    <string name="settings_personal_channel_summary">Show one of your channels on your profile</string>
+    <string name="settings_personal_channel_loading">Loading your channels</string>
+    <string name="settings_section_personal_channel">Show on your profile</string>
+    <string name="settings_personal_channel_off">None</string>
+    <string name="settings_personal_channel_saving">Saving your personal channel</string>
+    <string name="settings_personal_channel_footer">Everyone who sees your profile sees this channel there.</string>
+    <string name="settings_personal_channel_none_owned">Only public channels you own can be shown on your profile, and you have none.</string>
+    <string name="settings_section_secret_chats">Secret chats</string>
+    <string name="settings_secret_chat_previews">Link previews in secret chats</string>
+    <string name="settings_secret_chat_previews_summary">Telegram’s servers make the previews, so they see the links you send</string>
 </resources>

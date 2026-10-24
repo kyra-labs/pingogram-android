@@ -1,17 +1,26 @@
 package dev.kyralabs.pingogram.core.domain.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.SendKeys
 import kotlinx.coroutines.flow.Flow
 
 /**
- * How the composer takes a hardware keyboard (`docs/DESIGN_SYSTEM.md` §9, `docs/audit/accessibility.md` A2): whether
- * Ctrl+Enter sends a message, Enter then starting a new line, instead of Enter sending. Off by default; kept on this
- * device across logouts, like the Appearance settings. The on-screen keyboard's Enter always starts a new line.
+ * How the composer takes Enter ([SendKeys]): kept on this device across logouts, like the Appearance settings, and set
+ * in Appearance → Chats.
  */
 interface ComposerSettingsRepository {
-    /** Whether Ctrl+Enter sends, then every change. Never fails: a setting that cannot be read counts as off. */
-    val sendWithCtrlEnter: Flow<Boolean>
+    /** Which Enter sends, then every change. Never fails: settings that cannot be read count as the defaults. */
+    val sendKeys: Flow<SendKeys>
 
-    /** Saves whether Ctrl+Enter sends; fails with `DomainError.Unknown` if it cannot be written (a full disk). */
-    suspend fun setSendWithCtrlEnter(enabled: Boolean): Outcome<Unit>
+    /** Saves [keys]; fails with `DomainError.Unknown` if they cannot be written (a full disk). */
+    suspend fun setSendKeys(keys: SendKeys): Outcome<Unit>
+
+    /**
+     * Whether picked photos and videos go without compression by default (`AttachmentKind.Original`: as files, their
+     * metadata removed), then every change; the attach preview can still change it per send. Off when unreadable.
+     */
+    val sendPhotosInOriginalQuality: Flow<Boolean>
+
+    /** Saves [sendPhotosInOriginalQuality]; fails with `DomainError.Unknown` if it cannot be written. */
+    suspend fun setSendPhotosInOriginalQuality(enabled: Boolean): Outcome<Unit>
 }

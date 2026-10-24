@@ -126,6 +126,13 @@ data object LanguageRoute
 data object DataStorageRoute
 
 /**
+ * Power saving (Settings → Power saving): when it is on, following Battery Saver or always, and what it turns off,
+ * `:feature:settings`, pushed above the Settings tab.
+ */
+@Serializable
+data object PowerSavingRoute
+
+/**
  * What downloads by itself on one kind of network, pushed above [DataStorageRoute]. [network] is the name of an
  * `AutoDownloadNetwork` of `:core:domain`, which this module does not depend on.
  */
@@ -213,6 +220,14 @@ data object BlockedUsersRoute
 @Serializable
 data object ActiveSessionsRoute
 
+/** The websites logged in with the account, pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object ConnectedWebsitesRoute
+
+/** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
+@Serializable
+data object PersonalChannelRoute
+
 /** The passcode lock's settings (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object PasscodeLockRoute
@@ -283,6 +298,14 @@ data object NotificationSettingsRoute
 data class NotificationExceptionsRoute(
     val scope: String,
 )
+
+/** Whom the account hears of reactions and poll votes from, pushed above [NotificationSettingsRoute]. */
+@Serializable
+data object ReactionNotificationsRoute
+
+/** The quick reaction and where a double tap adds it, pushed above [AppearanceRoute]. */
+@Serializable
+data object QuickReactionRoute
 
 /**
  * Global search of chats, contacts and messages (`REQUIREMENTS.md` FR-L6), `:feature:chats`, opened from the search
@@ -459,6 +482,33 @@ data class EditChatInfoRoute(
 /** What members of group [chatId] may do by default, and its slow mode, pushed above its info page. */
 @Serializable
 data class ChatPermissionsRoute(
+    val chatId: Long,
+)
+
+/**
+ * The settings of group or channel [chatId] (reactions, saving content, signatures, topics, the discussion group,
+ * upgrading), pushed above its info page.
+ */
+@Serializable
+data class ChatSettingsRoute(
+    val chatId: Long,
+)
+
+/** The requests to join group or channel [chatId], pushed above its info page. */
+@Serializable
+data class JoinRequestsRoute(
+    val chatId: Long,
+)
+
+/** The recent actions of supergroup or channel [chatId], for its administrators, pushed above its info page. */
+@Serializable
+data class RecentActionsRoute(
+    val chatId: Long,
+)
+
+/** The statistics of supergroup or channel [chatId], for its administrators, pushed above its info page. */
+@Serializable
+data class ChatStatisticsRoute(
     val chatId: Long,
 )
 

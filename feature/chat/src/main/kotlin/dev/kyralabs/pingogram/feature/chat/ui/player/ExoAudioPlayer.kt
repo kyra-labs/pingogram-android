@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui.player
 
 import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
@@ -30,14 +31,17 @@ import javax.inject.Inject
  * reported ([PlaybackClock]), which it reports whenever it starts or stops advancing, jumps or learns the file's
  * length.
  *
- * It holds audio focus while it plays (speech pauses when another app talks over it, music only gets quieter), and
- * pauses when headphones are unplugged. It plays only while the conversation is started: playing on in the
- * background would need a media session in a foreground service.
+ * It holds audio focus while it plays: music ExoPlayer's own, a voice message a transient one ([SpeechFocus]), so the
+ * music of another app pauses for it and plays on after it; speech pauses when another app talks over it or a call
+ * starts, music only gets quieter. It pauses when headphones are unplugged. It plays only while the conversation is
+ * started: playing on in the background would need a media session in a foreground service. Voice messages play at the
+ * earpiece while the phone is held to the ear ([RaiseToListen]).
  */
 internal class ExoAudioPlayer
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
+        private val raiseToListen: RaiseToListen,
     ) : AudioPlayer {
         private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -57,12 +61,35 @@ internal class ExoAudioPlayer
 
         override val durationMillis: Long? get() = clock.durationMillis
 
+        init {
+            raiseToListen.listener =
+                object : RaiseToListen.Listener {
+                    override fun onEarpieceChanged(earpiece: Boolean) {
+                        onPlayer {
+                            this@ExoAudioPlayer.earpiece = earpiece
+                            it.setAudioAttributes(attributesFor(kind, earpiece), kind == AudioKind.Music)
+                        }
+                    }
+
+                    override fun onPlayingChanged(playing: Boolean) {
+                        if (playing) resume() else pause()
+                        listener?.onPlayingChanged(playing)
+                    }
+                }
+        }
+
         // The player's thread.
 
         private var player: ExoPlayer? = null
 
         /** The kind the player's audio attributes are set for. */
         private var kind: AudioKind? = null
+
+        /** Whether the player's audio attributes are set for the earpiece ([RaiseToListen]). */
+        private var earpiece = false
+
+        /** A voice message's transient audio focus; ExoPlayer holds music's itself. Built with the player. */
+        private var speechFocus: SpeechFocus? = null
 
         /** The [generation] of the last call the player carried out. */
         private var playerGeneration = 0
@@ -87,7 +114,10 @@ internal class ExoAudioPlayer
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) onMainThread { listener?.onEnded() }
+                    if (playbackState == Player.STATE_ENDED) {
+                        speechFocus?.abandon()
+                        onMainThread { listener?.onEnded() }
+                    }
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
@@ -102,6 +132,7 @@ internal class ExoAudioPlayer
         ) {
             val generation = ++generation
             clock = PlaybackClock.startingAt(positionMillis, SystemClock.elapsedRealtime())
+            if (kind == AudioKind.Speech) raiseToListen.start() else raiseToListen.stop()
             val handler =
                 playerHandler
                     ?: Handler(HandlerThread(THREAD_NAME).apply { start() }.looper).also { playerHandler = it }
@@ -109,23 +140,30 @@ internal class ExoAudioPlayer
                 val player = player ?: newPlayer().also { player = it }
                 playerGeneration = generation
                 if (this.kind != kind) {
-                    // Handles audio focus: asks for it, pauses on losing it, plays on when it comes back.
-                    player.setAudioAttributes(kind.attributes, true)
+                    // Music: ExoPlayer asks for audio focus, pauses on losing it and plays on when it comes back.
+                    // Speech: SpeechFocus does, transiently.
                     this.kind = kind
+                    earpiece = earpiece && kind == AudioKind.Speech
+                    player.setAudioAttributes(attributesFor(kind, earpiece), kind == AudioKind.Music)
+                    if (kind == AudioKind.Music) speechFocus?.abandon()
                 }
                 player.setMediaItem(MediaItem.fromUri(Uri.fromFile(File(path))), positionMillis)
                 player.prepare()
-                player.play()
+                // A voice message plays once it has the focus; SpeechFocus shows a refusal as a pause.
+                if (kind != AudioKind.Speech || speechFocus?.request() != false) player.play()
             }
         }
 
         override fun pause() {
             clock = clock.pausedAt(SystemClock.elapsedRealtime())
-            onPlayer { it.pause() }
+            onPlayer {
+                it.pause()
+                speechFocus?.abandon()
+            }
         }
 
         override fun resume() {
-            onPlayer { it.play() }
+            onPlayer { if (kind != AudioKind.Speech || speechFocus?.request() != false) it.play() }
         }
 
         override fun seekTo(positionMillis: Long) {
@@ -136,32 +174,56 @@ internal class ExoAudioPlayer
         override fun stop() {
             val generation = ++generation
             clock = PlaybackClock.Empty
+            raiseToListen.stop()
             onPlayer {
                 playerGeneration = generation
                 it.stop()
                 it.clearMediaItems()
+                speechFocus?.abandon()
             }
         }
 
         override fun release() {
             listener = null
+            raiseToListen.release()
             generation++
             val handler = playerHandler ?: return
             playerHandler = null
             handler.post {
+                speechFocus?.abandon()
                 player?.release()
                 player = null
                 handler.looper.quitSafely()
             }
         }
 
-        /** Built on the player's thread, whose looper it then calls back on. */
-        private fun newPlayer(): ExoPlayer =
-            ExoPlayer
-                .Builder(context)
-                .setHandleAudioBecomingNoisy(true)
-                .build()
-                .apply { addListener(playerListener) }
+        /** Built on the player's thread, whose looper it then calls back on, with the voice messages' focus. */
+        private fun newPlayer(): ExoPlayer {
+            val player =
+                ExoPlayer
+                    .Builder(context)
+                    .setHandleAudioBecomingNoisy(true)
+                    .build()
+                    .apply { addListener(playerListener) }
+            val audioManager = context.getSystemService(AudioManager::class.java)
+            speechFocus =
+                audioManager?.let {
+                    SpeechFocus(
+                        audioManager = it,
+                        handler = Handler(checkNotNull(Looper.myLooper())),
+                        // The UI is told, as when the user pauses or plays.
+                        onLoss = {
+                            player.pause()
+                            onMainThread { listener?.onPlayingChanged(false) }
+                        },
+                        onGain = {
+                            player.play()
+                            onMainThread { listener?.onPlayingChanged(true) }
+                        },
+                    )
+                }
+            return player
+        }
 
         /** Runs [action] with the player on its thread, if there is one. */
         private fun onPlayer(action: (ExoPlayer) -> Unit) {
@@ -199,6 +261,20 @@ internal class ExoAudioPlayer
                 )
         }
     }
+
+/** The audio attributes for the earpiece ([RaiseToListen]) or for [kind]'s media. */
+private fun attributesFor(
+    kind: AudioKind?,
+    earpiece: Boolean,
+): AudioAttributes = if (earpiece) EarpieceAttributes else (kind ?: AudioKind.Speech).attributes
+
+/** A voice message at the ear: played as a call's voice, which Android routes to the earpiece in communication mode. */
+private val EarpieceAttributes: AudioAttributes =
+    AudioAttributes
+        .Builder()
+        .setUsage(C.USAGE_VOICE_COMMUNICATION)
+        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
+        .build()
 
 /** Media playback of speech or music; ExoPlayer derives the audio focus it asks for from these. */
 private val AudioKind.attributes: AudioAttributes

@@ -425,4 +425,186 @@
     </plurals>
     <!-- The profile's call pill (REQUIREMENTS.md FR-V1). -->
     <string name="profile_action_call">Call</string>
+
+    <!-- A group's or channel's settings (REQUIREMENTS.md FR-P3) -->
+    <string name="chat_settings_group">Group settings</string>
+    <string name="chat_settings_channel">Channel settings</string>
+    <string name="chat_settings_reactions">Reactions</string>
+    <string name="chat_settings_reactions_all">All reactions</string>
+    <string name="chat_settings_reactions_some">Some reactions</string>
+    <string name="chat_settings_reactions_none">No reactions</string>
+    <string name="chat_settings_reactions_pick">Members can react with the reactions you pick.</string>
+    <!-- Spoken by screen readers for a reaction that can be picked. %1$s is the emoji. -->
+    <string name="chat_settings_reaction">Reaction %1$s</string>
+    <string name="chat_settings_content">Content</string>
+    <string name="chat_settings_protected">Restrict saving content</string>
+    <string name="chat_settings_protected_summary">Members can’t forward, save or copy messages, or take screenshots in Telegram’s apps</string>
+    <string name="chat_settings_posts">Posts</string>
+    <string name="chat_settings_sign">Sign messages</string>
+    <string name="chat_settings_sign_summary">Posts show who wrote them</string>
+    <string name="chat_settings_show_profiles">Show authors’ profiles</string>
+    <string name="chat_settings_show_profiles_summary">Names in signed posts open the author’s profile</string>
+    <string name="chat_settings_topics">Topics</string>
+    <string name="chat_settings_topics_on">Topics</string>
+    <string name="chat_settings_topics_summary">Members talk in separate topics</string>
+    <string name="chat_settings_topic_tabs">Show topics as tabs</string>
+    <string name="chat_settings_topic_tabs_summary">Instead of a list of topics</string>
+    <string name="chat_settings_discussion">Discussion</string>
+    <string name="chat_settings_discussion_group">Discussion group</string>
+    <string name="chat_settings_linked_channel">Linked channel</string>
+    <string name="chat_settings_discussion_none">None · Posts can’t be commented</string>
+    <string name="chat_settings_unlink">Unlink</string>
+    <string name="chat_settings_unlink_title">Unlink the discussion?</string>
+    <string name="chat_settings_unlink_text">Posts can no longer be commented in the group. The group and its messages stay.</string>
+    <string name="chat_settings_unlink_confirm">Unlink</string>
+    <string name="chat_settings_picker_title">Discussion group</string>
+    <string name="chat_settings_picker_text">Comments on posts appear in the group you pick. Its members can see who comments.</string>
+    <string name="chat_settings_picker_none">You have no group that can be linked. Create a group first.</string>
+    <!-- Spoken by screen readers for the progress indicator while the groups load. -->
+    <string name="chat_settings_picker_loading">Loading groups</string>
+    <string name="chat_settings_upgrade_section">Group type</string>
+    <string name="chat_settings_upgrade">Upgrade to supergroup</string>
+    <string name="chat_settings_upgrade_summary">Up to 200,000 members, admins with rights, and more</string>
+    <string name="chat_settings_upgrade_title">Upgrade to supergroup?</string>
+    <string name="chat_settings_upgrade_text">The group becomes a new chat. Members and messages move with it. This can’t be undone.</string>
+    <string name="chat_settings_upgrade_confirm">Upgrade</string>
+    <!-- Spoken by screen readers for the progress indicator while a change is saved. -->
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+
+    <!-- The requests to join a group or channel (REQUIREMENTS.md FR-P3) -->
+    <string name="join_requests">Join requests</string>
+    <string name="join_requests_none">No one is waiting to join.</string>
+    <string name="join_requests_footer_group">People who open an invite link that needs approval wait here until an admin adds them.</string>
+    <string name="join_requests_footer_channel">People who open an invite link that needs approval wait here until an admin lets them subscribe.</string>
+    <!-- A request's supporting text: when it came, e.g. "Requested Oct 30". -->
+    <string name="join_requests_date">Requested %1$s</string>
+    <string name="join_requests_add">Add</string>
+    <!-- The approve button for screen readers. %1$s is the person's name. -->
+    <string name="join_requests_add_named">Add %1$s</string>
+    <!-- The dismiss button for screen readers. %1$s is the person's name. -->
+    <string name="join_requests_dismiss_named">Dismiss %1$s</string>
+    <string name="join_requests_add_all">Add all</string>
+    <string name="join_requests_dismiss_all">Dismiss all</string>
+    <string name="join_requests_dismiss_all_title">Dismiss every request?</string>
+    <string name="join_requests_dismiss_all_text">No one who is waiting joins. They can ask again with the link.</string>
+    <string name="join_requests_dismiss_all_confirm">Dismiss all</string>
+    <!-- Snackbar. %1$s is the person's name. -->
+    <string name="join_requests_added">%1$s joined</string>
+    <!-- Spoken by screen readers for the progress indicator while requests are processed. -->
+    <string name="join_requests_more_error">Couldn’t load more requests</string>
+    <string name="join_requests_retry">Try again</string>
+    <string name="join_requests_more">Load more</string>
+    <!-- Transferring the ownership of a supergroup or channel, from a member's rights page. -->
+    <string name="chat_info_transfer">Transfer ownership</string>
+    <string name="chat_info_transfer_summary">%1$s becomes the owner. You stay an administrator.</string>
+    <string name="chat_info_transfer_title">Transfer ownership to %1$s?</string>
+    <string name="chat_info_transfer_text">%1$s will own the group and can change or remove your rights. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_transfer_text_channel">%1$s will own the channel and can change or remove your rights. Only %1$s can give the ownership back. Enter your 2-step verification password to confirm.</string>
+    <string name="chat_info_transfer_password">Password</string>
+    <string name="chat_info_transfer_confirm">Transfer</string>
+    <string name="chat_info_transfer_checking">Checking whether you can transfer the ownership</string>
+    <string name="chat_info_transfer_password_needed">Turn on 2-step verification in Settings → Privacy and security to transfer the ownership.</string>
+    <string name="chat_info_transfer_password_too_new">Telegram lets you transfer the ownership only a while after the 2-step verification password was set. Try again in %1$s.</string>
+    <string name="chat_info_transfer_session_too_new">Telegram lets you transfer the ownership only from a device that has been logged in for a while. Try again in %1$s.</string>
+    <!-- Recent actions of a supergroup or channel, from the info page's Administration. -->
+    <string name="recent_actions">Recent actions</string>
+    <string name="recent_actions_footer">What administrators and members did in the last 48 hours. Only administrators see this.</string>
+    <string name="recent_actions_none">No actions in the last 48 hours</string>
+    <string name="recent_actions_loading">Loading actions</string>
+    <string name="recent_actions_more_error">Couldn’t load older actions</string>
+    <string name="recent_actions_retry">Try again</string>
+    <string name="recent_actions_filter_messages">Messages</string>
+    <string name="recent_actions_filter_members">Members</string>
+    <string name="recent_actions_filter_admins">Admins</string>
+    <string name="recent_actions_filter_restrictions">Restrictions</string>
+    <string name="recent_actions_filter_settings">Info and settings</string>
+    <string name="recent_actions_filter_links">Invite links</string>
+    <string name="recent_actions_filter_voice_chats">Voice chats</string>
+    <string name="recent_actions_edited">Edited a message</string>
+    <string name="recent_actions_deleted">Deleted a message</string>
+    <string name="recent_actions_pinned">Pinned a message</string>
+    <string name="recent_actions_unpinned">Unpinned a message</string>
+    <string name="recent_actions_joined">Joined</string>
+    <string name="recent_actions_joined_link">Joined with an invite link</string>
+    <string name="recent_actions_joined_approved">Joined, approved by %1$s</string>
+    <string name="recent_actions_left">Left</string>
+    <string name="recent_actions_invited">Added %1$s</string>
+    <string name="recent_actions_promoted">Made %1$s an admin</string>
+    <string name="recent_actions_rights_changed">Changed the admin rights of %1$s</string>
+    <string name="recent_actions_dismissed">Dismissed %1$s as admin</string>
+    <string name="recent_actions_banned">Removed %1$s</string>
+    <string name="recent_actions_restricted">Restricted %1$s</string>
+    <string name="recent_actions_unrestricted">Lifted the restrictions of %1$s</string>
+    <string name="recent_actions_unbanned">Let %1$s back</string>
+    <string name="recent_actions_title">Changed the name to “%1$s”</string>
+    <string name="recent_actions_description">Changed the description</string>
+    <string name="recent_actions_username">Changed the link to %1$s</string>
+    <string name="recent_actions_username_removed">Removed the public link</string>
+    <string name="recent_actions_photo">Changed the photo</string>
+    <string name="recent_actions_photo_removed">Removed the photo</string>
+    <string name="recent_actions_linked">Linked %1$s</string>
+    <string name="recent_actions_unlinked">Unlinked the discussion</string>
+    <string name="recent_actions_link_edited">Edited the invite link %1$s</string>
+    <string name="recent_actions_link_revoked">Revoked the invite link %1$s</string>
+    <string name="recent_actions_link_deleted">Deleted the invite link %1$s</string>
+    <string name="recent_actions_voice_chat_started">Started a voice chat</string>
+    <string name="recent_actions_voice_chat_ended">Ended the voice chat</string>
+    <string name="recent_actions_topic">Changed a topic</string>
+    <string name="recent_actions_permissions">Changed what members may do</string>
+    <string name="recent_actions_reactions">Changed the reactions</string>
+    <string name="recent_actions_slow_mode">Set slow mode to %1$s</string>
+    <string name="recent_actions_slow_mode_off">Turned slow mode off</string>
+    <string name="recent_actions_signatures_on">Turned signatures on</string>
+    <string name="recent_actions_signatures_off">Turned signatures off</string>
+    <string name="recent_actions_profiles_on">Turned author profiles on</string>
+    <string name="recent_actions_profiles_off">Turned author profiles off</string>
+    <string name="recent_actions_protected_on">Restricted saving content</string>
+    <string name="recent_actions_protected_off">Allowed saving content</string>
+    <string name="recent_actions_topics_on">Turned topics on</string>
+    <string name="recent_actions_topics_off">Turned topics off</string>
+    <string name="recent_actions_invites_on">Let members add people</string>
+    <string name="recent_actions_invites_off">Stopped members from adding people</string>
+    <string name="recent_actions_history_on">Showed the history to new members</string>
+    <string name="recent_actions_history_off">Hid the history from new members</string>
+    <string name="recent_actions_other">Did something Pingogram can’t show yet</string>
+    <!-- Statistics of a supergroup or channel, from the info page's Administration. -->
+    <string name="statistics">Statistics</string>
+    <string name="statistics_period">%1$s, as Telegram counts it</string>
+    <string name="statistics_overview">Overview</string>
+    <string name="statistics_top_members">Top members</string>
+    <plurals name="statistics_messages">
+        <item quantity="one">%1$d message</item>
+        <item quantity="other">%1$d messages</item>
+    </plurals>
+    <string name="statistics_members">Members</string>
+    <string name="statistics_messages">Messages</string>
+    <string name="statistics_viewers">Members reading</string>
+    <string name="statistics_senders">Members writing</string>
+    <string name="statistics_views_per_post">Views per post</string>
+    <string name="statistics_shares_per_post">Shares per post</string>
+    <string name="statistics_reactions_per_post">Reactions per post</string>
+    <string name="statistics_views_per_story">Views per story</string>
+    <string name="statistics_shares_per_story">Shares per story</string>
+    <string name="statistics_reactions_per_story">Reactions per story</string>
+    <string name="statistics_notifications">Subscribers with notifications on</string>
+    <string name="statistics_graph_members">Growth</string>
+    <string name="statistics_graph_joins">Joined and left</string>
+    <string name="statistics_graph_joins_by_source">New members by source</string>
+    <string name="statistics_graph_languages">Languages</string>
+    <string name="statistics_graph_messages">Messages</string>
+    <string name="statistics_graph_actions">Actions</string>
+    <string name="statistics_graph_by_hour">Activity by hour</string>
+    <string name="statistics_graph_by_weekday">Activity by day of the week</string>
+    <string name="statistics_graph_muted">Notifications</string>
+    <string name="statistics_graph_views_by_hour">Views by hour</string>
+    <string name="statistics_graph_views_by_source">Views by source</string>
+    <string name="statistics_graph_interactions">Interactions</string>
+    <string name="statistics_graph_reactions">Reactions</string>
+    <string name="statistics_graph_story_interactions">Story interactions</string>
+    <string name="statistics_graph_story_reactions">Story reactions</string>
+    <string name="statistics_graph_instant_view">Instant View interactions</string>
+    <string name="statistics_graph_loading">Loading the chart</string>
+    <string name="statistics_graph_empty">Not enough data for this chart</string>
+    <string name="statistics_chart_series">%1$s: from %2$s to %3$s, highest %4$s</string>
+    <string name="profile_personal_channel">Channel</string>
 </resources>
