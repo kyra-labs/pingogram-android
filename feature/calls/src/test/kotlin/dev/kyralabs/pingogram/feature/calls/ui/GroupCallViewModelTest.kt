@@ -7,11 +7,13 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.feature.calls.CALL_ID
 import dev.kyralabs.pingogram.feature.calls.CHAT_ID
 import dev.kyralabs.pingogram.feature.calls.CallLine
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.FakeCallClock
 import dev.kyralabs.pingogram.feature.calls.FakeCallEngine
 import dev.kyralabs.pingogram.feature.calls.FakeCallForeground
 import dev.kyralabs.pingogram.feature.calls.FakeCallSystem
 import dev.kyralabs.pingogram.feature.calls.FakeGroupCallRepository
+import dev.kyralabs.pingogram.feature.calls.FakeNetworkRepository
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.GroupCallManager
 import dev.kyralabs.pingogram.feature.calls.MuteRequest
@@ -31,6 +33,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -44,6 +48,7 @@ class GroupCallViewModelTest {
     private val users = FakeUserRepository()
     private val line = CallLine()
     private var microphone = true
+    private val camera = FakeCameraAccess()
     private val created = mutableListOf<GroupCallViewModel>()
     private val chats = GroupCallChats { id -> flowOf(GroupCallChat(id, "Book club", null)) }
 
@@ -68,6 +73,7 @@ class GroupCallViewModelTest {
             clock,
             { "" },
             line,
+            { FakeNetworkRepository() },
             backgroundScope,
         )
 
@@ -78,7 +84,7 @@ class GroupCallViewModelTest {
             SavedStateHandle(
                 mapOf(GroupCallActivity.EXTRA_ACTION to action, GroupCallActivity.EXTRA_CHAT_ID to CHAT_ID),
             ),
-    ) = GroupCallViewModel(handle, manager, repository, chats, users, { microphone }, clock).also { viewModel ->
+    ) = GroupCallViewModel(handle, manager, repository, chats, users, { microphone }, camera, clock).also { viewModel ->
         created += viewModel
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -183,6 +189,41 @@ class GroupCallViewModelTest {
             )
             advanceTimeBy(2_500)
             assertEquals(GroupCallUiState.Closed, viewModel.uiState.value)
+        }
+
+    @Test
+    fun `the camera asks for its permission, then turns on and off`() =
+        runTest(dispatcher) {
+            val manager = manager()
+            val viewModel = viewModel(manager, GroupCallActivity.ACTION_JOIN)
+            val effects = mutableListOf<CallEffect>()
+            backgroundScope.launch { viewModel.effects.collect { effects += it } }
+            runCurrent()
+            assertTrue((viewModel.uiState.value as GroupCallUiState.InCall).video.canSend)
+
+            viewModel.onEvent(GroupCallEvent.ToggleCamera)
+            runCurrent()
+            assertEquals(listOf<CallEffect>(CallEffect.RequestCamera), effects)
+
+            camera.granted = true
+            viewModel.onEvent(GroupCallEvent.CameraResult(granted = true, canAskAgain = true))
+            runCurrent()
+            assertEquals(CameraFacing.Front, (viewModel.uiState.value as GroupCallUiState.InCall).video.camera)
+            assertEquals(listOf(true), repository.videoToggles)
+
+            viewModel.onEvent(GroupCallEvent.ToggleCamera)
+            runCurrent()
+            assertNull((viewModel.uiState.value as GroupCallUiState.InCall).video.camera)
+            assertEquals(listOf(true, false), repository.videoToggles)
+        }
+
+    @Test
+    fun `no camera is offered without one on the device`() =
+        runTest(dispatcher) {
+            camera.hasCamera = false
+            val viewModel = viewModel(manager(), GroupCallActivity.ACTION_JOIN)
+
+            assertFalse((viewModel.uiState.value as GroupCallUiState.InCall).video.canSend)
         }
 
     @Test

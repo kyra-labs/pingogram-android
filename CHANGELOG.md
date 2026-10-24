@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Voice chats: where the voice chat allows video, a Camera button sends your camera, and your own picture shows above
+  the participants with "Switch camera" on it. Pingogram asks for the camera when you first turn it on. It sends less on
+  mobile data and roaming, and stops while the call is on hold.
 - Rate this call: when Telegram asks for it after a call of at least a few seconds that ended normally, a sheet over
   the ended call asks for one to five stars, and what went wrong for one to three (echo, noise, sound cutting out,
   not hearing each other, a dropped call, and for video calls distorted or blurry video). It says that the rating goes

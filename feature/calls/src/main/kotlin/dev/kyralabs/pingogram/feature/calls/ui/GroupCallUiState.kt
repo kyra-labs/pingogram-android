@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.calls.ui
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.feature.calls.AudioRoute
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -53,11 +54,22 @@ sealed interface GroupCallUiState {
         val canEnd: Boolean = false,
         val route: AudioRoute? = null,
         val routes: ImmutableList<AudioRoute> = persistentListOf(),
+        val video: GroupCallVideoUi = GroupCallVideoUi(),
     ) : GroupCallUiState {
         /** The controls apply: joined and not over. */
         val hasControls: Boolean get() = stage !is GroupCallStage.Ended
     }
 }
+
+/** The user's camera in the voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
+@Immutable
+data class GroupCallVideoUi(
+    /** The panel offers the camera: Telegram allows video in the call and the device has a camera. */
+    val canSend: Boolean = false,
+    /** The camera the user sends (the self-view shows), or null with it off. */
+    val camera: CameraFacing? = null,
+    val canSwitchCamera: Boolean = false,
+)
 
 /** The voice chat's chat: its title and photo. */
 @Immutable
@@ -130,4 +142,16 @@ sealed interface GroupCallEvent {
 
     /** "Not now" before the permission request: nothing is joined. */
     data object DismissMicrophone : GroupCallEvent
+
+    /** Turns the camera on (asking for the permission first where needed) or off. */
+    data object ToggleCamera : GroupCallEvent
+
+    /** The other camera: front after back, and back. */
+    data object SwitchCamera : GroupCallEvent
+
+    /** Android answered the camera's permission request. */
+    data class CameraResult(
+        val granted: Boolean,
+        val canAskAgain: Boolean,
+    ) : GroupCallEvent
 }

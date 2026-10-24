@@ -876,6 +876,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   goes to the screen's `CallVideoView` (`GroupCallManager.setVideoSink`) and on in picture-in-picture. The features
   reach voice chats through `core:ui`'s `VoiceChats` (`LocalVoiceChats`, provided by `:app` from `Calls`): the
   conversation's `VoiceChatBarSlot` at the top of its sheet and the info page's "Voice chat" pill.
+  Video in voice chats (`docs/adr/0024-video-in-voice-chats.md`): where Telegram allows it (`groupCall.can_enable_video`),
+  `GroupCallManager.setCameraOn` sends a camera through the engine's group session (`GroupCallSession.setCamera`: its
+  capture sources again, as NTgCalls' join payload already carries the camera's track) and tells the others with
+  `GroupCallRepository.setMyVideoEnabled` (`toggleGroupCallIsMyVideoEnabled`); the most it sends follows the network as
+  in one-to-one calls (`VideoQuality.forNetwork`), none while held, and it stops when Telegram takes video back. The
+  screen draws the self-view through `setSelfVideoSink`, and the call service adds the `camera` type while it sends.
 - **Rating a call**: TDLib's `callStateDiscarded.need_rating` reaches `CallManager` as `CallState.Discarded.needsRating`;
   for a call hung up after at least 5 s connected it holds a `CallRatingRequest` (`rating`), which outlives the ended
   call's 2 s on screen until the user rates (`CallRepository.rateCall`, `sendCallRating` with `inputCallDiscarded`, in

@@ -541,7 +541,7 @@ internal fun user(
     haveAccess = true,
 )
 
-private class FakeCameraAccess : CameraAccess {
+internal class FakeCameraAccess : CameraAccess {
     var hasCamera = true
     var granted = false
 

@@ -191,7 +191,7 @@ enum class CallVideoSlot { Remote, Self }
  */
 typealias CallVideo = @Composable (slot: CallVideoSlot, mirror: Boolean, modifier: Modifier) -> Unit
 
-private val PlaceholderVideo: CallVideo = { slot, _, modifier ->
+internal val PlaceholderVideo: CallVideo = { slot, _, modifier ->
     val color =
         when (slot) {
             CallVideoSlot.Remote -> MaterialTheme.colorScheme.surfaceContainerHighest
@@ -512,7 +512,7 @@ private fun OverlayPill(
  * shows; "Switch camera" at its bottom end where the device has a front and a back camera.
  */
 @Composable
-private fun SelfView(
+internal fun SelfView(
     mirror: Boolean,
     canSwitch: Boolean,
     landscape: Boolean,

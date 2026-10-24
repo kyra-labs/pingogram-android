@@ -25,6 +25,18 @@ data class ActiveGroupCall(
     val audio: CallAudio = CallAudio(),
     /** When it first connected, on the elapsed-realtime clock in milliseconds; null before. */
     val connectedAtMillis: Long? = null,
+    val video: GroupCallVideo = GroupCallVideo(),
+)
+
+/** The user's camera in a voice chat (`docs/adr/0024-video-in-voice-chats.md`). */
+@Immutable
+data class GroupCallVideo(
+    /** Telegram lets the user send their camera in this call. */
+    val canSend: Boolean = false,
+    /** The camera the user sends, or null with it off (and while the call is held). */
+    val camera: CameraFacing? = null,
+    /** The device has a front and a back camera. */
+    val canSwitchCamera: Boolean = false,
 )
 
 /** Where an [ActiveGroupCall] is. */

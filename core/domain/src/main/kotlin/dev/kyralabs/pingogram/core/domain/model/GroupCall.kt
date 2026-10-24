@@ -40,6 +40,10 @@ data class GroupCall(
     val muteNewParticipants: Boolean,
     /** How long it has been going (seconds), for an active call. */
     val duration: Int,
+    /** The user may send their camera in it (`docs/adr/0024-video-in-voice-chats.md`). */
+    val canEnableVideo: Boolean = false,
+    /** The user sends their camera, as Telegram knows it. */
+    val isMyVideoEnabled: Boolean = false,
 )
 
 /** One of a [GroupCall]'s recent speakers. */

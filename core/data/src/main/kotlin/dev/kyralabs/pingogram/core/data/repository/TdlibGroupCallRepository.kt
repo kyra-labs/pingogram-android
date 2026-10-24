@@ -129,6 +129,11 @@ class TdlibGroupCallRepository
                 .request(TdApi.ToggleGroupCallParticipantIsMuted(id, participant.toTdMessageSender(), isMuted))
                 .map {}
 
+        override suspend fun setMyVideoEnabled(
+            id: Int,
+            enabled: Boolean,
+        ): Outcome<Unit> = client.request(TdApi.ToggleGroupCallIsMyVideoEnabled(id, enabled)).map {}
+
         override suspend fun setHandRaised(
             id: Int,
             participant: MessageSender,

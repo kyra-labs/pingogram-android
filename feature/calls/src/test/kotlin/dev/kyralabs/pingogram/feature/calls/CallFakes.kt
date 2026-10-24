@@ -228,6 +228,21 @@ class FakeGroupCallSession(
         videoSink = sink
     }
 
+    /** The camera sent and its quality, null while none sends. */
+    var camera: Pair<CallCamera, VideoQuality>? = null
+    var selfSink: VideoFrameSink? = null
+
+    override suspend fun setCamera(
+        camera: CallCamera?,
+        quality: VideoQuality,
+    ) {
+        this.camera = camera?.let { it to quality }
+    }
+
+    override suspend fun setSelfVideoSink(sink: VideoFrameSink?) {
+        selfSink = sink
+    }
+
     override suspend fun close() {
         closed = true
         state.value = CallMediaState.Closed

@@ -22,6 +22,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -54,7 +56,8 @@ import javax.inject.Inject
 @Suppress("TooManyFunctions") // The screen's events, its permission step, the joining and the flows it combines.
 class GroupCallViewModel
     @Inject
-    @Suppress("LongParameterList") // Injected: the voice chat, its participants, chats, users, microphone, clock.
+    // Injected: the voice chat, its participants, chats, users, microphone, camera, clock.
+    @Suppress("LongParameterList")
     internal constructor(
         private val savedStateHandle: SavedStateHandle,
         private val manager: GroupCallManager,
@@ -62,6 +65,7 @@ class GroupCallViewModel
         private val chats: GroupCallChats,
         private val userRepository: UserRepository,
         private val microphone: MicrophoneAccess,
+        private val camera: CameraAccess,
         private val clock: CallClock,
     ) : ViewModel() {
         private val action: String = savedStateHandle[GroupCallActivity.EXTRA_ACTION] ?: GroupCallActivity.ACTION_SHOW
@@ -76,6 +80,13 @@ class GroupCallViewModel
 
         /** True once a voice chat was shown here: its end closes the screen, while before it "Loading" waits for it. */
         private var sawCall = false
+
+        private val hasCamera = camera.hasCamera()
+
+        private val effectChannel = Channel<CallEffect>(Channel.BUFFERED)
+
+        /** The camera's permission request and the app's settings, each once. */
+        val effects: Flow<CallEffect> = effectChannel.receiveAsFlow()
 
         val uiState: StateFlow<GroupCallUiState> =
             combine(manager.call, permissionStep, unavailable, chat(), details()) { call, step, busy, chat, details ->
@@ -113,8 +124,12 @@ class GroupCallViewModel
         /** Where a live stream's video goes while the screen draws it, or null once it no longer does. */
         fun setVideoSink(sink: VideoFrameSink?) = manager.setVideoSink(sink)
 
+        /** Where the user's own camera's frames go while the screen draws the self-view; null once it does not. */
+        fun setSelfVideoSink(sink: VideoFrameSink?) = manager.setSelfVideoSink(sink)
+
         override fun onCleared() {
             manager.setVideoSink(null)
+            manager.setSelfVideoSink(null)
         }
 
         fun onEvent(event: GroupCallEvent) {
@@ -149,6 +164,37 @@ class GroupCallViewModel
                     permissionStep.value = null
                     savedStateHandle[KEY_DONE] = true
                 }
+
+                GroupCallEvent.ToggleCamera -> {
+                    toggleCamera()
+                }
+
+                GroupCallEvent.SwitchCamera -> {
+                    viewModelScope.launch { manager.switchCamera() }
+                }
+
+                is GroupCallEvent.CameraResult -> {
+                    if (event.granted) {
+                        viewModelScope.launch { manager.setCameraOn(true) }
+                    } else if (!event.canAskAgain) {
+                        savedStateHandle[KEY_CAMERA_REFUSED] = true
+                    }
+                }
+            }
+        }
+
+        private fun toggleCamera() {
+            val call = manager.call.value ?: return
+            when {
+                call.video.camera != null -> viewModelScope.launch { manager.setCameraOn(false) }
+
+                camera.isGranted() -> viewModelScope.launch { manager.setCameraOn(true) }
+
+                savedStateHandle.get<Boolean>(
+                    KEY_CAMERA_REFUSED,
+                ) == true -> effectChannel.trySend(CallEffect.OpenSettings)
+
+                else -> effectChannel.trySend(CallEffect.RequestCamera)
             }
         }
 
@@ -311,11 +357,18 @@ class GroupCallViewModel
             canEnd = canEnd,
             route = audio.route,
             routes = audio.available,
+            video =
+                GroupCallVideoUi(
+                    canSend = video.canSend && hasCamera,
+                    camera = video.camera,
+                    canSwitchCamera = video.canSwitchCamera,
+                ),
         )
 
         private companion object {
             const val KEY_DONE = "group_call_action_done"
             const val KEY_REFUSED = "microphone_refused"
+            const val KEY_CAMERA_REFUSED = "camera_refused"
             const val STOP_TIMEOUT_MS = 5_000L
             const val MILLIS_PER_SECOND = 1_000L
             const val UNAVAILABLE_SHOWN_MS = 2_000L

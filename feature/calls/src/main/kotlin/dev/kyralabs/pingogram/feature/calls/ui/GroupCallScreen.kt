@@ -71,6 +71,7 @@ import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
+import dev.kyralabs.pingogram.feature.calls.CameraFacing
 import dev.kyralabs.pingogram.feature.calls.GroupCallEndReason
 import dev.kyralabs.pingogram.feature.calls.R
 import java.text.NumberFormat
@@ -100,15 +101,30 @@ fun GroupCallScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     video: StreamVideo = PlaceholderStream,
+    selfVideo: CallVideo = PlaceholderVideo,
     pictureInPicture: Boolean = false,
 ) {
     // A Surface, so text and icons take the window's content color.
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize()) {
-            GroupCallContent(state, onEvent, onMinimize, onRequestMicrophone, onOpenSettings, video, pictureInPicture)
+            GroupCallContent(
+                state,
+                onEvent,
+                onMinimize,
+                onRequestMicrophone,
+                onOpenSettings,
+                GroupCallVideos(video, selfVideo),
+                pictureInPicture,
+            )
         }
     }
 }
+
+/** What draws a voice chat's videos: a live stream's, and the user's own camera (the self-view). */
+private class GroupCallVideos(
+    val stream: StreamVideo,
+    val self: CallVideo,
+)
 
 @Composable
 @Suppress("LongParameterList") // The screen's state, its events and the activity's callbacks.
@@ -118,7 +134,7 @@ private fun BoxScope.GroupCallContent(
     onMinimize: () -> Unit,
     onRequestMicrophone: () -> Unit,
     onOpenSettings: () -> Unit,
-    video: StreamVideo,
+    videos: GroupCallVideos,
     pictureInPicture: Boolean,
 ) {
     when (state) {
@@ -146,9 +162,9 @@ private fun BoxScope.GroupCallContent(
 
         is GroupCallUiState.InCall -> {
             if (pictureInPicture && state.isStream) {
-                video(Modifier.fillMaxSize())
+                videos.stream(Modifier.fillMaxSize())
             } else {
-                InGroupCall(state, onEvent, onMinimize, video)
+                InGroupCall(state, onEvent, onMinimize, videos)
             }
         }
     }
@@ -159,14 +175,31 @@ private fun InGroupCall(
     state: GroupCallUiState.InCall,
     onEvent: (GroupCallEvent) -> Unit,
     onMinimize: () -> Unit,
-    video: StreamVideo,
+    videos: GroupCallVideos,
 ) {
     val spacing = MaterialTheme.spacing
     Column(Modifier.fillMaxSize()) {
         Header(state, onMinimize)
+        val camera = state.video.camera
+        if (camera != null && !state.isStream) {
+            // The user's own camera above the participants (docs/adr/0024-video-in-voice-chats.md).
+            SelfView(
+                mirror = camera == CameraFacing.Front,
+                canSwitch = state.video.canSwitchCamera,
+                landscape = true,
+                video = videos.self,
+                onSwitch = { onEvent(GroupCallEvent.SwitchCamera) },
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(vertical = spacing.small)
+                        .widthIn(max = MaterialTheme.sizes.illustrationMaxSize)
+                        .fillMaxWidth(SELF_VIEW_WIDTH),
+            )
+        }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             if (state.isStream) {
-                video(
+                videos.stream(
                     Modifier
                         .fillMaxSize()
                         .padding(horizontal = spacing.medium, vertical = spacing.small)
@@ -391,10 +424,26 @@ private fun Controls(
                     }
                 }
                 RouteButton(state.route, state.routes) { onEvent(GroupCallEvent.SelectRoute(it)) }
+                if (state.video.canSend) CameraButton(on = state.video.camera != null, onEvent = onEvent)
             }
             Spacer(Modifier.height(spacing.extraLarge))
             LeaveButton(canEnd = state.canEnd, isStream = state.isStream, onEvent = onEvent)
         }
+    }
+}
+
+/** The call screen's Camera toggle over its label (`docs/adr/0024-video-in-voice-chats.md`). */
+@Composable
+private fun CameraButton(
+    on: Boolean,
+    onEvent: (GroupCallEvent) -> Unit,
+) {
+    LabeledButton(R.string.call_camera) {
+        Toggle(
+            checked = on,
+            icon = if (on) R.drawable.ic_videocam_filled else R.drawable.ic_videocam_off_filled,
+            label = R.string.call_camera,
+        ) { onEvent(GroupCallEvent.ToggleCamera) }
     }
 }
 
@@ -565,3 +614,6 @@ private fun Message(
         )
     }
 }
+
+/** The self-view's share of the window's width (at most `sizes.illustrationMaxSize`), leaving room below it. */
+private const val SELF_VIEW_WIDTH = 0.6f
