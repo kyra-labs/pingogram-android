@@ -262,6 +262,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
 - **Contact joined Telegram** (Settings → Notifications): `core:domain`'s `ContactJoinedRepository`
   (`TdlibContactJoinedRepository`, `core:data`, no cache) reads TDLib's option `disable_contact_registered_notifications`
   with `getOption` per collection, follows its `updateOption`, and sets it with `setOption`.
+- **Link previews in secret chats** (Privacy and security, off by default): `core:domain`'s
+  `LinkPreviewSettingsRepository` (`DataStoreLinkPreviewSettingsRepository`, the settings file). `core:data`'s
+  `SecretChatLinkPreviews` gives the texts sent to a chat their `linkPreviewOptions` (disabled in a secret chat while
+  the setting is off, `getChat` telling the chat's type), used by `TdlibMessageRepository.sendText`, the share sheet's
+  texts and a notification's reply. `feature:settings`' `SecretChatPreviewsViewModel` holds the switch.
 - **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
   (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
   logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,

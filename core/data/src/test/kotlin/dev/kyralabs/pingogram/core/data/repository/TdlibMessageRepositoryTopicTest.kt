@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.message
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.messages
@@ -26,7 +27,12 @@ import org.junit.jupiter.api.Test
 class TdlibMessageRepositoryTopicTest {
     private val client = FakeTdlibClient()
 
-    private fun TestScope.repository() = TdlibMessageRepository(client, backgroundScope)
+    private fun TestScope.repository() =
+        TdlibMessageRepository(
+            client,
+            backgroundScope,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     private fun inTopic(
         id: Long,

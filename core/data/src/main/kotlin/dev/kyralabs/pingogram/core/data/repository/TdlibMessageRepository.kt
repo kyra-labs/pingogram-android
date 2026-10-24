@@ -60,6 +60,7 @@ class TdlibMessageRepository
     constructor(
         private val client: TdlibClient,
         @ApplicationScope private val scope: CoroutineScope,
+        private val linkPreviews: SecretChatLinkPreviews,
     ) : MessageRepository,
         TdlibUpdateCache {
         private val store = UpdateStore(client, scope, HistoryCache(), HistoryCache::reduce)
@@ -163,7 +164,8 @@ class TdlibMessageRepository
         override fun trimMemory() = store.update { cache -> cache.trimmed() }
 
         /**
-         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview and
+         * `sendMessage` of an `inputMessageText` that clears the draft, with TDLib's default link preview (none in a
+         * secret chat unless allowed, [SecretChatLinkPreviews]) and
          * [options]' notification, scheduling and topic, replying to [replyToMessageId] of the chat itself without a
          * quote. TDLib puts the message into the chat as being sent (`updateNewMessage`) before it answers, so the
          * window shows it at once (`docs/PERFORMANCE.md` §1: tap to bubble ≤ 50 ms); `updateMessageSendSucceeded` or
@@ -175,7 +177,7 @@ class TdlibMessageRepository
             options: SendOptions,
             replyToMessageId: Long?,
         ): Outcome<Unit> {
-            val content = TdApi.InputMessageText(text.toTdFormattedText(), null, true)
+            val content = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), true)
             val replyTo = replyToMessageId?.let(::replyToMessage)
             return client
                 .request(TdApi.SendMessage(chatId, options.tdTopic(), replyTo, options.toTdOptions(), null, content))

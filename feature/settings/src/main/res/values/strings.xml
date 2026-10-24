@@ -1172,4 +1172,7 @@
     <string name="settings_personal_channel_saving">Saving your personal channel</string>
     <string name="settings_personal_channel_footer">Everyone who sees your profile sees this channel there.</string>
     <string name="settings_personal_channel_none_owned">Only public channels you own can be shown on your profile, and you have none.</string>
+    <string name="settings_section_secret_chats">Secret chats</string>
+    <string name="settings_secret_chat_previews">Link previews in secret chats</string>
+    <string name="settings_secret_chat_previews_summary">Telegram’s servers make the previews, so they see the links you send</string>
 </resources>

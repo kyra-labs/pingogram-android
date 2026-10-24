@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.messageIds
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.messageNotification
 import dev.kyralabs.pingogram.core.testing.NotificationFixtures.notificationGroup
@@ -33,7 +34,13 @@ class TdlibNotificationRepositoryTest {
     private val client = FakeTdlibClient()
     private val openChats = OpenChats()
 
-    private fun TestScope.repository() = TdlibNotificationRepository(client, backgroundScope, openChats)
+    private fun TestScope.repository() =
+        TdlibNotificationRepository(
+            client,
+            backgroundScope,
+            openChats,
+            SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
+        )
 
     private suspend fun TdlibNotificationRepository.current(): ActiveNotifications = notifications.first()
 

@@ -36,12 +36,15 @@ import javax.inject.Singleton
  * comment before it as a message of its own; files with [sendAttachments], the text as their caption.
  */
 @Singleton
+// The client, the files, the content and media seams tests replace, the cleaner, the link previews and the dispatcher.
+@Suppress("LongParameterList")
 class TdlibShareRepository internal constructor(
     private val client: TdlibClient,
     private val files: UploadFiles,
     content: ContentSource,
     media: MediaProcessor,
     private val cleaner: UploadCleaner,
+    private val linkPreviews: SecretChatLinkPreviews,
     private val io: CoroutineDispatcher,
 ) : ShareRepository {
     @Inject
@@ -49,9 +52,18 @@ class TdlibShareRepository internal constructor(
         client: TdlibClient,
         files: UploadFiles,
         cleaner: UploadCleaner,
+        linkPreviews: SecretChatLinkPreviews,
         @ApplicationContext context: Context,
         @Dispatcher(IO) io: CoroutineDispatcher,
-    ) : this(client, files, AndroidContentSource(context.contentResolver), AndroidMediaProcessor(), cleaner, io)
+    ) : this(
+        client,
+        files,
+        AndroidContentSource(context.contentResolver),
+        AndroidMediaProcessor(),
+        cleaner,
+        linkPreviews,
+        io,
+    )
 
     private val preparer = AttachmentPreparer(files, content, media)
 
@@ -136,8 +148,14 @@ class TdlibShareRepository internal constructor(
         comment: FormattedText,
     ): Outcome.Failure? {
         if (comment.text.isNotBlank()) {
-            (client.sendMessage(chatId, textContent(comment), SendOptions(), replyTo = null) as? Outcome.Failure)
-                ?.let { return it }
+            (
+                client.sendMessage(
+                    chatId,
+                    textContent(chatId, comment),
+                    SendOptions(),
+                    replyTo = null,
+                ) as? Outcome.Failure
+            )?.let { return it }
         }
         return when {
             attachments.isNotEmpty() -> {
@@ -145,7 +163,7 @@ class TdlibShareRepository internal constructor(
             }
 
             text.text.isNotBlank() -> {
-                client.sendMessage(chatId, textContent(text), SendOptions(), replyTo = null) as? Outcome.Failure
+                client.sendMessage(chatId, textContent(chatId, text), SendOptions(), replyTo = null) as? Outcome.Failure
             }
 
             else -> {
@@ -154,8 +172,14 @@ class TdlibShareRepository internal constructor(
         }
     }
 
-    /** A text message with TDLib's default link preview, leaving the chat's draft alone. */
-    private fun textContent(text: FormattedText) = TdApi.InputMessageText(text.toTdFormattedText(), null, false)
+    /**
+     * A text message to [chatId] with TDLib's default link preview (none in a secret chat unless allowed,
+     * [SecretChatLinkPreviews]), leaving the chat's draft alone.
+     */
+    private suspend fun textContent(
+        chatId: Long,
+        text: FormattedText,
+    ) = TdApi.InputMessageText(text.toTdFormattedText(), linkPreviews.optionsFor(chatId), false)
 }
 
 /** The copies TDLib uploads for this attachment: its file, and a video's still. */
