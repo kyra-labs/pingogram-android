@@ -124,6 +124,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   a week or a month); their messages are deleted for everyone once it runs out.
 
 ### Changed
+- Voice messages pause the music another app plays only while they play, and it plays on after them. A call pauses
+  a voice message or video that plays.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
