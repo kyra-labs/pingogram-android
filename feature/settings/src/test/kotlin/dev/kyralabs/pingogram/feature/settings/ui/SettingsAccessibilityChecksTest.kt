@@ -16,6 +16,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.account.phone.ChangePhoneNumbe
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
+import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChangePhoneNumberPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFolderEditPreviewStates
@@ -23,6 +26,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.preview.ChatFoldersPreviewStat
 import dev.kyralabs.pingogram.feature.settings.ui.preview.DeleteAccountPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.FolderInvitePreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.PrivacyPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.preview.ProxyPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickerSetSheetPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.preview.StickersPreviewStates
@@ -178,6 +182,36 @@ class SettingsAccessibilityChecksTest {
         }
 
     @Test
+    fun proxies() =
+        check {
+            ProxiesScreen(
+                ProxyPreviewStates.proxies,
+                onEvent = {},
+                onAddProxy = {},
+                onEditProxy = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun proxiesEmpty() =
+        check {
+            ProxiesScreen(ProxyPreviewStates.proxiesEmpty, onEvent = {}, onAddProxy = {}, onEditProxy = {}, onBack = {})
+        }
+
+    @Test
+    fun editProxy() = check { EditProxyScreen(ProxyPreviewStates.editProxy, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun editProxyErrors() = check { EditProxyScreen(ProxyPreviewStates.mtprotoErrors, onEvent = {}, onBack = {}) }
+
+    @Test
+    fun proxyLink() = check { ProxyLinkContent(ProxyPreviewStates.link, onEvent = {}, onClose = {}) }
+
+    @Test
+    fun proxyLinkConnected() = check { ProxyLinkContent(ProxyPreviewStates.linkConnected, onEvent = {}, onClose = {}) }
+
+    @Test
     fun stickerSet() =
         check {
             StickerSetContent(StickerSetSheetPreviewStates.notAdded, onEvent = {}, onShare = {}, onClose = {})
@@ -202,7 +236,15 @@ class SettingsAccessibilityChecksTest {
 
     @Test
     fun dataStorage() =
-        check { DataStorageScreen(SettingsPreviewData.storage, onEvent = {}, onOpenAutoDownload = {}, onBack = {}) }
+        check {
+            DataStorageScreen(
+                SettingsPreviewData.storage,
+                onEvent = {},
+                onOpenAutoDownload = {},
+                onOpenProxies = {},
+                onBack = {},
+            )
+        }
 
     @Test
     fun autoDownload() = check { AutoDownloadScreen(SettingsPreviewData.autoDownloadWiFi, onEvent = {}, onBack = {}) }

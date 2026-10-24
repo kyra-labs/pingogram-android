@@ -56,6 +56,6 @@ class DataStorageScreenScreenshotTest {
         themeMode: ThemeMode,
         state: DataStorageUiState,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        DataStorageScreen(state = state, onEvent = {}, onOpenAutoDownload = {}, onBack = {})
+        DataStorageScreen(state = state, onEvent = {}, onOpenAutoDownload = {}, onOpenProxies = {}, onBack = {})
     }
 }

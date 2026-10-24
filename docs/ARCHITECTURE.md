@@ -232,6 +232,15 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `AccountRepository` also reads and sets the self-destruct timer of new chats (`getDefaultMessageAutoDeleteTime`,
   `setDefaultMessageAutoDeleteTime`), which `AutoDeleteRoute` (`AutoDeleteViewModel`) offers as Telegram's choices
   (off, a day, a week, a month, and a value another app set), saving a pick at once and taking it back on a refusal.
+- **Proxies** (Data and storage, `docs/adr/0027-proxies.md`): `core:domain`'s `ProxyRepository`
+  (`TdlibProxyRepository`, `core:data`, a singleton without a cache) wraps `getProxies`, `addProxy`, `editProxy`,
+  `enableProxy`, `disableProxy`, `removeProxy` and `pingProxy`; TDLib keeps the proxies, credentials included, and has
+  no update for them, so `proxies` reads them again after every change made through it. `feature:settings`' Proxy page
+  (`ProxiesRoute`, `ProxiesViewModel`: each proxy pinged once as it first shows, four at a time, and on "Check again")
+  and its form (`EditProxyRoute(proxyId?)`, `EditProxyViewModel`: checked on the device first, the password and the
+  secret never in saved state) sit above Data and storage, whose "Proxy" row shows the one in use. A proxy link
+  (`tg://proxy`, `t.me/socks`) resolves to `LinkTarget.ProxyServer`, which `:app` opens as `ProxyLinkRoute`, a dialog
+  destination of `settingsPages` (`ProxyLinkViewModel`), connecting only on "Connect".
 - **Deleting the account** (Google Play's account deletion policy, `docs/PLAY_STORE.md`): `AccountRepository`
   (`core:domain`, `TdlibAccountRepository` in `core:data`, no cache: TDLib has no updates for it) reads and sets how long
   the account may stay unused (`getAccountTtl`, `setAccountTtl`, in days) and deletes it (`deleteAccount` with the

@@ -990,4 +990,73 @@
     <!-- Appearance → Chats: the composer's send key on a hardware keyboard (docs/DESIGN_SYSTEM.md §9). -->
     <string name="settings_send_with_ctrl_enter">Send with Ctrl+Enter</string>
     <string name="settings_send_with_ctrl_enter_summary">With a keyboard, Enter starts a new line</string>
+
+    <!-- Data and storage → Proxy (docs/adr/0027-proxies.md) -->
+    <string name="settings_section_network">Network</string>
+    <string name="settings_proxy">Proxy</string>
+    <string name="settings_proxy_summary_off">Off · Connect directly</string>
+    <!-- %1$s is the proxy in use: its name, or its address such as "proxy.example.org:1080". -->
+    <string name="settings_proxy_summary_on">Connected through %1$s</string>
+    <!-- Spoken by screen readers for the progress indicator while the page loads. -->
+    <string name="settings_proxy_loading">Loading proxies</string>
+    <string name="settings_proxy_use">Use proxy</string>
+    <string name="settings_proxy_use_summary">Connect to Telegram through a proxy server</string>
+    <string name="settings_proxy_add">Add proxy</string>
+    <string name="settings_proxy_section">Your proxies</string>
+    <string name="settings_proxy_footer">Pingogram connects to Telegram through the proxy you pick. The proxy’s owner can see that you use Telegram, and from which address, but not your messages.</string>
+    <!-- A proxy's address and port, e.g. "proxy.example.org:1080". -->
+    <string name="settings_proxy_address" translatable="false">%1$s:%2$s</string>
+    <string name="settings_proxy_kind_socks5">SOCKS5</string>
+    <string name="settings_proxy_kind_http">HTTP</string>
+    <string name="settings_proxy_kind_mtproto">MTProto</string>
+    <string name="settings_proxy_checking">Checking…</string>
+    <!-- %1$s is how long Telegram took to answer, e.g. "120 ms". -->
+    <string name="settings_proxy_available">Available · %1$s</string>
+    <!-- A duration in milliseconds, e.g. "120 ms". -->
+    <string name="settings_proxy_ping_ms">%1$s ms</string>
+    <string name="settings_proxy_unavailable">Unavailable</string>
+    <!-- A proxy's details: its protocol, then its address or its state, e.g. "SOCKS5 · Available · 120 ms". -->
+    <string name="settings_proxy_details">%1$s · %2$s</string>
+    <string name="settings_proxy_check_again">Check again</string>
+    <!-- The more-options button of a proxy, for screen readers. %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_options">Options for %1$s</string>
+    <string name="settings_proxy_edit">Edit</string>
+    <string name="settings_proxy_delete">Delete</string>
+    <string name="settings_proxy_delete_title">Delete this proxy?</string>
+    <!-- %1$s is the proxy's name or address. -->
+    <string name="settings_proxy_delete_text">%1$s will be removed from Pingogram. If you use it now, Pingogram connects directly.</string>
+    <string name="settings_proxy_delete_confirm">Delete</string>
+    <string name="settings_proxy_none_text">Add a proxy if Telegram is blocked or slow where you are.</string>
+    <!-- Adding or editing a proxy -->
+    <string name="settings_proxy_new">New proxy</string>
+    <string name="settings_proxy_edit_title">Edit proxy</string>
+    <string name="settings_proxy_edit_loading">Loading the proxy</string>
+    <string name="settings_proxy_protocol">Protocol</string>
+    <string name="settings_proxy_server">Server</string>
+    <string name="settings_proxy_server_error">Enter the server’s address, without spaces.</string>
+    <string name="settings_proxy_port">Port</string>
+    <string name="settings_proxy_port_error">Enter a port from 1 to 65535.</string>
+    <string name="settings_proxy_username">Username (optional)</string>
+    <string name="settings_proxy_password">Password (optional)</string>
+    <string name="settings_proxy_secret">Secret</string>
+    <string name="settings_proxy_secret_error">Enter the secret the proxy’s owner gave you.</string>
+    <string name="settings_proxy_http_only">HTTP requests only</string>
+    <string name="settings_proxy_http_only_summary">For proxies that don’t allow other connections</string>
+    <string name="settings_proxy_name">Name (optional)</string>
+    <string name="settings_proxy_check">Check</string>
+    <string name="settings_proxy_save">Save</string>
+    <string name="settings_proxy_save_connect">Save and connect</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is saved. -->
+    <string name="settings_proxy_saving">Saving the proxy</string>
+    <!-- The sheet a proxy link opens -->
+    <string name="settings_proxy_link_title">Connect through this proxy?</string>
+    <string name="settings_proxy_link_text">Pingogram will connect to Telegram through this server. Its owner can see that you use Telegram, and from which address, but not your messages. Only use proxies you trust.</string>
+    <string name="settings_proxy_link_in_use">You already use this proxy.</string>
+    <string name="settings_proxy_link_connect">Connect</string>
+    <string name="settings_proxy_link_cancel">Cancel</string>
+    <!-- Spoken by screen readers for the progress indicator while the proxy is added. -->
+    <string name="settings_proxy_link_connecting">Connecting through the proxy</string>
+    <string name="settings_proxy_link_connected">Proxy turned on</string>
+    <string name="settings_proxy_link_connected_text">Pingogram now connects through this proxy. You can turn it off in Settings → Data and storage → Proxy.</string>
+    <string name="settings_proxy_link_done">Done</string>
 </resources>
