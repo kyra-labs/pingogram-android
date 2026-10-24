@@ -99,6 +99,7 @@ object ChatInfoPreviewData {
                     canManageInviteLinks = true,
                     bannedCount = 2,
                     restrictedCount = 1,
+                    canEditSettings = true,
                 ),
         )
 

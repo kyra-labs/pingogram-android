@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
@@ -95,6 +96,11 @@ interface UpdateCacheModule {
     @Binds
     @IntoSet
     fun contactSyncCache(repository: TdlibContactSyncRepository): TdlibUpdateCache
+
+    /** For the emoji Telegram offers as reactions, which come once at TDLib's start. */
+    @Binds
+    @IntoSet
+    fun chatSettingsCache(repository: TdlibChatSettingsRepository): TdlibUpdateCache
 
     /** Not a repository, but it follows the messages being sent from their first update on, to delete their copies. */
     @Binds

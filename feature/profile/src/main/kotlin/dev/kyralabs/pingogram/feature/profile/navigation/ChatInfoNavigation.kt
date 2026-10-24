@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.navigation.ChatExportRoute
 import dev.kyralabs.pingogram.core.navigation.ChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.ChatMembersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatPermissionsRoute
+import dev.kyralabs.pingogram.core.navigation.ChatSettingsRoute
 import dev.kyralabs.pingogram.core.navigation.EditChatInfoRoute
 import dev.kyralabs.pingogram.core.navigation.EditInviteLinkRoute
 import dev.kyralabs.pingogram.core.navigation.InviteLinksRoute
@@ -31,11 +32,13 @@ import dev.kyralabs.pingogram.feature.profile.chatinfo.EditChatInfoRoute as Edit
 import dev.kyralabs.pingogram.feature.profile.chatinfo.EditInviteLinkRoute as EditInviteLinkScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.InviteLinksRoute as InviteLinksScreenRoute
 import dev.kyralabs.pingogram.feature.profile.chatinfo.MemberRightsRoute as MemberRightsScreenRoute
+import dev.kyralabs.pingogram.feature.profile.chatinfo.settings.ChatSettingsRoute as ChatSettingsScreenRoute
 
 /**
  * Adds the info page of a group or channel, [ChatInfoRoute] (`REQUIREMENTS.md` FR-P3, FR-P4), and the pages it
  * opens to the graph, each pushed above the one before: the members ([ChatMembersRoute]), a member's rights
- * ([MemberRightsRoute]), editing the title and description ([EditChatInfoRoute]), the permissions
+ * ([MemberRightsRoute]), editing the title and description ([EditChatInfoRoute]), the settings ([ChatSettingsRoute]),
+ * the permissions
  * ([ChatPermissionsRoute]), the invite links ([InviteLinksRoute], [EditInviteLinkRoute]) and the boosts
  * ([ChatBoostRoute], also from a boost link). "Export chat" opens `:feature:chat`'s [ChatExportRoute], which the
  * `NavHost` must hold too. [onOpen] pushes one of those routes, [onBack] leaves the page shown. [onLeft] runs once the
@@ -72,6 +75,7 @@ fun NavGraphBuilder.chatInfoScreens(
                             onOpen(
                                 when (page) {
                                     ChatInfoPage.EditInfo -> EditChatInfoRoute(chatId)
+                                    ChatInfoPage.Settings -> ChatSettingsRoute(chatId)
                                     ChatInfoPage.Permissions -> ChatPermissionsRoute(chatId)
                                     ChatInfoPage.InviteLinks -> InviteLinksRoute(chatId)
                                     ChatInfoPage.Boosts -> ChatBoostRoute(chatId)
@@ -97,6 +101,7 @@ fun NavGraphBuilder.chatInfoScreens(
     composable<MemberRightsRoute> { MemberRightsScreenRoute(onBack = onBack, onSaved = onSaved) }
     composable<EditChatInfoRoute> { EditChatInfoScreenRoute(onBack = onBack) }
     composable<ChatPermissionsRoute> { ChatPermissionsScreenRoute(onBack = onBack) }
+    composable<ChatSettingsRoute> { ChatSettingsScreenRoute(onBack = onBack, onOpenChat = onOpenChat) }
     composable<InviteLinksRoute> { entry ->
         val chatId = entry.toRoute<InviteLinksRoute>().chatId
         val results = entry.savedStateHandle

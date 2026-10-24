@@ -418,6 +418,8 @@ class ChatInfoViewModel internal constructor(
                         },
                     // Boosts are a supergroup's or channel's; basic groups have none.
                     canViewBoosts = info.kind != GroupKind.BasicGroup,
+                    canEditSettings = rights.canChangeInfo || info.myRole is MemberRole.Owner,
+                    isChannel = info.kind == GroupKind.Channel,
                 ).takeIf { isAdmin && !it.isEmpty },
             dialog = overlay.dialog,
         )

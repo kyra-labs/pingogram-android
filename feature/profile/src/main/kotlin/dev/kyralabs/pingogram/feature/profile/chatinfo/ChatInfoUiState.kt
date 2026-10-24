@@ -104,11 +104,13 @@ data class ChatAdministration(
     val bannedCount: Int? = null,
     val restrictedCount: Int? = null,
     val canViewBoosts: Boolean = false,
+    val canEditSettings: Boolean = false,
+    val isChannel: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() =
             !canEditInfo && !canEditPermissions && administratorCount == null && !canManageInviteLinks &&
-                bannedCount == null && restrictedCount == null && !canViewBoosts
+                bannedCount == null && restrictedCount == null && !canViewBoosts && !canEditSettings
 }
 
 /**
@@ -240,6 +242,9 @@ sealed interface ChatInfoEvent {
 /** The pages the info page opens: those for administrators, and the export for anyone. */
 enum class ChatInfoPage {
     EditInfo,
+
+    /** Reactions, saving content, signatures, topics, the discussion group, upgrading. */
+    Settings,
     Permissions,
     InviteLinks,
 

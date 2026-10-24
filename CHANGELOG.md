@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Group and channel settings: administrators choose which reactions members may add (all, some, none), and owners
+  restrict saving content. In channels: sign posts and show the authors' profiles, and pick or unlink the discussion
+  group. Owners of supergroups turn topics on and off; owners of basic groups upgrade them to supergroups (after a
+  question). The info page's "Group settings" / "Channel settings" opens it.
 - Calls: share your screen. "Share screen" at the top of a connected call asks Android for consent, then shares your
   screen in place of your camera, so the other person sees what you show while you use other apps. A pill says
   "You're sharing your screen" with Stop, and the call's notification has "Stop sharing". When the other person
