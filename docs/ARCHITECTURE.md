@@ -206,6 +206,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   `phone/` (`PhoneNumberForm` and its `with*` changes, `CountryPickerSheet`, `CountryField`, `PhoneNumberFields`, the
   login code texts) and `time/` (countdowns, `CountdownIndicator`); the step and the number typed are in its saved
   state, never the code.
+- **Privacy beyond the rules** (FR-S1, Privacy and security): `PrivacyRepository` also reads and sets whether the read
+  time shows (`getReadDatePrivacySettings`, `setReadDatePrivacySettings`; the Last seen page's switch) and who may start
+  a chat (`getNewChatPrivacySettings`, `setNewChatPrivacySettings`, with the option
+  `can_set_new_chat_privacy_settings` as `NewChatPrivacy.canRestrict`; a price another app set for non-contacts'
+  messages is kept while they may write and dropped when they may not, as Telegram requires).
+  `feature:settings`' `NewChatPrivacyRoute` (`NewChatPrivacyViewModel`) is its page. A setting's exceptions are
+  `PrivacyRepository.exceptions` (the users' and groups' ids of its rules, `PrivacyExceptionLists`) and `setExceptions`
+  (`setUserPrivacySettingRules` with those rules replaced, the never allowed first, every other rule kept in its
+  order); `PrivacyExceptionsRoute(setting, always)` (`PrivacyExceptionsViewModel`) shows one side, names from
+  `UserRepository` and `ChatRepository` (asked for once where TDLib has not announced them), and picks from the main
+  chat list (people and groups; Saved Messages, channels and secret chats left out), its picks in the saved state.
+  Its picker shares its parts with the chat folders' (`PickerParts.kt`).
 - **Birthday** (FR-S1, Account): `ProfileRepository.editableProfile` carries the birthday (`userFullInfo.birthdate`,
   its year 0 for none) and `setBirthdate` sets or removes it; `EditProfileViewModel` saves it with the names and the
   bio, and follows who may see it (`PrivacySetting.Birthdate`, `userPrivacySettingShowBirthdate`) through

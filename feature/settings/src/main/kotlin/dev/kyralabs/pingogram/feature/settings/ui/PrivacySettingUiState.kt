@@ -13,6 +13,8 @@ import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
  * @property savingChoice the choice being saved, shown selected meanwhile; null when nothing is being saved.
  * @property premiumRequired the setting limits voice and video messages, which only Telegram Premium subscribers can
  *   do, and the user has no Premium: only "Everybody" can be chosen.
+ * @property showsReadTime on the last seen page, whether the user's read time shows (td_api.tl
+ *   `readDatePrivacySettings`), as just switched while it is saved; null on other pages and while unknown.
  */
 @Immutable
 data class PrivacySettingUiState(
@@ -20,6 +22,7 @@ data class PrivacySettingUiState(
     val rules: PrivacyRulesState = PrivacyRulesState.Loading,
     val savingChoice: PrivacyChoice? = null,
     val premiumRequired: Boolean = false,
+    val showsReadTime: Boolean? = null,
 ) {
     /** The rules as they show: with the choice being saved, if any. */
     val shownRules: PrivacyRules?
@@ -52,6 +55,11 @@ sealed interface PrivacySettingEvent {
 
     /** Load the rules again after they failed. */
     data object Retry : PrivacySettingEvent
+
+    /** The read time switch, on the last seen page, was turned to [shows]. */
+    data class ShowReadTime(
+        val shows: Boolean,
+    ) : PrivacySettingEvent
 }
 
 /** One-off side effects of [PrivacySettingViewModel], handled once by its route. */

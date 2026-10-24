@@ -66,6 +66,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   the code Telegram sends it, as at sign-in: the country picker, live formatting, the resend countdown.
 - Birthday: Edit profile adds, changes or removes your birthday, with or without its year, and shows who can see it;
   "Birthday" joins the privacy settings in Privacy and security.
+- Privacy exceptions: every privacy setting's "Always allowed" and "Never allowed" open a page of their own, where you
+  add people and groups from your chats or remove them.
+- Privacy: "Messages" sets who can start a chat with you (everybody, or your contacts and Telegram Premium
+  subscribers, where Telegram lets you choose it); "Last seen and online" can hide your read time; "Bio" joins the
+  privacy settings.
 - Login email: Privacy and security → Account shows the email Telegram can send your login codes to, and changes it
   with a code sent to the new address.
 - Auto-delete messages: Privacy and security → Account sets a timer for the chats you start from then on (off, a day,

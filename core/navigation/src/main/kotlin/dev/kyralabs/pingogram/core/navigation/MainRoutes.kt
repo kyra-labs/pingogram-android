@@ -209,6 +209,20 @@ data object LoginEmailRoute
 @Serializable
 data object AutoDeleteRoute
 
+/** Who may start a chat with the user (`REQUIREMENTS.md` FR-S1), pushed above [PrivacySecurityRoute]. */
+@Serializable
+data object NewChatPrivacyRoute
+
+/**
+ * The users and groups a privacy [setting] (its `PrivacySetting` name) always allows ([always]) or never allows,
+ * pushed above its [PrivacySettingRoute].
+ */
+@Serializable
+data class PrivacyExceptionsRoute(
+    val setting: String,
+    val always: Boolean,
+)
+
 /** 2-step verification (`REQUIREMENTS.md` FR-S1): its state and its changes, pushed above [PrivacySecurityRoute]. */
 @Serializable
 data object TwoStepVerificationRoute

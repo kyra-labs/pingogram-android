@@ -208,6 +208,7 @@
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>
     <string name="settings_privacy_profile_photo">Profile photos</string>
+    <string name="settings_privacy_bio">Bio</string>
     <string name="settings_privacy_birthdate">Birthday</string>
     <string name="settings_privacy_forwarded_messages">Forwarded messages</string>
     <string name="settings_privacy_calls">Calls</string>
@@ -322,7 +323,32 @@
     <string name="settings_privacy_phone_number_question">Who can see my phone number</string>
     <string name="settings_privacy_last_seen_question">Who can see when I was last online</string>
     <string name="settings_privacy_profile_photo_question">Who can see my profile photos</string>
+    <string name="settings_privacy_bio_question">Who can see my bio</string>
     <string name="settings_privacy_birthdate_question">Who can see my birthday</string>
+    <string name="settings_section_privacy_read_time">Read time</string>
+    <string name="settings_privacy_exceptions_loading">Loading exceptions</string>
+    <string name="settings_privacy_exceptions_add">Add users or groups</string>
+    <string name="settings_privacy_exceptions_search">Search chats</string>
+    <string name="settings_privacy_exceptions_group">Group</string>
+    <string name="settings_privacy_exceptions_remove">Remove</string>
+    <!-- For screen readers: the "Remove" button of an exception's row; %1$s is the user's or group's name. -->
+    <string name="settings_privacy_exceptions_remove_label">Remove %1$s</string>
+    <string name="settings_privacy_exceptions_always_note">These people, and the members of these groups, are always allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_never_note">These people, and the members of these groups, are never allowed, whatever you chose.</string>
+    <string name="settings_privacy_exceptions_none">Add users or groups</string>
+    <string name="settings_privacy_new_chats">Messages</string>
+    <string name="settings_privacy_new_chats_loading">Loading who can message you</string>
+    <string name="settings_privacy_new_chats_question">Who can message me</string>
+    <string name="settings_privacy_new_chats_contacts">My contacts and Telegram Premium users</string>
+    <string name="settings_privacy_new_chats_premium">Telegram lets only Telegram Premium subscribers choose this</string>
+    <string name="settings_privacy_new_chats_note">People who are not your contacts can start a chat with you only if you let them. Telegram Premium subscribers can always write first. Chats you have keep going either way.</string>
+    <plurals name="settings_privacy_new_chats_paid">
+        <item quantity="one">Non-contacts pay %1$s Telegram Star for each message, as set in another app.</item>
+        <item quantity="other">Non-contacts pay %1$s Telegram Stars for each message, as set in another app.</item>
+    </plurals>
+    <string name="settings_privacy_read_time">Show my read time</string>
+    <string name="settings_privacy_read_time_summary">When you read messages in private chats</string>
+    <string name="settings_privacy_read_time_note">People who can see when you were last online always see your read time. If you hide it, you don\'t see other people\'s read time either, unless you have Telegram Premium.</string>
     <string name="settings_privacy_forwarded_messages_question">Whose forwards of my messages link to my account</string>
     <string name="settings_privacy_calls_question">Who can call me</string>
     <string name="settings_privacy_chat_invites_question">Who can add me to groups and channels</string>
