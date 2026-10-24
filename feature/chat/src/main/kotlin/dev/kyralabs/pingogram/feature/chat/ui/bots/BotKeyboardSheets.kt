@@ -50,6 +50,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.text.errorText
 import dev.kyralabs.pingogram.core.ui.text.formatPhoneNumber
+import dev.kyralabs.pingogram.core.ui.text.phoneNumberToShow
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
@@ -77,7 +78,7 @@ internal fun BotKeyboardDialogHost(
             val bot = dialog.botName.resolve().bidiIsolated()
             // Kept on one line: no break between its groups of digits.
             val phone =
-                formatPhoneNumber(dialog.phoneNumber, LocalConfiguration.current.locales[0].country)
+                phoneNumberToShow(formatPhoneNumber(dialog.phoneNumber, LocalConfiguration.current.locales[0].country))
                     .replace(' ', NO_BREAK_SPACE)
             AlertDialog(
                 onDismissRequest = { onEvent(BotKeyboardEvent.DismissDialog) },
