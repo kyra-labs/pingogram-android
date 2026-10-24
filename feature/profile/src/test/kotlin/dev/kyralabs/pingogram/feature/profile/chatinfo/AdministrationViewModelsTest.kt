@@ -9,12 +9,12 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakePickedPhotoRepository
 import dev.kyralabs.pingogram.core.testing.ProfileFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
-import dev.kyralabs.pingogram.core.domain.model.OwnershipTransferCheck
 import dev.kyralabs.pingogram.core.ui.component.PhotoTask
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -178,7 +178,6 @@ class AdministrationViewModelsTest : GroupViewModelTest() {
         runCurrent()
         return viewModel
     }
-
 
     // Transferring the ownership
 
