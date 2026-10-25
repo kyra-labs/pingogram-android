@@ -140,7 +140,9 @@ private fun Sessions(
         footer = if (sessions.others.isEmpty()) ttl else null,
     ) {
         sessions.current?.let { current ->
-            item(key = current.id) { shapes -> SessionRow(current, isBusy = false, shapes = shapes) }
+            item(key = current.id) { shapes ->
+                SessionRow(current, isBusy = false, shapes = shapes, isOnTestServers = state.isOnTestServers)
+            }
         }
         if (hasOthers) {
             item(key = TERMINATE_ALL) { shapes ->
@@ -211,6 +213,18 @@ private fun LinkDeviceGroup(onLinkDevice: () -> Unit) {
 @Composable
 private fun ActiveSessionsScreenPreview() {
     PingogramPreview { ActiveSessionsScreen(state = SettingsPreviewData.sessions, onEvent = {}, onBack = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun ActiveSessionsScreenTestServerPreview() {
+    PingogramPreview {
+        ActiveSessionsScreen(
+            state = SettingsPreviewData.onlyThisDevice.copy(isOnTestServers = true),
+            onEvent = {},
+            onBack = {},
+        )
+    }
 }
 
 @PingogramPreviews

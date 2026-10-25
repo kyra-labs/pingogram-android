@@ -145,6 +145,7 @@ class AuthViewModel internal constructor(
     // TDLib's steps
 
     private fun onAuthStep(step: AuthStep) {
+        if (isServerSwitch(step)) return
         val previous = model.step
         stepCount++
         if (step == AuthStep.Closed && !model.restarting) cancelCountdowns()
@@ -161,6 +162,18 @@ class AuthViewModel internal constructor(
             else -> Unit
         }
         loadCountries()
+    }
+
+    /**
+     * Whether [step] belongs to TDLib restarting on other servers for the number or QR code being sent
+     * (`REQUIREMENTS.md` FR-A9): the screen keeps what was typed, with its progress, until the step the request leads
+     * to. The phone number step the new instance starts at is not that step either.
+     */
+    private fun isServerSwitch(step: AuthStep): Boolean {
+        val switchesServers = model.pendingAction == AuthAction.SubmitPhoneNumber ||
+            model.pendingAction == AuthAction.RequestQrCode
+        val restartStep = step == AuthStep.LoggingOut || step == AuthStep.Closed || step == AuthStep.Initializing
+        return switchesServers && (restartStep || step == AuthStep.WaitPhoneNumber && model.step == step)
     }
 
     private fun completeAwaitedStep() {

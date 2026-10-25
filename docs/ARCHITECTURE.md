@@ -63,6 +63,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
   (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
   `TdlibClient.start()`. Every new caching repository must join that set.
+- **Test servers** (FR-A9, `docs/TDLIB.md` "Test servers"): `TdlibClient.servers` / `useServers` restart TDLib on
+  Telegram's test servers or back. Only `TdlibAuthRepository` asks for a switch: `setPhoneNumber` by the number
+  (`core:domain`'s `telegramServersFor`), `requestQrCode` for the production servers; any other close returns to them.
+  `AuthRepository.servers` (`TelegramServers`) tells `feature:settings` (the account card, Active sessions) to show
+  "Test server", and `AuthViewModel` keeps the phone number step, with what was typed, through the restart's steps
+  while it sends the number.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
   (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model

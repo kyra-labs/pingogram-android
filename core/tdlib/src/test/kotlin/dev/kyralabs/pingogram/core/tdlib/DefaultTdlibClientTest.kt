@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.drinkless.tdlib.TdApi
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -313,6 +314,103 @@ class DefaultTdlibClientTest {
             assertTrue(closedClient.requests.isEmpty() && native.clients[1].requests.size == 1)
         }
 
+    /** Takes the current TDLib instance to its phone number step: parameters asked for, sent and taken. */
+    private fun TestScope.toPhoneNumberStep() {
+        tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitTdlibParameters()))
+        runCurrent()
+        tdlib.requests.last().respond(TdApi.Ok())
+        tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.waitPhoneNumber()))
+        runCurrent()
+    }
+
+    /** TDLib's answer to the Close it was sent: Ok, then Closing and Closed. */
+    private fun TestScope.closeAsAsked() {
+        val closed = tdlib
+        closed.requests.last { it.function is TdApi.Close }.respond(TdApi.Ok())
+        closed.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.closing()))
+        closed.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.closed()))
+        runCurrent()
+    }
+
+    @Test
+    fun `useServers closes TDLib and returns once the next instance waits for a phone number on those servers`() =
+        runTest {
+            val client = startedClient()
+            toPhoneNumberStep()
+
+            val switched = async { client.useServers(TdlibServers.Test) }
+            runCurrent()
+            closeAsAsked()
+            toPhoneNumberStep()
+
+            assertTrue(switched.isCompleted)
+            assertEquals(
+                listOf(TdlibServers.Production, TdlibServers.Test) to TdlibServers.Test,
+                parametersProvider.builtFor to client.servers.value,
+            )
+        }
+
+    @Test
+    fun `useServers waits while the next instance starts`() =
+        runTest {
+            val client = startedClient()
+            toPhoneNumberStep()
+
+            val switched = backgroundScope.async { client.useServers(TdlibServers.Test) }
+            runCurrent()
+            closeAsAsked()
+
+            assertFalse(switched.isCompleted)
+        }
+
+    @Test
+    fun `useServers sends nothing for the servers in use`() =
+        runTest {
+            val client = startedClient()
+            toPhoneNumberStep()
+
+            client.useServers(TdlibServers.Production)
+            runCurrent()
+
+            assertTrue(native.clients.size == 1 && tdlib.requests.none { it.function is TdApi.Close })
+        }
+
+    @Test
+    fun `a close nobody asked for, such as a logout, returns to the production servers`() =
+        runTest {
+            val client = startedClient()
+            toPhoneNumberStep()
+            val switched = async { client.useServers(TdlibServers.Test) }
+            runCurrent()
+            closeAsAsked()
+            toPhoneNumberStep()
+            switched.await()
+
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.loggingOut()))
+            tdlib.update(TdApiFixtures.authorizationStateUpdate(TdApiFixtures.closed()))
+            runCurrent()
+            toPhoneNumberStep()
+
+            assertEquals(
+                TdlibServers.Production to TdlibServers.Production,
+                client.servers.value to parametersProvider.builtFor.last(),
+            )
+        }
+
+    @Test
+    fun `a restart keeps the servers of the last session, so a signed-in test account stays signed in`() =
+        runTest {
+            parametersProvider.last = TdlibServers.Test
+
+            val client = startedClient()
+            toPhoneNumberStep()
+
+            assertEquals(
+                listOf(TdlibServers.Test) to TdlibServers.Test,
+                parametersProvider.builtFor to client.servers.value,
+            )
+        }
+
     private class FakeTdlibNative : TdlibNative {
         val events = mutableListOf<String>()
         val clients = mutableListOf<FakeNativeClient>()
@@ -363,13 +461,21 @@ class DefaultTdlibClientTest {
         val parameters = TdApi.SetTdlibParameters()
         var discarded = 0
         var built = 0
+        var last = TdlibServers.Production
 
-        override suspend fun parameters(): TdApi.SetTdlibParameters {
+        /** The servers of every set of parameters built, in order. */
+        val builtFor = mutableListOf<TdlibServers>()
+
+        override suspend fun lastServers() = last
+
+        override suspend fun parameters(servers: TdlibServers): TdApi.SetTdlibParameters {
             built++
+            builtFor += servers
+            last = servers
             return parameters
         }
 
-        override suspend fun discardDatabase() {
+        override suspend fun discardDatabase(servers: TdlibServers) {
             discarded++
         }
     }

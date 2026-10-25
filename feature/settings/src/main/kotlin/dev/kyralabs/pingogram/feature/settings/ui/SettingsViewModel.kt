@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -62,8 +64,9 @@ class SettingsViewModel
         private var formattedPhoneNumber: Pair<String, String>? = null
 
         init {
-            account(userRepository)
-                .onEach { account -> mutableUiState.update { it.copy(account = account) } }
+            combine(account(userRepository), authRepository.servers) { account, servers ->
+                account?.copy(isOnTestServers = servers == TelegramServers.Test)
+            }.onEach { account -> mutableUiState.update { it.copy(account = account) } }
                 .launchIn(viewModelScope)
         }
 

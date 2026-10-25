@@ -22,21 +22,23 @@ data class TdlibConfig(
     /** `BuildConfig.VERSION_NAME`; TDLib reports the client as "Pingogram <it>" (CLAUDE.md rule 3). */
     val appVersionName: String,
     val isDebug: Boolean,
-    val useTestDc: Boolean,
 ) {
-    override fun toString() =
-        "TdlibConfig(apiId=…, apiHash=…, appVersionName=$appVersionName, isDebug=$isDebug, useTestDc=$useTestDc)"
+    override fun toString() = "TdlibConfig(apiId=…, apiHash=…, appVersionName=$appVersionName, isDebug=$isDebug)"
 }
 
 /** Builds the `SetTdlibParameters` that [TdlibClient] sends when TDLib asks for them. */
 interface TdlibParametersProvider {
-    suspend fun parameters(): TdApi.SetTdlibParameters
+    /** The servers of the last [parameters], so a restart while signed in to a test account stays on its servers. */
+    suspend fun lastServers(): TdlibServers
+
+    /** The parameters of an instance on [servers], which [lastServers] then answers. */
+    suspend fun parameters(servers: TdlibServers): TdApi.SetTdlibParameters
 
     /**
-     * TDLib rejected the database key (error 401): forget the key and delete the local database, so the next
-     * [parameters] start a new, logged-out session.
+     * TDLib rejected the database key (error 401): forget the key and delete the local database of [servers], so the
+     * next [parameters] start a new, logged-out session.
      */
-    suspend fun discardDatabase()
+    suspend fun discardDatabase(servers: TdlibServers)
 }
 
 /**
@@ -73,13 +75,14 @@ internal data class DeviceInfo(
 /** The values from the parameters table in `docs/TDLIB.md`. */
 internal fun tdlibParameters(
     config: TdlibConfig,
+    servers: TdlibServers,
     directories: TdlibDirectories,
     databaseKey: ByteArray,
     device: DeviceInfo,
     languageTag: String,
 ): TdApi.SetTdlibParameters =
     TdApi.SetTdlibParameters().apply {
-        useTestDc = config.useTestDc
+        useTestDc = servers == TdlibServers.Test
         databaseDirectory = directories.database.path
         filesDirectory = directories.files.path
         databaseEncryptionKey = databaseKey
@@ -104,31 +107,49 @@ class AndroidTdlibParametersProvider
         private val databaseKeys: DatabaseKeyProvider,
         @Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : TdlibParametersProvider {
-        // Lazy: Context.getFilesDir() touches the disk, and this class is created on the main thread.
-        private val directories by lazy { TdlibDirectories.of(context.filesDir, config.useTestDc) }
+        // Lazy: Context.getNoBackupFilesDir() touches the disk, and this class is created on the main thread.
+        private val testServersMarker by lazy { context.noBackupFilesDir.resolve(TEST_SERVERS_MARKER) }
 
-        override suspend fun parameters(): TdApi.SetTdlibParameters =
+        override suspend fun lastServers(): TdlibServers =
+            withContext(io) { if (testServersMarker.exists()) TdlibServers.Test else TdlibServers.Production }
+
+        override suspend fun parameters(servers: TdlibServers): TdApi.SetTdlibParameters =
             withContext(io) {
+                rememberServers(servers)
                 val key = databaseKeys.databaseKey()
                 // A database encrypted with a lost key can never be opened again: start over, logged out.
-                if (key.isNew) deleteDatabase()
+                if (key.isNew) deleteDatabase(servers)
                 tdlibParameters(
                     config,
-                    directories,
+                    servers,
+                    directories(servers),
                     key.bytes,
                     DeviceInfo.current(),
                     Locale.getDefault().toLanguageTag(),
                 )
             }
 
-        override suspend fun discardDatabase() =
+        override suspend fun discardDatabase(servers: TdlibServers) =
             withContext(io) {
                 databaseKeys.discard()
-                deleteDatabase()
+                deleteDatabase(servers)
             }
 
-        private fun deleteDatabase() {
+        private fun rememberServers(servers: TdlibServers) {
+            if (servers == TdlibServers.Test) testServersMarker.createNewFile() else testServersMarker.delete()
+        }
+
+        private fun directories(servers: TdlibServers) =
+            TdlibDirectories.of(context.filesDir, useTestDc = servers == TdlibServers.Test)
+
+        private fun deleteDatabase(servers: TdlibServers) {
+            val directories = directories(servers)
             directories.database.deleteRecursively()
             directories.files.deleteRecursively()
+        }
+
+        private companion object {
+            /** Present while the last instance was set up for the test servers; never backed up. */
+            const val TEST_SERVERS_MARKER = "tdlib_test_servers"
         }
     }

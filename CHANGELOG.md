@@ -16,6 +16,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
   conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
   away for a minute. The locks stay on this device; your other devices show the chats as usual.
+- Telegram's test accounts sign in on Telegram's test servers, in every build, so app reviewers can sign in again and
+  again: a number +99966 X YYYY (X from 1 to 3) on the phone number step restarts the connection on the test servers
+  and asks for the code X five times. The number stays on screen meanwhile. Settings' account card and Active sessions
+  show "Test server" while signed in that way, and logging out returns to Telegram's real servers. Every other number
+  signs in as before.
 - Forum topics: members with the right create topics ("New topic" in the topic list's top bar: a name and one of six
   colors), and rename, close and reopen, pin and unpin, and delete them from a topic's long press or its
   conversation's "Manage topic" button; deleting asks first. Pinned topics reorder by dragging their handles.

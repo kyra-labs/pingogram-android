@@ -25,8 +25,8 @@ import org.robolectric.annotation.Config
 
 /**
  * The account's card at the top of Settings, on the page's color: without and with a photo (a solid color, which Coil
- * shows in inspection mode instead of loading from TDLib), and with the Premium label, in light and dark, and at the
- * largest font scale.
+ * shows in inspection mode instead of loading from TDLib), with the Premium label and the Test server label, in light
+ * and dark, and at the largest font scale.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -50,6 +50,17 @@ class AccountCardScreenshotTest {
 
     @Test
     fun premiumDark() = capture(ThemeMode.Dark, SettingsPreviewData.premiumAccount)
+
+    @Test
+    fun testServerLight() = capture(ThemeMode.Light, SettingsPreviewData.testServerAccount)
+
+    @Test
+    fun testServerDark() = capture(ThemeMode.Dark, SettingsPreviewData.testServerAccount)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun premiumOnTestServerFontScale200() =
+        capture(ThemeMode.Light, SettingsPreviewData.testServerAccount.copy(isPremium = true))
 
     @Test
     @Config(fontScale = FONT_SCALE_200)

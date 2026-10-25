@@ -27,6 +27,7 @@ data class SettingsUiState(
  *   TDLib has formatted it; empty if TDLib reports none.
  * @property username the first active username, without `@`; null without one.
  * @property isPremium the account subscribes to Telegram Premium, as TDLib reports it (`user.is_premium`).
+ * @property isOnTestServers the account signed in on Telegram's test servers (`REQUIREMENTS.md` FR-A9).
  */
 @Immutable
 data class AccountUiModel(
@@ -36,6 +37,7 @@ data class AccountUiModel(
     val phoneNumber: String,
     val username: String?,
     val isPremium: Boolean = false,
+    val isOnTestServers: Boolean = false,
 ) {
     override fun toString() = "AccountUiModel(userId=$userId, …)"
 }
