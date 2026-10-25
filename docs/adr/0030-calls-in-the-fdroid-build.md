@@ -57,6 +57,26 @@ Neither ships a build without calls.
 - **Until then** the F-Droid submission waits, and the recipe's TODO on NTgCalls says why. IzzyOnDroid (the GitHub APKs,
   with calls) stays the F-Droid-compatible way to install Pingogram.
 
+## What the engines need (research, 2026-10-25)
+
+- **Telegram X** (`.gitmodules`, `app/jni/tgvoip/BuildWebRTC.cmake`):
+  - WebRTC is a submodule (`TGX-Android/webrtc`, branch `production`, from Telegram iOS's tree). About 1,300 files
+    are listed by hand in CMake and compiled with the NDK; no gn or ninja.
+  - VP8 and VP9 come from libvpx, H.264 from OpenH264. libvpx, OpenH264, FFmpeg, abseil, usrsctp and libsrtp are all
+    submodules built from source. tgcalls is its own submodule, with group calls (`GroupInstanceCustomImpl`) and
+    screen capture.
+  - The source list holds no frame encryptor or transformer.
+  - F-Droid builds it as Telegram X FOSS: NDK r27d, a 5 h `timeout`, `arm64-v8a` only, a 70 MiB APK.
+- **NTgCalls** (`cmake/FindWebRTC.cmake`, `FindClang.cmake`, `FindLibCXX.cmake`, `FindFFmpeg.cmake`):
+  - It always downloads WebRTC M152 from `pytgcalls/webrtc-build`, which runs gn and ninja on a Chromium checkout. It
+    also downloads Chromium's clang and libc++ and a prebuilt FFmpeg.
+  - Its one hook is an imported target `WebRTC::webrtc` defined before it looks, which skips the download.
+  - On Android it needs WebRTC's frame transformer (for conference calls), FFmpeg, and WebRTC's Java SDK. It does not
+    need desktop capture or OpenH264.
+- So route 1 means a WebRTC M152 built with the NDK alone, the NDK's clang and libc++ in place of Chromium's, and
+  FFmpeg from source. Route 2 means an older WebRTC than NTgCalls uses, without the frame transformer that
+  Pingogram's conference calls rely on (`docs/adr/0025-conference-calls.md`).
+
 ## The spike, before any engine change
 
 1. Build Telegram X's tgcalls and WebRTC tree for `arm64-v8a`, `armeabi-v7a` and `x86_64` with NDK r28 (16 KB pages,
