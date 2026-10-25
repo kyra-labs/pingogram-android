@@ -161,6 +161,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   dialog destination of `settingsPages`, so it is in `:app`'s `NavHost` and the Settings detail pane's alike,
   `StickerSetSheetViewModel`: a link's name found first, the set read again on its changes, "Add stickers" / "Remove"
   only on a tap) opens from a set's row and from `t.me/addstickers/<name>` links (`LinkTarget.StickerSet`).
+- **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
+  cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
+  non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
+  `can_archive_and_mute_new_chats_from_unknown_users` lets the account turn on the first, and marks a whole list as read
+  (`readChatList`, the folder tabs' "Mark all as read"; here rather than on `ChatRepository`, whose fakes live in every
+  feature). How the main list's archive row shows (`ArchiveRowStyle`: full, compact, hidden) is the device's own,
+  `ArchiveRowRepository` (`DataStoreArchiveRowRepository`, the settings file), which `ChatListViewModel` combines with
+  the archive's chats: a hidden row leaves the archive to the top bar (`ChatListUiState.hiddenArchive`), and hiding it
+  offers "Undo". `feature:chats`' `ArchiveSettingsRoute` (`ArchiveSettingsViewModel`, route `ArchiveSettingsRoute` of
+  `core:navigation`, `archiveSettingsScreen`) is a settings-style page built from that pattern's parts (features share
+  no code), pushed above the archive from its top bar; any feature can navigate to the route. A folder tab's menu
+  (`FolderTabMenu.kt`) is the other hook: `ChatListPane(onEditFolder)` adds "Edit folder", which `:app` points at
+  `feature:settings`' `ChatFolderEditRoute(folderId)` (`ChatFoldersRoute` for "All chats").
 - **Contacts** (FR-P1): `ContactRepository` (`core:domain`, `TdlibContactRepository` in `core:data`) is no
   `TdlibUpdateCache`: TDLib has no update for the contact list, but announces every user, `is_contact` included, with
   `updateUser`, which `TdlibUserRepository` already keeps. So the contacts are `getContacts` once per collection (which

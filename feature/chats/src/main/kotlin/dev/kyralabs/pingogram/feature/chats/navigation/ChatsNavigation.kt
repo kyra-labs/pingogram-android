@@ -25,6 +25,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.ArchivedChatsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListRoute
 import dev.kyralabs.pingogram.feature.chats.ui.NewChatRoute
 import dev.kyralabs.pingogram.feature.chats.ui.SearchRoute
+import dev.kyralabs.pingogram.feature.chats.ui.archive.ArchiveSettingsRoute
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelTypeStep
@@ -32,6 +33,7 @@ import dev.kyralabs.pingogram.feature.chats.ui.create.NewChannelViewModel
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupDetailsStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupMembersStep
 import dev.kyralabs.pingogram.feature.chats.ui.create.NewGroupViewModel
+import dev.kyralabs.pingogram.core.navigation.ArchiveSettingsRoute as ArchiveSettingsDestination
 import dev.kyralabs.pingogram.core.navigation.NewChatRoute as NewChatDestination
 import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
 
@@ -43,6 +45,11 @@ import dev.kyralabs.pingogram.core.navigation.SearchRoute as SearchDestination
  * "New chat" floating action button grows into the New chat screen ([newChatScreen]) while the destination provides
  * its animated visibility scope. A story ring above the chats calls [onOpenStory] with its chat, for the stories viewer
  * (`StoryViewerRoute`, `:feature:media`).
+ *
+ * A folder tab's long press opens its menu: "Mark all as read", and, where [onEditFolder] is given, "Edit folder" first
+ * ("Edit folders" on "All chats"), which calls it with the folder's id, or null for "All chats": the hook a folder
+ * editor plugs into (`:app` opens `ChatFolderEditRoute(folderId)`, or `ChatFoldersRoute` for null). Screen readers get
+ * the menu's items as the tab's custom actions.
  */
 @Composable
 fun ChatListPane(
@@ -52,6 +59,7 @@ fun ChatListPane(
     modifier: Modifier = Modifier,
     onOpenStory: (chatId: Long) -> Unit = {},
     openChatId: Long? = null,
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
 ) {
     ChatListRoute(
         onOpenArchive = onOpenArchive,
@@ -60,15 +68,30 @@ fun ChatListPane(
         modifier = modifier,
         onOpenStory = onOpenStory,
         openChatId = openChatId,
+        onEditFolder = onEditFolder,
     )
 }
 
-/** Adds the archived chats, [ArchiveRoute], to the graph; [onBack] leaves them, and a row calls [onOpenChat]. */
+/**
+ * Adds the archived chats, [ArchiveRoute], to the graph; [onBack] leaves them, a row calls [onOpenChat], and the top
+ * bar's settings button [onOpenSettings] (for [archiveSettingsScreen]).
+ */
 fun NavGraphBuilder.archiveScreen(
     onBack: () -> Unit,
     onOpenChat: (chatId: Long) -> Unit,
+    onOpenSettings: () -> Unit = {},
 ) {
-    composable<ArchiveRoute> { ArchivedChatsRoute(onBack = onBack, onOpenChat = onOpenChat) }
+    composable<ArchiveRoute> {
+        ArchivedChatsRoute(onBack = onBack, onOpenChat = onOpenChat, onOpenSettings = onOpenSettings)
+    }
+}
+
+/**
+ * Adds the archive's settings, [ArchiveSettingsDestination], to the graph: what Telegram archives and keeps archived,
+ * and how the archive row shows. Any screen may navigate to the route, e.g. a settings page; [onBack] leaves it.
+ */
+fun NavGraphBuilder.archiveSettingsScreen(onBack: () -> Unit) {
+    composable<ArchiveSettingsDestination> { ArchiveSettingsRoute(onBack = onBack) }
 }
 
 /**

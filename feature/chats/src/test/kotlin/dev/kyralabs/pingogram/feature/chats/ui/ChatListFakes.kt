@@ -3,6 +3,9 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
+import dev.kyralabs.pingogram.core.domain.model.ArchiveSettings
+import dev.kyralabs.pingogram.core.domain.model.ArchiveSettingsAvailability
 import dev.kyralabs.pingogram.core.domain.model.BasicGroup
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
@@ -16,6 +19,8 @@ import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.Supergroup
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.model.User
+import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
+import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
@@ -300,3 +305,50 @@ class FakeTimePatterns(
 }
 
 private fun unused(): Nothing = throw UnsupportedOperationException("Not used by the chat list")
+
+/** The archive row's style as [style] holds it; [setStyle] answers with [onSetStyle] and is recorded. */
+class FakeArchiveRowRepository : ArchiveRowRepository {
+    override val style = MutableStateFlow(ArchiveRowStyle.Full)
+
+    /** Every style saved, in order. */
+    val saved = mutableListOf<ArchiveRowStyle>()
+
+    var onSetStyle: suspend (ArchiveRowStyle) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    override suspend fun setStyle(style: ArchiveRowStyle): Outcome<Unit> {
+        saved += style
+        return onSetStyle(style).also { if (it is Outcome.Success) this.style.value = style }
+    }
+}
+
+/**
+ * The archive's settings as [settings] holds them, answered by [onRead]; every change ([changes]) and every list read
+ * ([readLists]) is recorded and answered by [onSet] and [onReadList].
+ */
+class FakeArchiveSettingsRepository : ArchiveSettingsRepository {
+    var settings = ArchiveSettingsAvailability(ArchiveSettings(), canArchiveAndMuteNewChats = true)
+
+    var onRead: suspend () -> Outcome<ArchiveSettingsAvailability> = { Outcome.Success(settings) }
+    var onSet: suspend (ArchiveSettings) -> Outcome<Unit> = { Outcome.Success(Unit) }
+    var onReadList: suspend (ChatListType) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
+    /** Every [archiveSettings] call. */
+    var reads = 0
+    val changes = mutableListOf<ArchiveSettings>()
+    val readLists = mutableListOf<ChatListType>()
+
+    override suspend fun archiveSettings(): Outcome<ArchiveSettingsAvailability> {
+        reads++
+        return onRead()
+    }
+
+    override suspend fun setArchiveSettings(settings: ArchiveSettings): Outcome<Unit> {
+        changes += settings
+        return onSet(settings)
+    }
+
+    override suspend fun readChatList(list: ChatListType): Outcome<Unit> {
+        readLists += list
+        return onReadList(list)
+    }
+}

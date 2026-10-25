@@ -116,6 +116,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * - **Stories**: [stories], where there are any, is the list's first row, above the archive row, and scrolls away with
  *   the chats: the story rings on the Chats tab (`StoryRingsRow`). One item of the list, so scrolling the chats costs
  *   what it did. A row that appears above the first one while the list shows its top is scrolled into view.
+ * - **Archive row**: full or compact, its menu and swipe set its style ([ChatListEvent.SetArchiveRowStyle]); hidden,
+ *   the top bar opens the archive. The archive's own top bar opens its settings.
+ * - **Folder tabs**: a long press opens a tab's menu, "Mark all as read" and, with [onEditFolder], "Edit folder".
  */
 @Composable
 internal fun ChatListScreen(
@@ -128,6 +131,7 @@ internal fun ChatListScreen(
     openChatId: Long? = null,
     header: @Composable () -> Unit = {},
     stories: (@Composable (Modifier) -> Unit)? = null,
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
 ) {
     val selection = state.selection
     HideNavigationBar(hidden = selection != null)
@@ -148,7 +152,7 @@ internal fun ChatListScreen(
                     .nestedScroll(newChatButton.nestedScrollConnection),
             // The top bar's container; the list sits on a sheet below it (ContentSheet).
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack) },
+            topBar = { ChatListScreenTopBar(state, scrollBehavior, onEvent, onBack, onEditFolder) },
             snackbarHost = {
                 // Above the "New chat" button, which floats over the Scaffold rather than in its button slot.
                 SnackbarHost(snackbarHostState, Modifier.padding(bottom = newChatButtonSpace))
@@ -241,18 +245,13 @@ private fun ChatListBody(
                     }
 
                     is ChatListContent.Empty -> {
-                        Column(contentModifier.padding(contentPadding)) {
-                            // The archive stays in reach when every chat is archived.
-                            state.archive?.let {
-                                ArchiveRow(it, enabled = true, onClick = { onEvent(ChatListEvent.OpenArchive) })
-                            }
-                            ChatListEmpty(
-                                kind = state.kind,
-                                isFolder = content.isFolder,
-                                onNewChat = { onEvent(ChatListEvent.NewChat) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+                        ChatListEmptyWithArchive(
+                            archive = state.archive,
+                            kind = state.kind,
+                            isFolder = content.isFolder,
+                            onEvent = onEvent,
+                            modifier = contentModifier.padding(contentPadding),
+                        )
                     }
 
                     is ChatListContent.Error -> {
@@ -527,6 +526,7 @@ private fun ChatList(
                     enabled = selection == null,
                     onClick = { onEvent(ChatListEvent.OpenArchive) },
                     modifier = Modifier.listRow(this, maxWidth, motionScheme.takeIf { animateRows }),
+                    onStyle = { onEvent(ChatListEvent.SetArchiveRowStyle(it)) },
                 )
             }
         }
@@ -587,7 +587,7 @@ private fun Modifier.listRow(
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ChatListEmpty(
+internal fun ChatListEmpty(
     kind: ChatListKind,
     isFolder: Boolean,
     onNewChat: () -> Unit,
