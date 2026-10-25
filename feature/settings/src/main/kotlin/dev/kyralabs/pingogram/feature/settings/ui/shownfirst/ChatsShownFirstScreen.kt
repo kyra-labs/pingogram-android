@@ -134,7 +134,9 @@ private fun ShownFirstGroup(
     }
 }
 
-/** A chat shown first: its avatar, its title as user content, "Remove" named with it, and moving it for screen readers. */
+/**
+ * A chat shown first: its avatar, its title as user content, "Remove" named with it, and moving it for screen readers.
+ */
 @Suppress("LongParameterList") // The chat, its place among the others, the row's look and its events.
 @Composable
 private fun ShownFirstItem(

@@ -35,8 +35,8 @@ fun interface BiometricAvailability {
     fun canAuthenticate(): Boolean
 
     /**
-     * Whether the phone's own screen lock (its PIN, pattern or password) can unlock the app through the system's prompt:
-     * Android 11 and later, with a screen lock set. False unless overridden.
+     * Whether the phone's own screen lock (its PIN, pattern or password) can unlock the app through the system's
+     * prompt: Android 11 and later, with a screen lock set. False unless overridden.
      */
     fun canUseScreenLock(): Boolean = false
 }
@@ -78,11 +78,10 @@ internal class PlatformBiometricAvailability
 
         // USE_BIOMETRIC is declared in :app's manifest, as above.
         @SuppressLint("MissingPermission")
-        override fun canUseScreenLock(): Boolean {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
-            val manager = context.getSystemService(BiometricManager::class.java) ?: return false
-            return manager.canAuthenticate(DEVICE_CREDENTIAL) == BiometricManager.BIOMETRIC_SUCCESS
-        }
+        override fun canUseScreenLock(): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                context.getSystemService(BiometricManager::class.java)?.canAuthenticate(DEVICE_CREDENTIAL) ==
+                BiometricManager.BIOMETRIC_SUCCESS
 
         // USE_BIOMETRIC is declared in :app's manifest (pinned by AppManifestTest), which a library's lint cannot see.
         @SuppressLint("MissingPermission")
