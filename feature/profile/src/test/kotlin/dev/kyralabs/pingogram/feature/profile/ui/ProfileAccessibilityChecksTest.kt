@@ -72,6 +72,33 @@ class ProfileAccessibilityChecksTest {
         }
 
     @Test
+    fun profileWithId() =
+        check {
+            ProfileScreen(
+                state = ProfilePreviewData.withId,
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+                onEditContact = {},
+            )
+        }
+
+    @Test
+    fun chatInfoWithId() =
+        check {
+            ChatInfoScreen(
+                state = ChatInfoPreviewData.group.copy(id = -1001234567890),
+                media = ProfilePreviewData.media,
+                onEvent = {},
+                onMediaEvent = {},
+                onBack = {},
+                mediaActions = mediaActions,
+            )
+        }
+
+    @Test
     fun members() = check { ChatMembersScreen(ChatInfoPreviewData.membersPage, {}, {}) }
 
     @Test

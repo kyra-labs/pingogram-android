@@ -113,6 +113,15 @@ class PrivacySecurityScreenScreenshotTest {
             variant,
         ) { Frequent() }
 
+    /** "On screen" with "Show IDs" on under "Hide phone numbers". */
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun showIdsLight() = composeRule.captureScreen(javaClass, "showIdsLight", ThemeMode.Light) { ShowIds() }
+
+    @Test
+    @Config(qualifiers = "w411dp-h2400dp-xxhdpi")
+    fun showIdsDark() = composeRule.captureScreen(javaClass, "showIdsDark", ThemeMode.Dark) { ShowIds() }
+
     @Test
     fun loadingLight() = capture("loadingLight", ThemeMode.Light, PrivacySecurityUiState.Loading)
 
@@ -166,5 +175,18 @@ private fun Frequent() {
         onBack = {},
         contactSync = ContactSyncStatus.On(lastSyncedAt = null),
         suggestsFrequent = true,
+    )
+}
+
+/** The page with phone numbers hidden and IDs shown. */
+@Composable
+private fun ShowIds() {
+    PrivacySecurityScreen(
+        state = SettingsPreviewData.privacySecurity,
+        onEvent = {},
+        onOpen = {},
+        onBack = {},
+        phoneNumbersHidden = true,
+        idsShown = true,
     )
 }
