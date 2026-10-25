@@ -83,6 +83,8 @@ sealed interface PrivacySecurityPage {
 
     data object PasscodeLock : PrivacySecurityPage
 
+    data object LockedChats : PrivacySecurityPage
+
     data object DeleteAccount : PrivacySecurityPage
 
     data object LoginEmail : PrivacySecurityPage

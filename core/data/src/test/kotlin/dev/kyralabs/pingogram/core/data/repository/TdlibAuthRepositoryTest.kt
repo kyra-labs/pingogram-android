@@ -6,10 +6,12 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.EmailAddressResetState
+import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.tdlib.TdlibServers
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import kotlinx.coroutines.CompletableDeferred
@@ -87,6 +89,79 @@ class TdlibAuthRepositoryTest {
             assertFalse(settings.allowSmsRetrieverApi, "SMS retriever")
             assertNull(settings.firebaseAuthenticationSettings, "Firebase")
             assertEquals(0, settings.authenticationTokens.size)
+        }
+
+    /** Answers every number with Ok, recording the servers TDLib used when it got each. */
+    private fun recordServersOfNumbers(): List<Pair<String, TdlibServers>> {
+        val numbers = mutableListOf<Pair<String, TdlibServers>>()
+        client.on(TdApi.SetAuthenticationPhoneNumber::class) { function ->
+            numbers += function.phoneNumber to client.servers.value
+            ok()
+        }
+        return numbers
+    }
+
+    @Test
+    fun `a test account's number restarts TDLib on the test servers before it is sent`() =
+        runTest {
+            val numbers = recordServersOfNumbers()
+
+            assertEquals(Outcome.Success(Unit), repository().setPhoneNumber("+9996621234"))
+
+            assertEquals(listOf("+9996621234" to TdlibServers.Test), numbers)
+            assertEquals(listOf(TdlibServers.Test), client.serverSwitches)
+        }
+
+    @Test
+    fun `no other number ever reaches the test servers`() =
+        runTest {
+            val numbers = recordServersOfNumbers()
+            val repository = repository()
+            repository.setPhoneNumber("+9996611234")
+
+            listOf("+447911123456", "+9996641234", "+999662123", "+99966212345", "+19996621234", "+888 1234").forEach {
+                repository.setPhoneNumber(it)
+            }
+
+            assertEquals(TdlibServers.Test, numbers.first().second)
+            assertTrue(numbers.drop(1).all { it.second == TdlibServers.Production }, "$numbers")
+            assertEquals(listOf(TdlibServers.Test, TdlibServers.Production), client.serverSwitches)
+        }
+
+    @Test
+    fun `a production number restarts nothing while TDLib is on the production servers`() =
+        runTest {
+            recordServersOfNumbers()
+
+            repository().setPhoneNumber("+447911123456")
+
+            assertTrue(client.serverSwitches.isEmpty())
+        }
+
+    @Test
+    fun `QR code login is on the production servers`() =
+        runTest {
+            client.servers.value = TdlibServers.Test
+            client.on(TdApi.RequestQrCodeAuthentication::class) {
+                assertEquals(TdlibServers.Production, client.servers.value)
+                ok()
+            }
+
+            assertEquals(Outcome.Success(Unit), repository().requestQrCode())
+            assertEquals(listOf(TdlibServers.Production), client.serverSwitches)
+        }
+
+    @Test
+    fun `servers follow the client`() =
+        runTest {
+            repository().servers.test {
+                assertEquals(TelegramServers.Production, awaitItem())
+                client.servers.value = TdlibServers.Test
+                assertEquals(TelegramServers.Test, awaitItem())
+                // A logout returns TDLib to the production servers.
+                client.servers.value = TdlibServers.Production
+                assertEquals(TelegramServers.Production, awaitItem())
+            }
         }
 
     @Test

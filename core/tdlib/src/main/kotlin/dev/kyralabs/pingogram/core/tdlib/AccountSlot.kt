@@ -33,7 +33,8 @@ data class AccountSlot(
 
 /**
  * Deletes what an account left on the device: both of its TDLib directories (the production and the test DC's), its
- * database key file and its Keystore key. Only for a slot whose TDLib client is closed. Blocking: off the main thread.
+ * database key file, its test servers marker and its Keystore key. Only for a slot whose TDLib client is closed.
+ * Blocking: off the main thread.
  */
 class AccountStorage internal constructor(
     private val filesDir: () -> File,
@@ -54,6 +55,7 @@ class AccountStorage internal constructor(
             TdlibDirectories.of(filesDir(), useTestDc, slot).root.deleteRecursively()
         }
         noBackupFilesDir().resolve(KeystoreDatabaseKeyProvider.keyFileName(slot)).delete()
+        noBackupFilesDir().resolve(testServersMarkerName(slot)).delete()
         wrappingKeys(slot).delete()
     }
 }

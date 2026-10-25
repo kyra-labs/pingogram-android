@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.share.IncomingShare
@@ -37,6 +38,7 @@ class MainActivityViewModel internal constructor(
     private val appLockRepository: AppLockRepository,
     passcodeRepository: PasscodeRepository,
     timeSource: TimeSource,
+    private val chatLock: ChatLockRepository,
 ) : ViewModel() {
     @Inject
     constructor(
@@ -44,7 +46,15 @@ class MainActivityViewModel internal constructor(
         appearanceRepository: AppearanceRepository,
         appLockRepository: AppLockRepository,
         passcodeRepository: PasscodeRepository,
-    ) : this(authRepository, appearanceRepository, appLockRepository, passcodeRepository, TimeSource.Monotonic)
+        chatLock: ChatLockRepository,
+    ) : this(
+        authRepository,
+        appearanceRepository,
+        appLockRepository,
+        passcodeRepository,
+        TimeSource.Monotonic,
+        chatLock,
+    )
 
     private val createdAt = timeSource.markNow()
 
@@ -91,6 +101,19 @@ class MainActivityViewModel internal constructor(
         mutableChatToOpen.value = null
     }
 
+    private val mutableLockedChatsToOpen = MutableStateFlow(false)
+
+    /**
+     * Whether a locked chat's notification asked to open Locked chats (`docs/adr/0029-locked-chats.md`), until the app
+     * opened them ([setLockedChatsToOpen] false); like [chatToOpen], once logged in and never in the login flow.
+     */
+    val lockedChatsToOpen: StateFlow<Boolean> = mutableLockedChatsToOpen.asStateFlow()
+
+    /** Asks to open Locked chats ([open]), or reports them opened. */
+    fun setLockedChatsToOpen(open: Boolean) {
+        mutableLockedChatsToOpen.value = open
+    }
+
     private val mutableLinkToOpen = MutableStateFlow<String?>(null)
 
     /**
@@ -129,11 +152,20 @@ class MainActivityViewModel internal constructor(
         mutableShareToOpen.value = null
     }
 
-    /** The app left the screen, not for a configuration change: the passcode lock's auto-lock starts counting. */
-    fun onAppHidden() = appLockRepository.onAppHidden()
+    /**
+     * The app left the screen, not for a configuration change: the passcode lock's auto-lock starts counting, and so
+     * does the locked chats' ([ChatLockRepository]).
+     */
+    fun onAppHidden() {
+        appLockRepository.onAppHidden()
+        chatLock.onAppHidden()
+    }
 
-    /** The app is on screen again: it locks if it was away for the auto-lock delay. */
-    fun onAppShown() = appLockRepository.onAppShown()
+    /** The app is on screen again: it locks if it was away for the auto-lock delay, the locked chats after a while. */
+    fun onAppShown() {
+        appLockRepository.onAppShown()
+        chatLock.onAppShown()
+    }
 
     /**
      * Whether the splash screen stays on screen: while the login state, the Appearance settings or the lock are

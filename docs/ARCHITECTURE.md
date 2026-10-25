@@ -83,6 +83,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and adds, switches and leaves an account's sign-in; it is not offered on screen (`isAvailable` false) until the
   background parts follow every account. The passcode lock is the app's (`DefaultAppLockRepository`, `@Singleton`):
   it follows the accounts' login steps together, and forgetting the passcode logs every account out.
+- **Test servers** (FR-A9, `docs/TDLIB.md` "Test servers"): `TdlibClient.servers` / `useServers` restart TDLib on
+  Telegram's test servers or back. Only `TdlibAuthRepository` asks for a switch: `setPhoneNumber` by the number
+  (`core:domain`'s `telegramServersFor`), `requestQrCode` for the production servers; any other close returns to them.
+  `AuthRepository.servers` (`TelegramServers`) tells `feature:settings` (the account card, Active sessions) to show
+  "Test server", and `AuthViewModel` keeps the phone number step, with what was typed, through the restart's steps
+  while it sends the number.
 - **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
   (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
   (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model
@@ -149,6 +155,24 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **Locked chats** (`docs/adr/0029-locked-chats.md`): Pingogram's own, kept on the device. `core:domain`'s
+  `ChatLockRepository` (`DefaultChatLockRepository`, `core:data`, a singleton) holds the locked chats' ids
+  (`LockedChatIdsRepository`, `DataStoreLockedChatIdsRepository`: the settings file) and whether they are open: only
+  while a passcode is set (none locked otherwise; removing the passcode or logging out unlocks them all for good), opened
+  by the app lock's passcode check (`AppLockRepository.checkPasscode`, attempts and waits shared) or biometrics, closed
+  again when the app lock locks or after a minute out of sight (`MainActivity.onStop`/`onStart`). `hiddenChatIds` (a
+  `StateFlow`, current from the start) is what to hide now. Readers: `ChatListViewModel` (`feature:chats`) leaves locked
+  chats out of every list, folder and the archive row, and shows a "Locked chats" row (`LockedChatsRow`) at the end of
+  the main list; `SearchViewModel` and `ChatTargets` (the forward and share sheets, `feature:chat`) leave the hidden ones
+  out; `ChatRoute` wraps the conversation in `core:ui`'s `LocalLockedChatGate`, which `MainActivity` provides as
+  `feature:settings`' `LockedChatGate` (the passcode entry, `ChatUnlockRoute` and `ChatUnlockViewModel`, in the
+  conversation's place, its saved state kept). `NotificationRenderer` posts one anonymous "New message" for their
+  groups (`ConversationNotificationBuilder.locked`, opening `LockedChatsRoute` through `NotificationIntents`) and
+  removes their conversation shortcuts; `ShareTargetShortcuts` and the widget (`RecentChatsWidgetUpdater`) leave them
+  out. Settings → Privacy and security → "Locked chats" (`LockedChatsRoute`, `LockedChatsViewModel`) lists them behind
+  the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
+  through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
+  `PingogramApp`.
 - **Chat folders** (FR-L3): `ChatRepository` keeps the folders TDLib announces (`updateChatFolders`: the tabs above
   the chat list and the main list's place among them). `core:domain`'s `ChatFolderRepository` (`TdlibChatFolderRepository`,
   `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as
@@ -555,6 +579,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sends `ChatEvent.OpenNextChannel`, which the view model checks against what it still offers before
   `ChatEffect.OpenNextChannel`. The route opens it through `onOpenNextChat`: `:app` replaces the pushed conversation's
   `ChatRoute` (`popUpTo<ChatRoute>`), and the Chats tab's detail pane shows it as any chat it opens.
+- **Saved Messages tabs**: TDLib sorts Saved Messages into topics, one per chat the user saved from, the user's notes
+  and messages of hidden authors (td_api.tl `savedMessagesTopic`, `message.topic_id` `messageTopicSavedMessages`, which
+  `MessageTopic.SavedMessages` maps). `core:domain`'s `SavedMessagesTopicRepository` (`TdlibSavedMessagesTopicRepository`,
+  `core:data`, a `TdlibUpdateCache`: TDLib announces each topic only with `updateSavedMessagesTopic`, after
+  `loadSavedMessagesTopics`) keeps them for the session, pinned first and by `order`. A topic's history is
+  `MessageRepository`'s window of that `HistoryKey` (`getSavedMessagesTopicHistory`; its newest message from its first
+  page, as td_api.tl has no `getSavedMessagesTopic`). `feature:chat`: `ChatOpeningViewModel` opens Saved Messages as
+  `ChatOpening.SavedMessages`, whose `SavedMessagesConversation` shows the selected tab's conversation (`ChatViewModel`
+  with the topic, its `ChatThread` reading it as `ThreadState.SavedTopic`), each tab in a view model store of its own,
+  and `SavedTabsViewModel` (the tabs, the first topics loaded once collected and more near the row's end, the selection
+  in its saved state) hands the tabs to the top bar through `LocalConversationTabs`. What is sent from a tab goes to
+  Saved Messages without a topic (`SendOptions.tdTopic` leaves Saved Messages topics out), which Telegram files under
+  the user's notes, so only the notes' tab has a composer.
 - **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
   others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
   `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a

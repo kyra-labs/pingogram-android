@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -61,6 +62,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -89,6 +91,8 @@ import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 interface AccountRepositories {
     fun authRepository(): AuthRepository
 
+    fun chatLockRepository(): ChatLockRepository
+
     fun connectionRepository(): ConnectionRepository
 
     fun countryRepository(): CountryRepository
@@ -114,6 +118,8 @@ interface AccountRepositories {
     fun scheduledMessageRepository(): ScheduledMessageRepository
 
     fun forumTopicRepository(): ForumTopicRepository
+
+    fun savedMessagesTopicRepository(): SavedMessagesTopicRepository
 
     fun messageThreadRepository(): MessageThreadRepository
 

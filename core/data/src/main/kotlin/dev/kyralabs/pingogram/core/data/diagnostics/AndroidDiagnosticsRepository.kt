@@ -9,7 +9,6 @@ import dev.kyralabs.pingogram.core.domain.model.AppInfo
 import dev.kyralabs.pingogram.core.domain.model.CrashReport
 import dev.kyralabs.pingogram.core.domain.model.DiagnosticReport
 import dev.kyralabs.pingogram.core.domain.repository.DiagnosticsRepository
-import dev.kyralabs.pingogram.core.tdlib.TdlibConfig
 import dev.kyralabs.pingogram.core.tdlib.TdlibDirectories
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineDispatcher
@@ -36,11 +35,11 @@ class AndroidDiagnosticsRepository internal constructor(
     constructor(
         @ApplicationContext context: Context,
         app: AppInfo,
-        tdlib: TdlibConfig,
         @Dispatcher(IO) io: CoroutineDispatcher,
     ) : this(
         crashFile = CrashRecorder.crashFile(context),
-        tdlibLog = TdlibDirectories.of(context.filesDir, tdlib.useTestDc).logFile,
+        // TDLib keeps one log, under the production servers' directory, whichever servers it uses.
+        tdlibLog = TdlibDirectories.of(context.filesDir, useTestDc = false).logFile,
         app = app,
         device = currentDevice(),
         now = System::currentTimeMillis,

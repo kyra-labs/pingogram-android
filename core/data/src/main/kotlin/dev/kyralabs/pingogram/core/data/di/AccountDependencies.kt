@@ -9,9 +9,11 @@ import dev.kyralabs.pingogram.core.common.time.WallClock
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.data.export.DocumentTree
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
+import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushTokenSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -45,9 +47,14 @@ interface AccountDependencies {
 
     fun passcodeRepository(): PasscodeRepository
 
+    /** The passcode lock is the app's (`DeviceModule`); the chat lock of each account follows it. */
+    fun appLockRepository(): AppLockRepository
+
     fun linkPreviewSettingsRepository(): LinkPreviewSettingsRepository
 
     fun contactSyncSettingsRepository(): ContactSyncSettingsRepository
+
+    fun lockedChatIdsRepository(): LockedChatIdsRepository
 
     fun pushTokenSource(): Optional<PushTokenSource>
 }

@@ -17,6 +17,18 @@ FROM android_startups AS s
 WHERE s.package LIKE 'dev.kyralabs.pingogram%'
 ORDER BY s.ts;
 
+-- When each start called reportFullyDrawn (the chat list's first content), from the start, in ms: the first query's
+-- time to full display, read from the slices themselves where Perfetto's module finds none.
+SELECT
+  s.startup_id,
+  s.startup_type,
+  ROUND((MIN(slice.ts) - s.ts) / 1e6, 1) AS fully_drawn_ms
+FROM android_startups AS s
+JOIN slice ON slice.name LIKE '%reportFullyDrawn%' AND slice.ts >= s.ts AND slice.ts < s.ts + 10e9
+WHERE s.package LIKE 'dev.kyralabs.pingogram%'
+GROUP BY s.startup_id
+ORDER BY s.ts;
+
 -- The app's own sections (docs/PERFORMANCE.md §2): how long each took per start, median and worst.
 SELECT
   slice.name AS section,
@@ -25,7 +37,8 @@ SELECT
   ROUND(AVG(slice.dur) / 1e6, 1) AS avg_ms,
   ROUND(MAX(slice.dur) / 1e6, 1) AS max_ms
 FROM slice
-WHERE slice.name IN ('app.inject', 'app.tdlibStart', 'app.starters', 'main.onCreate', 'main.awaitSettings', 'openChat')
+WHERE slice.name IN ('app.inject', 'app.tdlibStart', 'app.starters', 'app.readSettings', 'main.onCreate',
+                     'main.awaitSettings', 'openChat')
 GROUP BY slice.name
 ORDER BY slice.name;
 

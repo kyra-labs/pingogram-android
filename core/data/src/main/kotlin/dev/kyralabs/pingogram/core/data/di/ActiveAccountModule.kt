@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -65,6 +66,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -96,6 +98,9 @@ import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 object ActiveAccountModule {
     @Provides
     fun authRepository(accounts: Accounts): AuthRepository = accounts.active.authRepository()
+
+    @Provides
+    fun chatLockRepository(accounts: Accounts): ChatLockRepository = accounts.active.chatLockRepository()
 
     @Provides
     fun connectionRepository(accounts: Accounts): ConnectionRepository = accounts.active.connectionRepository()
@@ -137,6 +142,10 @@ object ActiveAccountModule {
 
     @Provides
     fun forumTopicRepository(accounts: Accounts): ForumTopicRepository = accounts.active.forumTopicRepository()
+
+    @Provides
+    fun savedMessagesTopicRepository(accounts: Accounts): SavedMessagesTopicRepository =
+        accounts.active.savedMessagesTopicRepository()
 
     @Provides
     fun messageThreadRepository(accounts: Accounts): MessageThreadRepository = accounts.active.messageThreadRepository()

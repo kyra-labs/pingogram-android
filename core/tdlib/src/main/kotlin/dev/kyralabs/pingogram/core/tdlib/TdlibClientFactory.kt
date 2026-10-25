@@ -37,9 +37,9 @@ class TdlibClientFactory
             return DefaultTdlibClient(
                 native = JniTdlib,
                 parametersProvider = AndroidTdlibParametersProvider(context, config, slot, keys, io),
-                // TDLib's log is the process's: the first account's directory holds it for every account.
+                // TDLib's log is the process's: the first account's production directory holds it for every account.
                 logSettings = {
-                    TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir, config.useTestDc))
+                    TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir, useTestDc = false))
                 },
                 log = log,
                 scope = DefaultTdlibClient.clientScope(default, log),

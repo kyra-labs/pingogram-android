@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
+import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
 import dev.kyralabs.pingogram.core.notifications.ShareTargetShortcuts
@@ -19,8 +20,10 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import dev.kyralabs.pingogram.core.ui.theme.warmUpGoogleSansFlex
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.startup.StartupTrace
+import dev.kyralabs.pingogram.startup.asyncTraceSection
 import dev.kyralabs.pingogram.widget.RecentChatsWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -76,6 +79,13 @@ class PingogramApplication :
     @Inject
     lateinit var messageRepository: dagger.Lazy<MessageRepository>
 
+    /**
+     * The Appearance settings, read as the app starts: they and the passcode lock's, in the same file, are what the
+     * splash screen waits for, and the first activity finds them in memory (docs/PERFORMANCE.md §2).
+     */
+    @Inject
+    lateinit var appearanceRepository: dagger.Lazy<AppearanceRepository>
+
     /** Where work that must not hold up the first frame runs: the `Default` dispatcher. */
     @Inject
     @ApplicationScope
@@ -90,6 +100,10 @@ class PingogramApplication :
         StartupTrace.section(StartupTrace.INJECT) {
             super.onCreate()
             accounts.start()
+        }
+        // Reads the settings file while the activity is created: the splash screen waits for it (main.awaitSettings).
+        applicationScope.launch {
+            asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
         }
         // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
         applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }

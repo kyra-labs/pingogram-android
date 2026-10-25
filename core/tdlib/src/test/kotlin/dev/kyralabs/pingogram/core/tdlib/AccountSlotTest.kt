@@ -57,7 +57,7 @@ class AccountSlotTest {
     }
 
     @Test
-    fun `deleting an account removes its directories, key file and Keystore key, and nothing of the others`() {
+    fun `deleting an account removes all it keeps on the device, and nothing of the others`() {
         val keys = mutableMapOf(AccountSlot.First to RecordedKey(), AccountSlot(1) to RecordedKey())
         val storage = AccountStorage({ filesDir }, { noBackupFilesDir }, { keys.getValue(it) })
         val kept = listOf(AccountSlot.First, AccountSlot(1)).associateWith(::createStorage)
@@ -68,7 +68,7 @@ class AccountSlotTest {
         assertEquals(listOf(false, true), keys.values.map { it.deleted })
     }
 
-    /** Both directories with a file each, and the key file. */
+    /** Both directories with a file each, the key file and the test servers marker. */
     private fun createStorage(slot: AccountSlot): List<File> =
         listOf(false, true).map { testDc ->
             TdlibDirectories.of(filesDir, testDc, slot).database.resolve("db.sqlite").apply {
@@ -79,7 +79,8 @@ class AccountSlotTest {
             noBackupFilesDir.resolve(KeystoreDatabaseKeyProvider.keyFileName(slot)).apply {
                 parentFile.mkdirs()
                 writeText("key")
-            }
+            } +
+            noBackupFilesDir.resolve(testServersMarkerName(slot)).apply { createNewFile() }
 
     private class RecordedKey : WrappingKeyStore {
         var deleted = false

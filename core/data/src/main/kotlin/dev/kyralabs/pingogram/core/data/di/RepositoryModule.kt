@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
+import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
@@ -74,6 +75,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibScheduledMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
@@ -113,6 +115,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -163,6 +166,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -196,6 +200,9 @@ import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 interface RepositoryModule {
     @Binds
     fun authRepository(repository: TdlibAuthRepository): AuthRepository
+
+    @Binds
+    fun chatLockRepository(repository: DefaultChatLockRepository): ChatLockRepository
 
     @Binds
     fun connectionRepository(repository: TdlibConnectionRepository): ConnectionRepository
@@ -235,6 +242,9 @@ interface RepositoryModule {
 
     @Binds
     fun forumTopicRepository(repository: TdlibForumTopicRepository): ForumTopicRepository
+
+    @Binds
+    fun savedMessagesTopicRepository(repository: TdlibSavedMessagesTopicRepository): SavedMessagesTopicRepository
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository

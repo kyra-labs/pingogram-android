@@ -22,6 +22,12 @@ interface TdlibClient {
 
     val connectionState: StateFlow<ConnectionState>
 
+    /**
+     * The servers the current TDLib instance talks to: [TdlibServers.Production] unless [useServers] chose the test
+     * servers, which last until the next close (a logout, a deleted account) and across restarts until then.
+     */
+    val servers: StateFlow<TdlibServers>
+
     /** Starts TDLib in the background, without blocking the caller. Idempotent; [send] calls it too. */
     fun start()
 
@@ -30,4 +36,11 @@ interface TdlibClient {
      * request, so it still runs and its late answer is dropped.
      */
     suspend fun <T : TdApi.Object> send(function: TdApi.Function<T>): TdResult<T>
+
+    /**
+     * Restarts TDLib on [servers] unless it already talks to them: closes the current instance, whose `Closed` starts
+     * the next one there, and returns once that one is past starting up (at `WaitPhoneNumber`, before a login). Only
+     * sign-in calls it, before sending a number ([TdlibServers.Test] for a test account's, `REQUIREMENTS.md` FR-A9).
+     */
+    suspend fun useServers(servers: TdlibServers)
 }

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
@@ -25,9 +26,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -62,6 +66,7 @@ class ForwardViewModel internal constructor(
     dispatcher: CoroutineDispatcher,
     applicationScope: CoroutineScope,
     private val results: ForwardResults,
+    hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -75,6 +80,7 @@ class ForwardViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         results: ForwardResults,
+        chatLock: ChatLockRepository,
     ) : this(
         savedStateHandle.toRoute<ForwardRoute>(),
         chats,
@@ -86,6 +92,7 @@ class ForwardViewModel internal constructor(
         dispatcher,
         applicationScope,
         results,
+        chatLock.hiddenChatIds.filterNotNull(),
     )
 
     private val closedState = MutableStateFlow(false)
@@ -105,6 +112,7 @@ class ForwardViewModel internal constructor(
             dispatcher = dispatcher,
             sendScope = applicationScope,
             onClosed = { closedState.value = true },
+            hiddenChats = hiddenChats,
             onEffect = ::onEffect,
         )
 
