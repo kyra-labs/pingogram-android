@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatMute
 import dev.kyralabs.pingogram.core.data.mapper.toChatType
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationScope
@@ -28,7 +29,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [NotificationSettingsRepository] on TDLib's `getScopeNotificationSettings`, `setScopeNotificationSettings`,
@@ -40,7 +40,7 @@ import javax.inject.Singleton
  * setters replace every field. A chat's limited mute is reported as the time left (`mute_for`), turned into the time
  * it ends with [clock].
  */
-@Singleton
+@AccountScoped
 class TdlibNotificationSettingsRepository
     @Inject
     constructor(

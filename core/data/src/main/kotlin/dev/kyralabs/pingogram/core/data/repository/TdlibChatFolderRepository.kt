@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolderInvite
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolderInviteLink
 import dev.kyralabs.pingogram.core.data.mapper.toChatFolderSettings
@@ -16,7 +17,6 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatFolderRepository] on TDLib's chat folder requests (no cache: `updateChatFolders`, which `TdlibChatRepository`
@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * includes nothing is refused before it reaches TDLib, with `DomainError.ChatFolderEmpty`.
  */
 @Suppress("TooManyFunctions") // One function per TDLib request, as in ChatFolderRepository.
-@Singleton
+@AccountScoped
 class TdlibChatFolderRepository
     @Inject
     constructor(

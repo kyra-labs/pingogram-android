@@ -2,18 +2,18 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
 import dev.kyralabs.pingogram.core.domain.repository.StorageRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [StorageRepository] on TDLib's storage statistics (`getStorageStatisticsFast`) and its file garbage collector
  * (`optimizeStorage`). Both work on this device's files only, without the network.
  */
-@Singleton
+@AccountScoped
 class TdlibStorageRepository
     @Inject
     constructor(

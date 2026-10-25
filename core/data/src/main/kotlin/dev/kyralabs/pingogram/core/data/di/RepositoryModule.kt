@@ -2,9 +2,9 @@ package dev.kyralabs.pingogram.core.data.di
 
 import dagger.Binds
 import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dagger.hilt.migration.DisableInstallInCheck
 import dev.kyralabs.pingogram.core.data.emoji.AndroidEmojiCatalogRepository
+import dev.kyralabs.pingogram.core.data.export.DocumentChatExporter
 import dev.kyralabs.pingogram.core.data.repository.AndroidBatterySaverRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLanguageDetector
@@ -28,6 +28,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibChatActionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatBoostRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatCreationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatEventLogRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibChatExportRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatFolderRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatJoinRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibChatMediaRepository
@@ -69,6 +70,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPollRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibPrivacyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
@@ -107,6 +109,8 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatCreationRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatEventLogRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
@@ -155,6 +159,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PowerSavingPolicy
 import dev.kyralabs.pingogram.core.domain.repository.PrivacyRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
+import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
@@ -180,12 +185,14 @@ import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 
 /**
- * Binds the repositories to their interfaces. Caching ones also join the set in [UpdateCacheModule]. One binding per
- * repository, hence `TooManyFunctions` is suppressed.
+ * Binds each account's repositories to their interfaces, in [AccountComponent] (`docs/adr/0031-multiple-accounts.md`).
+ * Caching ones also join the set in [UpdateCacheModule]; [ActiveAccountModule] hands the active account's to the rest
+ * of the app; what belongs to the device is bound in [DeviceModule]. One binding per repository, hence
+ * `TooManyFunctions` is suppressed.
  */
 @Suppress("TooManyFunctions")
 @Module
-@InstallIn(SingletonComponent::class)
+@DisableInstallInCheck
 interface RepositoryModule {
     @Binds
     fun authRepository(repository: TdlibAuthRepository): AuthRepository
@@ -266,13 +273,7 @@ interface RepositoryModule {
     fun contactSyncRepository(repository: TdlibContactSyncRepository): ContactSyncRepository
 
     @Binds
-    fun deviceContactsRepository(repository: AndroidDeviceContactsRepository): DeviceContactsRepository
-
-    @Binds
     fun chatCreationRepository(repository: TdlibChatCreationRepository): ChatCreationRepository
-
-    @Binds
-    fun pickedPhotoRepository(repository: AndroidPickedPhotoRepository): PickedPhotoRepository
 
     @Binds
     fun storageRepository(repository: TdlibStorageRepository): StorageRepository
@@ -404,12 +405,6 @@ interface RepositoryModule {
     fun notificationSettingsRepository(repository: TdlibNotificationSettingsRepository): NotificationSettingsRepository
 
     @Binds
-    fun sharedStorageRepository(repository: AndroidSharedStorageRepository): SharedStorageRepository
-
-    @Binds
-    fun deviceLocationRepository(repository: AndroidDeviceLocationRepository): DeviceLocationRepository
-
-    @Binds
     fun stickerRepository(repository: TdlibStickerRepository): StickerRepository
 
     @Binds
@@ -417,21 +412,6 @@ interface RepositoryModule {
 
     @Binds
     fun stickerSetRepository(repository: TdlibStickerSetRepository): StickerSetRepository
-
-    @Binds
-    fun emojiCatalogRepository(repository: AndroidEmojiCatalogRepository): EmojiCatalogRepository
-
-    @Binds
-    fun networkRepository(repository: AndroidNetworkRepository): NetworkRepository
-
-    @Binds
-    fun autoDownloadPolicy(policy: DefaultAutoDownloadPolicy): AutoDownloadPolicy
-
-    @Binds
-    fun batterySaverRepository(repository: AndroidBatterySaverRepository): BatterySaverRepository
-
-    @Binds
-    fun powerSavingPolicy(policy: DefaultPowerSavingPolicy): PowerSavingPolicy
 
     @Binds
     fun linkRepository(repository: TdlibLinkRepository): LinkRepository
@@ -443,8 +423,14 @@ interface RepositoryModule {
     fun translationRepository(repository: TdlibTranslationRepository): TranslationRepository
 
     @Binds
-    fun deviceLanguageDetector(detector: AndroidDeviceLanguageDetector): DeviceLanguageDetector
+    fun customEmojiRepository(repository: TdlibCustomEmojiRepository): CustomEmojiRepository
 
     @Binds
-    fun customEmojiRepository(repository: TdlibCustomEmojiRepository): CustomEmojiRepository
+    fun chatExportRepository(repository: TdlibChatExportRepository): ChatExportRepository
+
+    @Binds
+    fun chatExporter(exporter: DocumentChatExporter): ChatExporter
+
+    @Binds
+    fun pushRepository(repository: TdlibPushRepository): PushRepository
 }

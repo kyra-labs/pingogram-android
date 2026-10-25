@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toPhoto
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [UserProfileRepository] on TDLib: `getUserFullInfo` and its `updateUserFullInfo`s, and `getUserProfilePhotos`.
@@ -33,7 +33,7 @@ import javax.inject.Singleton
  *
  * Nothing about a user (bio, birthday, photos) is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibUserProfileRepository
     @Inject
     constructor(

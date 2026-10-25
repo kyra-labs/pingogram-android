@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.ConferenceChannel
 import dev.kyralabs.pingogram.core.domain.model.ConferenceInviteResult
 import dev.kyralabs.pingogram.core.domain.model.ConferenceJoin
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -33,7 +33,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * which this cache keeps per call; the frames' encryption is a request each (`encryptGroupCallData`,
  * `decryptGroupCallData`), which TDLib answers only asynchronously, waited for at most [FRAME_TIMEOUT].
  */
-@Singleton
+@AccountScoped
 class TdlibConferenceCallRepository
     @Inject
     constructor(

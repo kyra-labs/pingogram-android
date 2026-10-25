@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toProxy
 import dev.kyralabs.pingogram.core.domain.model.LinkSubject
@@ -13,7 +14,6 @@ import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [LinkRepository] on TDLib's `getInternalLinkType`, which knows every form of Telegram's links (`tg://resolve`,
@@ -36,7 +36,7 @@ import javax.inject.Singleton
  * errors and `FLOOD_WAIT` are failures. A link `getInternalLinkType` refuses is no internal link at all:
  * [LinkTarget.Unsupported], like the kinds Pingogram does not open.
  */
-@Singleton
+@AccountScoped
 class TdlibLinkRepository
     @Inject
     constructor(

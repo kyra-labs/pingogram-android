@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.JoinRequest
 import dev.kyralabs.pingogram.core.domain.model.JoinRequestsPage
 import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
@@ -9,14 +10,13 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [JoinRequestRepository] on TDLib's `getChatJoinRequests` (every link's requests: an empty link),
  * `processChatJoinRequest` and `processChatJoinRequests`. Nothing is cached; TDLib announces the count with
  * `updateChatPendingJoinRequests`.
  */
-@Singleton
+@AccountScoped
 class TdlibJoinRequestRepository
     @Inject
     constructor(

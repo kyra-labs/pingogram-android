@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.attachment.AttachmentPreparer
 import dev.kyralabs.pingogram.core.data.attachment.ContentSource
 import dev.kyralabs.pingogram.core.data.attachment.MediaProcessor
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.data.mapper.albumGroups
 import dev.kyralabs.pingogram.core.data.mapper.captionIndex
@@ -46,7 +47,6 @@ import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [AttachmentRepository] on TDLib and the app's cache ([UploadFiles]). Preparing and reading picked content runs on
@@ -56,7 +56,7 @@ import javax.inject.Singleton
  * attachment, as in [AttachmentRepository] (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibAttachmentRepository internal constructor(
     private val client: TdlibClient,
     private val files: UploadFiles,

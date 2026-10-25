@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toForumTopic
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
@@ -29,7 +30,6 @@ import kotlinx.coroutines.sync.withLock
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ForumTopicRepository] on TDLib's forum topics. Each forum someone observes has its loaded topics in memory
@@ -44,7 +44,7 @@ import javax.inject.Singleton
  * - **Fetched again** (`getForumTopic`), where no update says it all: a topic whose read state changed (TDLib reports
  *   no unread count with it), one whose last message was deleted, and one TDLib reports that is not loaded (a new one).
  */
-@Singleton
+@AccountScoped
 class TdlibForumTopicRepository
     @Inject
     constructor(

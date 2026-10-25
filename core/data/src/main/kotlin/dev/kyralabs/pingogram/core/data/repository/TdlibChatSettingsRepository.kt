@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMemberRole
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatSettingsRepository] on TDLib: the chat (`getChat`: reactions, protected content), a supergroup or channel
@@ -34,7 +34,7 @@ import javax.inject.Singleton
  * requests go out. The emoji Telegram offers as reactions come once, with `updateActiveEmojiReactions` at TDLib's
  * start, so this is a [TdlibUpdateCache] for them.
  */
-@Singleton
+@AccountScoped
 class TdlibChatSettingsRepository
     @Inject
     constructor(

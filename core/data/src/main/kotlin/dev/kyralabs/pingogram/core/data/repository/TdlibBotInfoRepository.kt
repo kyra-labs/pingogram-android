@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAnimation
 import dev.kyralabs.pingogram.core.data.mapper.toPhoto
 import dev.kyralabs.pingogram.core.domain.model.BotCommand
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [BotInfoRepository] on TDLib: a chat's bots from the full info of its user or group, followed through
@@ -35,7 +35,7 @@ import javax.inject.Singleton
  *
  * Nothing about a bot (its description, its menu button's address) is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibBotInfoRepository
     @Inject
     constructor(

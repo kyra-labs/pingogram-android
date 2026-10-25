@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
@@ -26,7 +27,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [MessageActionRepository] on TDLib's message functions. Each call is one request; what it changes reaches the
@@ -38,7 +38,7 @@ import javax.inject.Singleton
  * (`getMessageLink`), which asks Telegram for a private chat's.
  */
 @Suppress("TooManyFunctions") // One function per message action of the interface, each a single TDLib request.
-@Singleton
+@AccountScoped
 class TdlibMessageActionRepository
     @Inject
     constructor(

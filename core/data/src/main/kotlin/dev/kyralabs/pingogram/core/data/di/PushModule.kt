@@ -16,9 +16,6 @@ import dev.kyralabs.pingogram.core.domain.repository.PushTokenSource
 @Module
 @InstallIn(SingletonComponent::class)
 interface PushModule {
-    @Binds
-    fun pushRepository(repository: TdlibPushRepository): PushRepository
-
     @BindsOptionalOf
     fun pushTokenSource(): PushTokenSource
 }

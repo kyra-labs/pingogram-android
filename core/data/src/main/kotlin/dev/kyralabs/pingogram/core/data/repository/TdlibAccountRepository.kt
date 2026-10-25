@@ -2,11 +2,11 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [AccountRepository] on TDLib's `getAccountTtl`, `setAccountTtl`, `deleteAccount`, `getDefaultMessageAutoDeleteTime`
@@ -15,7 +15,7 @@ import javax.inject.Singleton
  * requests ([AUTH_REQUEST_TIMEOUT]). Once Telegram deleted the account TDLib closes the session by itself
  * (`updateAuthorizationState` with `LoggingOut`, then `Closed`), which the app handles as a logout.
  */
-@Singleton
+@AccountScoped
 class TdlibAccountRepository
     @Inject
     constructor(

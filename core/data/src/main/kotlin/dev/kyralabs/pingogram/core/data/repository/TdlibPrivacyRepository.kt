@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toExceptionLists
 import dev.kyralabs.pingogram.core.data.mapper.toPrivacyRules
 import dev.kyralabs.pingogram.core.data.mapper.toPrivacySetting
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [PrivacyRepository] on TDLib's `getUserPrivacySettingRules`, `setUserPrivacySettingRules` and
@@ -33,7 +33,7 @@ import javax.inject.Singleton
  * and groups always or never allowed stay exactly as they are (`withChoice`). TDLib sends changes of one setting in
  * order, each after the one before.
  */
-@Singleton
+@AccountScoped
 class TdlibPrivacyRepository
     @Inject
     constructor(

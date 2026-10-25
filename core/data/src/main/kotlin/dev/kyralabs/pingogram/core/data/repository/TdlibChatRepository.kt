@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.isMuted
 import dev.kyralabs.pingogram.core.data.mapper.ownMute
 import dev.kyralabs.pingogram.core.data.mapper.resolveMute
@@ -48,7 +49,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatRepository] on TDLib's chats. TDLib announces each chat with `updateNewChat` before any of its ids reaches the
@@ -68,7 +68,7 @@ import javax.inject.Singleton
  * [ChatRepository] (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibChatRepository
     @Inject
     constructor(

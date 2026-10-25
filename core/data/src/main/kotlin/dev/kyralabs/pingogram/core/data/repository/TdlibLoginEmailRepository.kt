@@ -2,19 +2,19 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.EmailCodeInfo
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [LoginEmailRepository] on TDLib's `getPasswordState` (its `login_email_address_pattern`), `setLoginEmailAddress`,
  * `resendLoginEmailAddressCode` and `checkLoginEmailAddressCode`, which ask Telegram each time (no cache, no updates).
  * They wait as long as authentication requests ([AUTH_REQUEST_TIMEOUT]), as the login code ones do.
  */
-@Singleton
+@AccountScoped
 class TdlibLoginEmailRepository
     @Inject
     constructor(

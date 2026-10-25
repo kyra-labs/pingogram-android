@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
@@ -33,7 +34,6 @@ import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [MessageRepository] on TDLib's chat history. Each history someone observes, or loaded recently (a chat's, or one of
@@ -56,7 +56,7 @@ import javax.inject.Singleton
  * [sendText] and [setDraft] only send requests: the message being sent reaches the window through TDLib's updates, as
  * every other new message does, and the draft reaches the chat through `updateChatDraftMessage`.
  */
-@Singleton
+@AccountScoped
 class TdlibMessageRepository
     @Inject
     constructor(

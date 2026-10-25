@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaFilter
 import dev.kyralabs.pingogram.core.domain.model.ChatMediaPage
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatMediaRepository] on TDLib's `searchChatMessages` with `searchMessagesFilterPhotoAndVideo` or
@@ -35,7 +35,7 @@ import javax.inject.Singleton
  * - **Saving** ([canBeSaved]) is `getMessageProperties`' `can_be_saved`, which TDLib works out locally, as it is when
  *   asked: the chat's protection may change while the message is loaded.
  */
-@Singleton
+@AccountScoped
 class TdlibChatMediaRepository
     @Inject
     constructor(

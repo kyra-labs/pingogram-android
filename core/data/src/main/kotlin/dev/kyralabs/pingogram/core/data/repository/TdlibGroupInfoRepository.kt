@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toFormattedText
 import dev.kyralabs.pingogram.core.data.mapper.toGroupMember
 import dev.kyralabs.pingogram.core.data.mapper.toInviteLink
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [GroupInfoRepository] on TDLib: `getBasicGroup` or `getSupergroup` and their full info, followed through
@@ -50,7 +50,7 @@ import javax.inject.Singleton
  *
  * Nothing about a group (description, usernames, links) is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibGroupInfoRepository
     @Inject
     constructor(

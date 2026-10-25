@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.ChatCreationLimits
 import dev.kyralabs.pingogram.core.domain.model.CreatedGroup
 import dev.kyralabs.pingogram.core.domain.model.MessageAutoDelete
@@ -23,7 +24,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -44,7 +44,7 @@ import kotlin.time.Duration.Companion.minutes
  * Nothing about the chats (titles, usernames, links, paths) is logged.
  */
 @Suppress("TooManyFunctions") // One override per ChatCreationRepository call, and the lookups they share.
-@Singleton
+@AccountScoped
 class TdlibChatCreationRepository
     @Inject
     constructor(

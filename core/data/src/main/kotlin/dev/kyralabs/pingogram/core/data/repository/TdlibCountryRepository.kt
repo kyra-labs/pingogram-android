@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toCountry
 import dev.kyralabs.pingogram.core.data.mapper.toPhoneNumberInfo
 import dev.kyralabs.pingogram.core.domain.model.Country
@@ -10,10 +11,9 @@ import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /** [CountryRepository] on TDLib's country list, which works before login too. */
-@Singleton
+@AccountScoped
 class TdlibCountryRepository
     @Inject
     constructor(

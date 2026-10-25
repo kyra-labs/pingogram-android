@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.AddContactResult
 import dev.kyralabs.pingogram.core.domain.model.EditableContact
 import dev.kyralabs.pingogram.core.domain.model.User
@@ -25,7 +26,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import java.text.Collator
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ContactRepository] on TDLib's contacts. It caches nothing of its own, so it is no `TdlibUpdateCache`: TDLib has no
@@ -47,7 +47,7 @@ import javax.inject.Singleton
  * - **Invitations**: `getApplicationDownloadLink`, else Telegram's download page.
  */
 @Suppress("TooManyFunctions") // One override per ContactRepository call, and the two lookups they share.
-@Singleton
+@AccountScoped
 class TdlibContactRepository
     @Inject
     constructor(

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.domain.model.AvailableSender
@@ -12,14 +13,13 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SendAsRepository] on `getChatAvailableMessageSenders` and `setChatMessageSender`, without a cache: the list is
  * short, asked for only when the picker opens, and the current sender comes with the chat (`updateChatMessageSender`,
  * kept by [TdlibChatRepository]). Senders of a kind a newer TDLib adds are left out.
  */
-@Singleton
+@AccountScoped
 class TdlibSendAsRepository
     @Inject
     constructor(

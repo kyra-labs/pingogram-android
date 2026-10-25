@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.data.repository
 
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
@@ -10,7 +11,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * The chats whose conversation is on screen: opened with `openChat` and not closed yet, counted per chat as TDLib
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  * for this, so [TdlibChatRepository] keeps it as it opens and closes chats, and [TdlibNotificationRepository] reads it:
  * notifications of a chat on screen must not alert.
  */
-@Singleton
+@AccountScoped
 class OpenChats
     @Inject
     constructor() {

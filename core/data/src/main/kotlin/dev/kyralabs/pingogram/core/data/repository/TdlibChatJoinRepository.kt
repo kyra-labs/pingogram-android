@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.ChatInvite
 import dev.kyralabs.pingogram.core.domain.model.GroupKind
@@ -12,7 +13,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatJoinRepository] on TDLib's `checkChatInviteLink`, `joinChatByInviteLink` and `joinChat`, each a request to
@@ -21,7 +21,7 @@ import javax.inject.Singleton
  * Telegram answers a request to join with `INVITE_REQUEST_SENT` where TDLib does not turn it into
  * `chatJoinResultRequestSent` itself; both are [JoinResult.RequestSent].
  */
-@Singleton
+@AccountScoped
 class TdlibChatJoinRepository
     @Inject
     constructor(

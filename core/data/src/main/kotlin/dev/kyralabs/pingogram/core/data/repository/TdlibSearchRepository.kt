@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.FoundMessage
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.flow
 import org.drinkless.tdlib.TdApi
 import java.text.Collator
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SearchRepository] on TDLib's searches. Nothing is cached, so it is no `TdlibUpdateCache`: TDLib announces every
@@ -50,7 +50,7 @@ import javax.inject.Singleton
  * chats while their ranking is off); that finds nothing instead of failing.
  */
 @Suppress("TooManyFunctions") // One function per search of the interface, each a TDLib request or two.
-@Singleton
+@AccountScoped
 class TdlibSearchRepository
     @Inject
     constructor(

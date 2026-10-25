@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSavedProxy
 import dev.kyralabs.pingogram.core.data.mapper.toTdlib
 import dev.kyralabs.pingogram.core.domain.model.Proxy
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.update
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,7 +26,7 @@ import kotlin.time.Duration.Companion.seconds
  * `pingProxy`. TDLib has no update for its proxies, so [proxies] reads them again after each change made here
  * ([changes] counts them); every screen that changes proxies goes through this singleton.
  */
-@Singleton
+@AccountScoped
 class TdlibProxyRepository
     @Inject
     constructor(

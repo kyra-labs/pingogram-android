@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toTdReactionType
@@ -15,14 +16,13 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [MessageInteractionRepository] on TDLib's `getMessageViewers` and `getMessageAddedReactions`, one request per call,
  * nothing kept. TDLib announces the users and chats of an answer (`updateUser`, `updateNewChat`) before it answers.
  * Reactions of a kind added by a newer TDLib, and senders of a kind it added, are left out of a page.
  */
-@Singleton
+@AccountScoped
 class TdlibMessageInteractionRepository
     @Inject
     constructor(
