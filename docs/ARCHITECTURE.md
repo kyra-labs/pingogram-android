@@ -274,8 +274,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   texts and a notification's reply. `feature:settings`' `SecretChatPreviewsViewModel` holds the switch.
 - **Hiding phone numbers** (Privacy and security, for sharing the screen or streaming): `core:domain`'s
   `PhoneNumberVisibilityRepository` (`DataStorePhoneNumberVisibilityRepository`, the settings file, off by default).
-  `MainActivity` provides it as `core:ui`'s `LocalPhoneNumbersHidden` (true until read, so no number shows before it
-  is known), and every screen that shows a number passes its formatted number through `phoneNumberToShow`, which keeps
+  `MainActivity` provides it as `core:ui`'s `LocalPhoneNumbersHidden`, composing nothing until it is read (with the
+  Appearance settings, from the same file), so no number shows before it is known and the static local never changes
+  after the first frame, and every screen that shows a number passes its formatted number through `phoneNumberToShow`, which keeps
   the calling code and the separators and turns the other digits into dots (`maskPhoneNumber`). What is copied, dialled
   or sent keeps the number; fields where the user types one show what is typed. `feature:settings`'
   `PhoneNumberVisibilityViewModel` holds the switch.
@@ -986,13 +987,15 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `updateActiveNotifications`, `updateNotificationGroup`, `updateNotification` and `updateHavePendingNotifications`
   into `ActiveNotifications` (`core:domain`), with the chats on screen (`OpenChats`, kept by `TdlibChatRepository` as it
   opens and closes chats). Logging out drops everything.
-- `core:notifications` only renders: `NotificationRenderer` (started by `PingogramApplication` in every process,
-  before TDLib) posts one `MessagingStyle` notification per TDLib group under one summary, with a `Person` per sender
+- `core:notifications` only renders: `NotificationRenderer` (started by `PingogramApplication` in every process, on a
+  background coroutine just after TDLib) posts one `MessagingStyle` notification per TDLib group under one summary, with a `Person` per sender
   (avatars from `AvatarIcons`, initials on the placeholder colors without a photo) and the chat list's previews
   (`core:ui` `messagePreviewText`, or "New message" without `showPreview`). Only notifications not seen before alert;
   updates, silent messages and restored notifications set `GROUP_ALERT_SUMMARY` under a summary with
   `GROUP_ALERT_CHILDREN`, so they do not alert. Chats on screen get no notification. After a restart, notifications
-  TDLib no longer knows are cancelled; logging out cancels everything and removes the conversation shortcuts.
+  TDLib no longer knows are cancelled, and a restored group Android still shows as an earlier process posted it (its
+  fingerprint in the notification's extras, `GroupFingerprint`) is not posted again; logging out cancels everything
+  and removes the conversation shortcuts.
 - Channels (`PingogramChannel`, `NotificationChannels`): Private chats (secret chats too), Groups, Channels, Calls,
   Other, and Transfers (low importance, no badge: the progress of background transfers), created at every start; the one place that decides channels, except the `foss` flavor's "Connection" channel
   of "Keep connected", which only that flavor creates, with its service.
@@ -1001,7 +1004,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `NotificationIntents.SHARE_TARGET_CATEGORY`, which `:app`'s `res/xml/shortcuts.xml` `<share-target>` names for
   `MainActivity`, and `ShareTargetShortcuts` (started by `PingogramApplication`) publishes the 8 most recent chats of
   the main chat list where the user can write, Saved Messages left out, 5 s after they last changed (Direct share,
-  below). No bubbles yet (they need a resizable chat activity of their own).
+  below), leaving the targets Android already has unchanged (their key and rank in the shortcut's extras, read once
+  per process), so a start does not push them all again. No bubbles yet (they need a resizable chat activity of their own).
 - Android Auto and Wear OS take these notifications as they are (`docs/ANDROID_AUTO.md`): `:app`'s `gms` flavor declares
   Android Auto's notification use (`res/xml/automotive_app_desc.xml`, a meta-data name, no library), and the
   `MessagingStyle`, Reply and Mark as read follow its rules for messaging apps (`AndroidAutoNotificationTest`). No car
@@ -1019,6 +1023,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   `app/src/gms`); `foss` binds none (`@BindsOptionalOf`) and the repository does nothing. `PingogramMessagingService`
   (`gms`) hands each push's data to `processPushNotification`, waiting a few seconds at most; TDLib's notification
   engine then produces the notifications above (`NewPushMessage` until it has synced), in the process FCM started.
+  Firebase starts where it is first needed (`FirebaseStart`: the token source, the messaging service's `onCreate`),
+  not in its `FirebaseInitProvider`, which the flavor's manifest removes.
 - Android 13+: the chat list asks for `POST_NOTIFICATIONS` with a card above the list (`NotificationPromptHost`,
   `feature:chats`); "Not now" and the first request are kept in DataStore (`NotificationPromptRepository`), so it never
   nags, and after a final refusal it offers the app's notification settings.
@@ -1086,7 +1092,8 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   Video (`docs/adr/0019-video-and-group-calls-scope.md`): it lists the cameras, sends one (`CallSession.setCamera`,
   720p), reports the other side's video (`remoteVideo`) and hands both sides' frames, packed I420, to the
   `VideoFrameSink`s the call screen sets. It receives the other side's video only while there is such a sink.
-- **`CallManager`** (`:feature:calls`, started by `PingogramApplication` through `Calls` before TDLib) is the call's state
+- **`CallManager`** (`:feature:calls`, started by `PingogramApplication` through `Calls`, in the background just after
+  TDLib, losing nothing: `CallRepository` keeps every call TDLib announced) is the call's state
   machine: one call at a time (another incoming one is declined), `ActiveCall` as its state (with `CallVideo`: the
   camera sent, front or back, and the other side's video; the camera goes off while held), the engine started once
   TDLib says ready (with the data the other side sent before kept per call), Telecom (`CallSystem`:

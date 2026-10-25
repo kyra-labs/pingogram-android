@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.domain.model.ActiveNotifications
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
+import dev.kyralabs.pingogram.core.domain.model.NotificationContent
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroup
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
@@ -36,7 +37,9 @@ import javax.inject.Singleton
  * - Calls groups (an incoming call) are not shown either: `feature:calls` rings with its own call notification
  *   ([CallNotificationBuilder]); a missed call reaches the chat's group as a message.
  * - Once TDLib has restored the notifications of the last run, notifications of this app that it no longer knows are
- *   cancelled (they belong to a previous process).
+ *   cancelled (they belong to a previous process). A restored group that Android still shows as it is, posted by the
+ *   previous process ([GroupFingerprint]), is not posted again: at a cold start that would build every avatar and
+ *   shortcut anew (`docs/PERFORMANCE.md` §2).
  * - Logging out, or a start without a logged-in account, cancels everything and removes the conversation shortcuts.
  *
  * `PingogramApplication` calls [start] in every process, before TDLib starts. Without permission to post (Android
@@ -63,6 +66,9 @@ class NotificationRenderer
         private val shown = HashMap<Int, Shown>()
         private var latest = ActiveNotifications()
         private var staleCancelled = false
+
+        /** What an earlier process posted and Android still shows. */
+        private val earlier = EarlierGroups(manager, GROUP_TAG)
 
         /**
          * Creates the channels and starts rendering; call once per process. Returns at once: both run on the
@@ -96,18 +102,30 @@ class NotificationRenderer
                     manager.cancel(GROUP_TAG, groupId)
                 }
                 for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
-                    val visible = group.chatId !in active.openChatIds && group.type != NotificationGroupType.Calls
-                    val previous = shown[group.id]
-                    if (previous != null && previous.group == group && previous.visible == visible) continue
-                    shown[group.id] = Shown(group, visible)
-                    when {
-                        visible -> post(group, alert = ChatNotificationAlerts.shouldAlert(previous?.group, group))
-                        previous?.visible == true -> manager.cancel(GROUP_TAG, group.id)
-                    }
+                    render(group, active.openChatIds)
                 }
                 updateSummary()
                 if (active.isRestored && !staleCancelled) cancelStale()
             }
+
+        /** Posts, cancels or holds back [group] as it changed since it was last rendered. */
+        private suspend fun render(
+            group: NotificationGroup,
+            openChatIds: Set<Long>,
+        ) {
+            val visible = group.chatId !in openChatIds && group.type != NotificationGroupType.Calls
+            val previous = shown[group.id]
+            if (previous != null && previous.group == group && previous.visible == visible) return
+            shown[group.id] = Shown(group, visible)
+            val alert = ChatNotificationAlerts.shouldAlert(previous?.group, group)
+            // A group seen first now, quietly: TDLib restoring the last run's groups.
+            val restored = visible && previous == null && !alert
+            when {
+                restored && earlier.isStillShown(group) -> Unit
+                visible -> post(group, alert)
+                previous?.visible == true -> manager.cancel(GROUP_TAG, group.id)
+            }
+        }
 
         private suspend fun post(
             group: NotificationGroup,
@@ -115,7 +133,9 @@ class NotificationRenderer
         ) {
             val conversation = factory.create(group)
             val shortcutId = shortcuts.publish(conversation)
-            notify(GROUP_TAG, group.id, builder.build(conversation, alert, shortcutId))
+            val notification = builder.build(conversation, alert, shortcutId)
+            notification.extras.putString(GroupFingerprint.EXTRA, GroupFingerprint.of(group))
+            notify(GROUP_TAG, group.id, notification)
         }
 
         private fun updateSummary() {
@@ -130,6 +150,7 @@ class NotificationRenderer
         /** Cancels the notifications of groups TDLib no longer has, left by an earlier process. */
         private fun cancelStale() {
             staleCancelled = true
+            earlier.restored()
             manager.activeNotifications
                 .filter { it.tag == GROUP_TAG && shown[it.id]?.visible != true }
                 .forEach { manager.cancel(GROUP_TAG, it.id) }
@@ -140,6 +161,7 @@ class NotificationRenderer
                 shown.clear()
                 latest = ActiveNotifications()
                 staleCancelled = false
+                earlier.reset()
                 manager.cancelAll()
                 shortcuts.removeAll()
             }
@@ -186,6 +208,77 @@ internal object ChatNotificationAlerts {
         val seen = previous?.notifications.orEmpty().mapTo(HashSet()) { it.id }
         return group.notifications.any { it.alerts && it.id !in seen }
     }
+}
+
+/**
+ * What a group's notification shows, as a string kept in the notification's extras ([EXTRA]): its kind, chat and
+ * count, and each notification with its message's last edit and whether it may show a preview. The same in every
+ * process, so a restored group can be compared with what an earlier process posted. Names and avatars changed while no
+ * process ran show with the group's next change.
+ */
+internal object GroupFingerprint {
+    const val EXTRA = "dev.kyralabs.pingogram.group"
+
+    fun of(group: NotificationGroup): String =
+        buildString {
+            append(group.type.name)
+                .append(':')
+                .append(group.chatId)
+                .append(':')
+                .append(group.totalCount)
+            for (notification in group.notifications) {
+                append(';').append(notification.id).append(',').append(notification.date)
+                when (val content = notification.content) {
+                    is NotificationContent.NewMessage -> {
+                        append(',').append(content.message.editDate).append(',').append(content.showPreview)
+                    }
+
+                    is NotificationContent.NewPushMessage -> {
+                        append(",push")
+                    }
+
+                    else -> {
+                        Unit
+                    }
+                }
+            }
+        }
+}
+
+/**
+ * The groups an earlier process posted that Android still shows, by group id and [GroupFingerprint], read from Android
+ * at the first question and given up once TDLib restored the groups ([restored]): a group posted after that is new.
+ */
+internal class EarlierGroups(
+    private val manager: NotificationManagerCompat,
+    private val tag: String,
+) {
+    private var fingerprints: MutableMap<Int, String>? = null
+
+    /** Whether an earlier process posted [group] as it is now, and Android still shows it; asks once per group. */
+    fun isStillShown(group: NotificationGroup): Boolean {
+        val fingerprints = fingerprints ?: read().also { fingerprints = it }
+        return fingerprints.remove(group.id) == GroupFingerprint.of(group)
+    }
+
+    /** TDLib restored the groups of the last run: what Android shows from before is either rendered or stale now. */
+    fun restored() {
+        fingerprints = HashMap()
+    }
+
+    /** The account logged out: everything was cancelled, the next login starts afresh. */
+    fun reset() {
+        fingerprints = null
+    }
+
+    private fun read(): MutableMap<Int, String> =
+        manager.activeNotifications
+            .filter { it.tag == tag }
+            .mapNotNull { posted ->
+                posted.notification.extras
+                    .getString(GroupFingerprint.EXTRA)
+                    ?.let { posted.id to it }
+            }.toMap(HashMap())
 }
 
 /** A step without a logged-in account: its notifications and shortcuts must go. */

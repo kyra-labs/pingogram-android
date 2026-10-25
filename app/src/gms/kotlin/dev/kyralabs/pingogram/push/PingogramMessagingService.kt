@@ -20,6 +20,12 @@ class PingogramMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var pushRepository: PushRepository
 
+    override fun onCreate() {
+        // Before Firebase's own start of the service, which asks for its configuration (FirebaseStart).
+        FirebaseStart.ensure(this)
+        super.onCreate()
+    }
+
     override fun onNewToken(token: String) {
         pushRepository.onNewToken(token)
     }

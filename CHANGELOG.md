@@ -181,6 +181,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
+- Pingogram starts with less work on the way to the chat list: notifications and share sheet chats that Android still
+  shows from the last time are not posted again, the parts that follow notifications, calls, transfers and the widget
+  start in the background, the `gms` build starts Firebase only when it needs it, and the screen is no longer drawn
+  twice at the start for "Hide phone numbers".
 
 ### Fixed
 - Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a

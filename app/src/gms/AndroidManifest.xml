@@ -33,6 +33,13 @@
             </intent-filter>
         </service>
 
+        <!-- Firebase starts where it is first needed (FirebaseStart), not in its provider, which would run on the main
+             thread before the app in every process (docs/PERFORMANCE.md §2). -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
+
         <!-- No token, and no contact with Google, until a logged-in account asks for one (FirebasePushTokenSource);
              after a logout the token is deleted and none is made again by itself. -->
         <meta-data
