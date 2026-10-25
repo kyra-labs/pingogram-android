@@ -8,13 +8,19 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 
-// Privacy and security's "Contacts" group (docs/adr/0011-contacts-sync.md), driven by ContactSyncSettingViewModel.
+// Privacy and security's "Contacts" group (docs/adr/0011-contacts-sync.md), driven by ContactSyncSettingViewModel and
+// FrequentContactsViewModel.
 
-/** "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused. */
+/**
+ * "Sync contacts": on while sync is on or paused, its summary saying what it does or why it is paused; then "Suggest
+ * frequent contacts" once read ([suggestsFrequent]), whose summary says that turning it off clears them.
+ */
 @Composable
 internal fun ContactsSection(
     status: ContactSyncStatus,
     onCheckedChange: (Boolean) -> Unit,
+    suggestsFrequent: Boolean? = null,
+    onSuggestsFrequentChange: (Boolean) -> Unit = {},
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_contacts)) {
         item { shapes ->
@@ -32,6 +38,17 @@ internal fun ContactsSection(
                 shapes = shapes,
                 onCheckedChange = onCheckedChange,
             )
+        }
+        if (suggestsFrequent != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_frequent_contacts),
+                    summary = stringResource(R.string.settings_frequent_contacts_summary),
+                    checked = suggestsFrequent,
+                    shapes = shapes,
+                    onCheckedChange = onSuggestsFrequentChange,
+                )
+            }
         }
     }
 }

@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibDataOptionsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibFrequentContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
@@ -138,6 +139,7 @@ import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
+import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -361,6 +363,9 @@ interface RepositoryModule {
 
     @Binds
     fun dataOptionsRepository(repository: TdlibDataOptionsRepository): DataOptionsRepository
+
+    @Binds
+    fun frequentContactsRepository(repository: TdlibFrequentContactsRepository): FrequentContactsRepository
 
     @Binds
     fun personalChannelRepository(repository: TdlibPersonalChannelRepository): PersonalChannelRepository

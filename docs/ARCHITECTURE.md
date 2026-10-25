@@ -320,6 +320,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   and sets it with `setOption`, and deletes every cloud draft (`clearAllDraftMessages`, secret chats left out).
   `feature:settings`' `DataOptionsViewModel` holds the switch and the question before deleting (in its saved state),
   beside `DataStorageViewModel`, which also resets the automatic download to `AutoDownloadSettings()`'s defaults.
+- **Frequent contacts** (Privacy and security, Contacts): `core:domain`'s `FrequentContactsRepository`
+  (`TdlibFrequentContactsRepository`, `core:data`, no cache) is TDLib's option `disable_top_chats`, inverted: read with
+  `getOption` per collection, followed through `updateOption`, set with `setOption` (TDLib clears the top chats it
+  counted when it is turned off). `core:data`'s `TdlibOptions.kt` (`booleanOption`, `setBooleanOption`) reads and sets
+  such boolean options for it and the data options. `feature:settings`' `FrequentContactsViewModel` holds the switch.
 - **Network usage** (Data and storage): `core:domain`'s `NetworkUsageRepository` (`TdlibNetworkUsageRepository`,
   `core:data`, no cache) reads TDLib's own statistics (`getNetworkStatistics` of every session since the last reset,
   answered from its database) into `NetworkUsage`, by network (TDLib's "other" networks counted as Wi-Fi, as automatic

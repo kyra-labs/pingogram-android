@@ -248,6 +248,9 @@
     <string name="settings_contact_sync">Sync contacts</string>
     <string name="settings_contact_sync_off">Send your phone\'s contacts to Telegram to find who uses it. Off</string>
     <string name="settings_contact_sync_on">On. Your phone\'s names and numbers go to Telegram when you open Contacts and when you sync</string>
+    <!-- Privacy and security → Contacts: TDLib's option disable_top_chats. -->
+    <string name="settings_frequent_contacts">Suggest frequent contacts</string>
+    <string name="settings_frequent_contacts_summary">Search shows the people you write to most. Turning this off clears them.</string>
     <string name="settings_contact_sync_paused">Paused: Pingogram can no longer read your contacts. Allow it on the Contacts tab or in Android\'s settings</string>
     <string name="settings_privacy_phone_number">Phone number</string>
     <string name="settings_privacy_last_seen">Last seen and online</string>

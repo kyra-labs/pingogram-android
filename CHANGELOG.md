@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Privacy and security: "Suggest frequent contacts" lets you turn off the people search suggests from those you write
+  to most, which clears them.
 - Data and storage: "Reset automatic download" puts every network's defaults back, "Prefer IPv6" connects over IPv6
   where your network and Telegram offer it, and "Delete cloud drafts" deletes the unsent messages saved in all your
   chats, on all your devices (secret chats' drafts stay).

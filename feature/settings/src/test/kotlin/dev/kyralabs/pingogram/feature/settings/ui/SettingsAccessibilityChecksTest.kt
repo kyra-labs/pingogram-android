@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
@@ -110,6 +111,19 @@ class SettingsAccessibilityChecksTest {
                 onEvent = {},
                 onOpen = {},
                 onBack = {},
+            )
+        }
+
+    @Test
+    fun privacySecurityFrequentContacts() =
+        check {
+            PrivacySecurityScreen(
+                state = SettingsPreviewData.privacySecurity,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+                contactSync = ContactSyncStatus.On(lastSyncedAt = null),
+                suggestsFrequent = true,
             )
         }
 
