@@ -174,6 +174,7 @@ internal fun ActionPill(
  *   copies it.
  * - **Birthday**, formatted by the view model.
  * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
+ * - **ID**, while Privacy and security's "Show IDs" is on: the user's ID, left to right; tapping copies it.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
  */
@@ -204,6 +205,7 @@ internal fun ProfileInfoGroup(
     info.personalChannel?.let { channel ->
         rows += ProfileRow("personalChannel") { shapes -> PersonalChannelRow(channel, shapes, onEvent) }
     }
+    info.id?.let { id -> rows += ProfileRow("id") { shapes -> IdRow(id, shapes) { onEvent(ProfileEvent.CopyId) } } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
 }
 

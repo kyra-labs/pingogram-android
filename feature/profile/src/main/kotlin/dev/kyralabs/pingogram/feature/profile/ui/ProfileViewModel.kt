@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.model.UsernameOwner
 import dev.kyralabs.pingogram.core.domain.model.isOnlineAt
 import dev.kyralabs.pingogram.core.domain.repository.BlockListRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
+import dev.kyralabs.pingogram.core.domain.repository.IdVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -109,6 +110,7 @@ class ProfileViewModel internal constructor(
     messageActionRepository: MessageActionRepository,
     sharedMediaRepository: SharedMediaRepository,
     private val searchRepository: SearchRepository,
+    private val idVisibility: IdVisibilityRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     dispatcher: CoroutineDispatcher,
@@ -125,6 +127,7 @@ class ProfileViewModel internal constructor(
         messageActionRepository: MessageActionRepository,
         sharedMediaRepository: SharedMediaRepository,
         searchRepository: SearchRepository,
+        idVisibility: IdVisibilityRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -139,6 +142,7 @@ class ProfileViewModel internal constructor(
         messageActionRepository,
         sharedMediaRepository,
         searchRepository,
+        idVisibility,
         clock,
         timePatterns,
         dispatcher,
@@ -227,6 +231,7 @@ class ProfileViewModel internal constructor(
         }.flatMapLatest { it.withPersonalChannel() }
             .combine(overlay) { sources, overlay -> sources.toUiState(overlay) }
             .combine(photos) { state, photos -> state.withPhotos(photos) }
+            .combine(idVisibility.shown) { state, shown -> state.withId(shown) }
             .flowOn(dispatcher)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ProfileUiState.Loading)
 
@@ -284,6 +289,10 @@ class ProfileViewModel internal constructor(
                 effectChannel.trySend(
                     ProfileEffect.Share("https://t.me/${event.username}"),
                 )
+            }
+
+            ProfileEvent.CopyId -> {
+                copy(userId.toString(), CopiedText.Id)
             }
 
             ProfileEvent.CopyPhone -> {
@@ -684,6 +693,10 @@ class ProfileViewModel internal constructor(
         val isLoading: Boolean = false,
         val failed: Boolean = false,
     )
+
+    /** The user's ID in the information rows while [shown] ("Show IDs"). */
+    private fun ProfileUiState.withId(shown: Boolean): ProfileUiState =
+        if (shown && this is ProfileUiState.Content) copy(info = info.copy(id = userId)) else this
 
     private fun ProfileUiState.withPhotos(load: PhotosLoad): ProfileUiState =
         if (this is ProfileUiState.Content) {

@@ -44,24 +44,39 @@ class PhoneNumberVisibilityViewModel
     }
 
 /**
- * "On screen": "Hide phone numbers" as a switch row whose summary says what it shows instead and what for; nothing
- * until the setting is read ([hidden] null).
+ * "On screen": "Hide phone numbers" as a switch row whose summary says what it shows instead and what for, then "Show
+ * IDs" ([idsShown]), whose summary says where; each once its setting is read, the group once either is.
  */
 @Composable
 internal fun OnScreenSection(
     hidden: Boolean?,
     onCheckedChange: (Boolean) -> Unit,
+    idsShown: Boolean? = null,
+    onIdsShownChange: (Boolean) -> Unit = {},
 ) {
-    if (hidden == null) return
+    if (hidden == null && idsShown == null) return
     SettingsGroup(title = stringResource(R.string.settings_section_on_screen)) {
-        item { shapes ->
-            SwitchItem(
-                title = stringResource(R.string.settings_hide_phone_numbers),
-                summary = stringResource(R.string.settings_hide_phone_numbers_summary),
-                checked = hidden,
-                shapes = shapes,
-                onCheckedChange = onCheckedChange,
-            )
+        if (hidden != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_hide_phone_numbers),
+                    summary = stringResource(R.string.settings_hide_phone_numbers_summary),
+                    checked = hidden,
+                    shapes = shapes,
+                    onCheckedChange = onCheckedChange,
+                )
+            }
+        }
+        if (idsShown != null) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_show_ids),
+                    summary = stringResource(R.string.settings_show_ids_summary),
+                    checked = idsShown,
+                    shapes = shapes,
+                    onCheckedChange = onIdsShownChange,
+                )
+            }
         }
     }
 }

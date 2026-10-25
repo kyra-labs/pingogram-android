@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeIdVisibilityRepository
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.profile.R
@@ -43,6 +44,8 @@ import java.util.Locale
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatInfoViewModelTest : GroupViewModelTest() {
+    private val idVisibility = FakeIdVisibilityRepository()
+
     private suspend fun TestScope.viewModel(handle: SavedStateHandle = SavedStateHandle()): ChatInfoViewModel {
         val users = TdlibUserRepository(client, backgroundScope)
         val chats = TdlibChatRepository(client, backgroundScope, StandardTestDispatcher(testScheduler), OpenChats())
@@ -65,6 +68,7 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 userRepository = users,
                 sharedMediaRepository = TdlibSharedMediaRepository(client),
                 searchRepository = TdlibSearchRepository(client, chats),
+                idVisibility = idVisibility,
                 clock = clock,
                 timePatterns = patterns,
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -229,6 +233,22 @@ class ChatInfoViewModelTest : GroupViewModelTest() {
                 effects,
             )
             assertEquals(ChatInfoDialog.QrCode("https://t.me/rustberlin"), viewModel.content.dialog)
+        }
+
+    @Test
+    fun `the chat's ID shows while Show IDs is on, and is copied`() =
+        runTest {
+            answerSupergroup()
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertNull(viewModel.content.id)
+
+            idVisibility.shown.value = true
+            runCurrent()
+            assertEquals(CHAT, viewModel.content.id)
+
+            send(viewModel, ChatInfoEvent.CopyId)
+            assertEquals(listOf(ChatInfoEffect.CopyText(CHAT.toString(), CopiedChatText.Id)), effects)
         }
 
     @Test

@@ -48,6 +48,19 @@ class ChatInfoScreenshotTest {
     @Test
     fun channelDark() = info(ScreenshotVariant.Dark, ChatInfoPreviewData.channel, ProfilePreviewData.emptyMedia)
 
+    /** "Show IDs" on: the chat's ID closes the Info group. */
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun idShownLight() = info(ScreenshotVariant.Light, ChatInfoPreviewData.group.copy(id = -1001234567890))
+
+    @Test
+    @Config(qualifiers = "w411dp-h1600dp-xxhdpi")
+    fun idShownDark() = info(ScreenshotVariant.Dark, ChatInfoPreviewData.group.copy(id = -1001234567890))
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun idShownFontScale200() = info(ScreenshotVariant.Light, ChatInfoPreviewData.group.copy(id = -1001234567890))
+
     @Test
     fun error() = info(ScreenshotVariant.Light, ChatInfoUiState.Error(DomainError.NotFound))
 

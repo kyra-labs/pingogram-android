@@ -45,6 +45,7 @@ import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.profile.R
 import dev.kyralabs.pingogram.feature.profile.ui.ActionPill
+import dev.kyralabs.pingogram.feature.profile.ui.IdRow
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileGroup
 import dev.kyralabs.pingogram.feature.profile.ui.ProfileRow
 import dev.kyralabs.pingogram.feature.profile.ui.profileRowColors
@@ -135,7 +136,8 @@ private fun VoiceChatPill(
  * The information rows, segmented list items without icons, each value over its label as the profile's: the
  * description with its links and mentions (selectable; a mention opens who it names; "Copy" for screen readers), then
  * the link ("t.me/rustberlin", or the invite link for administrators of a private group), which a tap copies and the
- * trailing button shares, and "QR code", which shows it as one.
+ * trailing button shares, and "QR code", which shows it as one; then, while Privacy and security's "Show IDs" is
+ * on, the chat's [id], which a tap copies.
  */
 @Composable
 internal fun ChatInfoGroup(
@@ -143,6 +145,7 @@ internal fun ChatInfoGroup(
     link: ChatLink?,
     onEvent: (ChatInfoEvent) -> Unit,
     modifier: Modifier = Modifier,
+    id: Long? = null,
 ) {
     val rows = mutableListOf<ProfileRow>()
     description?.let { text -> rows += ProfileRow("description") { DescriptionRow(text, it, onEvent) } }
@@ -157,6 +160,7 @@ internal fun ChatInfoGroup(
                 )
             }
     }
+    id?.let { chatId -> rows += ProfileRow("id") { shapes -> IdRow(chatId, shapes) { onEvent(ChatInfoEvent.CopyId) } } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
 }
 
