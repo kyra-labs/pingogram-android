@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatMute
 import dev.kyralabs.pingogram.core.domain.model.MuteChange
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import org.drinkless.tdlib.TdApi
 
 // The notification settings of Settings → Notifications: the defaults of the scopes and the chats' own mutes.
@@ -21,15 +22,25 @@ internal fun TdApi.ScopeNotificationSettings.toScopeNotificationSettings() =
         showPreview = showPreview,
         pinnedMessages = !disablePinnedMessageNotifications,
         mentions = !disableMentionNotifications,
+        stories =
+            when {
+                useDefaultMuteStories -> StoryNotifications.Automatic
+                muteStories -> StoryNotifications.None
+                else -> StoryNotifications.All
+            },
+        showStoryPoster = showStoryPoster,
     )
 
 /**
- * These defaults with what Pingogram changes taken from [settings]; the sounds and the stories' settings stay, as
- * `setScopeNotificationSettings` replaces them all. Muted means forever ([MUTE_FOREVER]); a limited mute that is still
+ * These defaults with what Pingogram changes taken from [settings]; the sounds stay, as `setScopeNotificationSettings`
+ * replaces them all. Muted means forever ([MUTE_FOREVER]); a limited mute that is still
  * running stays as it is.
  */
-internal fun TdApi.ScopeNotificationSettings.with(settings: ScopeNotificationSettings) =
-    TdApi.ScopeNotificationSettings(
+internal fun TdApi.ScopeNotificationSettings.with(
+    settings: ScopeNotificationSettings,
+): TdApi.ScopeNotificationSettings {
+    val automaticStories = settings.stories == StoryNotifications.Automatic
+    return TdApi.ScopeNotificationSettings(
         when {
             !settings.isMuted -> 0
             isMuted -> muteFor
@@ -37,13 +48,15 @@ internal fun TdApi.ScopeNotificationSettings.with(settings: ScopeNotificationSet
         },
         soundId,
         settings.showPreview,
-        useDefaultMuteStories,
-        muteStories,
+        automaticStories,
+        // Automatic leaves TDLib's own choice as it is, which it ignores meanwhile.
+        if (automaticStories) muteStories else settings.stories == StoryNotifications.None,
         storySoundId,
-        showStoryPoster,
+        settings.showStoryPoster,
         !settings.pinnedMessages,
         !settings.mentions,
     )
+}
 
 /**
  * The chat's mute as of [nowEpochSeconds]: TDLib's `mute_for` is the time left. More than 366 days is forever, as

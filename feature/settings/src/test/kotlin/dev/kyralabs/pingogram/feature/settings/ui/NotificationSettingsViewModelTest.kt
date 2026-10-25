@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.NotificationPrompt
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.PushDelivery
 import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -185,6 +186,21 @@ class NotificationSettingsViewModelTest {
             val sent = client.sentOf<TdApi.SetScopeNotificationSettings>().single()
             assertInstanceOf(TdApi.NotificationSettingsScopePrivateChats::class.java, sent.scope)
             assertFalse(sent.notificationSettings.showPreview)
+        }
+
+    @Test
+    fun `story notifications turned off show at once and are saved, the poster's name kept`() =
+        runTest {
+            val viewModel = viewModel()
+            val none = settings().copy(stories = StoryNotifications.None)
+
+            send(viewModel, NotificationSettingsEvent.ChangeScope(NotificationScope.PrivateChats, none))
+
+            assertEquals(none, viewModel.settings[NotificationScope.PrivateChats])
+            val sent = client.sentOf<TdApi.SetScopeNotificationSettings>().single().notificationSettings
+            assertFalse(sent.useDefaultMuteStories)
+            assertTrue(sent.muteStories)
+            assertTrue(sent.showStoryPoster)
         }
 
     @Test

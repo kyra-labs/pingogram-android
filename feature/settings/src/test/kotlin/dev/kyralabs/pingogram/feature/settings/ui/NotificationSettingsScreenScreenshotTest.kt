@@ -3,8 +3,12 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.NotificationScope
+import dev.kyralabs.pingogram.core.domain.model.ScopeNotificationSettings
+import dev.kyralabs.pingogram.core.domain.model.StoryNotifications
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
+import kotlinx.collections.immutable.toImmutableMap
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,6 +84,43 @@ class NotificationSettingsScreenScreenshotTest {
     fun resetDialogDark() =
         capture("resetDialogDark", ThemeMode.Dark, SettingsPreviewData.notifications.copy(isResetDialogOpen = true))
 
+    /** The private chats' group, its new stories on Automatic, in the audit's other looks. */
+    @Test
+    fun storiesAmoled() = captureVariant(ScreenshotVariant.Amoled)
+
+    @Test
+    fun storiesHighContrast() = captureVariant(ScreenshotVariant.HighContrast)
+
+    @Test
+    fun storiesRtl() = captureVariant(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = "w700dp-h891dp-xxhdpi")
+    fun storiesMedium() = captureVariant(ScreenshotVariant.Medium)
+
+    /** New stories turned off: no "Name who posted". */
+    @Test
+    fun storiesNoneLight() =
+        capture(
+            "storiesNoneLight",
+            ThemeMode.Light,
+            SettingsPreviewData.notifications.withPrivateChats { it.copy(stories = StoryNotifications.None) },
+        )
+
+    private fun captureVariant(variant: ScreenshotVariant) =
+        composeRule.captureScreen(
+            javaClass,
+            "stories" + variant.goldenName.replaceFirstChar { it.uppercase() },
+            variant,
+        ) {
+            NotificationSettingsScreen(
+                state = SettingsPreviewData.notifications,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+            )
+        }
+
     private fun capture(
         name: String,
         themeMode: ThemeMode,
@@ -92,4 +133,20 @@ class NotificationSettingsScreenScreenshotTest {
         /** Tall enough for the whole page at 100 % font scale. */
         const val TALL = "w411dp-h2000dp-xxhdpi"
     }
+}
+
+/** [this] with the private chats' defaults changed by [change]. */
+private fun NotificationSettingsUiState.withPrivateChats(
+    change: (ScopeNotificationSettings) -> ScopeNotificationSettings,
+): NotificationSettingsUiState {
+    val scopes = scopes as ScopeSettingsState.Content
+    return copy(
+        scopes =
+            ScopeSettingsState.Content(
+                scopes.settings
+                    .mapValues { (scope, settings) ->
+                        if (scope == NotificationScope.PrivateChats) change(settings) else settings
+                    }.toImmutableMap(),
+            ),
+    )
 }
