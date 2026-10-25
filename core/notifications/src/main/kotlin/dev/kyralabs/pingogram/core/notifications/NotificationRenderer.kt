@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraph
 import dev.kyralabs.pingogram.core.domain.repository.AccountGraphs
+import dev.kyralabs.pingogram.core.domain.repository.AccountNotificationsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
@@ -55,7 +57,8 @@ import javax.inject.Singleton
  * (`docs/adr/0031-multiple-accounts.md`): one [AccountNotificationRenderer] per account, made as the account comes and
  * stopped, with its notifications and shortcuts gone, as it leaves the device. While more than one account is signed
  * in, each account's notifications name it by its first name, and its channels are in a group named after it
- * ([NotificationChannels]).
+ * ([NotificationChannels]). With "Notifications from all accounts" off ([AccountNotificationsRepository]), only the
+ * shown account's show.
  *
  * `PingogramApplication` calls [start] in every process, before TDLib starts. Without permission to post (Android
  * 13+), nothing is posted; what is active shows once a later change comes after the user allowed notifications.
@@ -68,11 +71,14 @@ class NotificationRenderer
         private val parts: AccountNotificationParts,
         private val channels: NotificationChannels,
         private val scope: CoroutineScope,
+        /** Whether the account in a slot shows its notifications ("Notifications from all accounts"). */
+        private val shows: (slot: Int) -> Flow<Boolean> = { flowOf(true) },
     ) {
         @Inject
         internal constructor(
             @ApplicationContext context: Context,
             graphs: AccountGraphs,
+            settings: AccountNotificationsRepository,
             parts: AccountNotificationParts,
             channels: NotificationChannels,
             @ApplicationScope scope: CoroutineScope,
@@ -82,6 +88,9 @@ class NotificationRenderer
             parts = parts,
             channels = channels,
             scope = scope,
+            shows = { slot ->
+                combine(settings.fromAllAccounts, graphs.activeSlot) { all, active -> all || slot == active }
+            },
         )
 
         private val renderers = ConcurrentHashMap<Int, Running>()
@@ -119,7 +128,7 @@ class NotificationRenderer
             }
             list.filterNot { renderers.containsKey(it.slot) }.forEach { account ->
                 val renderer = AccountNotificationRenderer(context, account, parts)
-                val job = scope.launch { renderer.render(accountNames.map { it[account.slot] }) }
+                val job = scope.launch { renderer.render(accountNames.map { it[account.slot] }, shows(account.slot)) }
                 renderers[account.slot] = Running(renderer, job)
             }
             this.list.value = list
@@ -267,29 +276,40 @@ internal class AccountNotificationRenderer(
     private var staleCancelled = false
     private var accountName: String? = null
 
+    /** What shows again after being hidden was seen before: it does not alert ([render]). */
+    private var quiet = false
+
     /** What an earlier process posted and Android still shows. */
     private val earlier = EarlierGroups(manager, groupTag)
 
     /**
      * Renders the account's notifications, named [accountNames] (null with one account), until cancelled; while the
-     * account is signed out, it shows none.
+     * account is signed out, or does not [show] its notifications, it shows none.
      */
-    suspend fun render(accountNames: Flow<String?>) =
-        combine(
-            account.notifications.notifications,
-            account.chatLock.lockedChatIds,
-            accountNames.distinctUntilChanged(),
-            account.auth.authStep
-                .map { it.isSignedOut() }
-                .distinctUntilChanged(),
-        ) { active, locked, name, signedOut -> Rendering(active, locked, name, signedOut) }
-            .collect { if (it.signedOut) clear() else render(it.active, it.locked, it.name) }
+    suspend fun render(
+        accountNames: Flow<String?>,
+        show: Flow<Boolean> = flowOf(true),
+    ) = combine(
+        account.notifications.notifications,
+        account.chatLock.lockedChatIds,
+        accountNames.distinctUntilChanged(),
+        combine(account.auth.authStep, show) { step, shows -> step.isSignedOut() || !shows }.distinctUntilChanged(),
+    ) { active, locked, name, hidden -> Rendering(active, locked, name, hidden) }
+        .collect {
+            if (it.hidden) {
+                clear()
+                quiet = true
+            } else {
+                render(it.active, it.locked, it.name)
+                quiet = false
+            }
+        }
 
     private class Rendering(
         val active: ActiveNotifications,
         val locked: Set<Long>,
         val name: String?,
-        val signedOut: Boolean,
+        val hidden: Boolean,
     )
 
     /**
@@ -357,7 +377,7 @@ internal class AccountNotificationRenderer(
         val now = Shown(group, visible, isLocked)
         if (previous == now && !(renamed && now.visible)) return LockedChange()
         shown[group.id] = now
-        val alert = ChatNotificationAlerts.shouldAlert(previous?.group, group)
+        val alert = !quiet && ChatNotificationAlerts.shouldAlert(previous?.group, group)
         show(group, previous, now, alert)
         return LockedChange(changed = isLocked || previous?.locked == true, alert = isLocked && alert)
     }

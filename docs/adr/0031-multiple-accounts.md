@@ -129,7 +129,8 @@ What Pingogram has today, all written for one account:
    pull requests: the accounts underneath, hidden (3a), then what shows them on screen (3b).
 4. Background accounts, in three pull requests: their notifications, shortcuts and channel groups, and opening the
    right account from them (4a); calls of every account (4b); "Notifications from all accounts" and the notification
-   settings' channels of the shown account, then the switcher shown (4c).
+   settings' channels of the shown account (4c). The switcher shows once stage 5 is in too, as an account in the
+   background notifies only with its push or its connection.
 5. Push per account (`gms`) and "Keep connected" for all (`foss`).
 6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher).
 
