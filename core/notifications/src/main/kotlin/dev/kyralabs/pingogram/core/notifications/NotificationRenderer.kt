@@ -16,15 +16,15 @@ import dev.kyralabs.pingogram.core.domain.model.NotificationContent
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroup
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
-import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
-import kotlinx.coroutines.flow.combine
 
 /**
  * Shows TDLib's notifications (`docs/ARCHITECTURE.md`, Notifications): one notification per notification group, drawn
