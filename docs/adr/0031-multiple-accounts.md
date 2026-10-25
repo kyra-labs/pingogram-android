@@ -54,7 +54,7 @@ What Pingogram has today, all written for one account:
   file with its user id once logged in, its test DC flag and its order. The first slot keeps today's directories and
   key file, so an update moves nothing: `tdlib/` and `tdlib_database_key` for slot 0, `tdlib-1/`,
   `tdlib_database_key_1` (and `tdlib-test-1/`) for the others.
-- **A database key per account**: 32 random bytes each, wrapped by a Keystore key of its own (`tdlib_db_wrap_1`, …), so
+- **A database key per account**: 32 random bytes each, wrapped by a Keystore key of its own (`pingogram.tdlib.database_key.1`, …), so
   removing an account deletes its key, alias and directories, and a damaged key costs only that account
   (`docs/TDLIB.md`, Database encryption key).
 - **One client per account, all running**: each account's TDLib client starts with the app, so notifications and calls
