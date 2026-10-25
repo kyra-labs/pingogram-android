@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatHistory
 import dev.kyralabs.pingogram.core.domain.model.LanguageDetection
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.testing.FakeAppLanguageRepository
+import dev.kyralabs.pingogram.core.testing.FakeComposerSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeCustomEmojiRepository
 import dev.kyralabs.pingogram.core.testing.FakeDeviceLanguageDetector
 import dev.kyralabs.pingogram.core.ui.text.UiText
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,8 +48,8 @@ import kotlin.reflect.cast
 
 /**
  * The fakes and helpers the tests of [ChatViewModel] share: the view model on fakes of the domain repositories, of
- * the player and of the voice recorder (whose clock is the test's), a fake wall clock at [NOW] in UTC, fixed English
- * time patterns and a log that keeps what it is told.
+ * the player and of the voice and video recorders (whose clock is the test's), a fake wall clock at [NOW] in UTC,
+ * fixed English time patterns and a log that keeps what it is told.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class ChatViewModelHarness {
@@ -56,6 +58,8 @@ abstract class ChatViewModelHarness {
     protected val messageActions = FakeMessageActionRepository()
     protected val attachments = FakeAttachmentRepository()
     protected val voiceNotes = FakeVoiceNoteRepository()
+    protected val videoNotes = FakeVideoNoteRepository()
+    protected val composerSettings = FakeComposerSettingsRepository()
     protected val sendAs = FakeSendAsRepository()
     protected val secretChats = FakeSecretChatRepository()
     protected val sponsored = FakeSponsoredMessageRepository()
@@ -69,6 +73,7 @@ abstract class ChatViewModelHarness {
     protected val savedState = SavedStateHandle()
     internal val player = FakeAudioPlayer()
     internal val recorder = FakeVoiceRecorder()
+    internal val camera = FakeVideoNoteRecorder()
     protected val autoDownloads = FakeAutoDownloadPolicy()
     protected val joins = FakeChatJoinRepository()
     protected val pinnedMessages = FakePinnedMessageRepository()
@@ -143,6 +148,7 @@ abstract class ChatViewModelHarness {
                 audioPlayer = player,
                 voiceRecorder = recorder,
                 voiceNoteRepository = voiceNotes,
+                videoNotes = VideoNoteRecording(camera, videoNotes, composerSettings),
                 sendAsRepository = sendAs,
                 secretChatRepository = secretChats,
                 autoDownloadPolicy = autoDownloads,

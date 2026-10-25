@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Round video messages (docs/adr/0032-round-video-messages.md): the composer's record button switched to the
+         camera, the round preview while it records, and the sheet that asks for the camera. -->
+    <!-- The record button while it records video messages, for screen readers and its tooltip. -->
+    <string name="video_note_record">Record video message</string>
+    <!-- The record button's custom actions for screen readers: a tap switches what it records. -->
+    <string name="video_note_switch_to_video">Switch to video message</string>
+    <string name="video_note_switch_to_voice">Switch to voice message</string>
+    <!-- The send button of a video message that records hands-free. -->
+    <string name="video_note_send">Send video message</string>
+    <!-- The recording bar's button that records from the other camera. -->
+    <string name="video_note_flip">Flip camera</string>
+    <!-- The recording bar once the recording ended as the user left the app: it can be sent or deleted. -->
+    <string name="video_note_stopped">Recording stopped</string>
+    <!-- The round preview of the camera, for screen readers, with how long it has recorded of the one minute allowed:
+         "Video message, 0:07 of 1:00". -->
+    <string name="video_note_preview">Video message, %1$s of %2$s</string>
+    <!-- The sheet before the system asks for the camera and the microphone. -->
+    <string name="video_note_permission_title">Record video messages</string>
+    <string name="video_note_permission_body">Video messages need your camera and microphone. Pingogram uses them only while you record, and the video goes only into the message you send.</string>
+    <string name="video_note_permission_denied_body">Allow the camera and the microphone in Settings to record video messages.</string>
+    <string name="video_note_permission_not_now">Not now</string>
+    <string name="video_note_permission_continue">Continue</string>
+    <string name="video_note_permission_settings">Open settings</string>
+    <!-- Snackbar when the camera or the microphone cannot be used, or the recording cannot be finished. -->
+    <string name="video_note_recording_failed">Couldn\'t record. Another app may be using the camera or the microphone.</string>
+    <!-- Snackbar when the other camera cannot be opened while recording. -->
+    <string name="video_note_flip_failed">Couldn\'t switch the camera</string>
+</resources>

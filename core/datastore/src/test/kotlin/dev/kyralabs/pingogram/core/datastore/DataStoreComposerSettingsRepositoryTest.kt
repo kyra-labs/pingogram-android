@@ -115,6 +115,30 @@ class DataStoreComposerSettingsRepositoryTest {
             assertEquals(SendKeys(), repository.sendKeys.first())
         }
 
+    @Test
+    fun `the record button records voice until switched to video, which survives the app process`() =
+        runTest {
+            val firstProcess = CoroutineScope(Job() + StandardTestDispatcher(testScheduler))
+            val first = DataStoreComposerSettingsRepository(dataStore(firstProcess))
+            assertEquals(false, first.recordsVideoMessages.first())
+
+            assertEquals(Outcome.Success(Unit), first.setRecordsVideoMessages(true))
+            firstProcess.coroutineContext[Job]?.cancelAndJoin()
+
+            val again = DataStoreComposerSettingsRepository(dataStore())
+            assertEquals(true, again.recordsVideoMessages.first())
+            assertEquals(false, again.sendPhotosInOriginalQuality.first())
+        }
+
+    @Test
+    fun `a record mode that cannot be read is voice, and saving it fails`() =
+        runTest {
+            val repository = DataStoreComposerSettingsRepository(FailingDataStore())
+
+            assertEquals(false, repository.recordsVideoMessages.first())
+            assertTrue((repository.setRecordsVideoMessages(true) as Outcome.Failure).error is DomainError.Unknown)
+        }
+
     /** A settings file that can be neither read nor written, as on a failing disk. */
     private class FailingDataStore : DataStore<Preferences> {
         override val data: Flow<Preferences> = flow { throw IOException("Disk unavailable") }

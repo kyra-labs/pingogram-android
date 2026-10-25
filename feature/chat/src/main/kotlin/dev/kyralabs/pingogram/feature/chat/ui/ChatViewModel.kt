@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import android.os.SystemClock
+import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -118,7 +119,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.thread.inThread
 import dev.kyralabs.pingogram.feature.chat.ui.translation.ChatTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.translation.withTranslations
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import dev.kyralabs.pingogram.feature.chat.ui.voice.ChatRecorder
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecorder
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import kotlinx.collections.immutable.ImmutableList
@@ -228,10 +231,12 @@ import java.util.Locale
  * - **Shared into the chat** ([ChatShares], `REQUIREMENTS.md` FR-N2, direct share): what another app shared to this
  *   chat, through a Direct Share target or the share sheet, goes into the composer once the conversation is on screen,
  *   a text into the field, files into the attach preview; the user sends it.
- * - **Voice messages** ([ChatRecorder]): held, locked, paused, sent or cancelled from the composer's microphone on the
- *   [VoiceRecorder], as [voiceRecording] (kept out of [uiState], like the forward sheet, as only the composer shows
- *   it); recording stops what plays, the screen stopping locks and pauses it, and clearing the view model throws it
- *   away.
+ * - **Voice and video messages** ([ChatRecorder]): held, locked, paused, sent or cancelled from the composer's record
+ *   button on the [VoiceRecorder], or on the camera's `VideoNoteRecorder` once a tap switched the button to round video
+ *   messages ([videoNotes], `docs/adr/0032-round-video-messages.md`), as [voiceRecording], [recordMode] and the
+ *   camera's [videoNotePreview] (kept out of [uiState], like the forward sheet, as only the composer shows them);
+ *   recording stops what plays, the screen stopping locks and pauses a voice recording and ends a video recording,
+ *   and clearing the view model throws it away.
  * - **Secret chats** ([ChatSecretChat], `REQUIREMENTS.md` FR-E1): the secret chat's state in the header and the
  *   composer (none while it waits for the other user or after it ended), and the sheets of its top bar's actions
  *   ([secretChatSheet], kept out of [uiState] like the forward sheet): the self-destruct timer and the encryption key.
@@ -319,6 +324,7 @@ class ChatViewModel internal constructor(
     audioPlayer: AudioPlayer,
     voiceRecorder: VoiceRecorder,
     voiceNoteRepository: VoiceNoteRepository,
+    videoNotes: VideoNoteRecording,
     sendAsRepository: SendAsRepository,
     secretChatRepository: SecretChatRepository,
     autoDownloadPolicy: AutoDownloadPolicy,
@@ -362,6 +368,7 @@ class ChatViewModel internal constructor(
         audioPlayer: AudioPlayer,
         voiceRecorder: VoiceRecorder,
         voiceNoteRepository: VoiceNoteRepository,
+        videoNotes: VideoNoteRecording,
         sendAsRepository: SendAsRepository,
         secretChatRepository: SecretChatRepository,
         autoDownloadPolicy: AutoDownloadPolicy,
@@ -400,6 +407,7 @@ class ChatViewModel internal constructor(
         audioPlayer,
         voiceRecorder,
         voiceNoteRepository,
+        videoNotes,
         sendAsRepository,
         secretChatRepository,
         autoDownloadPolicy,
@@ -556,6 +564,10 @@ class ChatViewModel internal constructor(
             chatId = chatId,
             recorder = voiceRecorder,
             repository = thread.voiceNotes(voiceNoteRepository),
+            video = videoNotes.recorder,
+            videoNotes = thread.videoNotes(videoNotes.repository),
+            settings = videoNotes.settings,
+            savedState = savedStateHandle,
             scope = viewModelScope,
             replies = composer,
             clock = recordingClock,
@@ -600,8 +612,14 @@ class ChatViewModel internal constructor(
             onEffect = { effectChannel.trySend(it) },
         )
 
-    /** The voice message being recorded in the composer; null while there is none. */
+    /** The voice or video message being recorded in the composer; null while there is none. */
     val voiceRecording: StateFlow<VoiceRecordingUiState?> get() = recorder.state
+
+    /** What the composer's record button records, and the camera's rationale sheet while it shows. */
+    val recordMode: StateFlow<RecordModeUiState> get() = recorder.mode
+
+    /** The camera's preview while a video message records, for the round preview; null otherwise. */
+    val videoNotePreview: StateFlow<SurfaceRequest?> = videoNotes.recorder.preview
 
     private val sendAs =
         ChatSendAs(
@@ -1133,6 +1151,7 @@ class ChatViewModel internal constructor(
             is SponsoredEvent -> sponsored.onEvent(event)
             is SelectionEvent -> selectionEvents.onEvent(event)
             is VoiceEvent -> recorder.onEvent(event)
+            is VideoNoteEvent -> recorder.onEvent(event)
             is SendAsEvent -> sendAs.onEvent(event)
             is BotEvent -> bots.onEvent(event)
             is InlineBotEvent -> inlineBots.onEvent(event)

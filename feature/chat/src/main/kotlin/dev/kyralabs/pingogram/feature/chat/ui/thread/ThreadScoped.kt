@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.RecordedVideoNote
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
@@ -18,6 +19,7 @@ import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -140,6 +142,19 @@ internal class TopicVoiceNoteRepository(
         options: SendOptions,
         replyTo: ReplyTarget?,
     ): Outcome<Unit> = voiceNotes.sendVoiceNote(chatId, voiceNote, options.copy(topic = topic), replyTo)
+}
+
+/** [videoNotes] sent into [topic]. */
+internal class TopicVideoNoteRepository(
+    private val videoNotes: VideoNoteRepository,
+    private val topic: MessageTopic,
+) : VideoNoteRepository by videoNotes {
+    override suspend fun sendVideoNote(
+        chatId: Long,
+        videoNote: RecordedVideoNote,
+        options: SendOptions,
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = videoNotes.sendVideoNote(chatId, videoNote, options.copy(topic = topic), replyTo)
 }
 
 /** [inlineBots] whose results are sent into [topic]. */

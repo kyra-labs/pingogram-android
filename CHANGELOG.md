@@ -10,6 +10,13 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Round video messages: tap the microphone beside the message field to switch it to a camera, then hold it to record a
+  round video message, up to a minute, with the same gestures as a voice message: slide left to cancel, slide up to
+  keep recording hands-free, let go to send. A round preview above the field shows what the camera sees and how much
+  of the minute is used. Hands-free, you can flip between the front and back cameras, pause, delete or send. Tap the
+  camera to switch back to voice messages; Pingogram remembers which one you use. The first time, Pingogram says why
+  it needs the camera and the microphone before Android asks. The camera runs only while you record, and the video goes
+  only into the message you send. Screen readers switch with an action on the button and record hands-free at once.
 - Settings → Data and storage → "Use less data for calls": never, on mobile data or always, the video you send in
   calls goes at most at 360p.
 - In the media viewer, a tap near the left or right side shows the previous or next photo or video. In stories, a

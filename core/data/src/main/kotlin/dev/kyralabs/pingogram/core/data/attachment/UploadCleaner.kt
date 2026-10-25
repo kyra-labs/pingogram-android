@@ -232,8 +232,8 @@ private fun TdApi.UpdateMessageSendSucceeded.localPaths() = message.content.loca
 private fun TdApi.UpdateMessageSendFailed.localPaths() = message.content.localPaths()
 
 /**
- * The local paths of the files of a photo, video, GIF or document message (with their thumbnails): those of a message
- * being sent are the files it uploads. Empty for other content.
+ * The local paths of the files of a photo, video, GIF, document, voice or video message (with their thumbnails): those
+ * of a message being sent are the files it uploads. Empty for other content.
  */
 internal fun TdApi.MessageContent.localPaths(): List<String> {
     val files =
@@ -242,6 +242,8 @@ internal fun TdApi.MessageContent.localPaths(): List<String> {
             is TdApi.MessageVideo -> listOfNotNull(video.video, video.thumbnail?.file)
             is TdApi.MessageDocument -> listOfNotNull(document.document, document.thumbnail?.file)
             is TdApi.MessageAnimation -> listOfNotNull(animation.animation, animation.thumbnail?.file)
+            is TdApi.MessageVoiceNote -> listOf(voiceNote.voice)
+            is TdApi.MessageVideoNote -> listOfNotNull(videoNote.video, videoNote.thumbnail?.file)
             else -> emptyList()
         }
     return files.mapNotNull { file -> file.local?.path?.takeIf { it.isNotEmpty() } }

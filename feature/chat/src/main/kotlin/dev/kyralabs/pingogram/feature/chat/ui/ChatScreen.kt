@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
+import androidx.camera.core.SurfaceRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -87,6 +88,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.SearchTopBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.rememberSearchBack
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatIntro
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslateBarSlot
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.RoundVideoPreview
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNotePermissionSheet
+import dev.kyralabs.pingogram.feature.chat.ui.voice.RecordModeUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.VoiceRecordingUiState
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceEvents
 import kotlinx.collections.immutable.ImmutableMap
@@ -197,6 +201,8 @@ internal fun ChatScreen(
     connection: ConnectionStatus = ConnectionStatus.Ready,
     onOpenScheduledMessages: (() -> Unit)? = null,
     nextChannel: NextChannel? = null,
+    recordMode: RecordModeUiState = RecordModeUiState(),
+    videoNotePreview: SurfaceRequest? = null,
 ) {
     val content = state.content
     val selection = state.selection
@@ -231,6 +237,7 @@ internal fun ChatScreen(
                     state = state,
                     search = search,
                     recording = recording,
+                    recordMode = recordMode,
                     composerText = composerText,
                     composerFocus = composerFocus,
                     selectionBack = { selectionBack.value },
@@ -246,10 +253,13 @@ internal fun ChatScreen(
             onOpenScheduledMessages = onOpenScheduledMessages,
             jumpButton = { JumpButtonSlot(content, showJump, state.unreadCount, scrollToNewest) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
+            // Over the messages, above the composer, while a video message records.
+            overlay = { RoundVideoPreview(recording, videoNotePreview) },
         )
         if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
     }
     ChatSheets(state, onEvent, reportComment, actionsInSheet = lifted == null)
+    recordMode.rationale?.let { VideoNotePermissionSheet(it, onEvent) }
     AttachSheets(state, attach, attachMenuOpen, onCloseMenu = { attachMenuOpen = false }, onEvent, scrollToSent)
 }
 
@@ -276,6 +286,7 @@ private fun ChatScaffold(
     jumpButton: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     onOpenScheduledMessages: (() -> Unit)? = null,
+    overlay: @Composable () -> Unit = {},
 ) {
     val selection = state.selection
     Scaffold(
@@ -316,6 +327,7 @@ private fun ChatScaffold(
                 ScheduledBarSlot(state.scheduledBar, onOpenScheduledMessages, contentPadding)
                 Box(Modifier.weight(1f)) {
                     ChatBody(state, onEvent, listState, bubbleResources, contentPadding, nextChannel)
+                    overlay()
                 }
             }
         }
@@ -336,6 +348,7 @@ private fun ChatScreenBottomBar(
     state: ChatUiState,
     search: ChatSearchUiState?,
     recording: VoiceRecordingUiState?,
+    recordMode: RecordModeUiState,
     composerText: ComposerText,
     composerFocus: ComposerFocusState,
     selectionBack: () -> Float,
@@ -375,6 +388,8 @@ private fun ChatScreenBottomBar(
                 onGallery = { onAttach(AttachOption.Gallery) },
                 recording = recording,
                 onVoiceEvent = voiceEvents(onEvent, onSent = { onSent(SendOptions()) }),
+                recordMode = recordMode,
+                onVideoNoteEvent = onEvent,
                 onSendAs = { onEvent(SendAsEvent.Open) },
                 panel = emojiPanel,
                 onPanelEvent = onEmojiPanelEvent,

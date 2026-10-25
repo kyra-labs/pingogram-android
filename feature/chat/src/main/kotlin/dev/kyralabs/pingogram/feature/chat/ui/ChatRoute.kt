@@ -200,6 +200,8 @@ internal fun ConversationRoute(
             connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
             onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
             nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
+            recordMode = viewModel.recordMode.collectAsStateWithLifecycle().value,
+            videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
         )
         ChatSheets(viewModel)
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
@@ -280,7 +282,7 @@ internal fun ChatEffects(
                     ChatEffect.JoinRequestSent, ChatEffect.JoinRefused, ChatEffect.PinnedHidden,
                     ChatEffect.MiniAppsUnsupported, ChatEffect.GamesUnsupported, ChatEffect.NoMessagesForDay,
                     is ChatEffect.SponsoredNotice,
-                    is VoiceEffect,
+                    is VoiceEffect, is VideoNoteEffect,
                     -> {
                         resources.getString(effect.noticeText())
                     }
@@ -427,6 +429,8 @@ private fun ChatEffect.noticeText(): Int =
         ChatEffect.NoMessagesForDay -> R.string.search_no_messages_for_day
         is ChatEffect.SponsoredNotice -> notice.text
         is VoiceEffect -> voiceNoticeText(this)
+        VideoNoteEffect.RecordingFailed -> R.string.video_note_recording_failed
+        VideoNoteEffect.FlipFailed -> R.string.video_note_flip_failed
         else -> R.string.chat_message_unavailable
     }
 

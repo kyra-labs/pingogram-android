@@ -86,8 +86,11 @@
          Frames are read for QR codes on the device by ZXing while the scanner shows, and dropped; nothing the camera
          sees is kept or sent, only the text of a Telegram link reaches TDLib. And video calls (FR-V2, approved for 1:1
          video, docs/adr/0019-video-and-group-calls-scope.md): asked when the user turns the camera on in a call; the
-         video goes to the other person only, end-to-end encrypted, and is not kept. Devices without a camera still install
-         Pingogram and scan from an image (the photo picker, no permission). The CAMERA permission implies a required
+         video goes to the other person only, end-to-end encrypted, and is not kept. And round video messages (FR-C5,
+         approved by the owner 2026-10-23, docs/adr/0032-round-video-messages.md): asked when the user first switches
+         the microphone button to video, after it says why; the camera runs only while the user records, and the video
+         goes only into the message sent. Devices without a camera still install Pingogram and scan from an image (the
+         photo picker, no permission); their record button stays a microphone. The CAMERA permission implies a required
          back camera with autofocus, so those are declared optional too. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
