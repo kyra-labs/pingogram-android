@@ -70,7 +70,10 @@ data class StickersRoute(
     val emoji: Boolean = false,
 )
 
-/** The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], above [StickersRoute]. */
+/**
+ * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
+ * [StickersRoute].
+ */
 @Serializable
 data class StickerSetListRoute(
     val archived: Boolean,
