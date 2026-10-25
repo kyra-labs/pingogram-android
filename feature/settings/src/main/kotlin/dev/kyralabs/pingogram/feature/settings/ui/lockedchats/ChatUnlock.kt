@@ -74,7 +74,7 @@ internal fun ChatUnlockRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
-    val prompt = rememberBiometricPrompt { viewModel.onEvent(ChatUnlockEvent.BiometricSucceeded) }
+    val prompt = rememberBiometricPrompt(state.screenLock) { viewModel.onEvent(ChatUnlockEvent.BiometricSucceeded) }
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -155,7 +155,8 @@ internal fun ChatUnlockScreen(
                         }
                     }
                 },
-            extraAction = if (state.biometricUnlock) ({ BiometricButton(onBiometricUnlock) }) else null,
+            extraAction =
+                if (state.biometricUnlock) ({ BiometricButton(onBiometricUnlock, state.screenLock) }) else null,
         )
     }
 }

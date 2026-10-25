@@ -44,15 +44,16 @@ import java.text.NumberFormat
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
  * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react, [onOpenSwipeActions]
- * Swipe actions; [onBack] leaves.
+ * Swipe actions, [onOpenShownFirst] Chats shown first; [onBack] leaves.
  */
-@Suppress("LongParameterList") // The four pages it opens, back, the modifier and the view model.
+@Suppress("LongParameterList") // The five pages it opens, back, the modifier and the view model.
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
     onOpenChatAppearance: () -> Unit,
     onOpenQuickReaction: () -> Unit,
     onOpenSwipeActions: () -> Unit,
+    onOpenShownFirst: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -78,6 +79,7 @@ internal fun AppearanceRoute(
         onOpenChatAppearance = onOpenChatAppearance,
         onOpenQuickReaction = onOpenQuickReaction,
         onOpenSwipeActions = onOpenSwipeActions,
+        onOpenShownFirst = onOpenShownFirst,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -93,8 +95,8 @@ internal fun AppearanceRoute(
  * the contrast level; then under "Chat list" a row that opens Swipe actions ([onOpenSwipeActions]) and whether story
  * rings show above the chats; then under "Chats" a row that
  * opens the Chat appearance page ([onOpenChatAppearance]: message text size, bubble corners, wallpaper) with their
- * summary, a row that opens Double-tap to react ([onOpenQuickReaction]), and which Enter sends on a hardware and on
- * the on-screen keyboard.
+ * summary, a row that opens Double-tap to react ([onOpenQuickReaction]), one that opens Chats shown first
+ * ([onOpenShownFirst]), and which Enter sends on a hardware and on the on-screen keyboard.
  * With a [systemContrast] (Android 14+) the contrast follows the system: its buttons show the system's level, disabled.
  * The app's theme follows each change at once, cross-fading its colors (`PingogramTheme`).
  */
@@ -108,6 +110,7 @@ internal fun AppearanceScreen(
     onOpenChatAppearance: () -> Unit = {},
     onOpenQuickReaction: () -> Unit = {},
     onOpenSwipeActions: () -> Unit = {},
+    onOpenShownFirst: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -128,7 +131,13 @@ internal fun AppearanceScreen(
                     state.settings,
                     ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList),
                     onEvent,
-                    AppearancePages(onOpenColorTheme, onOpenChatAppearance, onOpenQuickReaction, onOpenSwipeActions),
+                    AppearancePages(
+                        onOpenColorTheme,
+                        onOpenChatAppearance,
+                        onOpenQuickReaction,
+                        onOpenSwipeActions,
+                        onOpenShownFirst,
+                    ),
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -194,15 +203,16 @@ private fun AppearanceSettingsContent(
         }
     }
     ChatListGroup(chats.chatList, onEvent, pages.onOpenSwipeActions)
-    ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance, pages.onOpenQuickReaction)
+    ChatsGroup(settings.chat, chats, onEvent, pages)
 }
 
 /** What opens the pages above Appearance. */
-private class AppearancePages(
+internal class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
     val onOpenQuickReaction: () -> Unit,
     val onOpenSwipeActions: () -> Unit,
+    val onOpenShownFirst: () -> Unit,
 )
 
 @PingogramPreviews

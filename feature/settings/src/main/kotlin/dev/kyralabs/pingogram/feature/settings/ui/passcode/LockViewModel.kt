@@ -26,7 +26,9 @@ import javax.inject.Inject
  * What the lock screen shows.
  *
  * @property entry the passcode entry, for the passcode's type.
- * @property biometricUnlock whether the fingerprint button shows: biometric unlock is on and the device can do it.
+ * @property biometricUnlock whether the fingerprint button shows: biometric unlock (or unlocking with the screen lock)
+ *   is on and the device can do it.
+ * @property screenLock what the system's prompt takes of the phone's screen lock.
  * @property promptBiometrics whether the system's biometric prompt should show by itself, once the screen is in front:
  *   the first time after each lock.
  * @property showForgetDialog whether "Forgot passcode?" asks to log out.
@@ -39,6 +41,7 @@ data class LockUiState(
     val promptBiometrics: Boolean = false,
     val showForgetDialog: Boolean = false,
     val isLoggingOut: Boolean = false,
+    val screenLock: ScreenLock = ScreenLock.Off,
 )
 
 /** What the user does on the lock screen, handled by [LockViewModel.onEvent]. */
@@ -109,6 +112,7 @@ class LockViewModel
                     promptBiometrics = local.promptBiometrics,
                     showForgetDialog = local.showForgetDialog,
                     isLoggingOut = local.isLoggingOut,
+                    screenLock = biometrics.screenLockFor(settings),
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, LockUiState())
 
@@ -181,7 +185,7 @@ class LockViewModel
             }
         }
 
-        private fun canUseBiometrics(): Boolean = settings.biometricUnlock && biometrics.canAuthenticate()
+        private fun canUseBiometrics(): Boolean = biometrics.canUnlock(settings)
 
         private data class LocalState(
             val biometricUnlock: Boolean = false,

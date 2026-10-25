@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.basicGroup
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.groupChat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.user
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareClose
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareEvent
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
@@ -59,6 +60,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
         content: SharedContent = link,
         offered: Boolean = true,
         hiddenChats: Set<Long> = emptySet(),
+        shownFirst: List<Long> = emptyList(),
     ): ShareViewModel {
         users.setUsers(user(ME), user(ADA, firstName = "Ada"))
         val ada = chat(title = "Ada Lovelace")
@@ -79,7 +81,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 applicationScope = backgroundScope,
                 results = results,
-                hiddenChats = flowOf(hiddenChats),
+                targetPreferences = TargetPreferences(flowOf(hiddenChats), flowOf(shownFirst)),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sheet.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { results.results.collect { reported += it } }
@@ -115,6 +117,19 @@ class ShareViewModelTest : ChatViewModelHarness() {
 
             assertEquals(
                 listOf(ME, GROUP_CHAT),
+                viewModel.sheet.value!!
+                    .targets
+                    .map { it.chatId },
+            )
+        }
+
+    @Test
+    fun `the chats chosen to show first follow Saved Messages, in their order`() =
+        runViewModelTest {
+            val viewModel = shareViewModel(shownFirst = listOf(GROUP_CHAT, ME, UNKNOWN_CHAT))
+
+            assertEquals(
+                listOf(ME, GROUP_CHAT, PRIVATE_CHAT),
                 viewModel.sheet.value!!
                     .targets
                     .map { it.chatId },
@@ -241,6 +256,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
     }
 
     private companion object {
+        const val UNKNOWN_CHAT = 999L
         const val UNKNOWN_SHARE = 99L
         const val READ_ONLY = 77L
         const val DEBOUNCE = 300L

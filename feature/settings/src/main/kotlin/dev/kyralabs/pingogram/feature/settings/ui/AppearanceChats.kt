@@ -45,25 +45,32 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
 /**
- * The "Chats" group: the rows of the Chat appearance page and of Double-tap to react, which Enter sends on a hardware
- * and on the on-screen keyboard, and raise to listen.
+ * The "Chats" group: the rows of the Chat appearance page, of Double-tap to react and of Chats shown first ([pages]),
+ * which Enter sends on a hardware and on the on-screen keyboard, and raise to listen.
  */
 @Composable
 internal fun ChatsGroup(
     chat: ChatAppearance,
     chats: ChatsSettings,
     onEvent: (AppearanceEvent) -> Unit,
-    onOpenChatAppearance: () -> Unit,
-    onOpenQuickReaction: () -> Unit,
+    pages: AppearancePages,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chats)) {
-        item { shapes -> ChatAppearanceItem(chat, shapes, onOpenChatAppearance) }
+        item { shapes -> ChatAppearanceItem(chat, shapes, pages.onOpenChatAppearance) }
         item { shapes ->
             SettingsRow(
                 title = stringResource(R.string.settings_double_tap),
                 shapes = shapes,
                 supportingContent = { Text(stringResource(R.string.settings_double_tap_summary)) },
-                onClick = onOpenQuickReaction,
+                onClick = pages.onOpenQuickReaction,
+            )
+        }
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.shown_first_title),
+                shapes = shapes,
+                supportingContent = { Text(stringResource(R.string.shown_first_summary)) },
+                onClick = pages.onOpenShownFirst,
             )
         }
         item { shapes -> HardwareEnterItem(chats.sendKeys, shapes, onEvent) }

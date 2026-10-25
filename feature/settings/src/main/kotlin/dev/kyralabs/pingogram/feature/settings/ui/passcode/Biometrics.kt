@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
 import android.os.CancellationSignal
@@ -21,6 +22,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.kyralabs.pingogram.core.domain.model.PasscodeSettings
 import dev.kyralabs.pingogram.feature.settings.R
 import javax.inject.Inject
 
@@ -31,7 +33,36 @@ import javax.inject.Inject
 /** Whether this device can unlock the app with biometrics right now: strong ones set up, Android 10 or later. */
 fun interface BiometricAvailability {
     fun canAuthenticate(): Boolean
+
+    /**
+     * Whether the phone's own screen lock (its PIN, pattern or password) can unlock the app through the system's
+     * prompt: Android 11 and later, with a screen lock set. False unless overridden.
+     */
+    fun canUseScreenLock(): Boolean = false
 }
+
+/**
+ * Whether the system's prompt also accepts the phone's screen lock (the passcode lock's "Unlock with screen lock",
+ * `PasscodeSettings.deviceCredentialUnlock`), and whether that is all it accepts, as on a phone without strong
+ * biometrics: the button then shows the PIN symbol rather than the fingerprint.
+ */
+enum class ScreenLock {
+    Off,
+    Also,
+    Only,
+}
+
+/** Whether the system's prompt can unlock under [settings] on this device: biometrics, the screen lock, or both. */
+internal fun BiometricAvailability.canUnlock(settings: PasscodeSettings): Boolean =
+    (settings.biometricUnlock && canAuthenticate()) || screenLockFor(settings) != ScreenLock.Off
+
+/** What the system's prompt takes of the screen lock under [settings] on this device. */
+internal fun BiometricAvailability.screenLockFor(settings: PasscodeSettings): ScreenLock =
+    when {
+        !settings.deviceCredentialUnlock || !canUseScreenLock() -> ScreenLock.Off
+        settings.biometricUnlock && canAuthenticate() -> ScreenLock.Also
+        else -> ScreenLock.Only
+    }
 
 /**
  * [BiometricAvailability] from the platform's [BiometricManager]: strong (class 3) biometrics enrolled on Android 11
@@ -44,6 +75,13 @@ internal class PlatformBiometricAvailability
     ) : BiometricAvailability {
         override fun canAuthenticate(): Boolean =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canAuthenticateSinceQ()
+
+        // USE_BIOMETRIC is declared in :app's manifest, as above.
+        @SuppressLint("MissingPermission")
+        override fun canUseScreenLock(): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                context.getSystemService(BiometricManager::class.java)?.canAuthenticate(DEVICE_CREDENTIAL) ==
+                BiometricManager.BIOMETRIC_SUCCESS
 
         // USE_BIOMETRIC is declared in :app's manifest (pinned by AppManifestTest), which a library's lint cannot see.
         @SuppressLint("MissingPermission")
@@ -82,13 +120,17 @@ internal fun interface BiometricPromptLauncher {
 
 /**
  * The system's biometric prompt for unlocking ("Unlock Pingogram", with "Use passcode" to cancel): strong biometrics
- * only (class 3, Android 11 and later), never the device's screen lock, which would let anyone who knows the phone's
- * PIN past the app's passcode. [onSucceeded] runs once the system recognized the user. A failed attempt is the
- * system's to show, and cancelling or an error leaves the passcode entry. A prompt still showing is cancelled when this
- * leaves the composition. Does nothing before Android 10.
+ * (class 3, Android 11 and later), and the device's screen lock only where the user turned it on ([screenLock], which
+ * lets anyone who knows the phone's PIN past the app's passcode). With the screen lock the system offers its own way
+ * back, so the prompt has no "Use passcode" button. [onSucceeded] runs once the system recognized the user. A failed
+ * attempt is the system's to show, and cancelling or an error leaves the passcode entry. A prompt still showing is
+ * cancelled when this leaves the composition. Does nothing before Android 10.
  */
 @Composable
-internal fun rememberBiometricPrompt(onSucceeded: () -> Unit): BiometricPromptLauncher {
+internal fun rememberBiometricPrompt(
+    screenLock: ScreenLock = ScreenLock.Off,
+    onSucceeded: () -> Unit,
+): BiometricPromptLauncher {
     val context = LocalContext.current
     val title = stringResource(R.string.lock_biometric_prompt_title)
     val cancel = stringResource(R.string.lock_biometric_prompt_cancel)
@@ -100,13 +142,13 @@ internal fun rememberBiometricPrompt(onSucceeded: () -> Unit): BiometricPromptLa
             signals.clear()
         }
     }
-    return remember(context, title, cancel) {
+    return remember(context, title, cancel, screenLock) {
         BiometricPromptLauncher {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 signals.forEach(CancellationSignal::cancel)
                 signals.clear()
                 val signal = CancellationSignal().also(signals::add)
-                showPrompt(context, title, cancel, signal) { currentOnSucceeded() }
+                showPrompt(context, PromptTexts(title, cancel), screenLock, signal) { currentOnSucceeded() }
             }
         }
     }
@@ -117,21 +159,28 @@ internal fun rememberBiometricPrompt(onSucceeded: () -> Unit): BiometricPromptLa
 @RequiresApi(Build.VERSION_CODES.Q)
 private fun showPrompt(
     context: Context,
-    title: String,
-    cancel: String,
+    texts: PromptTexts,
+    screenLock: ScreenLock,
     signal: CancellationSignal,
     onSucceeded: () -> Unit,
 ) {
     val executor = context.mainExecutor
+    val withScreenLock = screenLock != ScreenLock.Off && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
     val prompt =
         BiometricPrompt
             .Builder(context)
-            .setTitle(title)
-            .setNegativeButton(cancel, executor) { _, _ -> }
+            .setTitle(texts.title)
             // A face recognized needs no extra tap: the app is only unlocked, nothing is paid or signed.
             .setConfirmationRequired(false)
-            .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setAllowedAuthenticators(BIOMETRIC_STRONG) }
-            .build()
+            .apply {
+                when {
+                    // The system shows its own way back with the screen lock; a negative button is not allowed then.
+                    withScreenLock -> setAllowedAuthenticators(authenticatorsFor(screenLock))
+
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> setAllowedAuthenticators(BIOMETRIC_STRONG)
+                }
+                if (!withScreenLock) setNegativeButton(texts.cancel, executor) { _, _ -> }
+            }.build()
     prompt.authenticate(
         signal,
         executor,
@@ -142,3 +191,13 @@ private fun showPrompt(
         },
     )
 }
+
+/** The prompt's title and its button back to the passcode. */
+private class PromptTexts(
+    val title: String,
+    val cancel: String,
+)
+
+@RequiresApi(Build.VERSION_CODES.R)
+private fun authenticatorsFor(screenLock: ScreenLock): Int =
+    if (screenLock == ScreenLock.Only) DEVICE_CREDENTIAL else BIOMETRIC_STRONG or DEVICE_CREDENTIAL

@@ -154,7 +154,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   locked and keeps its saved state (`rememberSaveableStateHolder`), so nothing of it draws, runs or reaches screen
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
-  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`;
+  where the user turned on "Unlock with screen lock" (`PasscodeSettings.deviceCredentialUnlock`, off by default), the
+  prompt takes the phone's PIN, pattern or password too (`DEVICE_CREDENTIAL`, Android 11+, `ScreenLock`).
 - **Locked chats** (`docs/adr/0029-locked-chats.md`): Pingogram's own, kept on the device. `core:domain`'s
   `ChatLockRepository` (`DefaultChatLockRepository`, `core:data`, a singleton) holds the locked chats' ids
   (`LockedChatIdsRepository`, `DataStoreLockedChatIdsRepository`: the settings file) and whether they are open: only
@@ -173,6 +175,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
   through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
   `PingogramApp`.
+- **Chats shown first** (`docs/audit/feature-gaps-octogram.md` P2): `core:domain`'s `ChatsShownFirstRepository`
+  (`DataStoreChatsShownFirstRepository`, the settings file, at most 5 ids in order) lists the chats the forward and
+  share sheets show right after Saved Messages. `feature:chat`'s `ChatTargets` takes it with the locked chats as one
+  `TargetPreferences` (the hidden chats, the chats shown first), so `ChatForwarding`, `ForwardViewModel`,
+  `ShareViewModel` and `ChatViewModel` take one parameter for both; chats shown first go through the same checks as the
+  rest (locked chats left out, only chats the sheet may send to), and one TDLib does not know is left out. `feature:settings`' `ChatsShownFirstRoute` (`ChatsShownFirstViewModel`: removing,
+  moving with screen readers' "Move up" / "Move down", a picker of the main list limited to the places left, its picks
+  in saved state) sits above Appearance, whose Chats group opens it.
 - **Chat folders** (FR-L3): `ChatRepository` keeps the folders TDLib announces (`updateChatFolders`: the tabs above
   the chat list and the main list's place among them). `core:domain`'s `ChatFolderRepository` (`TdlibChatFolderRepository`,
   `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as

@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.navigation.ShareRoute
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.CoroutineDispatcher
@@ -72,7 +73,7 @@ class ShareViewModel internal constructor(
     dispatcher: CoroutineDispatcher,
     private val applicationScope: CoroutineScope,
     private val results: ShareResults,
-    hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
+    targetPreferences: TargetPreferences = TargetPreferences(),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -86,7 +87,7 @@ class ShareViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         results: ShareResults,
-        chatLock: ChatLockRepository,
+        targetPreferences: TargetPreferences,
     ) : this(
         savedStateHandle.toRoute<ShareRoute>(),
         inbox,
@@ -98,7 +99,7 @@ class ShareViewModel internal constructor(
         dispatcher,
         applicationScope,
         results,
-        chatLock.hiddenChatIds.filterNotNull(),
+        targetPreferences,
     )
 
     /** What is shared; null when the share was gone. */
@@ -114,7 +115,7 @@ class ShareViewModel internal constructor(
 
     private val selected = MutableStateFlow<PersistentSet<Long>>(persistentSetOf())
 
-    private val chatTargets = ChatTargets(chats, search, users, groups, viewModelScope, hiddenChats = hiddenChats)
+    private val chatTargets = ChatTargets(chats, search, users, groups, viewModelScope, preferences = targetPreferences)
 
     /** The sheet; null when there is nothing to share. */
     val sheet: StateFlow<ShareSheet?> =

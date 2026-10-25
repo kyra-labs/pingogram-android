@@ -314,6 +314,10 @@ data object ReactionNotificationsRoute
 @Serializable
 data object QuickReactionRoute
 
+/** The chats the forward and share sheets show first, pushed above [AppearanceRoute]. */
+@Serializable
+data object ChatsShownFirstRoute
+
 /** What swiping a chat row does toward each side, pushed above [AppearanceRoute]. */
 @Serializable
 data object SwipeActionsRoute

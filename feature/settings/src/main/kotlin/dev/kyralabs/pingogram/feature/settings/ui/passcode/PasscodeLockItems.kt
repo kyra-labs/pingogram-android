@@ -116,7 +116,10 @@ private fun AutoLockGroup(
     }
 }
 
-/** The switches for biometric unlock, where the device can, and for hiding the content in recent apps. */
+/**
+ * The switches for biometric unlock and for the phone's screen lock, where the device can, and for hiding the content
+ * in recent apps.
+ */
 @Composable
 private fun UnlockGroup(
     state: PasscodeLockUiState.On,
@@ -131,6 +134,17 @@ private fun UnlockGroup(
                     checked = state.biometricUnlock,
                     shapes = shapes,
                     onCheckedChange = { onEvent(PasscodeLockEvent.SetBiometricUnlock(it)) },
+                )
+            }
+        }
+        if (state.screenLockAvailable) {
+            item { shapes ->
+                SwitchItem(
+                    title = stringResource(R.string.settings_passcode_screen_lock),
+                    summary = stringResource(R.string.settings_passcode_screen_lock_summary),
+                    checked = state.screenLockUnlock,
+                    shapes = shapes,
+                    onCheckedChange = { onEvent(PasscodeLockEvent.SetScreenLockUnlock(it)) },
                 )
             }
         }

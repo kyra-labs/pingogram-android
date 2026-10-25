@@ -152,6 +152,17 @@ class DataStorePasscodeRepositoryTest {
                     PasscodeSettings(autoLock = AutoLock.Immediately, biometricUnlock = false, hideContent = false),
                     awaitItem(),
                 )
+
+                repository.setDeviceCredentialUnlock(true)
+                assertEquals(
+                    PasscodeSettings(
+                        autoLock = AutoLock.Immediately,
+                        biometricUnlock = false,
+                        deviceCredentialUnlock = true,
+                        hideContent = false,
+                    ),
+                    awaitItem(),
+                )
             }
         }
 

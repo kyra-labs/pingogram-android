@@ -60,6 +60,9 @@ class FakePasscodeRepository(
 
     override suspend fun setBiometricUnlock(enabled: Boolean) = change { it.copy(biometricUnlock = enabled) }
 
+    override suspend fun setDeviceCredentialUnlock(enabled: Boolean) =
+        change { it.copy(deviceCredentialUnlock = enabled) }
+
     override suspend fun setHideContent(enabled: Boolean) = change { it.copy(hideContent = enabled) }
 
     private fun change(transform: (PasscodeSettings) -> PasscodeSettings): Outcome<Unit> {

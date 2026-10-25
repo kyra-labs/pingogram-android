@@ -678,6 +678,9 @@
     <string name="settings_passcode_section_unlock">Unlock and privacy</string>
     <string name="settings_passcode_biometric">Unlock with fingerprint or face</string>
     <string name="settings_passcode_biometric_summary">Use the biometrics set up on this device instead of the passcode</string>
+    <!-- Unlocking Pingogram with the phone's own PIN, pattern or password (Android 11 and later). -->
+    <string name="settings_passcode_screen_lock">Unlock with screen lock</string>
+    <string name="settings_passcode_screen_lock_summary">Your phone\'s PIN, pattern or password opens Pingogram too. Anyone who knows it can open your chats.</string>
     <string name="settings_passcode_hide_content">Hide content in recent apps</string>
     <string name="settings_passcode_hide_content_summary">Recent apps show Pingogram without your chats</string>
     <string name="settings_passcode_hide_content_summary_secure">Recent apps show Pingogram without your chats. This also blocks screenshots in Pingogram.</string>
@@ -735,6 +738,8 @@
     <string name="settings_locked_chats_summary">Keep chats behind your passcode</string>
     <string name="lock_forgot">Forgot passcode?</string>
     <string name="lock_biometric">Unlock with fingerprint or face</string>
+    <!-- The lock screen's button where only the phone's own PIN, pattern or password unlocks (no biometrics). -->
+    <string name="lock_screen_lock">Unlock with your screen lock</string>
     <string name="lock_biometric_prompt_title">Unlock Pingogram</string>
     <string name="lock_biometric_prompt_cancel">Use passcode</string>
     <string name="lock_forgot_dialog_title">Log out to remove the passcode?</string>
@@ -1236,4 +1241,20 @@
     <string name="settings_swipe_short_mute">Mute</string>
     <string name="settings_swipe_short_delete">Delete</string>
     <string name="settings_swipe_short_none">Nothing</string>
+    <!-- Chats shown first (Appearance → Chats): the chats the forward and share sheets offer first. -->
+    <string name="shown_first_title">Chats shown first</string>
+    <string name="shown_first_summary">First when you forward or share, after Saved Messages</string>
+    <string name="shown_first_loading">Loading chats</string>
+    <string name="shown_first_add">Add a chat</string>
+    <string name="shown_first_remove">Remove</string>
+    <!-- The "Remove" button's name for screen readers; %1$s is the chat's title. -->
+    <string name="shown_first_remove_label">Remove %1$s</string>
+    <plurals name="shown_first_footer">
+        <item quantity="one">Up to %1$d chat shows first when you forward or share, right after Saved Messages, in this order. They stay on this device.</item>
+        <item quantity="other">Up to %1$d chats show first when you forward or share, right after Saved Messages, in this order. They stay on this device.</item>
+    </plurals>
+    <plurals name="shown_first_picker_title">
+        <item quantity="one">Choose up to %1$d chat</item>
+        <item quantity="other">Choose up to %1$d chats</item>
+    </plurals>
 </resources>
