@@ -313,9 +313,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   replying to the story (`inputMessageReplyToStory`). `activateStoryStealthMode` is never sent: every story shown is
   marked viewed. Areas, privacy settings, interactions, saving and posting are left out. `feature:chats` draws the rings
   as the chat list's first row (`StoryRingsViewModel`, `StoryRingsRow`, passed to `ChatListScreen` as its `stories`
-  slot, none while Appearance → Chat list → "Show stories" is off: `core:domain`'s `ChatListSettingsRepository`,
-  `DataStoreChatListSettingsRepository`, the settings file, whose rings then load nothing, which the route gives only while there are rings and whose state the row reads in its own composition, so the
-  rings changing recomposes nothing else). A ring opens `StoryViewerRoute(chatId, storyId?)` of `core:navigation`, a
+  slot, which the route gives only while there are rings and whose state the row reads in its own composition, so the
+  rings changing recomposes nothing else; none while Appearance → Chat list → "Show stories" is off:
+  `core:domain`'s `ChatListSettingsRepository`, `DataStoreChatListSettingsRepository`, the settings file, whose rings
+  then load nothing). A ring opens `StoryViewerRoute(chatId, storyId?)` of `core:navigation`, a
   full-screen destination of `feature:media` (beside the media viewer, whose video player, images, caption and
   swipe-to-close it reuses; a module of its own would have needed copies of them, as features do not share code):
   `StoryViewerViewModel` pages through the main list's chats as they were when it opened, from the chat's first unseen
@@ -323,6 +324,15 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (a photo's 5 s on an injected `TimeSource`, a video on the `VideoPlayer`, progress in snapshot state read in the draw
   phase), pausing while held, paging, typing, choosing a reaction or stopped. It downloads the story's file at visible
   priority and the next one's at prefetch priority, and opens each story for TDLib once per showing while started.
+- **Chat list swipes** (Appearance → Chat list → Swipe actions): `ChatListSettingsRepository` also keeps what swiping a
+  chat toward each side does (`SwipeAction`) and whether swiping the list changes the folder instead
+  (`swipeChangesFolder`), which the Swipe actions page (`SwipeActionsRoute`, `SwipeActionsViewModel`, `feature:settings`)
+  sets and `feature:chats`' `ChatSwipesViewModel` hands to the chat list through `LocalChatSwipes`. While the list
+  changes the folder, rows do not swipe and `Modifier.folderSwipe` (`FolderSwipe.kt`) moves the whole list with the
+  finger, in its graphics layer (`FolderSwitch.position`, read in the draw phase, so a drag recomposes nothing); past a
+  third of the width it selects the tab beside the selected one (`FolderNeighbours`, `ChatListEvent.SelectFolder`), and
+  the folder's list slides in from the other side instead of fading through. The neighbouring folder's chats are not
+  loaded ahead: the list slides away and the new one in, as a tab's tap fades them.
 - **Pinned messages** (FR-C9): `PinnedMessageRepository` (`core:domain`, `TdlibPinnedMessageRepository` in `core:data`,
   no cache: TDLib introduces pinned messages by no update) loads a chat's pinned messages once per collection
   (`searchChatMessages` with `searchMessagesFilterPinned`, the newest 100), subscribed to the updates before it asks, then
@@ -452,6 +462,14 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   topic's name in the header and a closed topic's label in the composer. A topic tapped in the list is pushed above it
   (`chatScreen`'s `onOpenThread`); in the Chats tab's detail pane it takes the pane's place (`ChatPane`'s saved stack of
   topics and threads, shared axis X, back returning to the list). Creating, editing and closing topics come later.
+- **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
+  `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
+  whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first
+  other channel with unread posts it offers (`NextChannel`). `NextChannelPullState` takes the message list's leftover
+  upward drags through a nested scroll connection, read in the layout and draw phases; a release past the threshold
+  sends `ChatEvent.OpenNextChannel`, which the view model checks against what it still offers before
+  `ChatEffect.OpenNextChannel`. The route opens it through `onOpenNextChat`: `:app` replaces the pushed conversation's
+  `ChatRoute` (`popUpTo<ChatRoute>`), and the Chats tab's detail pane shows it as any chat it opens.
 - **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
   others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
   `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a

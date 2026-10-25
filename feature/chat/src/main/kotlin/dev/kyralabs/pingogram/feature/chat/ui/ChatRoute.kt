@@ -108,6 +108,7 @@ internal fun ConversationRoute(
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
             it.create(chatId, messageId, topic)
@@ -131,6 +132,7 @@ internal fun ConversationRoute(
     val currentOnOpenChat by rememberUpdatedState(onOpenChat)
     val currentOnOpenProfile by rememberUpdatedState(onOpenProfile)
     val currentOnOpenThread by rememberUpdatedState(onOpenThread)
+    val currentOnOpenNextChat by rememberUpdatedState(onOpenNextChat ?: onOpenChat)
     val launchers = rememberAttachLaunchers(viewModel::onEvent)
     val attach =
         rememberAttachInputs(
@@ -148,6 +150,7 @@ internal fun ConversationRoute(
         onOpenChat = { currentOnOpenChat(it) },
         onOpenProfile = { currentOnOpenProfile?.invoke(it) },
         onOpenThread = { chat, thread -> currentOnOpenThread(chat, thread) },
+        onOpenNextChat = { currentOnOpenNextChat(it) },
         composerFocus = composerFocus,
         onEvent = viewModel::onEvent,
         onShareLocation = { attach.onPick(AttachOption.Location) },
@@ -184,6 +187,7 @@ internal fun ConversationRoute(
             searchQuery = viewModel.searchQuery,
             botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
             onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
+            nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
         )
         ChatSheets(viewModel)
     }
@@ -198,10 +202,10 @@ internal fun ConversationRoute(
  * in another app through [openFile] (the app's `FileProvider`, [viewTdlibFile]) and a location in a maps app, or a
  * snackbar says that no app can; a copied text goes to the clipboard through [copyText], with a snackbar before
  * Android 13, which confirms copies itself; a focus request goes to [composerFocus]; media to open goes to
- * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat] and a message's thread to
- * [onOpenThread]; the camera app opens through [onLaunchCamera], or a snackbar
- * says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet through
- * [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
+ * [onOpenMedia], a profile to [onOpenProfile], a chat a mention named to [onOpenChat], a message's thread to
+ * [onOpenThread] and the next unread channel to [onOpenNextChat]; the camera app opens through [onLaunchCamera], or a
+ * snackbar says that no camera app can; a bot's keyboard button that asks for the location opens the "Location" sheet
+ * through [onShareLocation]. After forwarding a snackbar says to how many chats, or to which one, with an action
  * that opens it through [onOpenChat] if it is another chat; or for how many it failed, and why. A sponsored message's
  * link opens through [openUri] (the platform's handler), or a snackbar says that no app can; what came of reporting
  * one is a snackbar too. Selecting, reporting and saving messages ([SelectionEffect], [selectionNotice]) copy several
@@ -226,6 +230,7 @@ internal fun ChatEffects(
     onOpenChat: (chatId: Long) -> Unit = {},
     onOpenProfile: (userId: Long) -> Unit = {},
     onOpenThread: (chatId: Long, topic: MessageTopic) -> Unit = { _, _ -> },
+    onOpenNextChat: (chatId: Long) -> Unit = onOpenChat,
     openFile: Context.(path: String, mimeType: String?, chooserTitle: String) -> ExternalFileResult =
         Context::viewTdlibFile,
     copyText: Context.(text: String) -> Unit = Context::copyPlainText,
@@ -277,6 +282,11 @@ internal fun ChatEffects(
 
                     is ChatEffect.OpenProfile, is ChatEffect.OpenChat, is ChatEffect.OpenThread -> {
                         openNamed(effect, onOpenProfile, onOpenChat, onOpenThread)
+                    }
+
+                    is ChatEffect.OpenNextChannel -> {
+                        onOpenNextChat(effect.chatId)
+                        ""
                     }
 
                     is ChatEffect.OpenMedia, ChatEffect.FocusComposer, is ChatEffect.LaunchCamera,

@@ -16,10 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
@@ -38,6 +40,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.core.ui.theme.systemContrastOrNull
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.chatlist.shortLabelRes
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 
@@ -131,13 +134,25 @@ internal class ChatsSettings(
     val chatList: ChatListSettings = ChatListSettings(),
 )
 
-/** The "Chat list" group: "Show stories", whether the story rings show above the chats (they load only then). */
+/**
+ * The "Chat list" group: "Show stories", whether the story rings show above the chats (they load only then), and a row
+ * that opens Swipe actions ([onOpenSwipeActions]) with the two swipes' actions as its summary.
+ */
 @Composable
 internal fun ChatListGroup(
     chatList: ChatListSettings,
     onEvent: (AppearanceEvent) -> Unit,
+    onOpenSwipeActions: () -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.settings_section_chat_list)) {
+        item { shapes ->
+            SettingsRow(
+                title = stringResource(R.string.settings_swipe_actions),
+                shapes = shapes,
+                supportingContent = { Text(swipeActionsSummary(chatList)) },
+                onClick = onOpenSwipeActions,
+            )
+        }
         item { shapes ->
             SwitchItem(
                 title = stringResource(R.string.settings_show_stories),
@@ -148,6 +163,21 @@ internal fun ChatListGroup(
             )
         }
     }
+}
+
+/** "Right: Read · Left: Archive", the sides as the layout's direction puts them. */
+@Composable
+private fun swipeActionsSummary(chatList: ChatListSettings): String {
+    if (chatList.swipeChangesFolder) return stringResource(R.string.settings_swipe_actions_summary_folders)
+    return stringResource(
+        if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
+            R.string.settings_swipe_actions_summary
+        } else {
+            R.string.settings_swipe_actions_summary_rtl
+        },
+        stringResource(chatList.startSwipe.shortLabelRes()),
+        stringResource(chatList.endSwipe.shortLabelRes()),
+    )
 }
 
 /** The row that opens the Chat appearance page: its name over the text size, the corners and the wallpaper. */

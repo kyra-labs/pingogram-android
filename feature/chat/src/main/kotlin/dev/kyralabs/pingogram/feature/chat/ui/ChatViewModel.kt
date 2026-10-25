@@ -475,6 +475,15 @@ class ChatViewModel internal constructor(
      */
     val customEmoji: StateFlow<ImmutableMap<Long, CustomEmoji>> get() = customEmojis.customEmoji
 
+    private val nextChannels =
+        ChatNextChannel(chatId, wholeChat = topic == null, chatRepository, viewModelScope) { effectChannel.trySend(it) }
+
+    /**
+     * The next unread channel a read channel's conversation offers, which a pull past its newest post opens
+     * ([ChatNextChannel]); kept out of [uiState], as only the end of the list shows it.
+     */
+    val nextChannel: StateFlow<NextChannel?> get() = nextChannels.next
+
     private val views = MessageViews(chatId, thread.chats(chatRepository), viewModelScope, log)
 
     private val mentions = ChatMentions(searchRepository, viewModelScope) { effectChannel.trySend(it) }
@@ -1113,6 +1122,7 @@ class ChatViewModel internal constructor(
             is ChatEvent.Resend -> messageActions.resend(event.messageId)
             is ChatEvent.ToggleReaction -> messageActions.toggleReaction(event.messageId, event.label)
             is ChatEvent.Forward -> messageActions.forward(event.messageId)
+            is ChatEvent.OpenNextChannel -> nextChannels.open(event.chatId)
             is ForwardEvent -> forwarding.onEvent(event)
             else -> onAttachEvent(event)
         }
@@ -1286,7 +1296,12 @@ class ChatViewModel internal constructor(
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
-            shortcuts = MessageShortcuts(canReply = canWrite, canCopy = !chat.hasProtectedContent),
+            shortcuts =
+                MessageShortcuts(
+                    canReply = canWrite,
+                    canCopy = !chat.hasProtectedContent,
+                    canForward = !chat.hasProtectedContent && chat.type !is ChatType.Secret,
+                ),
             // What was picked or written stays while the user may not write; it shows again when they may.
             attachPreview =
                 overlays.preview?.takeIf { canWrite }?.let {

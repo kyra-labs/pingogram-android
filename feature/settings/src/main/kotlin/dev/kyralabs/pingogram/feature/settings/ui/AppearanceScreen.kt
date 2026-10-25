@@ -43,13 +43,16 @@ import java.text.NumberFormat
  * The Appearance page: hoists [AppearanceViewModel], shows in snackbars the changes that could not be saved, and tells
  * the page what this device supports: wallpaper colors from Android 12, and from Android 14 the system's contrast
  * level, which the theme follows instead of the app's. [onOpenColorTheme] opens the Theme page,
- * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react; [onBack] leaves.
+ * [onOpenChatAppearance] the Chat appearance page, [onOpenQuickReaction] Double-tap to react, [onOpenSwipeActions]
+ * Swipe actions; [onBack] leaves.
  */
+@Suppress("LongParameterList") // The four pages it opens, back, the modifier and the view model.
 @Composable
 internal fun AppearanceRoute(
     onOpenColorTheme: () -> Unit,
     onOpenChatAppearance: () -> Unit,
     onOpenQuickReaction: () -> Unit,
+    onOpenSwipeActions: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppearanceViewModel = hiltViewModel(),
@@ -74,6 +77,7 @@ internal fun AppearanceRoute(
         onOpenColorTheme = onOpenColorTheme,
         onOpenChatAppearance = onOpenChatAppearance,
         onOpenQuickReaction = onOpenQuickReaction,
+        onOpenSwipeActions = onOpenSwipeActions,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -86,7 +90,8 @@ internal fun AppearanceRoute(
  * Appearance (`REQUIREMENTS.md` FR-S2; `docs/DESIGN_SYSTEM.md` §2.1): light or dark (system, light or dark, as a
  * connected button group) and AMOLED black, then the color theme, a row that opens the Theme page with the theme's
  * chip at its end ([onOpenColorTheme]: the wallpaper's colors where [dynamicColorAvailable], or a generated theme), and
- * the contrast level; then under "Chat list" whether story rings show above the chats; then under "Chats" a row that
+ * the contrast level; then under "Chat list" a row that opens Swipe actions ([onOpenSwipeActions]) and whether story
+ * rings show above the chats; then under "Chats" a row that
  * opens the Chat appearance page ([onOpenChatAppearance]: message text size, bubble corners, wallpaper) with their
  * summary, a row that opens Double-tap to react ([onOpenQuickReaction]), and which Enter sends on a hardware and on
  * the on-screen keyboard.
@@ -102,6 +107,7 @@ internal fun AppearanceScreen(
     onOpenColorTheme: () -> Unit = {},
     onOpenChatAppearance: () -> Unit = {},
     onOpenQuickReaction: () -> Unit = {},
+    onOpenSwipeActions: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     dynamicColorAvailable: Boolean = true,
     systemContrast: Contrast? = null,
@@ -122,7 +128,7 @@ internal fun AppearanceScreen(
                     state.settings,
                     ChatsSettings(state.sendKeys, state.raiseToListen, state.chatList),
                     onEvent,
-                    AppearancePages(onOpenColorTheme, onOpenChatAppearance, onOpenQuickReaction),
+                    AppearancePages(onOpenColorTheme, onOpenChatAppearance, onOpenQuickReaction, onOpenSwipeActions),
                     dynamicColorAvailable,
                     systemContrast,
                 )
@@ -187,7 +193,7 @@ private fun AppearanceSettingsContent(
             )
         }
     }
-    ChatListGroup(chats.chatList, onEvent)
+    ChatListGroup(chats.chatList, onEvent, pages.onOpenSwipeActions)
     ChatsGroup(settings.chat, chats, onEvent, pages.onOpenChatAppearance, pages.onOpenQuickReaction)
 }
 
@@ -196,6 +202,7 @@ private class AppearancePages(
     val onOpenColorTheme: () -> Unit,
     val onOpenChatAppearance: () -> Unit,
     val onOpenQuickReaction: () -> Unit,
+    val onOpenSwipeActions: () -> Unit,
 )
 
 @PingogramPreviews

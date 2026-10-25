@@ -13,6 +13,7 @@ internal class ChatPreviewStates : PreviewParameterProvider<ChatUiState> {
                 PinnedPreviewData.privateWithPin,
                 PinnedPreviewData.groupWithPins,
                 channel,
+                ShareButtonPreviewData.channel,
                 ThreadPreviewData.channelWithComments,
                 ThreadPreviewData.comments,
                 SponsoredPreviewData.channel,

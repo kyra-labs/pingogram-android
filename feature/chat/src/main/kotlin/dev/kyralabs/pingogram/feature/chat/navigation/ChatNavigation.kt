@@ -36,7 +36,8 @@ import dev.kyralabs.pingogram.core.navigation.ChatRoute as ChatDestination
  * [onOpenProfile] a user's profile, from the title of a private chat, a sender's avatar or name, or a mention;
  * [onOpenChatInfo] the info page of a group or channel, from its title; [onOpenThread] pushes a forum topic or a
  * message thread opened from it, a [ChatDestination] too; [onOpenScheduledMessages] the list of the chat's scheduled
- * messages, from their bar (`scheduledMessagesScreen`).
+ * messages, from their bar (`scheduledMessagesScreen`). [onOpenNextChat] opens the next unread channel, which a read
+ * channel offers, in the conversation's place ([onOpenChat] without it).
  */
 fun NavGraphBuilder.chatScreen(
     onBack: () -> Unit,
@@ -46,6 +47,7 @@ fun NavGraphBuilder.chatScreen(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
+    onOpenNextChat: ((chatId: Long) -> Unit)? = null,
 ) {
     composable<ChatDestination> { entry ->
         val route = entry.toRoute<ChatDestination>()
@@ -61,6 +63,7 @@ fun NavGraphBuilder.chatScreen(
                 onOpenProfile = onOpenProfile,
                 onOpenChatInfo = onOpenChatInfo,
                 onOpenScheduledMessages = onOpenScheduledMessages,
+                onOpenNextChat = onOpenNextChat,
             )
         }
     }

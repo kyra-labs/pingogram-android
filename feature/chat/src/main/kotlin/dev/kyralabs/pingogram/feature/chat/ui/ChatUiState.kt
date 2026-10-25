@@ -287,6 +287,8 @@ sealed interface ChatItem {
      *   null for every other bubble, and while none is checked.
      * @property schedule when a scheduled message goes out (`REQUIREMENTS.md` FR-C5), shown in its meta in the list of
      *   scheduled messages, [time] then being its send time; null for messages of the history.
+     * @property hasShareButton a channel post, or a message forwarded from a channel: the share button beside it
+     *   forwards it, where the chat lets messages be forwarded ([showsShareButton]).
      */
     data class Bubble(
         val id: Long,
@@ -321,6 +323,7 @@ sealed interface ChatItem {
         val searchMatch: MatchHighlight? = null,
         val pollChoices: ImmutableSet<Int>? = null,
         val schedule: BubbleSchedule? = null,
+        val hasShareButton: Boolean = false,
     ) : ChatItem {
         override val key: Any get() = album?.let { albumKey(it.id) } ?: id
 

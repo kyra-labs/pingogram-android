@@ -78,12 +78,15 @@ enum class ReactionSectionKind {
 /**
  * The actions every bubble offers screen readers directly (`docs/DESIGN_SYSTEM.md` §9), besides opening its actions
  * sheet: replying where the user can write ([canReply]), copying a text where the chat lets its content be saved
- * ([canCopy]). They are checked against TDLib when chosen, like the sheet's.
+ * ([canCopy]), forwarding a channel post from its share button where the chat lets its messages be forwarded
+ * ([canForward]: no protected content, not a secret chat). They are checked against TDLib when chosen, like the
+ * sheet's.
  */
 @Immutable
 data class MessageShortcuts(
     val canReply: Boolean = false,
     val canCopy: Boolean = false,
+    val canForward: Boolean = false,
 )
 
 /** What the actions sheet offers for a message, each only where TDLib allows it. */
