@@ -325,6 +325,12 @@ regresses by more than 10%.
   rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
   its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
   under ~10% may be thermal.
+- Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
+  budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
+  baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
+  v0.5.0's numbers below). Times are the start times' medians, the frame time percentiles and the trace sections'
+  medians; the share of late frames is checked against its budget only. `--write-baseline` records a run as the new
+  baseline. `docs/RELEASE.md` runs it before each release, on the owner's phone, as there is no device in CI.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.
