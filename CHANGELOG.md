@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Privacy and security: "Show IDs" (off by default) shows the ID of a person on their profile, and of a group or
+  channel on its info page; tap it to copy it.
 - Privacy and security: "Suggest frequent contacts" lets you turn off the people search suggests from those you write
   to most, which clears them.
 - Data and storage: "Reset automatic download" puts every network's defaults back, "Prefer IPv6" connects over IPv6

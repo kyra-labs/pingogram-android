@@ -171,6 +171,7 @@ private fun Resources.copied(what: CopiedText): String =
             CopiedText.Username -> R.string.profile_username_copied
             CopiedText.Phone -> R.string.profile_phone_copied
             CopiedText.Bio -> R.string.profile_bio_copied
+            CopiedText.Id -> R.string.profile_id_copied
         },
     )
 

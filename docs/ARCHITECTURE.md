@@ -362,6 +362,12 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   the calling code and the separators and turns the other digits into dots (`maskPhoneNumber`). What is copied, dialled
   or sent keeps the number; fields where the user types one show what is typed. `feature:settings`'
   `PhoneNumberVisibilityViewModel` holds the switch.
+- **Showing IDs** (Privacy and security, off by default): `core:domain`'s `IdVisibilityRepository`
+  (`DataStoreIdVisibilityRepository`, the settings file). `feature:profile`'s `ProfileViewModel` and
+  `ChatInfoViewModel` follow it and put the user's or chat's ID (TDLib's, the one the bot API uses) into their state
+  while it is on (`ProfileInfo.id`, `ChatInfoUiState.Content.id`), which the Info group shows as a row that copies it
+  (`IdRow`). td_api.tl tells no user's or chat's data center, so none shows. `feature:settings`' `IdVisibilityViewModel`
+  holds the switch.
 - **Websites** (Privacy and security, "Log in with Telegram"): `core:domain`'s `ConnectedWebsiteRepository`
   (`TdlibConnectedWebsiteRepository`, `core:data`, no cache: TDLib announces no changes to them) lists the websites
   logged in with the account (`getConnectedWebsites`) and logs one or all of them out (`disconnectWebsite`,
