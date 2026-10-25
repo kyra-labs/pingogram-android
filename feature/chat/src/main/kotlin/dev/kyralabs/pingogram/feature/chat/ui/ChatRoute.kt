@@ -132,6 +132,7 @@ internal fun ConversationRoute(
     val sendKeys by sendKeysViewModel.sendKeys.collectAsStateWithLifecycle()
     val doubleTap by doubleTapViewModel.doubleTap.collectAsStateWithLifecycle()
     ChatStartedEffect(viewModel)
+    OpenChatTraceEffect(chatId, shown = state.content !is ChatContent.Loading)
     val snackbarHostState = remember { SnackbarHostState() }
     val jumpState = rememberMessageJumpState()
     val composerFocus = rememberComposerFocusState(requestAtStart = focusComposer)
