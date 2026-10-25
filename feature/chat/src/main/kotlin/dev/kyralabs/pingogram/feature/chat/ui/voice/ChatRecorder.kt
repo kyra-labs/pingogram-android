@@ -218,7 +218,7 @@ internal class ChatRecorder(
     private fun send(voiceNote: RecordedVoiceNote) {
         val replyTo = replies.takeReply()
         scope.launch {
-            val result = repository.sendVoiceNote(chatId, voiceNote, replyToMessageId = replyTo)
+            val result = repository.sendVoiceNote(chatId, voiceNote, replyTo = replyTo)
             if (result is Outcome.Failure) {
                 replyTo?.let(replies::restoreReply)
                 onEffect(ChatEffect.ShowError(result.error))

@@ -16,11 +16,13 @@ import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -262,7 +264,7 @@ class TdlibAttachmentRepositoryTest {
             answerSends()
             val options = SendOptions(silent = true, scheduledAt = 1_800_000_000)
 
-            repository().send(CHAT, List(11) { photo() }, text(""), options, replyToMessageId = 42)
+            repository().send(CHAT, List(11) { photo() }, text(""), options, replyTo = ReplyTarget(42))
 
             val album = client.sentOf<TdApi.SendMessageAlbum>().single()
             val single = client.sentOf<TdApi.SendMessage>().single()
@@ -272,6 +274,62 @@ class TdlibAttachmentRepositoryTest {
                 assertTrue(sent.disableNotification)
                 assertEquals(1_800_000_000, (sent.schedulingState as TdApi.MessageSchedulingStateSendAtDate).sendDate)
             }
+        }
+
+    @Test
+    fun `an attachment takes a quote and a reply in another chat along`() =
+        runTest {
+            answerSends()
+            val quote = TextQuote(text("on tonight"), position = 18)
+
+            repository().send(CHAT, listOf(photo()), text(""), replyTo = ReplyTarget(42, quote, chatId = 300))
+
+            val replyTo =
+                client.sentOf<TdApi.SendMessage>().single().replyTo as TdApi.InputMessageReplyToExternalMessage
+            assertEquals(
+                listOf<Any?>(300L, 42L, "on tonight", 18),
+                listOf(replyTo.chatId, replyTo.messageId, replyTo.quote.text.text, replyTo.quote.position),
+            )
+        }
+
+    @Test
+    fun `editMedia sends the new photo with the caption and deletes the copy once TDLib answered`() =
+        runTest {
+            client.on(TdApi.EditMessageMedia::class, TdResult.Success(message(id = 9, chatId = CHAT)))
+            val photo = photo()
+
+            val result = repository().editMedia(CHAT, 9, photo, text("New view"), showCaptionAboveMedia = true)
+            runCurrent()
+
+            val request = client.sentOf<TdApi.EditMessageMedia>().single()
+            val content = request.inputMessageContent as TdApi.InputMessagePhoto
+            assertEquals(Outcome.Success(Unit), result)
+            assertEquals(listOf<Any?>(CHAT, 9L, null), listOf(request.chatId, request.messageId, request.replyMarkup))
+            assertEquals(
+                listOf<Any?>(photo.path, "New view", true),
+                listOf(
+                    (content.photo.photo as TdApi.InputFileLocal).path,
+                    content.caption.text,
+                    content.showCaptionAboveMedia,
+                ),
+            )
+            assertFalse(File(photo.path).exists())
+        }
+
+    @Test
+    fun `a refused media edit fails, its copy deleted too, and an empty caption is none`() =
+        runTest {
+            client.on(TdApi.EditMessageMedia::class, TdResult.Failure(TdError(400, "MESSAGE_NOT_MODIFIED")))
+            val file = document()
+
+            val result = repository().editMedia(CHAT, 9, file, text(""))
+            runCurrent()
+
+            val content =
+                client.sentOf<TdApi.EditMessageMedia>().single().inputMessageContent as TdApi.InputMessageDocument
+            assertTrue(result is Outcome.Failure)
+            assertNull(content.caption)
+            assertFalse(File(file.path).exists())
         }
 
     @Test
@@ -293,7 +351,7 @@ class TdlibAttachmentRepositoryTest {
         runTest {
             answerSends()
 
-            repository().sendContact(CHAT, Contact("+15551234567", "Ada Lovelace", "", 0), replyToMessageId = 7)
+            repository().sendContact(CHAT, Contact("+15551234567", "Ada Lovelace", "", 0), replyTo = ReplyTarget(7))
 
             val request = client.sentOf<TdApi.SendMessage>().single()
             val contact = (request.inputMessageContent as TdApi.InputMessageContact).contact
@@ -310,7 +368,7 @@ class TdlibAttachmentRepositoryTest {
             answerSends()
             val here = DeviceLocation(Location(48.858370, 2.294481), accuracyMeters = 12.5f)
 
-            repository().sendLocation(CHAT, here, SendOptions(silent = true), replyToMessageId = 7)
+            repository().sendLocation(CHAT, here, SendOptions(silent = true), replyTo = ReplyTarget(7))
 
             val request = client.sentOf<TdApi.SendMessage>().single()
             val location = (request.inputMessageContent as TdApi.InputMessageLocation).location
@@ -337,7 +395,7 @@ class TdlibAttachmentRepositoryTest {
                     file = FileRef(70, 30_000),
                 )
 
-            repository().sendSticker(CHAT, duck, replyToMessageId = 7)
+            repository().sendSticker(CHAT, duck, replyTo = ReplyTarget(7))
 
             val request = client.sentOf<TdApi.SendMessage>().single()
             val content = request.inputMessageContent as TdApi.InputMessageSticker

@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.domain.model.KeyboardButtonType
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.ReplyMarkup
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -278,7 +279,7 @@ internal class ChatBotKeyboard(
         whilePending(target.position) {
             val own = composer.takeReply()
             val text = FormattedText(target.button.text, persistentListOf())
-            val result = messages.sendText(chatId, text, replyToMessageId = own ?: groupReplyTo(target.message))
+            val result = messages.sendText(chatId, text, replyTo = own ?: groupReplyTo(target.message))
             if (result is Outcome.Failure) {
                 own?.let(composer::restoreReply)
                 onEffect(ChatEffect.ShowError(result.error))
@@ -313,7 +314,7 @@ internal class ChatBotKeyboard(
                     val contact = Contact(me.phoneNumber, me.firstName, me.lastName, me.id)
                     val own = composer.takeReply()
                     attachments
-                        .sendContact(chatId, contact, replyToMessageId = own ?: groupReplyTo(target.message))
+                        .sendContact(chatId, contact, replyTo = own ?: groupReplyTo(target.message))
                         .also { if (it is Outcome.Failure) own?.let(composer::restoreReply) }
                 }
             closeDialog()
@@ -418,7 +419,7 @@ internal class ChatBotKeyboard(
     }
 
     /** The keyboard's message, in a group, where a button's message replies to it; null in a private chat. */
-    private fun groupReplyTo(message: Message): Long? = message.id.takeUnless { isPrivateChat }
+    private fun groupReplyTo(message: Message): ReplyTarget? = ReplyTarget(message.id).takeUnless { isPrivateChat }
 
     private suspend fun userOf(userId: Long): User? = (users.getUser(userId) as? Outcome.Success)?.value
 

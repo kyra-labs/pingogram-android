@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.Contact
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -54,6 +55,13 @@ class FakeAttachmentRepository : AttachmentRepository {
     val sentPolls = mutableListOf<SentPoll>()
     var onSendPoll: suspend (NewPoll) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
+    /** What every send replied to, with its quote and chat, in order; null for none. */
+    val replyTargets = mutableListOf<ReplyTarget?>()
+
+    /** Every [editMedia] call, in order. */
+    val editedMedia = mutableListOf<EditedMedia>()
+    var onEditMedia: suspend (EditedMedia) -> Outcome<Unit> = { Outcome.Success(Unit) }
+
     /** The message ids of every [cancelUpload] call. */
     val cancelled = mutableListOf<List<Long>>()
     var onCancelUpload: suspend (List<Long>) -> Outcome<Unit> = { Outcome.Success(Unit) }
@@ -88,8 +96,10 @@ class FakeAttachmentRepository : AttachmentRepository {
         attachments: List<Attachment>,
         caption: FormattedText,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         val send = SentAttachments(chatId, attachments, caption, options, replyToMessageId)
         sent += send
         return onSend(send)
@@ -99,8 +109,10 @@ class FakeAttachmentRepository : AttachmentRepository {
         chatId: Long,
         contact: Contact,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         sentContacts += contact to replyToMessageId
         return onSendContact(contact)
     }
@@ -109,8 +121,10 @@ class FakeAttachmentRepository : AttachmentRepository {
         chatId: Long,
         location: DeviceLocation,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         sentLocations += Triple(location, options, replyToMessageId)
         return onSendLocation(location)
     }
@@ -119,8 +133,10 @@ class FakeAttachmentRepository : AttachmentRepository {
         chatId: Long,
         sticker: Sticker,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         sentStickers += Triple(sticker, options, replyToMessageId)
         return onSendSticker(sticker)
     }
@@ -129,8 +145,10 @@ class FakeAttachmentRepository : AttachmentRepository {
         chatId: Long,
         animation: Animation,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         sentAnimations += Triple(animation, options, replyToMessageId)
         return Outcome.Success(Unit)
     }
@@ -139,10 +157,24 @@ class FakeAttachmentRepository : AttachmentRepository {
         chatId: Long,
         poll: NewPoll,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        replyTargets += replyTo
+        val replyToMessageId = replyTo?.messageId
         sentPolls += SentPoll(poll, options, replyToMessageId)
         return onSendPoll(poll)
+    }
+
+    override suspend fun editMedia(
+        chatId: Long,
+        messageId: Long,
+        attachment: Attachment,
+        caption: FormattedText,
+        showCaptionAboveMedia: Boolean,
+    ): Outcome<Unit> {
+        val edit = EditedMedia(chatId, messageId, attachment, caption, showCaptionAboveMedia)
+        editedMedia += edit
+        return onEditMedia(edit)
     }
 
     override suspend fun cancelUpload(
@@ -160,6 +192,15 @@ class FakeAttachmentRepository : AttachmentRepository {
         val caption: FormattedText,
         val options: SendOptions,
         val replyToMessageId: Long?,
+    )
+
+    /** One [editMedia] call. */
+    data class EditedMedia(
+        val chatId: Long,
+        val messageId: Long,
+        val attachment: Attachment,
+        val caption: FormattedText,
+        val showCaptionAboveMedia: Boolean,
     )
 
     /** One [sendPoll] call. */

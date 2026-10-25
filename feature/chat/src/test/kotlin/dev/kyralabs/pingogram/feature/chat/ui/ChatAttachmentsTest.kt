@@ -23,6 +23,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.Photo
 import dev.kyralabs.pingogram.core.domain.model.PhotoSize
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -71,7 +72,7 @@ class ChatAttachmentsTest : ChatViewModelHarness() {
         replyTo: Long? = null,
         handle: SavedStateHandle = savedState,
     ): ChatViewModel {
-        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, it) }
+        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, ReplyTarget(it)) }
         chats.setChats(chat(draft = draft))
         messages.setHistory(ADA, history(message(1)))
         return viewModel(handle = handle)

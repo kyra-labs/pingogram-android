@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.chat.ui
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 
@@ -28,8 +29,9 @@ class FakeVoiceNoteRepository : VoiceNoteRepository {
         chatId: Long,
         voiceNote: RecordedVoiceNote,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        val replyToMessageId = replyTo?.messageId
         sentVoiceNotes += voiceNote to replyToMessageId
         return onSendVoiceNote(voiceNote)
     }

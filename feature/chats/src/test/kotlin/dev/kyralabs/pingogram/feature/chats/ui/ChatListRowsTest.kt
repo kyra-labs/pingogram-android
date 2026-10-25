@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SecretChatState
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
 import dev.kyralabs.pingogram.core.domain.model.SendingState
@@ -64,7 +65,7 @@ class ChatListRowsTest : ChatListViewModelHarness() {
     @Test
     fun `a draft that is only a reply shows the last message`() =
         runTest {
-            val replyOnly = draft("").copy(replyToMessageId = 7)
+            val replyOnly = draft("").copy(replyTo = ReplyTarget(7))
 
             val row = rowOf(chat(id = 2, lastMessage = message(chatId = 2), draft = replyOnly))
 
