@@ -90,3 +90,33 @@ data class RecordedVoiceNote(
 ) {
     override fun toString() = "RecordedVoiceNote(duration=$duration, $waveform, …)"
 }
+
+/**
+ * Where a round video message is recorded (`docs/adr/0032-round-video-messages.md`): the MP4 file at [video], new and
+ * empty, and the path for the JPEG still of its first frame ([thumbnail]), not created yet, both in one directory of
+ * the app's upload cache made for them (`VideoNoteRepository.newVideoNoteFiles`).
+ *
+ * `toString()` leaves out the paths.
+ */
+data class VideoNoteFiles(
+    val video: String,
+    val thumbnail: String,
+) {
+    override fun toString() = "VideoNoteFiles(…)"
+}
+
+/**
+ * A round video message the user recorded in the composer (`docs/adr/0032-round-video-messages.md`), ready to send:
+ * the square MP4 at [path] in the app's cache (from [VideoNoteFiles]), [duration] in seconds (at least 1, at most 60),
+ * [length] the side of its square in pixels, and the still of its first frame ([thumbnail]; null if none was made).
+ *
+ * `toString()` leaves out the path.
+ */
+data class RecordedVideoNote(
+    val path: String,
+    val duration: Int,
+    val length: Int,
+    val thumbnail: AttachmentThumbnail?,
+) {
+    override fun toString() = "RecordedVideoNote(duration=$duration, length=$length, …)"
+}

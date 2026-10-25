@@ -15,6 +15,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chat.R
@@ -42,9 +43,10 @@ import kotlinx.coroutines.launch
  * channel's discussion group, or the replies to a group's message). A topic's or thread's conversation is the chat's,
  * scoped to it:
  *
- * - **Repositories** ([messages], [attachments], [voiceNotes], [chats]): its own history and pages, every message sent
- *   into it, its messages viewed there (`TopicMessageRepository` and the others). A thread's history starts with the
- *   messages that start it (its head: the channel post, or the message replied to), without their link to the thread.
+ * - **Repositories** ([messages], [attachments], [voiceNotes], [videoNotes], [chats]): its own history and pages,
+ *   every message sent into it, its messages viewed there (`TopicMessageRepository` and the others). A thread's
+ *   history starts with the messages that start it (its head: the channel post, or the message replied to), without
+ *   their link to the thread.
  * - **The chat** ([inThread]) reads as the topic or thread: its unread count, read state and last message, so the jump
  *   button's badge, the read checks and opening at the first unread message follow it; it has no draft, as topics and
  *   threads keep drafts of their own, which the composer does not sync yet ([drafts]: none).
@@ -130,6 +132,9 @@ internal class ChatThread(
 
     fun voiceNotes(voiceNotes: VoiceNoteRepository): VoiceNoteRepository =
         topic?.let { TopicVoiceNoteRepository(voiceNotes, it) } ?: voiceNotes
+
+    fun videoNotes(videoNotes: VideoNoteRepository): VideoNoteRepository =
+        topic?.let { TopicVideoNoteRepository(videoNotes, it) } ?: videoNotes
 
     fun inlineBots(inlineBots: InlineBotRepository): InlineBotRepository =
         topic?.let { TopicInlineBotRepository(inlineBots, it) } ?: inlineBots

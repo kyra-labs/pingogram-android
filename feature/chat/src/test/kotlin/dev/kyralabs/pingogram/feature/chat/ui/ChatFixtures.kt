@@ -107,6 +107,8 @@ object ChatFixtures {
         lastMessage: Message? = null,
         lastReadInboxMessageId: Long = 0,
         color: TopicColor = TopicColor.Blue,
+        isHidden: Boolean = false,
+        isOutgoing: Boolean = false,
     ) = ForumTopic(
         chatId = FORUM_CHAT,
         id = id,
@@ -114,7 +116,7 @@ object ChatFixtures {
         icon = ForumTopicIcon(color, customEmojiId = 0),
         isGeneral = isGeneral,
         isClosed = isClosed,
-        isHidden = false,
+        isHidden = isHidden,
         isPinned = isPinned,
         lastMessage = lastMessage,
         order = 0,
@@ -122,6 +124,7 @@ object ChatFixtures {
         unreadMentionCount = 0,
         lastReadInboxMessageId = lastReadInboxMessageId,
         lastReadOutboxMessageId = 0,
+        isOutgoing = isOutgoing,
     )
 
     val channelChat =

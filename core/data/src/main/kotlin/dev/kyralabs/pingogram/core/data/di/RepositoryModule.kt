@@ -90,6 +90,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibTranslationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibTwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserProfileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibVideoNoteRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
@@ -177,6 +178,7 @@ import dev.kyralabs.pingogram.core.domain.repository.TranslationRepository
 import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserProfileRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import dev.kyralabs.pingogram.core.domain.repository.VideoNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 
 /**
@@ -246,6 +248,9 @@ interface RepositoryModule {
 
     @Binds
     fun voiceNoteRepository(repository: TdlibVoiceNoteRepository): VoiceNoteRepository
+
+    @Binds
+    fun videoNoteRepository(repository: TdlibVideoNoteRepository): VideoNoteRepository
 
     @Binds
     fun chatActionRepository(repository: TdlibChatActionRepository): ChatActionRepository

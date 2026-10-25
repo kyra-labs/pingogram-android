@@ -79,6 +79,47 @@ class UploadCleanerTest {
         }
 
     @Test
+    fun `a recorded voice message and a video message with its thumbnail are deleted once sent`() =
+        runTest {
+            cleaner()
+            val voice = copy("voice.ogg")
+            val video = copy("video_note.mp4")
+            val still = File(video.parentFile, "video_note.jpg").apply { writeText("data") }
+            val voiceMessage = { id: Long, state: TdApi.MessageSendingState? ->
+                val note = TdApiFixtures.voiceNote(file = file(id = 30, localPath = voice.path))
+                message(
+                    id = id,
+                    isOutgoing = true,
+                    sendingState = state,
+                    content = TdApiFixtures.messageVoiceNote(note),
+                )
+            }
+            val videoMessage = { id: Long, state: TdApi.MessageSendingState? ->
+                val thumbnail = TdApiFixtures.thumbnail(file = file(id = 32, localPath = still.path))
+                val note =
+                    TdApiFixtures.videoNote(file = file(id = 31, localPath = video.path)).apply {
+                        this.thumbnail =
+                            thumbnail
+                    }
+                message(
+                    id = id,
+                    isOutgoing = true,
+                    sendingState = state,
+                    content = TdApi.MessageVideoNote(note, false, false),
+                )
+            }
+
+            emit(updateNewMessage(voiceMessage(-1, pendingState())))
+            emit(updateNewMessage(videoMessage(-2, pendingState())))
+            assertTrue(voice.exists() && video.exists() && still.exists())
+            emit(updateMessageSendSucceeded(voiceMessage(10, null), oldMessageId = -1))
+            emit(updateMessageSendSucceeded(videoMessage(11, null), oldMessageId = -2))
+
+            assertFalse(voice.parentFile!!.exists())
+            assertFalse(video.parentFile!!.exists())
+        }
+
+    @Test
     fun `a copy is deleted when the message names it, also when it was not followed`() =
         runTest {
             // After a restart nothing is followed; TDLib keeps the local path of an uploaded file.

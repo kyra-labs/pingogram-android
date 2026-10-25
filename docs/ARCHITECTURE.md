@@ -9,6 +9,7 @@
 │  :feature:*  — one module per user-facing area                 │
 │   auth · chats · chat · contacts · profile · settings · media   │
 │   · scanner (the QR code scanner, CameraX) · calls (NTgCalls)  │
+│   · chat records round video messages with CameraX too         │
 │   · feedback (the report testers share themselves)             │
 │   Each: Screen composables + ViewModel + UiState + navigation  │
 ├────────────────────────────────────────────────────────────────┤
@@ -530,7 +531,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   topic (unread count, read state; no draft, which topics keep apart and the composer does not sync yet), and puts the
   topic's name in the header and a closed topic's label in the composer. A topic tapped in the list is pushed above it
   (`chatScreen`'s `onOpenThread`); in the Chats tab's detail pane it takes the pane's place (`ChatPane`'s saved stack of
-  topics and threads, shared axis X, back returning to the list). Creating, editing and closing topics come later.
+  topics and threads, shared axis X, back returning to the list). Managing topics: `ForumTopicRepository` also creates
+  (`createForumTopic`, the name and one of Telegram's six icon colors), renames (`editForumTopic`, the icon kept: a
+  topic's color is chosen once, and Pingogram offers no custom emoji icons), closes and reopens
+  (`toggleForumTopicIsClosed`), pins, unpins and reorders the pinned ones (`toggleForumTopicIsPinned`,
+  `setPinnedForumTopics`, the new order applied once TDLib took it), deletes (`deleteForumTopic`, the topic dropped then)
+  and hides or shows General (`toggleGeneralForumTopicIsHidden`); TDLib's updates bring the rest back, and a blank name
+  is refused before TDLib (`DomainError.TitleInvalid`). What the user may do comes from their role in the forum
+  (`GroupInfoRepository.groupInfo`, `ForumRights` of `feature:chat`'s `topics/`): `can_manage_topics` for everything but
+  deleting, which takes `can_delete_messages`; the creator of a topic renames, closes and reopens it; creating takes the
+  members' `can_create_topics` (a restricted member's too). `TopicManagement` (the editor and the question before
+  deleting in saved state, the toggles, their effects) is a part of both the list's `ForumTopicsViewModel` (which also
+  keeps a hidden General for those who may show it, and a dragged order until Telegram takes or refuses it) and
+  `TopicActionsViewModel`, a view model of the topic's conversation apart from `ChatViewModel`
+  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic".
 - **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
   `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
   whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first
@@ -973,6 +987,19 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   with `sendVoiceNote` (`inputMessageVoiceNote`); like
   picked files, the file is deleted once TDLib uploaded it (`UploadCleaner`), or when the recording is cancelled or
   refused.
+- Round video messages (FR-C5, `docs/adr/0032-round-video-messages.md`) go through the same `ChatRecorder`, whose
+  record button a tap switches to video (`RecordModeUiState`, kept in `ComposerSettingsRepository.recordsVideoMessages`
+  where the device has a camera): `feature:chat`'s `videonote/` package records them on `VideoNoteRecorder`
+  (`CameraXVideoNoteRecorder`: CameraX's `Preview` and `VideoCapture` of a `Recorder` in one `UseCaseGroup` with a 1:1
+  `ViewPort`, bound to a lifecycle of its own that is resumed only while it records, a persistent recording so a flip
+  rebinds the other camera; SD quality cropped square, about 1 Mbit/s, at most 60 s) into the files
+  `VideoNoteRepository.newVideoNoteFiles` (`TdlibVideoNoteRepository`, `core:data`) makes in the upload cache
+  (`uploads/<uuid>/video_note.mp4` and the first frame's `video_note.jpg`), and sends them with `sendVideoNote`
+  (`inputMessageVideoNote`, through the thread's `TopicVideoNoteRepository` in a topic), cleaned up as voice notes
+  are. The preview is the recorder's `SurfaceRequest` (`ChatViewModel.videoNotePreview`), drawn by camera-compose's
+  `CameraXViewfinder` in the round preview over the messages. CameraX is in two feature modules now, `feature:scanner`
+  and `feature:chat`, at one catalog version: an upgrade changes both, and a third camera feature moves them into a
+  `:core:camera` module.
 - Without compression (`AttachmentKind.Original`, the attach preview's switch, its default `ComposerSettingsRepository.sendPhotosInOriginalQuality`
   in Data and storage): `ChatAttachments` keeps the gallery's URIs of the preview's items and, on sending, prepares
   each again as a file. `AttachmentPreparer` copies a JPEG's image data byte for byte without its metadata

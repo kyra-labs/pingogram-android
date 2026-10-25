@@ -35,7 +35,7 @@ in the `gms` build only, a push token to Firebase Cloud Messaging. The developer
 |---|---|---|
 | Does your app collect or share any of the required user data types? | **Yes** | messages, contacts (opt-in), location (when sent), media, account details go to Telegram |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** | MTProto 2.0 by TDLib to Telegram's data centers; FCM over TLS; `networkSecurityConfig` refuses cleartext (`REQUIREMENTS.md` §6.2) |
-| Do you provide a way for users to request that their data is deleted? | **Yes** | account deletion: in the app (Settings → Privacy and security → Delete account) and on the web. **Delete account URL** for the form: `<website>/delete-account` (planned on the Pingogram website, content in `docs/website/delete-account.md`; it must be published, and its domain filled in here, before the Play listing); the page leads to Telegram's own `https://my.telegram.org/deactivate`. Telegram deletes the account's messages and contacts; Pingogram holds no account data. Opt-in contacts sync deletes the imported contacts when turned off (`docs/adr/0011-contacts-sync.md`) |
+| Do you provide a way for users to request that their data is deleted? | **Yes** | account deletion: in the app (Settings → Privacy and security → Delete account) and on the web. **Delete account URL** for the form: `https://pingogram.kyralabs.dev/delete-account/` (the Pingogram website's page, published from `docs/website/delete-account.md`); the page leads to Telegram's own `https://my.telegram.org/deactivate`. Telegram deletes the account's messages and contacts; Pingogram holds no account data. Opt-in contacts sync deletes the imported contacts when turned off (`docs/adr/0011-contacts-sync.md`) |
 | Has your app successfully completed an independent security review (MASA)? | No | |
 
 ### 2.2 Data types
@@ -211,8 +211,9 @@ that key, not a key Google generates:
 ## 8. Before the first Play release
 
 - **Account deletion page on the web** (Play's account deletion policy): the app's Delete account page is in
-  (Settings → Privacy and security). The owner publishes `docs/website/delete-account.md` on the Pingogram website and
-  puts its address in §2.1 and in the Data safety form's "Delete account URL".
+  (Settings → Privacy and security), and `docs/website/delete-account.md` is published on the Pingogram website at
+  `https://pingogram.kyralabs.dev/delete-account/` (§2.1). Enter that address in the Data safety form's "Delete account
+  URL".
 - **Privacy policy**: `PRIVACY.md` once this is merged; its GitHub URL is the policy's address.
 - **Screenshots** padded to 9:16 (§4).
 - **Telegram's terms**: Telegram allows third-party clients built on its API (`https://core.telegram.org/api/terms`)

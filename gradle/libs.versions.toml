@@ -34,7 +34,9 @@ assertj = "3.27.7"
 # CameraX for the in-app QR code scanner only (feature:scanner, REQUIREMENTS.md FR-P5; approved by the owner 2026-10-21;
 # docs/adr/0012-camerax-and-zxing-qr-scanner.md): camera-core, its Camera2 implementation, the lifecycle binding and
 # camera-compose's CameraXViewfinder. First-party Jetpack, no network code and no Google Play services, so foss stays
-# Google-free; frames are decoded on the device by ZXing and never leave it.
+# Google-free; frames are decoded on the device by ZXing and never leave it. The same artifacts, and camera-video's
+# VideoCapture and Recorder, record round video messages in feature:chat (approved by the owner 2026-10-23;
+# docs/adr/0032-round-video-messages.md): first-party, no network code; the video goes only into the message sent.
 camerax = "1.6.2"
 # Coil 3 image loading, without any coil-network-* artifact: images come only from TDLib's local files
 # (core:ui TdlibFileFetcher), so Coil makes no network calls of its own (REQUIREMENTS.md §6.2).
@@ -136,6 +138,7 @@ camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.
 camerax-compose = { group = "androidx.camera", name = "camera-compose", version.ref = "camerax" }
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+camerax-video = { group = "androidx.camera", name = "camera-video", version.ref = "camerax" }
 # AsyncImage and the singleton ImageLoader; brings coil-core (okio, coroutines). No network artifact (see coil above).
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }

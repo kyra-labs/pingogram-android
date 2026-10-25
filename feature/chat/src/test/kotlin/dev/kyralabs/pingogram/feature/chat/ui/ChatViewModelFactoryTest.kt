@@ -20,6 +20,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.search.FakeChatSearchRepository
 import dev.kyralabs.pingogram.feature.chat.ui.search.FakeGroupInfoRepository
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
 import dev.kyralabs.pingogram.feature.chat.ui.translation.TranslationRepositories
+import dev.kyralabs.pingogram.feature.chat.ui.videonote.VideoNoteRecording
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -91,6 +92,12 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 audioPlayer = player,
                 voiceRecorder = FakeVoiceRecorder(),
                 voiceNoteRepository = FakeVoiceNoteRepository(),
+                videoNotes =
+                    VideoNoteRecording(
+                        FakeVideoNoteRecorder(),
+                        FakeVideoNoteRepository(),
+                        FakeComposerSettingsRepository(),
+                    ),
                 sendAsRepository = FakeSendAsRepository(),
                 secretChatRepository = FakeSecretChatRepository(),
                 autoDownloadPolicy = autoDownloads,

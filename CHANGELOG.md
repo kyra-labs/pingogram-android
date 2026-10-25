@@ -16,6 +16,17 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
   conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
   away for a minute. The locks stay on this device; your other devices show the chats as usual.
+- Forum topics: members with the right create topics ("New topic" in the topic list's top bar: a name and one of six
+  colors), and rename, close and reopen, pin and unpin, and delete them from a topic's long press or its
+  conversation's "Manage topic" button; deleting asks first. Pinned topics reorder by dragging their handles.
+  Administrators hide or show the General topic. Members who may create topics rename, close and reopen their own.
+- Round video messages: tap the microphone beside the message field to switch it to a camera, then hold it to record a
+  round video message, up to a minute, with the same gestures as a voice message: slide left to cancel, slide up to
+  keep recording hands-free, let go to send. A round preview above the field shows what the camera sees and how much
+  of the minute is used. Hands-free, you can flip between the front and back cameras, pause, delete or send. Tap the
+  camera to switch back to voice messages; Pingogram remembers which one you use. The first time, Pingogram says why
+  it needs the camera and the microphone before Android asks. The camera runs only while you record, and the video goes
+  only into the message you send. Screen readers switch with an action on the button and record hands-free at once.
 - Settings → Data and storage → "Use less data for calls": never, on mobile data or always, the video you send in
   calls goes at most at 360p.
 - In the media viewer, a tap near the left or right side shows the previous or next photo or video. In stories, a
