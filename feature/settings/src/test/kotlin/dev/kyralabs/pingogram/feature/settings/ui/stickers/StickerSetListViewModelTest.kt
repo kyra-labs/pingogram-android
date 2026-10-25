@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui.stickers
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -65,8 +66,11 @@ class StickerSetListViewModelTest {
         stickerType = TdApi.StickerTypeRegular()
     }
 
-    private fun TestScope.viewModel(archived: Boolean = false): StickerSetListViewModel {
-        val viewModel = StickerSetListViewModel(archived, TdlibStickerSetRepository(client))
+    private fun TestScope.viewModel(
+        archived: Boolean = false,
+        kind: StickerSetKind = StickerSetKind.Stickers,
+    ): StickerSetListViewModel {
+        val viewModel = StickerSetListViewModel(archived, TdlibStickerSetRepository(client), kind)
         runCurrent()
         return viewModel
     }
@@ -86,6 +90,18 @@ class StickerSetListViewModelTest {
             client.emit(TdApi.UpdateTrendingStickerSets(TdApi.StickerTypeRegular(), TdApi.TrendingStickerSets()))
             runCurrent()
             assertEquals(1, client.sentOf<TdApi.ViewTrendingStickerSets>().size)
+        }
+
+    @Test
+    fun `the emoji pages ask for the custom emoji sets`() =
+        runTest {
+            viewModel(kind = StickerSetKind.Emoji)
+            viewModel(archived = true, kind = StickerSetKind.Emoji)
+
+            val trending = client.sentOf<TdApi.GetTrendingStickerSets>().single()
+            assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, trending.stickerType)
+            val archived = client.sentOf<TdApi.GetArchivedStickerSets>().single()
+            assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, archived.stickerType)
         }
 
     @Test

@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import dev.kyralabs.pingogram.core.domain.repository.StickerRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -65,7 +66,12 @@ internal fun TdApi.StickerSetInfo.toStickerSetSummary() =
         isArchived = isArchived,
         isOfficial = isOfficial,
         isViewed = isViewed,
+        kind = stickerType.toStickerSetKind(),
     )
+
+/** What a set of td_api.tl's [TdApi.StickerType] holds: custom emoji, or stickers (masks among them). */
+internal fun TdApi.StickerType?.toStickerSetKind(): StickerSetKind =
+    if (this is TdApi.StickerTypeCustomEmoji) StickerSetKind.Emoji else StickerSetKind.Stickers
 
 /**
  * [read] once subscribed to [TdlibClient.updates], so no change in between is missed, then again on every update that

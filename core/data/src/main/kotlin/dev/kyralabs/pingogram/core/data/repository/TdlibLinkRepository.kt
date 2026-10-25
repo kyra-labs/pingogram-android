@@ -251,9 +251,9 @@ private fun TdApi.InternalLinkType.toTarget(link: String): LinkTarget =
             LinkTarget.ChatFolderInvite(inviteLink)
         }
 
-        // Custom emoji packs are for Telegram Premium subscribers, which Pingogram does not offer to add.
+        // A sticker set (t.me/addstickers) or a custom emoji set (t.me/addemoji): its sheet tells which.
         is TdApi.InternalLinkTypeStickerSet -> {
-            if (expectCustomEmoji) LinkTarget.Unsupported(link) else LinkTarget.StickerSet(stickerSetName)
+            LinkTarget.StickerSet(stickerSetName)
         }
 
         // The link itself is what confirmQrCodeAuthentication takes; TDLib's type carries nothing.

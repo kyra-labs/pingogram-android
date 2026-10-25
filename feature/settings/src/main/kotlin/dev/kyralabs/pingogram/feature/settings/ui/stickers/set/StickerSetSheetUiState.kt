@@ -3,9 +3,13 @@ package dev.kyralabs.pingogram.feature.settings.ui.stickers.set
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import kotlinx.collections.immutable.ImmutableList
 
-/** What the sheet of a sticker set shows (`REQUIREMENTS.md` FR-C5): a link's set, or one tapped in Settings. */
+/**
+ * What the sheet of a sticker or custom emoji set shows (`REQUIREMENTS.md` FR-C5): a link's set, or one tapped in
+ * Settings.
+ */
 @Immutable
 sealed interface StickerSetSheetUiState {
     data object Loading : StickerSetSheetUiState
@@ -19,7 +23,7 @@ sealed interface StickerSetSheetUiState {
     /**
      * The set: its [title] (user content), its short [name] for its link, its [stickers] in their order; whether the
      * user has it ([isInstalled]) or archived it ([isArchived]); [isChanging] while Telegram is asked to add or remove
-     * it, and why that failed last ([changeError]).
+     * it, and why that failed last ([changeError]); whether it holds stickers or custom emoji ([kind]).
      */
     data class Content(
         val title: String,
@@ -29,6 +33,7 @@ sealed interface StickerSetSheetUiState {
         val isArchived: Boolean,
         val isChanging: Boolean = false,
         val changeError: DomainError? = null,
+        val kind: StickerSetKind = StickerSetKind.Stickers,
     ) : StickerSetSheetUiState {
         override fun toString() =
             "Content(stickers=${stickers.size}, installed=$isInstalled, archived=$isArchived, changing=$isChanging)"
