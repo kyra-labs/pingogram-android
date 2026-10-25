@@ -83,7 +83,10 @@ regresses by more than 10%.
   Warm starts use the developer option "Don't keep activities" while they run, so leaving the app destroys its
   activity, as Macrobenchmark's warm starts do. `startup.sql` summarizes the trace: each start's time to first frame
   and to full display, the app's sections (`app.inject`, `app.tdlibStart`, `app.starters`, `main.onCreate`,
-  `main.awaitSettings`), the main thread's longest framework slices and states, and the emoji font's load.
+  `main.awaitSettings`), the main thread's longest framework slices and states, and the emoji font's load. The trace
+  runs to hundreds of MB (300 MB on a Galaxy S24 Ultra before CPU idle states and binder transactions were left out),
+  too large to send: `summarize.py` runs `startup.sql` on it with Perfetto's Python package (`pip install perfetto`)
+  into `summary.txt`, a few KB of numbers, which the scripts write themselves where the package is installed.
   `StartupBenchmark` reports `app.inject`, `main.onCreate` and `main.awaitSettings` beside the start times.
 
 ## 3. TDLib usage patterns
