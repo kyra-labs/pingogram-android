@@ -66,6 +66,10 @@ class DataOptionsViewModelTest {
             assertEquals("prefer_ipv6", set.name)
             assertEquals(true, (set.value as TdApi.OptionValueBoolean).value)
 
+            // TDLib announces the option it set, then any later change (another app of the account's, say).
+            client.emit(TdApi.UpdateOption("prefer_ipv6", TdApi.OptionValueBoolean(true)))
+            runCurrent()
+            assertEquals(true, viewModel.uiState.value.prefersIpv6)
             client.emit(TdApi.UpdateOption("prefer_ipv6", TdApi.OptionValueBoolean(false)))
             runCurrent()
             assertEquals(false, viewModel.uiState.value.prefersIpv6)

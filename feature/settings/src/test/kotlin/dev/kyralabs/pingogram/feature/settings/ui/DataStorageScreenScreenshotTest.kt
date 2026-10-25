@@ -83,11 +83,11 @@ class DataStorageScreenScreenshotTest {
     fun optionsRtl() = captureOptions(ScreenshotVariant.Rtl)
 
     @Test
-    @Config(qualifiers = "w700dp-h1400dp-xxhdpi")
+    @Config(qualifiers = "w700dp-h2000dp-xxhdpi")
     fun optionsMedium() = captureOptions(ScreenshotVariant.Medium)
 
     @Test
-    @Config(qualifiers = "w411dp-h2400dp-xxhdpi", fontScale = FONT_SCALE_200)
+    @Config(qualifiers = "w411dp-h3600dp-xxhdpi", fontScale = FONT_SCALE_200)
     fun optionsFontScale200() =
         composeRule.captureScreen(javaClass, "optionsFontScale200", ThemeMode.Light) { Options() }
 
@@ -126,7 +126,7 @@ class DataStorageScreenScreenshotTest {
     }
 }
 
-private const val TALL = "w411dp-h1600dp-xxhdpi"
+private const val TALL = "w411dp-h2000dp-xxhdpi"
 
 /** The page with automatic download changed from its defaults, so it can be reset, and the options of [options]. */
 @Composable
