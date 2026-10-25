@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Locked chats: keep chats behind your passcode (Settings → Privacy and security → Locked chats, with the passcode
+  lock on). Locked chats leave the chat list, its folders and the archive, and a "Locked chats" row at the end of the
+  list opens them after your passcode or fingerprint. Until you open them, search and the share and forward sheets don't
+  show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
+  conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
+  away for a minute. The locks stay on this device; your other devices show the chats as usual.
 - Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
   (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
   sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and

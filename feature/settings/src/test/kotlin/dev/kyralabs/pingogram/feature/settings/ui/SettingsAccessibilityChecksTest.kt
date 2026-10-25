@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
@@ -18,12 +19,19 @@ import dev.kyralabs.pingogram.feature.settings.ui.chatlist.SwipeActionsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFolderEditScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.ChatFoldersScreen
 import dev.kyralabs.pingogram.feature.settings.ui.folders.invite.FolderInviteContent
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockScreen
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.ChatUnlockUiState
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerContent
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPreviewStates
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxyLinkContent
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.notifications.ReactionNotificationsScreen
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeInput
 import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.personal.PersonalChannelScreen
 import dev.kyralabs.pingogram.feature.settings.ui.preview.AccountPagePreviewStates
@@ -140,6 +148,46 @@ class SettingsAccessibilityChecksTest {
     fun privacyExceptionsPicker() =
         check {
             PrivacyExceptionsPickerContent(PrivacyPreviewStates.exceptionsPicker, onEvent = {})
+        }
+
+    @Test
+    fun lockedChats() =
+        check {
+            LockedChatsScreen(
+                LockedChatsPreviewStates.content,
+                onEvent = {},
+                onOpenChat = {},
+                onOpenPasscodeLock = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun lockedChatsNoPasscode() =
+        check {
+            LockedChatsScreen(
+                LockedChatsUiState.NoPasscode,
+                onEvent = {},
+                onOpenChat = {},
+                onOpenPasscodeLock = {},
+                onBack = {},
+            )
+        }
+
+    @Test
+    fun lockedChatsPicker() = check { LockedChatsPickerContent(LockedChatsPreviewStates.picker, onEvent = {}) }
+
+    @Test
+    fun chatUnlock() =
+        check {
+            ChatUnlockScreen(
+                title = "This chat is locked",
+                state = ChatUnlockUiState(biometricUnlock = true),
+                input = remember { PasscodeInput() },
+                onEvent = {},
+                onBiometricUnlock = {},
+                onCancel = {},
+            )
         }
 
     @Test

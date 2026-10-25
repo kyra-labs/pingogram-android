@@ -15,8 +15,10 @@ import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroup
 import dev.kyralabs.pingogram.core.domain.model.NotificationGroupType
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,6 +35,10 @@ import javax.inject.Singleton
  *   ([ChatNotificationAlerts]); restored ones never do.
  * - The groups of chats whose conversation is on screen are not shown at all: the user sees the messages arrive, and
  *   TDLib removes them as they are read. One still unread when the chat leaves the screen shows then, silently.
+ * - Groups of locked chats ([ChatLockRepository], `docs/adr/0029-locked-chats.md`) are not shown as conversations:
+ *   one notification stands for all of them, "New message" without a name, sender or text
+ *   ([ConversationNotificationBuilder.locked]), and their conversation shortcuts go. A chat locked while its
+ *   notification shows has it replaced at once.
  * - Calls groups (an incoming call) are not shown either: `feature:calls` rings with its own call notification
  *   ([CallNotificationBuilder]); a missed call reaches the chat's group as a message.
  * - Once TDLib has restored the notifications of the last run, notifications of this app that it no longer knows are
@@ -50,6 +56,7 @@ class NotificationRenderer
         @param:ApplicationContext private val context: Context,
         private val notificationRepository: NotificationRepository,
         private val authRepository: AuthRepository,
+        private val chatLock: ChatLockRepository,
         private val factory: ConversationNotificationFactory,
         private val builder: ConversationNotificationBuilder,
         private val shortcuts: ConversationShortcuts,
@@ -62,6 +69,7 @@ class NotificationRenderer
         /** What each group showed last, by group id; also for groups of open chats, which are not posted. */
         private val shown = HashMap<Int, Shown>()
         private var latest = ActiveNotifications()
+        private var lockedChatIds = emptySet<Long>()
         private var staleCancelled = false
 
         /**
@@ -71,7 +79,8 @@ class NotificationRenderer
         fun start() {
             scope.launch {
                 channels.ensureCreated()
-                notificationRepository.notifications.collect { render(it) }
+                combine(notificationRepository.notifications, chatLock.lockedChatIds, ::Pair)
+                    .collect { (active, locked) -> render(active, locked) }
             }
             scope.launch {
                 authRepository.authStep.collect { step -> if (step.isSignedOut()) clearAccount() }
@@ -85,29 +94,61 @@ class NotificationRenderer
         suspend fun refresh(groupId: Int) =
             mutex.withLock {
                 val group = latest.groups[groupId] ?: return@withLock
-                if (group.chatId !in latest.openChatIds) post(group, alert = false)
+                if (shown[groupId]?.visible == true) post(group, alert = false)
             }
 
-        private suspend fun render(active: ActiveNotifications) =
-            mutex.withLock {
-                latest = active
-                (shown.keys - active.groups.keys).forEach { groupId ->
-                    shown.remove(groupId)
-                    manager.cancel(GROUP_TAG, groupId)
-                }
-                for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
-                    val visible = group.chatId !in active.openChatIds && group.type != NotificationGroupType.Calls
-                    val previous = shown[group.id]
-                    if (previous != null && previous.group == group && previous.visible == visible) continue
-                    shown[group.id] = Shown(group, visible)
-                    when {
-                        visible -> post(group, alert = ChatNotificationAlerts.shouldAlert(previous?.group, group))
-                        previous?.visible == true -> manager.cancel(GROUP_TAG, group.id)
-                    }
-                }
-                updateSummary()
-                if (active.isRestored && !staleCancelled) cancelStale()
+        private suspend fun render(
+            active: ActiveNotifications,
+            locked: Set<Long>,
+        ) = mutex.withLock {
+            latest = active
+            // Chats locked since the last render: their conversation shortcuts would name them.
+            val newlyLocked = locked - lockedChatIds
+            lockedChatIds = locked
+            if (newlyLocked.isNotEmpty()) shortcuts.remove(newlyLocked)
+            val lockedBefore = shown.values.any { it.locked }
+            var change = LockedChange()
+            (shown.keys - active.groups.keys).forEach { groupId ->
+                if (shown.remove(groupId)?.locked == true) change += LockedChange(changed = true)
+                manager.cancel(GROUP_TAG, groupId)
             }
+            for (group in active.groups.values.sortedBy { it.notifications.last().date }) {
+                change += renderGroup(group, active.openChatIds, locked)
+            }
+            // The one notification of the locked chats, while any has a group.
+            if (change.changed) {
+                when {
+                    shown.values.any { it.locked } -> notify(LOCKED_TAG, LOCKED_ID, builder.locked(change.alert))
+                    lockedBefore -> manager.cancel(LOCKED_TAG, LOCKED_ID)
+                }
+            }
+            updateSummary()
+            if (active.isRestored && !staleCancelled) cancelStale()
+        }
+
+        /**
+         * Posts [group] as a conversation, cancels it, or counts it in the locked chats' notification, as it changed
+         * since it last showed; returns what that changed of the locked chats' notification.
+         */
+        private suspend fun renderGroup(
+            group: NotificationGroup,
+            openChatIds: Set<Long>,
+            locked: Set<Long>,
+        ): LockedChange {
+            val calls = group.type == NotificationGroupType.Calls
+            val isLocked = !calls && group.chatId in locked
+            val visible = !calls && !isLocked && group.chatId !in openChatIds
+            val previous = shown[group.id]
+            val now = Shown(group, visible, isLocked)
+            if (previous == now) return LockedChange()
+            shown[group.id] = now
+            val alert = ChatNotificationAlerts.shouldAlert(previous?.group, group)
+            when {
+                visible -> post(group, alert)
+                previous?.visible == true -> manager.cancel(GROUP_TAG, group.id)
+            }
+            return LockedChange(changed = isLocked || previous?.locked == true, alert = isLocked && alert)
+        }
 
         private suspend fun post(
             group: NotificationGroup,
@@ -119,11 +160,11 @@ class NotificationRenderer
         }
 
         private fun updateSummary() {
-            val visible = shown.values.filter { it.visible }
-            if (visible.isEmpty()) {
+            val posted = shown.values.filter { it.visible || it.locked }
+            if (posted.isEmpty()) {
                 manager.cancel(SUMMARY_TAG, SUMMARY_ID)
             } else {
-                notify(SUMMARY_TAG, SUMMARY_ID, builder.summary(visible.sumOf { it.group.totalCount }))
+                notify(SUMMARY_TAG, SUMMARY_ID, builder.summary(posted.sumOf { it.group.totalCount }))
             }
         }
 
@@ -133,6 +174,7 @@ class NotificationRenderer
             manager.activeNotifications
                 .filter { it.tag == GROUP_TAG && shown[it.id]?.visible != true }
                 .forEach { manager.cancel(GROUP_TAG, it.id) }
+            if (shown.values.none { it.locked }) manager.cancel(LOCKED_TAG, LOCKED_ID)
         }
 
         private suspend fun clearAccount() =
@@ -160,17 +202,33 @@ class NotificationRenderer
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
 
-        /** A group as last rendered, and whether it was posted ([visible]) or held back for its open chat. */
-        private class Shown(
+        /**
+         * A group as last rendered: whether it was posted as a conversation ([visible]), counted in the locked chats'
+         * notification ([locked]), or held back for its open chat.
+         */
+        private data class Shown(
             val group: NotificationGroup,
             val visible: Boolean,
+            val locked: Boolean,
         )
+
+        /** Whether rendering changed the locked chats' notification, and whether a new message should alert. */
+        private data class LockedChange(
+            val changed: Boolean = false,
+            val alert: Boolean = false,
+        ) {
+            operator fun plus(other: LockedChange) = LockedChange(changed || other.changed, alert || other.alert)
+        }
 
         private companion object {
             /** The tag of the groups' notifications, whose ids are TDLib's group ids. */
             const val GROUP_TAG = "group"
             const val SUMMARY_TAG = "summary"
             const val SUMMARY_ID = 0
+
+            /** The tag and id of the locked chats' one notification. */
+            const val LOCKED_TAG = "locked"
+            const val LOCKED_ID = 0
         }
     }
 

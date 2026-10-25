@@ -117,6 +117,24 @@ internal class ConversationShortcuts
             }
         }
 
+        /**
+         * Removes the conversation shortcuts of [chatIds], cached ones too, so neither the launcher, the share sheet
+         * nor the conversation section names them: chats that were locked (`docs/adr/0029-locked-chats.md`).
+         */
+        suspend fun remove(chatIds: Set<Long>) {
+            chatIds.forEach(published::remove)
+            shareTargets = shareTargets - chatIds
+            withContext(ioDispatcher) {
+                try {
+                    val ids = chatIds.map(::shortcutId)
+                    ShortcutManagerCompat.removeDynamicShortcuts(context, ids)
+                    ShortcutManagerCompat.removeLongLivedShortcuts(context, ids)
+                } catch (_: IllegalStateException) {
+                    // The user is locked: before the first unlock after a reboot. The next lock change tries again.
+                }
+            }
+        }
+
         /** Removes every conversation shortcut, cached ones too, e.g. when the account logs out. */
         suspend fun removeAll() {
             published.clear()

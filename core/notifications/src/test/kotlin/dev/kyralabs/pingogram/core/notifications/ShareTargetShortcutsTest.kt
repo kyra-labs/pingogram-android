@@ -4,6 +4,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chatPosition
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.updateNewChat
@@ -28,7 +29,10 @@ import kotlin.time.Duration.Companion.seconds
  */
 @RunWith(RobolectricTestRunner::class)
 class ShareTargetShortcutsTest {
-    private fun TestScope.started(authState: AuthState = AuthState.Ready): NotificationsHarness {
+    private fun TestScope.started(
+        authState: AuthState = AuthState.Ready,
+        lockedChats: Set<Long> = emptySet(),
+    ): NotificationsHarness {
         val harness = NotificationsHarness(this)
         val dispatcher = StandardTestDispatcher(testScheduler)
         val avatars =
@@ -44,6 +48,7 @@ class ShareTargetShortcutsTest {
             chatRepository = harness.chats,
             userRepository = harness.users,
             groupRepository = harness.groups,
+            chatLock = FakeChatLockRepository(locked = lockedChats),
             avatars = avatars,
             shortcuts = ConversationShortcuts(harness.context, dispatcher),
             scope = backgroundScope,
@@ -118,6 +123,22 @@ class ShareTargetShortcutsTest {
             val ids = ShortcutManagerCompat.getDynamicShortcuts(harness.context).map { it.id }
             assertTrue(NotificationIntents.shortcutId(10) in ids)
             assertTrue(NotificationIntents.shortcutId(8) !in ids)
+        }
+
+    @Test
+    fun `locked chats are never share targets, the next chats taking their place`() =
+        runTest {
+            val harness = started(lockedChats = setOf(1L, 4L))
+            harness.chats(count = 10)
+            runCurrent()
+            settle()
+
+            val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(harness.context).sortedBy { it.rank }
+            assertEquals(
+                listOf(2L, 3L, 5L, 6L, 7L, 8L, 9L, 10L).map(NotificationIntents::shortcutId),
+                shortcuts.map { it.id },
+            )
+            assertTrue(shortcuts.none { it.shortLabel == "User 1" || it.shortLabel == "User 4" })
         }
 
     @Test

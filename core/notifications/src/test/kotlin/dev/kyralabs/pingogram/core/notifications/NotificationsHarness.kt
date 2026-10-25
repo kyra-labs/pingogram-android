@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibTransferRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -49,6 +50,7 @@ internal class NotificationsHarness(
             SecretChatLinkPreviews(client, FakeLinkPreviewSettingsRepository()),
         )
     val auth = TdlibAuthRepository(client, dispatcher)
+    val chatLock = FakeChatLockRepository()
 
     val builder = ConversationNotificationBuilder(context)
     val renderer =
@@ -56,6 +58,7 @@ internal class NotificationsHarness(
             context = context,
             notificationRepository = notifications,
             authRepository = auth,
+            chatLock = chatLock,
             factory =
                 ConversationNotificationFactory(
                     context = context,
@@ -85,6 +88,12 @@ internal class NotificationsHarness(
 
     /** The notification of group [groupId], if posted. */
     fun posted(groupId: Int): Notification? = shadowOf(manager).getNotification("group", groupId)
+
+    /** The locked chats' one notification, if posted. */
+    fun lockedNotification(): Notification? = shadowOf(manager).getNotification("locked", 0)
+
+    /** Every notification on screen. */
+    fun all(): List<Notification> = shadowOf(manager).allNotifications
 
     /** The summary, if posted. */
     fun summary(): Notification? = shadowOf(manager).getNotification("summary", 0)

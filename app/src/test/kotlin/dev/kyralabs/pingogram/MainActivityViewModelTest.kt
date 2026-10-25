@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.testing.FakeAppLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
@@ -46,6 +47,7 @@ class MainActivityViewModelTest {
     private val appearance = FakeAppearanceRepository(initial = AppearanceSettings())
     private val appLock = FakeAppLockRepository()
     private val passcodes = FakePasscodeRepository()
+    private val chatLock = FakeChatLockRepository(unlocked = true)
 
     @BeforeEach
     fun setUp() {
@@ -67,6 +69,7 @@ class MainActivityViewModelTest {
             appLock,
             passcodes,
             timeSource,
+            chatLock,
         ).also { runCurrent() }
 
     private suspend fun TestScope.tdlib(state: TdApi.AuthorizationState) {
@@ -257,6 +260,31 @@ class MainActivityViewModelTest {
         }
 
     @Test
+    fun `locked chats to open wait until they are opened`() =
+        runTest {
+            val viewModel = viewModel()
+            assertFalse(viewModel.lockedChatsToOpen.value)
+
+            viewModel.setLockedChatsToOpen(true)
+            assertTrue(viewModel.lockedChatsToOpen.value)
+
+            viewModel.setLockedChatsToOpen(false)
+            assertFalse(viewModel.lockedChatsToOpen.value)
+        }
+
+    @Test
+    fun `leaving the app and coming back reaches the locked chats too`() =
+        runTest {
+            val viewModel = viewModel()
+
+            viewModel.onAppHidden()
+            viewModel.onAppShown()
+
+            assertEquals(1, chatLock.hiddenCount)
+            assertFalse(chatLock.unlocked.value)
+        }
+
+    @Test
     fun `a share waits until it is opened, and a newer one replaces it`() =
         runTest {
             val viewModel = viewModel()
@@ -324,6 +352,7 @@ class MainActivityViewModelTest {
                     appLock,
                     withoutPasscode,
                     timeSource,
+                    chatLock,
                 ).also { runCurrent() }
 
             assertFalse(viewModel.hideContent.value)

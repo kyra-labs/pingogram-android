@@ -30,10 +30,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationIntents
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
+import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
 import dev.kyralabs.pingogram.core.ui.component.LocalSecureWindow
 import dev.kyralabs.pingogram.core.ui.component.LocalVoiceChats
 import dev.kyralabs.pingogram.core.ui.component.SecureWindowRequests
@@ -44,6 +46,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.isDark
 import dev.kyralabs.pingogram.feature.calls.Calls
 import dev.kyralabs.pingogram.feature.chat.ui.share.ShareInbox
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatGate
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.AppLockRoute
 import dev.kyralabs.pingogram.language.PlatformAppLanguageRepository
 import dev.kyralabs.pingogram.language.contextInLanguage
@@ -137,6 +140,10 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
 
+    /** The chats kept behind the passcode, which the conversation's gate reads ([LocalLockedChatGate]). */
+    @Inject
+    lateinit var chatLock: ChatLockRepository
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
@@ -180,6 +187,7 @@ class MainActivity : ComponentActivity() {
             if (settings != null && lock != LockState.Unknown && inAppLanguage) {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
+                val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
                 val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
                 val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
                 val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
@@ -187,6 +195,7 @@ class MainActivity : ComponentActivity() {
                 val phoneNumbersHidden by phoneNumberVisibility.hidden.collectAsStateWithLifecycle(initialValue = true)
                 val locked = lock == LockState.Locked
                 val secureRequests = remember { SecureWindowRequests() }
+                val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
                 SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
                 AppTheme(settings) {
                     CompositionLocalProvider(
@@ -199,6 +208,8 @@ class MainActivity : ComponentActivity() {
                         // A chat's voice chat bar and its info page's voice chat row (feature:calls).
                         LocalVoiceChats provides calls,
                         LocalPhoneNumbersHidden provides phoneNumbersHidden,
+                        // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
+                        LocalLockedChatGate provides lockedChatGate,
                     ) {
                         LockableApp(
                             locked = locked,
@@ -209,6 +220,8 @@ class MainActivity : ComponentActivity() {
                                 uiState = uiState,
                                 chatToOpen = chatToOpen,
                                 onChatOpened = viewModel::onChatOpened,
+                                lockedChatsToOpen = lockedChatsToOpen,
+                                onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },
                                 links = links,
                                 linkToOpen = linkToOpen,
                                 onLinkOpened = viewModel::onLinkOpened,
@@ -285,6 +298,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun handle(intent: Intent?) {
         NotificationIntents.chatIdOf(intent)?.let(viewModel::openChat)
+        if (NotificationIntents.opensLockedChats(intent)) viewModel.setLockedChatsToOpen(true)
         linkOf(intent)?.let(viewModel::openLink)
         shareOf(intent) { isOwnContent(it) }?.let(viewModel::openShare)
     }
@@ -330,3 +344,7 @@ class MainActivity : ComponentActivity() {
         val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
     }
 }
+
+/** `core:ui`'s [LocalLockedChatGate] over [hiddenChatIds]: `feature:settings`' [LockedChatGate]. */
+private fun lockedChatGate(hiddenChatIds: StateFlow<Set<Long>?>): @Composable (Long, @Composable () -> Unit) -> Unit =
+    { chatId, content -> LockedChatGate(hiddenChatIds, chatId, content) }

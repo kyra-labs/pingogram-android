@@ -7,6 +7,7 @@ import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
@@ -44,7 +45,8 @@ import kotlin.time.Duration.Companion.seconds
  * is placed ([RecentChatsWidgets.hasWidgets], then the receiver's [onWidgetsChanged]). Each change of what the widget
  * shows becomes [content] and one update of the placed widgets ([RecentChatsWidgets.updateAll], Glance's own work),
  * [UPDATE_DELAY] after the chats last changed, so a busy chat list redraws it rarely. With a passcode set the widget
- * names no chat ([RecentChatsContent.Locked]).
+ * names no chat ([RecentChatsContent.Locked]); locked chats (`docs/adr/0029-locked-chats.md`), which need a passcode,
+ * are left out besides, should the widget ever show chats behind one.
  *
  * A process started for the widget (after a reboot, or by a push in the gms flavor) starts TDLib as any other; the
  * updater then loads the first chats itself if TDLib has fewer, as the chat list would on screen.
@@ -62,6 +64,7 @@ class RecentChatsWidgetUpdater
         private val passcodeRepository: PasscodeRepository,
         private val chatRepository: ChatRepository,
         private val userRepository: UserRepository,
+        private val chatLock: ChatLockRepository,
         private val avatars: AvatarIcons,
         private val widgets: RecentChatsWidgets,
         @param:ApplicationScope private val scope: CoroutineScope,
@@ -135,7 +138,9 @@ class RecentChatsWidgetUpdater
                     loaded.value = true
                 }
                 combine(
-                    chatRepository.chatList(ChatListType.Main),
+                    combine(chatRepository.chatList(ChatListType.Main), chatLock.lockedChatIds) { chats, locked ->
+                        if (locked.isEmpty()) chats else chats.filterNot { it.id in locked }
+                    },
                     userRepository.users,
                     userRepository.myUserId,
                     loaded,

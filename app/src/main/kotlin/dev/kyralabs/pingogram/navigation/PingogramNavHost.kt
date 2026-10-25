@@ -101,6 +101,8 @@ internal fun PingogramNavHost(
     modifier: Modifier = Modifier,
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
+    lockedChatsToOpen: Boolean = false,
+    onLockedChatsOpened: () -> Unit = {},
     onOpenLinkTarget: (LinkTarget) -> Unit = {},
 ) {
     val motionScheme = MaterialTheme.motionScheme
@@ -133,6 +135,7 @@ internal fun PingogramNavHost(
     }
     SessionNavigationEffect(navController, uiState)
     OpenChatEffect(navController, uiState, chatToOpen, onChatOpened)
+    OpenLockedChatsEffect(navController, uiState, lockedChatsToOpen, onLockedChatsOpened)
     ReturnFromPictureInPictureEffect(navController)
 }
 
