@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.feature.chat.ui.COMPACT
 import dev.kyralabs.pingogram.feature.chat.ui.ComponentActivityRegistration
 import dev.kyralabs.pingogram.feature.chat.ui.EXPANDED
+import dev.kyralabs.pingogram.feature.chat.ui.FONT_SCALE_200
 import dev.kyralabs.pingogram.feature.chat.ui.ScreenshotTheme
 import dev.kyralabs.pingogram.feature.chat.ui.ScreenshotVariant
 import dev.kyralabs.pingogram.feature.chat.ui.export.preview.ChatExportPreviewData
@@ -62,6 +63,13 @@ class ChatExportScreenshotTest(
     @Config(qualifiers = EXPANDED)
     fun expanded() {
         if (stateName == "form" || stateName == "done") capture(ScreenshotVariant.Light, "expanded")
+    }
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        if (stateName == "form") capture(ScreenshotVariant.Light, "fontScale200")
     }
 
     @OptIn(ExperimentalRoborazziApi::class)

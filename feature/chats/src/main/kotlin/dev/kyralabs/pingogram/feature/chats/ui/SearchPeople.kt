@@ -83,7 +83,8 @@ private fun Person(
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
+            // A second line at large font scales, where one line of the column's width cuts most names.
+            maxLines = if (isLargeFontScale()) 2 else 1,
             style = MaterialTheme.typography.labelMedium.userContent,
         )
     }

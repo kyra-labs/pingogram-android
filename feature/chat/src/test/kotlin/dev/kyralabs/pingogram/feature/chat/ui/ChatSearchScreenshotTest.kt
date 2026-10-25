@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatSearchPreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchSenderSheet
 import dev.kyralabs.pingogram.feature.chat.ui.search.SenderSheet
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,6 +46,14 @@ class ChatSearchScreenshotTest(
     @Test
     @Config(qualifiers = EXPANDED)
     fun expanded() = capture(ScreenshotVariant.Light, "expanded")
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "found")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(

@@ -41,6 +41,7 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.MatchHighlight
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -174,17 +175,16 @@ internal fun SearchMessageRow(
         remember(sender, text, highlight, colors.onSurface, match) {
             highlighted(sender, text, highlight, colors.onSurface, match)
         }
-    val description =
-        listOfNotNull(
-            chatTitle,
-            listOfNotNull(sender, text).joinToString(" "),
-            item.date,
-        ).joinToString(", ")
+    val resources = LocalResources.current
     val itemColors = ListItemDefaults.segmentedColors()
     SegmentedListItem(
         onClick = onClick,
         shapes = shapes,
-        modifier = modifier.semantics { contentDescription = description },
+        modifier =
+            modifier.semantics {
+                val message = sender?.let { resources.getString(R.string.chat_list_a11y_sender_text, it, text) } ?: text
+                contentDescription = spokenList(resources, listOf(chatTitle, message, item.date))
+            },
         leadingContent = {
             Avatar(
                 photo = item.photo,
@@ -249,7 +249,7 @@ internal fun chatDescription(
         if (item.isOnline) add(resources.getString(R.string.chat_list_a11y_online))
         if (item.isMuted) add(resources.getString(R.string.chat_list_a11y_muted))
         if (subtitle != null) add(subtitle)
-    }.joinToString(", ")
+    }.let { spokenList(resources, it) }
 }
 
 @PingogramPreviews

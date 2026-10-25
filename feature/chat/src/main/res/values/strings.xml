@@ -6,6 +6,11 @@
     <string name="chat_open_profile">Open profile</string>
     <!-- What tapping the title of a group or channel does, spoken by screen readers. -->
     <string name="chat_open_info">Open info</string>
+    <!-- In place of the chat's status while not connected, as the chat list's pill says it. -->
+    <string name="chat_waiting_for_network">Waiting for network…</string>
+    <string name="chat_connecting_to_proxy">Connecting to proxy…</string>
+    <string name="chat_connecting">Connecting…</string>
+    <string name="chat_updating">Updating…</string>
     <string name="chat_subtitle_bot">bot</string>
     <plurals name="chat_subtitle_members">
         <item quantity="one">%,d member</item>
@@ -239,6 +244,9 @@
     <!-- The buttons of a recording that goes on hands-free. -->
     <string name="voice_send">Send voice message</string>
     <string name="voice_delete">Delete recording</string>
+    <!-- For screen readers, announced as it changes: what the recording bar's dot shows while a voice message records. -->
+    <string name="voice_state_recording">Recording</string>
+    <string name="voice_state_paused">Paused</string>
     <string name="voice_pause">Pause recording</string>
     <string name="voice_resume">Resume recording</string>
     <!-- Snackbar before the system asks for the microphone, with an action that asks. -->
@@ -313,6 +321,8 @@
     <string name="location_refining">Improving accuracy…</string>
     <!-- %1$s is a distance with its unit, "12 m" or "1.5 km". -->
     <string name="location_accuracy">Accurate to %1$s</string>
+    <!-- For screen readers, the location found: %1$s its coordinates in words, %2$s its accuracy (location_accuracy). -->
+    <string name="location_found_description">%1$s. %2$s</string>
     <!-- The user allowed only an approximate location (Android 12 and later), which is what is sent. -->
     <string name="location_approximate">Approximate location</string>
     <string name="location_use_precise">Use precise location</string>

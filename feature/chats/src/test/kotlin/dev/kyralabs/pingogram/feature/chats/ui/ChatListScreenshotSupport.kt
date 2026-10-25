@@ -40,6 +40,9 @@ fun goldenPath(
     name: String,
 ): String = "src/test/snapshots/${testClass.name}.$name.png"
 
+/** The largest font scale Android offers (`REQUIREMENTS.md` §6.3): text grows, never clips. */
+const val FONT_SCALE_200 = 2f
+
 /** A medium window (600–839 dp), e.g. a small tablet or a foldable in portrait, with one pane and the rail. */
 const val MEDIUM = "w700dp-h891dp-xxhdpi"
 

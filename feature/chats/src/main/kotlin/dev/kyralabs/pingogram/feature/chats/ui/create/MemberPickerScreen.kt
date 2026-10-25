@@ -46,6 +46,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -264,13 +265,15 @@ private fun PickedChip(
     modifier: Modifier = Modifier,
 ) {
     val removeLabel = stringResource(R.string.create_member_remove, member.name)
+    // Wider with the font scale, so a large font shows as much of the name.
+    val maxWidth = MaterialTheme.sizes.mediaMinSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
     InputChip(
         selected = true,
         onClick = onRemove,
         label = {
             Text(
                 text = member.name,
-                modifier = Modifier.widthIn(max = MaterialTheme.sizes.mediaMinSize),
+                modifier = Modifier.widthIn(max = maxWidth),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = LocalTextStyle.current.userContent,

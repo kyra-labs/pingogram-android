@@ -3,7 +3,8 @@
 <resources>
     <!-- The bar's label over the pinned message. %1$d is its place counted from the newest, %2$d how many there are. -->
     <string name="pinned_message">Pinned message</string>
-    <string name="pinned_message_of">Pinned message %1$d of %2$d</string>
+    <!-- No-break spaces around "of": where the label wraps at large font sizes, "4 of 5" stays together. -->
+    <string name="pinned_message_of">Pinned message %1$d&#160;of&#160;%2$d</string>
 
     <!-- What tapping the bar does, for screen readers. -->
     <string name="pinned_show">Show in chat</string>

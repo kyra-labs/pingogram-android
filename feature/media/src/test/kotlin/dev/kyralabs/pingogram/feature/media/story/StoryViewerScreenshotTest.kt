@@ -56,6 +56,14 @@ class StoryViewerScreenshotTest(
         capture(ScreenshotVariant.Rtl)
     }
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the story with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "photo")
+        capture(ScreenshotVariant.Light, goldenName = "fontScale200")
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         variant: ScreenshotVariant,
@@ -78,6 +86,8 @@ class StoryViewerScreenshotTest(
     }
 
     companion object {
+        private const val FONT_SCALE_200 = 2f
+
         val STATES =
             mapOf(
                 "photo" to StoryViewerPreviewData.photo,

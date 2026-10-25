@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.domain.model.FileState
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
@@ -161,6 +162,9 @@ import kotlinx.collections.immutable.ImmutableSet
  *   ([SponsoredMessageCard]); one goes to TDLib as viewed once it is wholly on screen ([ReportSponsoredViews]), and
  *   its info button opens "About this ad" ([SponsoredMessageSheet]).
  *
+ * - **Connection** (audit A11): while TDLib is not connected ([connection], the app's, not the view model's), the top
+ *   bar says "Connecting…" and the like in place of the chat's status, and screen readers hear it change.
+ *
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows. [onOpenProfile],
  * where the app has profiles, is what the title of a private chat opens, [onOpenChatInfo] what that of a group or
  * channel opens; tapped mentions, senders' avatars and names
@@ -190,6 +194,7 @@ internal fun ChatScreen(
     search: ChatSearchUiState? = null,
     searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
+    connection: ConnectionStatus = ConnectionStatus.Ready,
     onOpenScheduledMessages: (() -> Unit)? = null,
     nextChannel: NextChannel? = null,
 ) {
@@ -218,6 +223,7 @@ internal fun ChatScreen(
             onOpenChatInfo = onOpenChatInfo,
             search = search,
             searchQuery = searchQuery,
+            connection = connection,
             // A read channel's next unread one, outside selection mode and search.
             nextChannel = nextChannel.takeIf { selection == null && search == null },
             bottomBar = {
@@ -251,7 +257,7 @@ internal fun ChatScreen(
  * The screen's [Scaffold]: the top bar (with the selection's count), the [bottomBar], the [jumpButton] and the
  * snackbars around the messages on their sheet; [modifier] blurs it all behind the floating message menu.
  */
-@Suppress("LongParameterList") // The state, back, its list and snackbars, what the bubbles share, search, the slots.
+@Suppress("LongParameterList") // The state, back, list, snackbars, what the bubbles share, search, connection, slots.
 @Composable
 private fun ChatScaffold(
     state: ChatUiState,
@@ -264,6 +270,7 @@ private fun ChatScaffold(
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
     search: ChatSearchUiState?,
     searchQuery: TextFieldState,
+    connection: ConnectionStatus,
     nextChannel: NextChannel?,
     bottomBar: @Composable () -> Unit,
     jumpButton: @Composable () -> Unit,
@@ -289,6 +296,7 @@ private fun ChatScaffold(
                     onSecretChatEvent = onEvent,
                     onOpenChatInfo = onOpenChatInfo,
                     onSearch = { onEvent(ChatSearchEvent.Open) },
+                    connection = connection,
                 )
             }
         },

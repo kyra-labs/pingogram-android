@@ -63,7 +63,12 @@ internal fun ChatMeta(
  */
 @Composable
 @ReadOnlyComposable
-internal fun timeOnPreviewLine(): Boolean = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+internal fun timeOnPreviewLine(): Boolean = isLargeFontScale()
+
+/** Whether the font scale is [LARGE_FONT_SCALE] or more, where the chat list rearranges what would be cut. */
+@Composable
+@ReadOnlyComposable
+internal fun isLargeFontScale(): Boolean = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
 
 /** A clock while sending, an error when it failed, one check once sent, two in `primary` once read. */
 @Composable

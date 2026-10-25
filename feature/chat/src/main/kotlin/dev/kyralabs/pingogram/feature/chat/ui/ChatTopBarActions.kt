@@ -8,11 +8,14 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import dev.kyralabs.pingogram.core.ui.component.CallButtonMenu
 import dev.kyralabs.pingogram.core.ui.component.CallStarter
 import dev.kyralabs.pingogram.core.ui.component.LocalCallStarter
@@ -79,7 +82,18 @@ private fun SecretChatActions(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
-                Text(selfDestructShortText(resources, seconds), maxLines = 1)
+                // Its text grows with the font up to BADGE_MAX_FONT_SCALE only: larger, the badge would hide the timer
+                // it labels (the button's name says the timer in full for screen readers).
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides
+                        Density(
+                            density.density,
+                            density.fontScale.coerceAtMost(BADGE_MAX_FONT_SCALE),
+                        ),
+                ) {
+                    Text(selfDestructShortText(resources, seconds), maxLines = 1)
+                }
             }
         }
     }
@@ -92,6 +106,9 @@ private fun SecretChatActions(
         }
     }
 }
+
+/** The largest font scale the timer's badge follows, where it still leaves the timer's icon to be seen. */
+private const val BADGE_MAX_FONT_SCALE = 1.3f
 
 /** Opens the search in the chat (`REQUIREMENTS.md` §5.9), a filled tonal icon button as the others. */
 @Composable

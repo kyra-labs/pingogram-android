@@ -173,6 +173,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
 
+### Fixed
+- Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a
+  conversation's title now says "Waiting for network…", "Connecting…" or "Updating…" in place of the status while
+  Pingogram is not connected.
+- Screen readers hear whether a voice recording is recording or paused, the folder tabs as selected tabs rather than
+  checked buttons, and the media viewer's caption as a button that expands and collapses.
+- Your own reactions show by more than their color: their badge on a message has a ring in your theme's accent color,
+  and so do their tiles in the reactions sheet.
+- Screen readers join the parts of a chat row, a message, a search result and other descriptions with the language's
+  own punctuation, and the people a new group could not add are listed the way the language lists names.
+- At large font sizes, names under search's top people and the story rings take two lines instead of being cut, and
+  nothing else is cut off: a file's download progress, the pinned messages bar's "4 of 5", the auto-delete choices
+  of a new group and the names of the people picked for it. A secret chat's self-destruct timer badge no longer hides
+  the timer.
+
 ## [0.5.0] - 2026-10-23
 
 ### Added

@@ -21,12 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
 import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
@@ -52,6 +54,7 @@ internal fun JumpToBottomButton(
         val unread =
             if (unreadCount > 0) pluralStringResource(R.plurals.chat_unread_count, unreadCount, unreadCount) else null
         val label = stringResource(R.string.chat_jump_to_bottom)
+        val resources = LocalResources.current
         BadgedBox(
             badge = {
                 if (unreadCount > 0) {
@@ -61,7 +64,7 @@ internal fun JumpToBottomButton(
         ) {
             FloatingActionButton(
                 onClick = onClick,
-                modifier = Modifier.semantics { contentDescription = listOfNotNull(label, unread).joinToString(", ") },
+                modifier = Modifier.semantics { contentDescription = spokenList(resources, listOf(label, unread)) },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ) {

@@ -7,6 +7,8 @@
     <string name="chat_list_connecting_to_proxy">Connecting to proxy…</string>
     <string name="chat_list_connecting">Connecting…</string>
     <string name="chat_list_updating">Updating…</string>
+    <!-- For screen readers, announced once when the connection is back after one of the states above showed. -->
+    <string name="chat_list_connected">Connected</string>
     <string name="chat_list_loading">Loading chats</string>
     <!-- The folder tab of the main chat list. -->
     <string name="chat_list_all_chats">All chats</string>
@@ -20,6 +22,8 @@
     <!-- Rows of the chat list (ChatListItem) -->
     <!-- Before the preview of a message in a group: %1$s is "You" or the sender's first name. -->
     <string name="chat_list_sender">%1$s:</string>
+    <!-- For screen readers: a message's sender ("Alice:", chat_list_sender) before its text, as a search result shows them. -->
+    <string name="chat_list_a11y_sender_text">%1$s %2$s</string>
     <!-- Before the preview of a message the user started and did not send. -->
     <string name="chat_list_draft">Draft:</string>
     <!-- Warning badges after the name of a chat that many users reported. -->

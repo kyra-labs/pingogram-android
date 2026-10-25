@@ -123,6 +123,7 @@ internal fun ConversationRoute(
         hiltViewModel<EmojiPanelViewModel, EmojiPanelViewModel.Factory>(key = "emoji-panel-$chatId") {
             it.create(chatId)
         },
+    connectionViewModel: ChatConnectionViewModel = hiltViewModel(),
     interactionsViewModel: MessageInteractionsViewModel = hiltViewModel(key = "interactions-$chatId-$topic"),
     sendKeysViewModel: SendKeysViewModel = hiltViewModel(),
     doubleTapViewModel: DoubleTapViewModel = hiltViewModel(),
@@ -193,6 +194,7 @@ internal fun ConversationRoute(
             search = viewModel.searchState.collectAsStateWithLifecycle().value,
             searchQuery = viewModel.searchQuery,
             botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+            connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
             onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
             nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
         )

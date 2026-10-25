@@ -317,11 +317,10 @@ private fun FoundLocation(
     Column(
         modifier =
             Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+                // Two sentences, the coordinates then the accuracy, in the language's own punctuation.
+                val spoken = resources.coordinatesText(location.location, locale, spoken = true)
                 contentDescription =
-                    listOfNotNull(
-                        resources.coordinatesText(location.location, locale, spoken = true),
-                        accuracy,
-                    ).joinToString(separator = ". ")
+                    accuracy?.let { resources.getString(R.string.location_found_description, spoken, it) } ?: spoken
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
