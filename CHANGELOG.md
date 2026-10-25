@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Custom emoji sets in Settings → Stickers → Emoji: your emoji sets in their order, which you can drag, archive, remove
+  and share, with trending and archived emoji sets to add. Custom emoji set links (t.me/addemoji/…) open the set, ready
+  to add. Pingogram shows custom emoji in messages; it doesn't offer any to send yet.
 - Chats shown first: Settings → Appearance → Chats → "Chats shown first" picks up to 5 chats that the forward and share
   sheets list right after Saved Messages, in your order. They stay on this device.
 - Unlock with screen lock: Settings → Privacy and security → Passcode lock can let your phone's own PIN, pattern or

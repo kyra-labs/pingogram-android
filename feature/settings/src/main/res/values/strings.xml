@@ -1038,6 +1038,27 @@
     <string name="settings_stickers_archived_empty_title">No archived sets</string>
     <string name="settings_stickers_archived_empty_body">Sets you archive leave the sticker panel and wait here until you add them again.</string>
     <string name="settings_stickers_show">Show stickers</string>
+    <!-- Settings → Stickers → Emoji: the user's custom emoji sets, managed as the sticker sets are. -->
+    <string name="settings_emoji">Emoji</string>
+    <string name="settings_emoji_summary">Your custom emoji sets, trending and archived sets</string>
+    <string name="settings_emoji_loading">Loading emoji sets</string>
+    <string name="settings_emoji_trending">Trending emoji</string>
+    <string name="settings_emoji_archived">Archived emoji</string>
+    <plurals name="settings_emoji_count">
+        <item quantity="one">%1$s emoji</item>
+        <item quantity="other">%1$s emoji</item>
+    </plurals>
+    <string name="settings_emoji_section_yours">Your emoji sets</string>
+    <string name="settings_emoji_none">You have no emoji sets. Add some from Trending emoji.</string>
+    <string name="settings_emoji_footer">Your emoji sets keep this order on all your devices. Drag a set to move it. Pingogram shows custom emoji in messages but offers none to send yet.</string>
+    <string name="settings_emoji_show">Show emoji</string>
+    <string name="settings_emoji_remove_text">The set leaves your emoji sets on all your devices. You can add it again from its link.</string>
+    <!-- %1$s: the set's title. -->
+    <string name="settings_emoji_added_done">“%1$s” added to your emoji</string>
+    <string name="settings_emoji_trending_footer">Emoji sets many people on Telegram add now. Added sets join your emoji sets.</string>
+    <string name="settings_emoji_archived_footer">Archived emoji sets stay in your account without showing with your emoji sets. Add one to bring it back.</string>
+    <string name="settings_emoji_trending_empty_body">Telegram has no trending emoji sets for you right now.</string>
+    <string name="settings_emoji_archived_empty_body">Emoji sets you archive wait here until you add them again.</string>
 
     <!-- The sheet of a sticker set (a t.me/addstickers link, or a set in Settings → Stickers). -->
     <string name="sticker_set_add">Add stickers</string>
@@ -1047,6 +1068,9 @@
     <string name="sticker_set_try_again">Try again</string>
     <string name="sticker_set_adding">Adding the stickers</string>
     <string name="sticker_set_removing">Removing the stickers</string>
+    <string name="emoji_set_add">Add emoji</string>
+    <string name="emoji_set_adding">Adding the emoji</string>
+    <string name="emoji_set_removing">Removing the emoji</string>
     <string name="sticker_set_not_found_title">Sticker set not found</string>
     <string name="sticker_set_not_found_text">The link may be mistyped, or its owner deleted the set.</string>
     <string name="sticker_set_failed_title">Couldn’t open the stickers</string>

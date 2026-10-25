@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.testing.assertAccessible
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.settings.ui.account.DeleteAccountScreen
@@ -253,6 +254,19 @@ class SettingsAccessibilityChecksTest {
     fun stickers() =
         check {
             StickersScreen(StickersPreviewStates.content, onEvent = {}, onOpenList = {}, onShare = {}, onBack = {})
+        }
+
+    @Test
+    fun emojiSets() =
+        check {
+            StickersScreen(
+                StickersPreviewStates.emoji,
+                onEvent = {},
+                onOpenList = {},
+                onShare = {},
+                onBack = {},
+                kind = StickerSetKind.Emoji,
+            )
         }
 
     @Test

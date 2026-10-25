@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.LocalSettingsBackButton
 import dev.kyralabs.pingogram.feature.settings.ui.NotificationSettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsPage
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.set.StickerSetSheetRoute
+import dev.kyralabs.pingogram.feature.settings.ui.stickers.stickerSetKind
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlow
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationResult
 import dev.kyralabs.pingogram.feature.settings.ui.AboutRoute as AboutScreenRoute
@@ -147,23 +148,28 @@ private fun NavGraphBuilder.folderPages(
     settingsPage<ChatFolderEditRoute> { ChatFolderEditScreenRoute(onBack = onBack) }
 }
 
-/** Stickers and the Trending and Archived stickers pages above it. */
+/** Stickers, its Emoji page, and the Trending and Archived pages above each. */
 private fun NavGraphBuilder.stickerPages(
     onOpen: (route: Any) -> Unit,
     onBack: () -> Unit,
 ) {
-    settingsPage<StickersRoute> {
+    settingsPage<StickersRoute> { entry ->
+        val emoji = entry.toRoute<StickersRoute>().emoji
         StickersScreenRoute(
-            onOpenList = { onOpen(StickerSetListRoute(archived = it)) },
+            onOpenList = { onOpen(StickerSetListRoute(archived = it, emoji = emoji)) },
             onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
             onBack = onBack,
+            kind = stickerSetKind(emoji),
+            onOpenEmoji = { onOpen(StickersRoute(emoji = true)) },
         )
     }
     settingsPage<StickerSetListRoute> { entry ->
+        val route = entry.toRoute<StickerSetListRoute>()
         StickerSetListScreenRoute(
-            archived = entry.toRoute<StickerSetListRoute>().archived,
+            archived = route.archived,
             onOpenSet = { onOpen(StickerSetRoute(setId = it)) },
             onBack = onBack,
+            kind = stickerSetKind(route.emoji),
         )
     }
     // A dialog destination, so the page below stays visible under the sheet's scrim; links open it too.
@@ -353,7 +359,7 @@ internal val SettingsPage.route: Any
             SettingsPage.EditProfile -> EditProfileRoute
             SettingsPage.Appearance -> AppearanceRoute
             SettingsPage.ChatFolders -> ChatFoldersRoute
-            SettingsPage.Stickers -> StickersRoute
+            SettingsPage.Stickers -> StickersRoute()
             SettingsPage.Notifications -> NotificationSettingsRoute
             SettingsPage.DataStorage -> DataStorageRoute
             SettingsPage.PowerSaving -> PowerSavingRoute

@@ -79,6 +79,7 @@ class StickerSetSheetViewModel internal constructor(
                                     isChanging =
                                         previous?.isChanging == true && previous.isInstalled == details.set.isInstalled,
                                     changeError = previous?.changeError,
+                                    kind = details.set.kind,
                                 )
                             }
                         }

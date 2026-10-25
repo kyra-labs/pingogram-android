@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.common.result.DomainError
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -65,15 +66,18 @@ import kotlinx.coroutines.launch
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * Trending stickers ([archived] false) or Archived stickers: hoists [StickerSetListViewModel] and shows what it did
- * and its failures in snackbars; a tapped set opens its sheet ([onOpenSet]); [onBack] leaves the page.
+ * Trending stickers ([archived] false) or Archived stickers, of custom emoji sets for [kind] Emoji: hoists
+ * [StickerSetListViewModel] and shows what it did and its failures in snackbars; a tapped set opens its sheet
+ * ([onOpenSet]); [onBack] leaves the page.
  */
+@Suppress("LongParameterList") // The page's kind and list, its ways out, and its hoisted view model.
 @Composable
 internal fun StickerSetListRoute(
     archived: Boolean,
     onOpenSet: (setId: Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    kind: StickerSetKind = StickerSetKind.Stickers,
     viewModel: StickerSetListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,7 +93,7 @@ internal fun StickerSetListRoute(
                     }
 
                     is StickerSetListEffect.Added -> {
-                        resources.getString(R.string.settings_stickers_added_done, effect.title.bidiIsolated())
+                        resources.getString(stickerKindTexts(kind).addedDone, effect.title.bidiIsolated())
                     }
                 }
             launch { snackbarHostState.showSnackbar(message) }
@@ -97,6 +101,7 @@ internal fun StickerSetListRoute(
     }
     StickerSetListScreen(
         archived = archived,
+        kind = kind,
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
@@ -107,11 +112,11 @@ internal fun StickerSetListRoute(
 }
 
 /**
- * The sets trending on Telegram, or those the user archived ([archived]), in Telegram's order: each with its cover,
- * its title (user content) over how many stickers it has, and "Add" at the end (a `LoadingIndicator` while it is
- * added, a check once the user has it); a footer says what the page is for.
+ * The sets of [kind] trending on Telegram, or those the user archived ([archived]), in Telegram's order: each with its
+ * cover, its title (user content) over how many stickers or emoji it has, and "Add" at the end (a `LoadingIndicator`
+ * while it is added, a check once the user has it); a footer says what the page is for.
  */
-@Suppress("LongParameterList") // A page's kind, state and events, its way out, and its hoisted states.
+@Suppress("LongParameterList") // A page's kinds, state and events, its way out, and its hoisted states.
 @Composable
 internal fun StickerSetListScreen(
     archived: Boolean,
@@ -122,9 +127,11 @@ internal fun StickerSetListScreen(
     onOpenSet: (setId: Long) -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     listState: LazyListState = rememberLazyListState(),
+    kind: StickerSetKind = StickerSetKind.Stickers,
 ) {
+    val texts = listTexts(archived, kind)
     SettingsPageFrame(
-        title = stringResource(listTexts(archived).title),
+        title = stringResource(texts.title),
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
@@ -133,7 +140,7 @@ internal fun StickerSetListScreen(
             when (state) {
                 StickerSetListUiState.Loading -> {
                     SettingsLoading(
-                        description = stringResource(R.string.settings_stickers_loading),
+                        description = stringResource(stickerKindTexts(kind).loading),
                         modifier = Modifier.padding(contentPadding),
                     )
                 }
@@ -148,9 +155,9 @@ internal fun StickerSetListScreen(
 
                 is StickerSetListUiState.Content -> {
                     if (state.sets.isEmpty()) {
-                        StickerSetListEmpty(archived, Modifier.padding(contentPadding))
+                        StickerSetListEmpty(texts, Modifier.padding(contentPadding))
                     } else {
-                        StickerSetList(archived, state, onEvent, onOpenSet, listState, contentPadding)
+                        StickerSetList(texts, state, onEvent, onOpenSet, listState, contentPadding)
                     }
                 }
             }
@@ -158,10 +165,10 @@ internal fun StickerSetListScreen(
     }
 }
 
-@Suppress("LongParameterList") // The page's kind, state and events, where a set opens, and the list's state.
+@Suppress("LongParameterList") // The page's texts, state and events, where a set opens, and the list's state.
 @Composable
 private fun StickerSetList(
-    archived: Boolean,
+    texts: ListTexts,
     state: StickerSetListUiState.Content,
     onEvent: (StickerSetListEvent) -> Unit,
     onOpenSet: (setId: Long) -> Unit,
@@ -194,7 +201,7 @@ private fun StickerSetList(
             )
         }
         item(key = FOOTER, contentType = FOOTER) {
-            SettingsFooter(stringResource(listTexts(archived).footer), Modifier.settingsListRow(this, style))
+            SettingsFooter(stringResource(texts.footer), Modifier.settingsListRow(this, style))
         }
     }
 }
@@ -217,7 +224,7 @@ private fun AvailableSetRow(
         shapes = shapes,
         modifier = modifier,
         leadingContent = { StickerCover(set.cover, MaterialTheme.sizes.leadingIconContainer) },
-        supportingContent = { Text(stickerCount(set.count)) },
+        supportingContent = { Text(stickerCount(set.count, set.kind)) },
         trailingContent = {
             when {
                 set.isInstalled -> {
@@ -257,10 +264,9 @@ private fun AvailableSetRow(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StickerSetListEmpty(
-    archived: Boolean,
+    texts: ListTexts,
     modifier: Modifier = Modifier,
 ) {
-    val texts = listTexts(archived)
     EmptyState(
         illustration = MaterialShapes.Cookie9Sided,
         icon = texts.icon,
@@ -270,7 +276,7 @@ private fun StickerSetListEmpty(
     )
 }
 
-/** The page's title, footer, empty state and icon, for the archived or the trending sets. */
+/** The page's title, footer, empty state and icon, for the archived or the trending sets of a kind. */
 private class ListTexts(
     val title: Int,
     val footer: Int,
@@ -279,24 +285,29 @@ private class ListTexts(
     val icon: Int,
 )
 
-private fun listTexts(archived: Boolean) =
-    if (archived) {
+private fun listTexts(
+    archived: Boolean,
+    kind: StickerSetKind,
+): ListTexts {
+    val texts = stickerKindTexts(kind)
+    return if (archived) {
         ListTexts(
-            title = R.string.settings_stickers_archived,
-            footer = R.string.settings_stickers_archived_footer,
+            title = texts.archived,
+            footer = texts.archivedFooter,
             emptyTitle = R.string.settings_stickers_archived_empty_title,
-            emptyBody = R.string.settings_stickers_archived_empty_body,
+            emptyBody = texts.archivedEmptyBody,
             icon = UiR.drawable.ic_archive,
         )
     } else {
         ListTexts(
-            title = R.string.settings_stickers_trending,
-            footer = R.string.settings_stickers_trending_footer,
+            title = texts.trending,
+            footer = texts.trendingFooter,
             emptyTitle = R.string.settings_stickers_trending_empty_title,
-            emptyBody = R.string.settings_stickers_trending_empty_body,
+            emptyBody = texts.trendingEmptyBody,
             icon = R.drawable.ic_trending_up,
         )
     }
+}
 
 @PingogramPreviews
 @Composable

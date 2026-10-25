@@ -200,10 +200,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   registered in `:app`'s `NavHost`, `FolderInviteViewModel`), which checks the link (only reading) and adds the folder
   with the chats the user picked, joining them, only on "Add folder"; a folder the user has offers the chats added to
   it since.
-- **Sticker sets** (FR-C5, Settings → Stickers): the installed sets are `StickerRepository.installedSets` (the panel's
-  list, `getInstalledStickerSets` on `updateInstalledStickerSets`); `core:domain`'s `StickerSetRepository`
-  (`TdlibStickerSetRepository`, `core:data`, no cache: TDLib keeps the sets and announces their changes) reads the
-  archived sets (`getArchivedStickerSets`, the first 100) and the trending ones (`getTrendingStickerSets`, the first
+- **Sticker sets** (FR-C5, Settings → Stickers): the panel's installed sets are `StickerRepository.installedSets`
+  (`getInstalledStickerSets` on `updateInstalledStickerSets`); `core:domain`'s `StickerSetRepository`
+  (`TdlibStickerSetRepository`, `core:data`, no cache: TDLib keeps the sets and announces their changes) reads, for a
+  `StickerSetKind` (stickers, or custom emoji: td_api.tl's `StickerType`, whose lists Telegram keeps apart), the
+  installed sets, the archived sets (`getArchivedStickerSets`, the first 100) and the trending ones (`getTrendingStickerSets`, the first
   page, again on `updateTrendingStickerSets`), both again whenever the installed sets change, and one set with its
   stickers (`getStickerSet`, again on its `updateStickerSet`); it installs, archives and removes sets
   (`changeStickerSet`), reorders the installed ones (`reorderInstalledStickerSets`), marks trending sets seen
@@ -215,7 +216,10 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   animated TGS ones through the app's `AnimatedStickers` where asked). A set's sheet (`StickerSetRoute(setId, name)`, a
   dialog destination of `settingsPages`, so it is in `:app`'s `NavHost` and the Settings detail pane's alike,
   `StickerSetSheetViewModel`: a link's name found first, the set read again on its changes, "Add stickers" / "Remove"
-  only on a tap) opens from a set's row and from `t.me/addstickers/<name>` links (`LinkTarget.StickerSet`).
+  only on a tap) opens from a set's row and from `t.me/addstickers/<name>` and `t.me/addemoji/<name>` links
+  (`LinkTarget.StickerSet`). The custom emoji sets have the same pages (`StickersRoute(emoji)`,
+  `StickerSetListRoute(archived, emoji)`, the view models taking the kind from their route), opened from the Stickers
+  page's "Emoji" row; `StickerSetSummary.kind` words a set as stickers or emoji (`StickerKindTexts`).
 - **The archive** (FR-L9): `core:domain`'s `ArchiveSettingsRepository` (`TdlibArchiveSettingsRepository`, `core:data`, no
   cache: TDLib sends no update for them) reads and sets the account's `archiveChatListSettings` (new chats from
   non-contacts archived and muted, unmuted chats and folders' chats kept archived) with whether TDLib's option
