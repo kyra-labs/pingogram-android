@@ -21,7 +21,7 @@ internal fun AuthModel.toUiState(): AuthUiState {
         canGoBack = backTarget != null,
         floodWaitTotalSeconds = floodWaitTotalSeconds,
         // The same reduction as AuthViewModel's back, so the screen the gesture shows is the one it leads to.
-        backStep = backTarget?.let { afterBack(it).screen() },
+        backStep = backTarget?.takeIf { it != BackTarget.LeaveAddingAccount }?.let { afterBack(it).screen() },
     )
 }
 
@@ -29,7 +29,7 @@ private fun AuthModel.screen(): AuthStepUiState {
     val step = step
     return when {
         restarting || step == AuthStep.Initializing || step == AuthStep.Closed -> AuthStepUiState.Loading
-        step == AuthStep.WaitPhoneNumber && !welcomeDone -> AuthStepUiState.Welcome
+        step == AuthStep.WaitPhoneNumber && !welcomeDone && !addingAccount -> AuthStepUiState.Welcome
         step == AuthStep.WaitPhoneNumber -> phoneScreen(isChangingNumber = false)
         step is AuthStep.WaitOtherDeviceConfirmation -> AuthStepUiState.QrCode(step.link)
         step == AuthStep.LoggingOut -> AuthStepUiState.LoggingOut

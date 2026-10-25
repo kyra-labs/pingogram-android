@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibServers
+import dev.kyralabs.pingogram.core.testing.FakeDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.phone.matching
@@ -69,12 +70,14 @@ class AuthViewModelTest {
     private fun TestScope.viewModel(
         handle: SavedStateHandle = savedState,
         authRepository: TdlibAuthRepository = authRepository(),
+        deviceAccounts: FakeDeviceAccountsRepository = FakeDeviceAccountsRepository(),
     ): AuthViewModel =
         AuthViewModel(
             savedStateHandle = handle,
             authRepository = authRepository,
             countryRepository = TdlibCountryRepository(client),
             connectionRepository = TdlibConnectionRepository(client),
+            deviceAccounts = deviceAccounts,
             timeSource = testScheduler.timeSource,
         ).also { runCurrent() }
 
@@ -176,6 +179,34 @@ class AuthViewModelTest {
                 send(viewModel, AuthEvent.Back)
 
                 assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
+            }
+
+        @Test
+        fun `an account being added starts at phone number entry, and back leaves its sign-in`() =
+            runTest {
+                val accounts = FakeDeviceAccountsRepository().apply { adding.value = true }
+                val viewModel = viewModel(deviceAccounts = accounts)
+
+                assertFalse(viewModel.step<AuthStepUiState.PhoneNumber>().isChangingNumber)
+                assertTrue(viewModel.state.canGoBack)
+                // Back leaves the flow, so the gesture shows no step of it coming in.
+                assertNull(viewModel.state.backStep)
+
+                send(viewModel, AuthEvent.Back)
+
+                assertEquals(1, accounts.cancels)
+            }
+
+        @Test
+        fun `without an account being added, back from the welcome screen leaves nothing`() =
+            runTest {
+                val accounts = FakeDeviceAccountsRepository()
+                val viewModel = viewModel(deviceAccounts = accounts)
+
+                send(viewModel, AuthEvent.Back)
+
+                assertEquals(AuthStepUiState.Welcome, viewModel.state.step)
+                assertEquals(0, accounts.cancels)
             }
 
         @Test

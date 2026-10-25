@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.domain.model.isNumeric
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.ui.phone.PhoneNumberForm
 import dev.kyralabs.pingogram.core.ui.text.isPlausibleEmailAddress
 import dev.kyralabs.pingogram.core.ui.time.timeLeft
@@ -43,6 +44,10 @@ import kotlin.time.TimeSource
  * tests control time. Typed input and local navigation survive process death through the [SavedStateHandle];
  * passwords and codes do not.
  *
+ * While another account is being added ([DeviceAccountsRepository.isAdding]), the flow starts at phone number entry
+ * and back there leaves it ([DeviceAccountsRepository.cancelAdding]): the app then opens again on the account shown
+ * before (`docs/adr/0031-multiple-accounts.md`).
+ *
  * It has one handler per event of a thirteen-screen flow, hence `TooManyFunctions` is suppressed.
  */
 @Suppress("TooManyFunctions")
@@ -52,6 +57,7 @@ class AuthViewModel internal constructor(
     private val authRepository: AuthRepository,
     private val countryRepository: CountryRepository,
     connectionRepository: ConnectionRepository,
+    private val deviceAccounts: DeviceAccountsRepository,
     private val timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
     @Inject
@@ -60,7 +66,15 @@ class AuthViewModel internal constructor(
         authRepository: AuthRepository,
         countryRepository: CountryRepository,
         connectionRepository: ConnectionRepository,
-    ) : this(savedStateHandle, authRepository, countryRepository, connectionRepository, ElapsedRealtimeTimeSource)
+        deviceAccounts: DeviceAccountsRepository,
+    ) : this(
+        savedStateHandle,
+        authRepository,
+        countryRepository,
+        connectionRepository,
+        deviceAccounts,
+        ElapsedRealtimeTimeSource,
+    )
 
     // Only touched on the main thread: events come from the UI, and the flows are collected in viewModelScope.
     private var model = savedStateHandle.restoreAuthModel()
@@ -86,6 +100,7 @@ class AuthViewModel internal constructor(
 
     init {
         viewModelScope.launch { authRepository.authStep.collect(::onAuthStep) }
+        viewModelScope.launch { deviceAccounts.isAdding.collect { adding -> update { it.copy(addingAccount = adding) } } }
         viewModelScope.launch {
             connectionRepository.connectionStatus.collect { status ->
                 update { it.copy(connection = status) }
@@ -572,6 +587,7 @@ class AuthViewModel internal constructor(
         when (val target = model.backTarget()) {
             BackTarget.ChangeNumber -> changePhoneNumber()
             BackTarget.CancelQrCode -> cancelQrCode()
+            BackTarget.LeaveAddingAccount -> deviceAccounts.cancelAdding()
             null -> Unit
             else -> update { it.afterBack(target) }
         }
