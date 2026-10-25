@@ -250,9 +250,9 @@ private fun LazyGridScope.chatInfoItems(
             Modifier.padding(top = MaterialTheme.spacing.small),
         )
     }
-    if (state.description != null || state.link != null) {
+    if (state.description != null || state.link != null || state.id != null) {
         fullWidth(key = INFO, inset = inset, gapAbove = true) {
-            ChatInfoGroup(state.description, state.link, onEvent)
+            ChatInfoGroup(state.description, state.link, onEvent, id = state.id)
         }
     }
     state.members?.let { members ->

@@ -174,6 +174,7 @@ internal fun ActionPill(
  *   copies it.
  * - **Birthday**, formatted by the view model.
  * - **Channel**: the channel the user shows on their profile, its title over "Channel"; tapping opens it.
+ * - **ID**, while Privacy and security's "Show IDs" is on: the user's ID, left to right; tapping copies it.
  *
  * User content takes its own direction (`userContent`), the phone number left to right (`numericContent`).
  */
@@ -204,7 +205,28 @@ internal fun ProfileInfoGroup(
     info.personalChannel?.let { channel ->
         rows += ProfileRow("personalChannel") { shapes -> PersonalChannelRow(channel, shapes, onEvent) }
     }
+    info.id?.let { id -> rows += ProfileRow("id") { shapes -> IdRow(id, shapes) { onEvent(ProfileEvent.CopyId) } } }
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
+}
+
+/** A user's or chat's ID, left to right, over "ID"; a tap copies it ([onCopy]). */
+@Composable
+internal fun IdRow(
+    id: Long,
+    shapes: ListItemShapes,
+    onCopy: () -> Unit,
+) {
+    val copy = stringResource(R.string.profile_copy)
+    SegmentedListItem(
+        onClick = onCopy,
+        // Names what a tap does; the list item's click supplies the action.
+        modifier = Modifier.semantics { onClick(label = copy, action = null) },
+        shapes = shapes,
+        colors = profileRowColors(),
+        supportingContent = { Text(stringResource(R.string.profile_id)) },
+    ) {
+        Text(id.toString(), style = MaterialTheme.typography.bodyLarge.numericContent)
+    }
 }
 
 /** The personal channel: its title (user content) over "Channel"; a tap opens its chat. */

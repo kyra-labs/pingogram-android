@@ -32,6 +32,7 @@ sealed interface ChatInfoUiState {
      * @property description the description with its links, mentions and hashtags; null without one.
      * @property link the public link or, for administrators of a private group, its primary invite link; null without.
      * @property members the first members and how many there are; null where the user may not list them.
+     * @property id the chat's ID, only while Privacy and security's "Show IDs" is on.
      */
     data class Content(
         val header: ProfileHeader,
@@ -42,6 +43,7 @@ sealed interface ChatInfoUiState {
         val members: MembersPreview? = null,
         val administration: ChatAdministration? = null,
         val dialog: ChatInfoDialog? = null,
+        val id: Long? = null,
     ) : ChatInfoUiState
 }
 
@@ -215,6 +217,9 @@ sealed interface ChatInfoEvent {
 
     data object CopyLink : ChatInfoEvent
 
+    /** Copy the chat's ID. */
+    data object CopyId : ChatInfoEvent
+
     data object ShareLink : ChatInfoEvent
 
     data object ShowQrCode : ChatInfoEvent
@@ -317,4 +322,5 @@ sealed interface ChatInfoEffect {
 enum class CopiedChatText {
     Link,
     Description,
+    Id,
 }
