@@ -14,6 +14,8 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -26,10 +28,10 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import dev.kyralabs.pingogram.R
+import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.navigation.TopLevelDestination
 import org.junit.Assert.assertEquals
@@ -188,8 +190,8 @@ class PingogramNavigationBarTest {
         setBar(selected = TopLevelDestination.Chats, accountMenu = accountMenu())
         val tab = labeledTab(R.string.nav_settings)
 
-        tab.performCustomAccessibilityActionWithLabel(string(R.string.account_menu_switch, "\u2068Alan Turing\u2069"))
-        tab.performCustomAccessibilityActionWithLabel(string(R.string.account_menu_add))
+        tab.performCustomAction(string(R.string.account_menu_switch, "Alan Turing".bidiIsolated()))
+        tab.performCustomAction(string(R.string.account_menu_add))
 
         assertEquals(listOf(2), switches)
         assertEquals(1, adds)
@@ -324,6 +326,13 @@ class PingogramNavigationBarTest {
         @StringRes id: Int,
         vararg args: Any,
     ): String = RuntimeEnvironment.getApplication().getString(id, *args)
+
+    /** Runs the node's custom accessibility action labelled [label], as a screen reader does. */
+    private fun SemanticsNodeInteraction.performCustomAction(label: String) {
+        val actions = fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        composeRule.runOnUiThread { actions.single { it.label == label }.action() }
+        composeRule.waitForIdle()
+    }
 
     private fun hasNoCustomActions() =
         SemanticsMatcher("has no custom actions") { SemanticsActions.CustomActions !in it.config }
