@@ -43,7 +43,8 @@ interface TdlibParametersProvider {
 
 /**
  * Where TDLib keeps its data: under `filesDir`, which is never backed up (`android:allowBackup="false"`,
- * `REQUIREMENTS.md` §6.2). The test DC gets its own directories, as a database belongs to one environment.
+ * `REQUIREMENTS.md` §6.2). The test DC gets its own directories, as a database belongs to one environment, and so does
+ * each account ([AccountSlot]): "tdlib" for the first, "tdlib-1" for the second.
  */
 class TdlibDirectories(
     val root: File,
@@ -58,7 +59,8 @@ class TdlibDirectories(
         fun of(
             filesDir: File,
             useTestDc: Boolean,
-        ) = TdlibDirectories(filesDir.resolve(if (useTestDc) "tdlib-test" else "tdlib"))
+            slot: AccountSlot = AccountSlot.First,
+        ) = TdlibDirectories(filesDir.resolve((if (useTestDc) "tdlib-test" else "tdlib") + slot.suffix("-")))
     }
 }
 
@@ -105,11 +107,14 @@ class AndroidTdlibParametersProvider
     constructor(
         @ApplicationContext private val context: Context,
         private val config: TdlibConfig,
+        private val slot: AccountSlot,
         private val databaseKeys: DatabaseKeyProvider,
         @Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : TdlibParametersProvider {
         // Lazy: Context.getNoBackupFilesDir() touches the disk, and this class is created on the main thread.
-        private val testServersMarker by lazy { context.noBackupFilesDir.resolve(TEST_SERVERS_MARKER) }
+        private val testServersMarker by lazy {
+            context.noBackupFilesDir.resolve(testServersMarkerName(slot))
+        }
 
         override suspend fun lastServers(): TdlibServers =
             withContext(io) { if (testServersMarker.exists()) TdlibServers.Test else TdlibServers.Production }
@@ -141,16 +146,17 @@ class AndroidTdlibParametersProvider
         }
 
         private fun directories(servers: TdlibServers) =
-            TdlibDirectories.of(context.filesDir, useTestDc = servers == TdlibServers.Test)
+            TdlibDirectories.of(context.filesDir, useTestDc = servers == TdlibServers.Test, slot)
 
         private fun deleteDatabase(servers: TdlibServers) {
             val directories = directories(servers)
             directories.database.deleteRecursively()
             directories.files.deleteRecursively()
         }
-
-        private companion object {
-            /** Present while the last instance was set up for the test servers; never backed up. */
-            const val TEST_SERVERS_MARKER = "tdlib_test_servers"
-        }
     }
+
+/**
+ * The file in `noBackupFilesDir` present while [slot]'s last instance was set up for the test servers (FR-A9):
+ * "tdlib_test_servers" for the first slot, "tdlib_test_servers_1" for the second.
+ */
+internal fun testServersMarkerName(slot: AccountSlot) = "tdlib_test_servers" + slot.suffix("_")

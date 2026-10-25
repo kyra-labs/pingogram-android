@@ -114,6 +114,12 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 `TdlibConfig` (api id/hash, version name, debug flag) comes from `:app`'s
 `TdlibConfigModule`, which reads `BuildConfig`; `AndroidTdlibParametersProvider` builds the rest.
 
+Each account has its own directories, key file and Keystore key (`AccountSlot`, `docs/adr/0031-multiple-accounts.md`):
+the first keeps the names above (`tdlib`, `tdlib-test`, `tdlib_database_key`, the alias
+`pingogram.tdlib.database_key`), so an update moves nothing; the second uses `tdlib-1`, `tdlib-test-1`,
+`tdlib_database_key_1` and `pingogram.tdlib.database_key.1`, and so on up to four. `AccountStorage.delete` removes all
+of a slot's once its client is closed. TDLib's log is the process's, so it stays in `tdlib/logs` for every account.
+
 ### Test servers
 
 `REQUIREMENTS.md` FR-A9 (owner decision 2026-10-25: Google Play's review signs in with a Telegram test account, whose
@@ -130,7 +136,8 @@ so switching servers restarts it:
   other servers by then. `requestQrCodeAuthentication` switches to the production servers. Nothing else switches.
 - Any other `AuthorizationStateClosed` (a logout, an account deleted) starts the next instance on the production
   servers. Which servers the last parameters were for is kept in `noBackupFilesDir/tdlib_test_servers` (present only
-  for the test servers), so a restart of the app stays signed in to a test account.
+  for the test servers), so a restart of the app stays signed in to a test account (`tdlib_test_servers_1` and so on for the other
+  account slots).
 - The log file stays in `filesDir/tdlib/logs` on either servers (`docs/TESTING_GUIDE.md`).
 
 ### Database encryption key
