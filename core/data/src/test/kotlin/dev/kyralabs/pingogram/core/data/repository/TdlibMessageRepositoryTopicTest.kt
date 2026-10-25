@@ -176,7 +176,50 @@ class TdlibMessageRepositoryTopicTest {
             assertEquals(THREAD, (thread.topicId as TdApi.MessageTopicThread).messageThreadId)
         }
 
+    @Test
+    fun `a Saved Messages topic's history loads with getSavedMessagesTopicHistory and holds its messages only`() =
+        runTest {
+            fun saved(
+                id: Long,
+                topicId: Long = SAVED_TOPIC,
+            ) = message(id = id, chatId = SAVED).inTopic(TdApi.MessageTopicSavedMessages(topicId))
+            client.on(TdApi.GetSavedMessagesTopicHistory::class, TdResult.Success(messages(saved(9), saved(4))))
+            val repository = repository()
+
+            assertEquals(Outcome.Success(Unit), repository.loadOlder(SAVED, SAVED_MESSAGES_TOPIC))
+            client.emit(updateNewMessage(saved(12, topicId = SAVED_TOPIC + 1)))
+            client.emit(updateNewMessage(saved(13)))
+
+            assertEquals(
+                listOf(13L, 9L, 4L),
+                repository
+                    .history(SAVED, SAVED_MESSAGES_TOPIC)
+                    .first()
+                    .messages
+                    .map { it.id },
+            )
+            assertEquals(SAVED_TOPIC, client.sentOf<TdApi.GetSavedMessagesTopicHistory>().first().savedMessagesTopicId)
+        }
+
+    @Test
+    fun `a message sent from a Saved Messages topic goes to Saved Messages without a topic`() =
+        runTest {
+            client.on(TdApi.SendMessage::class, TdResult.Success(message(id = 99, chatId = SAVED)))
+            val repository = repository()
+
+            repository.sendText(
+                SAVED,
+                FormattedText("Hi", persistentListOf()),
+                SendOptions(topic = SAVED_MESSAGES_TOPIC),
+            )
+
+            assertEquals(null, client.sentOf<TdApi.SendMessage>().single().topicId)
+        }
+
     private companion object {
+        const val SAVED = 42L
+        const val SAVED_TOPIC = 5L
+        val SAVED_MESSAGES_TOPIC = MessageTopic.SavedMessages(SAVED_TOPIC)
         const val FORUM = -100L
         const val GROUP = -200L
         const val TOPIC = 7

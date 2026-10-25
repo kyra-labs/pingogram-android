@@ -221,8 +221,13 @@ class TdlibChatRepository
             val source =
                 when (topic) {
                     null -> TdApi.MessageSourceChatHistory()
+
                     is MessageTopic.Forum -> TdApi.MessageSourceForumTopicHistory()
+
                     is MessageTopic.Thread -> TdApi.MessageSourceMessageThreadHistory()
+
+                    // td_api.tl has no source of its own for a Saved Messages topic: it is the chat's history.
+                    is MessageTopic.SavedMessages -> TdApi.MessageSourceChatHistory()
                 }
             return client.request(TdApi.ViewMessages(chatId, messageIds.toLongArray(), source, false)).map {}
         }

@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
+import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 
 /**
  * What opening chat [chatId] shows (`REQUIREMENTS.md` FR-C9): its conversation, or for a forum (a supergroup with
- * topics) its topic list; a message search found in a forum ([messageId]) opens the conversation of its topic. Decided
+ * topics) its topic list; a message search found in a forum ([messageId]) opens the conversation of its topic. Saved
+ * Messages opens its conversation with its tabs. Decided
  * from TDLib's memory (the chat and its supergroup, which TDLib announces before the chat), so it takes a frame or
  * two; meanwhile [opening] is [ChatOpening.Unknown], and the destination draws what the conversation draws first.
  */
@@ -39,6 +41,7 @@ class ChatOpeningViewModel
         private val chats: ChatRepository,
         private val groups: GroupRepository,
         private val messages: MessageRepository,
+        private val users: UserRepository,
     ) : ViewModel() {
         /** Creates the view model of opening chat `chatId`, at message `messageId` if not null. */
         @AssistedFactory
@@ -54,7 +57,10 @@ class ChatOpeningViewModel
                 // A chat TDLib does not know opens as a conversation, which says so.
                 val chat = chats.chat(chatId).first() ?: chats.getChat(chatId).getOrNull()
                 val type = chat?.type as? ChatType.Supergroup
-                if (type == null || type.isChannel) {
+                val privateWith = (chat?.type as? ChatType.Private)?.userId
+                if (privateWith != null && privateWith == users.myUserId.filterNotNull().first()) {
+                    emit(ChatOpening.SavedMessages)
+                } else if (type == null || type.isChannel) {
                     emit(ChatOpening.Conversation)
                 } else {
                     emitAll(
@@ -86,6 +92,9 @@ sealed interface ChatOpening {
     data object Unknown : ChatOpening
 
     data object Conversation : ChatOpening
+
+    /** Saved Messages: its conversation, with its tabs. */
+    data object SavedMessages : ChatOpening
 
     /** A forum's topic list. */
     data object Topics : ChatOpening

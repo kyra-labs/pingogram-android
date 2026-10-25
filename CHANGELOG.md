@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Saved Messages tabs: with messages saved from more than one chat, Saved Messages shows tabs below its top bar: All,
+  My Notes, and one per chat you saved from. A tab shows only what was saved from there. New messages go to My Notes, so
+  the other tabs show where they go in place of the message field.
 - Locked chats: keep chats behind your passcode (Settings → Privacy and security → Locked chats, with the passcode
   lock on). Locked chats leave the chat list, its folders and the archive, and a "Locked chats" row at the end of the
   list opens them after your passcode or fingerprint. Until you open them, search and the share and forward sheets don't

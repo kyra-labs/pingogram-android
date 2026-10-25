@@ -211,6 +211,10 @@ internal class HistoryPages(
                 is MessageTopic.Thread -> {
                     TdApi.GetMessageThreadHistory(key.chatId, topic.threadId, fromMessageId, offset, PAGE_SIZE)
                 }
+
+                is MessageTopic.SavedMessages -> {
+                    TdApi.GetSavedMessagesTopicHistory(topic.topicId, fromMessageId, offset, PAGE_SIZE)
+                }
             }
         return client.request(request).map { messages ->
             messages.messages
@@ -221,8 +225,8 @@ internal class HistoryPages(
     }
 
     /**
-     * The id of the last message of the history, from TDLib's memory where it has it: the chat's, the topic's or the
-     * thread's last reply; 0 when it has none, and [UNKNOWN_LAST_MESSAGE] when it cannot be fetched, which no page
+     * The id of the last message of the history, from TDLib's memory where it has it: the chat's, the topic's, the
+     * thread's last reply or the Saved Messages topic's newest message; 0 when it has none, and [UNKNOWN_LAST_MESSAGE] when it cannot be fetched, which no page
      * reaches: a newer page from the server then tells.
      */
     private suspend fun lastMessageId(key: HistoryKey): Long {
@@ -240,6 +244,13 @@ internal class HistoryPages(
                     client
                         .request(TdApi.GetMessageThread(key.chatId, topic.threadId))
                         .map { it.replyInfo?.lastMessageId ?: 0 }
+                }
+
+                // td_api.tl has no getSavedMessagesTopic: the newest message of its history.
+                is MessageTopic.SavedMessages -> {
+                    client
+                        .request(TdApi.GetSavedMessagesTopicHistory(topic.topicId, 0, 0, 1))
+                        .map { it.messages.firstOrNull()?.id ?: 0 }
                 }
             }
         return lastId.getOrNull() ?: UNKNOWN_LAST_MESSAGE
