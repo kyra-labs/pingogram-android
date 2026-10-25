@@ -147,6 +147,35 @@ class DataStorageViewModelTest {
         }
 
     @Test
+    fun `resetting the automatic download puts every network's defaults back, and says so`() =
+        runTest {
+            answerUsage(filesSize = 1_000)
+            autoDownload.setRules(AutoDownloadNetwork.Roaming, AutoDownloadRules(photos = true))
+            autoDownload.setRules(AutoDownloadNetwork.WiFi, AutoDownloadRules.Nothing)
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+
+            send(viewModel, DataStorageEvent.ResetAutoDownload)
+
+            assertEquals(AutoDownloadSettings(), autoDownload.settings.value)
+            assertEquals(AutoDownloadSettings(), viewModel.uiState.value.autoDownload)
+            assertEquals(listOf(DataStorageEffect.AutoDownloadReset), effects)
+        }
+
+    @Test
+    fun `a reset that cannot be saved says why`() =
+        runTest {
+            answerUsage(filesSize = 1_000)
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            autoDownload.failure = DomainError.Unknown(0, "disk full")
+
+            send(viewModel, DataStorageEvent.ResetAutoDownload)
+
+            assertEquals(listOf(DataStorageEffect.ShowError(DomainError.Unknown(0, "disk full"))), effects)
+        }
+
+    @Test
     fun `is loading until TDLib reports the storage usage`() =
         runTest {
             client.on(TdApi.GetStorageStatisticsFast::class) {

@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.model.ChatAppearance
+import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PrivacyExceptionSide
 import dev.kyralabs.pingogram.core.domain.model.PrivacySetting
 import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
@@ -26,6 +27,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPickerC
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsPreviewStates
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsScreen
 import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
 import dev.kyralabs.pingogram.feature.settings.ui.network.EditProxyScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkUsageScreen
 import dev.kyralabs.pingogram.feature.settings.ui.network.ProxiesScreen
@@ -109,6 +111,19 @@ class SettingsAccessibilityChecksTest {
                 onEvent = {},
                 onOpen = {},
                 onBack = {},
+            )
+        }
+
+    @Test
+    fun privacySecurityFrequentContacts() =
+        check {
+            PrivacySecurityScreen(
+                state = SettingsPreviewData.privacySecurity,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+                contactSync = ContactSyncStatus.On(lastSyncedAt = null),
+                suggestsFrequent = true,
             )
         }
 
@@ -349,6 +364,20 @@ class SettingsAccessibilityChecksTest {
                 onOpenProxies = {},
                 onOpenNetworkUsage = {},
                 onBack = {},
+            )
+        }
+
+    @Test
+    fun dataStorageOptions() =
+        check {
+            DataStorageScreen(
+                SettingsPreviewData.storageChanged,
+                onEvent = {},
+                onOpenAutoDownload = {},
+                onOpenProxies = {},
+                onOpenNetworkUsage = {},
+                onBack = {},
+                options = DataOptionsUiState(prefersIpv6 = true),
             )
         }
 

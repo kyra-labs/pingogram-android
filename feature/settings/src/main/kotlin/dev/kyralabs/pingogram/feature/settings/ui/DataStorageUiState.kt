@@ -54,6 +54,9 @@ sealed interface DataStorageEvent {
 
     data object DismissClearCache : DataStorageEvent
 
+    /** "Reset automatic download": every network back to what downloads by itself at first. */
+    data object ResetAutoDownload : DataStorageEvent
+
     /** "Send photos in original quality" turned on or off. */
     data class SetPhotosInOriginalQuality(
         val enabled: Boolean,
@@ -66,6 +69,9 @@ sealed interface DataStorageEffect {
     data class CacheCleared(
         val freedBytes: Long,
     ) : DataStorageEffect
+
+    /** The automatic download settings are the defaults again, shown in a snackbar. */
+    data object AutoDownloadReset : DataStorageEffect
 
     /** Clearing the cache failed, shown in a snackbar (errors are never dialogs). */
     data class ShowError(

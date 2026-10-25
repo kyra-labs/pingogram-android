@@ -34,6 +34,9 @@ import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.text.errorMessage
 import dev.kyralabs.pingogram.core.ui.text.isDebuggable
 import dev.kyralabs.pingogram.feature.settings.R
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsEvent
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsUiState
+import dev.kyralabs.pingogram.feature.settings.ui.network.DataOptionsViewModel
 import dev.kyralabs.pingogram.feature.settings.ui.network.NetworkGroup
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.launch
@@ -41,10 +44,12 @@ import java.text.NumberFormat
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
- * The Data and storage page: hoists [DataStorageViewModel] and shows its results in snackbars: how much clearing the
- * cache freed, or why it failed. A network's automatic download row calls [onOpenAutoDownload]; [onBack] leaves the
+ * The Data and storage page: hoists [DataStorageViewModel], [CallDataSavingViewModel] and [DataOptionsViewModel] and
+ * shows their results in snackbars: how much clearing the cache freed, the reset automatic download, the deleted
+ * drafts, or why something failed. A network's automatic download row calls [onOpenAutoDownload]; [onBack] leaves the
  * page.
  */
+@Suppress("LongParameterList") // The pages it opens, back, and its three hoisted view models.
 @Composable
 internal fun DataStorageRoute(
     onOpenAutoDownload: (AutoDownloadNetwork) -> Unit,
@@ -54,8 +59,10 @@ internal fun DataStorageRoute(
     modifier: Modifier = Modifier,
     viewModel: DataStorageViewModel = hiltViewModel(),
     callsViewModel: CallDataSavingViewModel = hiltViewModel(),
+    optionsViewModel: DataOptionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val options by optionsViewModel.uiState.collectAsStateWithLifecycle()
     val callDataSaving by callsViewModel.dataSaving.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -76,6 +83,10 @@ internal fun DataStorageRoute(
                         }
                     }
 
+                    DataStorageEffect.AutoDownloadReset -> {
+                        resources.getString(R.string.settings_auto_download_reset_done)
+                    }
+
                     is DataStorageEffect.ShowError -> {
                         errorMessage(resources, effect.error, showErrorDetails)
                     }
@@ -84,6 +95,7 @@ internal fun DataStorageRoute(
             launch { snackbarHostState.showSnackbar(message) }
         }
     }
+    DataOptionsSnackbars(optionsViewModel, snackbarHostState)
     LaunchedEffect(callsViewModel) {
         callsViewModel.errors.collect { error ->
             launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
@@ -100,6 +112,8 @@ internal fun DataStorageRoute(
         snackbarHostState = snackbarHostState,
         callDataSaving = callDataSaving,
         onCallDataSavingChange = callsViewModel::onSelect,
+        options = options,
+        onOptionsEvent = optionsViewModel::onEvent,
     )
 }
 
@@ -108,8 +122,8 @@ internal fun DataStorageRoute(
  * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
  * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
  * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs; and the proxy in use, a row that
- * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) below it; and when calls use less
- * data ([callDataSaving], [CallsGroup]).
+ * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) and "Prefer IPv6" below it; when
+ * calls use less data ([callDataSaving], [CallsGroup]); and "Delete cloud drafts" after "Clear cache" ([options]).
  */
 @Suppress("LongParameterList") // The page's state and events, the three pages it opens, back, and its scaffold's parts.
 @Composable
@@ -124,6 +138,8 @@ internal fun DataStorageScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     callDataSaving: CallDataSaving? = null,
     onCallDataSavingChange: (CallDataSaving) -> Unit = {},
+    options: DataOptionsUiState = DataOptionsUiState(),
+    onOptionsEvent: (DataOptionsEvent) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_data_storage),
@@ -132,12 +148,16 @@ internal fun DataStorageScreen(
         snackbarHostState = snackbarHostState,
     ) {
         state.autoDownload?.let { settings ->
-            AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload)
+            AutoDownloadGroup(settings, state.isDataSaverOn, onOpenAutoDownload) {
+                onEvent(DataStorageEvent.ResetAutoDownload)
+            }
         }
         state.photosInOriginalQuality?.let { original ->
             SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }
         }
-        NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage)
+        NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage, options.prefersIpv6) {
+            onOptionsEvent(DataOptionsEvent.SetPrefersIpv6(it))
+        }
         CallsGroup(callDataSaving, onCallDataSavingChange)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
@@ -166,22 +186,9 @@ internal fun DataStorageScreen(
                 }
             }
         }
-        SettingsGroup(title = stringResource(R.string.settings_section_cache), iconTone = SettingsIconTone.Tertiary) {
-            item { shapes ->
-                ClearCacheItem(
-                    isClearing = state.isClearingCache,
-                    shapes = shapes,
-                    onClick = { onEvent(DataStorageEvent.ClearCache) },
-                )
-            }
-        }
+        CacheGroup(state, options, onEvent, onOptionsEvent)
     }
-    if (state.isClearCacheDialogOpen) {
-        ClearCacheDialog(
-            onConfirm = { onEvent(DataStorageEvent.ConfirmClearCache) },
-            onDismiss = { onEvent(DataStorageEvent.DismissClearCache) },
-        )
-    }
+    CacheDialogs(state, options, onEvent, onOptionsEvent)
 }
 
 /**

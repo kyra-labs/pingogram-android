@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
+import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
@@ -28,6 +30,7 @@ import javax.inject.Inject
  * ([AutoDownloadRepository], followed with Data Saver's state while the view model lives), how much space Pingogram
  * takes, loaded when the page opens, and clearing the cache of downloaded files after a confirmation, which shows how
  * much it freed and loads the usage again; and the proxy in use ([ProxyRepository]), which its page changes.
+ * Resetting the automatic download puts every network's defaults back.
  *
  * The open confirmation survives process death through the [SavedStateHandle]; clearing in progress does not, as
  * TDLib finishes it anyway and the usage is loaded again.
@@ -38,7 +41,7 @@ class DataStorageViewModel
     constructor(
         private val savedStateHandle: SavedStateHandle,
         private val storageRepository: StorageRepository,
-        autoDownloadRepository: AutoDownloadRepository,
+        private val autoDownloadRepository: AutoDownloadRepository,
         networkRepository: NetworkRepository,
         proxyRepository: ProxyRepository,
         private val composerSettings: ComposerSettingsRepository,
@@ -94,12 +97,31 @@ class DataStorageViewModel
                     clearCache()
                 }
 
+                DataStorageEvent.ResetAutoDownload -> {
+                    resetAutoDownload()
+                }
+
                 is DataStorageEvent.SetPhotosInOriginalQuality -> {
                     viewModelScope.launch {
                         val saved = composerSettings.setSendPhotosInOriginalQuality(event.enabled)
                         if (saved is Outcome.Failure) effectChannel.trySend(DataStorageEffect.ShowError(saved.error))
                     }
                 }
+            }
+        }
+
+        /** Writes every network's default rules; a write that fails stops there and says why. */
+        private fun resetAutoDownload() {
+            viewModelScope.launch {
+                val defaults = AutoDownloadSettings()
+                for (network in AutoDownloadNetwork.entries) {
+                    val saved = autoDownloadRepository.setRules(network, defaults.rulesFor(network))
+                    if (saved is Outcome.Failure) {
+                        effectChannel.trySend(DataStorageEffect.ShowError(saved.error))
+                        return@launch
+                    }
+                }
+                effectChannel.trySend(DataStorageEffect.AutoDownloadReset)
             }
         }
 

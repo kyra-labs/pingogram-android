@@ -45,9 +45,11 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibContactRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibContactSyncRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCountryRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibCustomEmojiRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibDataOptionsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibFileStreamRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibForumTopicRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibFrequentContactsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupAdministrationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupCallRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibGroupInfoRepository
@@ -129,6 +131,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
@@ -136,6 +139,7 @@ import dev.kyralabs.pingogram.core.domain.repository.EmojiCatalogRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
+import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -353,6 +357,12 @@ interface RepositoryModule {
 
     @Binds
     fun contactJoinedRepository(repository: TdlibContactJoinedRepository): ContactJoinedRepository
+
+    @Binds
+    fun dataOptionsRepository(repository: TdlibDataOptionsRepository): DataOptionsRepository
+
+    @Binds
+    fun frequentContactsRepository(repository: TdlibFrequentContactsRepository): FrequentContactsRepository
 
     @Binds
     fun personalChannelRepository(repository: TdlibPersonalChannelRepository): PersonalChannelRepository
