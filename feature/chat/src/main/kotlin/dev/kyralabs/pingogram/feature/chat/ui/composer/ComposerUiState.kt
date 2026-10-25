@@ -76,27 +76,32 @@ sealed interface ComposerBar {
     val preview: UiText
 
     /**
-     * Replying to message [messageId]: its [sender]'s name, "You" for the user's own, as reply quotes say. Without a
-     * sender while the message loads.
+     * Replying to message [messageId]: its [sender]'s name, "You" for the user's own, as reply quotes say ("Reply to
+     * Ada in Team chat" for a message of another chat, [isElsewhere], which the bar does not show in this list).
+     * Without a sender while the message loads. A quote reply ([isQuote]) shows the quoted part as its [preview].
      */
     data class Reply(
         override val messageId: Long,
         val sender: UiText?,
         override val preview: UiText,
+        val isQuote: Boolean = false,
+        val isElsewhere: Boolean = false,
     ) : ComposerBar {
-        override fun toString() = "Reply(messageId=$messageId, …)"
+        override fun toString() = "Reply(messageId=$messageId, isQuote=$isQuote, isElsewhere=$isElsewhere, …)"
     }
 
     /**
      * Editing message [messageId]: the send button becomes a check that saves the edit. [canBeEmpty] for a caption,
-     * which an empty text removes; a text message needs a text.
+     * which an empty text removes; a text message needs a text. Where its media can be replaced, [replace] is the
+     * picker the bar's "Replace" button opens.
      */
     data class Edit(
         override val messageId: Long,
         override val preview: UiText,
         val canBeEmpty: Boolean,
+        val replace: ReplaceMedia? = null,
     ) : ComposerBar {
-        override fun toString() = "Edit(messageId=$messageId, canBeEmpty=$canBeEmpty, …)"
+        override fun toString() = "Edit(messageId=$messageId, canBeEmpty=$canBeEmpty, replace=$replace, …)"
     }
 }
 

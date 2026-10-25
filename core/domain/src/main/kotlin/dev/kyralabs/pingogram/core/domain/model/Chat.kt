@@ -123,13 +123,13 @@ data class ChatPermissions(
 
 /**
  * An unsent message the user left in a chat, saved by Telegram on every device; [date] is when it was saved.
- * [replyToMessageId] is the message of the same chat it replies to; null if it replies to nothing. A draft may be only
- * a reply, with an empty text.
+ * [replyTo] is the message it replies to (of the same chat, or of another one), with the part it quotes; null if it
+ * replies to nothing. A draft may be only a reply, with an empty text.
  */
 data class ChatDraft(
     val content: DraftContent,
     val date: Long,
-    val replyToMessageId: Long? = null,
+    val replyTo: ReplyTarget? = null,
 )
 
 /** What a [ChatDraft] holds. */

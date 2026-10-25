@@ -16,6 +16,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
   conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
   away for a minute. The locks stay on this device; your other devices show the chats as usual.
+- Archive settings: the archive's top bar opens them. Archive and mute new chats from people who aren't in your
+  contacts (where Telegram offers it), and keep unmuted chats, or those of your folders, in the archive when a new
+  message arrives. They belong to your Telegram account. The archived chats row can show the chats' names, be one line,
+  or be hidden: long-press it, or swipe it away (with Undo); while hidden, the top bar's archive button opens it.
+- Mark all as read: long-press a folder tab, or "All chats", to mark all its chats as read. The same menu edits the
+  folder.
 - Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
   (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
   sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and
@@ -60,6 +66,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
   whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
   reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
+- Quote replies: select part of a message's text in its lifted bubble (a second long press) and tap "Quote" beside
+  Copy; the reply quotes just that part. The reply bar and the reply's bubble show the quote with a quote mark, and
+  quotes others send show the same way.
+- Reply in another chat: a message's actions offer "Reply in another chat", which lists your chats; the one you pick
+  opens with the reply ready ("Reply to Ada in Team chat") for you to write it. Nothing is sent until you send it.
+- Copy link: in groups and channels with links, a message's actions copy its link (an album's link for an album);
+  in a topic or thread, "Copy link to this thread". Links to private chats copy too and open for members only.
+- Replace a message's photo, video or file while editing it: "Replace" in the edit bar opens the Photo Picker or the
+  file picker, the new media shows in a preview, and "Replace" there swaps it in, keeping the caption you are editing.
 - Send with Enter: Appearance → Chats chooses which Enter sends a message. On a hardware keyboard Enter sends by
   default, and Shift+Enter or Ctrl+Enter starts a new line; turned off, Ctrl+Enter sends instead. On the on-screen
   keyboard Enter starts a new line by default; turned on, its Enter key becomes Send. This replaces "Send with
@@ -178,6 +193,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - The chat list does less work while it scrolls: rows no longer paint a background that matches the list behind them,
   avatars with a photo skip laying out the initials it covers, and rows set up their swipe feedback only when you
   swipe them.
+- Pingogram starts with less work on the way to the chat list: notifications and share sheet chats that Android still
+  shows from the last time are not posted again, the parts that follow notifications, calls, transfers and the widget
+  start in the background, the `gms` build starts Firebase only when it needs it, and the screen is no longer drawn
+  twice at the start for "Hide phone numbers".
 
 ### Fixed
 - Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a

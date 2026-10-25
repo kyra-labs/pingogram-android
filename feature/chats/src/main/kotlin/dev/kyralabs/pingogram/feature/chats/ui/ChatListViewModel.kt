@@ -13,9 +13,13 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import dev.kyralabs.pingogram.core.domain.model.Chat
 import dev.kyralabs.pingogram.core.domain.model.ChatFolder
 import dev.kyralabs.pingogram.core.domain.model.ChatListType
+import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
+import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
+import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
@@ -78,6 +82,9 @@ import java.util.Locale
  *   one chat; several chats are deleted for the current user only.
  * - **Times** follow the zone, the language and the 12- or 24-hour setting ([TimePatterns]), checked at every
  *   emission, so a change shows at the next minute at the latest.
+ * - **Archive row** (Chats tab only): full, compact or hidden as [ArchiveRowRepository] keeps it on the device; a
+ *   hidden row leaves the archive to the top bar ([ChatListUiState.hiddenArchive]). Its style and the tabs' "Mark all
+ *   as read" go through [ChatListActions].
  *
  * It takes one repository per kind of data the list combines, plus the clock, dispatcher, language and time patterns
  * that tests replace, hence `LongParameterList` is suppressed. The Chats tab and the archive create it with their
@@ -96,6 +103,8 @@ class ChatListViewModel internal constructor(
     chatActionRepository: ChatActionRepository,
     connectionRepository: ConnectionRepository,
     chatLock: ChatLockRepository,
+    archiveRowRepository: ArchiveRowRepository,
+    archiveSettingsRepository: ArchiveSettingsRepository,
     private val clock: WallClock,
     private val timePatterns: TimePatterns,
     private val dispatcher: CoroutineDispatcher,
@@ -112,6 +121,8 @@ class ChatListViewModel internal constructor(
         chatActionRepository: ChatActionRepository,
         connectionRepository: ConnectionRepository,
         chatLock: ChatLockRepository,
+        archiveRowRepository: ArchiveRowRepository,
+        archiveSettingsRepository: ArchiveSettingsRepository,
         clock: WallClock,
         timePatterns: TimePatterns,
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
@@ -125,6 +136,8 @@ class ChatListViewModel internal constructor(
         chatActionRepository,
         connectionRepository,
         chatLock,
+        archiveRowRepository,
+        archiveSettingsRepository,
         clock,
         timePatterns,
         dispatcher,
@@ -164,6 +177,15 @@ class ChatListViewModel internal constructor(
 
     private val effectChannel = Channel<ChatListEffect>(Channel.BUFFERED)
     val effects: Flow<ChatListEffect> = effectChannel.receiveAsFlow()
+
+    private val listActions =
+        ChatListActions(
+            scope = viewModelScope,
+            archiveRowRepository = archiveRowRepository,
+            archiveSettingsRepository = archiveSettingsRepository,
+            shownArchive = { uiState.value.archive },
+            effects = effectChannel,
+        )
 
     private val selectedList: Flow<ChatListType> =
         when (kind) {
@@ -210,10 +232,7 @@ class ChatListViewModel internal constructor(
                     flowOf(persistentListOf())
                 } else {
                     val lists = listOf(ChatListType.Main) + folders.map { ChatListType.Folder(it.id) }
-                    val unread =
-                        combine(lists.map(chatRepository::unreadChatCount)) { counts ->
-                            counts.map { it.unreadUnmutedCount }
-                        }
+                    val unread = combine(lists.map(chatRepository::unreadChatCount)) { it.toList() }
                     combine(unread, chatRepository.mainChatListPosition) { counts, mainPosition ->
                         folderTabs(folders, counts, mainPosition)
                     }
@@ -221,15 +240,15 @@ class ChatListViewModel internal constructor(
             }
         }
 
-    private val archive: Flow<ArchiveEntry?> =
+    private val archive: Flow<ArchivePlace> =
         if (kind == ChatListKind.Archive) {
-            flowOf(null)
+            flowOf(ArchivePlace(entry = null, style = ArchiveRowStyle.Full))
         } else {
             combine(
                 chatRepository.unreadChatCount(ChatListType.Archive),
                 chatRepository.chatList(ChatListType.Archive).without(lockedChatIds),
-                ::archiveEntry,
-            ).distinctUntilChanged()
+                archiveRowRepository.style,
+            ) { count, chats, style -> ArchivePlace(archiveEntry(count, chats), style) }.distinctUntilChanged()
         }
 
     private val overlays: Flow<Overlays> =
@@ -251,8 +270,9 @@ class ChatListViewModel internal constructor(
                 connection = connection,
                 folderTabs = tabs,
                 selectedFolderId = (list.list as? ChatListType.Folder)?.id,
-                archive = archive?.takeIf { list.list == ChatListType.Main },
+                archive = archive.row.takeIf { list.list == ChatListType.Main },
                 hasLockedChats = overlays.hasLockedChats && list.list == ChatListType.Main,
+                hiddenArchive = archive.hidden.takeIf { list.list == ChatListType.Main },
                 selection = selectionOf(list.content, overlays.selectedIds),
                 deleteDialog = overlays.deleteDialog,
             )
@@ -326,6 +346,10 @@ class ChatListViewModel internal constructor(
 
             ChatListEvent.NewChat -> {
                 effectChannel.trySend(ChatListEffect.OpenNewChat)
+            }
+
+            ChatListEvent.OpenArchiveSettings, is ChatListEvent.SetArchiveRowStyle, is ChatListEvent.MarkAllAsRead -> {
+                listActions.onEvent(event)
             }
 
             is ChatListEvent.ConfirmDelete -> {
@@ -508,6 +532,24 @@ class ChatListViewModel internal constructor(
         val content: ChatListContent,
     )
 
+    /** The archive row's [entry] (null while the archive is empty) and how the row shows ([style]). */
+    private data class ArchivePlace(
+        val entry: ArchiveEntry?,
+        val style: ArchiveRowStyle,
+    ) {
+        /** The row of the main list: full or compact; null while hidden or empty. */
+        val row: ArchiveEntry?
+            get() =
+                when (style) {
+                    ArchiveRowStyle.Full -> entry
+                    ArchiveRowStyle.Compact -> entry?.copy(isCompact = true)
+                    ArchiveRowStyle.Hidden -> null
+                }
+
+        /** The archive while its row is hidden, for the top bar's button. */
+        val hidden: ArchiveEntry? get() = entry.takeIf { style == ArchiveRowStyle.Hidden }
+    }
+
     /** What shows over the rows: which of them are selected, and the delete dialog. */
     private class Overlays(
         val selectedIds: Set<Long>,
@@ -531,17 +573,22 @@ private val ChatListUiState.rows: List<ChatListItemModel>
 private val ChatListUiState.shownChatIds: Set<Long>
     get() = rows.mapTo(HashSet()) { it.id }
 
-/** The tabs: the [folders] with their [unread] counts (the main list's first), "All chats" at [mainPosition]. */
+/**
+ * The tabs: the [folders] with their [unread] counts (the main list's first), "All chats" at [mainPosition]. A tab's
+ * badge counts its unmuted unread chats; its menu marks it as read while any chat, muted or not, is unread.
+ */
 private fun folderTabs(
     folders: List<ChatFolder>,
-    unread: List<Int>,
+    unread: List<UnreadChatCount>,
     mainPosition: Int,
 ): ImmutableList<FolderTab> {
     val tabs: MutableList<FolderTab> =
         folders.mapIndexedTo(mutableListOf()) { index, folder ->
-            FolderTab.Folder(folder.id, folder.title.text, unread[index + 1])
+            val count = unread[index + 1]
+            FolderTab.Folder(folder.id, folder.title.text, count.unreadUnmutedCount, count.unreadCount > 0)
         }
-    tabs.add(mainPosition.coerceIn(0, folders.size), FolderTab.AllChats(unread[0]))
+    val main = unread[0]
+    tabs.add(mainPosition.coerceIn(0, folders.size), FolderTab.AllChats(main.unreadUnmutedCount, main.unreadCount > 0))
     return tabs.toImmutableList()
 }
 

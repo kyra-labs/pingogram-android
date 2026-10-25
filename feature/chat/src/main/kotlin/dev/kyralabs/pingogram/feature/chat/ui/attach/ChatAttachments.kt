@@ -9,6 +9,7 @@ import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.AttachmentKind
 import dev.kyralabs.pingogram.core.domain.model.DeviceLocation
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -44,6 +45,9 @@ import kotlinx.coroutines.launch
  *   gallery's photos and videos are prepared again from their URIs when sent, as files at their size without their
  *   metadata (`AttachmentKind.Original`); one that cannot be keeps its compressed copy.
  * - **Shared files** ([addShared], direct share) join the preview like picked ones, their text as its caption.
+ * - **Replacing media** ([pickReplacement], `REQUIREMENTS.md` FR-C6): content picked to replace the media of a message
+ *   being edited opens in a preview of its own, one item without a caption (the edit's text is the caption), which
+ *   [takeReplacement] hands over once ready, its copy then the taker's.
  * - **Camera** ([takePhoto]): a new file for the camera app ([ChatEffect.LaunchCamera]), whose photo joins the preview
  *   ([photoTaken]); not taken, the file is deleted.
  * - **Process death**: the preview's ready attachments, the caption, the poll form and the camera's file are kept in
@@ -74,7 +78,8 @@ internal class ChatAttachments(
     private val mutablePreview =
         MutableStateFlow(
             savedState.restoredPreview()?.let { (kind, attachments) ->
-                PreviewDraft(kind, attachments.map { PreviewItem.Ready(nextKey++, it) }.toPersistentList())
+                val items = attachments.map { PreviewItem.Ready(nextKey++, it) }.toPersistentList()
+                PreviewDraft(kind, items, replacing = savedState[KEY_REPLACING])
             },
         )
 
@@ -177,9 +182,37 @@ internal class ChatAttachments(
         close()
     }
 
+    /**
+     * Content picked at [uri] to replace the media of message [messageId], being edited, as [kind] says: it opens in a
+     * preview of its own, being prepared, in place of any other.
+     */
+    fun pickReplacement(
+        uri: String,
+        kind: AttachmentKind,
+        messageId: Long,
+    ) {
+        dismissPreview()
+        val key = nextKey++
+        setPreview(PreviewDraft(kind, persistentListOf(PreviewItem.Preparing(key)), replacing = messageId))
+        track(scope.launch { finish(key, repository.prepare(uri, kind)) })
+    }
+
+    /**
+     * Takes the replacement out of its preview once it is ready, closing the preview without deleting its copy, which
+     * is the caller's then; null while there is none, or it is not ready.
+     */
+    fun takeReplacement(): Replacement? {
+        val draft = mutablePreview.value?.takeIf { it.isReady }
+        val messageId = draft?.replacing
+        val attachment = draft?.attachments?.singleOrNull()
+        if (messageId == null || attachment == null) return null
+        setPreview(null)
+        return Replacement(messageId, attachment)
+    }
+
     /** Sends the preview's items with its caption as [options] say, once all are ready. */
     fun sendPreview(options: SendOptions) {
-        val draft = mutablePreview.value?.takeIf { it.isReady } ?: return
+        val draft = mutablePreview.value?.takeIf { it.isReady && it.replacing == null } ?: return
         val text = caption.content
         setPreview(null)
         caption.setContent(FormattedText.Empty)
@@ -223,7 +256,7 @@ internal class ChatAttachments(
             when (val contact = repository.readContact(uri)) {
                 is Outcome.Success -> {
                     val replyTo = replies.takeReply()
-                    val sent = repository.sendContact(chatId, contact.value, replyToMessageId = replyTo)
+                    val sent = repository.sendContact(chatId, contact.value, replyTo = replyTo)
                     report(sent, SendOptions(), replyTo)
                 }
 
@@ -330,7 +363,7 @@ internal class ChatAttachments(
         kind: AttachmentKind,
         count: Int,
     ): List<Long> {
-        val current = mutablePreview.value?.takeIf { it.kind == kind }
+        val current = mutablePreview.value?.takeIf { it.kind == kind && it.replacing == null }
         if (current == null) dismissPreview()
         val keys = List(count) { nextKey++ }
         val items = (current?.items ?: persistentListOf()).addingAll(keys.map { PreviewItem.Preparing(it) })
@@ -385,7 +418,7 @@ internal class ChatAttachments(
     private fun report(
         result: Outcome<Unit>,
         options: SendOptions,
-        replyTo: Long?,
+        replyTo: ReplyTarget?,
     ) {
         when (result) {
             is Outcome.Success -> {
@@ -402,6 +435,7 @@ internal class ChatAttachments(
     private fun setPreview(draft: PreviewDraft?) {
         mutablePreview.value = draft
         savedState.savePreview(draft?.kind, draft?.attachments.orEmpty())
+        savedState[KEY_REPLACING] = draft?.replacing
     }
 
     private fun setPollOpen(open: Boolean) {
@@ -413,29 +447,42 @@ internal class ChatAttachments(
         /** The caption's text and formatting ([savedEntities]), for process death. */
         const val KEY_CAPTION = "chat.attachCaption"
         const val KEY_CAPTION_ENTITIES = "chat.attachCaptionEntities"
+
+        /** The message whose media the preview replaces, for process death. */
+        const val KEY_REPLACING = "chat.attachReplacing"
     }
 }
 
-/** The picked items of the preview, of one [kind], in their order. */
+/**
+ * The picked items of the preview, of one [kind], in their order; with [replacing], the one item that replaces the
+ * media of that message, being edited.
+ */
 internal data class PreviewDraft(
     val kind: AttachmentKind,
     val items: PersistentList<PreviewItem>,
     val offersOriginal: Boolean = false,
     val original: Boolean = false,
+    val replacing: Long? = null,
 ) {
     val isReady: Boolean get() = items.isNotEmpty() && items.none { it is PreviewItem.Preparing }
 
     val attachments: List<Attachment> get() = items.mapNotNull { (it as? PreviewItem.Ready)?.attachment }
 }
 
+/** What [ChatAttachments.takeReplacement] hands over: the [attachment] that replaces message [messageId]'s media. */
+internal class Replacement(
+    val messageId: Long,
+    val attachment: Attachment,
+)
+
 /**
  * How a message sent from elsewhere than the composer's text field (an attachment, a contact, a poll) takes the
  * composer's reply along, as a text message does: `ChatComposer`.
  */
 internal interface ReplyHandoff {
-    /** The message the composer replies to, which ends the reply; null if it replies to nothing. */
-    fun takeReply(): Long?
+    /** What the composer replies to, which ends the reply; null if it replies to nothing. */
+    fun takeReply(): ReplyTarget?
 
-    /** Replies to [messageId] again after the message that took it was refused, unless the composer moved on. */
-    fun restoreReply(messageId: Long)
+    /** Replies as [target] again after the message that took it was refused, unless the composer moved on. */
+    fun restoreReply(target: ReplyTarget)
 }

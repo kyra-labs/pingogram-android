@@ -433,7 +433,8 @@ enum class OutgoingStatus {
 
 /**
  * The quote of the replied message at the top of a bubble: [sender]'s name, colored by [senderId], over one line of
- * [text]. Without a sender while the replied message loads, when it was deleted, or for a story.
+ * [text] (the quoted part where the reply quotes one, [isQuote], marked as a quote). Without a sender while the replied
+ * message loads, when it was deleted, or for a story.
  *
  * @property messageId the replied message of this chat, which tapping the quote shows ([ChatEvent.OpenReply]); null
  *   for a story or a message of another chat, which it does not open.
@@ -444,8 +445,9 @@ data class ReplyQuote(
     val senderId: Long?,
     val text: UiText,
     val messageId: Long? = null,
+    val isQuote: Boolean = false,
 ) {
-    override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, …)"
+    override fun toString() = "ReplyQuote(senderId=$senderId, messageId=$messageId, isQuote=$isQuote, …)"
 }
 
 /**

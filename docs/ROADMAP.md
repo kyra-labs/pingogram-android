@@ -114,8 +114,10 @@ What is left for 1.0, item by item and with owners, is in `docs/audit/v1-readine
 - [ ] Performance budget verified (`REQUIREMENTS.md` §6.1); the APK size budget is checked by every pull request
       (`ci.yml`) and every release (`release.yml`). Scrolling misses its budget in the first baseline (`docs/PERFORMANCE.md` §9): the chat list's
       frame P90 10.4 ms against 8 ms, the conversation's late frames over 1%; #150 lowered the cost on the JVM, and
-      the owner's phone measures it again. No `OpenChatBenchmark` or `openChat` trace yet (open a chat ≤ 150 ms)
-- [ ] Benchmark thresholds in CI (a device in CI, or the owner's phone before each release)
+      the owner's phone measures it again. Open a chat ≤ 150 ms: `OpenChatBenchmark` and the `openChat` trace
+      section are in, not yet run on the phone
+- [x] Benchmark thresholds: on the owner's phone before each release (`tools/benchmark/compare.py`, `docs/RELEASE.md`
+      step 2); a device in CI is still open
 - [ ] Localization: at least 5 languages. The pipeline is in (Hosted Weblate, #152, `docs/TRANSLATING.md`); no
       language is translated yet
 - [x] Google Play readiness for `gms` (`docs/PLAY_STORE.md`, #153)

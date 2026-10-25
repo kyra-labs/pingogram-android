@@ -57,6 +57,7 @@ import dev.kyralabs.pingogram.core.ui.component.paneContainer
 import dev.kyralabs.pingogram.core.ui.component.rememberExtraPaneWidth
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.trace.OpenChatTrace
 import dev.kyralabs.pingogram.core.ui.transition.FullBleedShape
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.feature.chat.navigation.ChatPane
@@ -106,6 +107,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   above the whole layout as the archive is.
  * - **Stories**: a story ring above the chats opens [onOpenStory], the stories viewer full screen above the whole
  *   layout, as the media viewer is.
+ * - **Folders**: a folder tab's "Edit folder" opens [onEditFolder] with its folder (null for "All chats"), pushed
+ *   above the whole layout as the archive is.
  * - **Search** ([search], `docs/DESIGN_SYSTEM.md` §6 "Global search"): docked, it takes the list pane's place
  *   ([SearchPane]), growing out of the search button ([SearchOrList]). With two panes a chat it found shows in the
  *   detail pane as a tapped one does, and a message opens its conversation there at the message; with one pane (a
@@ -133,6 +136,7 @@ internal fun ChatsListDetail(
     onOpenChatInfo: (chatId: Long) -> Unit = {},
     onEditContact: (userId: Long) -> Unit = {},
     onOpenStory: (chatId: Long) -> Unit = {},
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
     onOpenScheduledMessages: (chatId: Long) -> Unit = {},
@@ -192,6 +196,7 @@ internal fun ChatsListDetail(
                                 onOpenNewChat = onOpenNewChat,
                                 onOpenStory = onOpenStory,
                                 openChatId = shownChatId,
+                                onEditFolder = onEditFolder,
                             )
                         }
                     }
@@ -405,6 +410,7 @@ private class PaneOpener(
         chatId: Long,
         messageId: Long?,
     ) {
+        OpenChatTrace.begin(chatId)
         if (!twoPanes.value) {
             message.value = null
             callbacks.value.onOpenChat(chatId, messageId)

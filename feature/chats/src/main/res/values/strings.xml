@@ -119,6 +119,43 @@
     <string name="chat_list_archive_back">Back</string>
     <string name="chat_list_archive_empty_title">No archived chats</string>
     <string name="chat_list_archive_empty_body">Chats you archive show up here, out of your way.</string>
+    <!-- The archive row's menu (a long press) and its swipe, and the snackbar after it was hidden. -->
+    <string name="chat_list_archive_row_menu">Show options</string>
+    <string name="chat_list_archive_row_collapse">Make compact</string>
+    <string name="chat_list_archive_row_expand">Show chat names</string>
+    <string name="chat_list_archive_row_hide">Hide from chat list</string>
+    <string name="chat_list_archive_row_swipe_hide">Hide</string>
+    <string name="chat_list_archive_row_hidden">Archived chats hidden. Open them from the top bar.</string>
+    <!-- A folder tab's menu (a long press): edit the folder ("All chats": the folders), and mark its chats as read. -->
+    <string name="chat_list_edit_folder">Edit folder</string>
+    <string name="chat_list_edit_folders">Edit folders</string>
+    <string name="chat_list_mark_all_as_read">Mark all as read</string>
+
+    <!-- The archive's settings (FR-L9): what Telegram archives and keeps archived, and the archive row. -->
+    <string name="archive_settings_title">Archive settings</string>
+    <string name="archive_settings_loading">Loading archive settings</string>
+    <string name="archive_settings_error">Couldn\'t load the archive settings</string>
+    <string name="archive_settings_new_chats_header">New chats</string>
+    <string name="archive_settings_new_chats">Archive and mute new chats</string>
+    <string name="archive_settings_new_chats_summary">From people who aren\'t in your contacts</string>
+    <string name="archive_settings_new_chats_footer">They go straight to the archive, without notifications. Chats with your contacts stay where they are.</string>
+    <!-- Telegram's option can_archive_and_mute_new_chats_from_unknown_users is off for the account. -->
+    <string name="archive_settings_new_chats_unavailable">Telegram doesn\'t offer this for your account right now.</string>
+    <string name="archive_settings_kept_header">When a new message arrives</string>
+    <string name="archive_settings_keep_unmuted">Keep unmuted chats archived</string>
+    <string name="archive_settings_keep_unmuted_summary">They stay in the archive</string>
+    <string name="archive_settings_keep_folders">Keep chats from folders archived</string>
+    <string name="archive_settings_keep_folders_summary">Unmuted chats a folder includes or pins stay in the archive</string>
+    <string name="archive_settings_keep_folders_implied">Kept, as all unmuted chats are</string>
+    <string name="archive_settings_kept_footer">Otherwise a new message moves an archived chat back to your chats, unless it\'s muted. These settings belong to your Telegram account.</string>
+    <string name="archive_settings_row_header">In the chat list</string>
+    <string name="archive_settings_row_full">Full</string>
+    <string name="archive_settings_row_full_summary">With the names of archived chats</string>
+    <string name="archive_settings_row_compact">Compact</string>
+    <string name="archive_settings_row_compact_summary">One line, with the unread count</string>
+    <string name="archive_settings_row_hidden">Hidden</string>
+    <string name="archive_settings_row_hidden_summary">Open the archive with the button in the top bar</string>
+    <string name="archive_settings_row_footer">Kept on this device. A long press on the row changes it too, and a swipe hides it.</string>
 
     <!-- Global search (SearchScreen, FR-L6): the search field. -->
     <string name="search_placeholder">Search chats, people and messages</string>

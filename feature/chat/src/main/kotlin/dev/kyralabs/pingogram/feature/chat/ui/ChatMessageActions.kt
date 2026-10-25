@@ -23,9 +23,11 @@ import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.editTarget
+import dev.kyralabs.pingogram.feature.chat.ui.composer.replaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.textOrCaption
 import dev.kyralabs.pingogram.feature.chat.ui.content.asPicture
 import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
+import dev.kyralabs.pingogram.feature.chat.ui.reply.quoteOf
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -53,8 +55,13 @@ import kotlinx.coroutines.launch
  *   bubble's "+N" ([show] with `showsPicker`), and switches to it and back ([showPicker]).
  * - **Actions**: each asks for the properties again, as they change with time and screen readers start actions
  *   without the sheet, and does nothing but say so ([ChatEffect.ActionUnavailable]) where TDLib no longer allows it.
- *   Replying and editing go to the [composer], which takes the focus ([ChatEffect.FocusComposer]); copying goes out as
- *   [ChatEffect.CopyText]; forwarding opens the forward sheet through [onForward]; selecting starts selection mode
+ *   Replying and editing go to the [composer], which takes the focus ([ChatEffect.FocusComposer]); so does a quote
+ *   reply ([quote], the part of the text selected in the lifted bubble, [quoteOf]); a reply in another chat opens its
+ *   chat picker through [onReplyElsewhere]; copying goes out as [ChatEffect.CopyText], a message's link
+ *   ([copyLink], TDLib's, in its topic or thread where the conversation is one: [inThread]) as
+ *   [ReplyEffect.CopyLink]; editing a message whose media TDLib lets be replaced offers its picker
+ *   ([ComposerMode.Editing.replace]); forwarding opens the forward sheet through [onForward]; selecting starts
+ *   selection mode
  *   through [onSelect], reporting the report sheet through [onReport], saving to Downloads goes to [onSave]; pinning,
  *   deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is
  *   forwarded, selected, reported, saved and deleted, and its failed items resent, as a whole. Selection mode deletes
@@ -82,6 +89,8 @@ internal class ChatMessageActions(
     private val onForward: (List<Message>) -> Unit = {},
     private val onSelect: (List<Long>) -> Unit = {},
     private val onReport: (List<Long>) -> Unit = {},
+    private val onReplyElsewhere: (messageId: Long) -> Unit = {},
+    private val inThread: Boolean = false,
     private val onSave: (List<Message>) -> Unit = {},
     private val onSelectionDeleted: () -> Unit = {},
     private val translationAction: suspend (Message) -> MessageAction? = { null },
@@ -134,7 +143,7 @@ internal class ChatMessageActions(
                                 reactions = quick,
                                 actions =
                                     context
-                                        .actionsOf(message, properties.value)
+                                        .actionsOf(message, properties.value, inThread)
                                         .withTranslation(translate.await())
                                         .toImmutableList(),
                                 picker = picker,
@@ -168,13 +177,51 @@ internal class ChatMessageActions(
             onEffect(ChatEffect.CopyText(message.textOrCaption.text))
         }
 
+    /**
+     * Replies to message [messageId] quoting what of its text the user [selected] in its lifted bubble (an album's
+     * item that holds the caption), where the user may reply to it; says so where the selection is not its text.
+     */
+    fun quote(
+        messageId: Long,
+        selected: List<String>,
+    ) = act(messageId, MessageAction.Reply) { context, message, _ ->
+        val quoted =
+            context.albumOf(message).firstNotNullOfOrNull { item ->
+                quoteOf(item.textOrCaption, selected)?.let { item.id to it }
+            }
+        if (quoted == null) {
+            onEffect(ReplyEffect.QuoteUnavailable)
+        } else {
+            composer.reply(quoted.first, quoted.second)
+            onEffect(ChatEffect.FocusComposer)
+        }
+    }
+
+    /** Opens the chat picker that replies to message [messageId] in another chat, through [onReplyElsewhere]. */
+    fun replyElsewhere(messageId: Long) =
+        act(messageId, MessageAction.ReplyElsewhere) { _, _, _ -> onReplyElsewhere(messageId) }
+
+    /**
+     * Copies the link of message [messageId]: to the whole album for an album's item, and to it in the conversation's
+     * topic or thread where it is one ([inThread]).
+     */
+    fun copyLink(messageId: Long) =
+        act(messageId, if (inThread) MessageAction.CopyThreadLink else MessageAction.CopyLink) { _, message, _ ->
+            scope.launch {
+                when (val link = repository.messageLink(chatId, messageId, message.mediaAlbumId != 0L, inThread)) {
+                    is Outcome.Success -> onEffect(ReplyEffect.CopyLink(link.value.link))
+                    is Outcome.Failure -> onEffect(ChatEffect.ShowError(link.error))
+                }
+            }
+        }
+
     /** Opens the forward sheet for message [messageId] with the album's other items, through [onForward]. */
     fun forward(messageId: Long) =
         act(messageId, MessageAction.Forward) { context, message, _ -> onForward(context.albumOf(message)) }
 
     fun edit(messageId: Long) =
-        act(messageId, MessageAction.Edit) { _, message, _ ->
-            composer.edit(message)
+        act(messageId, MessageAction.Edit) { _, message, properties ->
+            composer.edit(message, message.replaceMedia(properties.canEditMedia))
             onEffect(ChatEffect.FocusComposer)
         }
 
@@ -318,7 +365,7 @@ internal class ChatMessageActions(
                 is Outcome.Success -> {
                     // Fresh: the composer may have changed while TDLib answered.
                     val context = current() ?: return@launch
-                    if (action in context.actionsOf(message, properties.value)) {
+                    if (action in context.actionsOf(message, properties.value, inThread)) {
                         block(context, message, properties.value)
                     } else {
                         onEffect(ChatEffect.ActionUnavailable)
@@ -432,27 +479,40 @@ internal class ActionContext(
 /**
  * What the actions sheet offers for [message] with TDLib's [properties], in its order: who saw it where TDLib lists
  * them, who added its reactions where TDLib lists them and it has some (as Telegram's apps put them, after the quick
- * reactions), sending a failed message again, replying and editing where the user can write, copying a text or
- * caption the chat lets be saved, forwarding where TDLib allows it (never protected content), pinning or unpinning
- * (also for the user alone in a private chat), saving its file (an album's files) to Downloads where the chat lets it
- * be saved, selecting, reporting where TDLib allows it, deleting.
+ * reactions), sending a failed message again, replying and editing where the user can write, replying in another chat
+ * where TDLib allows it, copying a text or caption the chat lets be saved, copying the message's link where TDLib makes
+ * one (to it in its topic or thread in a conversation that is one, [inThread]), forwarding where TDLib allows it (never
+ * protected content), pinning or unpinning (also for the user alone in a private chat), saving its file (an album's
+ * files) to Downloads where the chat lets it be saved, selecting, reporting where TDLib allows it, deleting.
  */
 internal fun ActionContext.actionsOf(
     message: Message,
     properties: MessageProperties,
+    inThread: Boolean = false,
 ): List<MessageAction> =
     buildList {
-        if (properties.canGetViewers) add(MessageAction.SeenBy)
-        if (reactionsMessageOf(message).listedReactions.isNotEmpty()) add(MessageAction.Reactions)
+        addAll(interactionActions(message, properties))
         if (message.canBeResent) add(MessageAction.Resend)
         if (properties.canBeReplied && canWrite) add(MessageAction.Reply)
+        if (properties.canBeRepliedInAnotherChat) add(MessageAction.ReplyElsewhere)
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
+        if (properties.canGetLink) add(if (inThread) MessageAction.CopyThreadLink else MessageAction.CopyLink)
         if (properties.canBeForwarded) add(MessageAction.Forward)
         if (properties.canBeEdited && canWrite && message.editTarget != null) add(MessageAction.Edit)
         addAll(pollActions(message, properties))
         if (properties.canBePinned) addAll(pinActions(message))
         addAll(laterActions(message, properties))
     }
+
+/** Who saw [message] where TDLib lists them, and who added its reactions where TDLib lists them and it has some. */
+private fun ActionContext.interactionActions(
+    message: Message,
+    properties: MessageProperties,
+): List<MessageAction> =
+    listOfNotNull(
+        MessageAction.SeenBy.takeIf { properties.canGetViewers },
+        MessageAction.Reactions.takeIf { reactionsMessageOf(message).listedReactions.isNotEmpty() },
+    )
 
 /**
  * Taking the user's vote back where [message]'s poll allows it ([Poll.canRetractVote]), and stopping an open poll

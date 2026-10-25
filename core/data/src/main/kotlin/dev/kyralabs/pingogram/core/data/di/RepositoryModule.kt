@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
 import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAttachmentRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibAuthRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibBlockListRepository
@@ -92,6 +93,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibVoiceNoteRepository
 import dev.kyralabs.pingogram.core.domain.repository.AccountRepository
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
+import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
@@ -277,6 +279,9 @@ interface RepositoryModule {
 
     @Binds
     fun privacyRepository(repository: TdlibPrivacyRepository): PrivacyRepository
+
+    @Binds
+    fun archiveSettingsRepository(repository: TdlibArchiveSettingsRepository): ArchiveSettingsRepository
 
     @Binds
     fun blockListRepository(repository: TdlibBlockListRepository): BlockListRepository

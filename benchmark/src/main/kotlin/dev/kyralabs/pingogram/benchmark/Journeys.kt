@@ -42,6 +42,19 @@ internal fun MacrobenchmarkScope.openSavedMessages(): UiObject2 {
         ?: error("Saved Messages did not open within $TIMEOUT_MS ms.")
 }
 
+/**
+ * Goes back to the chat list from wherever the app is (a conversation the last iteration opened), up to
+ * [BACK_PRESSES] times.
+ */
+internal fun MacrobenchmarkScope.returnToChatList() {
+    repeat(BACK_PRESSES) {
+        if (device.hasObject(By.res(CHAT_LIST)) && !device.hasObject(By.res(MESSAGE_LIST))) return
+        device.pressBack()
+        device.waitForIdle()
+    }
+    waitForChatList()
+}
+
 /** The open conversation's messages, found afresh: a list found in an earlier block may be stale. */
 internal fun MacrobenchmarkScope.messageList(): UiObject2 =
     device.wait(Until.findObject(By.res(MESSAGE_LIST)), TIMEOUT_MS)
@@ -75,4 +88,5 @@ private const val MESSAGE_LIST = "message_list"
 private const val TIMEOUT_MS = 10_000L
 
 private const val FLINGS = 3
+private const val BACK_PRESSES = 3
 private const val GESTURE_MARGIN_FRACTION = 5

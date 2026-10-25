@@ -24,7 +24,9 @@ import org.drinkless.tdlib.TdApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,8 +36,9 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class NotificationRendererTest {
     /** A logged-in account with Ada (user 42) and her private chat 100, and a channel, chat 300. */
-    private suspend fun TestScope.started(): NotificationsHarness {
-        val harness = NotificationsHarness(this)
+    private suspend fun TestScope.started(
+        harness: NotificationsHarness = NotificationsHarness(this),
+    ): NotificationsHarness {
         harness.client.authState.value = AuthState.Ready
         harness.renderer.start()
         runCurrent()
@@ -193,6 +196,39 @@ class NotificationRendererTest {
 
             assertEquals(Notification.GROUP_ALERT_SUMMARY, harness.posted(7)!!.groupAlertBehavior)
             assertNull(harness.posted(99))
+        }
+
+    @Test
+    fun `a restored group Android still shows as it is is not posted again`() =
+        runTest {
+            val earlier = started()
+            earlier.client.emit(updateActiveNotifications(notificationGroup(groupId = 7, chatId = 100)))
+            runCurrent()
+            val shown = earlier.posted(7)!!
+
+            // The next process: a new renderer, with Android still showing the earlier process's notification.
+            val next = started(NotificationsHarness(this))
+            next.client.emit(updateActiveNotifications(notificationGroup(groupId = 7, chatId = 100)))
+            runCurrent()
+
+            assertSame(shown, next.posted(7))
+        }
+
+    @Test
+    fun `a restored group that changed while no process ran is posted again`() =
+        runTest {
+            val earlier = started()
+            earlier.client.emit(updateActiveNotifications(notificationGroup(groupId = 7, chatId = 100)))
+            runCurrent()
+            val shown = earlier.posted(7)!!
+
+            val next = started(NotificationsHarness(this))
+            val changed = notificationGroup(groupId = 7, chatId = 100).apply { totalCount = 3 }
+            next.client.emit(updateActiveNotifications(changed))
+            runCurrent()
+
+            assertNotSame(shown, next.posted(7))
+            assertEquals(Notification.GROUP_ALERT_SUMMARY, next.posted(7)!!.groupAlertBehavior)
         }
 
     @Test

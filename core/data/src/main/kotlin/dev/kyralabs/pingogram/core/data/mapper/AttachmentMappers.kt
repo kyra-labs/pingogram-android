@@ -15,16 +15,19 @@ import org.drinkless.tdlib.TdApi
  * The content that sends this attachment from its local copy, with [caption] (null: none):
  *
  * - `inputMessagePhoto` of an `inputPhoto` with its size, no thumbnail (TDLib makes one; it is sent only to secret
- *   chats), no live photo video, no stickers, no spoiler, the caption below.
+ *   chats), no live photo video, no stickers, no spoiler, the caption below unless [showCaptionAboveMedia].
  * - `inputMessageVideo` of an `inputVideo` with its thumbnail, length and size, streamable, no cover, from the start.
  * - `inputMessageDocument` of an `inputDocument` without thumbnail, with content type detection, so Telegram shows
  *   a GIF or a song as such; its name is the copy's file name.
  */
-internal fun Attachment.toInputMessageContent(caption: TdApi.FormattedText?): TdApi.InputMessageContent =
+internal fun Attachment.toInputMessageContent(
+    caption: TdApi.FormattedText?,
+    showCaptionAboveMedia: Boolean = false,
+): TdApi.InputMessageContent =
     when (this) {
         is Attachment.Photo -> {
             val photo = TdApi.InputPhoto(TdApi.InputFileLocal(path), null, null, intArrayOf(), width, height)
-            TdApi.InputMessagePhoto(photo, caption, false, null, false)
+            TdApi.InputMessagePhoto(photo, caption, showCaptionAboveMedia, null, false)
         }
 
         is Attachment.Video -> {
@@ -41,7 +44,7 @@ internal fun Attachment.toInputMessageContent(caption: TdApi.FormattedText?): Td
                     height,
                     true,
                 )
-            TdApi.InputMessageVideo(video, caption, false, null, false)
+            TdApi.InputMessageVideo(video, caption, showCaptionAboveMedia, null, false)
         }
 
         is Attachment.Document -> {

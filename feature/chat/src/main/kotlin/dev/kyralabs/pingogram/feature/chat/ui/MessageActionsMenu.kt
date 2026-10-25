@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.contextmenu.builder.item
+import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.text.selection.rememberSelectionState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
@@ -89,7 +92,8 @@ import kotlin.math.roundToInt
  *   not fit around the message's place in the safe area, they move into view on the motion scheme's default spatial
  *   spring; a menu too tall scrolls, and a message too tall to leave room for it scrolls in its place.
  * - **Text**: a second long press on the lifted message selects its text ([SelectionContainer]), which the platform's
- *   text toolbar copies.
+ *   text toolbar copies; where the user may reply to it, the toolbar's "Quote" replies quoting the selection
+ *   ([LiftedText]).
  * - **Motion**: the scrim and the blur fade in on the default effects spring as the reactions and the menu grow from
  *   the bubble on the fast spatial spring. A reaction or an action, a tap on the scrim and back fade them out (the
  *   message returning to its place), then send their event; the back gesture is predictive, shrinking them to 90%
@@ -148,9 +152,7 @@ internal fun MessageActionsMenu(
                     )
                 }
             }
-            SelectionContainer(Modifier.verticalScroll(rememberScrollState()).testTag(LIFTED_MESSAGE_TAG)) {
-                message()
-            }
+            LiftedText(sheet, onQuote = { close(it) }, content = message)
             MenuGroups(
                 actions = sheet.actions,
                 onAction = { close(it.eventFor(sheet.messageId)) },
@@ -160,6 +162,46 @@ internal fun MessageActionsMenu(
     }
     if (sheet.showsPicker && sheet.picker != null) MessageActionsBottomSheet(sheet, onEvent, onClose = close)
 }
+
+/**
+ * The lifted message in a [SelectionContainer], scrolling where it is taller than its room. Where [sheet] offers
+ * replying, its text selection's menu (the platform's text toolbar) offers "Quote" after its own items, which goes to
+ * [onQuote] as [ReplyEvent.Quote] with what is selected, read as the menu opens.
+ */
+@Composable
+private fun LiftedText(
+    sheet: MessageActionsSheet,
+    onQuote: (ReplyEvent) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val selection = rememberSelectionState()
+    val canQuote = MessageAction.Reply in sheet.actions
+    val quoteLabel = stringResource(R.string.quote_action)
+    val currentOnQuote by rememberUpdatedState(onQuote)
+    val messageId = sheet.messageId
+    val quote =
+        if (canQuote) {
+            Modifier.appendTextContextMenuComponents {
+                val selected = selection.selectedTexts.map { it.text }
+                if (selected.any { it.isNotBlank() }) {
+                    item(QuoteMenuKey, quoteLabel, R.drawable.ic_format_quote) {
+                        close()
+                        currentOnQuote(ReplyEvent.Quote(messageId, selected))
+                    }
+                }
+            }
+        } else {
+            Modifier
+        }
+    SelectionContainer(
+        state = selection,
+        modifier = Modifier.verticalScroll(rememberScrollState()).testTag(LIFTED_MESSAGE_TAG).then(quote),
+        content = content,
+    )
+}
+
+/** The key of "Quote" in the lifted text's selection menu. */
+private data object QuoteMenuKey
 
 /**
  * The bubble of [state]'s open actions where a long press lifted it for the floating menu ([MessageLiftState.anchor]),

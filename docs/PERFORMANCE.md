@@ -13,7 +13,7 @@ regresses by more than 10%.
 | Warm start | ≤ 400 ms | same |
 | Chat list scroll (1000 chats) | P90 frame ≤ 8 ms @120 Hz, 0 frames > 32 ms | `ScrollBenchmark` + JankStats |
 | Conversation scroll (10k messages, mixed media) | P90 ≤ 10 ms, jank rate < 1% | same |
-| Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `TraceSectionMetric("openChat")` |
+| Open chat (tap → first messages visible) | ≤ 150 ms with cached history | `OpenChatBenchmark`: `TraceSectionMetric("openChat")`, an async section from the tap in the chat list (`:app`) to the frame after the first messages (`feature:chat`) |
 | Send text message (tap → bubble shown) | ≤ 50 ms (optimistic) | trace |
 | Memory, chat list idle | ≤ 120 MB PSS | `adb shell dumpsys meminfo`, nightly |
 | Memory, 10k-message media chat | ≤ 250 MB PSS; no OOM at 2× font scale | nightly |
@@ -47,16 +47,44 @@ regresses by more than 10%.
     to run on the main thread in `Application.onCreate`.
   - The home screen widget's first redraw of a process waits 5 s (`RecentChatsWidgetUpdater.START_UPDATE_DELAY`).
     Glance composes it in a WorkManager worker, which would start WorkManager while the chat list loads.
-- Still open from that review, each to be measured with a Perfetto trace of `benchmarkRelease` before changing it:
-  - **Notifications at a cold start.** TDLib restores the active notifications at every start, and
-    `NotificationRenderer` posts them all again, conversation shortcuts included. It should skip what the system
-    still shows. `ShareTargetShortcuts` does the same 5 s later.
+- Done after the v0.5.0 benchmarks (review of 2026-10-25), waiting for a trace before and after on the owner's phone
+  (`tools/perfetto/startup.sh` or `startup.ps1`, below):
+  - **Notifications at a cold start.** TDLib restores the active notifications at every start. `NotificationRenderer`
+    posts a restored group again only when Android no longer shows it as the last process posted it: each posted group
+    carries its fingerprint in the notification's extras (`GroupFingerprint`). Before, it built every avatar and
+    conversation shortcut anew.
+  - **Direct Share targets.** `ShareTargetShortcuts` leaves the targets Android already has unchanged: each pushed
+    target carries its key (title, photo, rank) in the shortcut's extras, read once per process. Before, it pushed all
+    8 with their avatars 5 s after every start.
+  - **Field injection.** `PingogramApplication` injects only TDLib's client and the caching repositories (which must
+    subscribe before TDLib starts). The rest is `dagger.Lazy`, made and started by one coroutine on `Default`
+    (`startInBackground`, the trace section `app.starters`). Each of them follows a repository that keeps TDLib's
+    state, so starting a few milliseconds after TDLib loses nothing.
+  - **Firebase in `gms`.** The flavor's manifest removes `FirebaseInitProvider`, which ran on the main thread before
+    `Application.onCreate` in every process. Firebase starts where it is first needed (`FirebaseStart`): the push
+    token at login, on a background coroutine, and the messaging service's `onCreate`, before Firebase handles a push.
+  - **The phone number setting.** `MainActivity` waits for "Hide phone numbers" with the Appearance settings, from
+    the same file. It used to show the app with numbers hidden, then provide the setting's value as a static
+    composition local, which composed the whole app again a frame or two after the first one.
+- Still open:
   - **The emoji font.** `androidx.emoji2`'s initializer, which Compose brings, loads it from Play services about
     500 ms after the first frame. Every paragraph is then laid out again. Removing it would change how new emoji
-    draw on older Android versions.
-  - **Firebase in `gms`.** `FirebaseInitProvider` runs before `Application.onCreate` on the main thread.
-  - **Field injection.** It builds about 40 objects in `Application.onCreate`, the calls stack included. They could
-    be `dagger.Lazy` and started from one background coroutine.
+    draw on older Android versions, so it is measured first (`tools/perfetto/startup.sql`'s last query) and removed
+    only if the owner agrees.
+  - **The warm start** (v0.5.0: 171 ms against 135 ms, §9). A warm start runs no `Application.onCreate`: its time is
+    the activity's creation, the wait for the settings behind the splash screen (`main.awaitSettings`), the first
+    composition and the chat list's first content (`reportFullyDrawn`). Between the first baseline and v0.5.0 the
+    start gained the deep links' and shares' handling and `LinkViewModel`, the call and secure window providers, the
+    color theme's palette and the chat style in `PingogramTheme`, the third pane's navigator and the story rings above
+    the chat list. Which of them costs what is for the trace to say.
+- Measuring a start on a phone: `tools/perfetto/startup.sh` (`startup.ps1` in PowerShell) records one Perfetto trace
+  (`startup.pbtxt`) of 5 cold and 5 warm starts of an installed, profileable build (`benchmarkRelease`), with what
+  `am start -W` reports for each.
+  Warm starts use the developer option "Don't keep activities" while they run, so leaving the app destroys its
+  activity, as Macrobenchmark's warm starts do. `startup.sql` summarizes the trace: each start's time to first frame
+  and to full display, the app's sections (`app.inject`, `app.tdlibStart`, `app.starters`, `main.onCreate`,
+  `main.awaitSettings`), the main thread's longest framework slices and states, and the emoji font's load.
+  `StartupBenchmark` reports `app.inject`, `main.onCreate` and `main.awaitSettings` beside the start times.
 
 ## 3. TDLib usage patterns
 
@@ -297,6 +325,12 @@ regresses by more than 10%.
   rarely stutters, though most frames still finish slightly late at 120 Hz. The chat list is unchanged and still misses
   its P90 (10.0 against 8 ms): the scroll work of M6 helped the conversation only. Clocks were not locked, so changes
   under ~10% may be thermal.
+- Checking a run: `tools/benchmark/compare.py <results>` reads the run's `*-benchmarkData.json` files and fails on a
+  budget of §1 missed (`benchmark/budgets.json`, which mirrors the table) or a time more than 10% above the last
+  baseline of the device (`benchmark/baselines/`, one file per device; the first, `galaxy-s24-ultra.json`, holds
+  v0.5.0's numbers below). Times are the start times' medians, the frame time percentiles and the trace sections'
+  medians; the share of late frames is checked against its budget only. `--write-baseline` records a run as the new
+  baseline. `docs/RELEASE.md` runs it before each release, on the owner's phone, as there is no device in CI.
 - Scroll benchmarks start the app cold in their setup block (`coldStart`: `killProcess()`, then the launcher
   activity), never with `StartupMode.COLD`, which kills the process again after setup, so the measured block would
   find the app gone.

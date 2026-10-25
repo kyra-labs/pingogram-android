@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.InlineBot
 import dev.kyralabs.pingogram.core.domain.model.InlineQueryResults
 import dev.kyralabs.pingogram.core.domain.model.Location
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.InlineBotRepository
 import kotlinx.collections.immutable.persistentListOf
@@ -69,8 +70,9 @@ class FakeInlineBotRepository : InlineBotRepository {
         queryId: Long,
         resultId: String,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
+        val replyToMessageId = replyTo?.messageId
         sent += Sent(chatId, queryId, resultId, options, replyToMessageId)
         return onSend()
     }

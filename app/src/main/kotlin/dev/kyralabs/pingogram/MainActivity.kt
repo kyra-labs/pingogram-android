@@ -55,6 +55,8 @@ import dev.kyralabs.pingogram.link.LinkViewModel
 import dev.kyralabs.pingogram.link.linkOf
 import dev.kyralabs.pingogram.share.isOwnContent
 import dev.kyralabs.pingogram.share.shareOf
+import dev.kyralabs.pingogram.startup.AwaitSettingsTrace
+import dev.kyralabs.pingogram.startup.StartupTrace
 import dev.kyralabs.pingogram.ui.LockableApp
 import dev.kyralabs.pingogram.ui.PingogramApp
 import dev.kyralabs.pingogram.ui.rememberLinkUriHandler
@@ -151,6 +153,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appLanguageRepository: PlatformAppLanguageRepository
 
+    /** From [onCreate] until the first frame's settings are read ([StartupTrace.AWAIT_SETTINGS]). */
+    private val awaitSettingsTrace = AwaitSettingsTrace()
+
     /** Before Android 13: the language [attachBaseContext] gave this activity, null for the system's. */
     private var attachedLanguageTag: String? = null
 
@@ -168,73 +173,80 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
-        val splashScreen = installSplashScreen()
-        super.onCreate(savedInstanceState)
-        // The bound reference creates the view model now, which starts listening to TDLib, reading the settings and
-        // the splash time limit.
-        splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
-        splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
-        enableEdgeToEdge()
-        if (savedInstanceState == null) handle(intent)
-        languageApplied = followAppLanguage()
-        setContent {
-            val appearance by viewModel.appearance.collectAsStateWithLifecycle()
-            val lock by viewModel.lock.collectAsStateWithLifecycle()
-            val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
-            val settings = appearance
-            if (settings != null && lock != LockState.Unknown && inAppLanguage) {
-                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
-                val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
-                val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
-                val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
-                val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
-                // Hidden until the setting is read (a few milliseconds), so a shared screen never shows a number.
-                val phoneNumbersHidden by phoneNumberVisibility.hidden.collectAsStateWithLifecycle(initialValue = true)
-                val locked = lock == LockState.Locked
-                val secureRequests = remember { SecureWindowRequests() }
-                val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
-                SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
-                AppTheme(settings) {
-                    CompositionLocalProvider(
-                        LocalAnimatedStickers provides animatedStickers,
-                        LocalSecureWindow provides secureRequests,
-                        // Telegram links tapped in the app open in it (LinkUriHandler).
-                        LocalUriHandler provides rememberLinkUriHandler(links, uiState),
-                        // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
-                        LocalCallStarter provides calls,
-                        // A chat's voice chat bar and its info page's voice chat row (feature:calls).
-                        LocalVoiceChats provides calls,
-                        LocalPhoneNumbersHidden provides phoneNumbersHidden,
-                        // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
-                        LocalLockedChatGate provides lockedChatGate,
-                    ) {
-                        LockableApp(
-                            locked = locked,
-                            lockScreen = { AppLockRoute() },
-                            modifier = Modifier.semantics { testTagsAsResourceId = true },
+    override fun onCreate(savedInstanceState: Bundle?) =
+        StartupTrace.section(StartupTrace.ACTIVITY_CREATE) {
+            awaitSettingsTrace.begin()
+            // Before super.onCreate: switches from Theme.Pingogram.Starting to the post-splash theme.
+            val splashScreen = installSplashScreen()
+            super.onCreate(savedInstanceState)
+            // The bound reference creates the view model now, which starts listening to TDLib, reading the settings and
+            // the splash time limit.
+            splashScreen.setKeepOnScreenCondition(viewModel::keepSplashScreen)
+            splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
+            enableEdgeToEdge()
+            if (savedInstanceState == null) handle(intent)
+            languageApplied = followAppLanguage()
+            setContent {
+                val appearance by viewModel.appearance.collectAsStateWithLifecycle()
+                val lock by viewModel.lock.collectAsStateWithLifecycle()
+                val inAppLanguage by languageApplied.collectAsStateWithLifecycle()
+                // Read with the Appearance settings, from the same file: waiting for it costs nothing, and a value that
+                // changed after the first frame would compose the whole app again (a static composition local).
+                val phoneNumbersHiddenSetting by phoneNumberVisibility.hidden
+                    .collectAsStateWithLifecycle(initialValue = null)
+                val settings = appearance
+                val phoneNumbersHidden = phoneNumbersHiddenSetting
+                val lockAndLanguageKnown = lock != LockState.Unknown && inAppLanguage
+                if (settings != null && phoneNumbersHidden != null && lockAndLanguageKnown) {
+                    SideEffect(awaitSettingsTrace::end)
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    val chatToOpen by viewModel.chatToOpen.collectAsStateWithLifecycle()
+                    val lockedChatsToOpen by viewModel.lockedChatsToOpen.collectAsStateWithLifecycle()
+                    val linkToOpen by viewModel.linkToOpen.collectAsStateWithLifecycle()
+                    val shareToOpen by viewModel.shareToOpen.collectAsStateWithLifecycle()
+                    val hideContent by viewModel.hideContent.collectAsStateWithLifecycle()
+                    val locked = lock == LockState.Locked
+                    val secureRequests = remember { SecureWindowRequests() }
+                    val lockedChatGate = remember { lockedChatGate(chatLock.hiddenChatIds) }
+                    SecureWindowEffect(locked = locked, hideContent = hideContent, requests = secureRequests)
+                    AppTheme(settings) {
+                        CompositionLocalProvider(
+                            LocalAnimatedStickers provides animatedStickers,
+                            LocalSecureWindow provides secureRequests,
+                            // Telegram links tapped in the app open in it (LinkUriHandler).
+                            LocalUriHandler provides rememberLinkUriHandler(links, uiState),
+                            // The conversation's and the profile's call buttons, and "Call back" (feature:calls).
+                            LocalCallStarter provides calls,
+                            // A chat's voice chat bar and its info page's voice chat row (feature:calls).
+                            LocalVoiceChats provides calls,
+                            LocalPhoneNumbersHidden provides phoneNumbersHidden,
+                            // A locked chat asks for the passcode before it shows (docs/adr/0029-locked-chats.md).
+                            LocalLockedChatGate provides lockedChatGate,
                         ) {
-                            PingogramApp(
-                                uiState = uiState,
-                                chatToOpen = chatToOpen,
-                                onChatOpened = viewModel::onChatOpened,
-                                lockedChatsToOpen = lockedChatsToOpen,
-                                onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },
-                                links = links,
-                                linkToOpen = linkToOpen,
-                                onLinkOpened = viewModel::onLinkOpened,
-                                shares = shares,
-                                shareToOpen = shareToOpen,
-                                onShareOpened = viewModel::onShareOpened,
-                            )
+                            LockableApp(
+                                locked = locked,
+                                lockScreen = { AppLockRoute() },
+                                modifier = Modifier.semantics { testTagsAsResourceId = true },
+                            ) {
+                                PingogramApp(
+                                    uiState = uiState,
+                                    chatToOpen = chatToOpen,
+                                    onChatOpened = viewModel::onChatOpened,
+                                    lockedChatsToOpen = lockedChatsToOpen,
+                                    onLockedChatsOpened = { viewModel.setLockedChatsToOpen(false) },
+                                    links = links,
+                                    linkToOpen = linkToOpen,
+                                    onLinkOpened = viewModel::onLinkOpened,
+                                    shares = shares,
+                                    shareToOpen = shareToOpen,
+                                    onShareOpened = viewModel::onShareOpened,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
     override fun onStart() {
         super.onStart()

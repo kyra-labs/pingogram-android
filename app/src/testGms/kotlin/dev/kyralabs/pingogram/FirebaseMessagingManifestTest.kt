@@ -50,4 +50,11 @@ class FirebaseMessagingManifestTest {
         assertEquals("true", metaData["firebase_analytics_collection_deactivated"])
         assertEquals("false", metaData["firebase_messaging_delivery_metrics_exported_to_big_query_enabled"])
     }
+
+    @Test
+    fun `Firebase does not start in its provider, before the app`() {
+        val providers = manifest.elements("provider").map { it.androidAttribute("name") }
+
+        assertTrue(providers.none { it == "com.google.firebase.provider.FirebaseInitProvider" })
+    }
 }

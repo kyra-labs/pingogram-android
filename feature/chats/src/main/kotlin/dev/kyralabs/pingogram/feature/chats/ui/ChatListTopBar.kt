@@ -14,17 +14,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +67,7 @@ internal fun ChatListScreenTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onEvent: (ChatListEvent) -> Unit,
     onBack: () -> Unit,
+    onEditFolder: ((folderId: Int?) -> Unit)? = null,
 ) {
     val clearSelection = { onEvent(ChatListEvent.ClearSelection) }
     when (state.kind) {
@@ -67,11 +77,20 @@ internal fun ChatListScreenTopBar(
                 scrollBehavior = scrollBehavior,
                 onSelectFolder = { onEvent(ChatListEvent.SelectFolder(it)) },
                 onClearSelection = clearSelection,
+                onOpenArchive = { onEvent(ChatListEvent.OpenArchive) },
+                onMarkAllAsRead = { onEvent(ChatListEvent.MarkAllAsRead(it)) },
+                onEditFolder = onEditFolder,
             )
         }
 
         ChatListKind.Archive -> {
-            ArchiveTopBar(state.selection?.chatIds?.size, scrollBehavior, onBack, clearSelection)
+            ArchiveTopBar(
+                selectedCount = state.selection?.chatIds?.size,
+                scrollBehavior = scrollBehavior,
+                onBack = onBack,
+                onClearSelection = clearSelection,
+                onOpenSettings = { onEvent(ChatListEvent.OpenArchiveSettings) },
+            )
         }
     }
 }
@@ -86,13 +105,21 @@ internal fun ChatListScreenTopBar(
  * In selection mode the same bar shows how many chats are selected, with a button that clears the selection, and the
  * tabs stay but are disabled: nothing below moves, the tabs still say which list the selection is in, and switching
  * lists, which would drop the selection, waits until the selection is done.
+ *
+ * While the user hid the archive row ([ChatListUiState.hiddenArchive]), an "Archived chats" button at the bar's end
+ * opens the archive ([onOpenArchive]), with its unread chats in a muted badge. A folder tab's long press opens its
+ * menu ([FolderTabs]): [onMarkAllAsRead] and, where given, [onEditFolder].
  */
+@Suppress("LongParameterList") // The state, the bar's scroll, and what the selection, archive and tabs lead to.
 @Composable
 internal fun ChatListTopBar(
     state: ChatListUiState,
     scrollBehavior: TopAppBarScrollBehavior,
     onSelectFolder: (Int?) -> Unit,
     onClearSelection: () -> Unit,
+    onOpenArchive: () -> Unit = {},
+    onMarkAllAsRead: (Int?) -> Unit = {},
+    onEditFolder: ((Int?) -> Unit)? = null,
 ) {
     val selectedCount = state.selection?.chatIds?.size
     // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
@@ -113,6 +140,10 @@ internal fun ChatListTopBar(
                     )
                 },
                 navigationIcon = { if (selectedCount != null) ClearSelectionButton(onClearSelection) },
+                actions = {
+                    val hidden = state.hiddenArchive
+                    if (hidden != null && selectedCount == null) HiddenArchiveButton(hidden, onOpenArchive)
+                },
                 colors =
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -131,6 +162,8 @@ internal fun ChatListTopBar(
                     onSelect = onSelectFolder,
                     enabled = selectedCount == null,
                     margin = margin,
+                    onMarkAllAsRead = onMarkAllAsRead,
+                    onEditFolder = onEditFolder,
                 )
             }
         }
@@ -139,8 +172,9 @@ internal fun ChatListTopBar(
 
 /**
  * The archive's top bar (`REQUIREMENTS.md` FR-L9): a small [TopAppBar] with back and "Archived chats", on the screen's
- * `surfaceContainer` above the list's sheet. In selection mode it shows how many chats are selected, with a button
- * that clears the selection in place of back.
+ * `surfaceContainer` above the list's sheet, and one action, "Archive settings" ([onOpenSettings]), a filled tonal
+ * icon button with a tooltip (Material avoids overflow menus in app bars). In selection mode it shows how many chats
+ * are selected, with a button that clears the selection in place of back, and no action.
  */
 @Composable
 internal fun ArchiveTopBar(
@@ -148,6 +182,7 @@ internal fun ArchiveTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     onBack: () -> Unit,
     onClearSelection: () -> Unit,
+    onOpenSettings: () -> Unit = {},
 ) {
     TopAppBar(
         title = {
@@ -166,6 +201,13 @@ internal fun ArchiveTopBar(
                         painter = painterResource(UiR.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.chat_list_archive_back),
                     )
+                }
+            }
+        },
+        actions = {
+            if (selectedCount == null) {
+                TopBarAction(stringResource(R.string.archive_settings_title), onOpenSettings) {
+                    Icon(painterResource(UiR.drawable.ic_settings), contentDescription = null)
                 }
             }
         },
@@ -216,6 +258,71 @@ private fun SelectionTitle(
                 },
             maxLines = 1,
             style = style,
+        )
+    }
+}
+
+/**
+ * The archive while its row is hidden: a [TopBarAction] with the archive symbol, its unread chats in a `secondary`
+ * badge, muted beside the chats' `primary` ones as the row's is. Screen readers hear "Archived chats, 2 unread chats".
+ */
+@Composable
+private fun HiddenArchiveButton(
+    archive: ArchiveEntry,
+    onClick: () -> Unit,
+) {
+    val title = stringResource(R.string.chat_list_archived_chats)
+    val resources = LocalResources.current
+    val count = archive.unreadCount
+    TopBarAction(
+        label = title,
+        onClick = onClick,
+        description = {
+            if (count > 0) {
+                val unread = resources.getQuantityString(R.plurals.chat_list_a11y_unread_chats, count, count)
+                resources.getString(R.string.chat_list_a11y_tab, title, unread)
+            } else {
+                title
+            }
+        },
+    ) {
+        BadgedBox(
+            badge = {
+                if (count > 0) {
+                    // The row's muted surfaceVariant would vanish on the button's secondaryContainer: its own
+                    // secondary role stays muted beside the unread badges in primary.
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                    ) { Text(unreadCountText(count)) }
+                }
+            },
+        ) { Icon(painterResource(UiR.drawable.ic_archive), contentDescription = null) }
+    }
+}
+
+/**
+ * An action of a top bar: a `FilledTonalIconButton` showing [icon], named [label] in its plain tooltip (on a long
+ * press or hover) and for screen readers, or by [description] for them, built only when they read it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TopBarAction(
+    label: String,
+    onClick: () -> Unit,
+    description: (() -> String)? = null,
+    icon: @Composable () -> Unit,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+    ) {
+        FilledTonalIconButton(
+            onClick = onClick,
+            modifier = Modifier.semantics { contentDescription = description?.invoke() ?: label },
+            shapes = IconButtonDefaults.shapes(),
+            content = icon,
         )
     }
 }

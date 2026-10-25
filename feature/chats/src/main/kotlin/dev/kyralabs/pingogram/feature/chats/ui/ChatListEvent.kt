@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
+import dev.kyralabs.pingogram.core.domain.model.ArchiveRowStyle
 import kotlinx.collections.immutable.ImmutableList
 
 /** What the user does on a chat list, sent to [ChatListViewModel.onEvent]. */
@@ -49,8 +50,24 @@ sealed interface ChatListEvent {
         val chatIds: ImmutableList<Long>,
     ) : ChatListEvent
 
-    /** The archive row was tapped. */
+    /** The archive row was tapped, or the top bar's archive button while the row is hidden. */
     data object OpenArchive : ChatListEvent
+
+    /** The archive's top bar asked for its settings. */
+    data object OpenArchiveSettings : ChatListEvent
+
+    /**
+     * The archive row's menu, swipe or screen reader's action: shows the row in [style]. Hiding it offers to undo
+     * ([ChatListEffect.ArchiveRowHidden]).
+     */
+    data class SetArchiveRowStyle(
+        val style: ArchiveRowStyle,
+    ) : ChatListEvent
+
+    /** "Mark all as read" in a folder tab's menu: every chat of folder [folderId], or of the main list for null. */
+    data class MarkAllAsRead(
+        val folderId: Int?,
+    ) : ChatListEvent
 
     /** The "New chat" button, or the one of the empty Chats tab, was tapped. */
     data object NewChat : ChatListEvent

@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.core.notifications
 
+import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.tdlib.AuthState
@@ -21,6 +22,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -139,6 +141,63 @@ class ShareTargetShortcutsTest {
                 shortcuts.map { it.id },
             )
             assertTrue(shortcuts.none { it.shortLabel == "User 1" || it.shortLabel == "User 4" })
+        }
+
+    @Test
+    fun `the next process leaves the targets Android has as they are, and pushes those that changed`() =
+        runTest {
+            started().run {
+                chats(count = 2)
+                runCurrent()
+            }
+            settle()
+            val context = RuntimeEnvironment.getApplication()
+            // Marks what the earlier process pushed: a target pushed again loses the mark.
+            ShortcutManagerCompat.getDynamicShortcuts(context).forEach { shortcut ->
+                val marked = ShortcutInfoCompat.Builder(shortcut).setShortLabel("Marked").build()
+                ShortcutManagerCompat.pushDynamicShortcut(context, marked)
+            }
+
+            // The next process: chat 2 was renamed while no process ran.
+            started().run {
+                chats(count = 1)
+                client.emit(updateUser(user(id = 2, firstName = "User 2")))
+                val second = arrayOf(chatPosition(order = 998))
+                val renamed = chat(id = 2, type = TdApi.ChatTypePrivate(2), title = "Grace", positions = second)
+                client.emit(updateNewChat(renamed))
+                runCurrent()
+            }
+            settle()
+
+            val labels =
+                ShortcutManagerCompat.getDynamicShortcuts(context).associate { it.id to it.shortLabel.toString() }
+            assertEquals("Marked", labels[NotificationIntents.shortcutId(1)])
+            assertEquals("Grace", labels[NotificationIntents.shortcutId(2)])
+        }
+
+    @Test
+    fun `a target of an earlier process that is no longer recent is removed`() =
+        runTest {
+            started().run {
+                chats(count = 9)
+                runCurrent()
+            }
+            settle()
+
+            // The next process: chat 10 became the most recent while no process ran, so chat 8 is ninth.
+            started().run {
+                chats(count = 9)
+                client.emit(updateUser(user(id = 10, firstName = "User 10")))
+                val first = arrayOf(chatPosition(order = 2_000))
+                val newest = chat(id = 10, type = TdApi.ChatTypePrivate(10), title = "User 10", positions = first)
+                client.emit(updateNewChat(newest))
+                runCurrent()
+            }
+            settle()
+
+            val ids = ShortcutManagerCompat.getDynamicShortcuts(RuntimeEnvironment.getApplication()).map { it.id }
+            assertTrue(NotificationIntents.shortcutId(10) in ids)
+            assertTrue(NotificationIntents.shortcutId(8) !in ids)
         }
 
     @Test

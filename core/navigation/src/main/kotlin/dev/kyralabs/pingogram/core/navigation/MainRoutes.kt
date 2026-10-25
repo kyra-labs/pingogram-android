@@ -330,6 +330,14 @@ data object SearchRoute
 data object ArchiveRoute
 
 /**
+ * The archive's settings (`REQUIREMENTS.md` FR-L9): which chats Telegram archives and keeps archived, and how the
+ * "Archived chats" row shows in the chat list, `:feature:chats`, pushed above the archive from its top bar, and
+ * reachable from any screen that navigates to it (e.g. a settings page).
+ */
+@Serializable
+data object ArchiveSettingsRoute
+
+/**
  * Starting a chat (`REQUIREMENTS.md` FR-L7): new group, new channel and new contact, then the contacts,
  * `:feature:chats`, pushed above the Chats tab from its "New chat" button or its empty state.
  */

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.notifications
 
 import android.content.Context
 import android.os.Build
+import android.os.PersistableBundle
 import androidx.core.app.Person
 import androidx.core.content.LocusIdCompat
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -42,6 +43,12 @@ internal class ConversationShortcuts
         private var shareTargets: Set<Long> = emptySet()
 
         /**
+         * What Android's share targets show, by chat ([ShareTarget.key] and rank): read from the device's shortcuts at
+         * the first [publishShareTargets] of the process, kept as targets are pushed. Null until read.
+         */
+        private var shareKeys: MutableMap<Long, String>? = null
+
+        /**
          * Publishes (or updates) the shortcut of [conversation]'s chat and returns its id; null where conversations
          * have no shortcuts, or publishing failed.
          */
@@ -52,18 +59,30 @@ internal class ConversationShortcuts
         }
 
         /**
-         * Publishes [chats], the most recent ones, in their order (the first ranked highest), as Direct Share targets,
-         * and removes the dynamic shortcuts of the chats that were published here last time and no longer are (a
-         * notification's shortcut stays cached by Android while it shows).
+         * Publishes [targets], the most recent chats, in their order (the first ranked highest), as Direct Share
+         * targets, and removes the dynamic shortcuts of the chats that were published as targets before and no longer
+         * are (a notification's shortcut stays cached by Android while it shows). A target Android already shows as it
+         * is, published by this process or an earlier one, is left as it is, without building its avatar: so a cold
+         * start does not push every target again (`docs/PERFORMANCE.md` §2). Called from one coroutine at a time.
          */
-        suspend fun publishShareTargets(chats: List<ChatShortcut>) {
+        suspend fun publishShareTargets(targets: List<ShareTarget>) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-            chats.forEachIndexed { rank, chat -> publish(chat, rank) }
-            val ids = chats.mapTo(HashSet()) { it.chatId }
-            val dropped = shareTargets - ids
+            val onDevice = shareKeys ?: shareKeysOnDevice().also { shareKeys = it }
+            val before = shareTargets + onDevice.keys
+            targets.forEachIndexed { rank, target ->
+                val key = "${target.key}$RANK_SEPARATOR$rank"
+                if (onDevice[target.chatId] != key && publish(target.shortcut(), rank, key)) {
+                    onDevice[target.chatId] = key
+                }
+            }
+            val ids = targets.mapTo(HashSet()) { it.chatId }
+            val dropped = before - ids
             shareTargets = ids
             if (dropped.isEmpty()) return
-            dropped.forEach(published::remove)
+            dropped.forEach { chatId ->
+                published.remove(chatId)
+                onDevice.remove(chatId)
+            }
             withContext(ioDispatcher) {
                 try {
                     ShortcutManagerCompat.removeDynamicShortcuts(context, dropped.map(::shortcutId))
@@ -73,24 +92,46 @@ internal class ConversationShortcuts
             }
         }
 
-        /** Publishes [chat]'s shortcut, at [rank] (null: as it was); false where it cannot be. */
+        /** The keys of the share targets an earlier process pushed, which Android still has, by chat. */
+        private suspend fun shareKeysOnDevice(): MutableMap<Long, String> =
+            withContext(ioDispatcher) {
+                try {
+                    ShortcutManagerCompat
+                        .getDynamicShortcuts(context)
+                        .mapNotNull { shortcut ->
+                            val chatId = NotificationIntents.chatIdOfShortcut(shortcut.id)
+                            val key = shortcut.extras?.getString(KEY_EXTRA)
+                            if (chatId != null && key != null) chatId to key else null
+                        }.toMap(HashMap())
+                } catch (_: IllegalStateException) {
+                    // The user is locked: before the first unlock after a reboot.
+                    HashMap()
+                }
+            }
+
+        /**
+         * Publishes [chat]'s shortcut, at [rank] (null: as it was), a share target's with its [key]; false where it
+         * cannot be.
+         */
         private suspend fun publish(
             chat: ChatShortcut,
             rank: Int?,
+            key: String? = null,
         ): Boolean {
             val previous = published[chat.chatId]
             val content =
                 ShortcutContent(chat.title, System.identityHashCode(chat.icon), rank ?: previous?.rank ?: 0)
             val isPublished =
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (previous == content || push(chat, content.rank))
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && (previous == content || push(chat, content.rank, key))
             if (isPublished) published[chat.chatId] = content
             return isPublished
         }
 
-        /** Pushes the shortcut of [chat] at [rank]; false if that failed. */
+        /** Pushes the shortcut of [chat] at [rank], with a share target's [key]; false if that failed. */
         private suspend fun push(
             chat: ChatShortcut,
             rank: Int,
+            key: String?,
         ): Boolean {
             val intent = NotificationIntents.openChat(context, chat.chatId) ?: return false
             val id = shortcutId(chat.chatId)
@@ -106,6 +147,7 @@ internal class ConversationShortcuts
                     .setCategories(setOf(NotificationIntents.SHARE_TARGET_CATEGORY))
                     .setRank(rank)
                     .apply { chat.person?.let(::setPerson) }
+                    .apply { key?.let { setExtras(PersistableBundle().apply { putString(KEY_EXTRA, it) }) } }
                     .build()
             return withContext(ioDispatcher) {
                 try {
@@ -139,6 +181,7 @@ internal class ConversationShortcuts
         suspend fun removeAll() {
             published.clear()
             shareTargets = emptySet()
+            shareKeys = HashMap()
             withContext(ioDispatcher) {
                 try {
                     val flags = ShortcutManagerCompat.FLAG_MATCH_DYNAMIC or ShortcutManagerCompat.FLAG_MATCH_CACHED
@@ -164,8 +207,22 @@ internal class ConversationShortcuts
         companion object {
             /** The id of chat [chatId]'s shortcut, which its notifications name too. */
             fun shortcutId(chatId: Long) = NotificationIntents.shortcutId(chatId)
+
+            /** The extra of a share target's shortcut that holds its key and rank. */
+            private const val KEY_EXTRA = "dev.kyralabs.pingogram.shareTarget"
+            private const val RANK_SEPARATOR = '#'
         }
     }
+
+/**
+ * A Direct Share target: chat [chatId], whose shortcut shows what [key] says (its title and avatar, in a form that is
+ * the same in every process), built by [shortcut] only when it has to be pushed.
+ */
+internal class ShareTarget(
+    val chatId: Long,
+    val key: String,
+    val shortcut: suspend () -> ChatShortcut,
+)
 
 /** A chat's conversation shortcut: its [title], its avatar as [icon], and the other user of a private chat. */
 internal class ChatShortcut(
