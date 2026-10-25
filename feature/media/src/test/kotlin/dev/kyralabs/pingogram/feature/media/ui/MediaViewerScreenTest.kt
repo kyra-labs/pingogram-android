@@ -4,10 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -126,6 +130,32 @@ class MediaViewerScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf(1L, 2L), settled)
+    }
+
+    @Test
+    fun `a tap near the end side turns to the newer page, and near the start side back, the chrome staying`() {
+        setScreen()
+
+        composeRule.onRoot().performTouchInput { click(Offset(width * 0.95f, centerY)) }
+        composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_TIMEOUT_MILLIS)
+        composeRule.waitForIdle()
+        assertEquals(listOf(1L, 2L), settled)
+
+        composeRule.onRoot().performTouchInput { click(Offset(width * 0.05f, centerY)) }
+        composeRule.mainClock.advanceTimeBy(DOUBLE_TAP_TIMEOUT_MILLIS)
+        composeRule.waitForIdle()
+        assertEquals(listOf(1L, 2L, 1L), settled)
+        backButton().assertIsDisplayed()
+    }
+
+    @Test
+    fun `screen readers hear a download's progress as it moves`() {
+        setScreen(MediaPreviewData.downloading)
+
+        composeRule
+            .onNode(hasContentDescription(string(R.string.media_downloading)))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "40%"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
     }
 
     // Chrome

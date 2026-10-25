@@ -71,7 +71,7 @@ What blocks 1.0, in order:
 |---|---|---|---|
 | 48 dp targets, content descriptions, roles, merged message semantics | Pass | Compose tests across features; `minimumInteractiveComponentSize` | — |
 | Contrast ≥ 4.5:1 / 3:1 in all contrast levels | Pass | `ThemePalettesTest` | — |
-| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, settings and app. Contacts, profile, media, scanner and core:ui have none; #154 fixed what it cut at 200% in profile and contacts (F2, F8, F15) | A, B |
+| Font scale 200% without clipping | **Fail** (evidence) | 200% goldens exist in auth, calls (#149), chat, chats, feedback, media, scanner, settings and app. Contacts, profile and core:ui have none; #154 fixed what it cut at 200% in profile and contacts (F2, F8, F15) | A, B |
 | `AccessibilityChecks` in Compose UI tests (`docs/TESTING.md`) | **Fail** (partly) | Google's framework does not run under Robolectric; #154 added our own `assertAccessible()` (names, 48 dp targets) to settings, profile, contacts, sign-in and the app shell. The chat screens have none yet (`docs/audit/accessibility.md` §3) | A |
 | Reduced motion | Pass | `isReducedMotion()`, shape morphs snap | — |
 | TalkBack and Accessibility Scanner pass on every screen | Needs device | `docs/DESIGN_SYSTEM.md` §9 asks for a manual run before "done" | Owner / testers |

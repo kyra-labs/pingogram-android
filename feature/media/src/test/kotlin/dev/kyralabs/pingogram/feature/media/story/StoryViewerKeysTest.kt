@@ -108,4 +108,13 @@ class StoryViewerKeysTest {
 
         assertEquals(1, closes)
     }
+
+    @Test
+    fun `a volume key gives a muted video its sound back`() {
+        setScreen()
+
+        press(Key.VolumeDown)
+
+        assertEquals(listOf(StoryViewerEvent.Unmute), events.filter { it == StoryViewerEvent.Unmute })
+    }
 }

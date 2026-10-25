@@ -83,7 +83,7 @@ class CallManager
         private val names: CallerNames,
         // Lazy: the repository asks Android for the network when it is made, which the first call does off the main
         // thread, not the activities that inject this at their start (`docs/PERFORMANCE.md` §2).
-        private val network: dagger.Lazy<NetworkRepository>,
+        @param:CallNetwork private val network: dagger.Lazy<NetworkRepository>,
         private val line: CallLine,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {

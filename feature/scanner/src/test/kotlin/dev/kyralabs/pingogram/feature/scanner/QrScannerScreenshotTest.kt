@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
  * Goldens of the QR code scanner (`docs/TESTING.md`): the rationale before Android asks, after a refusal for good, a
  * device without a camera, and with the camera (a flat placeholder for its picture) while it reads, for a device's
  * login, with a code that is no Telegram link, and after a failure; light and dark where the scanner draws its own
- * surfaces. Brand colors.
+ * surfaces, and the ones with the most text at 200% font scale. Brand colors.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = COMPACT)
@@ -66,6 +66,28 @@ class QrScannerScreenshotTest {
             ThemeMode.Dark,
             QrScannerUiState(ScanPurpose.Any, CameraAccess.Granted, ScanResult.Failed(DomainError.Network)),
         )
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the states with the most text: they grow and never clip. */
+    @Test
+    @Config(fontScale = 2f)
+    fun rationaleFontScale200() = capture(ThemeMode.Light, QrScannerUiState(ScanPurpose.Any, CameraAccess.Rationale()))
+
+    @Test
+    @Config(fontScale = 2f)
+    fun notTelegramFontScale200() =
+        capture(
+            ThemeMode.Light,
+            QrScannerUiState(
+                ScanPurpose.Any,
+                CameraAccess.Granted,
+                ScanResult.NotTelegramLink("https://example.com/menu"),
+            ),
+        )
+
+    @Test
+    @Config(fontScale = 2f)
+    fun deviceLoginFontScale200() =
+        capture(ThemeMode.Dark, QrScannerUiState(ScanPurpose.DeviceLogin, CameraAccess.Granted))
 
     private fun capture(
         themeMode: ThemeMode,

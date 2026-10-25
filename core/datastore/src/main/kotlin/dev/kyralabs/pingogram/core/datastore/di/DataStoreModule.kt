@@ -17,6 +17,7 @@ import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.datastore.DataStoreAppearanceRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreAutoDownloadRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreCallSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreKeepConnectedRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreNotificationPromptRepository
@@ -25,6 +26,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStorePlaybackSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.SettingsDataStore
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadRepository
+import dev.kyralabs.pingogram.core.domain.repository.CallSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.KeepConnectedRepository
 import dev.kyralabs.pingogram.core.domain.repository.NotificationPromptRepository
@@ -55,6 +57,9 @@ interface DataStoreModule {
 
     @Binds
     fun playbackSettingsRepository(repository: DataStorePlaybackSettingsRepository): PlaybackSettingsRepository
+
+    @Binds
+    fun callSettingsRepository(repository: DataStoreCallSettingsRepository): CallSettingsRepository
 
     @Binds
     fun passcodeRepository(repository: DataStorePasscodeRepository): PasscodeRepository
