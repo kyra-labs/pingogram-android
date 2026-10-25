@@ -72,7 +72,17 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   phone's contacts and location, shared storage, the emoji catalog, picked photos, diagnostics) stays `@Singleton`
   (`DeviceModule`). A new account repository is `@AccountScoped`, bound in `RepositoryModule` and listed in
   `AccountRepositories` and `ActiveAccountModule` (`AccountBindingsTest` checks the three agree); what it needs from
-  the app goes into `AccountDependencies`. One account so far; adding and switching come next.
+  the app goes into `AccountDependencies`. `Accounts` reads which accounts there are and the shown one from a small
+  file (`AccountRegistryFile`, `noBackupFilesDir/accounts`) on the IO dispatcher as the app starts, runs every
+  account's client (the first's is the app's `TdlibClient`, the others' from `core:tdlib`'s `TdlibClientFactory`),
+  each graph in a scope of its own that ends with it, and removes an account that logs out, or that signs in as a
+  user already on the device, while another stays (its client then stays closed and `AccountStorage` deletes its
+  slot). Switching saves the shown slot; `MainActivity` then opens the app again in a new task
+  (`restartOnAccountSwitch`), so no screen keeps the other account's repositories. `core:domain`'s
+  `DeviceAccountsRepository` (`DefaultDeviceAccountsRepository`) lists the signed-in accounts with their unread chats
+  and adds, switches and leaves an account's sign-in; it is not offered on screen (`isAvailable` false) until the
+  background parts follow every account. The passcode lock is the app's (`DefaultAppLockRepository`, `@Singleton`):
+  it follows the accounts' login steps together, and forgetting the passcode logs every account out.
 - **Test servers** (FR-A9, `docs/TDLIB.md` "Test servers"): `TdlibClient.servers` / `useServers` restart TDLib on
   Telegram's test servers or back. Only `TdlibAuthRepository` asks for a switch: `setPhoneNumber` by the number
   (`core:domain`'s `telegramServersFor`), `requestQrCode` for the production servers; any other close returns to them.

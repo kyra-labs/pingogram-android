@@ -43,7 +43,8 @@ import kotlin.coroutines.resume
  *
  * On `AuthorizationStateWaitTdlibParameters` it sends the parameters from [TdlibParametersProvider]; on
  * `AuthorizationStateClosed` it creates a new TDLib instance, which starts over with `WaitTdlibParameters`: on the
- * servers [useServers] asked for, or else on [TdlibServers.Production], so a logout always leaves the test servers.
+ * servers [useServers] asked for, or else on [TdlibServers.Production], so a logout always leaves the test servers;
+ * unless the account it belongs to is gone ([TdlibClientFactory]).
  */
 @Singleton
 class DefaultTdlibClient internal constructor(
@@ -53,6 +54,12 @@ class DefaultTdlibClient internal constructor(
     private val log: TdlibLog,
     private val scope: CoroutineScope,
     updateBufferCapacity: Int = UPDATE_BUFFER_CAPACITY,
+    /**
+     * Whether a new TDLib instance starts after `AuthorizationStateClosed`: always for the first account, whose slot
+     * stays; for another account only while it is kept (`docs/adr/0031-multiple-accounts.md`), so a slot logged out
+     * of stays closed and its storage can be deleted.
+     */
+    private val restartsAfterClose: () -> Boolean = { true },
 ) : TdlibClient {
     @Inject
     constructor(
@@ -195,7 +202,7 @@ class DefaultTdlibClient internal constructor(
         } else if (authState == AuthState.Closed) {
             mutableConnectionState.value = ConnectionState.Connecting
             mutableServers.value = requestedServers.getAndSet(null) ?: TdlibServers.Production
-            session.value = newSession()
+            session.value = if (restartsAfterClose()) newSession() else null
         }
     }
 
@@ -240,7 +247,7 @@ class DefaultTdlibClient internal constructor(
         /** `SetTdlibParameters` answers 401 when the database key cannot open the database (td_api.tl). */
         private const val WRONG_DATABASE_KEY = 401
 
-        private fun clientScope(
+        fun clientScope(
             dispatcher: CoroutineDispatcher,
             log: TdlibLog,
         ) = CoroutineScope(

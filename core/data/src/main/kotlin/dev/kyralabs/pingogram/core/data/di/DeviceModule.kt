@@ -12,10 +12,14 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidDeviceLocationReposito
 import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
+import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
+import dev.kyralabs.pingogram.core.data.repository.DefaultDeviceAccountsRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
+import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AutoDownloadPolicy
 import dev.kyralabs.pingogram.core.domain.repository.BatterySaverRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLanguageDetector
 import dev.kyralabs.pingogram.core.domain.repository.DeviceLocationRepository
@@ -27,12 +31,20 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 
 /**
  * What belongs to the device rather than to an account (`docs/adr/0031-multiple-accounts.md`): the network, Battery
- * Saver, the phone's contacts and location, shared storage, the emoji the fonts draw. One instance for every account.
+ * Saver, the phone's contacts and location, shared storage, the emoji the fonts draw, the passcode lock. One instance
+ * for every account.
  */
 @Suppress("TooManyFunctions")
 @Module
 @InstallIn(SingletonComponent::class)
 interface DeviceModule {
+    /** The passcode lock is the app's: one for every account. */
+    @Binds
+    fun appLockRepository(repository: DefaultAppLockRepository): AppLockRepository
+
+    @Binds
+    fun deviceAccountsRepository(repository: DefaultDeviceAccountsRepository): DeviceAccountsRepository
+
     @Binds
     fun deviceContactsRepository(repository: AndroidDeviceContactsRepository): DeviceContactsRepository
 

@@ -2,10 +2,12 @@ package dev.kyralabs.pingogram.core.data.di
 
 import dagger.BindsInstance
 import dagger.Component
+import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.tdlib.AccountSlot
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import kotlinx.coroutines.CoroutineScope
 
 /**
  * One account's graph (`docs/adr/0031-multiple-accounts.md`): its TDLib client and every repository that talks to it,
@@ -29,6 +31,8 @@ interface AccountComponent : AccountRepositories {
         fun create(
             @BindsInstance slot: AccountSlot,
             @BindsInstance client: TdlibClient,
+            /** The account's own scope, a child of the app's, cancelled when the account leaves the device. */
+            @BindsInstance @ApplicationScope scope: CoroutineScope,
             dependencies: AccountDependencies,
         ): AccountComponent
     }
