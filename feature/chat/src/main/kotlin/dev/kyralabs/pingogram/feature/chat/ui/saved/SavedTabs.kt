@@ -1,5 +1,6 @@
 package dev.kyralabs.pingogram.feature.chat.ui.saved
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -70,13 +71,7 @@ internal fun SavedTabs(
     val labels = tabs.map { it.title.resolve() }
     val scroll =
         rememberTabScroll(tabs.size, selectedIndex = tabs.indexOfFirst { it.topicId == state.selectedTopicId }, margin)
-    val nearEnd by rememberUpdatedState(onNearEnd)
-    LaunchedEffect(scroll.state) {
-        snapshotFlow { scroll.state.maxValue - scroll.state.value < scroll.state.viewportSize }
-            .distinctUntilChanged()
-            .filter { it }
-            .collect { nearEnd() }
-    }
+    NearEndEffect(scroll.state, onNearEnd)
     ButtonGroup(
         // Never measured: the group always fits in its scroll.
         overflowIndicator = {},
@@ -127,6 +122,21 @@ internal fun SavedTabs(
     }
 }
 
+/** Calls [onNearEnd] whenever the row comes within a screen of its end. */
+@Composable
+private fun NearEndEffect(
+    state: ScrollState,
+    onNearEnd: () -> Unit,
+) {
+    val nearEnd by rememberUpdatedState(onNearEnd)
+    LaunchedEffect(state) {
+        snapshotFlow { state.maxValue - state.value < state.viewportSize }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect { nearEnd() }
+    }
+}
+
 @Composable
 private fun connectedShapes(
     index: Int,
@@ -148,12 +158,12 @@ private fun SavedTabsPreview() {
                     tabs =
                         persistentListOf(
                             SavedTab(null, UiText.resource(R.string.saved_tab_all)),
-                            SavedTab(1, UiText.resource(R.string.saved_tab_my_notes)),
-                            SavedTab(2, UiText.Plain("Android Developers")),
-                            SavedTab(3, UiText.Plain("Ada Lovelace")),
-                            SavedTab(4, UiText.resource(R.string.saved_tab_author_hidden)),
+                            SavedTab(PREVIEW_MY_NOTES, UiText.resource(R.string.saved_tab_my_notes)),
+                            SavedTab(PREVIEW_CHANNEL, UiText.Plain("Android Developers")),
+                            SavedTab(PREVIEW_ADA, UiText.Plain("Ada Lovelace")),
+                            SavedTab(PREVIEW_HIDDEN, UiText.resource(R.string.saved_tab_author_hidden)),
                         ),
-                    selectedTopicId = 2,
+                    selectedTopicId = PREVIEW_CHANNEL,
                 ),
             onSelect = {},
             onNearEnd = {},
@@ -161,3 +171,8 @@ private fun SavedTabsPreview() {
         )
     }
 }
+
+private const val PREVIEW_MY_NOTES = 1L
+private const val PREVIEW_CHANNEL = 2L
+private const val PREVIEW_ADA = 3L
+private const val PREVIEW_HIDDEN = 4L

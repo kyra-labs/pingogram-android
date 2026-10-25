@@ -226,8 +226,8 @@ internal class HistoryPages(
 
     /**
      * The id of the last message of the history, from TDLib's memory where it has it: the chat's, the topic's, the
-     * thread's last reply or the Saved Messages topic's newest message; 0 when it has none, and [UNKNOWN_LAST_MESSAGE] when it cannot be fetched, which no page
-     * reaches: a newer page from the server then tells.
+     * thread's last reply or the Saved Messages topic's newest message; 0 when it has none, and [UNKNOWN_LAST_MESSAGE]
+     * when it cannot be fetched, which no page reaches: a newer page from the server then tells.
      */
     private suspend fun lastMessageId(key: HistoryKey): Long {
         val lastId =
