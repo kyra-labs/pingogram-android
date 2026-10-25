@@ -57,6 +57,7 @@ internal class ChatTargets(
     private val groups: GroupRepository,
     private val scope: CoroutineScope,
     private val withContacts: Boolean = false,
+    private val hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
 ) {
     private val query = MutableStateFlow("")
     private val pages = MutableStateFlow(PageLoad())
@@ -96,7 +97,12 @@ internal class ChatTargets(
                 .distinctUntilChanged()
                 .flatMapLatest { text -> if (text.isEmpty()) mainChats() else searchChats(text) }
         val people = combine(users.users, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
-        val targets = combine(found, people) { found, people -> found to people.targetsOf(found.chats, canReceive) }
+        // Locked chats not opened with the passcode are never offered (docs/adr/0029-locked-chats.md).
+        val shown =
+            combine(found, hiddenChats) { found, hidden ->
+                if (hidden.isEmpty()) found else found.copy(chats = found.chats.filterNot { it.id in hidden })
+            }
+        val targets = combine(shown, people) { found, people -> found to people.targetsOf(found.chats, canReceive) }
         return combine(targets, pages) { (found, targets), pages ->
             TargetList(
                 targets = targets,
@@ -172,7 +178,9 @@ internal class ChatTargets(
         val isSearch: Boolean,
         val isLoading: Boolean = false,
         val error: DomainError? = null,
-    )
+    ) {
+        fun copy(chats: List<Chat>) = Found(chats, isSearch, isLoading, error)
+    }
 
     /** What checking and mapping a chat takes besides the chat. */
     private class People(

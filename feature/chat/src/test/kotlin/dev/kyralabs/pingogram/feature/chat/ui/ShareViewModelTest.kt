@@ -26,6 +26,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.share.ShareViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -57,6 +58,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
     private fun TestScope.shareViewModel(
         content: SharedContent = link,
         offered: Boolean = true,
+        hiddenChats: Set<Long> = emptySet(),
     ): ShareViewModel {
         users.setUsers(user(ME), user(ADA, firstName = "Ada"))
         val ada = chat(title = "Ada Lovelace")
@@ -77,6 +79,7 @@ class ShareViewModelTest : ChatViewModelHarness() {
                 dispatcher = StandardTestDispatcher(testScheduler),
                 applicationScope = backgroundScope,
                 results = results,
+                hiddenChats = flowOf(hiddenChats),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.sheet.collect {} }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { results.results.collect { reported += it } }
@@ -103,6 +106,19 @@ class ShareViewModelTest : ChatViewModelHarness() {
             assertEquals(listOf(ME, PRIVATE_CHAT, GROUP_CHAT), sheet.targets.map { it.chatId })
             assertEquals("https://example.com A page", sheet.text)
             assertNull(viewModel.closed.value)
+        }
+
+    @Test
+    fun `a locked chat not opened with the passcode is not offered`() =
+        runViewModelTest {
+            val viewModel = shareViewModel(hiddenChats = setOf(PRIVATE_CHAT))
+
+            assertEquals(
+                listOf(ME, GROUP_CHAT),
+                viewModel.sheet.value!!
+                    .targets
+                    .map { it.chatId },
+            )
         }
 
     @Test
