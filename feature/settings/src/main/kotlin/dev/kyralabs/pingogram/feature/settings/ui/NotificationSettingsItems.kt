@@ -51,9 +51,9 @@ private fun warningItemColors(): ListItemColors {
 
 /**
  * The defaults of [scope]'s chats under its name: notifications on or off, message previews, mentions (groups) and
- * pinned messages (groups and channels) as switches, new stories (private chats, [storyItems]), then "Sound and vibration", which opens the scope's notification
- * channel in Android's settings (noting when the user turned it off there, [channelBlocked]), and "Exceptions"
- * ([onOpenExceptions]). Each switch sends [settings] with its change.
+ * pinned messages (groups and channels) as switches, new stories (private chats, [storyItems]), then "Sound and
+ * vibration", which opens the scope's notification channel in Android's settings (noting when the user turned it off
+ * there, [channelBlocked]), and "Exceptions" ([onOpenExceptions]). Each switch sends [settings] with its change.
  */
 @Composable
 internal fun ScopeGroup(
