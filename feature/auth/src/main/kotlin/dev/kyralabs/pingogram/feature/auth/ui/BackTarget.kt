@@ -12,6 +12,9 @@ internal enum class BackTarget {
     CloseTermsOfService,
     StopChangingEmail,
     CancelQrCode,
+
+    /** Leaves an added account's sign-in; the app opens again on the account shown before. */
+    LeaveAddingAccount,
 }
 
 internal fun AuthModel.backTarget(): BackTarget? =
@@ -23,10 +26,21 @@ internal fun AuthModel.backTarget(): BackTarget? =
 
 private fun AuthModel.stepBackTarget(): BackTarget? =
     when (step) {
-        AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready -> null
-        AuthStep.WaitPhoneNumber -> BackTarget.Welcome.takeIf { welcomeDone }
-        is AuthStep.WaitOtherDeviceConfirmation -> BackTarget.CancelQrCode
-        else -> laterStepBackTarget()
+        AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready -> {
+            null
+        }
+
+        AuthStep.WaitPhoneNumber -> {
+            if (addingAccount) BackTarget.LeaveAddingAccount else BackTarget.Welcome.takeIf { welcomeDone }
+        }
+
+        is AuthStep.WaitOtherDeviceConfirmation -> {
+            BackTarget.CancelQrCode
+        }
+
+        else -> {
+            laterStepBackTarget()
+        }
     }
 
 private fun AuthModel.laterStepBackTarget(): BackTarget =
@@ -60,4 +74,7 @@ internal fun AuthModel.afterBack(target: BackTarget): AuthModel =
 
         // TDLib restarts (AuthViewModel cancels the QR login), and the flow continues with phone number entry.
         BackTarget.CancelQrCode -> copy(restarting = true, pendingAction = AuthAction.CancelQrCode)
+
+        // The flow itself does not move: the app leaves it (AuthViewModel hands it to the device's accounts).
+        BackTarget.LeaveAddingAccount -> this
     }

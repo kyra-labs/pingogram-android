@@ -8,4 +8,12 @@ sealed interface SettingsEvent {
     data object ConfirmLogOut : SettingsEvent
 
     data object DismissLogOut : SettingsEvent
+
+    /** Another account's row was tapped: the app opens again on it. */
+    data class SwitchAccount(
+        val slot: Int,
+    ) : SettingsEvent
+
+    /** "Add account" was tapped: the app opens on a new account's sign-in. */
+    data object AddAccount : SettingsEvent
 }

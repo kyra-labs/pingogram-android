@@ -21,7 +21,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -33,6 +35,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
@@ -134,8 +137,10 @@ fun PingogramApp(
     shares: ShareInbox? = null,
     shareToOpen: IncomingShare? = null,
     onShareOpened: () -> Unit = {},
+    accounts: AccountMenuSource? = null,
 ) {
     val currentEntry = navController.screenEntryAsState()
+    val accountMenu = rememberAccountMenu(accounts)
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
     val inMainGraph by remember(currentEntry) { derivedStateOf { currentEntry.value?.destination.isInMainGraph() } }
     val showNavigation by remember(currentEntry) {
@@ -168,7 +173,9 @@ fun PingogramApp(
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
-                navigationItems = { PingogramNavigationItems(navController, adaptiveType, tabReselection) },
+                navigationItems = {
+                    PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
+                },
                 navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
                 // The scaffold shows its primary action even without navigation.
                 primaryActionContent = { if (showRail) RailSearchButton(adaptiveType, searchOpen, search, openSearch) },
@@ -208,6 +215,7 @@ fun PingogramApp(
                             onSearch = openSearch,
                             searchOpen = searchOpen,
                             search = search,
+                            accountMenu = accountMenu,
                             modifier =
                                 Modifier
                                     .align(Alignment.BottomCenter)
@@ -351,18 +359,23 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
 /**
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only
  * the items and never the `NavHost` content. Tapping the item of the tab the user is on, not a screen pushed above it,
- * reports it to [tabReselection], whose screen scrolls back to the top.
+ * reports it to [tabReselection], whose screen scrolls back to the top. With an [accountMenu], a long press on the
+ * Settings item opens it ([rememberAccountMenuTrigger], [AccountMenuPopup]).
  */
 @Composable
 private fun PingogramNavigationItems(
     navController: NavController,
     navigationSuiteType: NavigationSuiteType,
     tabReselection: TabReselection,
+    accountMenu: AccountMenuActions?,
 ) {
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentEntry?.destination
     TopLevelDestination.entries.forEach { destination ->
         val selected = currentDestination.isInHierarchy(destination)
+        // Not wrapped, which would change the rail's layout: the trigger goes on the item, the menu into its icon.
+        val menu = accountMenu?.state?.takeIf { destination == TopLevelDestination.Settings }
+        val menuExpanded = rememberSaveable { mutableStateOf(false) }
         NavigationSuiteItem(
             selected = selected,
             onClick = {
@@ -374,9 +387,18 @@ private fun PingogramNavigationItems(
                     // The label below names the item for accessibility services.
                     contentDescription = null,
                 )
+                if (menu != null) AccountMenuPopup(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd)
             },
             label = { Text(stringResource(destination.label)) },
             navigationSuiteType = navigationSuiteType,
+            modifier =
+                if (menu != null) {
+                    Modifier.accountMenuTrigger(
+                        rememberAccountMenuTrigger(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd),
+                    )
+                } else {
+                    Modifier
+                },
         )
     }
 }
