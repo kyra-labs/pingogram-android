@@ -59,6 +59,7 @@ class DefaultTdlibClient internal constructor(
     ) : this(
         native = JniTdlib,
         parametersProvider = parametersProvider,
+        // TDLib's log stream is the process's, one for every account: it stays in the first account's directory.
         logSettings = { TdlibLogSettings.of(config.isDebug, TdlibDirectories.of(context.filesDir, config.useTestDc)) },
         log = AndroidTdlibLog(config.isDebug),
         scope = clientScope(dispatcher, AndroidTdlibLog(config.isDebug)),

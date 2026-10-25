@@ -41,7 +41,8 @@ interface TdlibParametersProvider {
 
 /**
  * Where TDLib keeps its data: under `filesDir`, which is never backed up (`android:allowBackup="false"`,
- * `REQUIREMENTS.md` §6.2). The test DC gets its own directories, as a database belongs to one environment.
+ * `REQUIREMENTS.md` §6.2). The test DC gets its own directories, as a database belongs to one environment, and so does
+ * each account ([AccountSlot]): "tdlib" for the first, "tdlib-1" for the second.
  */
 class TdlibDirectories(
     val root: File,
@@ -56,7 +57,8 @@ class TdlibDirectories(
         fun of(
             filesDir: File,
             useTestDc: Boolean,
-        ) = TdlibDirectories(filesDir.resolve(if (useTestDc) "tdlib-test" else "tdlib"))
+            slot: AccountSlot = AccountSlot.First,
+        ) = TdlibDirectories(filesDir.resolve((if (useTestDc) "tdlib-test" else "tdlib") + slot.suffix("-")))
     }
 }
 
@@ -101,11 +103,12 @@ class AndroidTdlibParametersProvider
     constructor(
         @ApplicationContext private val context: Context,
         private val config: TdlibConfig,
+        private val slot: AccountSlot,
         private val databaseKeys: DatabaseKeyProvider,
         @Dispatcher(IO) private val io: CoroutineDispatcher,
     ) : TdlibParametersProvider {
         // Lazy: Context.getFilesDir() touches the disk, and this class is created on the main thread.
-        private val directories by lazy { TdlibDirectories.of(context.filesDir, config.useTestDc) }
+        private val directories by lazy { TdlibDirectories.of(context.filesDir, config.useTestDc, slot) }
 
         override suspend fun parameters(): TdApi.SetTdlibParameters =
             withContext(io) {
