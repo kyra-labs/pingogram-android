@@ -32,6 +32,7 @@ data class ChatListUiState(
     val folderTabs: ImmutableList<FolderTab> = persistentListOf(),
     val selectedFolderId: Int? = null,
     val archive: ArchiveEntry? = null,
+    val hasLockedChats: Boolean = false,
     val selection: ChatSelection? = null,
     val deleteDialog: DeleteDialog? = null,
 )

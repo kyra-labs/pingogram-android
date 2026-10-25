@@ -252,6 +252,7 @@ private fun ChatListBody(
                                 onNewChat = { onEvent(ChatListEvent.NewChat) },
                                 modifier = Modifier.weight(1f),
                             )
+                            if (state.hasLockedChats) LockedChatsRow(enabled = true)
                         }
                     }
 
@@ -508,7 +509,7 @@ private fun ChatList(
     val folderId = state.selectedFolderId
     val selectedIds = selection?.chatIds
     val maxWidth = MaterialTheme.sizes.contentMaxWidth
-    val motionScheme = MaterialTheme.motionScheme
+    val rowMotion = MaterialTheme.motionScheme.takeIf { animateRows }
     LazyColumn(
         modifier = modifier.testTag(CHAT_LIST_TEST_TAG),
         state = listState,
@@ -517,7 +518,7 @@ private fun ChatList(
     ) {
         if (stories != null) {
             item(key = STORIES_ROW, contentType = STORIES_ROW) {
-                stories(Modifier.listRow(this, maxWidth, motionScheme.takeIf { animateRows }))
+                stories(Modifier.listRow(this, maxWidth, rowMotion))
             }
         }
         if (archive != null) {
@@ -526,7 +527,7 @@ private fun ChatList(
                     entry = archive,
                     enabled = selection == null,
                     onClick = { onEvent(ChatListEvent.OpenArchive) },
-                    modifier = Modifier.listRow(this, maxWidth, motionScheme.takeIf { animateRows }),
+                    modifier = Modifier.listRow(this, maxWidth, rowMotion),
                 )
             }
         }
@@ -539,10 +540,11 @@ private fun ChatList(
                 onEvent = onEvent,
                 modifier =
                     Modifier
-                        .listRow(this, maxWidth, motionScheme.takeIf { animateRows })
+                        .listRow(this, maxWidth, rowMotion)
                         .then(if (item.isSavedMessages) Modifier.testTag(SAVED_MESSAGES_TEST_TAG) else Modifier),
             )
         }
+        if (state.hasLockedChats) lockedChatsRow(selection == null) { Modifier.listRow(this, maxWidth, rowMotion) }
     }
     ShowRowsAddedAtTop(listState, rowsAbove = (if (stories != null) 1 else 0) + (if (archive != null) 1 else 0))
     val currentOnEvent by rememberUpdatedState(onEvent)
@@ -674,6 +676,7 @@ private const val LOAD_MORE_THRESHOLD = 20
 
 private const val CHAT_ROW = "chat"
 private const val ARCHIVE_ROW = "archive"
+
 private const val STORIES_ROW = "stories"
 
 // The Macrobenchmarks and the Baseline Profile generator (`:benchmark`, `Journeys.kt`) find the list and the row they
