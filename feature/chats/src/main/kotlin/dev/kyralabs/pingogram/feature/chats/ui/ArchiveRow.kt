@@ -223,7 +223,10 @@ private fun CompactArchiveIcon() {
     }
 }
 
-/** An empty list's state, below the archive row while there is one: it stays in reach when every chat is archived. */
+/**
+ * An empty list's state, below the archive row while there is one: it stays in reach when every chat is archived.
+ * [after] comes below it (the locked chats' row).
+ */
 @Composable
 internal fun ChatListEmptyWithArchive(
     archive: ArchiveEntry?,
@@ -231,6 +234,7 @@ internal fun ChatListEmptyWithArchive(
     isFolder: Boolean,
     onEvent: (ChatListEvent) -> Unit,
     modifier: Modifier = Modifier,
+    after: @Composable () -> Unit = {},
 ) {
     Column(modifier) {
         archive?.let {
@@ -247,6 +251,7 @@ internal fun ChatListEmptyWithArchive(
             onNewChat = { onEvent(ChatListEvent.NewChat) },
             modifier = Modifier.weight(1f),
         )
+        after()
     }
 }
 

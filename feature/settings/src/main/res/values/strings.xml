@@ -713,6 +713,24 @@
     <string name="lock_hint_pin">Enter your PIN</string>
     <string name="lock_hint_password">Enter your password</string>
     <string name="lock_unlock">Unlock</string>
+    <!-- Locked chats (docs/adr/0029-locked-chats.md): chats kept behind the app's passcode. -->
+    <string name="locked_chats_title">Locked chats</string>
+    <string name="locked_chat_title">This chat is locked</string>
+    <string name="locked_chats_hint_pin">Enter your PIN to open your locked chats</string>
+    <string name="locked_chats_hint_password">Enter your password to open your locked chats</string>
+    <string name="locked_chats_cancel">Cancel</string>
+    <string name="locked_chats_loading">Loading locked chats</string>
+    <string name="locked_chats_needs_passcode">Locked chats open with the app\'s passcode. Turn the passcode lock on first.</string>
+    <string name="locked_chats_footer">Locked chats are hidden from the chat list, folders, search, sharing and the widget on this device, and their notifications say only “New message”. Your other devices show them as usual.</string>
+    <string name="locked_chats_add">Lock a chat</string>
+    <string name="locked_chats_unlock">Unlock</string>
+    <!-- Screen readers: the "Unlock" button of a locked chat. %1$s: the chat's name. -->
+    <string name="locked_chats_unlock_label">Unlock %1$s</string>
+    <plurals name="locked_chats_unread">
+        <item quantity="one">%d unread message</item>
+        <item quantity="other">%d unread messages</item>
+    </plurals>
+    <string name="settings_locked_chats_summary">Keep chats behind your passcode</string>
     <string name="lock_forgot">Forgot passcode?</string>
     <string name="lock_biometric">Unlock with fingerprint or face</string>
     <string name="lock_biometric_prompt_title">Unlock Pingogram</string>

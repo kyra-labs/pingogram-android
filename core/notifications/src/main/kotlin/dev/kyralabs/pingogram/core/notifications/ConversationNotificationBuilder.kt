@@ -86,6 +86,28 @@ internal class ConversationNotificationBuilder
         }
 
         /**
+         * The one notification of every locked chat (`docs/adr/0029-locked-chats.md`): "New message", without the
+         * chat's name, sender, picture or text, in the Private chats channel whatever the chat (a channel would tell
+         * its kind), with no conversation shortcut and no actions. Its tap opens the locked chats behind the passcode.
+         * It alerts as a conversation's notification does, only if [alert].
+         */
+        fun locked(alert: Boolean): Notification =
+            NotificationCompat
+                .Builder(context, PingogramChannel.PrivateChats.id)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+                .setContentText(context.getString(R.string.notification_new_message))
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setShowWhen(true)
+                .setAutoCancel(true)
+                .setContentIntent(NotificationIntents.openLockedChatsPendingIntent(context))
+                .setGroup(GROUP_KEY)
+                .setGroupAlertBehavior(
+                    if (alert) NotificationCompat.GROUP_ALERT_ALL else NotificationCompat.GROUP_ALERT_SUMMARY,
+                ).setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .build()
+
+        /**
          * The summary of the bundle, which Android shows in place of the conversations on surfaces without room for
          * them (a watch, a collapsed group); it opens the app. It never alerts.
          */

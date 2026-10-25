@@ -14,10 +14,10 @@ import dev.kyralabs.pingogram.core.domain.model.UserType
 import dev.kyralabs.pingogram.core.domain.model.WriteAccess
 import dev.kyralabs.pingogram.core.domain.model.writeAccess
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +40,7 @@ import kotlin.time.Duration.Companion.seconds
  * its order (pinned chats first), where the user can send messages, published as conversation shortcuts
  * ([ConversationShortcuts.publishShareTargets]), so the system's share sheet offers them, with their avatars
  * ([AvatarIcons]). Saved Messages is left out: it has no avatar of its own there, and the share sheet lists it first.
+ * Locked chats are left out too, unlocked or not (`docs/adr/0029-locked-chats.md`).
  *
  * It follows the chat list while someone is logged in, publishing [PUBLISH_DELAY] after the first [MAX_TARGETS]
  * chats last changed, so a busy chat list rewrites the shortcuts rarely; logging out removes them with every other
@@ -57,6 +58,7 @@ class ShareTargetShortcuts
         private val chatRepository: ChatRepository,
         private val userRepository: UserRepository,
         private val groupRepository: GroupRepository,
+        private val chatLock: ChatLockRepository,
         private val avatars: AvatarIcons,
         private val shortcuts: ConversationShortcuts,
         @param:ApplicationScope private val scope: CoroutineScope,
@@ -78,7 +80,9 @@ class ShareTargetShortcuts
         /** The [MAX_TARGETS] most recent chats the user can write in, as they change. */
         private fun recentChats(): Flow<List<Target>> =
             combine(
-                chatRepository.chatList(ChatListType.Main),
+                combine(chatRepository.chatList(ChatListType.Main), chatLock.lockedChatIds) { chats, locked ->
+                    if (locked.isEmpty()) chats else chats.filterNot { it.id in locked }
+                },
                 userRepository.users,
                 userRepository.myUserId,
                 groupRepository.basicGroups,
@@ -137,7 +141,7 @@ class ShareTargetShortcuts
         )
 
         private fun targetsOf(
-            chats: ImmutableList<Chat>,
+            chats: List<Chat>,
             people: People,
         ): List<Target> =
             chats

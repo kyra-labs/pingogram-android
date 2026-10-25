@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Locked chats: keep chats behind your passcode (Settings → Privacy and security → Locked chats, with the passcode
+  lock on). Locked chats leave the chat list, its folders and the archive, and a "Locked chats" row at the end of the
+  list opens them after your passcode or fingerprint. Until you open them, search and the share and forward sheets don't
+  show them either. Their notifications say only "New message", without the chat, sender or text, and the widget,
+  conversation shortcuts and Direct Share leave them out. One unlock opens all of them until the app locks or has been
+  away for a minute. The locks stay on this device; your other devices show the chats as usual.
 - Forum topics: members with the right create topics ("New topic" in the topic list's top bar: a name and one of six
   colors), and rename, close and reopen, pin and unpin, and delete them from a topic's long press or its
   conversation's "Manage topic" button; deleting asks first. Pinned topics reorder by dragging their handles.

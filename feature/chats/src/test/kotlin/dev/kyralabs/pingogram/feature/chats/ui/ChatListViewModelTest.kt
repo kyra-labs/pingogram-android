@@ -47,6 +47,29 @@ class ChatListViewModelTest : ChatListViewModelHarness() {
         }
 
     @Test
+    fun `locked chats never show in the list or the archive row, which points to them instead`() =
+        runTest {
+            chats.setChats(ChatListType.Main, chat(id = 3), chat(id = 2), chat(id = 4))
+            chats.setChats(ChatListType.Archive, chat(id = 7, lists = listOf(ChatListType.Archive)))
+            chatLock.lock(setOf(2L, 7L))
+            val viewModel = viewModel()
+
+            assertEquals(listOf(3L, 4L), viewModel.ids())
+            assertNull(viewModel.state.archive)
+            assertEquals(true, viewModel.state.hasLockedChats)
+
+            // Open or not, they keep to their own list.
+            chatLock.setUnlocked(true)
+            runCurrent()
+            assertEquals(listOf(3L, 4L), viewModel.ids())
+
+            chatLock.lock(emptySet())
+            runCurrent()
+            assertEquals(listOf(3L, 2L, 4L), viewModel.ids())
+            assertEquals(false, viewModel.state.hasLockedChats)
+        }
+
+    @Test
     fun `a main list without chats is empty`() =
         runTest {
             assertEquals(ChatListContent.Empty(isFolder = false), viewModel().state.content)
