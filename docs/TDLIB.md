@@ -114,6 +114,12 @@ Send on `AuthorizationStateWaitTdlibParameters`:
 `TdlibConfig` (api id/hash, version name, debug flag, test DC) comes from `:app`'s
 `TdlibConfigModule`, which reads `BuildConfig`; `AndroidTdlibParametersProvider` builds the rest.
 
+Each account has its own directories, key file and Keystore key (`AccountSlot`, `docs/adr/0031-multiple-accounts.md`):
+the first keeps the names above (`tdlib`, `tdlib-test`, `tdlib_database_key`, the alias
+`pingogram.tdlib.database_key`), so an update moves nothing; the second uses `tdlib-1`, `tdlib-test-1`,
+`tdlib_database_key_1` and `pingogram.tdlib.database_key.1`, and so on up to four. `AccountStorage.delete` removes all
+of a slot's once its client is closed. TDLib's log is the process's, so it stays in `tdlib/logs` for every account.
+
 ### Database encryption key
 
 `KeystoreDatabaseKeyProvider`: 32 random bytes from `SecureRandom`, encrypted with AES-256-GCM by
