@@ -70,6 +70,11 @@ data class Chat(
      * the user's, and the user has Telegram Premium. Single messages translate for everyone.
      */
     val isTranslatable: Boolean = false,
+    /**
+     * The chat holds messages the user scheduled (td_api.tl `chat.has_scheduled_messages`,
+     * `updateChatHasScheduledMessages`), which `ScheduledMessageRepository` lists.
+     */
+    val hasScheduledMessages: Boolean = false,
 ) {
     /** The chat's position in [list]; null if the chat is not shown there. */
     fun positionIn(list: ChatListType): ChatPosition? = positions.firstOrNull { it.list == list }

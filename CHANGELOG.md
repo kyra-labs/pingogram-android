@@ -10,6 +10,11 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Scheduled messages: a chat with messages you scheduled shows "3 scheduled messages" at the top, with when the next
+  one goes out. Tap it to see them as they will look, under the day each goes out ("Today", "Tomorrow"), with its time,
+  "When online" for those that wait for the other person, and how often a repeating one repeats. Tap or hold one to
+  send it now, pick another time, edit it, copy its text or delete it. Messages go into the chat by themselves when
+  their time comes.
 - Next unread channel: at the bottom of a channel you have read, pull up to open the next channel with unread posts
   from your chat list. Letting go opens it in place of the one you read; screen readers have an action for it.
 - Share button: channel posts, and posts forwarded from a channel, have a round forward button beside them, which opens

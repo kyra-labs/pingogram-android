@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructText
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
 
@@ -14,15 +15,18 @@ import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
  * {content}, {status}", the status only for outgoing messages. The content is the forward's origin, the reply, the
  * kind of media, a poll's answers with their shares and marks ([pollDescription]), a translation's label, the text
  * (hidden spoilers read "spoiler"; a translation once shown), the link preview's title, the reactions, a self-destruct
- * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. Built in the
- * bubble's `semantics` block, so only when something reads the semantics tree (`docs/PERFORMANCE.md` §4).
+ * timer, how many buttons a bot attached, and that it is the result the search in the chat shows. A scheduled
+ * message's time is when it goes out, with how often it repeats. Built in the bubble's `semantics` block, so only when
+ * something reads the semantics tree (`docs/PERFORMANCE.md` §4).
  */
 internal fun bubbleDescription(
     resources: Resources,
     bubble: ChatItem.Bubble,
 ): String {
     val sender = bubble.sender.resolve(resources)
-    val time = if (bubble.isEdited) resources.getString(R.string.chat_bubble_time_edited, bubble.time) else bubble.time
+    // A scheduled message's time is when it goes out: "Sends 9:41 AM", "Sends when Ada is online".
+    val shownTime = bubble.schedule?.let { scheduleDescription(resources, it, bubble.time) } ?: bubble.time
+    val time = if (bubble.isEdited) resources.getString(R.string.chat_bubble_time_edited, shownTime) else shownTime
     val content =
         listOfNotNull(
             bubble.forwardedFrom?.resolve(resources),

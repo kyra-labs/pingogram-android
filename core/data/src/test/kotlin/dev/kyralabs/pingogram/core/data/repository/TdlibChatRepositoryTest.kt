@@ -139,6 +139,18 @@ class TdlibChatRepositoryTest {
         }
 
     @Test
+    fun `a chat says whether it holds scheduled messages, and follows updateChatHasScheduledMessages`() =
+        runTest {
+            val repository = repository()
+            client.emit(updateNewChat(chat().apply { hasScheduledMessages = true }))
+            assertTrue(repository.cached().hasScheduledMessages)
+
+            client.emit(TdApi.UpdateChatHasScheduledMessages(CHAT_ID, false))
+
+            assertFalse(repository.cached().hasScheduledMessages)
+        }
+
+    @Test
     fun `updateChatPhoto sets the photo`() =
         runTest {
             val repository = repository()

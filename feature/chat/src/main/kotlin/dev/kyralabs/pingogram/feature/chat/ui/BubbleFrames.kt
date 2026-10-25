@@ -93,7 +93,8 @@ internal fun WithReactionBadges(
  * Where the group
  * shows its time on its last bubble only, a tap that nothing inside takes (links, media, quotes and badges keep
  * theirs) shows or hides this one's ([ChatEvent.ToggleTime]); a double tap adds the quick reaction where the settings
- * allow it ([bubbleTaps], [rememberDoubleTapReaction]).
+ * allow it ([bubbleTaps], [rememberDoubleTapReaction]). On a scheduled message's bubble a tap opens its actions in the
+ * list of scheduled messages, and a double tap does nothing more.
  */
 @Suppress("LongParameterList") // The bubble, its frame and the badges' state, and where they send events.
 @Composable
@@ -125,8 +126,11 @@ internal fun BubbleStack(
             )
         }
     }
-    val onDoubleTap = rememberDoubleTapReaction(bubble, reactions, onEvent)
-    val stackModifier = modifier.bubbleTaps(bubble.id, bubble.position.joinsNext, onDoubleTap, onEvent)
+    // A scheduled message's bubble always shows its time: a tap opens its actions in their list
+    // (ScheduledMessagesScreen). It takes no reactions.
+    val onDoubleTap = rememberDoubleTapReaction(bubble, reactions, onEvent)?.takeIf { bubble.schedule == null }
+    val toggleTime = bubble.position.joinsNext || bubble.schedule != null
+    val stackModifier = modifier.bubbleTaps(bubble.id, toggleTime, onDoubleTap, onEvent)
     val thread = bubble.thread
     val keyboard = bubble.keyboard
     when {

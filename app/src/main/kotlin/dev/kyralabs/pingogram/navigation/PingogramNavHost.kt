@@ -42,7 +42,7 @@ import dev.kyralabs.pingogram.core.ui.theme.sharedAxisXExit
 import dev.kyralabs.pingogram.core.ui.transition.ProvideNavAnimatedVisibilityScope
 import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
-import dev.kyralabs.pingogram.feature.chat.navigation.chatExportScreen
+import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
 import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
@@ -236,6 +236,7 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenStory = navController::navigateToStoryViewer,
                     chatToShow = request.toChatToShow(),
                     onChatShown = { entry.savedStateHandle.chatShown() },
+                    onOpenScheduledMessages = navController::navigateToScheduledMessages,
                 )
             }
         }
@@ -257,11 +258,9 @@ private fun NavGraphBuilder.mainGraph(
         )
         archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
         newChatScreens(navController)
-        pushedChat(navController, openMedia)
+        chatScreens(navController, openMedia)
         profile(navController, besideList)
         chatInfo(navController, besideList)
-        // "Export chat", from a profile or an info page (docs/adr/0021-chat-export.md).
-        chatExportScreen(onBack = { navController.popBackStack() })
         chatInvite(navController)
         chatFolderInvite(navController)
         mediaViewer(navController)

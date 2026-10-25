@@ -83,9 +83,10 @@ import java.util.Locale
  * window is secure ([SecureWindow]): no screenshots.
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
- * title opens nothing. A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which the app
- * navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's text field
- * takes the focus once it shows.
+ * title opens nothing. The bar of the chat's scheduled messages opens their list through [onOpenScheduledMessages]
+ * (without it there is no bar). A bubble's "12 comments" opens that thread's conversation through [onOpenThread], which
+ * the app navigates with. With [focusComposer] (a chat opened from the list with a hardware keyboard) the composer's
+ * text field takes the focus once it shows.
  */
 @Suppress(
     "LongParameterList", // The chat and where in it, what it opens elsewhere, and its view models.
@@ -106,6 +107,7 @@ internal fun ConversationRoute(
     onOpenProfile: ((userId: Long) -> Unit)? = null,
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     focusComposer: Boolean = false,
+    onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
     viewModel: ChatViewModel =
         hiltViewModel<ChatViewModel, ChatViewModel.Factory>(key = "chat-$chatId-$topic") {
@@ -184,6 +186,7 @@ internal fun ConversationRoute(
             search = viewModel.searchState.collectAsStateWithLifecycle().value,
             searchQuery = viewModel.searchQuery,
             botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+            onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
             nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
         )
         ChatSheets(viewModel)
