@@ -134,3 +134,22 @@ internal fun scrollingToSent(
     scrollToNewest: () -> Unit,
 ): (SendOptions) -> Unit =
     { options -> if (options.scheduledAt == null && content is ChatContent.Content) scrollToNewest() }
+
+/**
+ * The jump-to-bottom button, while the list is away from the newest message ([showJump]) or the history does not reach
+ * it yet; [onClick] goes there.
+ */
+@Composable
+internal fun JumpButtonSlot(
+    content: ChatContent,
+    showJump: Boolean,
+    unreadCount: Int,
+    onClick: () -> Unit,
+) {
+    JumpToBottomButton(
+        visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
+        unreadCount = unreadCount,
+        motionScheme = MaterialTheme.motionScheme,
+        onClick = onClick,
+    )
+}

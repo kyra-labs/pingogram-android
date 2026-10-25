@@ -238,14 +238,7 @@ internal fun ChatScreen(
                 ) { option -> if (option == null) attachMenuOpen = true else attach.onPick(option) }
             },
             onOpenScheduledMessages = onOpenScheduledMessages,
-            jumpButton = {
-                JumpToBottomButton(
-                    visible = content is ChatContent.Content && (showJump || !content.reachedEnd),
-                    unreadCount = state.unreadCount,
-                    motionScheme = MaterialTheme.motionScheme,
-                    onClick = scrollToNewest,
-                )
-            },
+            jumpButton = { JumpButtonSlot(content, showJump, state.unreadCount, scrollToNewest) },
             modifier = Modifier.fillMaxSize().blurBehindMenu(lift, MaterialTheme.sizes.messageMenuBlur),
         )
         if (lifted != null) LiftedMessageMenu(state, lifted, lift, bubbleResources, onEvent)
