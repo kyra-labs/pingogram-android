@@ -631,6 +631,9 @@
     <string name="settings_notifications_exceptions">Exceptions</string>
     <string name="settings_notifications_exceptions_summary">Chats with settings of their own</string>
     <string name="settings_notifications_section_background">Background</string>
+    <string name="settings_notifications_section_accounts">Accounts</string>
+    <string name="settings_notifications_all_accounts">Notifications from all accounts</string>
+    <string name="settings_notifications_all_accounts_summary">Turn off to get notifications only from the account you are using. Calls to every account still ring.</string>
     <!-- A foreground service that keeps the connection open (foss builds only); the summary states its cost. -->
     <string name="settings_keep_connected">Keep connected</string>
     <string name="settings_keep_connected_summary">Stay connected in the background, so new messages arrive at once. Uses more battery and shows a notification while on.</string>

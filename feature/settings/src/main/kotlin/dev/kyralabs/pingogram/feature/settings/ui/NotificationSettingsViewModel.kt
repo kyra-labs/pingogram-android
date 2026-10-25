@@ -61,6 +61,8 @@ class NotificationSettingsViewModel
         private val promptRepository: NotificationPromptRepository,
         private val contactJoinedRepository: ContactJoinedRepository,
         pushDelivery: PushDelivery,
+        // The device's accounts (docs/adr/0031-multiple-accounts.md): the shown one's channels, and the switch.
+        private val accounts: NotificationAccounts,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(
@@ -97,6 +99,11 @@ class NotificationSettingsViewModel
             viewModelScope.launch {
                 contactJoinedRepository.notifies.collect { on -> mutableUiState.update { it.copy(contactJoined = on) } }
             }
+            viewModelScope.launch {
+                accounts.state.collect { (slot, all) ->
+                    mutableUiState.update { it.copy(accountSlot = slot, fromAllAccounts = all) }
+                }
+            }
             load()
         }
 
@@ -111,7 +118,9 @@ class NotificationSettingsViewModel
                 }
 
                 is NotificationSettingsEvent.OpenChannelSettings -> {
-                    effectChannel.trySend(NotificationSettingsEffect.OpenChannelSettings(event.scope))
+                    effectChannel.trySend(
+                        NotificationSettingsEffect.OpenChannelSettings(event.scope, uiState.value.accountSlot),
+                    )
                 }
 
                 is NotificationSettingsEvent.AccessChecked -> {
@@ -134,6 +143,16 @@ class NotificationSettingsViewModel
 
                 is NotificationSettingsEvent.SetContactJoined -> {
                     setContactJoined(event.enabled)
+                }
+
+                is NotificationSettingsEvent.SetFromAllAccounts -> {
+                    if (uiState.value.fromAllAccounts != null) {
+                        viewModelScope.launch {
+                            accounts.setFromAllAccounts(event.enabled).onFailure {
+                                effectChannel.trySend(NotificationSettingsEffect.ShowError(it))
+                            }
+                        }
+                    }
                 }
 
                 NotificationSettingsEvent.Reset -> {

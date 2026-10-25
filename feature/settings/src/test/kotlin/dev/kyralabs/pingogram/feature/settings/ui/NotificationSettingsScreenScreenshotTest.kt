@@ -80,6 +80,52 @@ class NotificationSettingsScreenScreenshotTest {
     fun resetDialogDark() =
         capture("resetDialogDark", ThemeMode.Dark, SettingsPreviewData.notifications.copy(isResetDialogOpen = true))
 
+    // With two accounts: "Notifications from all accounts", whole on a tall window.
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun accountsLight() = capture("accountsLight", ThemeMode.Light, SettingsPreviewData.notificationsWithAccounts)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun accountsDark() = capture("accountsDark", ThemeMode.Dark, SettingsPreviewData.notificationsWithAccounts)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun accountsAmoled() = captureVariant(ScreenshotVariant.Amoled)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun accountsHighContrast() = captureVariant(ScreenshotVariant.HighContrast)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun accountsRtl() = captureVariant(ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = TALL_MEDIUM)
+    fun accountsMedium() = captureVariant(ScreenshotVariant.Medium)
+
+    // While the kinds of chats load, so the group shows at the top at 200 % font scale.
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun accountsFontScale200() =
+        capture(
+            "accountsFontScale200",
+            ThemeMode.Light,
+            SettingsPreviewData.notificationsWithAccounts.copy(scopes = ScopeSettingsState.Loading),
+        )
+
+    private fun captureVariant(variant: ScreenshotVariant) =
+        composeRule.captureScreen(javaClass, "accounts" + variant.name, variant) {
+            NotificationSettingsScreen(
+                state = SettingsPreviewData.notificationsWithAccounts,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+            )
+        }
+
     private fun capture(
         name: String,
         themeMode: ThemeMode,
@@ -91,5 +137,8 @@ class NotificationSettingsScreenScreenshotTest {
     private companion object {
         /** Tall enough for the whole page at 100 % font scale. */
         const val TALL = "w411dp-h2000dp-xxhdpi"
+
+        /** As [TALL], 700 dp wide. */
+        const val TALL_MEDIUM = "w700dp-h2000dp-xxhdpi"
     }
 }

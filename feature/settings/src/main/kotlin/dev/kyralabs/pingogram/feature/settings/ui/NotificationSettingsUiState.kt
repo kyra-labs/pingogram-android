@@ -18,6 +18,9 @@ import kotlinx.collections.immutable.persistentSetOf
  * @property isKeepConnectedOffered the build offers "Keep connected" (`foss`, `PushDelivery.TdlibConnection`).
  * @property keepConnected "Keep connected" is on.
  * @property contactJoined whether Telegram tells the user when a contact joins; null until TDLib has said.
+ * @property accountSlot the shown account's slot, whose notification channels the page opens
+ *   (`docs/adr/0031-multiple-accounts.md`).
+ * @property fromAllAccounts "Notifications from all accounts"; null (and not shown) with one account on the device.
  * @property isResetDialogOpen the confirmation of "Reset all notification settings" is open.
  * @property isResetting resetting was confirmed and TDLib has not answered yet.
  */
@@ -29,6 +32,8 @@ data class NotificationSettingsUiState(
     val isKeepConnectedOffered: Boolean = false,
     val keepConnected: Boolean = false,
     val contactJoined: Boolean? = null,
+    val accountSlot: Int = 0,
+    val fromAllAccounts: Boolean? = null,
     val isResetDialogOpen: Boolean = false,
     val isResetting: Boolean = false,
 )
@@ -89,6 +94,11 @@ sealed interface NotificationSettingsEvent {
         val enabled: Boolean,
     ) : NotificationSettingsEvent
 
+    /** "Notifications from all accounts" was flipped. */
+    data class SetFromAllAccounts(
+        val enabled: Boolean,
+    ) : NotificationSettingsEvent
+
     /** "Reset all notification settings" was tapped: ask for confirmation. */
     data object Reset : NotificationSettingsEvent
 
@@ -111,8 +121,11 @@ sealed interface NotificationSettingsEffect {
     data object OpenAppNotificationSettings : NotificationSettingsEffect
 
     /** Open the notification channel of [scope]'s messages in Android's settings. */
+
+    /** Open [scope]'s channel of the account in [slot] in Android's settings. */
     data class OpenChannelSettings(
         val scope: NotificationScope,
+        val slot: Int = 0,
     ) : NotificationSettingsEffect
 
     /** Every notification setting was reset, said in a snackbar. */
