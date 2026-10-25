@@ -27,8 +27,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kyralabs.pingogram.account.restartOnAccountSwitch
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.domain.repository.LockState
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
@@ -139,6 +141,10 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var phoneNumberVisibility: PhoneNumberVisibilityRepository
 
+    /** The device's accounts: a switch opens the app again for the other one ([restartOnAccountSwitch]). */
+    @Inject
+    lateinit var accounts: Accounts
+
     @Inject
     @Dispatcher(IO)
     lateinit var io: CoroutineDispatcher
@@ -178,7 +184,8 @@ class MainActivity : ComponentActivity() {
             splashScreen.setOnExitAnimationListener { it.animateExit(lifecycleScope) }
             enableEdgeToEdge()
             if (savedInstanceState == null) handle(intent)
-            languageApplied = followAppLanguage()
+            // Opens the app again for the other account when the shown one changes.
+            languageApplied = followAppLanguage().also { restartOnAccountSwitch(accounts) }
             setContent {
                 val appearance by viewModel.appearance.collectAsStateWithLifecycle()
                 val lock by viewModel.lock.collectAsStateWithLifecycle()

@@ -98,9 +98,6 @@ object ActiveAccountModule {
     fun authRepository(accounts: Accounts): AuthRepository = accounts.active.authRepository()
 
     @Provides
-    fun appLockRepository(accounts: Accounts): AppLockRepository = accounts.active.appLockRepository()
-
-    @Provides
     fun connectionRepository(accounts: Accounts): ConnectionRepository = accounts.active.connectionRepository()
 
     @Provides

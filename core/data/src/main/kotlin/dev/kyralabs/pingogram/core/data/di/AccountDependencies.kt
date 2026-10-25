@@ -2,7 +2,6 @@ package dev.kyralabs.pingogram.core.data.di
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
@@ -16,21 +15,17 @@ import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsReposito
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushTokenSource
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import java.util.Optional
 
 /**
- * What an account's graph ([AccountComponent]) takes from the app's: the device's parts, the app's own settings, the
- * dispatchers and the app's scope. `:app` hands it over from Hilt's graph, which holds one of each for every account.
- * A new account repository that needs something else from the app adds it here.
+ * What an account's graph ([AccountComponent]) takes from the app's: the device's parts, the app's own settings and
+ * the dispatchers; its scope is its own ([AccountComponent.Factory]). `:app` hands it over from Hilt's graph, which
+ * holds one of each for every account. A new account repository that needs something else from the app adds it here.
  */
 @Suppress("TooManyFunctions")
 interface AccountDependencies {
     @ApplicationContext
     fun context(): Context
-
-    @ApplicationScope
-    fun applicationScope(): CoroutineScope
 
     @Dispatcher(IO)
     fun ioDispatcher(): CoroutineDispatcher

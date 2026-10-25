@@ -89,7 +89,7 @@ class PingogramApplication :
         // is lazy, made by startInBackground.
         StartupTrace.section(StartupTrace.INJECT) {
             super.onCreate()
-            accounts.active.updateCaches()
+            accounts.start()
         }
         // Parses the font and makes its typefaces while the activity is created, instead of in the first frame.
         applicationScope.launch { warmUpGoogleSansFlex(this@PingogramApplication) }
@@ -113,7 +113,9 @@ class PingogramApplication :
                 // Follows TDLib's calls: an incoming call rings from the first update on.
                 calls.get().start()
                 // Sends TDLib the network type once it has its parameters, and again at every new network.
-                accounts.active.networkTypeReporter().start()
+                accounts.firstAccount.component
+                    .networkTypeReporter()
+                    .start()
                 // foss: starts or stops the "Keep connected" service as its setting and the login change; gms:
                 // registers the push token with Telegram at every login and deletes it at logout.
                 backgroundConnection.get().start()
