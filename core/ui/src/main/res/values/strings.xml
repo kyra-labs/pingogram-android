@@ -56,6 +56,8 @@
     <string name="call_video">Video call</string>
     <string name="error_call_privacy_restricted">Their privacy settings don\'t let you call them.</string>
     <string name="error_call_peer_outdated">Their app can\'t take calls from this one yet.</string>
+    <!-- Who saw a message ("Seen by"): Telegram keeps it for a while only, and not in large groups. -->
+    <string name="error_message_viewers_unavailable">Telegram no longer shows who saw this message.</string>
     <string name="error_poll_closed">This poll is closed.</string>
 
     <!-- Remaining time in countdowns (durationText). -->

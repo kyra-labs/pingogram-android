@@ -91,6 +91,12 @@ data class MessageShortcuts(
 
 /** What the actions sheet offers for a message, each only where TDLib allows it. */
 enum class MessageAction {
+    /** List the group's members who saw it, with when ("Seen by", `MessageInteractionsViewModel`). */
+    SeenBy,
+
+    /** List who added which reaction to it ("Reactions", `MessageInteractionsViewModel`). */
+    Reactions,
+
     /** Send a message that failed again. */
     Resend,
 

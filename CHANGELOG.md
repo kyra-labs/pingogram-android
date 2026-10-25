@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
+  (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
+  sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and
+  when. Tap someone to open their profile. Nothing is asked of Telegram before you open the sheet.
 - Scheduled messages: a chat with messages you scheduled shows "3 scheduled messages" at the top, with when the next
   one goes out. Tap it to see them as they will look, under the day each goes out ("Today", "Tomorrow"), with its time,
   "When online" for those that wait for the other person, and how often a repeating one repeats. Tap or hold one to

@@ -242,6 +242,15 @@ sealed interface ChatEvent {
         val messageId: Long,
     ) : ChatEvent
 
+    /**
+     * "Seen by" ([reactions] false) or "Reactions" in a group message [messageId]'s actions: open the sheet of who saw
+     * it and who reacted to it, at that list, if TDLib still allows it.
+     */
+    data class ShowInteractions(
+        val messageId: Long,
+        val reactions: Boolean,
+    ) : ChatEvent
+
     /** The button at the end of the actions sheet's quick reactions: the sheet shows the reactions picker. */
     data object ExpandReactions : ChatEvent
 

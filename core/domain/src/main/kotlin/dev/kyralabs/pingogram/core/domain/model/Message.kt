@@ -139,6 +139,11 @@ data class InteractionInfo(
     val replyCount: Int?,
     /** Reactions in TDLib's order; empty if there are none. */
     val reactions: ImmutableList<Reaction>,
+    /**
+     * Who added which reaction can be listed ("Reactions", `MessageInteractionRepository.addedReactions`); TDLib says
+     * so for groups, not for channels, where reactions are anonymous.
+     */
+    val canGetAddedReactions: Boolean = false,
 )
 
 /** A reaction added [totalCount] times, [isChosen] if the user added it too. */

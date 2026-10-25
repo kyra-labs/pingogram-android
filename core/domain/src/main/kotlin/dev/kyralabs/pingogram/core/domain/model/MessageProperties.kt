@@ -35,6 +35,11 @@ data class MessageProperties(
     val canBeCopiedToSecretChat: Boolean = false,
     /** It can be reported to Telegram's moderators (td_api.tl `messageProperties.can_report_chat`, `reportChat`). */
     val canBeReported: Boolean = false,
+    /**
+     * The members who saw it can be listed ("Seen by", `MessageInteractionRepository.viewers`): TDLib allows it for a
+     * group's recent messages, while Telegram keeps who saw them, and in groups up to a size.
+     */
+    val canGetViewers: Boolean = false,
 )
 
 /**

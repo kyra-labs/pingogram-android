@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.Poll
+import dev.kyralabs.pingogram.core.domain.model.Reaction
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.Sticker
@@ -24,6 +25,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ChatComposer
 import dev.kyralabs.pingogram.feature.chat.ui.composer.editTarget
 import dev.kyralabs.pingogram.feature.chat.ui.composer.textOrCaption
 import dev.kyralabs.pingogram.feature.chat.ui.content.asPicture
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -57,6 +59,9 @@ import kotlinx.coroutines.launch
  *   deleting (after the [deleteDialog]) and resending go to TDLib, whose updates then change the history. An album is
  *   forwarded, selected, reported, saved and deleted, and its failed items resent, as a whole. Selection mode deletes
  *   its messages through [askDelete], and ends through [onSelectionDeleted] once they go.
+ * - **Seen by and reactions** ([showInteractions]): in groups, where TDLib lists who saw the message
+ *   (`MessageProperties.canGetViewers`) or who added its reactions (`InteractionInfo.canGetAddedReactions`), the first
+ *   actions open their sheet ([ChatEffect.OpenInteractions]), which asks for nothing before it opens.
  * - **Polls**: taking a vote back and stopping a poll (after its question) go to [onRetractVote] and [onStopPoll]
  *   (`ChatPolls`).
  * - **Reactions** ([toggleReaction]), from the quick row, the picker or a bubble, go on or come off the message as the
@@ -215,6 +220,30 @@ internal class ChatMessageActions(
     /** Opens the report sheet for message [messageId], an album's every item. */
     fun report(messageId: Long) =
         act(messageId, MessageAction.Report) { context, message, _ -> onReport(context.albumOf(message).map { it.id }) }
+
+    /**
+     * Opens the sheet of who saw message [messageId] and who reacted to it (an album's newest item, whose reactions its
+     * bubble shows), at its reactions if [reactions], else at its viewers; each list only where TDLib allows it.
+     */
+    fun showInteractions(
+        messageId: Long,
+        reactions: Boolean,
+    ) = act(
+        messageId,
+        if (reactions) MessageAction.Reactions else MessageAction.SeenBy,
+    ) { context, message, properties ->
+        val reactionsMessage = context.reactionsMessageOf(message)
+        val request =
+            MessageInteractionsRequest(
+                chatId = chatId,
+                messageId = messageId,
+                reactionsMessageId = reactionsMessage.id,
+                canGetViewers = properties.canGetViewers,
+                reactions = reactionsMessage.listedReactions.toImmutableList(),
+                opensReactions = reactions,
+            )
+        onEffect(ChatEffect.OpenInteractions(request))
+    }
 
     /** Saves the file of message [messageId], an album's every file, to Downloads. */
     fun saveToDownloads(messageId: Long) =
@@ -401,17 +430,20 @@ internal class ActionContext(
 )
 
 /**
- * What the actions sheet offers for [message] with TDLib's [properties], in its order: sending a failed message again,
- * replying and editing where the user can write, copying a text or caption the chat lets be saved, forwarding where
- * TDLib allows it (never protected content), pinning or unpinning (also for the user alone in a private chat), saving
- * its file (an album's files) to Downloads where the chat lets it be saved, selecting, reporting where TDLib allows
- * it, deleting.
+ * What the actions sheet offers for [message] with TDLib's [properties], in its order: who saw it where TDLib lists
+ * them, who added its reactions where TDLib lists them and it has some (as Telegram's apps put them, after the quick
+ * reactions), sending a failed message again, replying and editing where the user can write, copying a text or
+ * caption the chat lets be saved, forwarding where TDLib allows it (never protected content), pinning or unpinning
+ * (also for the user alone in a private chat), saving its file (an album's files) to Downloads where the chat lets it
+ * be saved, selecting, reporting where TDLib allows it, deleting.
  */
 internal fun ActionContext.actionsOf(
     message: Message,
     properties: MessageProperties,
 ): List<MessageAction> =
     buildList {
+        if (properties.canGetViewers) add(MessageAction.SeenBy)
+        if (reactionsMessageOf(message).listedReactions.isNotEmpty()) add(MessageAction.Reactions)
         if (message.canBeResent) add(MessageAction.Resend)
         if (properties.canBeReplied && canWrite) add(MessageAction.Reply)
         if (properties.canBeSaved && message.textOrCaption.text.isNotEmpty()) add(MessageAction.Copy)
@@ -467,6 +499,16 @@ private fun ActionContext.pinActions(message: Message): List<MessageAction> =
         message.isPinned -> listOf(MessageAction.Unpin)
         pinsForSelf -> listOf(MessageAction.Pin, MessageAction.PinForSelf)
         else -> listOf(MessageAction.Pin)
+    }
+
+/**
+ * The reactions of [this] whose senders TDLib lists (`getMessageAddedReactions`), in its order: none where it lists
+ * none; never the paid one, whose senders Telegram shows elsewhere.
+ */
+private val Message.listedReactions: List<Reaction>
+    get() {
+        val info = interactionInfo?.takeIf { it.canGetAddedReactions } ?: return emptyList()
+        return info.reactions.filter { it.type != ReactionType.Paid && it.totalCount > 0 }
     }
 
 /** A failed message TDLib can send again. */
