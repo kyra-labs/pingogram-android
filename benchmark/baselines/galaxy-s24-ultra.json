@@ -1,0 +1,54 @@
+{
+  "benchmarks": {
+    "ChatListScrollBenchmark.scrollBaselineProfile": {
+      "frameDurationCpuMs.P50": 6.0,
+      "frameDurationCpuMs.P90": 10.0,
+      "frameDurationCpuMs.P99": 14.4,
+      "frameOverrunMs.P90": 4.7,
+      "frameOverrunMs.P99": 11.0,
+      "frameOverrunMs.latePercent": 65
+    },
+    "ChatListScrollBenchmark.scrollCompilationNone": {
+      "frameDurationCpuMs.P50": 6.4,
+      "frameDurationCpuMs.P90": 9.6,
+      "frameDurationCpuMs.P99": 13.0,
+      "frameOverrunMs.P90": 3.9,
+      "frameOverrunMs.P99": 8.7,
+      "frameOverrunMs.latePercent": 76
+    },
+    "ConversationScrollBenchmark.scrollBaselineProfile": {
+      "frameDurationCpuMs.P50": 5.9,
+      "frameDurationCpuMs.P90": 8.5,
+      "frameDurationCpuMs.P99": 11.7,
+      "frameOverrunMs.P90": 2.5,
+      "frameOverrunMs.P99": 6.0,
+      "frameOverrunMs.latePercent": 59
+    },
+    "ConversationScrollBenchmark.scrollCompilationNone": {
+      "frameDurationCpuMs.P50": 4.7,
+      "frameDurationCpuMs.P90": 7.6,
+      "frameDurationCpuMs.P99": 11.5,
+      "frameOverrunMs.P90": 1.5,
+      "frameOverrunMs.P99": 9.0,
+      "frameOverrunMs.latePercent": 37
+    },
+    "StartupBenchmark.coldStartupBaselineProfile": {
+      "timeToFullDisplayMs.median": 517,
+      "timeToInitialDisplayMs.median": 372
+    },
+    "StartupBenchmark.coldStartupCompilationNone": {
+      "timeToFullDisplayMs.median": 752,
+      "timeToInitialDisplayMs.median": 487
+    },
+    "StartupBenchmark.warmStartupBaselineProfile": {
+      "timeToFullDisplayMs.median": 171,
+      "timeToInitialDisplayMs.median": 100
+    },
+    "StartupBenchmark.warmStartupCompilationNone": {
+      "timeToFullDisplayMs.median": 226,
+      "timeToInitialDisplayMs.median": 130
+    }
+  },
+  "commit": "v0.5.0 (f27520b4), Galaxy S24 Ultra, from docs/PERFORMANCE.md \u00a79; frame percentiles over 5 runs",
+  "device": "Galaxy S24 Ultra (model name not recorded)"
+}
