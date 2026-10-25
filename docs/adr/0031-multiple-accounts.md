@@ -125,7 +125,8 @@ What Pingogram has today, all written for one account:
 1. Account slots and storage: slot 0 as today, per-slot directories, keys and their migration test; still one account.
 2. The account component: `TdlibClient` and `core:data` move into it; the active account feeds the screens; still one
    account.
-3. Adding an account and the switcher (Settings card, the tab's long press), switching, logging out of one.
+3. Adding an account and the switcher (Settings card, the tab's long press), switching, logging out of one; in two
+   pull requests: the accounts underneath, hidden (3a), then what shows them on screen (3b).
 4. Background accounts: their notifications, shortcuts, channel groups, calls; opening the right account.
 5. Push per account (`gms`) and "Keep connected" for all (`foss`).
 6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher).

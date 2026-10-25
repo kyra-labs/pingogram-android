@@ -206,9 +206,6 @@ interface RepositoryModule {
     fun authRepository(repository: TdlibAuthRepository): AuthRepository
 
     @Binds
-    fun appLockRepository(repository: DefaultAppLockRepository): AppLockRepository
-
-    @Binds
     fun chatLockRepository(repository: DefaultChatLockRepository): ChatLockRepository
 
     @Binds

@@ -35,17 +35,16 @@ class DefaultAppLockRepositoryTest {
     private val time = TestTimeSource()
 
     private fun TestScope.lock(passcodes: FakePasscodeRepository): DefaultAppLockRepository =
-        DefaultAppLockRepository(
-            passcodeRepository = passcodes,
-            authRepository =
-                TdlibAuthRepository(
-                    client,
-                    StandardTestDispatcher(testScheduler),
-                    testScheduler.timeSource,
-                ),
-            scope = backgroundScope,
-            timeSource = time,
-        ).also { runCurrent() }
+        TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
+            .let { auth ->
+                DefaultAppLockRepository(
+                    passcodeRepository = passcodes,
+                    authSteps = auth.authStep,
+                    logOut = auth::logOut,
+                    scope = backgroundScope,
+                    timeSource = time,
+                )
+            }.also { runCurrent() }
 
     private fun withPasscode(autoLock: AutoLock = AutoLock.OneMinute) =
         FakePasscodeRepository(PasscodeSettings(autoLock = autoLock), passcode = "1234")
@@ -67,7 +66,14 @@ class DefaultAppLockRepositoryTest {
         runTest {
             val authRepository =
                 TdlibAuthRepository(client, StandardTestDispatcher(testScheduler), testScheduler.timeSource)
-            val lock = DefaultAppLockRepository(withPasscode(), authRepository, backgroundScope, time)
+            val lock =
+                DefaultAppLockRepository(
+                    withPasscode(),
+                    authRepository.authStep,
+                    authRepository::logOut,
+                    backgroundScope,
+                    time,
+                )
 
             assertEquals(LockState.Unknown, lock.state.value)
             runCurrent()

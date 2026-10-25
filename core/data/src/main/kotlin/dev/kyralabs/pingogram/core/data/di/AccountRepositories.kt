@@ -93,8 +93,6 @@ import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 interface AccountRepositories {
     fun authRepository(): AuthRepository
 
-    fun appLockRepository(): AppLockRepository
-
     fun chatLockRepository(): ChatLockRepository
 
     fun connectionRepository(): ConnectionRepository
