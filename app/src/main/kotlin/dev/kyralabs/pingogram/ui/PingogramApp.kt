@@ -33,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.account.AccountMenuSource
 import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
@@ -134,8 +135,10 @@ fun PingogramApp(
     shares: ShareInbox? = null,
     shareToOpen: IncomingShare? = null,
     onShareOpened: () -> Unit = {},
+    accounts: AccountMenuSource? = null,
 ) {
     val currentEntry = navController.screenEntryAsState()
+    val accountMenu = rememberAccountMenu(accounts)
     // Derived, so that only entering or leaving the main graph or a tab recomposes the shell, not every destination.
     val inMainGraph by remember(currentEntry) { derivedStateOf { currentEntry.value?.destination.isInMainGraph() } }
     val showNavigation by remember(currentEntry) {
@@ -168,7 +171,9 @@ fun PingogramApp(
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
-                navigationItems = { PingogramNavigationItems(navController, adaptiveType, tabReselection) },
+                navigationItems = {
+                    PingogramNavigationItems(navController, adaptiveType, tabReselection, accountMenu)
+                },
                 navigationSuiteType = if (showRail) adaptiveType else NavigationSuiteType.None,
                 // The scaffold shows its primary action even without navigation.
                 primaryActionContent = { if (showRail) RailSearchButton(adaptiveType, searchOpen, search, openSearch) },
@@ -208,6 +213,7 @@ fun PingogramApp(
                             onSearch = openSearch,
                             searchOpen = searchOpen,
                             search = search,
+                            accountMenu = accountMenu,
                             modifier =
                                 Modifier
                                     .align(Alignment.BottomCenter)
@@ -351,33 +357,43 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
 /**
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only
  * the items and never the `NavHost` content. Tapping the item of the tab the user is on, not a screen pushed above it,
- * reports it to [tabReselection], whose screen scrolls back to the top.
+ * reports it to [tabReselection], whose screen scrolls back to the top. With an [accountMenu], a long press on the
+ * Settings item opens it ([AccountMenuAnchor]).
  */
 @Composable
 private fun PingogramNavigationItems(
     navController: NavController,
     navigationSuiteType: NavigationSuiteType,
     tabReselection: TabReselection,
+    accountMenu: AccountMenuActions?,
 ) {
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentEntry?.destination
     TopLevelDestination.entries.forEach { destination ->
         val selected = currentDestination.isInHierarchy(destination)
-        NavigationSuiteItem(
-            selected = selected,
-            onClick = {
-                navController.selectTab(destination, currentDestination.topLevelDestination(), tabReselection)
-            },
-            icon = {
-                Icon(
-                    painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
-                    // The label below names the item for accessibility services.
-                    contentDescription = null,
-                )
-            },
-            label = { Text(stringResource(destination.label)) },
-            navigationSuiteType = navigationSuiteType,
-        )
+        AccountMenuAnchor(
+            menu = accountMenu?.state?.takeIf { destination == TopLevelDestination.Settings },
+            onSwitch = { accountMenu?.onSwitch?.invoke(it) },
+            onAdd = { accountMenu?.onAdd?.invoke() },
+        ) { trigger ->
+            NavigationSuiteItem(
+                selected = selected,
+                onClick = {
+                    navController.selectTab(destination, currentDestination.topLevelDestination(), tabReselection)
+                },
+                icon = {
+                    Icon(
+                        painter =
+                            painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+                        // The label below names the item for accessibility services.
+                        contentDescription = null,
+                    )
+                },
+                label = { Text(stringResource(destination.label)) },
+                navigationSuiteType = navigationSuiteType,
+                modifier = trigger,
+            )
+        }
     }
 }
 
