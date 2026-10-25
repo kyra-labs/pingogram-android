@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -52,7 +53,7 @@ class AccountMenuScreenshotTest {
     fun highContrast() = capture("highContrast", ThemeMode.Light, contrast = Contrast.High)
 
     @Test
-    @Config(qualifiers = "w411dp-h891dp-xxhdpi-ldrtl")
+    @Config(qualifiers = "ldrtl-w411dp-h891dp-xxhdpi")
     fun rtl() = capture("rtl", ThemeMode.Light)
 
     @Test
@@ -80,7 +81,10 @@ class AccountMenuScreenshotTest {
             }
         }
         val settings = RuntimeEnvironment.getApplication().getString(R.string.nav_settings)
-        composeRule.onNode(hasText(settings) and isSelectable()).performTouchInput { longClick() }
+        // At large font scales the tabs that are not selected show icons named by their labels.
+        composeRule
+            .onNode((hasText(settings) or hasContentDescription(settings)) and isSelectable())
+            .performTouchInput { longClick() }
         composeRule.waitForIdle()
         captureScreenRoboImage("src/test/snapshots/${javaClass.name}.$name.png")
     }
