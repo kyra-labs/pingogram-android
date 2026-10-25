@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
@@ -146,6 +147,18 @@ interface MessageActionRepository {
         option: ReportOptionId,
         text: String = "",
     ): Outcome<ChatReportResult>
+
+    /**
+     * The link to message [messageId] of chat [chatId], a supergroup's or a channel's (td_api.tl `getMessageLink`;
+     * `MessageProperties.canGetLink`): to its whole album if [forAlbum], and to it in its forum topic or message
+     * thread, or as a channel post's comment, if [inThread]. A private chat's link opens only for its members.
+     */
+    suspend fun messageLink(
+        chatId: Long,
+        messageId: Long,
+        forAlbum: Boolean,
+        inThread: Boolean,
+    ): Outcome<MessageLink>
 
     companion object {
         /** How many messages [forward] takes at once (td_api.tl `forwardMessages.message_ids`). */

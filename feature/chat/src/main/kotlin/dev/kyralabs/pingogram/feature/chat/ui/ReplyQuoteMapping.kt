@@ -10,7 +10,8 @@ import dev.kyralabs.pingogram.core.ui.text.previewOf
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
- * The quote of the replied message ([reply]): its sender and preview (the quoted part, if the sender quoted one), from
+ * The quote of the replied message ([reply]): its sender and preview (the quoted part, marked as a quote, if the sender
+ * quoted one), from
  * the loaded or fetched message; the origin and content TDLib bundled for a message of another chat while there is
  * none; otherwise what keeps it from showing: loading, deleted, unavailable. A reply to a story quotes the story.
  * A replied message of this chat opens from the quote, even one that is gone: tapping it then says so.
@@ -26,7 +27,7 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
             val you = UiText.resource(R.string.preview_sender_you)
             val sender = if (replied.isOutgoing) you else fullNameOf(reply.repliedSender)
             val text = replyTo.quote?.let(::previewOf) ?: messagePreviewText(replied, myUserId, ::shortNameOf)
-            ReplyQuote(sender, replied.sender.id, text, opens)
+            ReplyQuote(sender, replied.sender.id, text, opens, isQuote = replyTo.quote != null)
         }
 
         origin != null -> {
@@ -34,7 +35,7 @@ internal fun ItemInputs.toQuote(reply: ReplyInputs): ReplyQuote {
                 replyTo.quote?.let(::previewOf)
                     ?: replyTo.content?.let(::contentKindText)
                     ?: UiText.resource(ChatR.string.chat_reply_message)
-            ReplyQuote(originName(origin, reply.origin), origin.id, text, opens)
+            ReplyQuote(originName(origin, reply.origin), origin.id, text, opens, isQuote = replyTo.quote != null)
         }
 
         else -> {

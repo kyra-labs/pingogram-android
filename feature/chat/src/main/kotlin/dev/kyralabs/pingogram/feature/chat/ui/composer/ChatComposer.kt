@@ -9,7 +9,9 @@ import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
+import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEffect
@@ -41,13 +43,17 @@ import kotlinx.coroutines.launch
  *   ([ComposerMode.Replying]), which clears the chat's draft; the message shows through the history. A refused message
  *   comes back into the field, if it is still empty, with its reply and a snackbar ([ChatEffect.ShowError]); a
  *   scheduled one is confirmed with [ChatEffect.MessageScheduled].
- * - **Replying** ([reply], [cancelReply]) changes what the next message replies to, and the draft with it. A message
- *   sent from the attach menu takes the reply along ([takeReply]) and gives it back if it is refused ([restoreReply]).
+ * - **Replying** ([reply], [cancelReply]) changes what the next message replies to, and the draft with it: a message
+ *   of the chat, the part of its text the user quoted (a quote reply), or a message of another chat ([replyElsewhere],
+ *   "Reply in another chat"). A message sent from the attach menu takes the reply along ([takeReply]) and gives it
+ *   back if it is refused ([restoreReply]).
  * - **Editing** ([edit]) saves the draft as it is, keeps the composer's text and reply aside ([ComposerStash]), and
  *   fills the field with the message's text or caption. Drafts are left alone meanwhile. [send] then leaves the edit
  *   at once, giving the composer back what it held, and sends the edit ([MessageActionRepository.editText] or
  *   `editCaption`, from [messageOf]'s message); nothing when the text did not change. A refused edit comes back, if
  *   the composer is still as the edit left it, with a snackbar. [cancelEdit] gives the composer back without editing.
+ *   Replacing the edited message's media ([takeMediaEdit]) leaves the edit the same way, with its text as the new
+ *   media's caption, and [restoreMediaEdit] brings it back when Telegram refuses the new media.
  * - **Shared text** ([addShared], direct share) joins the field once the chat's draft is known, for the user to send.
  * - **Process death**: the text, its formatting and the mode are kept in [savedState] on every change.
  *
@@ -84,7 +90,7 @@ internal class ChatComposer(
     private var chatDraft: ComposerDraft? = null
 
     /** The drafts saved and not echoed back yet, oldest first, by [echoKey]. */
-    private val echoes = ArrayDeque<Pair<String, Long?>>()
+    private val echoes = ArrayDeque<EchoKey>()
 
     private var pendingSave: Job? = null
 
@@ -108,10 +114,24 @@ internal class ChatComposer(
         isFocused = focused
     }
 
-    /** The next message replies to message [messageId]; an edit in progress is cancelled first. */
-    fun reply(messageId: Long) {
+    /**
+     * The next message replies to message [messageId] of the chat, quoting [quote] of its text if not null; an edit in
+     * progress is cancelled first.
+     */
+    fun reply(
+        messageId: Long,
+        quote: TextQuote? = null,
+    ) = replyAs(ReplyTarget(messageId, quote))
+
+    /**
+     * The next message replies to [target], a message of another chat handed over by its conversation ("Reply in
+     * another chat"); an edit in progress is cancelled first.
+     */
+    fun replyElsewhere(target: ReplyTarget) = replyAs(target)
+
+    private fun replyAs(target: ReplyTarget) {
         cancelEdit()
-        setMode(ComposerMode.Replying(messageId))
+        setMode(ComposerMode.Replying(target))
         scheduleSave()
     }
 
@@ -119,17 +139,17 @@ internal class ChatComposer(
      * The message the next message replies to, for a message sent from the attach menu, which takes the reply along:
      * the reply ends, as sending a text ends it, and the draft follows. Null when the composer replies to nothing.
      */
-    override fun takeReply(): Long? {
+    override fun takeReply(): ReplyTarget? {
         val replying = mode.value as? ComposerMode.Replying ?: return null
         setMode(ComposerMode.Writing)
         scheduleSave()
-        return replying.messageId
+        return replying.target
     }
 
-    /** Replies to [messageId] again after what [takeReply] gave it to was refused, unless a reply or edit began. */
-    override fun restoreReply(messageId: Long) {
+    /** Replies as [target] again after what [takeReply] gave it to was refused, unless a reply or edit began. */
+    override fun restoreReply(target: ReplyTarget) {
         if (mode.value != ComposerMode.Writing) return
-        setMode(ComposerMode.Replying(messageId))
+        setMode(ComposerMode.Replying(target))
         scheduleSave()
     }
 
@@ -142,9 +162,13 @@ internal class ChatComposer(
 
     /**
      * Edits [message]: saves the draft now if it changed, keeps the composer's text and reply aside (those of the edit
-     * it replaces, if one is in progress), and fills the field with the message's text or caption.
+     * it replaces, if one is in progress), and fills the field with the message's text or caption. Its media can be
+     * replaced from [replace]'s picker, if not null.
      */
-    fun edit(message: Message) {
+    fun edit(
+        message: Message,
+        replace: ReplaceMedia? = null,
+    ) {
         val stash =
             when (val current = mode.value) {
                 is ComposerMode.Editing -> {
@@ -155,10 +179,10 @@ internal class ChatComposer(
                     pendingSave?.cancel()
                     // Undispatched: the draft is read before the field changes below.
                     scope.launch(start = CoroutineStart.UNDISPATCHED) { saveDraft() }
-                    ComposerStash(text.content, current.replyToMessageId)
+                    ComposerStash(text.content, current.replyTo)
                 }
             }
-        setMode(ComposerMode.Editing(message.id, stash))
+        setMode(ComposerMode.Editing(message.id, stash, replace))
         text.setContent(message.editableText)
     }
 
@@ -181,7 +205,7 @@ internal class ChatComposer(
     fun send(options: SendOptions) {
         when (val current = mode.value) {
             is ComposerMode.Editing -> saveEdit(current)
-            else -> sendMessage(options, current.replyToMessageId)
+            else -> sendMessage(options, current.replyTo)
         }
     }
 
@@ -196,7 +220,7 @@ internal class ChatComposer(
 
     private fun sendMessage(
         options: SendOptions,
-        replyTo: Long?,
+        replyTo: ReplyTarget?,
     ) {
         val content = text.content
         if (content.text.isBlank()) return
@@ -264,13 +288,36 @@ internal class ChatComposer(
     }
 
     /**
+     * Leaves the edit in progress for the replacement of its message's media, as saving it does: the composer gets back
+     * what it held, and the edit's text is the new media's caption. Null while not editing a message whose media can be
+     * replaced, or when that message is gone.
+     */
+    fun takeMediaEdit(): MediaEdit? {
+        val (editing, message) =
+            (mode.value as? ComposerMode.Editing)
+                ?.takeIf { it.replace != null }
+                ?.let { editing -> messageOf(editing.messageId)?.let { editing to it } } ?: return null
+        val caption = text.content
+        val restored = restore(editing.stash)
+        val showAbove = (message.editTarget as? EditTarget.Caption)?.showAboveMedia == true
+        return MediaEdit(editing, caption, showAbove, restored.mode, restored.text)
+    }
+
+    /** Brings back [edit] after Telegram refused its new media, if the composer still holds what it gave back. */
+    fun restoreMediaEdit(edit: MediaEdit) {
+        if (mode.value != edit.restoredMode || text.content != edit.restoredText) return
+        setMode(edit.editing)
+        text.setContent(edit.caption)
+    }
+
+    /**
      * Gives the composer back [stash]: its text and reply. An empty stash takes the chat's draft instead, which may
      * have changed on another device meanwhile and would otherwise be removed.
      */
     private fun restore(stash: ComposerStash): Restored {
         val draft = chatDraft
-        val restored = if (stash.isEmpty && draft != null) ComposerStash(draft.text, draft.replyToMessageId) else stash
-        val mode = restored.replyToMessageId?.let(ComposerMode::Replying) ?: ComposerMode.Writing
+        val restored = if (stash.isEmpty && draft != null) ComposerStash(draft.text, draft.replyTo) else stash
+        val mode = restored.replyTo?.let { ComposerMode.Replying(it) } ?: ComposerMode.Writing
         setMode(mode)
         text.setContent(restored.text)
         return Restored(mode, restored.text)
@@ -295,11 +342,11 @@ internal class ChatComposer(
         // An edit is not a draft: the draft stays as it was before the edit. Before TDLib reported the chat's draft,
         // saving could overwrite one not shown yet.
         val known = chatDraft?.takeIf { current !is ComposerMode.Editing } ?: return
-        val draft = ComposerDraft(text.content, current.replyToMessageId)
+        val draft = ComposerDraft(text.content, current.replyTo)
         if (draft == known) return
         chatDraft = draft
         remember(draft)
-        repository.setDraft(chatId, draft.text, draft.replyToMessageId).onFailure { error ->
+        repository.setDraft(chatId, draft.text, draft.replyTo).onFailure { error ->
             log.warn("setChatDraftMessage failed: ${error::class.simpleName}")
         }
     }
@@ -308,7 +355,7 @@ internal class ChatComposer(
         val reported =
             ComposerDraft(
                 text = (draft?.content as? DraftContent.Text)?.text ?: FormattedText.Empty,
-                replyToMessageId = draft?.replyToMessageId,
+                replyTo = draft?.replyTo,
             )
         val echo = echoes.indexOf(reported.echoKey)
         if (echo >= 0) {
@@ -321,7 +368,7 @@ internal class ChatComposer(
         chatDraft = reported
         val fills = !isFocused && text.isEmpty && mode.value == ComposerMode.Writing && !reported.isEmpty
         if (fills) {
-            reported.replyToMessageId?.let { setMode(ComposerMode.Replying(it)) }
+            reported.replyTo?.let { setMode(ComposerMode.Replying(it)) }
             text.setContent(reported.text)
         }
         draftReported.complete(Unit)
@@ -347,20 +394,30 @@ internal class ChatComposer(
         if (echoes.size > MAX_ECHOES) echoes.removeFirst()
     }
 
-    /** A draft as the composer compares it: the text with its formatting, and the message it replies to. */
+    /** A draft as the composer compares it: the text with its formatting, and what it replies to. */
     private data class ComposerDraft(
         val text: FormattedText,
-        val replyToMessageId: Long?,
+        val replyTo: ReplyTarget?,
     ) {
-        val isEmpty: Boolean get() = text.text.isEmpty() && replyToMessageId == null
+        val isEmpty: Boolean get() = text.text.isEmpty() && replyTo == null
 
-        /** How its echo is recognized: the trimmed text (TDLib may trim a draft) and the reply. */
-        val echoKey: Pair<String, Long?> get() = text.text.trim() to replyToMessageId
+        /**
+         * How its echo is recognized: the trimmed text (TDLib may trim a draft) and the replied message, not the
+         * quote, which TDLib may give back in another form.
+         */
+        val echoKey: EchoKey get() = EchoKey(text.text.trim(), replyTo?.messageId, replyTo?.chatId)
 
         companion object {
-            val Empty = ComposerDraft(FormattedText.Empty, replyToMessageId = null)
+            val Empty = ComposerDraft(FormattedText.Empty, replyTo = null)
         }
     }
+
+    /** What recognizes a draft's echo ([ComposerDraft.echoKey]). */
+    private data class EchoKey(
+        val text: String,
+        val replyToMessageId: Long?,
+        val replyChatId: Long?,
+    )
 
     /** What [restore] gave the composer back. */
     private class Restored(
@@ -389,3 +446,16 @@ internal fun FormattedText.followedBy(next: FormattedText): FormattedText {
     val moved = next.entities.map { it.copy(offset = it.offset + offset) }
     return FormattedText("$text\n${next.text}", (entities + moved).toImmutableList())
 }
+
+/**
+ * An edit left for the replacement of its message's media ([ChatComposer.takeMediaEdit]): the [editing] mode, its text
+ * as the new [caption] (above the media if [showCaptionAboveMedia], as the message had it), and what the composer was
+ * given back ([restoredMode], [restoredText]), which [ChatComposer.restoreMediaEdit] checks.
+ */
+internal class MediaEdit(
+    val editing: ComposerMode.Editing,
+    val caption: FormattedText,
+    val showCaptionAboveMedia: Boolean,
+    val restoredMode: ComposerMode,
+    val restoredText: FormattedText,
+)

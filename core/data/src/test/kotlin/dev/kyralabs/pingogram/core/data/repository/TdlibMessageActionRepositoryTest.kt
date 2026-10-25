@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOption
@@ -679,6 +680,68 @@ class TdlibMessageActionRepositoryTest {
                 val result = repository.report(CHAT, listOf(MESSAGE), ReportOptionId.Initial)
 
                 assertEquals(Outcome.Failure(DomainError.FloodWait(30)), result)
+            }
+    }
+
+    @Nested
+    inner class Links {
+        @Test
+        fun `the rights to reply in another chat, copy a link and replace the media are mapped`() =
+            runTest {
+                val properties =
+                    TdApi.MessageProperties().apply {
+                        canBeRepliedInAnotherChat = true
+                        canGetLink = true
+                        canEditMedia = true
+                        customEmojiIds = longArrayOf()
+                    }
+                client.on(TdApi.GetMessageProperties::class, TdResult.Success(properties))
+
+                val result = (repository.properties(CHAT, MESSAGE) as Outcome.Success).value
+
+                assertEquals(
+                    listOf(true, true, true),
+                    listOf(result.canBeRepliedInAnotherChat, result.canGetLink, result.canEditMedia),
+                )
+            }
+
+        @Test
+        fun `a message's link comes from TDLib, for its album and in its thread as asked`() =
+            runTest {
+                val link = TdApi.MessageLink("https://t.me/c/1/10", false)
+                client.on(TdApi.GetMessageLink::class, TdResult.Success(link))
+
+                val plain = repository.messageLink(CHAT, MESSAGE, forAlbum = false, inThread = false)
+                repository.messageLink(CHAT, MESSAGE, forAlbum = true, inThread = true)
+
+                assertEquals(Outcome.Success(MessageLink("https://t.me/c/1/10", isPublic = false)), plain)
+                assertEquals(
+                    listOf(
+                        listOf<Any>(CHAT, MESSAGE, 0, 0, "", false, false),
+                        listOf<Any>(CHAT, MESSAGE, 0, 0, "", true, true),
+                    ),
+                    client.sentOf<TdApi.GetMessageLink>().map {
+                        listOf(
+                            it.chatId,
+                            it.messageId,
+                            it.mediaTimestamp,
+                            it.checklistTaskId,
+                            it.pollOptionId,
+                            it.forAlbum,
+                            it.inMessageThread,
+                        )
+                    },
+                )
+            }
+
+        @Test
+        fun `a link TDLib cannot make fails with its error`() =
+            runTest {
+                client.on(TdApi.GetMessageLink::class, TdResult.Failure(TdError(400, "Message links are unavailable")))
+
+                val result = repository.messageLink(CHAT, MESSAGE, forAlbum = false, inThread = false)
+
+                assertEquals(true, result is Outcome.Failure)
             }
     }
 

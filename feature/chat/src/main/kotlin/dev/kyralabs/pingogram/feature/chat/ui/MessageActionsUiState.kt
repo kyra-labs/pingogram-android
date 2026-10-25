@@ -1,6 +1,8 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.compose.runtime.Immutable
+import dev.kyralabs.pingogram.core.domain.model.Chat
+import dev.kyralabs.pingogram.core.domain.model.ChatType
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
@@ -78,14 +80,18 @@ enum class ReactionSectionKind {
 /**
  * The actions every bubble offers screen readers directly (`docs/DESIGN_SYSTEM.md` §9), besides opening its actions
  * sheet: replying where the user can write ([canReply]), copying a text where the chat lets its content be saved
- * ([canCopy]), forwarding a channel post from its share button where the chat lets its messages be forwarded
- * ([canForward]: no protected content, not a secret chat). They are checked against TDLib when chosen, like the
- * sheet's.
+ * ([canCopy]), replying in another chat where the chat's content may leave it ([canReplyElsewhere]), copying a
+ * message's link in supergroups and channels ([canCopyLink]; to it in this topic or thread where [linksInThread]),
+ * forwarding a channel post from its share button where the chat lets its messages be forwarded ([canForward]: no
+ * protected content, not a secret chat). They are checked against TDLib when chosen, like the sheet's.
  */
 @Immutable
 data class MessageShortcuts(
     val canReply: Boolean = false,
     val canCopy: Boolean = false,
+    val canReplyElsewhere: Boolean = false,
+    val canCopyLink: Boolean = false,
+    val linksInThread: Boolean = false,
     val canForward: Boolean = false,
 )
 
@@ -103,8 +109,17 @@ enum class MessageAction {
     /** Reply to it from the composer. */
     Reply,
 
+    /** Reply to it from another chat's composer, picked in a sheet ("Reply in another chat"). */
+    ReplyElsewhere,
+
     /** Copy its text or caption, as plain text. */
     Copy,
+
+    /** Copy its link (supergroups and channels; an album's link for an album's item). */
+    CopyLink,
+
+    /** Copy its link in the conversation's forum topic or message thread. */
+    CopyThreadLink,
 
     /** Show Telegram's translation of its text or caption in its bubble (`ChatTranslation`). */
     Translate,
@@ -212,3 +227,21 @@ sealed interface DeleteScope {
         val option: UiText,
     ) : DeleteScope
 }
+
+/**
+ * What screen readers and the bubbles get directly in this chat: replying where the user can write ([canWrite]),
+ * copying, replying in another chat and forwarding where its content may leave it (not secret chats for the latter
+ * two), message links in supergroups and channels, to the message in the topic or thread where the conversation is
+ * one ([inThread]).
+ */
+internal fun Chat.shortcuts(
+    canWrite: Boolean,
+    inThread: Boolean,
+) = MessageShortcuts(
+    canReply = canWrite,
+    canCopy = !hasProtectedContent,
+    canReplyElsewhere = !hasProtectedContent && type !is ChatType.Secret,
+    canForward = !hasProtectedContent && type !is ChatType.Secret,
+    canCopyLink = type is ChatType.Supergroup,
+    linksInThread = inThread,
+)

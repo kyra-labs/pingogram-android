@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.AvailableReactions
 import dev.kyralabs.pingogram.core.domain.model.ChatReportResult
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
+import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
 import dev.kyralabs.pingogram.core.domain.model.ReportOption
@@ -33,7 +34,8 @@ import javax.inject.Singleton
  * `updateMessageIsPinned`, `updateDeleteMessages`, `updateMessageSendFailed`), which `TdlibMessageRepository` applies.
  * TDLib applies reactions, deletions and pins at once, before Telegram confirms them; edits once Telegram has them.
  * Forwarded messages reach the target chat's history as new messages being sent (`updateNewMessage`). Reports go to
- * Telegram's moderators (`reportChat`), one request per step the user takes.
+ * Telegram's moderators (`reportChat`), one request per step the user takes. Message links are TDLib's
+ * (`getMessageLink`), which asks Telegram for a private chat's.
  */
 @Suppress("TooManyFunctions") // One function per message action of the interface, each a single TDLib request.
 @Singleton
@@ -54,6 +56,9 @@ class TdlibMessageActionRepository
                     canBeDeletedOnlyForSelf = properties.canBeDeletedOnlyForSelf,
                     canBeDeletedForAllUsers = properties.canBeDeletedForAllUsers,
                     canBeSaved = properties.canBeSaved,
+                    canBeRepliedInAnotherChat = properties.canBeRepliedInAnotherChat,
+                    canGetLink = properties.canGetLink,
+                    canEditMedia = properties.canEditMedia,
                     canBeForwarded = properties.canBeForwarded,
                     canBeCopied = properties.canBeCopied,
                     canBeCopiedToSecretChat = properties.canBeCopiedToSecretChat,
@@ -247,6 +252,17 @@ class TdlibMessageActionRepository
             client
                 .request(TdApi.ReportChat(chatId, option.bytes, messageIds.toLongArray(), text))
                 .map { it.toChatReportResult() }
+
+        /** `getMessageLink` without a media timestamp, checklist task or poll option. */
+        override suspend fun messageLink(
+            chatId: Long,
+            messageId: Long,
+            forAlbum: Boolean,
+            inThread: Boolean,
+        ): Outcome<MessageLink> =
+            client
+                .request(TdApi.GetMessageLink(chatId, messageId, 0, 0, "", forAlbum, inThread))
+                .map { MessageLink(it.link, it.isPublic) }
 
         private companion object {
             /** Sent at once, with a notification: the forward sheet offers no options for that. */

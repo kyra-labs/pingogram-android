@@ -98,7 +98,8 @@ import java.time.Instant
  *
  * [onSend] gets what to send once the user asked for it (the edit, while editing); [onFocusChanged] whether the text
  * field has the focus; [focus] asks the field for the focus when the user starts a reply or an edit. The bar shows its
- * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]. The attach button, where the
+ * message through [onShowBarMessage] and ends the reply or edit through [onCloseBar]; its "Replace", while editing a
+ * message whose media can be replaced, goes to [onReplaceMedia]. The attach button, where the
  * chat takes attachments and the composer does not edit, opens the attach menu through [onAttach], and the gallery
  * button at the field's end, while it is empty, the system photo picker through [onGallery]. The microphone in
  * the send button's place records voice messages ([recording], the one in progress; what the user does goes to
@@ -129,6 +130,7 @@ internal fun ChatBottomBar(
     focus: ComposerFocusState = rememberComposerFocusState(),
     onShowBarMessage: (messageId: Long) -> Unit = {},
     onCloseBar: () -> Unit = {},
+    onReplaceMedia: () -> Unit = {},
     onAttach: () -> Unit = {},
     onGallery: () -> Unit = {},
     recording: VoiceRecordingUiState? = null,
@@ -178,7 +180,7 @@ internal fun ChatBottomBar(
                     ) {
                         CommandSuggestionsArea(bots, suggestionsState, enabled = recording == null)
                         InlineResultsArea(inline, inlineState, enabled = recording == null, now = now)
-                        BarArea(composer.bar, onShowBarMessage, onCloseBar)
+                        BarArea(composer.bar, onShowBarMessage, onCloseBar, onReplaceMedia)
                         Composer(
                             composer,
                             text,
@@ -236,6 +238,7 @@ private fun BarArea(
     bar: ComposerBar?,
     onShow: (messageId: Long) -> Unit,
     onClose: () -> Unit,
+    onReplace: () -> Unit,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     var shown by remember { mutableStateOf(bar) }
@@ -245,7 +248,7 @@ private fun BarArea(
         enter = expandVertically(motionScheme.defaultSpatialSpec()) + fadeIn(motionScheme.defaultEffectsSpec()),
         exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec()),
     ) {
-        shown?.let { ComposerBarRow(it, onShow, onClose) }
+        shown?.let { ComposerBarRow(it, onShow, onClose, onReplace = onReplace) }
     }
 }
 

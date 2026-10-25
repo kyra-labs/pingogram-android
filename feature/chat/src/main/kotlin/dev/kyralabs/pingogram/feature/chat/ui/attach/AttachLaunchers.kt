@@ -24,7 +24,9 @@ import androidx.compose.ui.platform.LocalResources
 import dev.kyralabs.pingogram.core.ui.file.cameraFileUri
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.ChatEvent
+import dev.kyralabs.pingogram.feature.chat.ui.ReplyEvent
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerText
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.location.LocationInputs
 import dev.kyralabs.pingogram.feature.chat.ui.location.ShareLocationEvent
 import kotlinx.coroutines.launch
@@ -40,6 +42,8 @@ import kotlinx.coroutines.launch
  * - **Camera**: the camera app, `ACTION_IMAGE_CAPTURE` into the content URI of the view model's camera file
  *   ([cameraFileUri]). The app declares no camera permission, so the camera app needs none from it.
  * - **Contact**: the contact picker, for a phone number ([PickContactPhone]).
+ * - **Replacing media** ([replace], `REQUIREMENTS.md` FR-C6): one photo or video from the Photo Picker, or one file
+ *   from the document picker, for the message being edited.
  */
 @Stable
 internal class AttachLaunchers(
@@ -48,6 +52,7 @@ internal class AttachLaunchers(
     private val files: ManagedActivityResultLauncher<Array<String>, List<Uri>>,
     private val camera: ManagedActivityResultLauncher<Uri, Boolean>,
     private val contact: ManagedActivityResultLauncher<Unit, Uri?>,
+    private val replacement: ReplacementLaunchers,
 ) {
     /** Whether the device has a camera; without one the menu offers none. */
     val hasCamera: Boolean get() = context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
@@ -74,6 +79,19 @@ internal class AttachLaunchers(
 
             AttachOption.Camera, AttachOption.Location, AttachOption.Poll -> {
                 false
+            }
+        }
+
+    /** Opens the picker of one [kind] of media that replaces the edited message's; false when no app opens. */
+    fun replace(kind: ReplaceMedia): Boolean =
+        when (kind) {
+            ReplaceMedia.Media -> {
+                val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                launching { replacement.media.launch(request) }
+            }
+
+            ReplaceMedia.Document -> {
+                launching { replacement.file.launch(arrayOf(ANY_TYPE)) }
             }
         }
 
@@ -116,11 +134,26 @@ internal fun rememberAttachLaunchers(onEvent: (ChatEvent) -> Unit): AttachLaunch
         rememberLauncherForActivityResult(PickContactPhone()) { uri ->
             uri?.let { currentOnEvent(ChatEvent.AttachContact(it.toString())) }
         }
+    val replacementMedia =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri?.let { currentOnEvent(ReplyEvent.ReplacementPicked(it.toString())) }
+        }
+    val replacementFile =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let { currentOnEvent(ReplyEvent.ReplacementPicked(it.toString())) }
+        }
     val context = LocalContext.current
-    return remember(context, gallery, files, camera, contact) {
-        AttachLaunchers(context, gallery, files, camera, contact)
+    return remember(context, gallery, files, camera, contact, replacementMedia, replacementFile) {
+        val replacement = ReplacementLaunchers(replacementMedia, replacementFile)
+        AttachLaunchers(context, gallery, files, camera, contact, replacement)
     }
 }
+
+/** The pickers of one photo or video ([media]) and of one file ([file]) that replace the edited message's media. */
+internal class ReplacementLaunchers(
+    val media: ManagedActivityResultLauncher<PickVisualMediaRequest, Uri?>,
+    val file: ManagedActivityResultLauncher<Array<String>, Uri?>,
+)
 
 /**
  * What the conversation's attach menu works with, from its route: [onPick] opens the picker of the option chosen in

@@ -370,6 +370,7 @@ private fun ChatScreenBottomBar(
                 focus = composerFocus,
                 onShowBarMessage = { onEvent(ChatEvent.OpenReply(it)) },
                 onCloseBar = { onEvent(if (editing) ChatEvent.CancelEdit else ChatEvent.CancelReply) },
+                onReplaceMedia = { onEvent(ReplyEvent.ReplaceMedia) },
                 onAttach = { onAttach(null) },
                 onGallery = { onAttach(AttachOption.Gallery) },
                 recording = recording,

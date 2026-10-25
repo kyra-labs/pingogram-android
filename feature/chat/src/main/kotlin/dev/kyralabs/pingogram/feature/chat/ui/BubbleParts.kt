@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,9 +48,10 @@ import dev.kyralabs.pingogram.feature.chat.R
 // secondaryContainer).
 
 /**
- * The replied message: a tonal card, the name in the sender's color over one line of its text. With [onOpen] it is a
- * button that shows the replied message, with its state layer clipped to the card. Inside a bubble, screen readers
- * reach it as the bubble's custom action instead ([replyAction]).
+ * The replied message: a tonal card, the name in the sender's color over one line of its text, which a quote reply
+ * starts with a quote mark (Material Symbols `format_quote` at `sizes.inlineIconSmall`, in the card's content color).
+ * With [onOpen] it is a button that shows the replied message, with its state layer clipped to the card. Inside a
+ * bubble, screen readers reach it as the bubble's custom action instead ([replyAction]).
  */
 @Composable
 internal fun ReplyQuoteBlock(
@@ -71,13 +74,26 @@ internal fun ReplyQuoteBlock(
                 style = MaterialTheme.typography.labelLarge.userContent,
             )
         }
-        Text(
-            text = reply.text.resolve(),
-            color = colors.blockContent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium.userContent,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (reply.isQuote) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_format_quote),
+                    contentDescription = null,
+                    modifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall),
+                    tint = colors.blockContent,
+                )
+            }
+            Text(
+                text = reply.text.resolve(),
+                color = colors.blockContent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium.userContent,
+            )
+        }
     }
 }
 

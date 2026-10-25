@@ -36,6 +36,17 @@ internal object AttachPreviewData {
                 ),
         )
 
+    /** A photo picked to replace the media of the message being edited. */
+    val replacement =
+        AttachPreview(
+            kind = AttachmentKind.Media,
+            items =
+                persistentListOf(
+                    PreviewItem.Ready(0, Attachment.Photo("/cache/uploads/f/sunset.jpg", 920_000, 2560, 1920)),
+                ),
+            isReplacement = true,
+        )
+
     val files =
         AttachPreview(
             kind = AttachmentKind.Document,

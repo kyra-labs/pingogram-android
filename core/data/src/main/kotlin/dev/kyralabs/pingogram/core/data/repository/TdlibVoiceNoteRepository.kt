@@ -6,8 +6,10 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageVoiceNote
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
@@ -54,10 +56,10 @@ class TdlibVoiceNoteRepository
             chatId: Long,
             voiceNote: RecordedVoiceNote,
             options: SendOptions,
-            replyToMessageId: Long?,
+            replyTo: ReplyTarget?,
         ): Outcome<Unit> {
             val content = voiceNote.toInputMessageVoiceNote()
-            val result = client.sendMessage(chatId, content, options, replyToMessageId?.let(::replyToMessage))
+            val result = client.sendMessage(chatId, content, options, replyTo?.toInputMessageReplyTo())
             if (result is Outcome.Failure) discardVoiceNote(voiceNote.path)
             return result
         }

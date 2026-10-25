@@ -49,6 +49,7 @@ import dev.kyralabs.pingogram.core.domain.repository.SharedStorageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SponsoredMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
 import dev.kyralabs.pingogram.core.domain.repository.VoiceNoteRepository
+import dev.kyralabs.pingogram.core.ui.text.messagePreviewText
 import dev.kyralabs.pingogram.core.ui.time.TimePatterns
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachOption
 import dev.kyralabs.pingogram.feature.chat.ui.attach.AttachPreview
@@ -80,6 +81,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerUiState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.composerState
 import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
+import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
 import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
@@ -91,6 +93,9 @@ import dev.kyralabs.pingogram.feature.chat.ui.poll.ChatPolls
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollDialog
 import dev.kyralabs.pingogram.feature.chat.ui.poll.withPollChoices
+import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatMediaReplacement
+import dev.kyralabs.pingogram.feature.chat.ui.reply.ChatReplyElsewhere
+import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsSheet
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ChatScheduledMessages
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.nextText
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearch
@@ -203,6 +208,10 @@ import java.util.Locale
  * - **Message actions** ([ChatMessageActions]): the actions sheet of a long-pressed message, with what TDLib allows for
  *   it ([MessageActionRepository.properties]) and its quick reactions; replying, copying, editing, pinning, deleting
  *   (after a confirmation), sending again and toggling reactions; and the [ChatUiState.shortcuts] screen readers get.
+ * - **Replies and links**: a quote reply from the lifted message's text selection ([ReplyEvent.Quote]), a reply in
+ *   another chat ([ChatReplyElsewhere], its chat picker [replyChatsSheet] kept out of [uiState], and the replies other
+ *   conversations hand to this one), a message's link ([ReplyEvent.CopyLink]), and replacing the media of the message
+ *   being edited ([ChatMediaReplacement]).
  * - **Forwarding** ([ChatForwarding]): the forward sheet ([forwardSheet], kept out of [uiState] so the chats it lists
  *   do not recompose the conversation), with its comment ([forwardComment]), and forwarding to the picked chats.
  * - **Selection mode** ([ChatSelection], [ChatUiState.selection]): the selected messages, kept across process death,
@@ -557,6 +566,40 @@ class ChatViewModel internal constructor(
 
     private val shares = ChatShares(chatId, shareInbox, onScreen.asStateFlow(), composer, attachments, viewModelScope)
 
+    /** Replying to a message in another chat, both ways ([ChatReplyElsewhere]). */
+    private val replyElsewhere =
+        ChatReplyElsewhere(
+            chatId = chatId,
+            targets = ChatTargets(chatRepository, searchRepository, userRepository, groupRepository, viewModelScope),
+            inbox = shareInbox,
+            onScreen = onScreen.asStateFlow(),
+            composer = composer,
+            previewOf = { id ->
+                history.replayCache
+                    .firstOrNull()
+                    ?.messages
+                    ?.findById(id)
+                    ?.let { messagePreviewText(it, userRepository.myUserId.value) { null } }
+            },
+            scope = viewModelScope,
+            dispatcher = dispatcher,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
+    /** The chat picker of "Reply in another chat"; null while it is closed. Kept out of [uiState]. */
+    val replyChatsSheet: StateFlow<ReplyChatsSheet?> get() = replyElsewhere.sheet
+
+    /** Replacing the media of the message being edited ([ChatMediaReplacement]). */
+    private val mediaReplacement =
+        ChatMediaReplacement(
+            chatId = chatId,
+            repository = thread.attachments(attachmentRepository),
+            composer = composer,
+            attachments = attachments,
+            scope = viewModelScope,
+            onEffect = { effectChannel.trySend(it) },
+        )
+
     /** The voice message being recorded in the composer; null while there is none. */
     val voiceRecording: StateFlow<VoiceRecordingUiState?> get() = recorder.state
 
@@ -684,6 +727,8 @@ class ChatViewModel internal constructor(
             onForward = { forwarding.open(it) },
             onSelect = { selection.select(it) },
             onReport = { reporting.start(it) },
+            onReplyElsewhere = { replyElsewhere.open(it) },
+            inThread = topic != null,
             onSave = { saving.save(it) },
             onSelectionDeleted = { selection.clear() },
             translationAction = { translation.actionFor(it) },
@@ -902,8 +947,9 @@ class ChatViewModel internal constructor(
 
     /** The chats the messages name, by id: their titles and photos, which change far less often than the chats. */
     private val referencedChats: Flow<ImmutableMap<Long, ChatRef>> =
-        combine(history, replies) { history, replies -> referencedChatIds(chatId, history, replies) }
-            .distinctUntilChanged()
+        combine(history, replies, composer.mode) { history, replies, mode ->
+            referencedChatIds(chatId, history, replies) + setOfNotNull(mode.replyTo?.chatId)
+        }.distinctUntilChanged()
             .flatMapLatest { ids ->
                 if (ids.isEmpty()) {
                     flowOf(persistentMapOf())
@@ -992,16 +1038,22 @@ class ChatViewModel internal constructor(
      */
     private val overlays: Flow<Overlays> =
         combine(
-            combine(composer.mode, history, composerTargets.messages) { mode, history, targets ->
-                composerTargets.require(mode.messageId, history)
-                mode to targets
+            combine(composer.mode, history, composerTargets.messages, composerTargets.elsewhere) {
+                mode,
+                history,
+                targets,
+                elsewhere,
+                ->
+                if (mode.replyTo?.chatId == null) composerTargets.require(mode.messageId, history)
+                composerTargets.requireElsewhere(mode.replyTo)
+                ComposerTargetState(mode, targets, elsewhere)
             },
             messageActions.sheet,
             messageActions.deleteDialog,
             attachments.preview,
             attachments.isPollOpen,
-        ) { (mode, targets), sheet, deleteDialog, preview, pollOpen ->
-            Overlays(mode, targets, sheet, deleteDialog, preview, pollOpen)
+        ) { composerTargetState, sheet, deleteDialog, preview, pollOpen ->
+            Overlays(composerTargetState, sheet, deleteDialog, preview, pollOpen)
         }
 
     val uiState: StateFlow<ChatUiState> =
@@ -1037,6 +1089,7 @@ class ChatViewModel internal constructor(
             composer.start()
             attachments.start()
             shares.start()
+            replyElsewhere.start()
             bots.start()
             search.start()
             botKeyboard.start()
@@ -1089,6 +1142,7 @@ class ChatViewModel internal constructor(
             is ChatSearchEvent -> search.onEvent(event)
             is BotKeyboardEvent -> botKeyboard.onEvent(event)
             is TranslationEvent -> translation.onEvent(event)
+            is ReplyEvent -> event.dispatch(messageActions, mediaReplacement, replyElsewhere)
             is PollEvent -> onPollEvent(event)
             else -> onMessageEvent(event)
         }
@@ -1297,16 +1351,18 @@ class ChatViewModel internal constructor(
             // A message deleted meanwhile takes its sheet with it.
             messageActions = overlays.sheet?.takeIf { history.messages.findById(it.messageId) != null },
             deleteDialog = overlays.deleteDialog,
-            shortcuts =
-                MessageShortcuts(
-                    canReply = canWrite,
-                    canCopy = !chat.hasProtectedContent,
-                    canForward = !chat.hasProtectedContent && chat.type !is ChatType.Secret,
-                ),
+            shortcuts = chat.shortcuts(canWrite, inThread = topic != null),
             // What was picked or written stays while the user may not write; it shows again when they may.
             attachPreview =
-                overlays.preview?.takeIf { canWrite }?.let {
-                    AttachPreview(it.kind, it.items, canSchedule, it.offersOriginal, it.original)
+                overlays.preview?.takeIf { canWrite }?.let { preview ->
+                    AttachPreview(
+                        preview.kind,
+                        preview.items,
+                        canSchedule,
+                        preview.offersOriginal,
+                        preview.original,
+                        isReplacement = preview.replacing != null,
+                    )
                 },
             poll =
                 PollSheet(chat.isChannel, canSchedule).takeIf {
@@ -1412,19 +1468,27 @@ private class MessageSources(
  * preview and whether the poll form is open.
  */
 private class Overlays(
-    val mode: ComposerMode,
-    val targets: Map<Long, Message?>,
+    val composerTargets: ComposerTargetState,
     val sheet: MessageActionsSheet?,
     val deleteDialog: DeleteMessagesDialog?,
     val preview: PreviewDraft?,
     val pollOpen: Boolean,
 ) {
+    val mode: ComposerMode get() = composerTargets.mode
+
     fun bar(
         chat: Chat,
         history: ChatHistory,
         people: ChatPeople,
-    ): ComposerBar? = composerBar(mode, chat, history, targets, people)
+    ): ComposerBar? = composerBar(mode, chat, history, composerTargets.targets, people, composerTargets.elsewhere)
 }
+
+/** The composer's mode with the messages fetched for its bar: of this chat by id, and of another chat. */
+private class ComposerTargetState(
+    val mode: ComposerMode,
+    val targets: Map<Long, Message?>,
+    val elsewhere: Message?,
+)
 
 private class ChatSources(
     val chat: ChatLookup,

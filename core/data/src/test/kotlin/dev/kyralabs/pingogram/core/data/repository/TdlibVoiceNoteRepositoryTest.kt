@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Waveform
 import dev.kyralabs.pingogram.core.tdlib.TdError
@@ -70,7 +71,13 @@ class TdlibVoiceNoteRepositoryTest {
             val path = (repository().newVoiceNoteFile("ogg") as Outcome.Success).value
             val options = SendOptions(silent = true)
 
-            val result = repository().sendVoiceNote(CHAT, RecordedVoiceNote(path, 7, Waveform(waveform)), options, 42)
+            val result =
+                repository().sendVoiceNote(
+                    CHAT,
+                    RecordedVoiceNote(path, 7, Waveform(waveform)),
+                    options,
+                    ReplyTarget(42),
+                )
 
             val request = client.sentOf<TdApi.SendMessage>().single()
             val content = request.inputMessageContent as TdApi.InputMessageVoiceNote

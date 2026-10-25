@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.model.FileUpload
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
@@ -485,6 +486,13 @@ class FakeMessageActionRepository : MessageActionRepository {
         option: ReportOptionId,
         text: String,
     ): Outcome<ChatReportResult> = unused()
+
+    override suspend fun messageLink(
+        chatId: Long,
+        messageId: Long,
+        forAlbum: Boolean,
+        inThread: Boolean,
+    ): Outcome<MessageLink> = unused()
 
     companion object {
         /** Message properties that allow deleting as said, and nothing else the viewer reads. */
