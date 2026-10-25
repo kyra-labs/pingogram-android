@@ -1,4 +1,4 @@
-package dev.kyralabs.pingogram.feature.settings.ui
+package dev.kyralabs.pingogram.core.ui.component
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -18,9 +18,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 
-// Dragging the rows of a settings page's lazy list into a new order (chat folders, sticker sets): the row follows the
-// finger in its graphics layer, and passes the rows it crosses, which slide into its place on the list's placement
-// springs.
+// Dragging the rows of a lazy list into a new order (chat folders, sticker sets, a forum's pinned topics): the row
+// follows the finger in its graphics layer, and passes the rows it crosses, which slide into its place on the list's
+// placement springs.
 
 /**
  * The order of a list's rows while one is dragged: [order] (the rows' ids, the dragged one where the finger has taken
@@ -29,11 +29,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
  * lifts.
  */
 @Stable
-internal class ListReorderState<K : Any>(
+class ListReorderState<K : Any>(
     private val listState: LazyListState,
     private val haptics: HapticFeedback,
     ids: List<K>,
-    private val rowKey: (K) -> String,
+    private val rowKey: (K) -> Any,
     private val onDrop: (List<K>) -> Unit,
 ) {
     var order: List<K> by mutableStateOf(ids)
@@ -93,10 +93,10 @@ internal class ListReorderState<K : Any>(
 
 /** A [ListReorderState] for the rows [ids] (keyed [rowKey] in the list), begun anew whenever they change. */
 @Composable
-internal fun <K : Any> rememberListReorderState(
+fun <K : Any> rememberListReorderState(
     listState: LazyListState,
     ids: List<K>,
-    rowKey: (K) -> String,
+    rowKey: (K) -> Any,
     onDrop: (List<K>) -> Unit,
 ): ListReorderState<K> {
     val haptics = LocalHapticFeedback.current
@@ -108,7 +108,7 @@ internal fun <K : Any> rememberListReorderState(
 }
 
 /** Drags row [id] after a long press anywhere on it. */
-internal fun <K : Any> Modifier.dragAfterLongPress(
+fun <K : Any> Modifier.dragAfterLongPress(
     state: ListReorderState<K>,
     id: K,
 ): Modifier =
@@ -125,7 +125,7 @@ internal fun <K : Any> Modifier.dragAfterLongPress(
     }
 
 /** Drags row [id] as soon as its handle moves. */
-internal fun <K : Any> Modifier.dragHandle(
+fun <K : Any> Modifier.dragHandle(
     state: ListReorderState<K>,
     id: K,
 ): Modifier =

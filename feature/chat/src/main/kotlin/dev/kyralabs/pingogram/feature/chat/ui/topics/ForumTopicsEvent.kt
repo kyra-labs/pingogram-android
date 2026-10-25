@@ -9,4 +9,15 @@ sealed interface ForumTopicsEvent {
 
     /** "Try again" after the first page or the next one failed. */
     data object Retry : ForumTopicsEvent
+
+    /** The pinned topics dragged into the order [topicIds]. */
+    data class Reorder(
+        val topicIds: List<Int>,
+    ) : ForumTopicsEvent
+
+    /** A screen reader's "Move up" ([up]) or "Move down" on pinned topic [topicId]. */
+    data class Move(
+        val topicId: Int,
+        val up: Boolean,
+    ) : ForumTopicsEvent
 }

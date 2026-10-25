@@ -9,12 +9,15 @@ import kotlinx.collections.immutable.ImmutableList
 
 /**
  * The topic list of a forum (`REQUIREMENTS.md` FR-C9): the forum in the top bar ([header], null until it is known) and
- * its topics ([content]).
+ * its topics ([content]); "New topic" where the user may create one ([canCreate]), and the editor and the question
+ * before deleting a topic while they show ([management]).
  */
 @Immutable
 data class ForumTopicsUiState(
     val header: ChatHeader? = null,
     val content: TopicsContent = TopicsContent.Loading,
+    val canCreate: Boolean = false,
+    val management: TopicManagementUiState = TopicManagementUiState(),
 )
 
 /** The topics, or why there are none. */
@@ -33,19 +36,23 @@ sealed interface TopicsContent {
 
     /**
      * The topics loaded so far, in the forum's order; more load near the end until [reachedEnd], with a progress
-     * indicator ([isLoadingMore]) or the error of the next page ([moreError]) below the last one.
+     * indicator ([isLoadingMore]) or the error of the next page ([moreError]) below the last one. With [canReorder]
+     * the pinned topics have a drag handle, and move up and down for screen readers.
      */
     data class Content(
         val topics: ImmutableList<TopicRow>,
         val reachedEnd: Boolean,
         val isLoadingMore: Boolean = false,
         val moreError: DomainError? = null,
+        val canReorder: Boolean = false,
     ) : TopicsContent
 }
 
 /**
  * One topic in the list: its [name] and [icon], one line of its last message ([sender] before [preview]; no sender
- * for the user's own or the forum's), its [time], and its unread and mention counts, pinned and closed.
+ * for the user's own or the forum's), its [time], and its unread and mention counts, pinned and closed; a General
+ * topic the administrators hid ([isHidden]) shows only to those who may show it again. What its long press offers is
+ * [menu], null where the user may do nothing with it.
  */
 @Immutable
 data class TopicRow(
@@ -59,6 +66,8 @@ data class TopicRow(
     val unreadMentionCount: Int,
     val isPinned: Boolean,
     val isClosed: Boolean,
+    val isHidden: Boolean = false,
+    val menu: TopicMenuState? = null,
 ) {
     override fun toString() = "TopicRow(id=$id, unreadCount=$unreadCount, isPinned=$isPinned, isClosed=$isClosed, …)"
 }

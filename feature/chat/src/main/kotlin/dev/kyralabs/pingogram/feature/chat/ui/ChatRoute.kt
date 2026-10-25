@@ -51,6 +51,8 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicManagementDialogs
+import dev.kyralabs.pingogram.feature.chat.ui.topics.rememberTopicActions
 import dev.kyralabs.pingogram.feature.chat.ui.translation.failureNotice
 import dev.kyralabs.pingogram.feature.chat.ui.voice.voiceNoticeText
 import kotlinx.coroutines.Job
@@ -86,7 +88,8 @@ import java.util.Locale
  * ([MessageInteractionsViewModel], keyed by the chat), whose rows open a profile through [onOpenProfile] or a
  * channel's info through [onOpenChatInfo] ([onOpenChat] without it). Custom emoji draw through a [CustomEmojiRenderer]
  * ([LocalCustomEmoji]) that follows the view model's. While a secret chat is open, the
- * window is secure ([SecureWindow]): no screenshots.
+ * window is secure ([SecureWindow]): no screenshots. A forum topic's conversation adds "Manage topic" to the top bar
+ * ([rememberTopicActions], a view model of its own); a deleted topic leaves through [onBack].
  * Profiles (the title of a private or secret chat, a sender's avatar or name, a mention) open through
  * [onOpenProfile]; the title of a group or channel opens its info page through [onOpenChatInfo]; without them the
  * title opens nothing. The bar of the chat's scheduled messages opens their list through [onOpenScheduledMessages]
@@ -169,6 +172,11 @@ internal fun ConversationRoute(
         },
         onPickReplacement = launchers::replace,
     )
+    // A forum topic's own actions (rename, close, pin, delete), from a view model of their own.
+    val topicActions =
+        (topic as? MessageTopic.Forum)?.let { forum ->
+            rememberTopicActions(chatId, forum.topicId, snackbarHostState, onDeleted = { onBack?.invoke() })
+        }
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
     CompositionLocalProvider(
@@ -197,6 +205,7 @@ internal fun ConversationRoute(
             search = viewModel.searchState.collectAsStateWithLifecycle().value,
             searchQuery = viewModel.searchQuery,
             botReply = viewModel.botReply.collectAsStateWithLifecycle().value,
+            topicAction = topicActions?.button,
             connection = connectionViewModel.status.collectAsStateWithLifecycle().value,
             onOpenScheduledMessages = onOpenScheduledMessages?.let { open -> { open(chatId) } },
             nextChannel = viewModel.nextChannel.collectAsStateWithLifecycle().value,
@@ -204,6 +213,7 @@ internal fun ConversationRoute(
             videoNotePreview = viewModel.videoNotePreview.collectAsStateWithLifecycle().value,
         )
         ChatSheets(viewModel)
+        topicActions?.let { TopicManagementDialogs(it.management, it.onEvent) }
         MessageInteractionsHost(interactionsViewModel, onOpenProfile, onOpenChatInfo ?: onOpenChat)
     }
     // No screenshots, screen recordings or recent-apps thumbnails of a secret chat (REQUIREMENTS.md FR-E1).

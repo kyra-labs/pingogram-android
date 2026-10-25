@@ -64,8 +64,9 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * (`REQUIREMENTS.md` FR-E1, [ChatHeader.secret]) has a lock before its name, and its self-destruct timer after the
  * search button, with the timer on a badge, through [onSecretChatEvent] ([SecretChatActions]); its encryption key opens
  * from the timer's sheet, as two actions are all Material allows (without search, the key's button follows). It sits on
- * the screen's `surfaceContainer`, above the sheet the messages scroll in. Without [onBack] there is no back button: in
- * the detail pane beside the chat list, which has nothing to go back to.
+ * the screen's `surfaceContainer`, above the sheet the messages scroll in. A forum's topic list and a topic's
+ * conversation add their topic action ([topicAction]: "New topic", "Manage topic") after search. Without [onBack]
+ * there is no back button: in the detail pane beside the chat list, which has nothing to go back to.
  *
  * It grows with the font scale instead of clipping its two lines, which the default height fits only up to about
  * 150%.
@@ -89,6 +90,7 @@ internal fun ChatTopBar(
     onSecretChatEvent: (SecretChatEvent) -> Unit = {},
     onOpenChatInfo: ((chatId: Long) -> Unit)? = null,
     onSearch: (() -> Unit)? = null,
+    topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -131,7 +133,9 @@ internal fun ChatTopBar(
                 }
             }
         },
-        actions = { if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent) },
+        actions = {
+            if (selectedCount == null && header != null) ChatActions(header, onSearch, onSecretChatEvent, topicAction)
+        },
         expandedHeight = titleHeight(),
         colors =
             TopAppBarDefaults.topAppBarColors(
