@@ -66,6 +66,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -144,6 +145,10 @@ object ActiveAccountModule {
 
     @Provides
     fun forumTopicRepository(accounts: Accounts): ForumTopicRepository = accounts.active.forumTopicRepository()
+
+    @Provides
+    fun savedMessagesTopicRepository(accounts: Accounts): SavedMessagesTopicRepository =
+        accounts.active.savedMessagesTopicRepository()
 
     @Provides
     fun messageThreadRepository(accounts: Accounts): MessageThreadRepository = accounts.active.messageThreadRepository()

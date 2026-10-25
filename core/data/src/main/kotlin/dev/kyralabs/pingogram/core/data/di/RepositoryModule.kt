@@ -75,6 +75,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibPushRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibSavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibScheduledMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
@@ -165,6 +166,7 @@ import dev.kyralabs.pingogram.core.domain.repository.PushRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.SavedMessagesTopicRepository
 import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
@@ -243,6 +245,9 @@ interface RepositoryModule {
 
     @Binds
     fun forumTopicRepository(repository: TdlibForumTopicRepository): ForumTopicRepository
+
+    @Binds
+    fun savedMessagesTopicRepository(repository: TdlibSavedMessagesTopicRepository): SavedMessagesTopicRepository
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository

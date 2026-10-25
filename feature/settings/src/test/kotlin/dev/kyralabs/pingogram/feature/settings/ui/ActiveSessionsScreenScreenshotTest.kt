@@ -32,6 +32,29 @@ class ActiveSessionsScreenScreenshotTest {
     fun onlyThisDeviceLight() = capture("onlyThisDeviceLight", ThemeMode.Light, SettingsPreviewData.onlyThisDevice)
 
     @Test
+    fun testServerLight() = capture("testServerLight", ThemeMode.Light, onTestServers)
+
+    @Test
+    fun testServerDark() = capture("testServerDark", ThemeMode.Dark, onTestServers)
+
+    @Test
+    fun testServerAmoled() = capture("testServer", ScreenshotVariant.Amoled)
+
+    @Test
+    fun testServerHighContrast() = capture("testServer", ScreenshotVariant.HighContrast)
+
+    @Test
+    fun testServerRtl() = capture("testServer", ScreenshotVariant.Rtl)
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun testServerMedium() = capture("testServer", ScreenshotVariant.Medium)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun testServerFontScale200() = capture("testServerFontScale200", ThemeMode.Light, onTestServers)
+
+    @Test
     fun terminateDialogLight() = capture("terminateDialogLight", ThemeMode.Light, withSessionDialog)
 
     @Test
@@ -58,6 +81,15 @@ class ActiveSessionsScreenScreenshotTest {
         SettingsPreviewData.sessions.copy(dialog = TerminateDialog.Session(3, UiText.Plain("MacBook Pro")))
 
     private val failed = ActiveSessionsUiState(sessions = SessionsState.Failed(DomainError.Network))
+
+    private val onTestServers = SettingsPreviewData.sessions.copy(isOnTestServers = true)
+
+    private fun capture(
+        name: String,
+        variant: ScreenshotVariant,
+    ) = composeRule.captureScreen(javaClass, "$name${variant.name}", variant) {
+        ActiveSessionsScreen(state = onTestServers, onEvent = {}, onBack = {})
+    }
 
     private fun capture(
         name: String,

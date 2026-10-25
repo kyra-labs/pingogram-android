@@ -95,7 +95,13 @@ for that milestone; "Should" = do if cheap; "Later" = tracked, not scheduled.
 - FR-A6 Must: QR login (`WaitOtherDeviceConfirmation`) as alternative, using Expressive shapes.
 - FR-A7 Must: Email verification states (`WaitEmailAddress`, `WaitEmailCode`) handled gracefully.
 - FR-A8 Must: Log out, and `AuthorizationStateClosed` / `LoggingOut` handled by resetting the graph.
-- FR-A9 Should: Test-DC toggle hidden behind a long-press on the version label (debug only).
+- FR-A9 Must: Telegram's test servers for its test accounts (https://core.telegram.org/api/auth#test-accounts), in every
+  build, so Google Play's review can sign in again and again (owner decision 2026-10-25, `docs/PLAY_STORE.md` §1): a
+  number +99966 X YYYY (X the data center, 1 to 3; its login code X five times) sent from the phone number step
+  restarts TDLib on the test servers, in their own directories, then sends the number; the number stays on screen
+  meanwhile. Logging out (and TDLib closing for any other reason) returns to the production servers. While signed in
+  that way, Settings' account card and Active sessions show a "Test server" label. Every other number signs in on the
+  production servers, and nothing else switches servers (`docs/TDLIB.md`, "Parameters").
 
 ### 5.2 Chat list [M2]
 
