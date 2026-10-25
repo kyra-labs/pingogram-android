@@ -153,6 +153,7 @@ internal val PasscodeLockOnPreview =
         biometricAvailable = true,
         biometricUnlock = true,
         hideContent = true,
+        screenLockAvailable = true,
     )
 
 @Composable

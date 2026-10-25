@@ -10,6 +10,9 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Unlock with screen lock: Settings → Privacy and security → Passcode lock can let your phone's own PIN, pattern or
+  password open Pingogram and your locked chats (Android 11 and later). It's off by default, since anyone who knows the
+  phone's PIN could then open your chats.
 - Saved Messages tabs: with messages saved from more than one chat, Saved Messages shows tabs below its top bar: All,
   My Notes, and one per chat you saved from. A tab shows only what was saved from there. New messages go to My Notes, so
   the other tabs show where they go in place of the message field.

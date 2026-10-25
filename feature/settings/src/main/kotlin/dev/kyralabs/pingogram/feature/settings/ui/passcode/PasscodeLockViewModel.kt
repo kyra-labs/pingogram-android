@@ -42,6 +42,9 @@ sealed interface PasscodeLockUiState {
      * @property autoLock how long the app may stay out of sight before it locks.
      * @property biometricAvailable whether the device can unlock with biometrics, which shows their switch.
      * @property biometricUnlock whether biometric unlock is on.
+     * @property screenLockAvailable whether the phone's screen lock can unlock (Android 11 and later, a screen lock
+     *   set), which shows its switch.
+     * @property screenLockUnlock whether unlocking with the phone's screen lock is on.
      * @property hideContent whether the app's content stays hidden in recent apps.
      * @property showTurnOffDialog whether turning the passcode off asks first.
      */
@@ -50,6 +53,8 @@ sealed interface PasscodeLockUiState {
         val biometricAvailable: Boolean,
         val biometricUnlock: Boolean,
         val hideContent: Boolean,
+        val screenLockAvailable: Boolean = false,
+        val screenLockUnlock: Boolean = false,
         val showTurnOffDialog: Boolean = false,
     ) : PasscodeLockUiState
 }
@@ -64,6 +69,10 @@ sealed interface PasscodeLockEvent {
 
     data class SelectAutoLock(
         val autoLock: AutoLock,
+    ) : PasscodeLockEvent
+
+    data class SetScreenLockUnlock(
+        val enabled: Boolean,
     ) : PasscodeLockEvent
 
     data class SetBiometricUnlock(
@@ -141,6 +150,7 @@ class PasscodeLockViewModel
                 PasscodeLockEvent.Submit -> checker.submit()
                 is PasscodeLockEvent.SelectAutoLock -> save { setAutoLock(event.autoLock) }
                 is PasscodeLockEvent.SetBiometricUnlock -> save { setBiometricUnlock(event.enabled) }
+                is PasscodeLockEvent.SetScreenLockUnlock -> save { setDeviceCredentialUnlock(event.enabled) }
                 is PasscodeLockEvent.SetHideContent -> save { setHideContent(event.enabled) }
                 PasscodeLockEvent.TurnOff -> local.update { it.copy(showTurnOffDialog = true) }
                 PasscodeLockEvent.DismissTurnOff -> local.update { it.copy(showTurnOffDialog = false) }
@@ -173,6 +183,8 @@ class PasscodeLockViewModel
                         biometricUnlock = settings.biometricUnlock,
                         hideContent = settings.hideContent,
                         showTurnOffDialog = local.showTurnOffDialog,
+                        screenLockAvailable = biometrics.canUseScreenLock(),
+                        screenLockUnlock = settings.deviceCredentialUnlock,
                     )
                 }
             }

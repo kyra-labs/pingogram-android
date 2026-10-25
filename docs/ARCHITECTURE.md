@@ -134,7 +134,9 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   locked and keeps its saved state (`rememberSaveableStateHolder`), so nothing of it draws, runs or reaches screen
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
-  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+  through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`;
+  where the user turned on "Unlock with screen lock" (`PasscodeSettings.deviceCredentialUnlock`, off by default), the
+  prompt takes the phone's PIN, pattern or password too (`DEVICE_CREDENTIAL`, Android 11+, `ScreenLock`).
 - **Locked chats** (`docs/adr/0029-locked-chats.md`): Pingogram's own, kept on the device. `core:domain`'s
   `ChatLockRepository` (`DefaultChatLockRepository`, `core:data`, a singleton) holds the locked chats' ids
   (`LockedChatIdsRepository`, `DataStoreLockedChatIdsRepository`: the settings file) and whether they are open: only

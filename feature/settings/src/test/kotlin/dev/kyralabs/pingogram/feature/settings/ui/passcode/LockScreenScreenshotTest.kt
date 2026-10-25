@@ -60,6 +60,11 @@ class LockScreenScreenshotTest {
             LockUiState(entry = PasscodeEntryUiState(type = PasscodeType.Password)),
         )
 
+    /** The phone's screen lock alone unlocks, without biometrics: the button shows the PIN symbol. */
+    @Test
+    fun screenLockLight() =
+        capture("screenLockLight", ThemeMode.Light, LockUiState(biometricUnlock = true, screenLock = ScreenLock.Only))
+
     @Test
     fun forgetDialogLight() = capture("forgetDialogLight", ThemeMode.Light, LockUiState(showForgetDialog = true))
 
