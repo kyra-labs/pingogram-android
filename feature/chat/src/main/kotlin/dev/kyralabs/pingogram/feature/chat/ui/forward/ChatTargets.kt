@@ -114,8 +114,8 @@ internal class ChatTargets(
     }
 
     /**
-     * Saved Messages, then the chats the user chose to show first (Settings → Appearance → Chats → "Chats shown first"),
-     * in their order, then the main chat list without them, in TDLib's order.
+     * Saved Messages, then the chats the user chose to show first (Settings → Appearance → Chats → "Chats shown
+     * first"), in their order, then the main chat list without them, in TDLib's order.
      */
     private fun mainChats(): Flow<Found> =
         combine(
