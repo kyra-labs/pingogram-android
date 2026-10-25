@@ -9,18 +9,27 @@ import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
 import dev.kyralabs.pingogram.feature.chat.ui.ChatHeader
 import dev.kyralabs.pingogram.feature.chat.ui.ChatSubtitle
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsUiState
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicActions
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicDeleteUiState
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicEditorUiState
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicIcon
+import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicMenuState
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicRow
 import dev.kyralabs.pingogram.feature.chat.ui.topics.TopicsContent
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import dev.kyralabs.pingogram.feature.chat.R as ChatR
 
 /**
  * A forum's topic list for previews and screenshot tests: "Compose Developers" with the General topic, a pinned one,
- * unread ones (one with a mention), a closed one, and the loading, empty and error states.
+ * unread ones (one with a mention), a closed one, and the loading, empty and error states; as an administrator who
+ * manages the topics sees it, with the menus, the editor and the question before deleting.
  */
 internal object TopicsPreviewData {
     private const val FORUM = -1_000_000_000_300L
+
+    /** "Material 3 Expressive", which the administrator's list shows pinned too. */
+    private const val EXPRESSIVE_TOPIC = 9
 
     val header =
         ChatHeader(
@@ -69,6 +78,58 @@ internal object TopicsPreviewData {
 
     val error = ForumTopicsUiState(header, TopicsContent.Error(DomainError.Network))
 
+    /** What an administrator who manages topics gets: every topic's menu. */
+    private val adminActions = TopicActions(canEdit = true, canClose = true, canPin = true, canDelete = true)
+
+    private val generalActions = TopicActions(canEdit = true, canHideGeneral = true)
+
+    /**
+     * The list as an administrator who manages topics sees it: "New topic", a menu on every topic, the hidden General
+     * topic, two pinned topics to reorder.
+     */
+    val managed =
+        ForumTopicsUiState(
+            header = header,
+            content =
+                TopicsContent.Content(
+                    topics =
+                        topics
+                            .map { row ->
+                                val general = row.icon.isGeneral
+                                val pinned = row.isPinned || row.id == EXPRESSIVE_TOPIC
+                                val managedRow = row.copy(isPinned = pinned, isHidden = general)
+                                managedRow.copy(menu = managedRow.menu(if (general) generalActions else adminActions))
+                            }.toImmutableList(),
+                    reachedEnd = true,
+                    canReorder = true,
+                ),
+            canCreate = true,
+        )
+
+    /** The menu of the "Help" topic for an administrator who manages topics. */
+    val helpMenu = managed.rowMenu(12)
+
+    /** The topic conversation's menu of a closed topic. */
+    val closedMenu = managed.rowMenu(14)
+
+    /** The editor of a new topic in [color]. */
+    fun newTopic(color: TopicColor = TopicColor.Blue) =
+        TopicEditorUiState(topicId = null, name = "Plans for 2027", color = color)
+
+    val renaming = TopicEditorUiState(topicId = 12, name = "Help", color = TopicColor.Green)
+
+    val refused = newTopic(TopicColor.Rose).copy(error = DomainError.FloodWait(42))
+
+    val saving = renaming.copy(name = "Help desk", isSaving = true)
+
+    val deleting = TopicDeleteUiState(12, "Help")
+
+    private fun TopicRow.menu(actions: TopicActions) =
+        TopicMenuState(id, name, icon.isGeneral, isClosed, isPinned, isHidden, actions)
+
+    private fun ForumTopicsUiState.rowMenu(id: Int): TopicMenuState =
+        checkNotNull(((content as TopicsContent.Content).topics.first { it.id == id }).menu)
+
     @Suppress("LongParameterList") // Every part of a row, most with defaults.
     private fun topic(
         id: Int,
@@ -99,5 +160,5 @@ internal object TopicsPreviewData {
 /** Every state of the topic list, for its previews. */
 internal class TopicsPreviewStates : PreviewParameterProvider<ForumTopicsUiState> {
     override val values: Sequence<ForumTopicsUiState> =
-        with(TopicsPreviewData) { sequenceOf(content, loadingMore, loading, empty, error) }
+        with(TopicsPreviewData) { sequenceOf(content, managed, loadingMore, loading, empty, error) }
 }

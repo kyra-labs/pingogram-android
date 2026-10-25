@@ -155,6 +155,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         "AUTH_TOKEN_INVALID" to DomainError.QrLoginExpired,
         "AUTH_TOKEN_INVALIDX" to DomainError.QrLoginExpired,
         "AUTH_TOKEN_ALREADY_ACCEPTED" to DomainError.QrLoginExpired,
+        // Forum topics: channels.editForumTopic, channels.deleteTopicHistory for a topic someone else deleted.
+        "TOPIC_DELETED" to DomainError.NotFound,
+        "TOPIC_ID_INVALID" to DomainError.NotFound,
         // Calls: phone.requestCall, phone.acceptCall.
         "USER_PRIVACY_RESTRICTED" to DomainError.CallPrivacyRestricted,
         "PARTICIPANT_VERSION_OUTDATED" to DomainError.CallPeerOutdated,

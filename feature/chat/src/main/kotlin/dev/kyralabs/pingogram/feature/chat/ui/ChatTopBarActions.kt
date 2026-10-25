@@ -29,19 +29,22 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  * The actions of the conversation's top bar for [header]'s chat (`docs/DESIGN_SYSTEM.md` §6, at most two): search
  * ([onSearch], `REQUIREMENTS.md` §5.9) in every chat, then a secret chat's self-destruct timer ([SecretChatActions],
  * through [onSecretChatEvent]), or the call button of a private chat with a person ([ChatHeader.callUserId], through
- * [LocalCallStarter]). Without search, a secret chat's encryption key takes its place.
+ * [LocalCallStarter]). Without search, a secret chat's encryption key takes its place. A forum's topic list and a
+ * topic's conversation, which have neither, show their [topicAction] there ("New topic", "Manage topic").
  */
 @Composable
 internal fun ChatActions(
     header: ChatHeader,
     onSearch: (() -> Unit)?,
     onSecretChatEvent: (SecretChatEvent) -> Unit,
+    topicAction: (@Composable () -> Unit)? = null,
 ) {
     val secret = header.secret
     val callUserId = header.callUserId
     val calls = LocalCallStarter.current
     onSearch?.let { SearchAction(it) }
     when {
+        topicAction != null -> topicAction()
         secret != null -> SecretChatActions(secret, onSecretChatEvent, showsKey = onSearch == null)
         callUserId != null && calls != null -> CallAction(callUserId, calls)
     }
