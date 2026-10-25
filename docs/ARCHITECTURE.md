@@ -1155,8 +1155,12 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   changes only what Pingogram shows), lists the exceptions (`getChatNotificationSettingsExceptions` without comparing
   sounds, then `getChat` for each), changes a chat's mute (`setChatNotificationSettings`, the time left of a limited
   mute turned into its end with the `WallClock`), resets everything (`resetAllNotificationSettings`) and follows
-  `updateScopeNotificationSettings` and `updateChatNotificationSettings`. Sounds stay with Android: the page opens each
-  scope's channel (`PingogramChannel.of(scope)`) in the system settings. It shares the chat list's
+  `updateScopeNotificationSettings` and `updateChatNotificationSettings`. A scope's defaults carry its story
+  notifications too (`ScopeNotificationSettings.stories`, `StoryNotifications`: td_api.tl `use_default_mute_stories` and
+  `mute_stories`, and `show_story_poster`), which the private chats' group sets; Pingogram words a story's push as any
+  push without a text ("New message"), and lists no chat's own story settings yet
+  (`getStoryNotificationSettingsExceptions`). Sounds stay with Android: the page opens each scope's channel
+  (`PingogramChannel.of(scope)`) in the system settings. It shares the chat list's
   `NotificationPromptRepository` to ask for the permission while Android still shows its dialog.
 - Reaction notifications (Settings → Notifications → Reactions): `core:domain`'s `ReactionNotificationRepository`
   (`TdlibReactionNotificationRepository`, `core:data`, a `TdlibUpdateCache`: TDLib announces the settings once per

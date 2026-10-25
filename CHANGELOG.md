@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Notifications → Private chats: "New stories" chooses which stories notify you (Telegram's automatic choice of the 5
+  people you write to most, all, or none), and "Name who posted" whether the notification says whose story it is.
 - Privacy and security: "Suggest frequent contacts" lets you turn off the people search suggests from those you write
   to most, which clears them.
 - Data and storage: "Reset automatic download" puts every network's defaults back, "Prefer IPv6" connects over IPv6

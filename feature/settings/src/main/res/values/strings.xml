@@ -620,6 +620,15 @@
     <string name="settings_notifications_notify_channels">New posts in channels</string>
     <string name="settings_notifications_preview">Message previews</string>
     <string name="settings_notifications_preview_summary">Show the text of messages in notifications</string>
+    <string name="settings_notifications_stories">New stories</string>
+    <string name="settings_notifications_stories_automatic">Automatic</string>
+    <string name="settings_notifications_stories_all">All</string>
+    <string name="settings_notifications_stories_none">None</string>
+    <string name="settings_notifications_stories_automatic_summary">Stories of the 5 people you write to most notify you</string>
+    <string name="settings_notifications_stories_all_summary">Every new story notifies you</string>
+    <string name="settings_notifications_stories_none_summary">New stories don\'t notify you</string>
+    <string name="settings_notifications_story_poster">Name who posted</string>
+    <string name="settings_notifications_story_poster_summary">Story notifications say whose story it is</string>
     <string name="settings_notifications_mentions">Mentions and replies</string>
     <string name="settings_notifications_mentions_summary">Notify about messages to you, even in muted groups</string>
     <string name="settings_notifications_pinned">Pinned messages</string>
