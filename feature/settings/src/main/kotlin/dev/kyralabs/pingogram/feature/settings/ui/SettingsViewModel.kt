@@ -7,12 +7,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
+import dev.kyralabs.pingogram.core.domain.model.DeviceAccount
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
 import dev.kyralabs.pingogram.core.domain.model.TelegramServers
 import dev.kyralabs.pingogram.core.domain.model.User
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
+import dev.kyralabs.pingogram.core.domain.repository.DeviceAccountsRepository
 import dev.kyralabs.pingogram.core.domain.repository.UserRepository
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +45,10 @@ import javax.inject.Inject
  * (`getPhoneNumberInfo`, once per number); until then, and if TDLib cannot format it, the number shows as `+` and its
  * digits.
  *
+ * Below the card, the device's other accounts and "Add account" (`docs/adr/0031-multiple-accounts.md`), only while
+ * the app offers several ([DeviceAccountsRepository.isAvailable]); their numbers are formatted as the card's. Switching
+ * and adding hand over to [DeviceAccountsRepository], after which the app opens again on the other account.
+ *
  * The open confirmation survives process death through the [SavedStateHandle]; a logout in progress does not, as
  * TDLib reports it by itself after a restart.
  */
@@ -52,6 +60,7 @@ class SettingsViewModel
         private val authRepository: AuthRepository,
         userRepository: UserRepository,
         private val countryRepository: CountryRepository,
+        private val deviceAccounts: DeviceAccountsRepository,
     ) : ViewModel() {
         private val mutableUiState =
             MutableStateFlow(SettingsUiState(isLogOutDialogOpen = savedStateHandle[KEY_LOG_OUT_DIALOG_OPEN] ?: false))
@@ -63,11 +72,20 @@ class SettingsViewModel
         /** The raw number formatted last, and how; a user's other changes (their status) do not ask TDLib again. */
         private var formattedPhoneNumber: Pair<String, String>? = null
 
+        /** The other accounts' raw numbers formatted so far, so their unread counts do not ask TDLib again. */
+        private val otherPhoneNumbers = mutableMapOf<String, String>()
+
         init {
             combine(account(userRepository), authRepository.servers) { account, servers ->
                 account?.copy(isOnTestServers = servers == TelegramServers.Test)
             }.onEach { account -> mutableUiState.update { it.copy(account = account) } }
                 .launchIn(viewModelScope)
+            if (deviceAccounts.isAvailable) {
+                combine(otherAccounts(), deviceAccounts.canAddAccount) { others, canAdd -> others to canAdd }
+                    .onEach { (others, canAdd) ->
+                        mutableUiState.update { it.copy(otherAccounts = others, canAddAccount = canAdd) }
+                    }.launchIn(viewModelScope)
+            }
         }
 
         fun onEvent(event: SettingsEvent) {
@@ -75,6 +93,8 @@ class SettingsViewModel
                 SettingsEvent.LogOut -> if (!uiState.value.isLoggingOut) setLogOutDialogOpen(true)
                 SettingsEvent.DismissLogOut -> setLogOutDialogOpen(false)
                 SettingsEvent.ConfirmLogOut -> logOut()
+                is SettingsEvent.SwitchAccount -> deviceAccounts.switchTo(event.slot)
+                SettingsEvent.AddAccount -> deviceAccounts.addAccount()
             }
         }
 
@@ -96,6 +116,35 @@ class SettingsViewModel
                     formattedPhoneNumber = fields.phoneNumber to formatted
                     emit(fields.toUiModel(formatted))
                 }
+
+        /** The signed-in accounts but the one shown, with their numbers formatted once TDLib has (then on). */
+        private fun otherAccounts(): Flow<ImmutableList<OtherAccountUiModel>> =
+            deviceAccounts.accounts
+                .map { accounts -> accounts.filter { !it.isActive && it.user != null } }
+                .distinctUntilChanged()
+                .transformLatest { accounts ->
+                    emit(accounts.toUiModels())
+                    val unformatted =
+                        accounts.mapNotNull { it.rawPhoneNumber() }.filter { it.isNotEmpty() && it !in otherPhoneNumbers }
+                    if (unformatted.isEmpty()) return@transformLatest
+                    unformatted.distinct().forEach { raw ->
+                        formatPhoneNumber(raw)?.let { otherPhoneNumbers[raw] = it }
+                    }
+                    emit(accounts.toUiModels())
+                }
+
+        private fun List<DeviceAccount>.toUiModels(): ImmutableList<OtherAccountUiModel> =
+            mapNotNull { account ->
+                val fields = account.user?.toAccountFields() ?: return@mapNotNull null
+                OtherAccountUiModel(
+                    slot = account.slot,
+                    userId = fields.userId,
+                    name = fields.name,
+                    photo = fields.photo,
+                    phoneNumber = otherPhoneNumbers[fields.phoneNumber] ?: fields.phoneNumber.unformatted(),
+                    unreadChats = account.unreadChats,
+                )
+            }.toImmutableList()
 
         /** [rawNumber] as TDLib formats it for its country, "+44 7911 123456"; null if TDLib cannot. */
         private suspend fun formatPhoneNumber(rawNumber: String): String? =
@@ -159,6 +208,8 @@ private fun User.toAccountFields() =
         username = usernames.firstOrNull(),
         isPremium = isPremium,
     )
+
+private fun DeviceAccount.rawPhoneNumber(): String? = user?.phoneNumber?.filter(Char::isDigit)
 
 /** The digits TDLib reports as an international number, "+447911123456"; empty for none. */
 private fun String.unformatted(): String = if (isEmpty()) "" else "+$this"

@@ -13,6 +13,7 @@ import org.robolectric.annotation.Config
 /**
  * The Settings screen: with the account, before TDLib has announced it, on an expanded window, with AMOLED black, high
  * contrast, right to left and on a medium window (`docs/DESIGN_SYSTEM.md` §12), and with the log out confirmation;
+ * the same with the device's other accounts below the card (`docs/adr/0031-multiple-accounts.md`);
  * screen captures, so the dialog's window shows. The account's card on its own:
  * [AccountCardScreenshotTest].
  */
@@ -67,10 +68,39 @@ class SettingsScreenScreenshotTest {
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
-    private fun captureAudit(variant: ScreenshotVariant) =
-        composeRule.captureScreen(javaClass, variant.goldenName, variant) {
-            SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {})
-        }
+    @Test
+    fun accountsLight() = capture("accountsLight", ThemeMode.Light, accounts)
+
+    @Test
+    fun accountsDark() = capture("accountsDark", ThemeMode.Dark, accounts)
+
+    @Test
+    fun accountsAmoledDark() = capture("accountsAmoledDark", ThemeMode.Dark, accounts, amoled = true)
+
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun accountsFontScale200() = capture("accountsFontScale200", ThemeMode.Light, accounts)
+
+    @Test
+    fun accountsHighContrast() = captureAudit(ScreenshotVariant.HighContrast, accounts, "accounts")
+
+    @Test
+    fun accountsRtl() = captureAudit(ScreenshotVariant.Rtl, accounts, "accounts")
+
+    @Test
+    @Config(qualifiers = MEDIUM)
+    fun accountsMedium() = captureAudit(ScreenshotVariant.Medium, accounts, "accounts")
+
+    private fun captureAudit(
+        variant: ScreenshotVariant,
+        state: SettingsUiState = SettingsPreviewData.content,
+        prefix: String = "",
+    ) = composeRule.captureScreen(javaClass, prefix.withGolden(variant.goldenName), variant) {
+        SettingsScreen(state = state, onEvent = {}, onOpenPage = {})
+    }
+
+    /** Two other accounts, one with unread chats, and "Add account". */
+    private val accounts = SettingsPreviewData.withOtherAccounts.copy(canAddAccount = true)
 
     private fun capture(
         name: String,
@@ -81,3 +111,6 @@ class SettingsScreenScreenshotTest {
         SettingsScreen(state = state, onEvent = {}, onOpenPage = {})
     }
 }
+
+/** [golden] after [this] prefix, its first letter upper case ("accounts" + "highContrast": "accountsHighContrast"). */
+private fun String.withGolden(golden: String) = if (isEmpty()) golden else this + golden.replaceFirstChar(Char::uppercase)

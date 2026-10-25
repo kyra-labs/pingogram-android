@@ -82,6 +82,16 @@ class SettingsAccessibilityChecksTest {
     fun settingsHome() = check { SettingsScreen(state = SettingsPreviewData.content, onEvent = {}, onOpenPage = {}) }
 
     @Test
+    fun settingsHomeWithOtherAccounts() =
+        check {
+            SettingsScreen(
+                state = SettingsPreviewData.withOtherAccounts.copy(canAddAccount = true),
+                onEvent = {},
+                onOpenPage = {},
+            )
+        }
+
+    @Test
     fun appearance() = check { AppearanceScreen(AppearanceUiState.Content(AppearanceSettings()), {}, {}) }
 
     @Test
