@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.kyralabs.pingogram.core.datastore.DataStoreArchiveRowRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreChatListSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreChatsShownFirstRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreComposerSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreDoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
@@ -16,6 +17,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepos
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatListSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatsShownFirstRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
@@ -28,7 +30,7 @@ import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 /**
  * The repositories of the settings file ([DataStoreModule]) that conversations and the chat list read: the composer's,
  * the bars' and the link previews', whether phone numbers show on screen, the chat list's own settings, the archive
- * row's, and the locked chats.
+ * row's, the locked chats, and the chats the forward and share sheets show first.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -64,4 +66,7 @@ interface ChatPreferencesModule {
 
     @Binds
     fun lockedChatIdsRepository(repository: DataStoreLockedChatIdsRepository): LockedChatIdsRepository
+
+    @Binds
+    fun chatsShownFirstRepository(repository: DataStoreChatsShownFirstRepository): ChatsShownFirstRepository
 }

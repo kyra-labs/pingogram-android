@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ChatAppearanceRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFolderEditRoute
 import dev.kyralabs.pingogram.core.navigation.ChatFoldersRoute
+import dev.kyralabs.pingogram.core.navigation.ChatsShownFirstRoute
 import dev.kyralabs.pingogram.core.navigation.ColorThemeRoute
 import dev.kyralabs.pingogram.core.navigation.DataStorageRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
@@ -80,6 +81,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.passcode.SetPasscodeRoute as S
 import dev.kyralabs.pingogram.feature.settings.ui.qr.MyQrCodeRoute as MyQrCodeScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.qr.QrLoginRoute as QrLoginScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.reactions.QuickReactionRoute as QuickReactionScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.shownfirst.ChatsShownFirstRoute as ChatsShownFirstScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListRoute as StickerSetListScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersRoute as StickersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.twostep.TwoStepVerificationFlowRoute as TwoStepVerificationFlowScreenRoute
@@ -123,6 +125,7 @@ private fun NavGraphBuilder.appearancePages(
             onOpenChatAppearance = { onOpen(ChatAppearanceRoute) },
             onOpenQuickReaction = { onOpen(QuickReactionRoute) },
             onOpenSwipeActions = { onOpen(SwipeActionsRoute) },
+            onOpenShownFirst = { onOpen(ChatsShownFirstRoute) },
             onBack = onBack,
         )
     }
@@ -130,6 +133,7 @@ private fun NavGraphBuilder.appearancePages(
     settingsPage<ChatAppearanceRoute> { ChatAppearanceScreenRoute(onBack = onBack) }
     settingsPage<QuickReactionRoute> { QuickReactionScreenRoute(onBack = onBack) }
     settingsPage<SwipeActionsRoute> { SwipeActionsScreenRoute(onBack = onBack) }
+    settingsPage<ChatsShownFirstRoute> { ChatsShownFirstScreenRoute(onBack = onBack) }
 }
 
 /** Chat folders and the folder editor above it. */

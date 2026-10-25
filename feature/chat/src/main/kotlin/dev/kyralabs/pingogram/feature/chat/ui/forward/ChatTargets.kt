@@ -57,7 +57,7 @@ internal class ChatTargets(
     private val groups: GroupRepository,
     private val scope: CoroutineScope,
     private val withContacts: Boolean = false,
-    private val hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
+    private val preferences: TargetPreferences = TargetPreferences(),
 ) {
     private val query = MutableStateFlow("")
     private val pages = MutableStateFlow(PageLoad())
@@ -99,7 +99,7 @@ internal class ChatTargets(
         val people = combine(users.users, users.myUserId, groups.basicGroups, groups.supergroups, ::People)
         // Locked chats not opened with the passcode are never offered (docs/adr/0029-locked-chats.md).
         val shown =
-            combine(found, hiddenChats) { found, hidden ->
+            combine(found, preferences.hidden) { found, hidden ->
                 if (hidden.isEmpty()) found else found.copy(chats = found.chats.filterNot { it.id in hidden })
             }
         val targets = combine(shown, people) { found, people -> found to people.targetsOf(found.chats, canReceive) }
@@ -113,15 +113,30 @@ internal class ChatTargets(
         }
     }
 
-    /** Saved Messages, then the main chat list without it, in TDLib's order. */
+    /**
+     * Saved Messages, then the chats the user chose to show first (Settings → Appearance → Chats → "Chats shown first"),
+     * in their order, then the main chat list without them, in TDLib's order.
+     */
     private fun mainChats(): Flow<Found> =
         combine(
             chats.chatList(ChatListType.Main),
             savedMessages(),
+            firstChats(),
             contacts { search.contacts() },
-        ) { list, saved, people ->
-            val ordered = if (saved == null) list else listOf(saved) + list.filter { it.id != saved.id }
-            Found(ordered + people, isSearch = false)
+        ) { list, saved, first, people ->
+            val top = listOfNotNull(saved) + first.filter { it.id != saved?.id }
+            val topIds = top.mapTo(HashSet()) { it.id }
+            Found(top + list.filter { it.id !in topIds } + people, isSearch = false)
+        }
+
+    /** The chats shown first that TDLib knows, in their order, as they change; none while there are none. */
+    private fun firstChats(): Flow<List<Chat>> =
+        preferences.shownFirst.distinctUntilChanged().flatMapLatest { ids ->
+            if (ids.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                combine(ids.map { id -> chats.chat(id) }) { found -> found.filterNotNull() }
+            }
         }
 
     /** With [withContacts], the contacts' private chats [find] gives, none until then and on a failure; else none. */

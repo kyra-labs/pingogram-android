@@ -10,6 +10,8 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Chats shown first: Settings → Appearance → Chats → "Chats shown first" picks up to 5 chats that the forward and share
+  sheets list right after Saved Messages, in your order. They stay on this device.
 - Unlock with screen lock: Settings → Privacy and security → Passcode lock can let your phone's own PIN, pattern or
   password open Pingogram and your locked chats (Android 11 and later). It's off by default, since anyone who knows the
   phone's PIN could then open your chats.
