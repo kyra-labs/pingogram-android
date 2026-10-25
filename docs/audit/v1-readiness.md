@@ -32,7 +32,9 @@ What blocks 1.0, in order:
    sign-in and the app shell (`docs/audit/accessibility.md`); the chat screens still need them and the fixes A2 and
    A5–A15 listed there (A1, A3 and A4, keyboard and mouse, are done in #171), and contacts, profile, media, scanner and core:ui still need 200% font goldens. Owner A (chat
    screens), B (the rest).
-5. **Benchmark thresholds in CI** (§9.3) and a nightly run. Owner: owner plus R; needs a device in CI (Firebase Test Lab) or the owner's phone.
+5. **Benchmark thresholds** (§9.3): `tools/benchmark/compare.py` checks a run against the budgets and the last
+   baseline, and `docs/RELEASE.md` runs it on the owner's phone before each release. A device in CI (Firebase Test Lab)
+   and a nightly run are still open. Owner.
 6. **Account deletion in the app** (Google Play, `docs/PLAY_STORE.md` §8). Owner B; not a §6/§7 item, but Play
    requires it for the `gms` listing.
 
@@ -116,7 +118,7 @@ What blocks 1.0, in order:
 |---|---|---|---|---|
 | 1 | Install the universal APK, log in, use chats, groups, channels, media, stickers, voice, reactions, notifications and settings without the official app | Needs device | Every feature is in; the dogfood shows it | Owner |
 | 2 | All §7 boxes ticked on every screen | **Fail** | §7's three fails | A, B |
-| 3 | CI green on `main`; `./gradlew check` and Macrobenchmark thresholds pass | **Fail** | `check` runs in CI; Macrobenchmark runs only on the owner's phone, without thresholds | Owner (a device in CI), R (thresholds once it exists) |
+| 3 | CI green on `main`; `./gradlew check` and Macrobenchmark thresholds pass | **Fail** | `check` runs in CI; Macrobenchmark runs on the owner's phone, checked by `tools/benchmark/compare.py` before each release (`docs/RELEASE.md`); no device in CI | Owner (a device in CI) |
 | 4 | No crashes in a 7-day dogfood with ≥ 10 testers | Needs device | `docs/TESTING_GUIDE.md`, "Send feedback" | Owner |
 | 5 | Telegram API terms compliance reviewed by the owner and in the release notes | Needs owner (*prepared here*) | `docs/API_TERMS.md` is the checklist; each release's notes now link to it. The owner reviews it before 1.0 | Owner |
 
