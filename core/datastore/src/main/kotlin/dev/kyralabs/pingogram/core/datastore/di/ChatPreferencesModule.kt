@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.datastore.DataStoreDoubleTapSettingsRepositor
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenPinsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreHiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreLinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.datastore.DataStoreLockedChatIdsRepository
 import dev.kyralabs.pingogram.core.datastore.DataStorePhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.datastore.DataStoreRecentEmojiRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
@@ -20,13 +21,14 @@ import dev.kyralabs.pingogram.core.domain.repository.DoubleTapSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenPinsRepository
 import dev.kyralabs.pingogram.core.domain.repository.HiddenTranslateBarsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberVisibilityRepository
 import dev.kyralabs.pingogram.core.domain.repository.RecentEmojiRepository
 
 /**
  * The repositories of the settings file ([DataStoreModule]) that conversations and the chat list read: the composer's,
- * the bars' and the link previews', whether phone numbers show on screen, the chat list's own settings and the
- * archive row's.
+ * the bars' and the link previews', whether phone numbers show on screen, the chat list's own settings, the archive
+ * row's, and the locked chats.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -59,4 +61,7 @@ interface ChatPreferencesModule {
 
     @Binds
     fun chatListSettingsRepository(repository: DataStoreChatListSettingsRepository): ChatListSettingsRepository
+
+    @Binds
+    fun lockedChatIdsRepository(repository: DataStoreLockedChatIdsRepository): LockedChatIdsRepository
 }

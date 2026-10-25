@@ -33,10 +33,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.window.core.layout.WindowSizeClass
 import dev.kyralabs.pingogram.MainActivityUiState
+import dev.kyralabs.pingogram.core.navigation.ChatRoute
 import dev.kyralabs.pingogram.core.navigation.ChatsRoute
+import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.SearchRoute
 import dev.kyralabs.pingogram.core.ui.component.HideNavigationBar
+import dev.kyralabs.pingogram.core.ui.component.LocalChatLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalFeedbackLauncher
+import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatsLauncher
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarInsets
 import dev.kyralabs.pingogram.core.ui.component.LocalNavigationBarVisibility
 import dev.kyralabs.pingogram.core.ui.component.LocalRecentCallsLauncher
@@ -122,6 +126,8 @@ fun PingogramApp(
     tabReselection: TabReselection = remember { TabReselection() },
     chatToOpen: Long? = null,
     onChatOpened: () -> Unit = {},
+    lockedChatsToOpen: Boolean = false,
+    onLockedChatsOpened: () -> Unit = {},
     links: LinkDispatcher? = null,
     linkToOpen: String? = null,
     onLinkOpened: () -> Unit = {},
@@ -156,6 +162,9 @@ fun PingogramApp(
     val openSearch = { navController.openSearch(search, docked = windowSizeClass.docksSearch()) }
     val openFeedback = remember(navController) { { navController.navigateToFeedback() } }
     val openRecentCalls = remember(navController) { { navController.navigateToRecentCalls() } }
+    val openLockedChats =
+        remember(navController) { { navController.navigate(LockedChatsRoute) { launchSingleTop = true } } }
+    val openChat = remember(navController) { { chatId: Long -> navController.navigate(ChatRoute(chatId)) } }
     SharedTransitionLayout(modifier) {
         ProvideSharedTransitionScope(this) {
             NavigationSuiteScaffold(
@@ -172,6 +181,9 @@ fun PingogramApp(
                         LocalTabReselection provides tabReselection,
                         LocalFeedbackLauncher provides openFeedback,
                         LocalRecentCallsLauncher provides openRecentCalls,
+                        // Locked chats (docs/adr/0029-locked-chats.md): the chat list's row, and the chats on the page.
+                        LocalLockedChatsLauncher provides openLockedChats,
+                        LocalChatLauncher provides openChat,
                     ) {
                         AppContent(uiState, search) {
                             PingogramNavHost(
@@ -180,6 +192,8 @@ fun PingogramApp(
                                 search = search,
                                 chatToOpen = chatToOpen,
                                 onChatOpened = onChatOpened,
+                                lockedChatsToOpen = lockedChatsToOpen,
+                                onLockedChatsOpened = onLockedChatsOpened,
                                 onOpenLinkTarget = { target -> links?.show(target) },
                             )
                         }

@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
 import dev.kyralabs.pingogram.core.domain.model.MessageSender
 import dev.kyralabs.pingogram.core.domain.model.UserStatus
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.ui.text.UiText
 import dev.kyralabs.pingogram.feature.chats.R
 import dev.kyralabs.pingogram.feature.chats.ui.ChatListFixtures.ME
@@ -62,6 +63,7 @@ class SearchViewModelTest {
     private val users = FakeUserRepository().apply { myUserId.value = ME }
     private val groups = FakeGroupRepository()
     private val clock = FakeWallClock(NOW)
+    private val chatLock = FakeChatLockRepository()
 
     @BeforeEach
     fun setUp() {
@@ -81,6 +83,7 @@ class SearchViewModelTest {
                 searchRepository = search,
                 userRepository = users,
                 groupRepository = groups,
+                chatLock = chatLock,
                 clock = clock,
                 timePatterns = FakeTimePatterns(),
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -217,6 +220,23 @@ class SearchViewModelTest {
             assertEquals(listOf(2L, 3L), suggestions.recents.map { it.id })
             assertFalse(suggestions.isLoading)
             assertFalse(suggestions.isEmpty)
+        }
+
+    @Test
+    fun `locked chats are suggested only once opened with the passcode`() =
+        runTest {
+            search.topPeople = listOf(chat(4), chat(5))
+            search.recents += listOf(chat(2), chat(3))
+            chatLock.lock(setOf(3L, 4L))
+            val viewModel = viewModel()
+
+            assertEquals(listOf(5L), viewModel.suggestions.topPeople.map { it.id })
+            assertEquals(listOf(2L), viewModel.suggestions.recents.map { it.id })
+
+            chatLock.setUnlocked(true)
+            runCurrent()
+            assertEquals(listOf(4L, 5L), viewModel.suggestions.topPeople.map { it.id })
+            assertEquals(listOf(2L, 3L), viewModel.suggestions.recents.map { it.id })
         }
 
     @Test

@@ -108,6 +108,9 @@
 
     <!-- The archive (FR-L3, FR-L9): its row at the top of the chat list, and its screen. -->
     <string name="chat_list_archived_chats">Archived chats</string>
+    <!-- The row at the end of the chat list that opens the chats kept behind the passcode (docs/adr/0029-locked-chats.md). -->
+    <string name="chat_list_locked_chats">Locked chats</string>
+    <string name="chat_list_locked_chats_summary">Open with your passcode</string>
     <!-- The archive row's second line before its chats are loaded: how many chats it has. -->
     <plurals name="chat_list_archive_chat_count">
         <item quantity="one">%d chat</item>

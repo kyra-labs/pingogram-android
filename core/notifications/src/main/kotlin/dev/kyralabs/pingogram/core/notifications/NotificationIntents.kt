@@ -38,6 +38,33 @@ object NotificationIntents {
             PendingIntent.getActivity(context, 0, intent, IMMUTABLE_FLAGS)
         }
 
+    /**
+     * Opens the locked chats (`docs/adr/0029-locked-chats.md`), which ask for the passcode first: the tap of their one
+     * notification, which names no chat. The activity reads it back with [opensLockedChats].
+     */
+    fun openLockedChatsPendingIntent(context: Context): PendingIntent? =
+        context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { intent ->
+            intent.action = Intent.ACTION_VIEW
+            intent.removeCategory(Intent.CATEGORY_LAUNCHER)
+            intent.data =
+                Uri
+                    .Builder()
+                    .scheme(SCHEME)
+                    .authority(LOCKED_CHATS_HOST)
+                    .build()
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+            PendingIntent.getActivity(context, 0, intent, IMMUTABLE_FLAGS)
+        }
+
+    /** Whether [intent] opens the locked chats ([openLockedChatsPendingIntent]), not replayed from the recent apps. */
+    fun opensLockedChats(intent: Intent?): Boolean =
+        intent != null &&
+            intent.action == Intent.ACTION_VIEW &&
+            intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0 &&
+            intent.data?.scheme == SCHEME &&
+            intent.data?.host == LOCKED_CHATS_HOST
+
     /** Opens the app where it was, for the summary of all notifications. */
     fun openAppPendingIntent(context: Context): PendingIntent? =
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { intent ->
@@ -90,6 +117,7 @@ object NotificationIntents {
 
     private const val SCHEME = "pingogram"
     private const val CHAT_HOST = "chat"
+    private const val LOCKED_CHATS_HOST = "locked-chats"
     private const val EXTRA_CHAT_ID = "dev.kyralabs.pingogram.extra.CHAT_ID"
     private const val SHORTCUT_PREFIX = "chat_"
 

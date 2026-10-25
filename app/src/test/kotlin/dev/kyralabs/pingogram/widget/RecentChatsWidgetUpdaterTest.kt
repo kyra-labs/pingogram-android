@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.notifications.AvatarIcons
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
+import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -63,6 +64,7 @@ class RecentChatsWidgetUpdaterTest {
         widgets: FakeWidgets,
         authState: AuthState = AuthState.Ready,
         passcode: String? = null,
+        lockedChats: Set<Long> = emptySet(),
     ): RecentChatsWidgetUpdater {
         val context = RuntimeEnvironment.getApplication()
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -75,6 +77,7 @@ class RecentChatsWidgetUpdaterTest {
             passcodeRepository = FakePasscodeRepository(passcode = passcode),
             chatRepository = TdlibChatRepository(client, backgroundScope, dispatcher, OpenChats()),
             userRepository = TdlibUserRepository(client, backgroundScope),
+            chatLock = FakeChatLockRepository(locked = lockedChats),
             avatars =
                 AvatarIcons(
                     context,
@@ -239,6 +242,19 @@ class RecentChatsWidgetUpdaterTest {
 
             assertEquals(RecentChatsContent.Locked, updater.content.value)
             assertTrue(client.sentOf<TdApi.LoadChats>().isEmpty())
+        }
+
+    @Test
+    fun `a locked chat never reaches the home screen, the next chats taking its place`() =
+        runTest {
+            val updater = updater(FakeWidgets(present = true), lockedChats = setOf(GROUP))
+            chats()
+            runCurrent()
+            settle()
+
+            val content = updater.content.value as RecentChatsContent.Chats
+            assertEquals(listOf("Alice", "Saved Messages", "Alice"), content.chats.map { it.title })
+            assertTrue(content.chats.none { GROUP == it.id || "Climbing" in it.title })
         }
 
     private companion object {

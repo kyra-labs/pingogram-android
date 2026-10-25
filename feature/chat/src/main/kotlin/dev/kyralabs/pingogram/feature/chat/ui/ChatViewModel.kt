@@ -34,6 +34,7 @@ import dev.kyralabs.pingogram.core.domain.repository.BotButtonRepository
 import dev.kyralabs.pingogram.core.domain.repository.BotInfoRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ComposerSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
@@ -345,6 +346,7 @@ class ChatViewModel internal constructor(
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
+    hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -384,6 +386,7 @@ class ChatViewModel internal constructor(
         customEmojiRepository: CustomEmojiRepository,
         pollRepository: PollRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
+        chatLock: ChatLockRepository,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -427,6 +430,7 @@ class ChatViewModel internal constructor(
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
+        hiddenChats = chatLock.hiddenChatIds.filterNotNull(),
     )
 
     /**
@@ -792,6 +796,7 @@ class ChatViewModel internal constructor(
             actions = messageActionRepository,
             scope = viewModelScope,
             dispatcher = dispatcher,
+            hiddenChats = hiddenChats,
             onEffect = { effectChannel.trySend(it) },
         )
 

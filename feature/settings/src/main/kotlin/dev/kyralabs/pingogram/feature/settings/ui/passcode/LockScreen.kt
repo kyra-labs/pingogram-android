@@ -164,7 +164,7 @@ private fun ForgotButton(
 
 /** Shows the system's biometric prompt again: the fingerprint on a tonal icon button with the Expressive shapes. */
 @Composable
-private fun BiometricButton(onClick: () -> Unit) {
+internal fun BiometricButton(onClick: () -> Unit) {
     FilledTonalIconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
         Icon(
             painter = painterResource(R.drawable.ic_fingerprint),
