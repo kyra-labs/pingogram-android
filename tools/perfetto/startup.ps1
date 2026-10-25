@@ -6,9 +6,8 @@
 # Install a profileable build first and sign in (.\gradlew.bat :app:installFossBenchmarkRelease), then run this with
 # the phone unlocked and the screen on. It records one Perfetto trace (tools\perfetto\startup.pbtxt) while it starts the
 # app -Starts times cold (the process stopped first) and as many times warm (the process kept, the activity created
-# again), and saves what `am start -W` reports for each start. Warm starts use Android's developer option "Don't keep
-# activities" for their duration, so leaving the app destroys its activity as Macrobenchmark's warm starts do; the option
-# is put back as it was, also when the script stops early.
+# again), and saves what `am start -W` reports for each start. A warm start keeps the process and starts the activity
+# with NEW_TASK | CLEAR_TASK, which destroys it and creates it again in the running process.
 #
 # It writes startup.perfetto-trace, starts.txt and device.txt into the output directory (default: .\startup-<date>),
 # and summary.txt where Perfetto's Python package is installed (py -m pip install perfetto; summarize.py). Open the trace
@@ -39,54 +38,48 @@ $packageInfo = adb shell dumpsys package $Package
     (adb shell getprop ro.product.model),
     (adb shell getprop ro.build.version.release),
     ($packageInfo | Select-String -Pattern "versionName" | Select-Object -First 1),
-    ($packageInfo | Select-String -Pattern "PROFILEABLE[A-Z_]*|DEBUGGABLE" | Select-Object -First 1)
+    ($packageInfo | Select-String -Pattern "PROFILEABLE[A-Z_]*|DEBUGGABLE" | Select-Object -First 1),
+    # Accessibility services make Compose work out its semantics in every frame: which ones run, by package name.
+    "accessibility services: $(adb shell settings get secure enabled_accessibility_services)"
 ) | Set-Content -Path (Join-Path $Out "device.txt")
-
-$keepActivities = (adb shell settings get global always_finish_activities).Trim()
-if ($keepActivities -eq "null") { $keepActivities = "0" }
 
 function Invoke-Home {
     adb shell input keyevent KEYCODE_HOME | Out-Null
     Start-Sleep -Seconds 2
 }
 
-function Invoke-Start([string]$label) {
+function Invoke-Start([string]$label, [string[]]$flags = @()) {
     Add-Content -Path (Join-Path $Out "starts.txt") -Value "=== $label ==="
-    adb shell am start-activity -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n $activity |
+    adb shell am start-activity -W @flags -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n $activity |
         Add-Content -Path (Join-Path $Out "starts.txt")
     Start-Sleep -Seconds $settle
 }
 
-try {
-    $durationMs = ($Starts * 2 * ($settle + 4) + 15) * 1000
-    Write-Host "Recording $Starts cold and $Starts warm starts (about $($durationMs / 1000) s). Leave the phone alone."
-    $config = (Get-Content -Raw -Path (Join-Path $here "startup.pbtxt")) `
-        -replace "dev\.kyralabs\.pingogram", $Package `
-        -replace "(?m)^duration_ms: .*$", "duration_ms: $durationMs"
-    $localConfig = Join-Path (Resolve-Path -LiteralPath $Out).Path "startup.pbtxt"
-    # Unix line ends: Perfetto reads the file on the phone.
-    [System.IO.File]::WriteAllText($localConfig, $config.Replace("`r`n", "`n"))
-    adb push $localConfig $deviceConfig | Out-Null
-    # In the background on the phone, so it records while this script starts the app; it stops after duration_ms.
-    adb shell "cat $deviceConfig | perfetto --background --txt -c - -o $deviceTrace" | Out-Null
-    Start-Sleep -Seconds 3
+$durationMs = ($Starts * 2 * ($settle + 4) + 15) * 1000
+Write-Host "Recording $Starts cold and $Starts warm starts (about $($durationMs / 1000) s). Leave the phone alone."
+$config = (Get-Content -Raw -Path (Join-Path $here "startup.pbtxt")) `
+    -replace "dev\.kyralabs\.pingogram", $Package `
+    -replace "(?m)^duration_ms: .*$", "duration_ms: $durationMs"
+$localConfig = Join-Path (Resolve-Path -LiteralPath $Out).Path "startup.pbtxt"
+# Unix line ends: Perfetto reads the file on the phone.
+[System.IO.File]::WriteAllText($localConfig, $config.Replace("`r`n", "`n"))
+adb push $localConfig $deviceConfig | Out-Null
+# In the background on the phone, so it records while this script starts the app; it stops after duration_ms.
+adb shell "cat $deviceConfig | perfetto --background --txt -c - -o $deviceTrace" | Out-Null
+Start-Sleep -Seconds 3
 
-    Set-Content -Path (Join-Path $Out "starts.txt") -Value ""
-    for ($i = 1; $i -le $Starts; $i++) {
-        Invoke-Home
-        adb shell am force-stop $Package | Out-Null
-        Start-Sleep -Seconds 1
-        Invoke-Start "cold $i"
-    }
+Set-Content -Path (Join-Path $Out "starts.txt") -Value ""
+for ($i = 1; $i -le $Starts; $i++) {
+    Invoke-Home
+    adb shell am force-stop $Package | Out-Null
+    Start-Sleep -Seconds 1
+    Invoke-Start "cold $i"
+}
 
-    adb shell settings put global always_finish_activities 1 | Out-Null
-    for ($i = 1; $i -le $Starts; $i++) {
-        # Leaving the app destroys its activity ("Don't keep activities"); the process stays.
-        Invoke-Home
-        Invoke-Start "warm $i"
-    }
-} finally {
-    adb shell settings put global always_finish_activities $keepActivities | Out-Null
+for ($i = 1; $i -le $Starts; $i++) {
+    # The process stays; NEW_TASK | CLEAR_TASK (0x10008000) destroys the activity and creates it again, a warm start.
+    Invoke-Home
+    Invoke-Start "warm $i" @("-f", "0x10008000")
 }
 Invoke-Home
 
