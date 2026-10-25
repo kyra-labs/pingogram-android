@@ -136,8 +136,8 @@ private fun VoiceChatPill(
  * The information rows, segmented list items without icons, each value over its label as the profile's: the
  * description with its links and mentions (selectable; a mention opens who it names; "Copy" for screen readers), then
  * the link ("t.me/rustberlin", or the invite link for administrators of a private group), which a tap copies and the
- * trailing button shares, and "QR code", which shows it as one; then, while Privacy and security's "Show IDs" is on, the
- * chat's [id], which a tap copies.
+ * trailing button shares, and "QR code", which shows it as one; then, while Privacy and security's "Show IDs" is
+ * on, the chat's [id], which a tap copies.
  */
 @Composable
 internal fun ChatInfoGroup(

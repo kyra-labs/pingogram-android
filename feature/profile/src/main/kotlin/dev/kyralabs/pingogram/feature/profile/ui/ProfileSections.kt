@@ -209,26 +209,6 @@ internal fun ProfileInfoGroup(
     ProfileGroup(rows, modifier, title = stringResource(R.string.profile_section_info))
 }
 
-/** A user's or chat's ID, left to right, over "ID"; a tap copies it ([onCopy]). */
-@Composable
-internal fun IdRow(
-    id: Long,
-    shapes: ListItemShapes,
-    onCopy: () -> Unit,
-) {
-    val copy = stringResource(R.string.profile_copy)
-    SegmentedListItem(
-        onClick = onCopy,
-        // Names what a tap does; the list item's click supplies the action.
-        modifier = Modifier.semantics { onClick(label = copy, action = null) },
-        shapes = shapes,
-        colors = profileRowColors(),
-        supportingContent = { Text(stringResource(R.string.profile_id)) },
-    ) {
-        Text(id.toString(), style = MaterialTheme.typography.bodyLarge.numericContent)
-    }
-}
-
 /** The personal channel: its title (user content) over "Channel"; a tap opens its chat. */
 @Composable
 private fun PersonalChannelRow(
