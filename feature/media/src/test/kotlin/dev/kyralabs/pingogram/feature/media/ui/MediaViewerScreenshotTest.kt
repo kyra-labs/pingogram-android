@@ -60,6 +60,17 @@ class MediaViewerScreenshotTest(
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
+    /**
+     * At 200% font scale (`REQUIREMENTS.md` §6.3), the states with the most text: the caption and top bar, a video's
+     * controls, the error, and the delete question. They grow and never clip.
+     */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName in LARGE_FONT_STATES)
+        capture(ScreenshotVariant.Light, goldenName = "fontScale200")
+    }
+
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
     private fun captureAudit(variant: ScreenshotVariant) {
         assumeTrue(stateName == "photo")
@@ -113,6 +124,9 @@ class MediaViewerScreenshotTest(
                 "sharing" to Shot(MediaPreviewData.sharing, imagesLoading = true),
                 "protectedContent" to Shot(MediaPreviewData.protectedContent),
             )
+
+        private const val FONT_SCALE_200 = 2f
+        private val LARGE_FONT_STATES = setOf("photo", "video", "error", "deleteConfirmation")
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")

@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.LayoutDirection
  * focus as they show, so the keys work at once. While they hold it themselves (not the reply field or a button),
  * Right shows the next story and Left the previous one (mirrored in right-to-left layouts, as the tap zones are), and
  * Space pauses or resumes ([isPaused], [StoryViewerEvent.Hold]); Esc closes the viewer ([onClose]) wherever the focus
- * is in it.
+ * is in it. A volume key gives a muted video its sound back ([StoryViewerEvent.Unmute]) and still changes the volume:
+ * the key is not consumed.
  */
 @Composable
 internal fun Modifier.storyKeys(
@@ -68,10 +69,16 @@ internal fun Modifier.storyKeys(
             }
         }
     return onKeyEvent(handler)
-        .onFocusChanged { owner.isFocused = it.isFocused }
+        .onKeyEvent { event ->
+            // Not consumed: the key still changes the volume.
+            if (event.type == KeyEventType.KeyDown && event.key.isVolume) currentOnEvent(StoryViewerEvent.Unmute)
+            false
+        }.onFocusChanged { owner.isFocused = it.isFocused }
         .focusRequester(focus)
         .focusable()
 }
+
+private val Key.isVolume: Boolean get() = this == Key.VolumeUp || this == Key.VolumeDown
 
 /** Whether the stories themselves have the focus, rather than something in them; read in key callbacks only. */
 private class FocusHolder(

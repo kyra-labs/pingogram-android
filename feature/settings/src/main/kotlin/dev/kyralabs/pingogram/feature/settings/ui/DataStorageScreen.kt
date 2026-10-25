@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadNetwork
 import dev.kyralabs.pingogram.core.domain.model.AutoDownloadSettings
 import dev.kyralabs.pingogram.core.domain.model.StorageUsage
+import dev.kyralabs.pingogram.core.domain.repository.CallDataSaving
 import dev.kyralabs.pingogram.core.ui.component.CheckSwitch
 import dev.kyralabs.pingogram.core.ui.component.performToggle
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
@@ -52,8 +53,10 @@ internal fun DataStorageRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: DataStorageViewModel = hiltViewModel(),
+    callsViewModel: CallDataSavingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val callDataSaving by callsViewModel.dataSaving.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -81,6 +84,11 @@ internal fun DataStorageRoute(
             launch { snackbarHostState.showSnackbar(message) }
         }
     }
+    LaunchedEffect(callsViewModel) {
+        callsViewModel.errors.collect { error ->
+            launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
+        }
+    }
     DataStorageScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -90,6 +98,8 @@ internal fun DataStorageRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        callDataSaving = callDataSaving,
+        onCallDataSavingChange = callsViewModel::onSelect,
     )
 }
 
@@ -98,7 +108,8 @@ internal fun DataStorageRoute(
  * that opens its page ([onOpenAutoDownload]), with a note while Data Saver is on; how much space Pingogram's downloaded
  * files and databases take, as TDLib reports it, and "Clear cache", which deletes the downloaded files after a
  * destructive confirmation ([ClearCacheDialog]) and shows progress while it runs; and the proxy in use, a row that
- * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) below it.
+ * opens the proxies ([onOpenProxies]), with network usage ([onOpenNetworkUsage]) below it; and when calls use less
+ * data ([callDataSaving], [CallsGroup]).
  */
 @Suppress("LongParameterList") // The page's state and events, the three pages it opens, back, and its scaffold's parts.
 @Composable
@@ -111,6 +122,8 @@ internal fun DataStorageScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    callDataSaving: CallDataSaving? = null,
+    onCallDataSavingChange: (CallDataSaving) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_data_storage),
@@ -125,6 +138,7 @@ internal fun DataStorageScreen(
             SendingGroup(original) { onEvent(DataStorageEvent.SetPhotosInOriginalQuality(it)) }
         }
         NetworkGroup(state.proxy, onOpenProxies, onOpenNetworkUsage)
+        CallsGroup(callDataSaving, onCallDataSavingChange)
         SettingsGroup(
             title = stringResource(R.string.settings_section_storage_usage),
             iconTone = SettingsIconTone.Secondary,

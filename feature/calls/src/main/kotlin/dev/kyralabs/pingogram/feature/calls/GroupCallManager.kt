@@ -83,7 +83,7 @@ class GroupCallManager
         private val titles: ChatTitles,
         private val line: CallLine,
         // Lazy, as in CallManager: made only once a camera turns on, off the main thread.
-        private val network: dagger.Lazy<NetworkRepository>,
+        @param:CallNetwork private val network: dagger.Lazy<NetworkRepository>,
         @param:ApplicationScope private val scope: CoroutineScope,
     ) {
         private val mutableCall = MutableStateFlow<ActiveGroupCall?>(null)

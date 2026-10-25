@@ -157,6 +157,9 @@ sealed interface StoryViewerEvent {
 
     data object ToggleMute : StoryViewerEvent
 
+    /** A volume key was pressed: a muted video gets its sound back, as the key also changes the volume. */
+    data object Unmute : StoryViewerEvent
+
     /** The reply field took the focus ([focused]: the keyboard is up), or lost it. */
     data class ReplyFocused(
         val focused: Boolean,

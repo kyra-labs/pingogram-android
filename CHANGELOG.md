@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Settings → Data and storage → "Use less data for calls": never, on mobile data or always, the video you send in
+  calls goes at most at 360p.
+- In the media viewer, a tap near the left or right side shows the previous or next photo or video. In stories, a
+  volume key turns a muted video's sound back on.
 - Archive settings: the archive's top bar opens them. Archive and mute new chats from people who aren't in your
   contacts (where Telegram offers it), and keep unmuted chats, or those of your folders, in the archive when a new
   message arrives. They belong to your Telegram account. The archived chats row can show the chats' names, be one line,
