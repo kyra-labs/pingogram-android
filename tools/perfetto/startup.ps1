@@ -10,9 +10,9 @@
 # activities" for their duration, so leaving the app destroys its activity as Macrobenchmark's warm starts do; the option
 # is put back as it was, also when the script stops early.
 #
-# It writes startup.perfetto-trace, starts.txt and device.txt into the output directory (default: .\startup-<date>).
-# Open the trace in https://ui.perfetto.dev (read in the browser, not uploaded) or summarize it with
-# tools\perfetto\startup.sql.
+# It writes startup.perfetto-trace, starts.txt and device.txt into the output directory (default: .\startup-<date>),
+# and summary.txt where Perfetto's Python package is installed (py -m pip install perfetto; summarize.py). Open the trace
+# in https://ui.perfetto.dev (read in the browser, not uploaded), or query it with tools\perfetto\startup.sql.
 param(
     [string]$Out = "startup-$(Get-Date -Format 'yyyyMMdd-HHmmss')",
     [string]$Package = "dev.kyralabs.pingogram",
@@ -97,4 +97,22 @@ do {
 } while ($LASTEXITCODE -eq 0)
 adb pull $deviceTrace (Join-Path $Out "startup.perfetto-trace") | Out-Null
 adb shell rm -f $deviceTrace $deviceConfig | Out-Null
-Write-Host "Done: $Out (send device.txt, starts.txt and startup.perfetto-trace)."
+# The trace is hundreds of MB; its summary is a few KB of numbers, which is what to send.
+$trace = Join-Path $Out "startup.perfetto-trace"
+$summary = Join-Path $Out "summary.txt"
+$python = Get-Command py -ErrorAction SilentlyContinue
+if (-not $python) { $python = Get-Command python -ErrorAction SilentlyContinue }
+$hasPerfetto = $false
+if ($python) {
+    & $python.Source -c "import perfetto.trace_processor" 2>$null
+    $hasPerfetto = $LASTEXITCODE -eq 0
+}
+if ($hasPerfetto) {
+    & $python.Source (Join-Path $here "summarize.py") $trace (Join-Path $here "startup.sql") |
+        Set-Content -Encoding utf8 -Path $summary
+    Write-Host "Done: $Out (send device.txt, starts.txt and summary.txt)."
+} else {
+    Write-Host "Done: $Out. To summarize the trace: py -m pip install perfetto, then"
+    Write-Host "  py tools\perfetto\summarize.py $trace > $summary"
+    Write-Host "and send device.txt, starts.txt and summary.txt."
+}

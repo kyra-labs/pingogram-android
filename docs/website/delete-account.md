@@ -1,7 +1,7 @@
 <!--
   The content of the Pingogram website's account deletion page, which Google Play asks for (its account deletion
-  policy: a web page where users can ask to delete their account and its data, without the app). Planned address:
-  `<website>/delete-account` (docs/PLAY_STORE.md §2.1). Keep it in step with the app's Delete account page
+  policy: a web page where users can ask to delete their account and its data, without the app). Published at
+  `https://pingogram.kyralabs.dev/delete-account/` (docs/PLAY_STORE.md §2.1). Keep it in step with the app's Delete account page
   (feature:settings, `DeleteAccountScreen`) and with Telegram's own deactivation page.
 -->
 

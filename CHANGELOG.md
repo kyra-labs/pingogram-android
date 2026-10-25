@@ -10,6 +10,10 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Forum topics: members with the right create topics ("New topic" in the topic list's top bar: a name and one of six
+  colors), and rename, close and reopen, pin and unpin, and delete them from a topic's long press or its
+  conversation's "Manage topic" button; deleting asks first. Pinned topics reorder by dragging their handles.
+  Administrators hide or show the General topic. Members who may create topics rename, close and reopen their own.
 - Round video messages: tap the microphone beside the message field to switch it to a camera, then hold it to record a
   round video message, up to a minute, with the same gestures as a voice message: slide left to cancel, slide up to
   keep recording hands-free, let go to send. A round preview above the field shows what the camera sees and how much

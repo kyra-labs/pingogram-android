@@ -1,16 +1,19 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.data.mapper.toForumTopic
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
+import dev.kyralabs.pingogram.core.data.mapper.toTdColor
 import dev.kyralabs.pingogram.core.data.mapper.withInfo
 import dev.kyralabs.pingogram.core.domain.model.ForumTopic
 import dev.kyralabs.pingogram.core.domain.model.ForumTopicList
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.PersistentMap
@@ -43,7 +46,12 @@ import javax.inject.Singleton
  *   one getting its final id (`updateMessageSendSucceeded`) and an edited last message (`updateMessageContent`).
  * - **Fetched again** (`getForumTopic`), where no update says it all: a topic whose read state changed (TDLib reports
  *   no unread count with it), one whose last message was deleted, and one TDLib reports that is not loaded (a new one).
+ * - **Managing** (`createForumTopic`, `editForumTopic`, `toggleForumTopicIsClosed`, `toggleForumTopicIsPinned`,
+ *   `setPinnedForumTopics`, `deleteForumTopic`, `toggleGeneralForumTopicIsHidden`): TDLib's updates carry most
+ *   changes back; what no update says is applied once TDLib took it: a new topic fetched, the pinned topics' new
+ *   order, a deleted topic dropped. One function per change td_api.tl offers (hence `TooManyFunctions`).
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class TdlibForumTopicRepository
     @Inject
@@ -77,6 +85,67 @@ class TdlibForumTopicRepository
                 val request = TdApi.GetForumTopics(chatId, "", next.date, next.messageId, next.topicId, PAGE_SIZE)
                 client.request(request).map { page -> store.update { cache -> cache.withPage(chatId, page) } }
             }
+
+        override suspend fun createTopic(
+            chatId: Long,
+            name: String,
+            color: TopicColor,
+        ): Outcome<Int> {
+            val trimmed = name.trim()
+            if (trimmed.isEmpty()) return Outcome.Failure(DomainError.TitleInvalid)
+            val icon = TdApi.ForumTopicIcon(color.toTdColor(), 0)
+            return client.request(TdApi.CreateForumTopic(chatId, trimmed, false, icon)).map { info ->
+                // Its updateForumTopicInfo may come before the forum is observed again; fetch it for the list.
+                if (chatId in store.state.value.forums) refetchLater(chatId to info.forumTopicId)
+                info.forumTopicId
+            }
+        }
+
+        override suspend fun renameTopic(
+            chatId: Long,
+            topicId: Int,
+            name: String,
+        ): Outcome<Unit> {
+            val trimmed = name.trim()
+            if (trimmed.isEmpty()) return Outcome.Failure(DomainError.TitleInvalid)
+            // editIconCustomEmoji false keeps the icon: Pingogram offers no custom emoji icons.
+            return client.request(TdApi.EditForumTopic(chatId, topicId, trimmed, false, 0)).map {}
+        }
+
+        override suspend fun setClosed(
+            chatId: Long,
+            topicId: Int,
+            isClosed: Boolean,
+        ): Outcome<Unit> = client.request(TdApi.ToggleForumTopicIsClosed(chatId, topicId, isClosed)).map {}
+
+        override suspend fun setPinned(
+            chatId: Long,
+            topicId: Int,
+            isPinned: Boolean,
+        ): Outcome<Unit> = client.request(TdApi.ToggleForumTopicIsPinned(chatId, topicId, isPinned)).map {}
+
+        override suspend fun reorderPinned(
+            chatId: Long,
+            topicIds: List<Int>,
+        ): Outcome<Unit> =
+            client.request(TdApi.SetPinnedForumTopics(chatId, topicIds.toIntArray())).map {
+                // TDLib reports the new order of no topic: put the loaded ones in it.
+                store.update { cache -> cache.reordering(chatId, topicIds) }
+            }
+
+        override suspend fun deleteTopic(
+            chatId: Long,
+            topicId: Int,
+        ): Outcome<Unit> =
+            client.request(TdApi.DeleteForumTopic(chatId, topicId)).map {
+                // No update says a topic is gone, only that its messages are.
+                store.update { cache -> cache.removing(chatId, topicId) }
+            }
+
+        override suspend fun setGeneralHidden(
+            chatId: Long,
+            isHidden: Boolean,
+        ): Outcome<Unit> = client.request(TdApi.ToggleGeneralForumTopicIsHidden(chatId, isHidden)).map {}
 
         /**
          * What [select] takes of the cache, then every change, while forum [chatId] counts one more observer; topic
@@ -261,6 +330,32 @@ internal data class TopicCache(
         return copy(forums = forums.putting(topic.chatId, forum.copy(topics = forum.topics.putting(topic.id, topic))))
     }
 
+    /** The loaded pinned topics of forum [chatId] in the order of [topicIds], once TDLib took it. */
+    fun reordering(
+        chatId: Long,
+        topicIds: List<Int>,
+    ): TopicCache {
+        val forum = forums[chatId]
+        val loaded = topicIds.mapNotNull { forum?.topics?.get(it) }
+        if (forum == null || loaded.isEmpty()) return this
+        // Orders only rank the pinned topics among themselves (ForumState.list): keep the highest one, rank the others
+        // below it in the new order.
+        val top = loaded.maxOf { it.order }
+        val reordered = loaded.mapIndexed { index, topic -> topic.copy(order = top - index) }
+        return copy(
+            forums = forums.putting(chatId, forum.copy(topics = forum.topics.putAll(reordered.associateBy { it.id }))),
+        )
+    }
+
+    /** Forum [chatId] without topic [topicId], deleted. */
+    fun removing(
+        chatId: Long,
+        topicId: Int,
+    ): TopicCache {
+        val forum = forums[chatId] ?: return this
+        return copy(forums = forums.putting(chatId, forum.copy(topics = forum.topics.removing(topicId))))
+    }
+
     private inline fun editing(
         chatId: Long,
         topicId: Int,
@@ -287,13 +382,12 @@ internal data class ForumState(
     val observers: Int = 0,
 ) {
     /**
-     * The topics in the forum's order: General first, then the pinned ones in TDLib's order, then the others by their
-     * newest message; a General topic the administrators hid is left out.
+     * The topics in the forum's order: General first (also when the administrators hid it, which the list shows only
+     * to those who may show it again), then the pinned ones in TDLib's order, then the others by their newest message.
      */
     fun list(): ForumTopicList {
-        val shown = topics.values.filterNot { it.isGeneral && it.isHidden }
         val sorted =
-            shown.sortedWith(
+            topics.values.sortedWith(
                 compareByDescending<ForumTopic> { it.isGeneral }
                     .thenByDescending { it.isPinned }
                     .thenByDescending { if (it.isPinned) it.order else it.lastMessage?.id ?: 0 },

@@ -27,16 +27,20 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -46,10 +50,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.DelayedLoadingIndicator
 import dev.kyralabs.pingogram.core.ui.component.EmptyState
+import dev.kyralabs.pingogram.core.ui.component.ListReorderState
+import dev.kyralabs.pingogram.core.ui.component.dragHandle
+import dev.kyralabs.pingogram.core.ui.component.rememberListReorderState
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
 import dev.kyralabs.pingogram.core.ui.preview.PingogramVariantPreviews
@@ -78,7 +87,12 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   topic, a loading indicator while the next page loads, or its error with "Try again".
  * - A tap opens the topic's conversation through [onOpenTopic]; [onBack] is the top bar's back button, none beside the
  *   chat list.
+ * - **Managing** (events to [onTopicEvent]): "New topic" in the top bar where the user may create one
+ *   ([NewTopicButton]), a topic's menu on its long press ([TopicRowItem]), the pinned topics' drag handles where they
+ *   may be reordered ([ForumTopicsEvent.Reorder]), and the editor and the question before deleting
+ *   ([TopicManagementDialogs]); snackbars in [snackbarHostState].
  */
+@Suppress("LongParameterList") // The state, its two kinds of events, where a topic opens, back and the hoisted states.
 @Composable
 internal fun ForumTopicsScreen(
     state: ForumTopicsUiState,
@@ -86,24 +100,36 @@ internal fun ForumTopicsScreen(
     onOpenTopic: (topicId: Int) -> Unit,
     onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    onTopicEvent: (TopicEvent) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { ChatTopBar(header = state.header, onBack = onBack) },
+        topBar = {
+            ChatTopBar(
+                header = state.header,
+                onBack = onBack,
+                topicAction = if (state.canCreate) ({ NewTopicButton { onTopicEvent(TopicEvent.NewTopic) } }) else null,
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) { innerPadding ->
         ContentSheet(innerPadding, Modifier.consumeWindowInsets(innerPadding)) { contentPadding ->
-            TopicsBody(state.content, onEvent, onOpenTopic, listState, contentPadding)
+            TopicsBody(state.content, onEvent, onTopicEvent, onOpenTopic, listState, contentPadding)
         }
     }
+    TopicManagementDialogs(state.management, onTopicEvent)
 }
 
 /** What the sheet shows for [content]: progress, an empty or error state, or the topics. */
+@Suppress("LongParameterList") // The content, its two kinds of events, where a topic opens, and the list's state.
 @Composable
 private fun TopicsBody(
     content: TopicsContent,
     onEvent: (ForumTopicsEvent) -> Unit,
+    onTopicEvent: (TopicEvent) -> Unit,
     onOpenTopic: (topicId: Int) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
@@ -123,26 +149,57 @@ private fun TopicsBody(
         }
 
         is TopicsContent.Content -> {
-            TopicList(content, onEvent, onOpenTopic, listState, contentPadding)
+            TopicList(content, onEvent, onTopicEvent, onOpenTopic, listState, contentPadding)
         }
     }
 }
 
-/** The topics, keyed by id, then the state of the next page; reports when the last topic comes near. */
+/**
+ * The topics, keyed by id, then the state of the next page; reports when the last topic comes near. Where
+ * [TopicsContent.Content.canReorder], the pinned topics are dragged by their handles into another order
+ * ([ListReorderState]): the dragged one follows the finger in its graphics layer above the others, which slide into
+ * its place, and the order goes to the view model as the finger lifts.
+ */
+@Suppress("LongMethod", "LongParameterList") // The rows with their menus and reordering, then the next page's state.
 @Composable
 private fun TopicList(
     content: TopicsContent.Content,
     onEvent: (ForumTopicsEvent) -> Unit,
+    onTopicEvent: (TopicEvent) -> Unit,
     onOpenTopic: (topicId: Int) -> Unit,
     listState: LazyListState,
     contentPadding: PaddingValues,
 ) {
+    val pinnedIds = content.topics.filter { it.isPinned }.map { it.id }
+    val reorder =
+        rememberListReorderState(listState, pinnedIds, rowKey = { it }) { onEvent(ForumTopicsEvent.Reorder(it)) }
+    val topics = content.topics.withPinnedIn(reorder.order)
+    val pinnedOrder = reorder.order
+    val placement = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     LazyColumn(modifier = Modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
-        items(content.topics, key = { it.id }, contentType = { CONTENT_TYPE_TOPIC }) { topic ->
+        items(topics, key = { it.id }, contentType = { CONTENT_TYPE_TOPIC }) { topic ->
+            val position = pinnedOrder.indexOf(topic.id)
+            val movable = content.canReorder && topic.isPinned && position >= 0
+            val dragged = movable && reorder.draggedId == topic.id
             TopicRowItem(
                 topic = topic,
                 onClick = { onOpenTopic(topic.id) },
-                modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+                onTopicEvent = onTopicEvent,
+                reorder =
+                    if (movable) {
+                        TopicReorder(position > 0, position < pinnedOrder.lastIndex) { up ->
+                            onEvent(ForumTopicsEvent.Move(topic.id, up))
+                        }
+                    } else {
+                        null
+                    },
+                dragged = dragged,
+                handleModifier = if (movable) Modifier.dragHandle(reorder, topic.id) else Modifier,
+                modifier =
+                    Modifier
+                        .then(if (dragged) Modifier else Modifier.animateItem(placementSpec = placement))
+                        .zIndex(if (dragged) 1f else 0f)
+                        .graphicsLayer { translationY = if (dragged) reorder.offset else 0f },
             )
         }
         if (content.isLoadingMore || content.moreError != null) {
@@ -237,6 +294,13 @@ private fun ReportNearEnd(
             currentOnEvent(ForumTopicsEvent.NearEndChanged(false))
         }
     }
+}
+
+/** [this] list with its pinned topics in [order], each in the place of a pinned one, the others where they are. */
+private fun List<TopicRow>.withPinnedIn(order: List<Int>): List<TopicRow> {
+    val byId = associateBy { it.id }
+    val pinned = order.mapNotNull { byId[it] }.iterator()
+    return map { topic -> if (topic.isPinned && pinned.hasNext()) pinned.next() else topic }
 }
 
 /** How close to the last topic the next page starts loading: about a screen. */
