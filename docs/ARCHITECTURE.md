@@ -78,7 +78,7 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   each graph in a scope of its own that ends with it, and removes an account that logs out, or that signs in as a
   user already on the device, while another stays (its client then stays closed and `AccountStorage` deletes its
   slot). Switching saves the shown slot; `MainActivity` then opens the app again in a new task
-  (`restartOnAccountSwitch`), so no screen keeps the other account's repositories. `core:domain`'s
+  (`AccountRestart`), so no screen keeps the other account's repositories. `core:domain`'s
   `DeviceAccountsRepository` (`DefaultDeviceAccountsRepository`) lists the signed-in accounts with their unread chats
   and adds, switches and leaves an account's sign-in; it is not offered on screen (`isAvailable` false) until the
   background parts follow every account. The passcode lock is the app's (`DefaultAppLockRepository`, `@Singleton`):
@@ -1139,6 +1139,16 @@ FR-P5 (`docs/adr/0012-camerax-and-zxing-qr-scanner.md`, `docs/adr/0013-deep-link
   screen, no watch app.
 - Tapping opens the chat: an explicit intent to the launcher activity (`NotificationIntents`), which `MainActivity`
   hands to `PingogramNavHost` (`chatToOpen`), which pushes `ChatRoute` above the chat list once logged in.
+- Every account (`docs/adr/0031-multiple-accounts.md`): `NotificationRenderer` follows `core:domain`'s `AccountGraphs`
+  (`DefaultAccountGraphs`, `core:data`: each account's `AccountRepositories`, once the registry is read) and runs an
+  `AccountNotificationRenderer` per account, from that account's repositories. An account's notifications have their
+  own tags (`group_1`), bundle and channels (`PingogramChannel.idFor`: `private_chats_1`), and its conversation
+  shortcuts their own ids (`chat_1_<id>`); the first account's are as before there were several. While more than one
+  account is signed in, each notification shows its account's first name as its subtext, and each account's channels
+  are in a channel group named after it. An account that leaves the device takes its notifications, shortcuts and
+  channels with it. Intents, shortcut ids and the actions' work carry the slot: `MainActivity`'s `AccountRestart`
+  switches to an intent's account first and opens the app again with it, and `NotificationActionWorker` acts on that
+  account's repositories. Direct Share targets and the widget are the shown account's, with its slot.
 - Reply (`RemoteInput`, `SEMANTIC_ACTION_REPLY`), Mark as read (`SEMANTIC_ACTION_MARK_AS_READ`) and dismissing go
   through `NotificationActionReceiver` to `NotificationActionWorker`, expedited one-time work (WorkManager with
   `HiltWorkerFactory`, initialized on demand by `PingogramApplication`'s `Configuration.Provider`), which waits for

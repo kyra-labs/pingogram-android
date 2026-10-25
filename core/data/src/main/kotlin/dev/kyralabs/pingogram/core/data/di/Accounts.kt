@@ -131,8 +131,14 @@ class Accounts internal constructor(
     /** The first slot's account, which is always there, signed in or not; its client is the app's [TdlibClient]. */
     val firstAccount: Account get() = account(AccountSlot.First)
 
-    /** Suspends until the registry is read, so [registry] holds the device's accounts. */
-    suspend fun awaitLoaded() = loaded.await()
+    /**
+     * Suspends until the registry is read, so [registry] holds the device's accounts; reads it, on the IO dispatcher,
+     * if nothing has yet (as [active] does).
+     */
+    suspend fun awaitLoaded() {
+        if (!loaded.isCompleted) withContext(io) { readRegistry() }
+        loaded.await()
+    }
 
     /** Every account on the device, in [registry]'s order. */
     fun all(): List<Account> = synchronized(this) { mutableRegistry.value.slots.map { account(AccountSlot(it)) } }

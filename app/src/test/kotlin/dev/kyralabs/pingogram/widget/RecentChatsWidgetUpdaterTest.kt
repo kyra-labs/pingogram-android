@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.AppearanceSettings
 import dev.kyralabs.pingogram.core.notifications.AvatarIcons
 import dev.kyralabs.pingogram.core.tdlib.AuthState
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeAccountGraphs
 import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakePasscodeRepository
@@ -86,6 +87,7 @@ class RecentChatsWidgetUpdaterTest {
                     dispatcher,
                 ),
             widgets = widgets,
+            graphs = FakeAccountGraphs(),
             scope = backgroundScope,
         ).also {
             it.start()

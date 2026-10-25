@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.di
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.account.AccountRegistry
 import dev.kyralabs.pingogram.core.data.account.AccountRegistryFile
+import dev.kyralabs.pingogram.core.data.repository.DefaultAccountGraphs
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
@@ -15,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -42,7 +44,7 @@ class AccountsTest {
     private val loggedOut = mutableListOf<Int>()
     private val deleted = mutableListOf<Int>()
 
-    private fun TestScope.accounts(): Accounts {
+    private fun TestScope.accounts(start: Boolean = true): Accounts {
         val dispatcher = StandardTestDispatcher(testScheduler)
         clients[0] = FakeTdlibClient()
         return Accounts(
@@ -68,7 +70,7 @@ class AccountsTest {
             appScope = CoroutineScope(backgroundScope.coroutineContext + dispatcher),
             io = dispatcher,
         ).also {
-            it.start()
+            if (start) it.start()
             runCurrent()
         }
     }
@@ -139,6 +141,36 @@ class AccountsTest {
 
             assertEquals(2, accounts.registry.value.active)
             assertTrue(clients.getValue(2).isStarted)
+        }
+
+    @Test
+    fun `waiting for the registry reads it when nothing has started yet`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 1), active = 1))
+            val accounts = accounts(start = false)
+
+            accounts.awaitLoaded()
+
+            assertEquals(AccountRegistry(listOf(0, 1), active = 1), accounts.registry.value)
+        }
+
+    @Test
+    fun `the account graphs come once the registry is read, then with every account added`() =
+        runTest {
+            registryFile.write(AccountRegistry(slots = listOf(0, 2), active = 2))
+            val accounts = accounts()
+            val graphs = DefaultAccountGraphs(accounts, backgroundScope)
+            val seen = mutableListOf<List<Int>>()
+            backgroundScope.launch(StandardTestDispatcher(testScheduler)) {
+                graphs.accounts.collect { list -> seen += list.map { it.slot } }
+            }
+            runCurrent()
+
+            accounts.add()
+            runCurrent()
+
+            assertEquals(listOf(listOf(0, 2), listOf(0, 2, 1)), seen)
+            assertEquals(1, graphs.activeSlot.value)
         }
 
     @Test

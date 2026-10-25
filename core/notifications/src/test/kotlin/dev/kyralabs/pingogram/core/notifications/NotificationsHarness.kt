@@ -19,6 +19,7 @@ import dev.kyralabs.pingogram.core.testing.FakeAppearanceRepository
 import dev.kyralabs.pingogram.core.testing.FakeChatLockRepository
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import org.robolectric.RuntimeEnvironment
@@ -32,6 +33,7 @@ import org.robolectric.Shadows.shadowOf
 internal class NotificationsHarness(
     scope: TestScope,
     val client: FakeTdlibClient = FakeTdlibClient(),
+    val slot: Int = 0,
 ) {
     val context: Application = RuntimeEnvironment.getApplication()
     private val dispatcher = StandardTestDispatcher(scope.testScheduler)
@@ -53,31 +55,18 @@ internal class NotificationsHarness(
     val chatLock = FakeChatLockRepository()
 
     val builder = ConversationNotificationBuilder(context)
-    val renderer =
-        NotificationRenderer(
-            context = context,
-            notificationRepository = notifications,
-            authRepository = auth,
-            chatLock = chatLock,
-            factory =
-                ConversationNotificationFactory(
-                    context = context,
-                    chatRepository = chats,
-                    userRepository = users,
-                    groupRepository = groups,
-                    avatars =
-                        AvatarIcons(
-                            context,
-                            files,
-                            FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
-                            dispatcher,
-                        ),
-                ),
+    val account = NotificationAccount(slot, notifications, auth, chatLock, chats, users, groups, files)
+
+    /** The device's accounts the renderer follows: this one; tests add others ([NotificationsHarness.account]). */
+    val accounts = MutableStateFlow(listOf(account))
+    val parts =
+        AccountNotificationParts(
             builder = builder,
-            shortcuts = ConversationShortcuts(context, dispatcher),
-            channels = NotificationChannels(context),
-            scope = backgroundScope,
+            shortcuts = ConversationShortcutsFactory(context, dispatcher),
+            appearance = FakeAppearanceRepository(AppearanceSettings(dynamicColor = false)),
+            ioDispatcher = dispatcher,
         )
+    val renderer = NotificationRenderer(context, accounts, parts, NotificationChannels(context), backgroundScope)
 
     private val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -86,17 +75,22 @@ internal class NotificationsHarness(
         shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    /** The notification of group [groupId], if posted. */
-    fun posted(groupId: Int): Notification? = shadowOf(manager).getNotification("group", groupId)
+    /** The notification of group [groupId] of the account in [slot], if posted. */
+    fun posted(
+        groupId: Int,
+        slot: Int = this.slot,
+    ): Notification? = shadowOf(manager).getNotification(AccountNotificationRenderer.tagFor("group", slot), groupId)
 
     /** The locked chats' one notification, if posted. */
-    fun lockedNotification(): Notification? = shadowOf(manager).getNotification("locked", 0)
+    fun lockedNotification(): Notification? =
+        shadowOf(manager).getNotification(AccountNotificationRenderer.tagFor("locked", slot), 0)
 
     /** Every notification on screen. */
     fun all(): List<Notification> = shadowOf(manager).allNotifications
 
-    /** The summary, if posted. */
-    fun summary(): Notification? = shadowOf(manager).getNotification("summary", 0)
+    /** The summary of the account in [slot], if posted. */
+    fun summary(slot: Int = this.slot): Notification? =
+        shadowOf(manager).getNotification(AccountNotificationRenderer.tagFor("summary", slot), 0)
 
     /** How many notifications are on screen. */
     fun count(): Int = shadowOf(manager).size()
