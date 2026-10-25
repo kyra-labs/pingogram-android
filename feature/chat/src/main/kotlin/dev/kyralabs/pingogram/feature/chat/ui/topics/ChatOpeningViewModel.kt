@@ -58,7 +58,8 @@ class ChatOpeningViewModel
                 val chat = chats.chat(chatId).first() ?: chats.getChat(chatId).getOrNull()
                 val type = chat?.type as? ChatType.Supergroup
                 val privateWith = (chat?.type as? ChatType.Private)?.userId
-                if (privateWith != null && privateWith == users.myUserId.filterNotNull().first()) {
+                // TDLib names the user (option my_id) before the login is ready, so before any chat can open.
+                if (privateWith != null && privateWith == users.myUserId.value) {
                     emit(ChatOpening.SavedMessages)
                 } else if (type == null || type.isChannel) {
                     emit(ChatOpening.Conversation)
