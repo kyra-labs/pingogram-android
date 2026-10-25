@@ -11,8 +11,8 @@
 # is put back as it was, also when the script stops early.
 #
 # It writes startup.perfetto-trace, starts.txt and device.txt into the output directory (default:
-# ./startup-<date>). Open the trace in https://ui.perfetto.dev (read in the browser, not uploaded) or summarize it with
-# tools/perfetto/startup.sql. The package defaults to dev.kyralabs.pingogram, the starts to 5.
+# ./startup-<date>), and summary.txt where Perfetto's Python package is installed (pip install perfetto; summarize.py).
+# Open the trace in https://ui.perfetto.dev (read in the browser, not uploaded), or query it with tools/perfetto/startup.sql. The package defaults to dev.kyralabs.pingogram, the starts to 5.
 set -euo pipefail
 
 out="${1:-startup-$(date +%Y%m%d-%H%M%S)}"
@@ -79,4 +79,13 @@ echo "Waiting for the trace to end."
 while adb shell pidof perfetto >/dev/null 2>&1; do sleep 2; done
 adb pull "$device_trace" "$out/startup.perfetto-trace" >/dev/null
 adb shell rm -f "$device_trace" "$device_config"
-echo "Done: $out (send device.txt, starts.txt and startup.perfetto-trace)."
+# The trace is hundreds of MB; its summary is a few KB of numbers, which is what to send.
+python="$(command -v python3 || command -v python || true)"
+if [ -n "$python" ] && "$python" -c "import perfetto.trace_processor" 2>/dev/null; then
+  "$python" "$here/summarize.py" "$out/startup.perfetto-trace" "$here/startup.sql" > "$out/summary.txt"
+  echo "Done: $out (send device.txt, starts.txt and summary.txt)."
+else
+  echo "Done: $out. To summarize the trace: pip install perfetto, then"
+  echo "  python3 $here/summarize.py $out/startup.perfetto-trace > $out/summary.txt"
+  echo "and send device.txt, starts.txt and summary.txt."
+fi

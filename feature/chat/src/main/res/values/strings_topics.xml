@@ -28,4 +28,54 @@
 
     <!-- In the composer's place in a closed topic, for members who are not administrators. -->
     <string name="composer_topic_closed">Only admins can write in this closed topic</string>
+
+    <!-- Managing topics: the topic list's top bar, a topic's long press and the topic conversation's top bar. -->
+    <string name="topics_new">New topic</string>
+    <string name="topic_manage">Manage topic</string>
+    <!-- Screen readers' name for a topic row's long press, which opens its menu. -->
+    <string name="topic_menu">Topic options</string>
+    <string name="topic_edit">Edit name</string>
+    <string name="topic_close">Close topic</string>
+    <string name="topic_reopen">Reopen topic</string>
+    <string name="topic_pin">Pin</string>
+    <string name="topic_unpin">Unpin</string>
+    <string name="topic_hide_general">Hide General</string>
+    <string name="topic_show_general">Show General</string>
+    <string name="topic_delete">Delete topic</string>
+    <!-- A General topic hidden from members, as its row says to the administrators who still see it. -->
+    <string name="topic_hidden">Hidden</string>
+    <!-- Screen readers move a pinned topic up or down in the list. -->
+    <string name="topic_move_up">Move up</string>
+    <string name="topic_move_down">Move down</string>
+
+    <!-- The editor of a new topic or of a topic's name. -->
+    <string name="topic_editor_new_title">New topic</string>
+    <string name="topic_editor_edit_title">Edit topic</string>
+    <string name="topic_editor_name">Topic name</string>
+    <!-- Under the name field: %1$d characters of at most %2$d. -->
+    <string name="topic_editor_counter">%1$d / %2$d</string>
+    <string name="topic_editor_too_long">The name is too long</string>
+    <string name="topic_editor_color">Color</string>
+    <!-- Under the colors: Telegram's six colors show in the theme's three tonal pairs, so the chips carry names. -->
+    <string name="topic_editor_color_note">Topic colors show in your theme\'s colors here. Other Telegram apps show Telegram\'s own.</string>
+    <!-- Under the name when renaming: the color cannot change. -->
+    <string name="topic_editor_color_fixed">A topic keeps the color it was created with.</string>
+    <string name="topic_editor_create">Create</string>
+    <string name="topic_editor_save">Save</string>
+    <string name="topic_editor_cancel">Cancel</string>
+    <!-- Screen readers' name for the icon above the name field: the topic's icon in the color picked. %1$s is the color. -->
+    <string name="topic_editor_preview">Topic icon, %1$s</string>
+    <!-- Telegram's six topic colors, named under their chips and for screen readers. -->
+    <string name="topic_color_blue">Blue</string>
+    <string name="topic_color_yellow">Yellow</string>
+    <string name="topic_color_violet">Violet</string>
+    <string name="topic_color_green">Green</string>
+    <string name="topic_color_rose">Rose</string>
+    <string name="topic_color_red">Red</string>
+
+    <!-- Before deleting a topic. %1$s is its name. -->
+    <string name="topic_delete_title">Delete topic?</string>
+    <string name="topic_delete_body">“%1$s” and all of its messages will be deleted for everyone in the group.</string>
+    <string name="topic_delete_confirm">Delete</string>
+    <string name="topic_deleted">Topic deleted</string>
 </resources>

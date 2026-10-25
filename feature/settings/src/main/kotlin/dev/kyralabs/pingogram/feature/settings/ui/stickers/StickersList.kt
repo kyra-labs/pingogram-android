@@ -40,20 +40,20 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.zIndex
+import dev.kyralabs.pingogram.core.ui.component.ListReorderState
+import dev.kyralabs.pingogram.core.ui.component.dragAfterLongPress
+import dev.kyralabs.pingogram.core.ui.component.dragHandle
+import dev.kyralabs.pingogram.core.ui.component.rememberListReorderState
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.sticker.StickerCover
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.settings.R
-import dev.kyralabs.pingogram.feature.settings.ui.ListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.PageItem
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsFooter
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsListRowStyle
 import dev.kyralabs.pingogram.feature.settings.ui.SettingsSectionHeader
-import dev.kyralabs.pingogram.feature.settings.ui.dragAfterLongPress
-import dev.kyralabs.pingogram.feature.settings.ui.dragHandle
-import dev.kyralabs.pingogram.feature.settings.ui.rememberListReorderState
 import dev.kyralabs.pingogram.feature.settings.ui.settingsListRow
 import dev.kyralabs.pingogram.feature.settings.ui.settingsRowColors
 import java.text.NumberFormat
@@ -233,7 +233,7 @@ private fun InstalledSetRow(
             trailingContent = {
                 // Screen readers move the set with the row's custom actions instead.
                 Box(modifier = handleModifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_drag_indicator), contentDescription = null)
+                    Icon(painterResource(UiR.drawable.ic_drag_indicator), contentDescription = null)
                 }
             },
             colors = settingsRowColors(),

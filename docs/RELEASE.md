@@ -144,8 +144,9 @@ Store listings read the fastlane metadata in `fastlane/metadata/android/en-US/` 
   Still open, in the recipe as TODOs:
   - **Telegram API values.** They would sit in clear text in the public recipe (owner decision).
   - **TDLib.** Its AAR has to be packaged in the recipe as `.github/workflows/tdlib.yml` does.
-  - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Either WebRTC is
-    built from source too, or F-Droid's build leaves calls out.
+  - **NTgCalls (voice calls).** Its build downloads prebuilt WebRTC, which F-Droid does not accept. Calls stay in
+    F-Droid's build, as in Telegram FOSS's and Telegram X's: the call engine and WebRTC will be built from source
+    (`docs/adr/0030-calls-in-the-fdroid-build.md`, after its spike).
 
 ## Reproducible builds
 

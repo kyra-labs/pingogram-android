@@ -172,7 +172,8 @@ import kotlinx.collections.immutable.ImmutableSet
  * [onBack] is the top bar's back button; null hides it, beside the chat list on expanded windows. [onOpenProfile],
  * where the app has profiles, is what the title of a private chat opens, [onOpenChatInfo] what that of a group or
  * channel opens; tapped mentions, senders' avatars and names
- * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]).
+ * go to the view model ([ChatEvent.OpenMention], [ChatEvent.OpenProfile]). A forum topic's conversation adds
+ * [topicAction] ("Manage topic") to the top bar, after search.
  */
 @Composable
 internal fun ChatScreen(
@@ -198,6 +199,7 @@ internal fun ChatScreen(
     search: ChatSearchUiState? = null,
     searchQuery: TextFieldState = remember { TextFieldState() },
     botReply: BotReplyUiState = BotReplyUiState(),
+    topicAction: (@Composable () -> Unit)? = null,
     connection: ConnectionStatus = ConnectionStatus.Ready,
     onOpenScheduledMessages: (() -> Unit)? = null,
     nextChannel: NextChannel? = null,
@@ -229,6 +231,7 @@ internal fun ChatScreen(
             onOpenChatInfo = onOpenChatInfo,
             search = search,
             searchQuery = searchQuery,
+            topicAction = topicAction,
             connection = connection,
             // A read channel's next unread one, outside selection mode and search.
             nextChannel = nextChannel.takeIf { selection == null && search == null },
@@ -280,6 +283,7 @@ private fun ChatScaffold(
     onOpenChatInfo: ((chatId: Long) -> Unit)?,
     search: ChatSearchUiState?,
     searchQuery: TextFieldState,
+    topicAction: (@Composable () -> Unit)?,
     connection: ConnectionStatus,
     nextChannel: NextChannel?,
     bottomBar: @Composable () -> Unit,
@@ -307,6 +311,7 @@ private fun ChatScaffold(
                     onSecretChatEvent = onEvent,
                     onOpenChatInfo = onOpenChatInfo,
                     onSearch = { onEvent(ChatSearchEvent.Open) },
+                    topicAction = topicAction,
                     connection = connection,
                 )
             }

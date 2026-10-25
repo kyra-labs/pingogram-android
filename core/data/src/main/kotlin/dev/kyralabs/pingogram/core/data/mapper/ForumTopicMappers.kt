@@ -36,6 +36,7 @@ internal fun TdApi.ForumTopic.toForumTopic(): ForumTopic =
         unreadMentionCount = unreadMentionCount,
         lastReadInboxMessageId = lastReadInboxMessageId,
         lastReadOutboxMessageId = lastReadOutboxMessageId,
+        isOutgoing = info.isOutgoing,
     )
 
 /** [this] topic with what [info] says now: its name, icon and state. */
@@ -46,6 +47,7 @@ internal fun ForumTopic.withInfo(info: TdApi.ForumTopicInfo): ForumTopic =
         isGeneral = info.isGeneral,
         isClosed = info.isClosed,
         isHidden = info.isHidden,
+        isOutgoing = info.isOutgoing,
     )
 
 internal fun TdApi.ForumTopicIcon.toForumTopicIcon() = ForumTopicIcon(topicColor(color), customEmojiId)
@@ -58,6 +60,17 @@ internal fun topicColor(rgb: Int): TopicColor {
     val hue = hueOf(rgb)
     return TOPIC_HUES.minBy { (_, reference) -> hueDistance(hue, reference) }.first
 }
+
+/** Telegram's own color for [this] topic color, which `createForumTopic` takes as a new topic's icon. */
+internal fun TopicColor.toTdColor(): Int =
+    when (this) {
+        TopicColor.Blue -> TELEGRAM_BLUE
+        TopicColor.Yellow -> TELEGRAM_YELLOW
+        TopicColor.Violet -> TELEGRAM_VIOLET
+        TopicColor.Green -> TELEGRAM_GREEN
+        TopicColor.Rose -> TELEGRAM_ROSE
+        TopicColor.Red -> TELEGRAM_RED
+    }
 
 private fun hueOf(rgb: Int): Float {
     val red = (rgb shr RED_SHIFT and BYTE) / MAX
@@ -103,7 +116,8 @@ private const val FULL_TURN = 360f
 private const val GREEN_SIXTHS = 2f
 private const val BLUE_SIXTHS = 4f
 
-// Telegram's topic colors (td_api.tl forumTopicIcon.color), only matched to the app's color roles, never drawn.
+// Telegram's topic colors (td_api.tl forumTopicIcon.color): matched to the app's color roles and sent with a new topic,
+// never drawn.
 private const val TELEGRAM_BLUE = 0x6FB9F0
 private const val TELEGRAM_YELLOW = 0xFFD67E
 private const val TELEGRAM_VIOLET = 0xCB86DB

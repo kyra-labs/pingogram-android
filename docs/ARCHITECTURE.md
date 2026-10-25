@@ -523,7 +523,20 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   topic (unread count, read state; no draft, which topics keep apart and the composer does not sync yet), and puts the
   topic's name in the header and a closed topic's label in the composer. A topic tapped in the list is pushed above it
   (`chatScreen`'s `onOpenThread`); in the Chats tab's detail pane it takes the pane's place (`ChatPane`'s saved stack of
-  topics and threads, shared axis X, back returning to the list). Creating, editing and closing topics come later.
+  topics and threads, shared axis X, back returning to the list). Managing topics: `ForumTopicRepository` also creates
+  (`createForumTopic`, the name and one of Telegram's six icon colors), renames (`editForumTopic`, the icon kept: a
+  topic's color is chosen once, and Pingogram offers no custom emoji icons), closes and reopens
+  (`toggleForumTopicIsClosed`), pins, unpins and reorders the pinned ones (`toggleForumTopicIsPinned`,
+  `setPinnedForumTopics`, the new order applied once TDLib took it), deletes (`deleteForumTopic`, the topic dropped then)
+  and hides or shows General (`toggleGeneralForumTopicIsHidden`); TDLib's updates bring the rest back, and a blank name
+  is refused before TDLib (`DomainError.TitleInvalid`). What the user may do comes from their role in the forum
+  (`GroupInfoRepository.groupInfo`, `ForumRights` of `feature:chat`'s `topics/`): `can_manage_topics` for everything but
+  deleting, which takes `can_delete_messages`; the creator of a topic renames, closes and reopens it; creating takes the
+  members' `can_create_topics` (a restricted member's too). `TopicManagement` (the editor and the question before
+  deleting in saved state, the toggles, their effects) is a part of both the list's `ForumTopicsViewModel` (which also
+  keeps a hidden General for those who may show it, and a dragged order until Telegram takes or refuses it) and
+  `TopicActionsViewModel`, a view model of the topic's conversation apart from `ChatViewModel`
+  (`rememberTopicActions` in `ConversationRoute`), which gives its top bar "Manage topic".
 - **Next unread channel** (`docs/audit/feature-gaps-octogram.md` P2): `feature:chat`'s `ChatNextChannel` (a part of
   `ChatViewModel`, `ChatViewModel.nextChannel`, kept out of `ChatUiState`) follows the chat while the conversation is a
   whole channel's, and only while it has no unread posts the main chat list (`ChatRepository.chatList`), whose first

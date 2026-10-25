@@ -1,7 +1,9 @@
 # 0031 · Multiple accounts
 
-Date: 2026-10-25 · Status: proposed, waiting for the owner's answers below (`docs/audit/feature-gaps-octogram.md`, P1,
-"Owner"; `REQUIREMENTS.md` §1.2 excludes multi-account *automation*, not several accounts of one person).
+Date: 2026-10-25 · Status: accepted by the owner on 2026-10-25 ("check Telegram or other Telegram clients, and do
+the same"): each open question is answered as Telegram's Android app does (Decisions, below)
+(`docs/audit/feature-gaps-octogram.md`, P1; `REQUIREMENTS.md` §1.2 excludes multi-account *automation*, not several
+accounts of one person).
 
 ## Context
 
@@ -15,7 +17,24 @@ What TDLib gives:
   process, each with its own updates, login steps and connection.
 - Push (checked in the pinned bindings, a94b83d): `registerDevice(device_token, other_user_ids)` names the other accounts of the app, and `getPushReceiverId(payload)`
   tells which account a push is for, without decrypting it, by the `push_receiver_id` that `registerDevice` returned.
-- No limit on accounts: the limit is the client's policy. Telegram's apps allow 3 accounts, more with Telegram Premium.
+- No limit on accounts: the limit is the client's policy.
+
+What Telegram's Android app does (DrKLO/Telegram, read 2026-10-25):
+
+- **Limit**: `UserConfig.MAX_ACCOUNT_DEFAULT_COUNT = 3` and `MAX_ACCOUNT_COUNT = 4`. A fourth account is allowed
+  while one of the signed-in accounts has Telegram Premium (`hasPremiumOnAccounts()`).
+- **Every account runs**: each account's `ConnectionsManager` and notifications work at once. Notifications of every
+  account are on by default, and Notifications and Sounds has a switch to show only the current account's.
+- **Notification channels**: `NotificationsController.ensureGroupsCreated` creates a `NotificationChannelGroup` per
+  account (`"private" + currentAccount`, `"groups" + …`, `"channels" + …`, `"other" + …`), named with the account's
+  name: "Private chats (Ada Lovelace)".
+- **Which account a notification is for**: with more than one account activated
+  (`UserConfig.getActivatedAccountsCount() > 1`), the notification's text and its summary start with the account's
+  first name and "・".
+- **Widgets**: the chats widget's setup saves the account it was made in per widget (`"account" + widgetId` in
+  `shortcut_widget`), so each widget keeps showing that account.
+- **Switcher**: the side menu on Android. Telegram's iOS app, which has no side menu, switches with a long press on
+  the Settings tab and from the list of accounts in Settings.
 
 What Pingogram has today, all written for one account:
 
@@ -35,11 +54,13 @@ What Pingogram has today, all written for one account:
   file with its user id once logged in, its test DC flag and its order. The first slot keeps today's directories and
   key file, so an update moves nothing: `tdlib/` and `tdlib_database_key` for slot 0, `tdlib-1/`,
   `tdlib_database_key_1` (and `tdlib-test-1/`) for the others.
-- **A database key per account**: 32 random bytes each, wrapped by a Keystore key of its own (`tdlib_db_wrap_1`, …), so
+- **A database key per account**: 32 random bytes each, wrapped by a Keystore key of its own (`pingogram.tdlib.database_key.1`, …), so
   removing an account deletes its key, alias and directories, and a damaged key costs only that account
   (`docs/TDLIB.md`, Database encryption key).
 - **One client per account, all running**: each account's TDLib client starts with the app, so notifications and calls
   arrive for every account, as in Telegram's apps. TDLib's memory is about 10–30 MB per account.
+- **"Notifications from all accounts"** (Settings → Notifications, shown with more than one account, on by default):
+  off, only the active account's notifications show, as Telegram's switch does; the others' clients keep running.
 
 ### One graph per account
 
@@ -60,7 +81,8 @@ What Pingogram has today, all written for one account:
 - **Settings home's account card** gets the accounts below it: one segmented row per other account (avatar, name,
   phone, unread count `Badge`), "Add account" (`ic_person_add`) while fewer than the limit are signed in. A tap switches
   (the app shows the chat list of that account, with the shared axis X). The card itself still opens Edit profile.
-- **A long press on the Settings tab** (the floating navigation bar and the rail) opens an expressive
+- **A long press on the Settings tab** (the floating navigation bar and the rail; Telegram's iOS app, as Pingogram
+  has no side menu, `docs/DESIGN_SYSTEM.md` §6 "Navigation drawer") opens an expressive
   `DropdownMenuPopup` anchored to it: the accounts with their unread counts, the active one checked, and "Add account".
   Screen readers get the same as the tab's custom actions.
 - **Adding an account** opens the sign-in flow (`feature:auth`) for a new slot above the current account, with back
@@ -72,27 +94,29 @@ What Pingogram has today, all written for one account:
 - **Per account**: each account's renderer posts under tags that carry its slot (`group:1`), its summary groups apart
   (`setGroup` per slot), and its conversation shortcuts' ids carry the slot (`chat:1:<chatId>`; slot 0 keeps today's
   ids, so existing shortcuts keep working).
-- **Channels**: with more than one account, Android's notification channel groups, one per account, named by the
-  account ("Ada Lovelace"), each with the five channels, so a user can silence one account. One account keeps today's
-  channels.
+- **Channels**: with more than one account, Android's notification channel groups, one per account, named as
+  Telegram's are ("Private chats (Ada Lovelace)" groups' names carry the account), each with the five channels, so a
+  user can silence one account. One account keeps today's channels.
 - **Which account opens**: a notification, a conversation shortcut and a Direct Share target carry their slot; opening
   one switches to that account first (after the passcode lock), then opens the chat. Telegram links and shares from
   other apps open in the active account.
-- **The notification's account**: with more than one account, a notification shows the account's name as its
-  sub-text ("Work"), as Telegram's apps do.
+- **The notification's account**: with more than one account, a notification's text and its group summary start
+  with the account's first name and "・" ("Ada・New message"), as Telegram's do; `MessagingStyle`'s messages keep
+  their senders.
 
 ### Lock, widget, push, logout, limits
 
 - **Passcode lock**: one lock for the app, as today (ADR 0005); unlocking unlocks every account.
-- **Widget**: the active account's recent chats; a widget per account is left for later.
+- **Widget**: each widget keeps the account that was active when it was placed (kept per widget id), as Telegram's
+  widgets do; removing that account turns the widget to the account active then.
 - **Push (`gms`)**: one FCM token for the app; each account registers it with `registerDevice`, naming the others in
   `other_user_ids`, and keeps the `push_receiver_id` it got. A push goes to the account `getPushReceiverId` names (asked
   of any running client), or to every account when none matches.
 - **`foss`**: "Keep connected" keeps every account's connection, as its one service already keeps the process.
 - **Logging out of one account**: Settings → Log out acts on the active account; the app switches to another signed-in
   account (or Welcome when none is left) and deletes the slot's directories, key and settings once TDLib closed it.
-- **Limit**: 3 accounts, as Telegram's apps without Premium; a fourth with Telegram Premium on one of them, where the
-  owner agrees (question 3). Pingogram never offers Premium.
+- **Limit**: 3 accounts, and a fourth while one of the signed-in accounts has Telegram Premium, as Telegram's app
+  allows. "Add account" is left out at the limit; Pingogram never offers Premium.
 - **Calls**: one call at a time across all accounts (`CallLine`): an incoming call on another account while in a call
   is declined, as today's second call is.
 
@@ -106,14 +130,15 @@ What Pingogram has today, all written for one account:
 5. Push per account (`gms`) and "Keep connected" for all (`foss`).
 6. The limit, the widget and the docs (`ARCHITECTURE.md`, `DESIGN_SYSTEM.md` §6 entries for the switcher).
 
-## Questions for the owner
+## Decisions (owner, 2026-10-25: as Telegram's app)
 
-1. Every account's client running all the time (notifications from all, ~10–30 MB and a connection each), or only the
-   active one (less memory and data, no notifications from the others)?
-2. The switcher's places: Settings home's account card and a long press on the Settings tab, as proposed?
-3. The limit: 3 accounts, and a fourth with Telegram Premium on one of them, as Telegram's apps do?
-4. Notification channels per account (channel groups) once there are two accounts, or one set of channels for all?
-5. The widget: the active account's chats, or a choice of account per widget?
+1. Every account's client runs all the time, with "Notifications from all accounts" to show only the active one's.
+2. The switcher on Settings home's account card and on a long press of the Settings tab, as Telegram's iOS app,
+   since Pingogram has no side menu.
+3. 3 accounts, a fourth while one of them has Telegram Premium.
+4. A group of notification channels per account once there are two, named with the account; the account's first name
+   before each notification's text.
+5. Each widget keeps the account it was placed in.
 
 ## Consequences
 

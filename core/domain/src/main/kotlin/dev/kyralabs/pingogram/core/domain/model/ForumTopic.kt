@@ -27,6 +27,8 @@ data class ForumTopic(
     val unreadMentionCount: Int,
     val lastReadInboxMessageId: Long,
     val lastReadOutboxMessageId: Long,
+    /** The current user created the topic, and may edit, close and reopen it without administrator rights. */
+    val isOutgoing: Boolean = false,
 ) {
     /** Where messages of the topic are. */
     val topic: MessageTopic.Forum get() = MessageTopic.Forum(id)
@@ -43,7 +45,10 @@ data class ForumTopicIcon(
     val customEmojiId: Long,
 )
 
-/** The colors Telegram gives topic icons (td_api.tl `forumTopicIcon.color`), by the hue they have there. */
+/**
+ * The colors Telegram gives topic icons (td_api.tl `forumTopicIcon.color`), by the hue they have there; a new topic
+ * takes one of them, and keeps it: td_api.tl `editForumTopic` changes the name only.
+ */
 enum class TopicColor {
     Blue,
     Yellow,
@@ -55,9 +60,16 @@ enum class TopicColor {
 
 /**
  * The topics of a forum loaded so far, in the forum's order (General first, then pinned topics, then the others by
- * their newest message); [reachedEnd] once every topic is loaded.
+ * their newest message); [reachedEnd] once every topic is loaded. A General topic the administrators hid is in it
+ * too ([ForumTopic.isHidden]): the list shows it only to those who may show it again.
  */
 data class ForumTopicList(
     val topics: ImmutableList<ForumTopic>,
     val reachedEnd: Boolean,
 )
+
+/** What Telegram accepts for a topic (td_api.tl `createForumTopic`, `editForumTopic`). */
+object ForumTopicLimits {
+    /** The longest name, in characters (TDLib's `MAX_FORUM_TOPIC_TITLE_LENGTH`). */
+    const val MAX_NAME_LENGTH = 128
+}
