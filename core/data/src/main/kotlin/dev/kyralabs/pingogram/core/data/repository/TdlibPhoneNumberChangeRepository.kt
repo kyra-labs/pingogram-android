@@ -2,13 +2,13 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAuthCodeType
 import dev.kyralabs.pingogram.core.domain.model.LoginCodeInfo
 import dev.kyralabs.pingogram.core.domain.repository.PhoneNumberChangeRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [PhoneNumberChangeRepository] on TDLib's `sendPhoneNumberCode` with `phoneNumberCodeTypeChange`,
@@ -16,7 +16,7 @@ import javax.inject.Singleton
  * Retriever, no Firebase: [phoneNumberAuthenticationSettings]). They wait as long as authentication requests
  * ([AUTH_REQUEST_TIMEOUT]). No cache: TDLib keeps the pending change, and announces the new number with `updateUser`.
  */
-@Singleton
+@AccountScoped
 class TdlibPhoneNumberChangeRepository
     @Inject
     constructor(

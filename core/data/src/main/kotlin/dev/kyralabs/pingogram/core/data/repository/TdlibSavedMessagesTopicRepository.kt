@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.SavedMessagesTopic
 import dev.kyralabs.pingogram.core.domain.model.SavedTopicKind
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SavedMessagesTopicRepository] on TDLib's Saved Messages topics. TDLib announces each topic only with
@@ -27,7 +27,7 @@ import javax.inject.Singleton
  * user saved messages from, a few fields each. `loadSavedMessagesTopics` answers 404 once all are loaded, which is no
  * error here.
  */
-@Singleton
+@AccountScoped
 class TdlibSavedMessagesTopicRepository
     @Inject
     constructor(

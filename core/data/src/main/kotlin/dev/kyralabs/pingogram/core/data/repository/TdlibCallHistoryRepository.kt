@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryChange
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryEntry
 import dev.kyralabs.pingogram.core.domain.model.CallHistoryPage
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [CallHistoryRepository] on TDLib: `searchCallMessages` (every private chat's call messages, newest first, paged by
@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * Group calls' messages (`messageGroupCall`, conference calls) are left out: Recent calls lists one-to-one calls,
  * which it can call back. Nothing about a call is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibCallHistoryRepository
     @Inject
     constructor(

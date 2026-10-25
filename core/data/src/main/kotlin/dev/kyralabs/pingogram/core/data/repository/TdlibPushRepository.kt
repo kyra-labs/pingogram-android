@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.error.toOutcome
 import dev.kyralabs.pingogram.core.domain.repository.NotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushRepository
@@ -25,7 +26,6 @@ import org.drinkless.tdlib.TdApi
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Duration.Companion.seconds
 
@@ -46,7 +46,7 @@ import kotlin.time.Duration.Companion.seconds
  * - **A push** ([processPush]) goes to `processPushNotification` as JSON ([PushPayload]), which TDLib accepts before
  *   it is fully started (it waits for its database) and answers once its notification updates are out.
  */
-@Singleton
+@AccountScoped
 class TdlibPushRepository
     @Inject
     constructor(

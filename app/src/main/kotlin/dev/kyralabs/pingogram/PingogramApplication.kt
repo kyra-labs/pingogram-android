@@ -10,9 +10,8 @@ import dagger.hilt.android.HiltAndroidApp
 import dev.kyralabs.pingogram.background.BackgroundConnection
 import dev.kyralabs.pingogram.background.TransfersController
 import dev.kyralabs.pingogram.core.common.ApplicationScope
+import dev.kyralabs.pingogram.core.data.di.Accounts
 import dev.kyralabs.pingogram.core.data.diagnostics.CrashRecorder
-import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkTypeReporter
-import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.domain.repository.AppearanceRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.notifications.NotificationRenderer
@@ -37,12 +36,12 @@ class PingogramApplication :
     lateinit var tdlibClient: TdlibClient
 
     /**
-     * Never read: injecting creates every caching repository, which subscribes to TDLib's updates as it is created.
-     * TDLib introduces each user and chat only once, and its updates are not replayed, so this must happen before
-     * [tdlibClient] starts. Hilt injects both fields in `super.onCreate()`.
+     * The accounts' graphs (`docs/adr/0031-multiple-accounts.md`). Making an account's caches subscribes each to
+     * TDLib's updates; TDLib introduces each user and chat only once, and its updates are not replayed, so this happens
+     * before [tdlibClient] starts. Hilt injects both fields in `super.onCreate()`.
      */
     @Inject
-    lateinit var updateCaches: Set<@JvmSuppressWildcards TdlibUpdateCache>
+    lateinit var accounts: Accounts
 
     /** Shows TDLib's notifications in every process, the ones a notification action starts too. */
     @Inject
@@ -67,10 +66,6 @@ class PingogramApplication :
     /** Rings for incoming calls and runs the user's call, in every process (FR-V1). */
     @Inject
     lateinit var calls: dagger.Lazy<Calls>
-
-    /** Tells TDLib about every new network the device uses, so it reconnects at once (docs/PERFORMANCE.md §3). */
-    @Inject
-    lateinit var networkTypeReporter: dagger.Lazy<TdlibNetworkTypeReporter>
 
     /** Creates the workers with Hilt (notification actions, transfers); WorkManager asks for it when first used. */
     @Inject
@@ -102,7 +97,10 @@ class PingogramApplication :
         CrashRecorder(this).install()
         // Injects the fields: TDLib's client and the caching repositories, which subscribe to its updates now; the rest
         // is lazy, made by startInBackground.
-        StartupTrace.section(StartupTrace.INJECT) { super.onCreate() }
+        StartupTrace.section(StartupTrace.INJECT) {
+            super.onCreate()
+            accounts.active.updateCaches()
+        }
         // Reads the settings file while the activity is created: the splash screen waits for it (main.awaitSettings).
         applicationScope.launch {
             asyncTraceSection(StartupTrace.READ_SETTINGS) { appearanceRepository.get().appearance.first() }
@@ -118,7 +116,7 @@ class PingogramApplication :
     /**
      * Makes and starts what follows TDLib's state in every process, on the `Default` dispatcher, off the main thread
      * and out of the way of the activity (docs/PERFORMANCE.md §2). Each follows a repository that keeps TDLib's state
-     * (a [TdlibUpdateCache]), so starting a little after TDLib loses nothing: an incoming call still rings, a
+     * (a `TdlibUpdateCache`), so starting a little after TDLib loses nothing: an incoming call still rings, a
      * restored notification still shows.
      */
     private fun startInBackground() {
@@ -129,7 +127,7 @@ class PingogramApplication :
                 // Follows TDLib's calls: an incoming call rings from the first update on.
                 calls.get().start()
                 // Sends TDLib the network type once it has its parameters, and again at every new network.
-                networkTypeReporter.get().start()
+                accounts.active.networkTypeReporter().start()
                 // foss: starts or stops the "Keep connected" service as its setting and the login change; gms:
                 // registers the push token with Telegram at every login and deletes it at logout.
                 backgroundConnection.get().start()

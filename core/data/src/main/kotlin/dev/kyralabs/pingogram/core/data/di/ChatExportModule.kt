@@ -14,21 +14,15 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ExportFolderRepository
 
 /**
- * Chat export (`docs/adr/0021-chat-export.md`): TDLib's side, the folders of the Storage Access Framework, and the
- * exporter that writes into them. None keeps state between exports.
+ * Chat export (`docs/adr/0021-chat-export.md`): the folders of the Storage Access Framework, which are the device's.
+ * TDLib's side and the exporter are the account's ([RepositoryModule]). None keeps state between exports.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 interface ChatExportModule {
     @Binds
-    fun chatExportRepository(repository: TdlibChatExportRepository): ChatExportRepository
-
-    @Binds
     fun exportFolderRepository(repository: AndroidExportFolderRepository): ExportFolderRepository
 
     @Binds
     fun documentTree(tree: AndroidDocumentTree): DocumentTree
-
-    @Binds
-    fun chatExporter(exporter: DocumentChatExporter): ChatExporter
 }

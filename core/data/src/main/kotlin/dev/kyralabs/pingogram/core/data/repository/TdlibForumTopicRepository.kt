@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.getOrNull
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toForumTopic
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
@@ -32,7 +33,6 @@ import kotlinx.coroutines.sync.withLock
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ForumTopicRepository] on TDLib's forum topics. Each forum someone observes has its loaded topics in memory
@@ -52,7 +52,7 @@ import javax.inject.Singleton
  *   order, a deleted topic dropped. One function per change td_api.tl offers (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibForumTopicRepository
     @Inject
     constructor(

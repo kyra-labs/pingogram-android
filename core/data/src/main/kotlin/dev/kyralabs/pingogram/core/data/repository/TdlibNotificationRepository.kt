@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatNotification
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroup
 import dev.kyralabs.pingogram.core.data.mapper.toNotificationGroupType
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [NotificationRepository] on TDLib's notification engine (`docs/TDLIB.md`, Notifications). TDLib leaves the engine
@@ -38,7 +38,7 @@ import javax.inject.Singleton
  * their way. Logging out drops everything, at `LoggingOut` already: the account's notifications must not outlive it.
  * The open chats come from [OpenChats], which `TdlibChatRepository` keeps.
  */
-@Singleton
+@AccountScoped
 class TdlibNotificationRepository
     @Inject
     constructor(

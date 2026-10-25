@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.Birthdate
 import dev.kyralabs.pingogram.core.domain.model.EditableProfile
 import dev.kyralabs.pingogram.core.domain.model.ProfileLimits
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ProfileRepository] on TDLib. It keeps two options from TDLib's updates: `bio_length_max`, which TDLib announces
@@ -33,7 +33,7 @@ import javax.inject.Singleton
  *
  * Nothing about the profile (names, username, bio, paths) is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibProfileRepository
     @Inject
     constructor(

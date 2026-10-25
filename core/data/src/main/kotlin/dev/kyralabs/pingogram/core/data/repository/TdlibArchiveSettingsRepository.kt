@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatList
 import dev.kyralabs.pingogram.core.domain.model.ArchiveSettings
 import dev.kyralabs.pingogram.core.domain.model.ArchiveSettingsAvailability
@@ -10,7 +11,6 @@ import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ArchiveSettingsRepository] on TDLib's `getArchiveChatListSettings`, `setArchiveChatListSettings` and
@@ -18,7 +18,7 @@ import javax.inject.Singleton
  * `TdlibUpdateCache`: each read asks again. Whether new chats may be archived is TDLib's option
  * `can_archive_and_mute_new_chats_from_unknown_users`, which it answers from memory.
  */
-@Singleton
+@AccountScoped
 class TdlibArchiveSettingsRepository
     @Inject
     constructor(

@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.attachment.ContentSource
 import dev.kyralabs.pingogram.core.data.attachment.MediaProcessor
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTdFormattedText
 import dev.kyralabs.pingogram.core.domain.model.Attachment
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
@@ -26,7 +27,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ShareRepository] on TDLib: the shared files are prepared once ([AttachmentPreparer], into `UploadFiles`' cache, on
@@ -35,7 +35,7 @@ import javax.inject.Singleton
  * they go once their last message uploaded them. A text goes as `inputMessageText` with TDLib's default link preview, a
  * comment before it as a message of its own; files with [sendAttachments], the text as their caption.
  */
-@Singleton
+@AccountScoped
 // The client, the files, the content and media seams tests replace, the cleaner, the link previews and the dispatcher.
 @Suppress("LongParameterList")
 class TdlibShareRepository internal constructor(

@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.ReactionNotificationSettings
 import dev.kyralabs.pingogram.core.domain.model.ReactionNotificationSource
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ReactionNotificationRepository] on TDLib: the settings from `updateReactionNotificationSettings` (a
@@ -25,7 +25,7 @@ import javax.inject.Singleton
  * TDLib (a94b83d) does not yet turn Telegram's reaction pushes into notifications, so these settings reach Telegram
  * and the account's other apps, while Pingogram shows no reaction notifications itself.
  */
-@Singleton
+@AccountScoped
 class TdlibReactionNotificationRepository
     @Inject
     constructor(

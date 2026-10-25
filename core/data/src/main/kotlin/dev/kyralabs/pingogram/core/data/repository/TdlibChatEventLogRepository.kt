@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toChatEvent
 import dev.kyralabs.pingogram.core.data.mapper.toTdFilters
 import dev.kyralabs.pingogram.core.domain.model.ChatEvent
@@ -12,10 +13,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /** [ChatEventLogRepository] on TDLib's `getChatEventLog`, without a search query or a list of members. */
-@Singleton
+@AccountScoped
 class TdlibChatEventLogRepository
     @Inject
     constructor(

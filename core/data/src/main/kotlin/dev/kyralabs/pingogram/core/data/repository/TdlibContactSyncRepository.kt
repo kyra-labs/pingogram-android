@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.time.WallClock
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncSettings
 import dev.kyralabs.pingogram.core.domain.model.ContactSyncStatus
 import dev.kyralabs.pingogram.core.domain.model.PhoneContact
@@ -31,7 +32,6 @@ import org.drinkless.tdlib.TdApi
 import java.text.Collator
 import java.time.Duration
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ContactSyncRepository] on TDLib's import of the phone's contacts (`docs/adr/0011-contacts-sync.md`), the phone's
@@ -55,7 +55,7 @@ import javax.inject.Singleton
  * one state, so the class keeps them together (`TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibContactSyncRepository
     @Inject
     constructor(

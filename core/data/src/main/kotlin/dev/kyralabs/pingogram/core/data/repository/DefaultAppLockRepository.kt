@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.AutoLock
 import dev.kyralabs.pingogram.core.domain.model.PasscodeSettings
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -41,7 +41,7 @@ import kotlin.time.TimeSource
  * `TooManyFunctions` is suppressed).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class DefaultAppLockRepository internal constructor(
     private val passcodeRepository: PasscodeRepository,
     private val authRepository: AuthRepository,

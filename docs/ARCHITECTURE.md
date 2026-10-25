@@ -61,8 +61,18 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   at app start: a caching repository implements `TdlibUpdateCache`, keeps its state in an
   `UpdateStore` (subscribed before its constructor returns, one immutable snapshot reduced from
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
-  (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
+  (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` makes before
   `TdlibClient.start()`. Every new caching repository must join that set.
+- **Accounts** (`docs/adr/0031-multiple-accounts.md`): the repositories that talk to TDLib are an account's, not the
+  app's. They are `@AccountScoped` and live in `core:data`'s `AccountComponent`, a Dagger component of its own per
+  account (its `AccountSlot` and `TdlibClient` given when it is made, the app's parts through `AccountDependencies`,
+  which `:app`'s `AccountsModule` implements as a Hilt entry point). `Accounts` holds them and the active one;
+  `ActiveAccountModule` binds each repository interface in Hilt's graph to the active account's, so view models,
+  workers and services inject the interfaces as before. What belongs to the device (the network, Battery Saver, the
+  phone's contacts and location, shared storage, the emoji catalog, picked photos, diagnostics) stays `@Singleton`
+  (`DeviceModule`). A new account repository is `@AccountScoped`, bound in `RepositoryModule` and listed in
+  `AccountRepositories` and `ActiveAccountModule` (`AccountBindingsTest` checks the three agree); what it needs from
+  the app goes into `AccountDependencies`. One account so far; adding and switching come next.
 - **Test servers** (FR-A9, `docs/TDLIB.md` "Test servers"): `TdlibClient.servers` / `useServers` restart TDLib on
   Telegram's test servers or back. Only `TdlibAuthRepository` asks for a switch: `setPhoneNumber` by the number
   (`core:domain`'s `telegramServersFor`), `requestQrCode` for the production servers; any other close returns to them.

@@ -4,6 +4,7 @@ import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toActiveStories
 import dev.kyralabs.pingogram.core.data.mapper.toReactionType
 import dev.kyralabs.pingogram.core.data.mapper.toStory
@@ -34,7 +35,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [StoryRepository] on TDLib's stories. TDLib announces each chat's active stories only with `updateChatActiveStories`
@@ -52,7 +52,7 @@ import javax.inject.Singleton
  *
  * Nothing about a story (caption, content) is logged.
  */
-@Singleton
+@AccountScoped
 class TdlibStoryRepository
     @Inject
     constructor(

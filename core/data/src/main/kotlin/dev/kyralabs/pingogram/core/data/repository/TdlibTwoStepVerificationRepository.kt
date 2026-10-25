@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTwoStepVerificationState
 import dev.kyralabs.pingogram.core.domain.model.PasswordResetResult
 import dev.kyralabs.pingogram.core.domain.model.TwoStepVerificationState
@@ -9,7 +10,6 @@ import dev.kyralabs.pingogram.core.domain.repository.TwoStepVerificationReposito
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [TwoStepVerificationRepository] on TDLib's password requests, which ask Telegram each time (no cache, no updates).
@@ -23,7 +23,7 @@ import javax.inject.Singleton
  * One function per TDLib password request, as in [TwoStepVerificationRepository] (hence `TooManyFunctions`).
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibTwoStepVerificationRepository
     @Inject
     constructor(

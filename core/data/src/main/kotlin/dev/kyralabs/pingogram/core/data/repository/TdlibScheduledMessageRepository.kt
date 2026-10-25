@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
 import dev.kyralabs.pingogram.core.common.result.onSuccess
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessageContent
 import dev.kyralabs.pingogram.core.data.mapper.toReplyMarkup
 import dev.kyralabs.pingogram.core.data.mapper.toScheduledMessage
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ScheduledMessageRepository] on TDLib, without a cache: each collection asks for the chat's scheduled messages
@@ -44,7 +44,7 @@ import javax.inject.Singleton
  *   its id would otherwise keep its old time.
  * - A failed load ends the collection with its failure; collecting again tries again.
  */
-@Singleton
+@AccountScoped
 class TdlibScheduledMessageRepository
     @Inject
     constructor(

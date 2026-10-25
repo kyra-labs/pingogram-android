@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.data.attachment.UploadFiles
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInputMessageReplyTo
 import dev.kyralabs.pingogram.core.domain.model.RecordedVideoNote
 import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
@@ -21,7 +22,6 @@ import org.drinkless.tdlib.TdApi
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [VideoNoteRepository] on TDLib and the app's upload cache ([UploadFiles]), as [TdlibVoiceNoteRepository] does voice
@@ -29,7 +29,7 @@ import javax.inject.Singleton
  * on [io]; deleted with its directory once TDLib uploaded it (`UploadCleaner`), when it is discarded, or when TDLib
  * refuses it.
  */
-@Singleton
+@AccountScoped
 class TdlibVideoNoteRepository
     @Inject
     constructor(

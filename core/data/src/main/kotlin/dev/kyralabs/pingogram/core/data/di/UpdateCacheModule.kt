@@ -2,8 +2,7 @@ package dev.kyralabs.pingogram.core.data.di
 
 import dagger.Binds
 import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dagger.hilt.migration.DisableInstallInCheck
 import dagger.multibindings.IntoSet
 import dev.kyralabs.pingogram.core.data.attachment.UploadCleaner
 import dev.kyralabs.pingogram.core.data.repository.TdlibCallRepository
@@ -28,15 +27,16 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 
 /**
- * The set of every [TdlibUpdateCache], which `PingogramApplication` injects so each cache exists, and is subscribed to
- * TDLib's updates, before TDLib starts. Every new caching repository joins it here.
+ * The set of every [TdlibUpdateCache] of an account ([AccountComponent.updateCaches]), which `PingogramApplication`
+ * makes so each cache exists, and is subscribed to TDLib's updates, before TDLib starts. Every new caching repository
+ * joins it here.
  *
  * One binding per caching repository, so it has as many functions as there are caches (`TooManyFunctions`): splitting
  * it would scatter the one list of caches.
  */
 @Suppress("TooManyFunctions")
 @Module
-@InstallIn(SingletonComponent::class)
+@DisableInstallInCheck
 interface UpdateCacheModule {
     @Binds
     @IntoSet

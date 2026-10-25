@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toCustomEmoji
 import dev.kyralabs.pingogram.core.domain.model.CustomEmoji
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.stateIn
 import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [CustomEmojiRepository] on TDLib's `getCustomEmojiStickers`, which answers from memory or its database where it can,
@@ -34,7 +34,7 @@ import javax.inject.Singleton
  * - **Cancellable**: a cancelled caller stops waiting, and its ids leave [pending], so the next caller asks for them;
  *   TDLib's late answer is dropped (`TdlibClient.send`).
  */
-@Singleton
+@AccountScoped
 class TdlibCustomEmojiRepository
     @Inject
     constructor(

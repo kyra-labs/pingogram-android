@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.FileRange
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -16,7 +17,6 @@ import org.drinkless.tdlib.TdApi
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [FileStreamRepository] on TDLib's partial downloads: `downloadFile` from an offset (`limit` 0: to the end), then
@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * `downloaded_prefix_size`). No cache: each wait subscribes to the updates before it asks, and ends with the range.
  * A reader seeking within what downloads already starts nothing new; one seeking elsewhere moves the download there.
  */
-@Singleton
+@AccountScoped
 class TdlibFileStreamRepository
     @Inject
     constructor(

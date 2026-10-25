@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.repository.AppLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.AuthRepository
@@ -25,7 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
@@ -37,7 +37,7 @@ import kotlin.time.TimeSource
  * sight, [RELOCK_DELAY]); the passcode, whose removal
  * unlocks every chat for good; and the login steps, where logging out does the same.
  */
-@Singleton
+@AccountScoped
 class DefaultChatLockRepository internal constructor(
     private val storage: LockedChatIdsRepository,
     private val passcodeRepository: PasscodeRepository,

@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toSticker
 import dev.kyralabs.pingogram.core.domain.model.StickerSetDetails
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
@@ -10,7 +11,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [StickerSetRepository] on TDLib: `getArchivedStickerSets` and `getTrendingStickerSets` read again on
@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * a link's set; `changeStickerSet`, `reorderInstalledStickerSets` and `viewTrendingStickerSets` for the changes. TDLib
  * keeps all of it in its database, so no cache of its own. Regular stickers only.
  */
-@Singleton
+@AccountScoped
 class TdlibStickerSetRepository
     @Inject
     constructor(

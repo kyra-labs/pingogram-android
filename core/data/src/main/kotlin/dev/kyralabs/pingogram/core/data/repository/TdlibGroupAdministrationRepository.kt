@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toTdChatMemberStatus
 import dev.kyralabs.pingogram.core.data.mapper.toTdMessageSender
 import dev.kyralabs.pingogram.core.data.mapper.toTdPermissions
@@ -15,7 +16,6 @@ import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationReposito
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [GroupAdministrationRepository] on TDLib: `setChatTitle`, `setChatDescription`, `setChatPhoto` (a static photo
@@ -25,7 +25,7 @@ import javax.inject.Singleton
  * rights itself and Telegram again; their refusals map to `DomainError.AdminRightsRequired`. A blank title and a slow
  * mode delay Telegram does not accept are refused before anything is sent.
  */
-@Singleton
+@AccountScoped
 class TdlibGroupAdministrationRepository
     @Inject
     constructor(

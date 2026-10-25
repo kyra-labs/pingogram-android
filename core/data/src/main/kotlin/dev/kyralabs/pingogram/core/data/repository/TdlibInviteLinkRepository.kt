@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toInviteLink
 import dev.kyralabs.pingogram.core.domain.model.InviteLink
 import dev.kyralabs.pingogram.core.domain.model.InviteLinkSettings
@@ -11,7 +12,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [InviteLinkRepository] on TDLib: `getChatInviteLinks` (paged by the date and link of the last one),
@@ -20,7 +20,7 @@ import javax.inject.Singleton
  * before they are sent: a name of at most 32 characters, a member limit of at most 99,999 and none with join requests
  * (td_api.tl `createChatInviteLink`). The links themselves are never logged.
  */
-@Singleton
+@AccountScoped
 class TdlibInviteLinkRepository
     @Inject
     constructor(

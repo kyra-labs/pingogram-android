@@ -1,12 +1,12 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.flow.first
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * The link preview options of a text sent to a chat: none in a secret chat while the user has not allowed link
@@ -14,7 +14,7 @@ import javax.inject.Singleton
  * default elsewhere (null). Whether the chat is secret comes from `getChat`, which TDLib answers from memory for chats
  * it knows.
  */
-@Singleton
+@AccountScoped
 class SecretChatLinkPreviews
     @Inject
     constructor(

@@ -1,19 +1,19 @@
 package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.model.ChatBoostStatus
 import dev.kyralabs.pingogram.core.domain.repository.ChatBoostRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [ChatBoostRepository] on TDLib's `getChatBoostStatus` and `getAvailableChatBoostSlots`, read only: nothing here
  * boosts (`boostChat` is never sent, `REQUIREMENTS.md` FR-P5). The user's boost slots are only counted; their failure
  * (an account without Telegram Premium may have none to list) leaves the count at 0 rather than failing the status.
  */
-@Singleton
+@AccountScoped
 class TdlibChatBoostRepository
     @Inject
     constructor(

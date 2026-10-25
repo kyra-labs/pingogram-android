@@ -2,6 +2,7 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toMessage
 import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageContent
@@ -12,7 +13,6 @@ import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.collections.immutable.toImmutableList
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [SharedMediaRepository] on TDLib's `searchChatMessages` with the search filter of each [SharedMediaKind]
@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * Self-destructing media is left out, as TDLib does; so is anything TDLib might mix in that is not of the kind, which
  * the tabs could not show.
  */
-@Singleton
+@AccountScoped
 class TdlibSharedMediaRepository
     @Inject
     constructor(

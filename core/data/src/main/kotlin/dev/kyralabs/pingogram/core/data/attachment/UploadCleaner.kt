@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.core.data.attachment
 import dev.kyralabs.pingogram.core.common.ApplicationScope
 import dev.kyralabs.pingogram.core.common.Dispatcher
 import dev.kyralabs.pingogram.core.common.PingogramDispatchers.IO
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.repository.TdlibUpdateCache
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,7 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -38,7 +38,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Updates are queued as they come and handled one at a time, in TDLib's order, on [io], where all file work runs.
  */
-@Singleton
+@AccountScoped
 class UploadCleaner internal constructor(
     client: TdlibClient,
     private val files: UploadFiles,

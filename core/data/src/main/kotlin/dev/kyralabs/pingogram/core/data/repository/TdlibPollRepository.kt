@@ -2,20 +2,20 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toPollVoters
 import dev.kyralabs.pingogram.core.domain.model.PollVoters
 import dev.kyralabs.pingogram.core.domain.repository.PollRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [PollRepository] on `setPollAnswer`, `stopPoll` and `getPollVoters`, without a cache: TDLib marks a vote on its way
  * at once (`pollOption.is_being_chosen`) and announces every change of the poll with `updatePoll`, which
  * [TdlibMessageRepository]'s windows apply to each message showing it.
  */
-@Singleton
+@AccountScoped
 class TdlibPollRepository
     @Inject
     constructor(

@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.common.PingogramDispatchers.Default
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.data.mapper.toAuthStep
 import dev.kyralabs.pingogram.core.domain.model.AuthStep
 import dev.kyralabs.pingogram.core.domain.model.TelegramServers
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.time.ComparableTimeMark
 import kotlin.time.TimeSource
 
@@ -34,7 +34,7 @@ import kotlin.time.TimeSource
  * deadlines on [timeSource] from when this singleton first saw the state, so they survive recreated screens.
  */
 @Suppress("TooManyFunctions")
-@Singleton
+@AccountScoped
 class TdlibAuthRepository(
     private val client: TdlibClient,
     dispatcher: CoroutineDispatcher,
