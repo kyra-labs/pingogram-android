@@ -22,6 +22,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -99,6 +100,9 @@ object ActiveAccountModule {
 
     @Provides
     fun appLockRepository(accounts: Accounts): AppLockRepository = accounts.active.appLockRepository()
+
+    @Provides
+    fun chatLockRepository(accounts: Accounts): ChatLockRepository = accounts.active.chatLockRepository()
 
     @Provides
     fun connectionRepository(accounts: Accounts): ConnectionRepository = accounts.active.connectionRepository()

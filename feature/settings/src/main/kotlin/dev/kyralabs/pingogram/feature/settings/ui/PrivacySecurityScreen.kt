@@ -32,10 +32,12 @@ import dev.kyralabs.pingogram.core.ui.text.resolve
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.feature.settings.R
 import dev.kyralabs.pingogram.feature.settings.ui.account.AccountGroup
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.lockedChatsItem
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * The Privacy and security page: hoists [PrivacySecurityViewModel] and, for "Sync contacts",
@@ -270,6 +272,7 @@ private fun SecuritySection(
                 onClick = { onOpen(PrivacySecurityPage.PasscodeLock) },
             )
         }
+        lockedChatsItem { onOpen(PrivacySecurityPage.LockedChats) }
     }
 }
 

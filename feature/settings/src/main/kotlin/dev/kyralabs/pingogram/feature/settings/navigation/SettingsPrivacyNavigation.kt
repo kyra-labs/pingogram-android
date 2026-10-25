@@ -10,6 +10,7 @@ import dev.kyralabs.pingogram.core.navigation.AutoDeleteRoute
 import dev.kyralabs.pingogram.core.navigation.BlockedUsersRoute
 import dev.kyralabs.pingogram.core.navigation.ConnectedWebsitesRoute
 import dev.kyralabs.pingogram.core.navigation.DeleteAccountRoute
+import dev.kyralabs.pingogram.core.navigation.LockedChatsRoute
 import dev.kyralabs.pingogram.core.navigation.LoginEmailRoute
 import dev.kyralabs.pingogram.core.navigation.NewChatPrivacyRoute
 import dev.kyralabs.pingogram.core.navigation.PasscodeLockRoute
@@ -21,6 +22,7 @@ import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityPage
 import dev.kyralabs.pingogram.feature.settings.ui.BlockedUsersRoute as BlockedUsersScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySecurityRoute as PrivacySecurityScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.PrivacySettingRoute as PrivacySettingScreenRoute
+import dev.kyralabs.pingogram.feature.settings.ui.lockedchats.LockedChatsRoute as LockedChatsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.exceptions.PrivacyExceptionsRoute as PrivacyExceptionsScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.privacy.messages.NewChatPrivacyRoute as NewChatPrivacyScreenRoute
 import dev.kyralabs.pingogram.feature.settings.ui.websites.ConnectedWebsitesRoute as ConnectedWebsitesScreenRoute
@@ -60,6 +62,9 @@ internal fun NavGraphBuilder.privacyPages(
     }
     settingsPage<BlockedUsersRoute> { BlockedUsersScreenRoute(onBack = onBack) }
     settingsPage<ConnectedWebsitesRoute> { ConnectedWebsitesScreenRoute(onBack = onBack) }
+    settingsPage<LockedChatsRoute> {
+        LockedChatsScreenRoute(onOpenPasscodeLock = { onOpen(PasscodeLockRoute) }, onBack = onBack)
+    }
 }
 
 private val PrivacySecurityPage.route: Any
@@ -71,6 +76,7 @@ private val PrivacySecurityPage.route: Any
             PrivacySecurityPage.Websites -> ConnectedWebsitesRoute
             PrivacySecurityPage.TwoStepVerification -> TwoStepVerificationRoute
             PrivacySecurityPage.PasscodeLock -> PasscodeLockRoute
+            PrivacySecurityPage.LockedChats -> LockedChatsRoute
             PrivacySecurityPage.DeleteAccount -> DeleteAccountRoute
             PrivacySecurityPage.LoginEmail -> LoginEmailRoute
             PrivacySecurityPage.AutoDelete -> AutoDeleteRoute

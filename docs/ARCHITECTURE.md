@@ -139,6 +139,24 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   readers, and a notification's chat (`chatToOpen`) opens after unlocking. The window is `FLAG_SECURE` while locked;
   "Hide content in recent apps" uses `setRecentsScreenshotEnabled` (Android 13+) or `FLAG_SECURE`. Biometrics go
   through the platform's `BiometricPrompt` (`BiometricAvailability`, `rememberBiometricPrompt`), not `androidx.biometric`.
+- **Locked chats** (`docs/adr/0029-locked-chats.md`): Pingogram's own, kept on the device. `core:domain`'s
+  `ChatLockRepository` (`DefaultChatLockRepository`, `core:data`, a singleton) holds the locked chats' ids
+  (`LockedChatIdsRepository`, `DataStoreLockedChatIdsRepository`: the settings file) and whether they are open: only
+  while a passcode is set (none locked otherwise; removing the passcode or logging out unlocks them all for good), opened
+  by the app lock's passcode check (`AppLockRepository.checkPasscode`, attempts and waits shared) or biometrics, closed
+  again when the app lock locks or after a minute out of sight (`MainActivity.onStop`/`onStart`). `hiddenChatIds` (a
+  `StateFlow`, current from the start) is what to hide now. Readers: `ChatListViewModel` (`feature:chats`) leaves locked
+  chats out of every list, folder and the archive row, and shows a "Locked chats" row (`LockedChatsRow`) at the end of
+  the main list; `SearchViewModel` and `ChatTargets` (the forward and share sheets, `feature:chat`) leave the hidden ones
+  out; `ChatRoute` wraps the conversation in `core:ui`'s `LocalLockedChatGate`, which `MainActivity` provides as
+  `feature:settings`' `LockedChatGate` (the passcode entry, `ChatUnlockRoute` and `ChatUnlockViewModel`, in the
+  conversation's place, its saved state kept). `NotificationRenderer` posts one anonymous "New message" for their
+  groups (`ConversationNotificationBuilder.locked`, opening `LockedChatsRoute` through `NotificationIntents`) and
+  removes their conversation shortcuts; `ShareTargetShortcuts` and the widget (`RecentChatsWidgetUpdater`) leave them
+  out. Settings → Privacy and security → "Locked chats" (`LockedChatsRoute`, `LockedChatsViewModel`) lists them behind
+  the passcode, locks more (a picker of the main and archive lists, its picks in saved state) and unlocks; its chats open
+  through `core:ui`'s `LocalChatLauncher`, the chat list's row through `LocalLockedChatsLauncher`, both provided by
+  `PingogramApp`.
 - **Chat folders** (FR-L3): `ChatRepository` keeps the folders TDLib announces (`updateChatFolders`: the tabs above
   the chat list and the main list's place among them). `core:domain`'s `ChatFolderRepository` (`TdlibChatFolderRepository`,
   `core:data`, no cache: that update announces every change) reads what a folder holds (`getChatFolder`, as

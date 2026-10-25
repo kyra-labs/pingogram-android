@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidNetworkRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.DeviceContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkPreviewSettingsRepository
+import dev.kyralabs.pingogram.core.domain.repository.LockedChatIdsRepository
 import dev.kyralabs.pingogram.core.domain.repository.PasscodeRepository
 import dev.kyralabs.pingogram.core.domain.repository.PushTokenSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -53,6 +54,8 @@ interface AccountDependencies {
     fun linkPreviewSettingsRepository(): LinkPreviewSettingsRepository
 
     fun contactSyncSettingsRepository(): ContactSyncSettingsRepository
+
+    fun lockedChatIdsRepository(): LockedChatIdsRepository
 
     fun pushTokenSource(): Optional<PushTokenSource>
 }

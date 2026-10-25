@@ -26,6 +26,12 @@ internal object StartupTrace {
      */
     const val AWAIT_SETTINGS = "main.awaitSettings"
 
+    /**
+     * The settings file's first read, which `PingogramApplication` starts so the first activity finds the settings in
+     * memory: an async section, as it runs on a background dispatcher.
+     */
+    const val READ_SETTINGS = "app.readSettings"
+
     inline fun <T> section(
         name: String,
         block: () -> T,
@@ -36,6 +42,20 @@ internal object StartupTrace {
         } finally {
             Trace.endSection()
         }
+    }
+}
+
+/** [name] around [block], as an async section (Android 10+), for work that suspends or runs off the main thread. */
+internal suspend inline fun <T> asyncTraceSection(
+    name: String,
+    block: () -> T,
+): T {
+    val traced = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+    if (traced) Trace.beginAsyncSection(name, 0)
+    try {
+        return block()
+    } finally {
+        if (traced) Trace.endAsyncSection(name, 0)
     }
 }
 

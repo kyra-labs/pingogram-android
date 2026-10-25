@@ -1,7 +1,7 @@
 # 0029 · Locked chats
 
-Date: 2026-10-24 · Status: proposed, waiting for the owner's answers below (`docs/audit/feature-gaps-octogram.md`, P1,
-"Owner"). Extends `docs/adr/0005-passcode-lock.md`.
+Date: 2026-10-24 · Status: accepted by the owner 2026-10-25, as proposed except decision 2, where (b) was chosen
+(`docs/audit/feature-gaps-octogram.md`, P1). Extends `docs/adr/0005-passcode-lock.md`.
 
 ## Context
 
@@ -47,6 +47,25 @@ What Telegram and TDLib give:
    Proposed: yes; there is no Telegram API for it.
 5. **Lock the archive, secret chats, call history or Settings** (P2 in the audit): the same mechanism later, each its
    own switch. Proposed: not in the first pull request.
+
+## Decision
+
+The owner's answers (2026-10-25): 1 (a), 2 **(b)**, 3 yes, 4 yes, 5 not now.
+
+- **Where they show:** nowhere in the chat list, its folders or the archive, open or not; a "Locked chats" row at the
+  end of the main list, and Settings → Privacy and security → "Locked chats", open their own list behind the passcode.
+  Search and the share and forward sheets leave them out until they are opened.
+- **Notifications:** one "New message" notification for all of them, in the Private chats channel, without the chat's
+  name, sender, text or avatar, without conversation shortcut, reply or mark-as-read actions; it alerts only for a new
+  message and opens Locked chats, which ask for the passcode first (as WhatsApp's Chat Lock does).
+- **Widget, conversation shortcuts, Direct Share:** locked chats are left out of all three; locking a chat removes its
+  conversation shortcut.
+- **Opening one:** the conversation shows the passcode entry (or the biometric prompt) in its place; one unlock opens all
+  of them. They lock again when the app lock locks, or after the app was out of sight for a minute (long enough for the
+  photo picker, the camera or a call).
+- **Locking:** from the Locked chats page ("Lock a chat", a picker of the chat list's and the archive's chats). Locking
+  from a chat's own actions and profile comes later.
+- **Turning the passcode off or logging out** unlocks every chat for good.
 
 ## Consequences
 

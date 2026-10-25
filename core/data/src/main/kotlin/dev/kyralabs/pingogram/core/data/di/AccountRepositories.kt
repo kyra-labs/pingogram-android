@@ -18,6 +18,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -90,6 +91,8 @@ interface AccountRepositories {
     fun authRepository(): AuthRepository
 
     fun appLockRepository(): AppLockRepository
+
+    fun chatLockRepository(): ChatLockRepository
 
     fun connectionRepository(): ConnectionRepository
 

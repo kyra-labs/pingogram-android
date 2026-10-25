@@ -14,6 +14,7 @@ import dev.kyralabs.pingogram.core.data.repository.AndroidPickedPhotoRepository
 import dev.kyralabs.pingogram.core.data.repository.AndroidSharedStorageRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAppLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultAutoDownloadPolicy
+import dev.kyralabs.pingogram.core.data.repository.DefaultChatLockRepository
 import dev.kyralabs.pingogram.core.data.repository.DefaultPowerSavingPolicy
 import dev.kyralabs.pingogram.core.data.repository.TdlibAccountRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibArchiveSettingsRepository
@@ -113,6 +114,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ChatExportRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatExporter
 import dev.kyralabs.pingogram.core.domain.repository.ChatFolderRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatJoinRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatMediaRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatSearchRepository
@@ -199,6 +201,9 @@ interface RepositoryModule {
 
     @Binds
     fun appLockRepository(repository: DefaultAppLockRepository): AppLockRepository
+
+    @Binds
+    fun chatLockRepository(repository: DefaultChatLockRepository): ChatLockRepository
 
     @Binds
     fun connectionRepository(repository: TdlibConnectionRepository): ConnectionRepository

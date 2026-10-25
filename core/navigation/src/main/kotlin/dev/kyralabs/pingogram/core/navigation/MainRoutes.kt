@@ -224,6 +224,13 @@ data object ActiveSessionsRoute
 @Serializable
 data object ConnectedWebsitesRoute
 
+/**
+ * The chats kept behind the passcode (`docs/adr/0029-locked-chats.md`), pushed above [PrivacySecurityRoute], above the
+ * chat list from its "Locked chats" row, or from a locked chat's notification.
+ */
+@Serializable
+data object LockedChatsRoute
+
 /** Which channel the user's profile shows, pushed above [EditProfileRoute]. */
 @Serializable
 data object PersonalChannelRoute

@@ -21,6 +21,7 @@ import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveRowRepository
 import dev.kyralabs.pingogram.core.domain.repository.ArchiveSettingsRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.ChatLockRepository
 import dev.kyralabs.pingogram.core.domain.repository.ChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.ConnectionRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupRepository
@@ -101,6 +102,7 @@ class ChatListViewModel internal constructor(
     secretChatRepository: SecretChatRepository,
     chatActionRepository: ChatActionRepository,
     connectionRepository: ConnectionRepository,
+    chatLock: ChatLockRepository,
     archiveRowRepository: ArchiveRowRepository,
     archiveSettingsRepository: ArchiveSettingsRepository,
     private val clock: WallClock,
@@ -118,6 +120,7 @@ class ChatListViewModel internal constructor(
         secretChatRepository: SecretChatRepository,
         chatActionRepository: ChatActionRepository,
         connectionRepository: ConnectionRepository,
+        chatLock: ChatLockRepository,
         archiveRowRepository: ArchiveRowRepository,
         archiveSettingsRepository: ArchiveSettingsRepository,
         clock: WallClock,
@@ -132,6 +135,7 @@ class ChatListViewModel internal constructor(
         secretChatRepository,
         chatActionRepository,
         connectionRepository,
+        chatLock,
         archiveRowRepository,
         archiveSettingsRepository,
         clock,
@@ -207,10 +211,13 @@ class ChatListViewModel internal constructor(
             RowSnapshot(users, supergroups, secretChats, actions, myUserId, now)
         }
 
+    /** Locked chats (docs/adr/0029-locked-chats.md) never show here, open or not: they have a list of their own. */
+    private val lockedChatIds = chatLock.lockedChatIds.distinctUntilChanged()
+
     private val listState: Flow<ListState> =
         selectedList.flatMapLatest { list ->
             combine(
-                chatRepository.chatList(list),
+                chatRepository.chatList(list).without(lockedChatIds),
                 rowSources,
                 loads.map { it[list] ?: ListLoad() }.distinctUntilChanged(),
             ) { chats, snapshot, load -> ListState(list, content(list, chats, snapshot, load)) }
@@ -239,12 +246,15 @@ class ChatListViewModel internal constructor(
         } else {
             combine(
                 chatRepository.unreadChatCount(ChatListType.Archive),
-                chatRepository.chatList(ChatListType.Archive),
+                chatRepository.chatList(ChatListType.Archive).without(lockedChatIds),
                 archiveRowRepository.style,
             ) { count, chats, style -> ArchivePlace(archiveEntry(count, chats), style) }.distinctUntilChanged()
         }
 
-    private val overlays: Flow<Overlays> = combine(selection.ids, deleteDialog, ::Overlays)
+    private val overlays: Flow<Overlays> =
+        combine(selection.ids, deleteDialog, lockedChatIds) { ids, dialog, locked ->
+            Overlays(ids, dialog, hasLockedChats = kind == ChatListKind.Chats && locked.isNotEmpty())
+        }
 
     val uiState: StateFlow<ChatListUiState> =
         combine(listState, connectionRepository.connectionStatus, folderTabs, archive, overlays) {
@@ -261,6 +271,7 @@ class ChatListViewModel internal constructor(
                 folderTabs = tabs,
                 selectedFolderId = (list.list as? ChatListType.Folder)?.id,
                 archive = archive.row.takeIf { list.list == ChatListType.Main },
+                hasLockedChats = overlays.hasLockedChats && list.list == ChatListType.Main,
                 hiddenArchive = archive.hidden.takeIf { list.list == ChatListType.Main },
                 selection = selectionOf(list.content, overlays.selectedIds),
                 deleteDialog = overlays.deleteDialog,
@@ -543,6 +554,7 @@ class ChatListViewModel internal constructor(
     private class Overlays(
         val selectedIds: Set<Long>,
         val deleteDialog: DeleteDialog?,
+        val hasLockedChats: Boolean,
     )
 
     internal companion object {
@@ -579,3 +591,7 @@ private fun folderTabs(
     tabs.add(mainPosition.coerceIn(0, folders.size), FolderTab.AllChats(main.unreadUnmutedCount, main.unreadCount > 0))
     return tabs.toImmutableList()
 }
+
+/** These chats without those of [locked]. */
+private fun Flow<List<Chat>>.without(locked: Flow<Set<Long>>): Flow<List<Chat>> =
+    combine(this, locked) { chats, ids -> if (ids.isEmpty()) chats else chats.filterNot { it.id in ids } }
