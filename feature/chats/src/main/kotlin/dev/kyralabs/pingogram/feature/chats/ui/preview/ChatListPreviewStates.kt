@@ -10,6 +10,8 @@ internal class ChatListPreviewStates : PreviewParameterProvider<ChatListUiState>
             "Content with folders" to ChatListPreviewData.contentWithFolders,
             "Content" to ChatListPreviewData.content,
             "Archive row" to ChatListPreviewData.contentWithArchive,
+            "Compact archive row" to ChatListPreviewData.contentWithCompactArchive,
+            "Hidden archive row" to ChatListPreviewData.contentWithHiddenArchive,
             "Selecting" to ChatListPreviewData.selecting,
             "Connecting" to ChatListPreviewData.connecting,
             "Loading" to ChatListPreviewData.loading,

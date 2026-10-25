@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two chevrons pointing apart, as Material Symbols Rounded "unfold_more" (wght 400, opsz 24) draws them: Pingogram's
+     own vector, stroked with round caps and joins at the symbols' stroke width. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:pathData="M300,360L480,240L660,360M300,600L480,720L660,600"
+        android:strokeWidth="80"
+        android:strokeColor="@android:color/white"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

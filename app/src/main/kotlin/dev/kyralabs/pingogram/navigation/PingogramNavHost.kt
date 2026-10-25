@@ -44,7 +44,6 @@ import dev.kyralabs.pingogram.core.ui.transition.ProvideSharedTransitionScope
 import dev.kyralabs.pingogram.feature.auth.navigation.authScreen
 import dev.kyralabs.pingogram.feature.chat.navigation.navigateToScheduledMessages
 import dev.kyralabs.pingogram.feature.chats.navigation.GlobalSearchState
-import dev.kyralabs.pingogram.feature.chats.navigation.archiveScreen
 import dev.kyralabs.pingogram.feature.chats.navigation.searchScreen
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToEditContact
 import dev.kyralabs.pingogram.feature.contacts.navigation.navigateToNewContact
@@ -234,6 +233,7 @@ private fun NavGraphBuilder.mainGraph(
                     onOpenChatInfo = navController::navigateToChatInfo,
                     onEditContact = navController::navigateToEditContact,
                     onOpenStory = navController::navigateToStoryViewer,
+                    onEditFolder = navController::navigateToFolderEditor,
                     chatToShow = request.toChatToShow(),
                     onChatShown = { entry.savedStateHandle.chatShown() },
                     onOpenScheduledMessages = navController::navigateToScheduledMessages,
@@ -256,7 +256,7 @@ private fun NavGraphBuilder.mainGraph(
                 navController.navigateToChat(chatId, messageId, besideList = besideList.value)
             },
         )
-        archiveScreen(onBack = { navController.popBackStack() }, onOpenChat = openChat)
+        archive(navController, openChat)
         newChatScreens(navController)
         chatScreens(navController, openMedia)
         profile(navController, besideList)

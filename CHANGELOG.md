@@ -10,6 +10,12 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Archive settings: the archive's top bar opens them. Archive and mute new chats from people who aren't in your
+  contacts (where Telegram offers it), and keep unmuted chats, or those of your folders, in the archive when a new
+  message arrives. They belong to your Telegram account. The archived chats row can show the chats' names, be one line,
+  or be hidden: long-press it, or swipe it away (with Undo); while hidden, the top bar's archive button opens it.
+- Mark all as read: long-press a folder tab, or "All chats", to mark all its chats as read. The same menu edits the
+  folder.
 - Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
   (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
   sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and
