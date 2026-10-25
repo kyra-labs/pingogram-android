@@ -128,6 +128,19 @@ class SettingsAccessibilityChecksTest {
         }
 
     @Test
+    fun privacySecurityOnScreen() =
+        check {
+            PrivacySecurityScreen(
+                state = SettingsPreviewData.privacySecurity,
+                onEvent = {},
+                onOpen = {},
+                onBack = {},
+                phoneNumbersHidden = false,
+                idsShown = true,
+            )
+        }
+
+    @Test
     fun changePhoneNumber() =
         check { ChangePhoneNumberScreen(state = ChangePhoneNumberPreviewStates.number, onEvent = {}, onBack = {}) }
 

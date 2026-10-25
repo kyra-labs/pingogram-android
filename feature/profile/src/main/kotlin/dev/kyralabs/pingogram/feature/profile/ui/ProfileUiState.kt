@@ -72,6 +72,7 @@ enum class ProfileWarning {
  * @property phoneNumber the phone number's digits, `+` first, as Telegram sends them; the row formats it.
  * @property birthday the birthday, formatted ("December 10, 1815", or "December 10" without a year).
  * @property personalChannel the channel the user shows on their profile (td_api.tl `personal_chat_id`).
+ * @property id the user's ID, only while Privacy and security's "Show IDs" is on.
  */
 @Immutable
 data class ProfileInfo(
@@ -81,9 +82,12 @@ data class ProfileInfo(
     val phoneNumber: String? = null,
     val birthday: String? = null,
     val personalChannel: PersonalChannel? = null,
+    val id: Long? = null,
 ) {
     val isEmpty: Boolean
-        get() = bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null
+        get() =
+            bio == null && usernames.isEmpty() && phoneNumber == null && birthday == null && personalChannel == null &&
+                id == null
 
     override fun toString() = "ProfileInfo(usernames=${usernames.size}, …)"
 }
@@ -221,6 +225,9 @@ sealed interface ProfileEvent {
 
     data object CopyPhone : ProfileEvent
 
+    /** Copy the user's ID. */
+    data object CopyId : ProfileEvent
+
     /** Open the dialer with the phone number. */
     data object CallPhone : ProfileEvent
 
@@ -298,4 +305,5 @@ enum class CopiedText {
     Username,
     Phone,
     Bio,
+    Id,
 }

@@ -87,6 +87,9 @@ object ProfilePreviewData {
                 ),
         )
 
+    /** [content] with the user's ID, as "Show IDs" shows it. */
+    val withId = content.copy(info = content.info.copy(id = 42))
+
     val bot =
         ProfileUiState.Content(
             header =

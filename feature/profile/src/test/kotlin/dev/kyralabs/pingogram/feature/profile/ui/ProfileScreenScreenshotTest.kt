@@ -70,6 +70,35 @@ class ProfileScreenScreenshotTest {
     @Test
     fun error() = capture(ScreenshotVariant.Light, ProfileUiState.Error(DomainError.NotFound))
 
+    /** "Show IDs" on: the user's ID closes the Info group. */
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownLight() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownDark() = capture(ScreenshotVariant.Dark, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownAmoled() = capture(ScreenshotVariant.Amoled, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownHighContrast() = capture(ScreenshotVariant.HighContrast, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = TALL)
+    fun idShownRtl() = capture(ScreenshotVariant.Rtl, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = "w700dp-h1600dp-xxhdpi")
+    fun idShownMedium() = capture(ScreenshotVariant.Medium, ProfilePreviewData.withId)
+
+    @Test
+    @Config(qualifiers = "w411dp-h3200dp-xxhdpi", fontScale = 2f)
+    fun idShownFontScale200() = capture(ScreenshotVariant.Light, ProfilePreviewData.withId)
+
     private fun capture(
         variant: ScreenshotVariant,
         state: ProfileUiState = ProfilePreviewData.content,
@@ -103,6 +132,9 @@ class ProfileScreenScreenshotTest {
     }
 
     private companion object {
+        /** A phone as tall as the profile down to its "More" group. */
+        const val TALL = "w411dp-h1600dp-xxhdpi"
+
         /** The "Shared media" heading of a profile without photos: after the actions, the info and More. */
         const val MEDIA = 3
 
