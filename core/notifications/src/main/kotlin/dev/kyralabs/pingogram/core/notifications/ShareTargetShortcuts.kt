@@ -88,22 +88,24 @@ class ShareTargetShortcuts
             }
 
         private suspend fun publish(targets: List<Target>) {
-            val chats =
-                targets.map { target ->
-                    val icon = avatars.icon(target.photo, target.chatId, target.title)
-                    val person =
-                        target.partner?.let { partner ->
-                            Person
-                                .Builder()
-                                .setKey(USER_KEY + partner.userId)
-                                .setName(target.title)
-                                .setIcon(icon)
-                                .setBot(partner.isBot)
-                                .build()
-                        }
-                    ChatShortcut(target.chatId, target.title, icon, person)
+            shortcuts.publishShareTargets(
+                targets.map { target -> ShareTarget(target.chatId, target.key) { shortcutOf(target) } },
+            )
+        }
+
+        private suspend fun shortcutOf(target: Target): ChatShortcut {
+            val icon = avatars.icon(target.photo, target.chatId, target.title)
+            val person =
+                target.partner?.let { partner ->
+                    Person
+                        .Builder()
+                        .setKey(USER_KEY + partner.userId)
+                        .setName(target.title)
+                        .setIcon(icon)
+                        .setBot(partner.isBot)
+                        .build()
                 }
-            shortcuts.publishShareTargets(chats)
+            return ChatShortcut(target.chatId, target.title, icon, person)
         }
 
         /** What a chat's shortcut needs, compared to publish only when it changed. */
@@ -113,6 +115,10 @@ class ShareTargetShortcuts
             val photo: ProfilePhoto?,
             val partner: Partner?,
         ) {
+            /** What its shortcut shows, the same in every process: the title, the photo's file and the partner. */
+            val key: String
+                get() = "$title\u0000${photo?.small?.id}\u0000${partner?.userId}:${partner?.isBot}"
+
             override fun toString() = "Target(chatId=$chatId, …)"
         }
 
