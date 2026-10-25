@@ -36,9 +36,11 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
+import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -264,6 +266,13 @@ object ActiveAccountModule {
 
     @Provides
     fun contactJoinedRepository(accounts: Accounts): ContactJoinedRepository = accounts.active.contactJoinedRepository()
+
+    @Provides
+    fun dataOptionsRepository(accounts: Accounts): DataOptionsRepository = accounts.active.dataOptionsRepository()
+
+    @Provides
+    fun frequentContactsRepository(accounts: Accounts): FrequentContactsRepository =
+        accounts.active.frequentContactsRepository()
 
     @Provides
     fun personalChannelRepository(accounts: Accounts): PersonalChannelRepository =

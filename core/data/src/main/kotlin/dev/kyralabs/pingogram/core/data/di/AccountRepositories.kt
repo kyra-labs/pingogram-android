@@ -32,9 +32,11 @@ import dev.kyralabs.pingogram.core.domain.repository.ContactRepository
 import dev.kyralabs.pingogram.core.domain.repository.ContactSyncRepository
 import dev.kyralabs.pingogram.core.domain.repository.CountryRepository
 import dev.kyralabs.pingogram.core.domain.repository.CustomEmojiRepository
+import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileRepository
 import dev.kyralabs.pingogram.core.domain.repository.FileStreamRepository
 import dev.kyralabs.pingogram.core.domain.repository.ForumTopicRepository
+import dev.kyralabs.pingogram.core.domain.repository.FrequentContactsRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupAdministrationRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupCallRepository
 import dev.kyralabs.pingogram.core.domain.repository.GroupInfoRepository
@@ -194,6 +196,10 @@ interface AccountRepositories {
     fun connectedWebsiteRepository(): ConnectedWebsiteRepository
 
     fun contactJoinedRepository(): ContactJoinedRepository
+
+    fun dataOptionsRepository(): DataOptionsRepository
+
+    fun frequentContactsRepository(): FrequentContactsRepository
 
     fun personalChannelRepository(): PersonalChannelRepository
 

@@ -2,19 +2,19 @@ package dev.kyralabs.pingogram.core.data.repository
 
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.common.result.map
+import dev.kyralabs.pingogram.core.data.di.AccountScoped
 import dev.kyralabs.pingogram.core.domain.repository.DataOptionsRepository
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
 import kotlinx.coroutines.flow.Flow
 import org.drinkless.tdlib.TdApi
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * [DataOptionsRepository] on TDLib: its option `prefer_ipv6`, read with `getOption` once per collection and followed
  * through `updateOption`, to which it subscribes first; and `clearAllDraftMessages` without secret chats. No cache, as
  * TDLib keeps both.
  */
-@Singleton
+@AccountScoped
 class TdlibDataOptionsRepository
     @Inject
     constructor(
