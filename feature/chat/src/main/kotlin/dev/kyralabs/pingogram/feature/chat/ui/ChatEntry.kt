@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.component.LocalLockedChatGate
+import dev.kyralabs.pingogram.feature.chat.ui.saved.SavedMessagesConversation
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpening
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ChatOpeningViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.topics.ForumTopicsRoute
@@ -81,14 +82,14 @@ private fun OpenedChat(
     onOpenScheduledMessages: ((chatId: Long) -> Unit)? = null,
     onOpenNextChat: ((chatId: Long) -> Unit)? = null,
 ) {
-    val conversation: @Composable (MessageTopic?) -> Unit = { shown ->
+    val conversationAt: @Composable (MessageTopic?, Long?) -> Unit = { shown, at ->
         ConversationRoute(
             chatId,
             onBack,
             onOpenMedia,
             modifier,
             onOpenChat,
-            messageId,
+            at,
             shown,
             onOpenThread,
             onOpenProfile,
@@ -98,6 +99,7 @@ private fun OpenedChat(
             onOpenNextChat = onOpenNextChat,
         )
     }
+    val conversation: @Composable (MessageTopic?) -> Unit = { shown -> conversationAt(shown, messageId) }
     if (topic != null) {
         conversation(topic)
         return
@@ -114,6 +116,10 @@ private fun OpenedChat(
 
         ChatOpening.Conversation -> {
             conversation(null)
+        }
+
+        ChatOpening.SavedMessages -> {
+            SavedMessagesConversation(messageId, conversationAt)
         }
 
         ChatOpening.Topics -> {

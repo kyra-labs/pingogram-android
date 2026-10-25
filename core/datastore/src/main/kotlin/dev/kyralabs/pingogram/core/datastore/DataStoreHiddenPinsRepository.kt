@@ -59,5 +59,6 @@ private fun keyOf(
         null -> "pinned.hidden_up_to.$chatId"
         is MessageTopic.Forum -> "pinned.hidden_up_to.$chatId.topic.${topic.topicId}"
         is MessageTopic.Thread -> "pinned.hidden_up_to.$chatId.thread.${topic.threadId}"
+        is MessageTopic.SavedMessages -> "pinned.hidden_up_to.$chatId.saved.${topic.topicId}"
     },
 )

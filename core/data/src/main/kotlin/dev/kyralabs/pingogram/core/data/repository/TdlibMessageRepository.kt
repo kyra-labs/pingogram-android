@@ -217,8 +217,13 @@ class TdlibMessageRepository
  */
 internal fun replyToMessage(messageId: Long) = TdApi.InputMessageReplyToMessage(messageId, null, 0, "")
 
-/** The forum topic or message thread the message goes into (td_api.tl `sendMessage.topic_id`); null for the chat. */
-internal fun SendOptions.tdTopic(): TdApi.MessageTopic? = topic?.toTdMessageTopic()
+/**
+ * The forum topic or message thread the message goes into (td_api.tl `sendMessage.topic_id`); null for the chat. A
+ * Saved Messages topic is not passed: what the user sends to Saved Messages goes into their notes, as in Telegram's
+ * apps, whichever topic shows.
+ */
+internal fun SendOptions.tdTopic(): TdApi.MessageTopic? =
+    topic?.takeUnless { it is MessageTopic.SavedMessages }?.toTdMessageTopic()
 
 /**
  * `messageSendOptions` for [SendOptions]: silent disables the notification, a scheduled time holds the message until

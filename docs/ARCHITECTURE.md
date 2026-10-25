@@ -559,6 +559,19 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sends `ChatEvent.OpenNextChannel`, which the view model checks against what it still offers before
   `ChatEffect.OpenNextChannel`. The route opens it through `onOpenNextChat`: `:app` replaces the pushed conversation's
   `ChatRoute` (`popUpTo<ChatRoute>`), and the Chats tab's detail pane shows it as any chat it opens.
+- **Saved Messages tabs**: TDLib sorts Saved Messages into topics, one per chat the user saved from, the user's notes
+  and messages of hidden authors (td_api.tl `savedMessagesTopic`, `message.topic_id` `messageTopicSavedMessages`, which
+  `MessageTopic.SavedMessages` maps). `core:domain`'s `SavedMessagesTopicRepository` (`TdlibSavedMessagesTopicRepository`,
+  `core:data`, a `TdlibUpdateCache`: TDLib announces each topic only with `updateSavedMessagesTopic`, after
+  `loadSavedMessagesTopics`) keeps them for the session, pinned first and by `order`. A topic's history is
+  `MessageRepository`'s window of that `HistoryKey` (`getSavedMessagesTopicHistory`; its newest message from its first
+  page, as td_api.tl has no `getSavedMessagesTopic`). `feature:chat`: `ChatOpeningViewModel` opens Saved Messages as
+  `ChatOpening.SavedMessages`, whose `SavedMessagesConversation` shows the selected tab's conversation (`ChatViewModel`
+  with the topic, its `ChatThread` reading it as `ThreadState.SavedTopic`), each tab in a view model store of its own,
+  and `SavedTabsViewModel` (the tabs, the first topics loaded once collected and more near the row's end, the selection
+  in its saved state) hands the tabs to the top bar through `LocalConversationTabs`. What is sent from a tab goes to
+  Saved Messages without a topic (`SendOptions.tdTopic` leaves Saved Messages topics out), which Telegram files under
+  the user's notes, so only the notes' tab has a composer.
 - **Comment threads** (FR-C9): a channel post's comments live in the channel's discussion group, and a group's message
   others replied to has a thread of its replies; TDLib gives both a reply count (`interactionInfo.reply_info`), which
   `ChatItem.Bubble.thread` turns into a link under the bubble ("12 comments" on every post of a channel with a

@@ -81,6 +81,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelEvent
 import dev.kyralabs.pingogram.feature.chat.ui.panel.EmojiPanelUiState
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewStates
+import dev.kyralabs.pingogram.feature.chat.ui.saved.LocalConversationTabs
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.ScheduledBarSlot
 import dev.kyralabs.pingogram.feature.chat.ui.search.ChatSearchUiState
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchBottomBarSlot
@@ -296,24 +297,28 @@ private fun ChatScaffold(
     Scaffold(
         modifier = modifier,
         topBar = {
-            SearchTopBarSlot(
-                searching = search != null && selection == null,
-                query = searchQuery,
-                height = titleHeight(),
-                onClose = { onEvent(ChatSearchEvent.Close) },
-            ) {
-                ChatTopBar(
-                    header = state.header,
-                    onBack = onBack,
-                    selectedCount = selection?.messageIds?.size,
-                    onClearSelection = { onEvent(SelectionEvent.Clear) },
-                    onOpenProfile = onOpenProfile,
-                    onSecretChatEvent = onEvent,
-                    onOpenChatInfo = onOpenChatInfo,
-                    onSearch = { onEvent(ChatSearchEvent.Open) },
-                    topicAction = topicAction,
-                    connection = connection,
-                )
+            Column {
+                SearchTopBarSlot(
+                    searching = search != null && selection == null,
+                    query = searchQuery,
+                    height = titleHeight(),
+                    onClose = { onEvent(ChatSearchEvent.Close) },
+                ) {
+                    ChatTopBar(
+                        header = state.header,
+                        onBack = onBack,
+                        selectedCount = selection?.messageIds?.size,
+                        onClearSelection = { onEvent(SelectionEvent.Clear) },
+                        onOpenProfile = onOpenProfile,
+                        onSecretChatEvent = onEvent,
+                        onOpenChatInfo = onOpenChatInfo,
+                        onSearch = { onEvent(ChatSearchEvent.Open) },
+                        topicAction = topicAction,
+                        connection = connection,
+                    )
+                }
+                // Saved Messages' tabs, below its top bar as the folder tabs below the chat list's.
+                LocalConversationTabs.current?.invoke()
             }
         },
         bottomBar = bottomBar,

@@ -6,11 +6,12 @@ import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
 import org.drinkless.tdlib.TdApi
 
-/** The forum topic or message thread; null for the topics of other chats (Saved Messages, direct messages). */
+/** The forum topic, message thread or Saved Messages topic; null for other chats' topics (direct messages). */
 internal fun TdApi.MessageTopic.toMessageTopic(): MessageTopic? =
     when (this) {
         is TdApi.MessageTopicForum -> MessageTopic.Forum(forumTopicId)
         is TdApi.MessageTopicThread -> MessageTopic.Thread(messageThreadId)
+        is TdApi.MessageTopicSavedMessages -> MessageTopic.SavedMessages(savedMessagesTopicId)
         else -> null
     }
 
@@ -18,6 +19,7 @@ internal fun MessageTopic.toTdMessageTopic(): TdApi.MessageTopic =
     when (this) {
         is MessageTopic.Forum -> TdApi.MessageTopicForum(topicId)
         is MessageTopic.Thread -> TdApi.MessageTopicThread(threadId)
+        is MessageTopic.SavedMessages -> TdApi.MessageTopicSavedMessages(topicId)
     }
 
 internal fun TdApi.ForumTopic.toForumTopic(): ForumTopic =
