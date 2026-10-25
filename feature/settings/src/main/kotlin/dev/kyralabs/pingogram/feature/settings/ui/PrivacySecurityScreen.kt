@@ -55,6 +55,7 @@ internal fun PrivacySecurityRoute(
     secretChatPreviewsViewModel: SecretChatPreviewsViewModel = hiltViewModel(),
     phoneNumberVisibilityViewModel: PhoneNumberVisibilityViewModel = hiltViewModel(),
     frequentContactsViewModel: FrequentContactsViewModel = hiltViewModel(),
+    idVisibilityViewModel: IdVisibilityViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val contactSync by contactSyncViewModel.status.collectAsStateWithLifecycle()
@@ -62,14 +63,21 @@ internal fun PrivacySecurityRoute(
     val secretChatPreviews by secretChatPreviewsViewModel.enabled.collectAsStateWithLifecycle()
     val phoneNumbersHidden by phoneNumberVisibilityViewModel.hidden.collectAsStateWithLifecycle()
     val suggestsFrequent by frequentContactsViewModel.suggests.collectAsStateWithLifecycle()
+    val idsShown by idVisibilityViewModel.shown.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val showErrorDetails = isDebuggable()
-    LaunchedEffect(secretChatPreviewsViewModel, phoneNumberVisibilityViewModel, frequentContactsViewModel) {
+    LaunchedEffect(
+        secretChatPreviewsViewModel,
+        phoneNumberVisibilityViewModel,
+        frequentContactsViewModel,
+        idVisibilityViewModel,
+    ) {
         merge(
             secretChatPreviewsViewModel.errors,
             phoneNumberVisibilityViewModel.errors,
             frequentContactsViewModel.errors,
+            idVisibilityViewModel.errors,
         ).collect { error ->
             launch { snackbarHostState.showSnackbar(errorMessage(resources, error, showErrorDetails)) }
         }
@@ -100,6 +108,8 @@ internal fun PrivacySecurityRoute(
         snackbarHostState = snackbarHostState,
         suggestsFrequent = suggestsFrequent,
         onSuggestsFrequentChange = frequentContactsViewModel::onCheckedChange,
+        idsShown = idsShown,
+        onIdsShownChange = idVisibilityViewModel::onCheckedChange,
     )
 }
 
@@ -112,7 +122,8 @@ internal fun PrivacySecurityRoute(
  * - Secret chats: "Link previews in secret chats" ([secretChatPreviews], off by default), whose summary says who makes
  *   them;
  * - On screen: "Hide phone numbers" ([phoneNumbersHidden], off by default), every number then shown with its calling
- *   code only (`core:ui`'s `phoneNumberToShow`);
+ *   code only (`core:ui`'s `phoneNumberToShow`), and "Show IDs" ([idsShown], off by default) on profiles and info
+ *   pages;
  * - Security: blocked users and active sessions with their counts, whether 2-step verification is on, and whether
  *   the passcode lock is on, each opening its page;
  * - Account: the login email, the self-destruct timer of new chats, and "Delete account" with how long the account
@@ -135,6 +146,8 @@ internal fun PrivacySecurityScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     suggestsFrequent: Boolean? = null,
     onSuggestsFrequentChange: (Boolean) -> Unit = {},
+    idsShown: Boolean? = null,
+    onIdsShownChange: (Boolean) -> Unit = {},
 ) {
     SettingsPageScaffold(
         title = stringResource(R.string.settings_privacy_security),
@@ -155,7 +168,7 @@ internal fun PrivacySecurityScreen(
                 PrivacySection(state, onOpen)
                 ContactsSection(contactSync, onContactSyncChange, suggestsFrequent, onSuggestsFrequentChange)
                 SecretChatsSection(secretChatPreviews, onSecretChatPreviewsChange)
-                OnScreenSection(phoneNumbersHidden, onPhoneNumbersHiddenChange)
+                OnScreenSection(phoneNumbersHidden, onPhoneNumbersHiddenChange, idsShown, onIdsShownChange)
                 SecuritySection(state, onOpen)
                 AccountGroup(
                     loginEmailPattern = state.loginEmailPattern,

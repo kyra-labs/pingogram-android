@@ -16,6 +16,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibUserRepository
 import dev.kyralabs.pingogram.core.domain.model.SharedMediaKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
+import dev.kyralabs.pingogram.core.testing.FakeIdVisibilityRepository
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.ui.text.MentionTarget
@@ -128,6 +129,8 @@ class ProfileViewModelTest {
         )
     }
 
+    private val idVisibility = FakeIdVisibilityRepository()
+
     private val clock =
         object : WallClock {
             override val minutes = MutableStateFlow(NOW)
@@ -171,6 +174,7 @@ class ProfileViewModelTest {
                 messageActionRepository = TdlibMessageActionRepository(client),
                 sharedMediaRepository = TdlibSharedMediaRepository(client),
                 searchRepository = TdlibSearchRepository(client, chats),
+                idVisibility = idVisibility,
                 clock = clock,
                 timePatterns = patterns,
                 dispatcher = StandardTestDispatcher(testScheduler),
@@ -225,6 +229,26 @@ class ProfileViewModelTest {
             viewModel.onEvent(ProfileEvent.OpenPersonalChannel(CHANNEL))
             runCurrent()
             assertEquals(listOf(ProfileEffect.OpenChat(CHANNEL)), effects)
+        }
+
+    @Test
+    fun `the ID shows while Show IDs is on, and is copied`() =
+        runTest {
+            answerProfile()
+            val viewModel = viewModel()
+            val effects = effectsOf(viewModel)
+            assertNull(viewModel.content.info.id)
+
+            idVisibility.shown.value = true
+            runCurrent()
+            assertEquals(ADA, viewModel.content.info.id)
+
+            send(viewModel, ProfileEvent.CopyId)
+            assertEquals(listOf(ProfileEffect.CopyText(ADA.toString(), CopiedText.Id)), effects)
+
+            idVisibility.shown.value = false
+            runCurrent()
+            assertNull(viewModel.content.info.id)
         }
 
     @Test

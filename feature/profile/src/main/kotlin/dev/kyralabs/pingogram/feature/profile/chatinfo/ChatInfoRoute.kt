@@ -105,10 +105,10 @@ internal fun ChatInfoEffects(
                             ""
                         } else {
                             resources.getString(
-                                if (effect.what == CopiedChatText.Link) {
-                                    R.string.chat_info_link_copied
-                                } else {
-                                    R.string.profile_bio_copied
+                                when (effect.what) {
+                                    CopiedChatText.Link -> R.string.chat_info_link_copied
+                                    CopiedChatText.Description -> R.string.profile_bio_copied
+                                    CopiedChatText.Id -> R.string.profile_id_copied
                                 },
                             )
                         }
