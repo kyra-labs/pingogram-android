@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreview
 import dev.kyralabs.pingogram.core.ui.preview.PingogramPreviews
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chats.R
@@ -50,7 +51,7 @@ internal fun ArchiveRow(
         } else {
             null
         }
-    val description = listOfNotNull(title, supporting, unread).joinToString(", ")
+    val description = spokenList(LocalResources.current, listOf(title, supporting, unread))
     val colors = MaterialTheme.colorScheme
     val insets = rowInsets()
     ListItem(

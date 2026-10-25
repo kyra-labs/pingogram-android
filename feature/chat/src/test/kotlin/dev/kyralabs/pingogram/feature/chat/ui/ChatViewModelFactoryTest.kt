@@ -104,6 +104,7 @@ class ChatViewModelFactoryTest : ChatViewModelHarness() {
                 searchRepositories = ChatSearchRepositories(FakeChatSearchRepository(), FakeGroupInfoRepository()),
                 customEmojiRepository = FakeCustomEmojiRepository(),
                 pollRepository = FakePollRepository(),
+                scheduledMessageRepository = FakeScheduledMessageRepository(),
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
         runCurrent()

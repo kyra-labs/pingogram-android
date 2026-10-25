@@ -436,6 +436,16 @@ data class ChatExportRoute(
 )
 
 /**
+ * The scheduled messages of chat [chatId] (`REQUIREMENTS.md` FR-C5), `:feature:chat`: pushed above the conversation
+ * whose "3 scheduled messages" bar opens it, with the shared axis on X, as bubbles under their send days, each to send
+ * now, reschedule, edit, copy or delete.
+ */
+@Serializable
+data class ScheduledMessagesRoute(
+    val chatId: Long,
+)
+
+/**
  * The profile of user [userId] (`REQUIREMENTS.md` FR-P2), `:feature:profile`: photos, bio, usernames, phone number and
  * birthday, sending a message, a secret chat, notifications, blocking and reporting, and the media shared in the
  * private chat. Pushed above the screen it is opened from (the conversation's title, a sender's avatar or name, a

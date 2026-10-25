@@ -98,7 +98,7 @@ internal fun MessageDocument(
                         fileSizeText(size)
                     },
                 color = colors.content,
-                maxLines = 1,
+                // No line limit: at large font scales "1.2 MB / 4.5 MB" wraps beside the ring rather than being cut.
                 style = MaterialTheme.typography.bodySmall,
             )
         }

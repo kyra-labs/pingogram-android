@@ -132,6 +132,7 @@ internal fun TdApi.MessageInteractionInfo.toInteractionInfo() =
                 .mapNotNull { reaction ->
                     reaction.type.toReactionType()?.let { Reaction(it, reaction.totalCount, reaction.isChosen) }
                 }.toImmutableList(),
+        canGetAddedReactions = reactions?.canGetAddedReactions == true,
     )
 
 /** Null for a reaction type added by a newer TDLib. */

@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chats.ui
 
 import android.content.res.Resources
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chats.R
 
 /**
@@ -16,13 +17,16 @@ internal fun rowDescription(
     title: String,
     preview: String,
 ): String =
-    buildList {
-        add(title)
-        addAll(chatStates(resources, item))
-        if (preview.isNotEmpty()) add(preview)
-        if (item.time.isNotEmpty()) add(item.time)
-        addAll(messageStates(resources, item))
-    }.joinToString(", ")
+    spokenList(
+        resources,
+        buildList {
+            add(title)
+            addAll(chatStates(resources, item))
+            add(preview)
+            add(item.time)
+            addAll(messageStates(resources, item))
+        },
+    )
 
 /** What the title, its badges and the avatar show: verification, encryption, online, mute and pin. */
 private fun chatStates(

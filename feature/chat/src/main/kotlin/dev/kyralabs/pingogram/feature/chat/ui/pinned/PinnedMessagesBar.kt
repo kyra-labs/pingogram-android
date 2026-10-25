@@ -195,7 +195,8 @@ private fun PinnedText(
             Text(
                 text = shown.label,
                 color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
+                // Two lines at large font scales, so "4 of 5" is never cut off.
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelMedium,
             )

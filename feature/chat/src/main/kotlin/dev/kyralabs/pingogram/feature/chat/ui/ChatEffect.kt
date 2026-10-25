@@ -3,6 +3,8 @@ package dev.kyralabs.pingogram.feature.chat.ui
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.ui.text.UiText
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsRequest
+import dev.kyralabs.pingogram.feature.chat.ui.interactions.MessageInteractionsViewModel
 
 /** One-off effects of [ChatViewModel], handled by the screen once each (`docs/ARCHITECTURE.md`, ViewModels). */
 sealed interface ChatEffect {
@@ -40,6 +42,11 @@ sealed interface ChatEffect {
     /** Open the profile of user [userId] (`REQUIREMENTS.md` FR-P2). */
     data class OpenProfile(
         val userId: Long,
+    ) : ChatEffect
+
+    /** Open the sheet of who saw a group message and who reacted to it ([MessageInteractionsViewModel]). */
+    data class OpenInteractions(
+        val request: MessageInteractionsRequest,
     ) : ChatEffect
 
     /** Open chat [chatId], a group or channel a mention named. */

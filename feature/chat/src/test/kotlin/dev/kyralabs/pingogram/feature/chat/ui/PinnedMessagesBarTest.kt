@@ -83,18 +83,18 @@ class PinnedMessagesBarTest {
     @Test
     fun `taps cycle through the pinned messages, newest last, back to the newest`() {
         setScreen()
-        composeRule.onNodeWithText("Pinned message 3 of 3").assertExists()
+        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").assertExists()
 
-        composeRule.onNodeWithText("Pinned message 3 of 3").performClick()
+        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Pinned message 2 of 3").assertExists()
+        composeRule.onNodeWithText("Pinned message 2\u00A0of\u00A03").assertExists()
         composeRule.onNodeWithText("Ada: Middle").assertExists()
 
-        composeRule.onNodeWithText("Pinned message 2 of 3").performClick()
-        composeRule.onNodeWithText("Pinned message 1 of 3").performClick()
+        composeRule.onNodeWithText("Pinned message 2\u00A0of\u00A03").performClick()
+        composeRule.onNodeWithText("Pinned message 1\u00A0of\u00A03").performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Pinned message 3 of 3").assertExists()
+        composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03").assertExists()
         assertEquals(List(3) { PinnedEvent.ShowCurrent }, events)
     }
 
@@ -128,7 +128,7 @@ class PinnedMessagesBarTest {
         setScreen()
         composeRule.onAllNodes(hasContentDescription("Hide pinned messages")).assertCountEquals(1)
         composeRule.onNodeWithContentDescription("Hide pinned messages").assert(isHiddenFromAccessibility())
-        val bar = composeRule.onNodeWithText("Pinned message 3 of 3")
+        val bar = composeRule.onNodeWithText("Pinned message 3\u00A0of\u00A03")
 
         val actions =
             bar

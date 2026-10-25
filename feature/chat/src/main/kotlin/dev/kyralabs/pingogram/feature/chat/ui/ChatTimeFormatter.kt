@@ -16,7 +16,8 @@ import java.util.Locale
  * The times of the conversation (`REQUIREMENTS.md` FR-C1, FR-C8, §6.4) in [zone] and [locale], with the platform's
  * patterns ([TimePatterns]):
  * - a message's time: "9:41 AM", or "09:41" on the 24-hour clock ([is24HourClock]);
- * - a date separator: "Today", "Yesterday", "Monday, March 17" this year, "March 17, 2024" before;
+ * - a date separator: "Today", "Yesterday", "Tomorrow" (scheduled messages), "Monday, March 17" this year, "March 17,
+ *   2024" in other years;
  * - "online" or "last seen" of a user, as `core:ui`'s [UserStatusFormatter] says it, which the profile shares;
  * - the time of a forum topic's last message in the topic list: "9:41 AM" today, "Mar 17" this year, "3/17/24" before.
  *
@@ -52,8 +53,14 @@ internal class ChatTimeFormatter(
     ): UiText =
         when {
             day == today -> UiText.resource(R.string.chat_date_today)
+
             day == today.minusDays(1) -> UiText.resource(R.string.chat_date_yesterday)
+
+            // Scheduled messages go out in the future.
+            day == today.plusDays(1) -> UiText.resource(R.string.chat_date_tomorrow)
+
             day.year == today.year -> UiText.Plain(weekdayAndDate.format(day))
+
             else -> UiText.Plain(fullDate.format(day))
         }
 
@@ -80,6 +87,26 @@ internal class ChatTimeFormatter(
         }
     }
 
+    /**
+     * When [epochSeconds] (Unix time) was, as of [now], as a day and a time of day ("Seen yesterday at 9:41 AM"):
+     * today, yesterday, the day and month this year, else the date, each with the time.
+     */
+    fun dayAndTime(
+        epochSeconds: Long,
+        now: Instant,
+    ): DayAndTime {
+        val dateTime = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+        val today = now.atZone(zone).toLocalDate()
+        val day = dateTime.toLocalDate()
+        val timeOfDay = time.format(dateTime)
+        return when {
+            !day.isBefore(today) -> DayAndTime.Today(timeOfDay)
+            day == today.minusDays(1) -> DayAndTime.Yesterday(timeOfDay)
+            day.year == today.year -> DayAndTime.OnDate(dayAndMonth.format(dateTime), timeOfDay)
+            else -> DayAndTime.OnDate(shortDate.format(dateTime), timeOfDay)
+        }
+    }
+
     /** Whether this formatter is the one for [zone], [locale] and the clock setting. */
     fun isFor(
         zone: ZoneId,
@@ -97,4 +124,23 @@ internal class ChatTimeFormatter(
         } catch (_: IllegalArgumentException) {
             fallback().withLocale(locale)
         }
+}
+
+/** A moment as [ChatTimeFormatter.dayAndTime] words it: its [time] of day, after its day. */
+internal sealed interface DayAndTime {
+    val time: String
+
+    data class Today(
+        override val time: String,
+    ) : DayAndTime
+
+    data class Yesterday(
+        override val time: String,
+    ) : DayAndTime
+
+    /** Another day: [date] ("Mar 17", or "3/17/24" in another year). */
+    data class OnDate(
+        val date: String,
+        override val time: String,
+    ) : DayAndTime
 }

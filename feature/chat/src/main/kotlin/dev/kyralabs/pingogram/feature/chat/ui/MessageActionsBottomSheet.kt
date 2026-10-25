@@ -231,6 +231,8 @@ internal val MessageAction.isDestructive: Boolean
 internal val MessageAction.label: Int
     @StringRes get() =
         when (this) {
+            MessageAction.SeenBy -> R.string.message_action_seen_by
+            MessageAction.Reactions -> R.string.message_action_reactions
             MessageAction.Resend -> R.string.message_action_resend
             MessageAction.Reply -> R.string.message_action_reply
             MessageAction.Copy -> R.string.message_action_copy
@@ -252,6 +254,8 @@ internal val MessageAction.label: Int
 internal val MessageAction.icon: Int
     @DrawableRes get() =
         when (this) {
+            MessageAction.SeenBy -> UiR.drawable.ic_done_all
+            MessageAction.Reactions -> UiR.drawable.ic_favorite
             MessageAction.Resend -> UiR.drawable.ic_refresh
             MessageAction.Reply -> UiR.drawable.ic_reply
             MessageAction.Copy -> UiR.drawable.ic_content_copy
@@ -271,6 +275,8 @@ internal val MessageAction.icon: Int
 /** The event of choosing [this] for message [messageId]. */
 internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
     when (this) {
+        MessageAction.SeenBy -> ChatEvent.ShowInteractions(messageId, reactions = false)
+        MessageAction.Reactions -> ChatEvent.ShowInteractions(messageId, reactions = true)
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)
         MessageAction.Copy -> ChatEvent.Copy(messageId)

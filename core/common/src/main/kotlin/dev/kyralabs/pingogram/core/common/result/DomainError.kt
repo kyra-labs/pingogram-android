@@ -203,6 +203,14 @@ sealed interface DomainError {
     /** The other person's app is too old for calls with this one (`PARTICIPANT_VERSION_OUTDATED`). */
     data object CallPeerOutdated : DomainError
 
+    // Who saw a message ("Seen by").
+
+    /**
+     * Telegram no longer says who saw the message: it keeps that for a while only (`MSG_TOO_OLD`), and not in groups
+     * beyond a size (`CHAT_TOO_BIG`).
+     */
+    data object MessageViewersUnavailable : DomainError
+
     // Polls (REQUIREMENTS.md FR-C4).
 
     /** The poll was closed meanwhile: no one may vote in it or change a vote (`MESSAGE_POLL_CLOSED`). */

@@ -62,6 +62,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
   (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
   `TdlibClient.start()`. Every new caching repository must join that set.
+- **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
+  (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
+  (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model
+  of its own beside `ChatViewModel` (the connection is the app's, not the chat's, and only the top bar reads it), which
+  `ConversationRoute` hands to `ChatScreen` as `connection`.
 - **Settings** (`core:datastore`) are the app's own, kept on the device and kept across logouts: one
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.
@@ -346,6 +351,39 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   (`ChatWindow.showMessage`, the jump of a reply quote; the choice holds until the user drags the list,
   `PinnedEvent.ListDragged`), unpins (`MessageActionRepository.unpin`, where `getMessageProperties` of the newest pin allows it) or
   hides, and keeps the sheet of every pin (`pinnedSheet`) out of `ChatUiState`.
+- **Seen by and reactions** (FR-C6): `core:domain`'s `MessageInteractionRepository` (`TdlibMessageInteractionRepository`,
+  `core:data`, no cache) lists who saw a group message (`getMessageViewers`, all at once, the latest view first) and who
+  added its reactions (`getMessageAddedReactions`, every kind or one, paged by `next_offset`); `MSG_TOO_OLD` and
+  `CHAT_TOO_BIG` are `DomainError.MessageViewersUnavailable`. TDLib decides where either is possible
+  (`MessageProperties.canGetViewers`, `InteractionInfo.canGetAddedReactions`), and the message's actions
+  (`ChatMessageActions`) offer "Seen by" and "Reactions" only there, handing a `MessageInteractionsRequest` over through
+  `ChatEffect.OpenInteractions`. The sheet has its own view model, `MessageInteractionsViewModel` (`feature:chat`
+  `interactions/`, keyed by the chat like `ShareLocationViewModel`), so `ChatViewModel` takes no repository more: it asks
+  for nothing before the sheet opens and only for the tabs the user selects, each once while open, looks up the users and
+  chats of a page (`UserRepository`, `ChatRepository`) before it shows, words the times as the conversation does
+  (`ChatTimeFormatter.dayAndTime`), and keeps the request and the selected tab in its saved state, loading that tab again
+  after process death. A row opens the profile through the route's `onOpenProfile`, a channel through `onOpenChatInfo`.
+- **Scheduled messages** (FR-C5): sending with a time (`SendOptions.scheduledAt`) holds a message on Telegram's servers,
+  outside the history (`HistoryCache` leaves every message with a scheduling state out). `core:domain`'s
+  `ScheduledMessageRepository` (`TdlibScheduledMessageRepository`, `core:data`, no cache, as the pinned messages) loads a
+  chat's `ScheduledMessage`s (the `Message` and its `MessageSchedule`: at a time, with td_api.tl's `repeat_period`, when
+  the other user comes online, once a video is processed) once per collection (`getChatScheduledMessages`), subscribed
+  to the updates before it asks, then follows `updateNewMessage` of messages with a scheduling state,
+  `updateMessageSendSucceeded` / `Failed` of those being scheduled, `updateDeleteMessages` (also how one leaves once
+  Telegram sent it: TDLib deletes it and announces the sent message, without a scheduling state, which the history
+  takes), `updateMessageContent` and `updateMessageEdited`. "Send now" is `editMessageSchedulingState` without a state,
+  rescheduling the same with `messageSchedulingStateSendAtDate` (keeping the repeat period), deleting `deleteMessages`;
+  td_api.tl has no update for a new scheduling state, so each change made there loads the collections' lists again.
+  `Chat.hasScheduledMessages` (`updateChatHasScheduledMessages`, kept by `TdlibChatRepository`) says whether to ask at
+  all. `feature:chat`'s `ChatScheduledMessages` (a part of `ChatViewModel`, the whole chat's conversation only) gives
+  the bar its count and the first time (`ChatUiState.scheduledBar`); the bar opens `ScheduledMessagesRoute(chatId)` of
+  `core:navigation` (`scheduledMessagesScreen`, pushed by `:app` above the conversation, also from the detail pane).
+  `ScheduledMessagesViewModel` maps the messages with the conversation's own mapping (`inputsOf`, `toItem`, so the
+  bubbles are the conversation's `MessageBubbleRow`s) under their send days (`ScheduledItemMapper`), with the send time
+  and the schedule in the meta (`ChatItem.Bubble.schedule`); its actions sheet sends now, reschedules (the composer's
+  `ScheduleDialog`), edits in the conversation's composer (`ChatBottomBar` in edit mode, saved with
+  `MessageActionRepository.editText` / `editCaption`; the message edited and its text in the saved state), copies and
+  deletes (after an `AlertDialog`).
 - **Message translation** (FR-C3, FR-C6): Telegram translates, nothing else sees a message. `core:domain`'s
   `TranslationRepository` (`TdlibTranslationRepository`, `core:data`, no cache) sends `translateMessageText` (the
   message by its ids, into one of the language codes td_api.tl lists, `targetLanguageOf` mapping a BCP 47 tag onto

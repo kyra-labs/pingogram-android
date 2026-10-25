@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibJoinRequestRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLoginEmailRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibMessageInteractionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkUsageRepository
@@ -70,6 +71,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibProxyRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibQuickReactionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibReactionNotificationRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSavedGifRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibScheduledMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSearchRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSecretChatRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibSendAsRepository
@@ -134,6 +136,7 @@ import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
@@ -152,6 +155,7 @@ import dev.kyralabs.pingogram.core.domain.repository.ProxyRepository
 import dev.kyralabs.pingogram.core.domain.repository.QuickReactionRepository
 import dev.kyralabs.pingogram.core.domain.repository.ReactionNotificationRepository
 import dev.kyralabs.pingogram.core.domain.repository.SavedGifRepository
+import dev.kyralabs.pingogram.core.domain.repository.ScheduledMessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.SearchRepository
 import dev.kyralabs.pingogram.core.domain.repository.SecretChatRepository
 import dev.kyralabs.pingogram.core.domain.repository.SendAsRepository
@@ -219,10 +223,16 @@ interface RepositoryModule {
     fun pinnedMessageRepository(repository: TdlibPinnedMessageRepository): PinnedMessageRepository
 
     @Binds
+    fun scheduledMessageRepository(repository: TdlibScheduledMessageRepository): ScheduledMessageRepository
+
+    @Binds
     fun forumTopicRepository(repository: TdlibForumTopicRepository): ForumTopicRepository
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository
+
+    @Binds
+    fun messageInteractionRepository(repository: TdlibMessageInteractionRepository): MessageInteractionRepository
 
     @Binds
     fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository

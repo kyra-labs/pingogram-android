@@ -58,7 +58,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -213,7 +216,7 @@ internal fun ViewerBottomBar(
 /**
  * The caption with its formatting (links open, spoilers show when tapped), at most [COLLAPSED_LINES] lines; tapping
  * it shows all of it, scrolling within about [EXPANDED_MAX_HEIGHT_FRACTION] of the window, and tapping again shows
- * less.
+ * less: a button for screen readers, with its expand or collapse action.
  * It grows and shrinks on the motion scheme's default spatial spring. Per item ([key]): another item starts collapsed.
  * The stories viewer shows its captions with it too.
  */
@@ -244,7 +247,21 @@ internal fun ExpandableCaption(
                 .animateContentSize(MaterialTheme.motionScheme.defaultSpatialSpec())
                 .heightIn(max = windowHeight * EXPANDED_MAX_HEIGHT_FRACTION)
                 .verticalScroll(rememberScrollState(), enabled = expanded)
-                .clickable(onClickLabel = label) { expanded = !expanded },
+                .clickable(onClickLabel = label, role = Role.Button) { expanded = !expanded }
+                // Screen readers get its state as the expand or collapse action.
+                .semantics {
+                    if (expanded) {
+                        collapse {
+                            expanded = false
+                            true
+                        }
+                    } else {
+                        expand {
+                            expanded = true
+                            true
+                        }
+                    }
+                },
         maxLines = if (expanded) Int.MAX_VALUE else COLLAPSED_LINES,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.bodyMedium.userContent,

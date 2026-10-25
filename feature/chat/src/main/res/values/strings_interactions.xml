@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Who saw a group message and who reacted to it: the rows in its actions and their sheet. -->
+<resources>
+    <!-- The rows of a group message's actions that open the sheet. -->
+    <string name="message_action_seen_by">Seen by</string>
+    <string name="message_action_reactions">Reactions</string>
+
+    <!-- The sheet's title: on the tab of the viewers, and on the tabs of the reactions. -->
+    <string name="interactions_title_seen">Seen by</string>
+    <string name="interactions_title_reactions">Reactions</string>
+
+    <!-- The tabs' labels, each followed by its count where it is known: the viewers, then every reaction. -->
+    <string name="interactions_tab_seen">Seen</string>
+    <string name="interactions_tab_all">All</string>
+
+    <!-- Screen readers: the tabs. %1$d is how many people saw the message. -->
+    <plurals name="interactions_tab_seen_count">
+        <item quantity="one">Seen by %1$d person</item>
+        <item quantity="other">Seen by %1$d people</item>
+    </plurals>
+    <!-- Screen readers: %1$d is how many reactions the message has in all. -->
+    <plurals name="interactions_tab_all_count">
+        <item quantity="one">All reactions, %1$d</item>
+        <item quantity="other">All reactions, %1$d</item>
+    </plurals>
+    <!-- Screen readers: %1$s is the reaction's emoji, %2$d how often it was added. -->
+    <plurals name="interactions_tab_reaction_count">
+        <item quantity="one">%1$s, %2$d reaction</item>
+        <item quantity="other">%1$s, %2$d reactions</item>
+    </plurals>
+
+    <!-- When someone saw the message: %1$s is the time of day, %2$s the date ("Mar 17"). -->
+    <string name="interactions_seen_today">Seen at %1$s</string>
+    <string name="interactions_seen_yesterday">Seen yesterday at %1$s</string>
+    <string name="interactions_seen_on">Seen %1$s at %2$s</string>
+
+    <!-- When someone added their reaction: %1$s is the time of day, %2$s the date ("Mar 17"). -->
+    <string name="interactions_reacted_today">Reacted at %1$s</string>
+    <string name="interactions_reacted_yesterday">Reacted yesterday at %1$s</string>
+    <string name="interactions_reacted_on">Reacted %1$s at %2$s</string>
+
+    <!-- Screen readers, on the tab of every reaction: %1$s is the reaction's emoji. -->
+    <string name="interactions_reacted_with">reacted %1$s</string>
+
+    <!-- A tab with nobody to show. -->
+    <string name="interactions_empty_seen_title">Nobody has seen it yet</string>
+    <string name="interactions_empty_seen_body">Members who read the message show up here, while Telegram keeps it.</string>
+    <string name="interactions_empty_reactions_title">No reactions</string>
+    <string name="interactions_empty_reactions_body">Reactions that were taken back don\'t show up here.</string>
+
+    <!-- A tab whose list could not be loaded, and the next page that could not. -->
+    <string name="interactions_error_title">Couldn\'t load the list</string>
+    <string name="interactions_retry">Try again</string>
+
+    <!-- Screen readers: the list on its way. -->
+    <string name="interactions_loading">Loading</string>
+</resources>

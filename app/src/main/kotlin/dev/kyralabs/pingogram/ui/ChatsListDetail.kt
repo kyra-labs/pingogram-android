@@ -95,7 +95,8 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
  *   opened in it are popped), then the conversation, back to the list alone or to [NoChatSelected] beside it.
  *   Selection mode in the list handles back first, and never changes the chat shown.
  * - **Media**: a photo, video or GIF tapped in the conversation opens through [onOpenMedia], which pushes the media
- *   viewer full screen above the whole layout, whichever pane it was tapped in.
+ *   viewer full screen above the whole layout, whichever pane it was tapped in. So do the chat's scheduled messages,
+ *   from the conversation's bar ([onOpenScheduledMessages]).
  * - **Containers**: with two panes or more, each is its own rounded container on the window's `surfaceContainer`
  *   ([paneContainer], `core:ui`). A drag handle between the list and the conversation resizes the list
  *   ([PaneDragHandle]) between Material's fixed widths and an even split; with three panes, another between the
@@ -134,6 +135,7 @@ internal fun ChatsListDetail(
     onOpenStory: (chatId: Long) -> Unit = {},
     chatToShow: ChatToShow? = null,
     onChatShown: () -> Unit = {},
+    onOpenScheduledMessages: (chatId: Long) -> Unit = {},
 ) {
     val navigator = rememberChatsPaneNavigator(chatsPaneScaffoldDirective(currentWindowAdaptiveInfoV2()))
     FollowScaffoldDirective(navigator)
@@ -213,6 +215,7 @@ internal fun ChatsListDetail(
                             onBack = backUnless(listVisible && shownChatId != null, opener::closeChat),
                             modifier = Modifier.escapeToList(keyboard, enabled = listVisible),
                             focusComposer = keyboard.focusesComposerOf(chatId),
+                            onOpenScheduledMessages = onOpenScheduledMessages,
                         )
                     } else {
                         NoChatSelected()

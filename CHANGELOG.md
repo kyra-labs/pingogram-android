@@ -10,6 +10,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 ## [Unreleased]
 
 ### Added
+- Seen by and reactions: in groups, a message's actions start with "Seen by", where Telegram still says who read it
+  (for a while after it was sent, and in groups up to a size), and "Reactions", where it has reactions. Both open a
+  sheet with a tab for who saw it, each with when, and tabs for every reaction and each kind, with who reacted and
+  when. Tap someone to open their profile. Nothing is asked of Telegram before you open the sheet.
+- Scheduled messages: a chat with messages you scheduled shows "3 scheduled messages" at the top, with when the next
+  one goes out. Tap it to see them as they will look, under the day each goes out ("Today", "Tomorrow"), with its time,
+  "When online" for those that wait for the other person, and how often a repeating one repeats. Tap or hold one to
+  send it now, pick another time, edit it, copy its text or delete it. Messages go into the chat by themselves when
+  their time comes.
 - Next unread channel: at the bottom of a channel you have read, pull up to open the next channel with unread posts
   from your chat list. Letting go opens it in place of the one you read; screen readers have an action for it.
 - Share button: channel posts, and posts forwarded from a channel, have a round forward button beside them, which opens
@@ -167,6 +176,21 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
   shows from the last time are not posted again, the parts that follow notifications, calls, transfers and the widget
   start in the background, the `gms` build starts Firebase only when it needs it, and the screen is no longer drawn
   twice at the start for "Hide phone numbers".
+
+### Fixed
+- Screen readers hear "Connected" once the connection is back after the chat list said it was connecting, and a
+  conversation's title now says "Waiting for network…", "Connecting…" or "Updating…" in place of the status while
+  Pingogram is not connected.
+- Screen readers hear whether a voice recording is recording or paused, the folder tabs as selected tabs rather than
+  checked buttons, and the media viewer's caption as a button that expands and collapses.
+- Your own reactions show by more than their color: their badge on a message has a ring in your theme's accent color,
+  and so do their tiles in the reactions sheet.
+- Screen readers join the parts of a chat row, a message, a search result and other descriptions with the language's
+  own punctuation, and the people a new group could not add are listed the way the language lists names.
+- At large font sizes, names under search's top people and the story rings take two lines instead of being cut, and
+  nothing else is cut off: a file's download progress, the pinned messages bar's "4 of 5", the auto-delete choices
+  of a new group and the names of the people picked for it. A secret chat's self-destruct timer badge no longer hides
+  the timer.
 
 ## [0.5.0] - 2026-10-23
 

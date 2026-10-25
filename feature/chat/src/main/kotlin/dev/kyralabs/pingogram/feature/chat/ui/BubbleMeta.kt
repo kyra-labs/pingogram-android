@@ -35,6 +35,8 @@ import dev.kyralabs.pingogram.core.ui.theme.pingogramColors
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.R
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.BubbleSchedule
+import dev.kyralabs.pingogram.feature.chat.ui.scheduled.repeatLabel
 import dev.kyralabs.pingogram.feature.chat.ui.secret.selfDestructShortText
 import dev.kyralabs.pingogram.feature.chat.ui.translation.BubbleTranslation
 import dev.kyralabs.pingogram.feature.chat.ui.translation.translationLabel
@@ -42,9 +44,11 @@ import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /**
  * A translation's label ("Translated from Spanish" after the translate symbol, "Translating…" after a loading
- * indicator), a self-destruct timer ("30s" after a timer icon), "edited", the time, and the state of an outgoing
- * message, in `labelSmall` with tabular figures; a failed message's state is its [NotSentLabel] instead. Shown where
- * [ChatItem.Bubble.showsTime] says, which a translated bubble always does.
+ * indicator), a self-destruct timer ("30s" after a timer icon), a scheduled message's mark (the schedule-send symbol,
+ * and "Daily" after the repeat symbol where it repeats), "edited", the time ("When online" for a message that waits
+ * for the other user), and the state of an outgoing message, in `labelSmall` with tabular figures; a failed message's
+ * state is its [NotSentLabel] instead. Shown where [ChatItem.Bubble.showsTime] says, which a translated bubble always
+ * does.
  */
 @Composable
 internal fun BubbleMeta(
@@ -109,8 +113,13 @@ private fun MetaRow(
         val style = MaterialTheme.typography.labelSmall
         bubble.translation?.let { TranslationMark(it, color, style) }
         bubble.selfDestructSeconds?.let { SelfDestructTimer(it, color, style) }
+        bubble.schedule?.let { ScheduleMark(it, color, style) }
         if (bubble.isEdited) Text(stringResource(R.string.chat_edited), color = color, style = style)
-        Text(bubble.time, color = color, maxLines = 1, style = style.userContent)
+        if (bubble.schedule is BubbleSchedule.WhenOnline) {
+            Text(stringResource(R.string.scheduled_meta_when_online), color = color, maxLines = 1, style = style)
+        } else {
+            Text(bubble.time, color = color, maxLines = 1, style = style.userContent)
+        }
         bubble.status?.takeIf { it != OutgoingStatus.Failed }?.let { StatusIcon(it, statusTint(it)) }
     }
 }
@@ -141,6 +150,33 @@ private fun RowScope.TranslationMark(
         overflow = TextOverflow.Ellipsis,
         style = style,
     )
+}
+
+/**
+ * A scheduled message's mark (`REQUIREMENTS.md` FR-C5): the schedule-send symbol, then the repeat symbol and how often
+ * ("Daily") where it repeats, which gives way first where the meta has no room for all of it; screen readers hear it
+ * in the description.
+ */
+@Composable
+private fun RowScope.ScheduleMark(
+    schedule: BubbleSchedule,
+    color: Color,
+    style: TextStyle,
+) {
+    val iconModifier = Modifier.size(MaterialTheme.sizes.inlineIconSmall)
+    Icon(painterResource(R.drawable.ic_schedule_send), contentDescription = null, modifier = iconModifier, tint = color)
+    val repeatPeriod = (schedule as? BubbleSchedule.At)?.repeatPeriod ?: 0
+    if (repeatPeriod > 0) {
+        Icon(painterResource(R.drawable.ic_repeat), contentDescription = null, modifier = iconModifier, tint = color)
+        Text(
+            text = repeatLabel(LocalResources.current, repeatPeriod),
+            modifier = Modifier.weight(1f, fill = false),
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = style,
+        )
+    }
 }
 
 /** The timer icon and the timer in short ("30s"), in the meta's color; screen readers hear it in the description. */
