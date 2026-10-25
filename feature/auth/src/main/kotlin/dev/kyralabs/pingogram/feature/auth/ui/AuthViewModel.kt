@@ -100,7 +100,11 @@ class AuthViewModel internal constructor(
 
     init {
         viewModelScope.launch { authRepository.authStep.collect(::onAuthStep) }
-        viewModelScope.launch { deviceAccounts.isAdding.collect { adding -> update { it.copy(addingAccount = adding) } } }
+        viewModelScope.launch {
+            deviceAccounts.isAdding.collect { adding ->
+                update { it.copy(addingAccount = adding) }
+            }
+        }
         viewModelScope.launch {
             connectionRepository.connectionStatus.collect { status ->
                 update { it.copy(connection = status) }

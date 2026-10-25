@@ -15,6 +15,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,52 +79,78 @@ internal fun AccountMenuAnchor(
         Box(modifier) { content(Modifier) }
         return
     }
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    val expanded = rememberSaveable { mutableStateOf(false) }
+    Box(modifier) {
+        content(accountMenuTrigger(menu, expanded, onSwitch, onAdd))
+        AccountMenuPopup(menu, expanded, onSwitch, onAdd)
+    }
+}
+
+/**
+ * The account menu's trigger on a tab: a long press (with the `LongPress` haptic) opens it ([expanded]), and screen
+ * readers get its choices as custom actions. For elements that cannot be wrapped in [AccountMenuAnchor] without
+ * changing their layout (the rail's items), with [AccountMenuPopup] inside them.
+ */
+@Composable
+internal fun accountMenuTrigger(
+    menu: AccountMenuState,
+    expanded: MutableState<Boolean>,
+    onSwitch: (slot: Int) -> Unit,
+    onAdd: () -> Unit,
+): Modifier {
     val haptics = LocalHapticFeedback.current
     val resources = LocalResources.current
     val currentMenu by rememberUpdatedState(menu)
-    val trigger =
-        Modifier
-            .onLongPress {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                expanded = true
-            }.semantics {
-                customActions =
-                    currentMenu.accounts.filterNot { it.isActive }.map { account ->
-                        CustomAccessibilityAction(
-                            resources.getString(R.string.account_menu_switch, account.name.bidiIsolated()),
-                        ) {
-                            onSwitch(account.slot)
+    val currentOnSwitch by rememberUpdatedState(onSwitch)
+    val currentOnAdd by rememberUpdatedState(onAdd)
+    return Modifier
+        .onLongPress {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            expanded.value = true
+        }.semantics {
+            customActions =
+                currentMenu.accounts.filterNot { it.isActive }.map { account ->
+                    CustomAccessibilityAction(
+                        resources.getString(R.string.account_menu_switch, account.name.bidiIsolated()),
+                    ) {
+                        currentOnSwitch(account.slot)
+                        true
+                    }
+                } +
+                listOfNotNull(
+                    if (currentMenu.canAdd) {
+                        CustomAccessibilityAction(resources.getString(R.string.account_menu_add)) {
+                            currentOnAdd()
                             true
                         }
-                    } +
-                    listOfNotNull(
-                        if (currentMenu.canAdd) {
-                            CustomAccessibilityAction(resources.getString(R.string.account_menu_add)) {
-                                onAdd()
-                                true
-                            }
-                        } else {
-                            null
-                        },
-                    )
-            }
-    Box(modifier) {
-        content(trigger)
-        DropdownMenuPopup(expanded = expanded, onDismissRequest = { expanded = false }) {
-            AccountMenuGroups(
-                menu = menu,
-                onSwitch = { slot ->
-                    expanded = false
-                    onSwitch(slot)
-                },
-                onAdd = {
-                    expanded = false
-                    onAdd()
-                },
-                onDismiss = { expanded = false },
-            )
+                    } else {
+                        null
+                    },
+                )
         }
+}
+
+/** The account menu's popup while [expanded], anchored to the layout it is composed in. */
+@Composable
+internal fun AccountMenuPopup(
+    menu: AccountMenuState,
+    expanded: MutableState<Boolean>,
+    onSwitch: (slot: Int) -> Unit,
+    onAdd: () -> Unit,
+) {
+    DropdownMenuPopup(expanded = expanded.value, onDismissRequest = { expanded.value = false }) {
+        AccountMenuGroups(
+            menu = menu,
+            onSwitch = { slot ->
+                expanded.value = false
+                onSwitch(slot)
+            },
+            onAdd = {
+                expanded.value = false
+                onAdd()
+            },
+            onDismiss = { expanded.value = false },
+        )
     }
 }
 

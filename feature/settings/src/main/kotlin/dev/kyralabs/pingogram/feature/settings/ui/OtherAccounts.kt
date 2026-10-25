@@ -47,7 +47,9 @@ internal fun OtherAccountsGroup(
     if (accounts.isEmpty() && !canAdd) return
     SettingsGroup(modifier) {
         accounts.forEach { account ->
-            item(key = account.slot) { shapes -> OtherAccountItem(account, shapes, onClick = { onSwitch(account.slot) }) }
+            item(
+                key = account.slot,
+            ) { shapes -> OtherAccountItem(account, shapes, onClick = { onSwitch(account.slot) }) }
         }
         if (canAdd) {
             item(key = ADD_ACCOUNT_KEY) { shapes ->

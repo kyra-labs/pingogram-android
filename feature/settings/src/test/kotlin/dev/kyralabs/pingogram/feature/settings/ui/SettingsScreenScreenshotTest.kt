@@ -113,4 +113,10 @@ class SettingsScreenScreenshotTest {
 }
 
 /** [golden] after [this] prefix, its first letter upper case ("accounts" + "highContrast": "accountsHighContrast"). */
-private fun String.withGolden(golden: String) = if (isEmpty()) golden else this + golden.replaceFirstChar(Char::uppercase)
+private fun String.withGolden(golden: String) =
+    if (isEmpty()) {
+        golden
+    } else {
+        this +
+            golden.replaceFirstChar(Char::uppercase)
+    }

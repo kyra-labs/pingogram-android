@@ -125,7 +125,10 @@ class SettingsViewModel
                 .transformLatest { accounts ->
                     emit(accounts.toUiModels())
                     val unformatted =
-                        accounts.mapNotNull { it.rawPhoneNumber() }.filter { it.isNotEmpty() && it !in otherPhoneNumbers }
+                        accounts
+                            .mapNotNull {
+                                it.rawPhoneNumber()
+                            }.filter { it.isNotEmpty() && it !in otherPhoneNumbers }
                     if (unformatted.isEmpty()) return@transformLatest
                     unformatted.distinct().forEach { raw ->
                         formatPhoneNumber(raw)?.let { otherPhoneNumbers[raw] = it }

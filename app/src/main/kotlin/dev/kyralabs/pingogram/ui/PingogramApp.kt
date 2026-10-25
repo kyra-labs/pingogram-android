@@ -21,7 +21,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -358,7 +360,7 @@ internal fun pingogramNavigationSuiteType(windowSizeClass: WindowSizeClass): Nav
  * One rail item per [TopLevelDestination]. It reads the back stack itself, so a destination change recomposes only
  * the items and never the `NavHost` content. Tapping the item of the tab the user is on, not a screen pushed above it,
  * reports it to [tabReselection], whose screen scrolls back to the top. With an [accountMenu], a long press on the
- * Settings item opens it ([AccountMenuAnchor]).
+ * Settings item opens it ([accountMenuTrigger], [AccountMenuPopup]).
  */
 @Composable
 private fun PingogramNavigationItems(
@@ -371,29 +373,31 @@ private fun PingogramNavigationItems(
     val currentDestination = currentEntry?.destination
     TopLevelDestination.entries.forEach { destination ->
         val selected = currentDestination.isInHierarchy(destination)
-        AccountMenuAnchor(
-            menu = accountMenu?.state?.takeIf { destination == TopLevelDestination.Settings },
-            onSwitch = { accountMenu?.onSwitch?.invoke(it) },
-            onAdd = { accountMenu?.onAdd?.invoke() },
-        ) { trigger ->
-            NavigationSuiteItem(
-                selected = selected,
-                onClick = {
-                    navController.selectTab(destination, currentDestination.topLevelDestination(), tabReselection)
+        // Not wrapped, which would change the rail's layout: the trigger goes on the item, the menu into its icon.
+        val menu = accountMenu?.state?.takeIf { destination == TopLevelDestination.Settings }
+        val menuExpanded = rememberSaveable { mutableStateOf(false) }
+        NavigationSuiteItem(
+            selected = selected,
+            onClick = {
+                navController.selectTab(destination, currentDestination.topLevelDestination(), tabReselection)
+            },
+            icon = {
+                Icon(
+                    painter = painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
+                    // The label below names the item for accessibility services.
+                    contentDescription = null,
+                )
+                if (menu != null) AccountMenuPopup(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd)
+            },
+            label = { Text(stringResource(destination.label)) },
+            navigationSuiteType = navigationSuiteType,
+            modifier =
+                if (menu != null) {
+                    accountMenuTrigger(menu, menuExpanded, accountMenu.onSwitch, accountMenu.onAdd)
+                } else {
+                    Modifier
                 },
-                icon = {
-                    Icon(
-                        painter =
-                            painterResource(if (selected) destination.selectedIcon else destination.unselectedIcon),
-                        // The label below names the item for accessibility services.
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(stringResource(destination.label)) },
-                navigationSuiteType = navigationSuiteType,
-                modifier = trigger,
-            )
-        }
+        )
     }
 }
 

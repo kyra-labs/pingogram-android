@@ -26,11 +26,21 @@ internal fun AuthModel.backTarget(): BackTarget? =
 
 private fun AuthModel.stepBackTarget(): BackTarget? =
     when (step) {
-        AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready -> null
-        AuthStep.WaitPhoneNumber ->
+        AuthStep.Initializing, AuthStep.Closed, AuthStep.LoggingOut, AuthStep.Ready -> {
+            null
+        }
+
+        AuthStep.WaitPhoneNumber -> {
             if (addingAccount) BackTarget.LeaveAddingAccount else BackTarget.Welcome.takeIf { welcomeDone }
-        is AuthStep.WaitOtherDeviceConfirmation -> BackTarget.CancelQrCode
-        else -> laterStepBackTarget()
+        }
+
+        is AuthStep.WaitOtherDeviceConfirmation -> {
+            BackTarget.CancelQrCode
+        }
+
+        else -> {
+            laterStepBackTarget()
+        }
     }
 
 private fun AuthModel.laterStepBackTarget(): BackTarget =

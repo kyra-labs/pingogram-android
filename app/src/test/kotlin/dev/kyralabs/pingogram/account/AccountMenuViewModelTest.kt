@@ -79,7 +79,12 @@ class AccountMenuViewModelTest {
             accounts.canAdd.value = false
             runCurrent()
 
-            assertEquals(listOf(0), viewModel.state.value?.accounts?.map { it.slot })
+            assertEquals(
+                listOf(0),
+                viewModel.state.value
+                    ?.accounts
+                    ?.map { it.slot },
+            )
             assertFalse(viewModel.state.value!!.canAdd)
         }
 

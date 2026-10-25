@@ -460,8 +460,18 @@ class SettingsViewModelTest {
             accounts.accountList.value = persistentListOf(ada, grace.copy(unreadChats = 4))
             runCurrent()
 
-            assertEquals("+1 202 555 0143", viewModel.state.otherAccounts.single().phoneNumber)
-            assertEquals(4, viewModel.state.otherAccounts.single().unreadChats)
+            assertEquals(
+                "+1 202 555 0143",
+                viewModel.state.otherAccounts
+                    .single()
+                    .phoneNumber,
+            )
+            assertEquals(
+                4,
+                viewModel.state.otherAccounts
+                    .single()
+                    .unreadChats,
+            )
             assertEquals(1, requests)
         }
 
@@ -489,7 +499,8 @@ class SettingsViewModelTest {
             assertEquals(1, accounts.adds)
         }
 
-    private val ada = DeviceAccount(slot = 0, user = domainUser(1, "Ada", "447911123456"), unreadChats = 0, isActive = true)
+    private val ada =
+        DeviceAccount(slot = 0, user = domainUser(1, "Ada", "447911123456"), unreadChats = 0, isActive = true)
     private val grace =
         DeviceAccount(slot = 1, user = domainUser(2, "Grace Hopper", "12025550143"), unreadChats = 3, isActive = false)
 
