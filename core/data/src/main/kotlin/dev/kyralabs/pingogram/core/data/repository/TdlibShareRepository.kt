@@ -159,7 +159,7 @@ class TdlibShareRepository internal constructor(
         }
         return when {
             attachments.isNotEmpty() -> {
-                client.sendAttachments(chatId, attachments, text, SendOptions(), replyToMessageId = null).failure
+                client.sendAttachments(chatId, attachments, text, SendOptions(), replyTo = null).failure
             }
 
             text.text.isNotBlank() -> {

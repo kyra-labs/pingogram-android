@@ -13,8 +13,10 @@ import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.Minithumbnail
 import dev.kyralabs.pingogram.core.domain.model.NotificationScope
 import dev.kyralabs.pingogram.core.domain.model.ProfilePhoto
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.domain.model.UnreadChatCount
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures
 import dev.kyralabs.pingogram.core.testing.TdApiFixtures.chat
@@ -225,23 +227,47 @@ class ChatMappersTest {
             )
 
         assertEquals(
-            ChatDraft(DraftContent.Text(FormattedText.Empty), date = 1_700_000_100, replyToMessageId = 42),
+            ChatDraft(DraftContent.Text(FormattedText.Empty), date = 1_700_000_100, replyTo = ReplyTarget(42)),
             chat(draftMessage = draft).toChat(noMutedScopes)?.draft,
         )
     }
 
     @Test
-    fun `a draft replying to a story or to another chat replies to nothing here`() {
+    fun `a draft replying to a story replies to nothing, one replying to another chat keeps that chat`() {
         val replies =
             listOf(
                 TdApi.InputMessageReplyToStory(7, 3),
                 TdApi.InputMessageReplyToExternalMessage(9, 42, null, 0, ""),
             ).map { replyTo ->
                 val draft = TdApi.DraftMessage(replyTo, 1_700_000_100, TdApiFixtures.draftText("Later"), 0, null)
-                chat(draftMessage = draft).toChat(noMutedScopes)?.draft?.replyToMessageId
+                chat(draftMessage = draft).toChat(noMutedScopes)?.draft?.replyTo
             }
 
-        assertEquals(listOf<Long?>(null, null), replies)
+        assertEquals(listOf(null, ReplyTarget(42, chatId = 9)), replies)
+    }
+
+    @Test
+    fun `a draft's quote keeps its text, formatting and position`() {
+        val quote =
+            TdApi.InputTextQuote(
+                TdApi.FormattedText("on tonight", arrayOf(TdApi.TextEntity(0, 2, TdApi.TextEntityTypeBold()))),
+                18,
+            )
+        val draft =
+            TdApi.DraftMessage(
+                TdApi.InputMessageReplyToMessage(42, quote, 0, ""),
+                1_700_000_100,
+                TdApiFixtures.draftText("Yes"),
+                0,
+                null,
+            )
+
+        val expected =
+            TextQuote(
+                FormattedText("on tonight", persistentListOf(TextEntity(0, 2, TextEntityType.Bold))),
+                position = 18,
+            )
+        assertEquals(ReplyTarget(42, expected), chat(draftMessage = draft).toChat(noMutedScopes)?.draft?.replyTo)
     }
 
     @Test

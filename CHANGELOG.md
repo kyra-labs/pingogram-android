@@ -54,6 +54,15 @@ so keep headings exactly in the form `## [X.Y.Z] - YYYY-MM-DD`.
 - Reaction notifications: Settings → Notifications → Reactions chooses whose reactions to your messages and stories, and
   whose votes in your polls, notify you (everyone, your contacts, nobody), and whether the notification shows the
   reaction. The settings belong to your Telegram account; Pingogram itself shows no reaction notifications yet.
+- Quote replies: select part of a message's text in its lifted bubble (a second long press) and tap "Quote" beside
+  Copy; the reply quotes just that part. The reply bar and the reply's bubble show the quote with a quote mark, and
+  quotes others send show the same way.
+- Reply in another chat: a message's actions offer "Reply in another chat", which lists your chats; the one you pick
+  opens with the reply ready ("Reply to Ada in Team chat") for you to write it. Nothing is sent until you send it.
+- Copy link: in groups and channels with links, a message's actions copy its link (an album's link for an album);
+  in a topic or thread, "Copy link to this thread". Links to private chats copy too and open for members only.
+- Replace a message's photo, video or file while editing it: "Replace" in the edit bar opens the Photo Picker or the
+  file picker, the new media shows in a preview, and "Replace" there swaps it in, keeping the caption you are editing.
 - Send with Enter: Appearance → Chats chooses which Enter sends a message. On a hardware keyboard Enter sends by
   default, and Shift+Enter or Ctrl+Enter starts a new line; turned off, Ctrl+Enter sends instead. On the on-screen
   keyboard Enter starts a new line by default; turned on, its Enter key becomes Send. This replaces "Send with

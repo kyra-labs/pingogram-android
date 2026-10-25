@@ -38,6 +38,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachInputs
 import dev.kyralabs.pingogram.feature.chat.ui.attach.rememberAttachLaunchers
 import dev.kyralabs.pingogram.feature.chat.ui.composer.ComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.composer.LocalSendKeys
+import dev.kyralabs.pingogram.feature.chat.ui.composer.ReplaceMedia
 import dev.kyralabs.pingogram.feature.chat.ui.composer.SendKeysViewModel
 import dev.kyralabs.pingogram.feature.chat.ui.composer.rememberComposerFocusState
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardBottomSheet
@@ -166,6 +167,7 @@ internal fun ConversationRoute(
         onLaunchCamera = { path ->
             launchers.takePhoto(path).also { if (!it) viewModel.onEvent(ChatEvent.PhotoTaken(taken = false)) }
         },
+        onPickReplacement = launchers::replace,
     )
     // The bubbles, reactions and composer draw custom emoji as the view model loads them, without composing again.
     val customEmoji = rememberCustomEmojiRenderer(viewModel.customEmoji)
@@ -224,8 +226,10 @@ internal fun ConversationRoute(
  * saved; the storage permission that saving needs on Android 8–9 is asked for here, after a snackbar that explains it
  * where the system wants that, and its answer goes to [onEvent]. The voice recording's snackbars explain the
  * microphone permission with an action that asks for it (its answer goes to [onEvent] too), offer the app's settings
- * once it is refused, and say to hold the button or that recording failed. The sheet of who saw a group message and
- * who reacted to it opens through [onOpenInteractions].
+ * once it is refused, and say to hold the button or that recording failed. A message's link goes to the clipboard
+ * through [copyText] too ("Link copied" before Android 13); the picker of the media that replaces the edited
+ * message's opens through [onPickReplacement], or a snackbar says that no app can. The sheet of who saw a group
+ * message and who reacted to it opens through [onOpenInteractions].
  * A message that failed to send while the screen is shown gets a `Reject` haptic on Android 14 and later
  * (`docs/DESIGN_SYSTEM.md` §5), and a quiz's answer once Telegram took it a `Confirm` (right) or `Reject` (wrong).
  */
@@ -251,6 +255,7 @@ internal fun ChatEffects(
     openUri: (uri: String) -> Boolean = rememberUriOpener(),
     onEvent: (ChatEvent) -> Unit = {},
     onShareLocation: () -> Unit = {},
+    onPickReplacement: (ReplaceMedia) -> Boolean = { false },
     onOpenInteractions: (MessageInteractionsRequest) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -318,6 +323,10 @@ internal fun ChatEffects(
 
                     ChatEffect.SendFailed -> {
                         haptics.rejectSend()
+                    }
+
+                    is ReplyEffect -> {
+                        context.replyNotice(effect, resources, copyText, onPickReplacement)
                     }
 
                     is ChatEffect.OpenInteractions -> {

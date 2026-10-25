@@ -235,7 +235,10 @@ internal val MessageAction.label: Int
             MessageAction.Reactions -> R.string.message_action_reactions
             MessageAction.Resend -> R.string.message_action_resend
             MessageAction.Reply -> R.string.message_action_reply
+            MessageAction.ReplyElsewhere -> R.string.message_action_reply_elsewhere
             MessageAction.Copy -> R.string.message_action_copy
+            MessageAction.CopyLink -> R.string.message_action_copy_link
+            MessageAction.CopyThreadLink -> R.string.message_action_copy_thread_link
             MessageAction.Translate -> R.string.message_action_translate
             MessageAction.ShowOriginal -> R.string.message_action_show_original
             MessageAction.Forward -> R.string.message_action_forward
@@ -258,7 +261,9 @@ internal val MessageAction.icon: Int
             MessageAction.Reactions -> UiR.drawable.ic_favorite
             MessageAction.Resend -> UiR.drawable.ic_refresh
             MessageAction.Reply -> UiR.drawable.ic_reply
+            MessageAction.ReplyElsewhere -> R.drawable.ic_chat_paste_go
             MessageAction.Copy -> UiR.drawable.ic_content_copy
+            MessageAction.CopyLink, MessageAction.CopyThreadLink -> UiR.drawable.ic_link
             MessageAction.Translate, MessageAction.ShowOriginal -> R.drawable.ic_translate
             MessageAction.Forward -> UiR.drawable.ic_forward
             MessageAction.Edit -> UiR.drawable.ic_edit
@@ -279,7 +284,9 @@ internal fun MessageAction.eventFor(messageId: Long): ChatEvent =
         MessageAction.Reactions -> ChatEvent.ShowInteractions(messageId, reactions = true)
         MessageAction.Resend -> ChatEvent.Resend(messageId)
         MessageAction.Reply -> ChatEvent.Reply(messageId)
+        MessageAction.ReplyElsewhere -> ReplyEvent.ReplyElsewhere(messageId)
         MessageAction.Copy -> ChatEvent.Copy(messageId)
+        MessageAction.CopyLink, MessageAction.CopyThreadLink -> ReplyEvent.CopyLink(messageId)
         MessageAction.Translate -> TranslationEvent.Translate(messageId)
         MessageAction.ShowOriginal -> TranslationEvent.ShowOriginal(messageId)
         MessageAction.Forward -> ChatEvent.Forward(messageId)

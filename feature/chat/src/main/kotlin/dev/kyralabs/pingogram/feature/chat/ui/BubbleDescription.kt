@@ -46,7 +46,8 @@ private fun bubbleContent(
         bubble.forwardedFrom?.resolve(resources),
         bubble.reply?.let { reply ->
             val text = reply.text.resolve(resources)
-            reply.sender?.let { resources.getString(R.string.chat_bubble_reply, it.resolve(resources), text) }
+            val label = if (reply.isQuote) R.string.chat_bubble_quote else R.string.chat_bubble_reply
+            reply.sender?.let { resources.getString(label, it.resolve(resources), text) }
                 ?: text
         },
         bubble.contentLabel?.resolve(resources),

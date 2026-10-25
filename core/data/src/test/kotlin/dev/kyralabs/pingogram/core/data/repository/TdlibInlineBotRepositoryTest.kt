@@ -8,6 +8,7 @@ import dev.kyralabs.pingogram.core.domain.model.InlineResultsButton
 import dev.kyralabs.pingogram.core.domain.model.InlineResultsButtonType
 import dev.kyralabs.pingogram.core.domain.model.Location
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
@@ -223,7 +224,7 @@ class TdlibInlineBotRepositoryTest {
                     QUERY_ID,
                     "a1",
                     SendOptions(silent = true, scheduledAt = 1_800_000_000, topic = MessageTopic.Forum(3)),
-                    replyToMessageId = 77,
+                    replyTo = ReplyTarget(77),
                 )
 
             assertEquals(Outcome.Success(Unit), sent)

@@ -6,6 +6,7 @@ import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.ChatDraft
 import dev.kyralabs.pingogram.core.domain.model.DraftContent
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.ADA
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.chat
 import dev.kyralabs.pingogram.feature.chat.ui.ChatFixtures.history
@@ -34,7 +35,7 @@ import org.junit.jupiter.api.Test
 class ChatRecorderTest : ChatViewModelHarness() {
     /** The private chat with Ada, replying to message 1 if [replyTo] is set (through the draft). */
     private fun TestScope.privateChat(replyTo: Long? = null): ChatViewModel {
-        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, it) }
+        val draft = replyTo?.let { ChatDraft(DraftContent.Text(FormattedText.Empty), 0, ReplyTarget(it)) }
         chats.setChats(chat(draft = draft))
         messages.setHistory(ADA, history(message(1)))
         return viewModel()

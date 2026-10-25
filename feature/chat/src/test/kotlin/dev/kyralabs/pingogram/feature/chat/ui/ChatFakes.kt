@@ -22,10 +22,12 @@ import dev.kyralabs.pingogram.core.domain.model.ForwardOptions
 import dev.kyralabs.pingogram.core.domain.model.FoundMessages
 import dev.kyralabs.pingogram.core.domain.model.JoinResult
 import dev.kyralabs.pingogram.core.domain.model.Message
+import dev.kyralabs.pingogram.core.domain.model.MessageLink
 import dev.kyralabs.pingogram.core.domain.model.MessageProperties
 import dev.kyralabs.pingogram.core.domain.model.MessageSearchFilter
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.ReactionType
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.ReportOptionId
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SenderAction
@@ -360,6 +362,9 @@ class FakeMessageRepository : MessageRepository {
     /** The message each [sendText] call replied to, in order; null for none. */
     val sentReplies = mutableListOf<Long?>()
 
+    /** What each [sendText] call replied to, with its quote and chat, in order; null for none. */
+    val sentReplyTargets = mutableListOf<ReplyTarget?>()
+
     var onSendText: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     /** Every [setDraft] call: the chat and the text. */
@@ -368,26 +373,31 @@ class FakeMessageRepository : MessageRepository {
     /** The message each [setDraft] call's draft replied to, in order; null for none. */
     val draftReplies = mutableListOf<Long?>()
 
+    /** What each [setDraft] call's draft replied to, with its quote and chat, in order; null for none. */
+    val draftReplyTargets = mutableListOf<ReplyTarget?>()
+
     var onSetDraft: suspend (FormattedText) -> Outcome<Unit> = { Outcome.Success(Unit) }
 
     override suspend fun sendText(
         chatId: Long,
         text: FormattedText,
         options: SendOptions,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
         sent += Triple(chatId, text, options)
-        sentReplies += replyToMessageId
+        sentReplies += replyTo?.messageId
+        sentReplyTargets += replyTo
         return onSendText(text)
     }
 
     override suspend fun setDraft(
         chatId: Long,
         text: FormattedText,
-        replyToMessageId: Long?,
+        replyTo: ReplyTarget?,
     ): Outcome<Unit> {
         drafts += chatId to text
-        draftReplies += replyToMessageId
+        draftReplies += replyTo?.messageId
+        draftReplyTargets += replyTo
         return onSetDraft(text)
     }
 
@@ -532,6 +542,24 @@ class FakeMessageActionRepository : MessageActionRepository {
     ): Outcome<ChatReportResult> {
         reports += "report:$chatId:$messageIds:${option.bytes.toList()}:$text"
         return onReport(option, text)
+    }
+
+    /** What [messageLink] answers; a public link by default. */
+    var onMessageLink: suspend (Long) -> Outcome<MessageLink> = {
+        Outcome.Success(MessageLink("https://t.me/c/$it", true))
+    }
+
+    /** `link:<chat>:<message>:<forAlbum>:<inThread>`, in order. */
+    val linkRequests = mutableListOf<String>()
+
+    override suspend fun messageLink(
+        chatId: Long,
+        messageId: Long,
+        forAlbum: Boolean,
+        inThread: Boolean,
+    ): Outcome<MessageLink> {
+        linkRequests += "link:$chatId:$messageId:$forAlbum:$inThread"
+        return onMessageLink(messageId)
     }
 
     private suspend fun record(call: String): Outcome<Unit> {

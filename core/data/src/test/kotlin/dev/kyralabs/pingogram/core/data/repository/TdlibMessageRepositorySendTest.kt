@@ -3,10 +3,12 @@ package dev.kyralabs.pingogram.core.data.repository
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.SendingState
 import dev.kyralabs.pingogram.core.domain.model.TextEntity
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
+import dev.kyralabs.pingogram.core.domain.model.TextQuote
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeLinkPreviewSettingsRepository
@@ -74,10 +76,42 @@ class TdlibMessageRepositorySendTest {
         runTest {
             answerSend()
 
-            repository().sendText(CHAT, text("Sure"), replyToMessageId = 42)
+            repository().sendText(CHAT, text("Sure"), replyTo = ReplyTarget(42))
 
             val replyTo = sentMessage().replyTo as TdApi.InputMessageReplyToMessage
             assertEquals(listOf<Any?>(42L, null, 0, ""), replyTo.describe())
+        }
+
+    @Test
+    fun `a quote reply sends the quoted part with its formatting and position`() =
+        runTest {
+            answerSend()
+            val quoted =
+                FormattedText(
+                    "still on",
+                    persistentListOf(TextEntity(0, 5, TextEntityType.Italic)),
+                )
+
+            repository().sendText(CHAT, text("Yes!"), replyTo = ReplyTarget(42, TextQuote(quoted, position = 15)))
+
+            val replyTo = sentMessage().replyTo as TdApi.InputMessageReplyToMessage
+            assertEquals(42L, replyTo.messageId)
+            assertEquals(listOf("still on", "0+5:TextEntityTypeItalic"), replyTo.quote.text.describe())
+            assertEquals(15, replyTo.quote.position)
+        }
+
+    @Test
+    fun `a reply in another chat names that chat's message`() =
+        runTest {
+            answerSend()
+
+            repository().sendText(CHAT, text("About this…"), replyTo = ReplyTarget(42, chatId = OTHER_CHAT))
+
+            val replyTo = sentMessage().replyTo as TdApi.InputMessageReplyToExternalMessage
+            assertEquals(
+                listOf<Any?>(OTHER_CHAT, 42L, null, 0, ""),
+                listOf(replyTo.chatId, replyTo.messageId, replyTo.quote, replyTo.checklistTaskId, replyTo.pollOptionId),
+            )
         }
 
     @Test
@@ -200,7 +234,7 @@ class TdlibMessageRepositorySendTest {
         runTest {
             client.on(TdApi.SetChatDraftMessage::class, TdResult.Success(TdApi.Ok()))
 
-            repository().setDraft(CHAT, text("Sure"), replyToMessageId = 42)
+            repository().setDraft(CHAT, text("Sure"), replyTo = ReplyTarget(42))
 
             val draft = client.sentOf<TdApi.SetChatDraftMessage>().single().draftMessage
             val replyTo = draft.replyTo as TdApi.InputMessageReplyToMessage
@@ -209,11 +243,32 @@ class TdlibMessageRepositorySendTest {
         }
 
     @Test
+    fun `a draft keeps a quote and a reply in another chat`() =
+        runTest {
+            client.on(TdApi.SetChatDraftMessage::class, TdResult.Success(TdApi.Ok()))
+            val quote = TextQuote(text("tonight"), position = 26)
+
+            repository().setDraft(CHAT, text("Sure"), replyTo = ReplyTarget(42, quote, chatId = OTHER_CHAT))
+
+            val replyTo =
+                client
+                    .sentOf<TdApi.SetChatDraftMessage>()
+                    .single()
+                    .draftMessage.replyTo
+                    as TdApi.InputMessageReplyToExternalMessage
+            assertEquals(
+                listOf<Any?>(OTHER_CHAT, 42L, 26),
+                listOf(replyTo.chatId, replyTo.messageId, replyTo.quote.position),
+            )
+            assertEquals(listOf("tonight"), replyTo.quote.text.describe())
+        }
+
+    @Test
     fun `a reply without a text is still a draft`() =
         runTest {
             client.on(TdApi.SetChatDraftMessage::class, TdResult.Success(TdApi.Ok()))
 
-            repository().setDraft(CHAT, FormattedText.Empty, replyToMessageId = 42)
+            repository().setDraft(CHAT, FormattedText.Empty, replyTo = ReplyTarget(42))
 
             val draft = client.sentOf<TdApi.SetChatDraftMessage>().single().draftMessage
             assertEquals(42L, (draft.replyTo as TdApi.InputMessageReplyToMessage).messageId)
@@ -257,6 +312,9 @@ class TdlibMessageRepositorySendTest {
 
     private companion object {
         const val CHAT = 100L
+
+        /** A chat a reply in another chat replies to. */
+        const val OTHER_CHAT = 200L
 
         /** The temporary id of a message being sent: larger than every sent one. */
         const val SENDING_ID = 1_000_000L

@@ -13,6 +13,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineLocationBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.pinned.PinnedMessagesSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.PollVotersBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.poll.StopPollAlert
+import dev.kyralabs.pingogram.feature.chat.ui.reply.ReplyChatsBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.search.SearchSenderSheet
 import dev.kyralabs.pingogram.feature.chat.ui.secret.SecretChatBottomSheet
 import dev.kyralabs.pingogram.feature.chat.ui.sendas.SendAsBottomSheet
@@ -48,6 +49,14 @@ internal fun ChatSheets(viewModel: ChatViewModel) {
     inlineLocationSheet?.let { InlineLocationBottomSheet(it, viewModel::onEvent) }
     val searchSenderSheet by viewModel.searchSenderSheet.collectAsStateWithLifecycle()
     searchSenderSheet?.let { SearchSenderSheet(it, viewModel.searchSenderQuery, viewModel::onEvent) }
+    MessageSheets(viewModel)
+}
+
+/** The sheets of a message's actions: the chats to reply in, who voted in a poll, and the question before a stop. */
+@Composable
+private fun MessageSheets(viewModel: ChatViewModel) {
+    val replyChatsSheet by viewModel.replyChatsSheet.collectAsStateWithLifecycle()
+    replyChatsSheet?.let { ReplyChatsBottomSheet(it, viewModel::onEvent) }
     val pollVotersSheet by viewModel.pollVotersSheet.collectAsStateWithLifecycle()
     pollVotersSheet?.let { PollVotersBottomSheet(it, viewModel::onEvent) }
     val stopPollDialog by viewModel.stopPollDialog.collectAsStateWithLifecycle()

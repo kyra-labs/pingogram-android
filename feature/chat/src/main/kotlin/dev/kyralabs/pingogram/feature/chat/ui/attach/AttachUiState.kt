@@ -60,7 +60,9 @@ internal val Chat.isChannel: Boolean get() = (type as? ChatType.Supergroup)?.isC
 /**
  * The picked photos, videos or files before they are sent (`REQUIREMENTS.md` FR-C5): from the gallery and the camera
  * ([AttachmentKind.Media]) or from the file picker ([AttachmentKind.Document]), each being prepared or ready, in the
- * order they were picked. They go out once all are ready; [canSchedule] whether the send menu offers scheduling.
+ * order they were picked. They go out once all are ready; [canSchedule] whether the send menu offers scheduling. A
+ * [isReplacement] preview holds the one item that replaces the media of the message being edited (FR-C6): no caption
+ * of its own, "Replace" in place of sending.
  */
 @Immutable
 data class AttachPreview(
@@ -71,6 +73,7 @@ data class AttachPreview(
     val offersOriginal: Boolean = false,
     /** They go without compression: as files, at their size, their metadata removed. */
     val original: Boolean = false,
+    val isReplacement: Boolean = false,
 ) {
     /** Every item is ready to send. */
     val isReady: Boolean get() = items.isNotEmpty() && items.none { it is PreviewItem.Preparing }

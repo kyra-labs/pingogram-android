@@ -424,6 +424,26 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   sender and the result shown are kept in the saved state; after process death it searches again at that result
   without moving the list. `core:ui`'s `MatchHighlight` (the query's words and where a text has them) is shared with
   global search.
+- **Replies and links** (FR-C5, FR-C6): what a message being sent or a draft replies to is `core:domain`'s
+  `ReplyTarget` (a message of the chat, or of another chat, with the `TextQuote` it quotes), which every send of
+  `MessageRepository`, `AttachmentRepository`, `VoiceNoteRepository` and `InlineBotRepository`, `ChatDraft` and the
+  composer's `ComposerMode.Replying` carry; `core:data` turns it into `inputMessageReplyToMessage` or
+  `inputMessageReplyToExternalMessage` with its `inputTextQuote` (`ReplyMappers.kt`) and back for drafts. Received
+  quotes come with the replied message (`ReplyTo.Message.quote`), which the bubble's reply quote marks. `feature:chat`:
+  `ChatMessageActions` quotes the part of the text selected in the lifted bubble ("Quote" in its text selection's
+  menu, `quoteOf`: the selection's part found in the text or caption, with the formatting a quote keeps), copies a
+  message's link (`MessageActionRepository.messageLink`, `getMessageLink`: an album's for an album's item, in its topic
+  or thread in a conversation that is one), and opens `ChatReplyElsewhere` for "Reply in another chat": the forward
+  sheet's `ChatTargets` in a sheet of its own (`replyChatsSheet`, kept out of `ChatUiState`), the picked chat getting
+  the reply through `ShareInbox` (`deliverReply`, in memory, like a share: the reply goes the same way, from one screen
+  to a chat's conversation, so it has no inbox of its own), which that chat's conversation takes into its composer once
+  on screen; its bar fetches the other chat's message (`ComposerTargets.requireElsewhere`) and names the chat
+  (`referencedChats`). Editing a message whose media TDLib lets be replaced (`MessageProperties.canEditMedia`) offers
+  "Replace" (`ComposerMode.Editing.replace`); `ChatMediaReplacement` opens the picker through the route
+  (`ReplyEffect.Pick`, `AttachLaunchers.replace`), prepares the pick in an attach preview of its own
+  (`ChatAttachments.pickReplacement`, kept in saved state) and sends `AttachmentRepository.editMedia`
+  (`editMessageMedia`, with the edit's text as caption, waited for without a timeout in the application scope, as TDLib
+  answers after the upload, the copy deleted then); the bubble follows TDLib's `updateMessageContent`.
 - **Bots** (FR-C5): `core:domain`'s `BotInfoRepository` (`TdlibBotInfoRepository`, `core:data`, no cache: TDLib keeps
   the full info and reports its changes) gives a conversation its `ChatBots`: `getChat` says what the chat is; a
   private chat whose user is a bot (`getUser`) follows `getUserFullInfo` and `updateUserFullInfo` (`bot_info`: the

@@ -11,6 +11,7 @@ import dev.kyralabs.pingogram.core.domain.model.Message
 import dev.kyralabs.pingogram.core.domain.model.MessageTopic
 import dev.kyralabs.pingogram.core.domain.model.NewPoll
 import dev.kyralabs.pingogram.core.domain.model.RecordedVoiceNote
+import dev.kyralabs.pingogram.core.domain.model.ReplyTarget
 import dev.kyralabs.pingogram.core.domain.model.SendOptions
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.repository.AttachmentRepository
@@ -64,8 +65,8 @@ internal class TopicMessageRepository(
         chatId: Long,
         text: FormattedText,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = messages.sendText(chatId, text, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = messages.sendText(chatId, text, options.copy(topic = topic), replyTo)
 }
 
 /** The history with [head] after its oldest message, once it reaches the start: older than every reply. */
@@ -89,43 +90,43 @@ internal class TopicAttachmentRepository(
         attachments: List<Attachment>,
         caption: FormattedText,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = this.attachments.send(chatId, attachments, caption, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = this.attachments.send(chatId, attachments, caption, options.copy(topic = topic), replyTo)
 
     override suspend fun sendContact(
         chatId: Long,
         contact: Contact,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = attachments.sendContact(chatId, contact, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = attachments.sendContact(chatId, contact, options.copy(topic = topic), replyTo)
 
     override suspend fun sendLocation(
         chatId: Long,
         location: DeviceLocation,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = attachments.sendLocation(chatId, location, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = attachments.sendLocation(chatId, location, options.copy(topic = topic), replyTo)
 
     override suspend fun sendSticker(
         chatId: Long,
         sticker: Sticker,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = attachments.sendSticker(chatId, sticker, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = attachments.sendSticker(chatId, sticker, options.copy(topic = topic), replyTo)
 
     override suspend fun sendAnimation(
         chatId: Long,
         animation: Animation,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = attachments.sendAnimation(chatId, animation, options.copy(topic = topic), replyTo)
 
     override suspend fun sendPoll(
         chatId: Long,
         poll: NewPoll,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = attachments.sendPoll(chatId, poll, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = attachments.sendPoll(chatId, poll, options.copy(topic = topic), replyTo)
 }
 
 /** [voiceNotes] sent into [topic]. */
@@ -137,8 +138,8 @@ internal class TopicVoiceNoteRepository(
         chatId: Long,
         voiceNote: RecordedVoiceNote,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ): Outcome<Unit> = voiceNotes.sendVoiceNote(chatId, voiceNote, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ): Outcome<Unit> = voiceNotes.sendVoiceNote(chatId, voiceNote, options.copy(topic = topic), replyTo)
 }
 
 /** [inlineBots] whose results are sent into [topic]. */
@@ -151,8 +152,8 @@ internal class TopicInlineBotRepository(
         queryId: Long,
         resultId: String,
         options: SendOptions,
-        replyToMessageId: Long?,
-    ) = inlineBots.send(chatId, queryId, resultId, options.copy(topic = topic), replyToMessageId)
+        replyTo: ReplyTarget?,
+    ) = inlineBots.send(chatId, queryId, resultId, options.copy(topic = topic), replyTo)
 }
 
 /** [chats] whose messages viewed on screen are viewed in [topic], which reads them there. */
