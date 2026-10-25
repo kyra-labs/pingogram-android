@@ -2,8 +2,10 @@ package dev.kyralabs.pingogram.feature.settings.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -132,8 +135,8 @@ private fun AccountAvatar(account: AccountUiModel) {
 }
 
 /**
- * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and the
- * "Premium" label below them for Telegram Premium subscribers.
+ * The phone number (`bodyLarge`) and the username (the list item's `bodyMedium`) in `onSurfaceVariant`, and below
+ * them the "Premium" label for Telegram Premium subscribers and "Test server" on Telegram's test servers.
  */
 @Composable
 private fun AccountDetails(account: AccountUiModel) {
@@ -150,26 +153,59 @@ private fun AccountDetails(account: AccountUiModel) {
                 style = LocalTextStyle.current.userContent,
             )
         }
-        if (account.isPremium) PremiumLabel(Modifier.padding(top = MaterialTheme.spacing.small))
+        if (account.isPremium || account.isOnTestServers) {
+            FlowRow(
+                modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            ) {
+                if (account.isPremium) {
+                    AccountLabel(
+                        text = stringResource(R.string.settings_account_premium),
+                        container = MaterialTheme.colorScheme.tertiaryContainer,
+                        content = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+                if (account.isOnTestServers) TestServerLabel()
+            }
+        }
     }
 }
 
 /**
- * "Premium", a status of the account: a full pill in `tertiaryContainer` with `labelMediumEmphasized` text. Not a chip:
- * it does nothing when tapped, and Pingogram sells nothing (`REQUIREMENTS.md` §1.2).
+ * A status of the account: a full pill with `labelMediumEmphasized` text, "Premium" in `tertiaryContainer`. Not a
+ * chip: it does nothing when tapped, and Pingogram sells nothing (`REQUIREMENTS.md` §1.2).
  */
 @Composable
-private fun PremiumLabel(modifier: Modifier = Modifier) {
-    val colors = MaterialTheme.colorScheme
+private fun AccountLabel(
+    text: String,
+    container: Color,
+    content: Color,
+    modifier: Modifier = Modifier,
+) {
     val spacing = MaterialTheme.spacing
     Text(
-        text = stringResource(R.string.settings_account_premium),
+        text = text,
         modifier =
             modifier
-                .background(colors.tertiaryContainer, CircleShape)
+                .background(container, CircleShape)
                 .padding(horizontal = spacing.small, vertical = spacing.extraSmall / 2),
-        color = colors.onTertiaryContainer,
+        color = content,
         style = MaterialTheme.typography.labelMediumEmphasized,
+    )
+}
+
+/**
+ * "Test server" in `secondaryContainer`: the account signed in on Telegram's test servers (`REQUIREMENTS.md` FR-A9),
+ * shown by Settings home's account card and Active sessions.
+ */
+@Composable
+internal fun TestServerLabel(modifier: Modifier = Modifier) {
+    AccountLabel(
+        text = stringResource(R.string.settings_account_test_server),
+        container = MaterialTheme.colorScheme.secondaryContainer,
+        content = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = modifier,
     )
 }
 
@@ -198,6 +234,12 @@ private fun AccountCardPreview() {
 @Composable
 private fun AccountCardPremiumPreview() {
     PingogramPreview { AccountCard(SettingsPreviewData.premiumAccount, onEditProfile = {}) }
+}
+
+@PingogramPreviews
+@Composable
+private fun AccountCardTestServerPreview() {
+    PingogramPreview { AccountCard(SettingsPreviewData.testServerAccount, onEditProfile = {}) }
 }
 
 @PingogramPreviews

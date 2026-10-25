@@ -14,6 +14,8 @@
     <string name="settings_account_username">\@%1$s</string>
     <!-- On the account's card when the account subscribes to Telegram Premium: a status, not an offer. -->
     <string name="settings_account_premium">Premium</string>
+    <!-- A label on the account's card and in Active sessions: the account is signed in on Telegram's test servers (Telegram's test accounts, used by app reviewers), not the real ones. -->
+    <string name="settings_account_test_server">Test server</string>
     <!-- What tapping the account's card does, spoken by screen readers ("double-tap to edit profile"). -->
     <string name="settings_edit_profile_button">Edit profile</string>
     <!-- Snackbar on Settings after the profile was saved. -->

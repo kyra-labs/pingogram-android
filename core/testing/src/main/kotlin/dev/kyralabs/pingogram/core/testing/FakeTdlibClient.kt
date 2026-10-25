@@ -5,6 +5,7 @@ import dev.kyralabs.pingogram.core.tdlib.ConnectionState
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.tdlib.TdlibClient
+import dev.kyralabs.pingogram.core.tdlib.TdlibServers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -23,6 +24,7 @@ import kotlin.reflect.KClass
  *   suspends until every subscriber has taken the update, which keeps tests deterministic.
  * - [authState] and [connectionState] can be set directly; [emitAuthorizationState] and [emitConnectionState] set
  *   them and emit the matching update, in the real client's order.
+ * - [useServers] switches [servers] at once, without a restart's updates, and records each switch ([serverSwitches]).
  */
 class FakeTdlibClient(
     authState: AuthState = AuthState.Initializing,
@@ -30,6 +32,12 @@ class FakeTdlibClient(
 ) : TdlibClient {
     override val authState = MutableStateFlow(authState)
     override val connectionState = MutableStateFlow(connectionState)
+    override val servers = MutableStateFlow(TdlibServers.Production)
+
+    private val switches = CopyOnWriteArrayList<TdlibServers>()
+
+    /** The servers of every [useServers] that switched, in order. */
+    val serverSwitches: List<TdlibServers> get() = switches.toList()
 
     private val mutableUpdates = MutableSharedFlow<TdApi.Update>()
     override val updates: SharedFlow<TdApi.Update> = mutableUpdates.asSharedFlow()
@@ -73,6 +81,12 @@ class FakeTdlibClient(
         // The handler was registered for this function class, so its result has the function's result type.
         @Suppress("UNCHECKED_CAST")
         return handler(function) as TdResult<T>
+    }
+
+    override suspend fun useServers(servers: TdlibServers) {
+        if (this.servers.value == servers) return
+        switches += servers
+        this.servers.value = servers
     }
 
     /** The sent functions of type [F]. */

@@ -15,27 +15,33 @@ class TdlibParametersTest {
             apiHash = "0123456789abcdef0123456789abcdef",
             appVersionName = "0.1.0",
             isDebug = false,
-            useTestDc = false,
         )
     private val key = ByteArray(32) { it.toByte() }
     private val device = DeviceInfo(manufacturer = "Google", model = "Pixel 9", androidVersion = "16")
 
-    private fun parameters(config: TdlibConfig = this.config) =
-        tdlibParameters(config, TdlibDirectories.of(filesDir, config.useTestDc), key, device, languageTag = "en-GB")
+    private fun parameters(servers: TdlibServers = TdlibServers.Production) =
+        tdlibParameters(
+            config,
+            servers,
+            TdlibDirectories.of(filesDir, useTestDc = servers == TdlibServers.Test),
+            key,
+            device,
+            languageTag = "en-GB",
+        )
 
     @Test
-    fun `database and files live under filesDir tdlib`() {
+    fun `database and files live under filesDir tdlib, on the production servers`() {
         val parameters = parameters()
 
         assertEquals(
-            listOf("$filesDir/tdlib/db", "$filesDir/tdlib/files"),
-            listOf(parameters.databaseDirectory, parameters.filesDirectory),
+            listOf(false, "$filesDir/tdlib/db", "$filesDir/tdlib/files"),
+            listOf(parameters.useTestDc, parameters.databaseDirectory, parameters.filesDirectory),
         )
     }
 
     @Test
-    fun `the test DC gets its own directories`() {
-        val parameters = parameters(config.copy(useTestDc = true))
+    fun `the test servers get their own directories`() {
+        val parameters = parameters(TdlibServers.Test)
 
         assertEquals(
             listOf(true, "$filesDir/tdlib-test/db", "$filesDir/tdlib-test/files"),

@@ -7,6 +7,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import dev.kyralabs.pingogram.core.domain.model.Country
+import dev.kyralabs.pingogram.core.domain.model.isTestPhoneNumber
 
 /** E.164: at most 15 digits, calling code included. */
 const val MAX_PHONE_NUMBER_DIGITS = 15
@@ -26,18 +27,26 @@ fun isPlausiblePhoneNumber(
 
 /**
  * Splits the digits of an international number into calling code and national number, by the longest calling code
- * of [countries] it starts with; null if none matches.
+ * of [countries] it starts with; null if none matches. A test account's number, whose +999 no country has, splits
+ * after it (`REQUIREMENTS.md` FR-A9), so it can be pasted as one.
  */
 fun splitInternationalNumber(
     digits: String,
     countries: List<Country>,
-): Pair<String, String>? =
-    countries
-        .asSequence()
-        .flatMap { it.callingCodes }
-        .filter { it.isNotEmpty() && digits.startsWith(it) }
-        .maxByOrNull { it.length }
-        ?.let { code -> code to digits.removePrefix(code).take(MAX_PHONE_NUMBER_DIGITS - code.length) }
+): Pair<String, String>? {
+    val code =
+        countries
+            .asSequence()
+            .flatMap { it.callingCodes }
+            .filter { it.isNotEmpty() && digits.startsWith(it) }
+            .maxByOrNull { it.length }
+            ?: TEST_CALLING_CODE.takeIf { isTestPhoneNumber(digits) }
+            ?: return null
+    return code to digits.removePrefix(code).take(MAX_PHONE_NUMBER_DIGITS - code.length)
+}
+
+/** The calling code of Telegram's test accounts' numbers, +99966 X YYYY. */
+private const val TEST_CALLING_CODE = "999"
 
 /** [current] if it has [callingCode], otherwise the first listed country that has it. */
 fun countryForCallingCode(
