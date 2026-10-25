@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.settings.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
+import dev.kyralabs.pingogram.core.domain.repository.CallDataSaving
 import dev.kyralabs.pingogram.feature.settings.ui.preview.SettingsPreviewData
 import org.junit.Rule
 import org.junit.Test
@@ -49,14 +50,31 @@ class DataStorageScreenScreenshotTest {
     fun clearingLight() =
         capture("clearingLight", ThemeMode.Light, SettingsPreviewData.storage.copy(isClearingCache = true))
 
+    /** The whole page with "Use less data for calls" below the network rows: a window tall enough for all of it. */
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun callsLight() = capture("callsLight", ThemeMode.Light, SettingsPreviewData.storage, CallDataSaving.OnMobileData)
+
+    @Test
+    @Config(qualifiers = "w411dp-h1400dp-xxhdpi")
+    fun callsDark() = capture("callsDark", ThemeMode.Dark, SettingsPreviewData.storage, CallDataSaving.Never)
+
     private val withDialog = SettingsPreviewData.storage.copy(isClearCacheDialogOpen = true)
 
     private fun capture(
         name: String,
         themeMode: ThemeMode,
         state: DataStorageUiState,
+        callDataSaving: CallDataSaving? = null,
     ) = composeRule.captureScreen(javaClass, name, themeMode) {
-        DataStorageScreen(state = state, onEvent = {
-        }, onOpenAutoDownload = {}, onOpenProxies = {}, onOpenNetworkUsage = {}, onBack = {})
+        DataStorageScreen(
+            state = state,
+            onEvent = {},
+            onOpenAutoDownload = {},
+            onOpenProxies = {},
+            onOpenNetworkUsage = {},
+            onBack = {},
+            callDataSaving = callDataSaving,
+        )
     }
 }

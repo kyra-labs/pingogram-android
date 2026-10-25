@@ -15,6 +15,7 @@ dependencies {
     // Decodes QR codes from the camera's frames and from picked images, on the device; nothing leaves it.
     implementation(libs.zxing.core)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 }

@@ -341,6 +341,11 @@ private fun MediaPager(
             onTap = onTap,
             onPlay = { onEvent(MediaViewerEvent.PlayPause) },
             videoSurface = videoSurface,
+            onSideTap =
+                { end: Boolean ->
+                    val target = page + if (end) 1 else -1
+                    if (target in items.indices) scope.launch { pagerState.animateScrollToPage(target) }
+                }.takeIf { !item.isHidden },
             modifier =
                 Modifier.pageSemantics(
                     page = info,

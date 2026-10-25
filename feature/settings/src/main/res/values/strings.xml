@@ -172,6 +172,12 @@
 
     <!-- Data and storage → Sending -->
     <string name="settings_section_sending">Sending</string>
+    <string name="settings_section_calls">Calls</string>
+    <string name="settings_call_data_saving">Use less data for calls</string>
+    <string name="settings_call_data_saving_summary">The video you send in calls goes at most at 360p. Voice stays as it is.</string>
+    <string name="settings_call_data_saving_never">Never</string>
+    <string name="settings_call_data_saving_mobile">Mobile data</string>
+    <string name="settings_call_data_saving_always">Always</string>
     <string name="settings_photos_original">Send photos in original quality</string>
     <string name="settings_photos_original_summary">Photos and videos from the gallery go as files, at their full size and quality, without their location or camera details. You can change it when you send them.</string>
 
