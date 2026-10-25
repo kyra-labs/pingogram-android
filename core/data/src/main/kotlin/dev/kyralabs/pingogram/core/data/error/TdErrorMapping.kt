@@ -158,6 +158,9 @@ private val TELEGRAM_ERRORS: Map<String, DomainError> =
         // Calls: phone.requestCall, phone.acceptCall.
         "USER_PRIVACY_RESTRICTED" to DomainError.CallPrivacyRestricted,
         "PARTICIPANT_VERSION_OUTDATED" to DomainError.CallPeerOutdated,
+        // Who saw a message: messages.getMessageReadParticipants.
+        "MSG_TOO_OLD" to DomainError.MessageViewersUnavailable,
+        "CHAT_TOO_BIG" to DomainError.MessageViewersUnavailable,
         // Polls: messages.sendVote in a poll that was closed meanwhile.
         "MESSAGE_POLL_CLOSED" to DomainError.PollClosed,
     )

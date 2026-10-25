@@ -1108,6 +1108,7 @@ class ChatViewModel internal constructor(
         when (event) {
             is ChatEvent.ShowMessageActions -> messageActions.show(event.messageId)
             is ChatEvent.ShowAllReactions -> messageActions.show(event.messageId, showsPicker = true)
+            is ChatEvent.ShowInteractions -> messageActions.showInteractions(event.messageId, event.reactions)
             ChatEvent.ExpandReactions -> messageActions.showPicker(true)
             ChatEvent.CollapseReactions -> messageActions.showPicker(false)
             ChatEvent.DismissMessageActions -> messageActions.dismiss()

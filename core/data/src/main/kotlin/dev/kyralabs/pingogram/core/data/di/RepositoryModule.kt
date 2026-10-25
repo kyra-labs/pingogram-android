@@ -55,6 +55,7 @@ import dev.kyralabs.pingogram.core.data.repository.TdlibJoinRequestRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLinkRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibLoginEmailRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageActionRepository
+import dev.kyralabs.pingogram.core.data.repository.TdlibMessageInteractionRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibMessageThreadRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibNetworkUsageRepository
@@ -135,6 +136,7 @@ import dev.kyralabs.pingogram.core.domain.repository.JoinRequestRepository
 import dev.kyralabs.pingogram.core.domain.repository.LinkRepository
 import dev.kyralabs.pingogram.core.domain.repository.LoginEmailRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageActionRepository
+import dev.kyralabs.pingogram.core.domain.repository.MessageInteractionRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageRepository
 import dev.kyralabs.pingogram.core.domain.repository.MessageThreadRepository
 import dev.kyralabs.pingogram.core.domain.repository.NetworkRepository
@@ -228,6 +230,9 @@ interface RepositoryModule {
 
     @Binds
     fun messageThreadRepository(repository: TdlibMessageThreadRepository): MessageThreadRepository
+
+    @Binds
+    fun messageInteractionRepository(repository: TdlibMessageInteractionRepository): MessageInteractionRepository
 
     @Binds
     fun attachmentRepository(repository: TdlibAttachmentRepository): AttachmentRepository
