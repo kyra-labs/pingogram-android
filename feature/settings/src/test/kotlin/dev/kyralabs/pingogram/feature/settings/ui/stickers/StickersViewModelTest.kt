@@ -2,8 +2,8 @@ package dev.kyralabs.pingogram.feature.settings.ui.stickers
 
 import app.cash.turbine.test
 import dev.kyralabs.pingogram.core.common.result.DomainError
-import dev.kyralabs.pingogram.core.data.repository.TdlibStickerRepository
 import dev.kyralabs.pingogram.core.data.repository.TdlibStickerSetRepository
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.tdlib.TdError
 import dev.kyralabs.pingogram.core.tdlib.TdResult
 import dev.kyralabs.pingogram.core.testing.FakeTdlibClient
@@ -35,8 +35,9 @@ class StickersViewModelTest {
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
-        client.on(TdApi.GetInstalledStickerSets::class) {
-            val sets = installed.map { setInfo(it, installed = true) }.toTypedArray()
+        client.on(TdApi.GetInstalledStickerSets::class) { request ->
+            val type = request.stickerType
+            val sets = installed.map { setInfo(it, installed = true, type = type) }.toTypedArray()
             TdResult.Success(TdApi.StickerSets(sets.size, sets))
         }
         client.on(TdApi.GetArchivedStickerSets::class) {
@@ -66,6 +67,7 @@ class StickersViewModelTest {
         installed: Boolean = false,
         archived: Boolean = false,
         viewed: Boolean = true,
+        type: TdApi.StickerType = TdApi.StickerTypeRegular(),
     ) = TdApi.StickerSetInfo().apply {
         this.id = id
         title = "Set $id"
@@ -75,11 +77,11 @@ class StickersViewModelTest {
         isInstalled = installed
         isArchived = archived
         isViewed = viewed
-        stickerType = TdApi.StickerTypeRegular()
+        stickerType = type
     }
 
-    private fun TestScope.viewModel(): StickersViewModel {
-        val viewModel = StickersViewModel(TdlibStickerRepository(client), TdlibStickerSetRepository(client))
+    private fun TestScope.viewModel(kind: StickerSetKind = StickerSetKind.Stickers): StickersViewModel {
+        val viewModel = StickersViewModel(kind, TdlibStickerSetRepository(client))
         runCurrent()
         return viewModel
     }
@@ -98,6 +100,44 @@ class StickersViewModelTest {
             assertEquals("set1", content.installed.first().name)
             assertEquals(1, content.archivedCount)
             assertEquals(1, content.newTrendingCount)
+        }
+
+    @Test
+    fun `the emoji page reads and reorders the custom emoji sets, and leaves the sticker sets alone`() =
+        runTest {
+            val viewModel = viewModel(StickerSetKind.Emoji)
+
+            assertEquals(listOf(1L, 2L, 3L), viewModel.ids())
+            assertEquals(
+                StickerSetKind.Emoji,
+                viewModel
+                    .content()
+                    .installed
+                    .first()
+                    .kind,
+            )
+            assertInstanceOf(
+                TdApi.StickerTypeCustomEmoji::class.java,
+                client.sentOf<TdApi.GetInstalledStickerSets>().single().stickerType,
+            )
+            assertInstanceOf(
+                TdApi.StickerTypeCustomEmoji::class.java,
+                client.sentOf<TdApi.GetArchivedStickerSets>().single().stickerType,
+            )
+            assertInstanceOf(
+                TdApi.StickerTypeCustomEmoji::class.java,
+                client.sentOf<TdApi.GetTrendingStickerSets>().single().stickerType,
+            )
+
+            viewModel.onEvent(StickersEvent.Reorder(listOf(3L, 1L, 2L)))
+            runCurrent()
+            val reorder = client.sentOf<TdApi.ReorderInstalledStickerSets>().single()
+            assertInstanceOf(TdApi.StickerTypeCustomEmoji::class.java, reorder.stickerType)
+
+            // A change of the sticker sets is not the emoji page's.
+            client.emit(TdApi.UpdateInstalledStickerSets(TdApi.StickerTypeRegular(), longArrayOf(1, 2)))
+            runCurrent()
+            assertEquals(1, client.sentOf<TdApi.GetInstalledStickerSets>().size)
         }
 
     @Test

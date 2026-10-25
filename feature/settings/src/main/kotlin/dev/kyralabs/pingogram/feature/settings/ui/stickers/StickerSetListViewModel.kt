@@ -7,6 +7,7 @@ import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.common.result.Outcome
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.repository.StickerSetRepository
 import dev.kyralabs.pingogram.core.navigation.StickerSetListRoute
 import kotlinx.collections.immutable.toImmutableList
@@ -25,22 +26,27 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Settings → Stickers' Trending stickers ([archived] false) or Archived stickers page (`REQUIREMENTS.md` FR-C5): the
- * sets of `StickerSetRepository.trendingSets` or `archivedSets`, read again whenever Telegram reports a change, each
- * with "Add", which installs it. The trending sets shown are marked as seen once, as Telegram's apps do, so they no
- * longer count as new.
+ * Settings → Stickers' Trending stickers ([archived] false) or Archived stickers page (`REQUIREMENTS.md` FR-C5), or
+ * Trending emoji and Archived emoji for custom emoji sets ([kind]): the sets of `StickerSetRepository.trendingSets` or
+ * `archivedSets`, read again whenever Telegram reports a change, each with "Add", which installs it. The trending sets
+ * shown are marked as seen once, as Telegram's apps do, so they no longer count as new.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StickerSetListViewModel internal constructor(
     private val archived: Boolean,
     private val repository: StickerSetRepository,
+    private val kind: StickerSetKind = StickerSetKind.Stickers,
 ) : ViewModel() {
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
         repository: StickerSetRepository,
-    ) : this(savedStateHandle.toRoute<StickerSetListRoute>().archived, repository)
+    ) : this(
+        savedStateHandle.toRoute<StickerSetListRoute>().archived,
+        repository,
+        stickerSetKind(savedStateHandle.toRoute<StickerSetListRoute>().emoji),
+    )
 
     private val mutableUiState = MutableStateFlow<StickerSetListUiState>(StickerSetListUiState.Loading)
     val uiState: StateFlow<StickerSetListUiState> = mutableUiState.asStateFlow()
@@ -58,7 +64,7 @@ class StickerSetListViewModel internal constructor(
     init {
         viewModelScope.launch {
             val sets =
-                retries.flatMapLatest { if (archived) repository.archivedSets() else repository.trendingSets() }
+                retries.flatMapLatest { if (archived) repository.archivedSets(kind) else repository.trendingSets(kind) }
             combine(sets, adding) { outcome, busy -> outcome to busy }.collectLatest { (outcome, busy) ->
                 when (outcome) {
                     is Outcome.Success -> {

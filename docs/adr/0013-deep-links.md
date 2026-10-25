@@ -59,11 +59,12 @@ dangerous to act on (a login code someone else asked for).
     opens the user's QR code (`MyQrCodeRoute`); `ChatFolderInvite` (`t.me/addlist/…`, added 2026-10-23) the shared
     folder's sheet (`ChatFolderInviteRoute`, which asks before adding the folder and joining its chats),
     `SettingsSectionChatFolders` the Chat folders page, and `StickerSet` (`t.me/addstickers/…`, added 2026-10-23) the
-    set's sheet (`StickerSetRoute`, which adds the set only on "Add stickers"); a custom emoji pack's link
-    (`expect_custom_emoji`) stays unsupported, as Pingogram offers no custom emoji to add.
+    set's sheet (`StickerSetRoute`, which adds the set only on "Add stickers"); a custom emoji set's link
+    (`t.me/addemoji/…`, `expect_custom_emoji`, added 2026-10-25) the same sheet, "Add emoji", as Settings → Stickers →
+    Emoji manages those sets.
   - Not opened ("Pingogram can't open this kind of link yet", and "Open in browser" for `https` links, which targets a
     browser through a `CATEGORY_APP_BROWSER` selector, or a chooser without Pingogram, so it never comes back here):
-    `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, custom emoji packs, bots
+    `AuthenticationCode` (see Security), `Proxy`, `LanguagePack`, `Theme`, `Background`, bots
     (`BotStartInGroup`, `BotAddToChannel`, `AttachmentMenuBot`, `WebApp`, `MainWebApp`, `Game`), `Invoice`,
     `PassportDataRequest`, `PremiumFeaturesPage`, `PremiumGiftCode`, `PremiumGiftPurchase`, `StarPurchase`, `TonConnect`,
     `TonWalletTransfer`, `GiftAuction`, `GiftCollection`, `UpgradedGift`, `Story`, `StoryAlbum`, `NewStory`, `LiveStory`,

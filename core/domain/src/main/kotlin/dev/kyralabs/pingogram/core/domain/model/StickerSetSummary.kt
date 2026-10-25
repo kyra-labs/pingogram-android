@@ -4,8 +4,8 @@ package dev.kyralabs.pingogram.core.domain.model
  * A sticker set without its stickers (`REQUIREMENTS.md` FR-C5: the sticker panel, Settings → Stickers): its [title],
  * its short [name] (`t.me/addstickers/<name>`), how many stickers it has ([size]) and the sticker that stands for it
  * ([cover], the first one; null while unknown). [isInstalled] and [isArchived] say whether the user installed or
- * archived it, [isOfficial] whether Telegram made it, [isViewed] whether a trending set was seen already.
- * `StickerRepository.stickerSet` loads its stickers.
+ * archived it, [isOfficial] whether Telegram made it, [isViewed] whether a trending set was seen already, and [kind]
+ * whether it holds stickers or custom emoji. `StickerRepository.stickerSet` loads its stickers.
  */
 data class StickerSetSummary(
     val id: Long,
@@ -17,6 +17,7 @@ data class StickerSetSummary(
     val isArchived: Boolean = false,
     val isOfficial: Boolean = false,
     val isViewed: Boolean = true,
+    val kind: StickerSetKind = StickerSetKind.Stickers,
 ) {
     override fun toString() = "StickerSetSummary(id=$id, size=$size, installed=$isInstalled, archived=$isArchived)"
 }
@@ -26,3 +27,12 @@ data class StickerSetDetails(
     val set: StickerSetSummary,
     val stickers: List<Sticker>,
 )
+
+/**
+ * What a set holds (td_api.tl `StickerType`): stickers ([Stickers]) or custom emoji ([Emoji]), which Telegram keeps in
+ * lists of their own, installed, archived and trending alike.
+ */
+enum class StickerSetKind {
+    Stickers,
+    Emoji,
+}

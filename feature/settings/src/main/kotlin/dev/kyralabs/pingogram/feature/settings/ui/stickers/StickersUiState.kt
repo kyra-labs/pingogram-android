@@ -3,10 +3,11 @@ package dev.kyralabs.pingogram.feature.settings.ui.stickers
 import androidx.compose.runtime.Immutable
 import dev.kyralabs.pingogram.core.common.result.DomainError
 import dev.kyralabs.pingogram.core.domain.model.Sticker
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.core.domain.model.StickerSetSummary
 import kotlinx.collections.immutable.ImmutableList
 
-/** What Settings → Stickers shows (`REQUIREMENTS.md` FR-C5). */
+/** What Settings → Stickers, or its Emoji page, shows (`REQUIREMENTS.md` FR-C5). */
 @Immutable
 sealed interface StickersUiState {
     data object Loading : StickersUiState
@@ -30,7 +31,8 @@ sealed interface StickersUiState {
 
 /**
  * A sticker set of a list: its [title] (user content), its short [name] for its link, how many stickers it has
- * ([count]) and its [cover]; [isInstalled] once the user has it, [isBusy] while Telegram is asked to change it.
+ * ([count]) and its [cover], whether it holds stickers or custom emoji ([kind]); [isInstalled] once the user has it,
+ * [isBusy] while Telegram is asked to change it.
  */
 @Immutable
 data class StickerSetItem(
@@ -41,6 +43,7 @@ data class StickerSetItem(
     val cover: Sticker?,
     val isInstalled: Boolean = true,
     val isBusy: Boolean = false,
+    val kind: StickerSetKind = StickerSetKind.Stickers,
 ) {
     override fun toString() = "StickerSetItem(id=$id, count=$count, installed=$isInstalled, busy=$isBusy)"
 }
@@ -63,9 +66,10 @@ internal fun StickerSetSummary.toItem(isBusy: Boolean = false) =
         cover = cover,
         isInstalled = isInstalled,
         isBusy = isBusy,
+        kind = kind,
     )
 
-/** What the user does on Settings → Stickers, handled by [StickersViewModel.onEvent]. */
+/** What the user does on Settings → Stickers or its Emoji page, handled by [StickersViewModel.onEvent]. */
 sealed interface StickersEvent {
     /** Load the sets again after they failed. */
     data object Retry : StickersEvent

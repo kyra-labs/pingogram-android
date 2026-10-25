@@ -3,12 +3,13 @@ package dev.kyralabs.pingogram.feature.settings.ui.preview
 import dev.kyralabs.pingogram.core.domain.model.FileRef
 import dev.kyralabs.pingogram.core.domain.model.Sticker
 import dev.kyralabs.pingogram.core.domain.model.StickerFormat
+import dev.kyralabs.pingogram.core.domain.model.StickerSetKind
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetItem
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickerSetListUiState
 import dev.kyralabs.pingogram.feature.settings.ui.stickers.StickersUiState
 import kotlinx.collections.immutable.persistentListOf
 
-/** The states of Settings → Stickers and its two lists, for previews and screenshot tests. */
+/** The states of Settings → Stickers, its Emoji page and their lists, for previews and screenshot tests. */
 internal object StickersPreviewStates {
     private fun set(
         id: Long,
@@ -17,6 +18,7 @@ internal object StickersPreviewStates {
         count: Int,
         isInstalled: Boolean = true,
         isBusy: Boolean = false,
+        kind: StickerSetKind = StickerSetKind.Stickers,
     ) = StickerSetItem(
         id = id,
         title = title,
@@ -26,6 +28,7 @@ internal object StickersPreviewStates {
         cover = Sticker(id, STICKER_SIDE, STICKER_SIDE, emoji, StickerFormat.Webp, null, FileRef(id.toInt(), 0)),
         isInstalled = isInstalled,
         isBusy = isBusy,
+        kind = kind,
     )
 
     val content =
@@ -62,6 +65,28 @@ internal object StickersPreviewStates {
         )
 
     val noArchived = StickerSetListUiState.Content(persistentListOf())
+
+    /** The Emoji page: the user's custom emoji sets. */
+    val emoji =
+        StickersUiState.Content(
+            installed =
+                persistentListOf(
+                    set(31, "Animated hearts", "❤️", 40, kind = StickerSetKind.Emoji),
+                    set(32, "Tiny flags", "🏳️", 120, kind = StickerSetKind.Emoji),
+                    set(33, "Pixel faces", "🙂", 64, kind = StickerSetKind.Emoji),
+                ),
+            archivedCount = 1,
+            newTrendingCount = 4,
+        )
+
+    val trendingEmoji =
+        StickerSetListUiState.Content(
+            persistentListOf(
+                set(41, "Party time", "🎉", 48, isInstalled = false, kind = StickerSetKind.Emoji),
+                set(42, "Weather icons", "⛅", 36, isInstalled = false, kind = StickerSetKind.Emoji),
+                set(31, "Animated hearts", "❤️", 40, kind = StickerSetKind.Emoji),
+            ),
+        )
 }
 
 /** Telegram's stickers are 512 px on their longer side. */

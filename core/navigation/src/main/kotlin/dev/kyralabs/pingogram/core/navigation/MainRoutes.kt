@@ -61,14 +61,23 @@ data class ChatFolderEditRoute(
     val folderId: Int? = null,
 )
 
-/** The user's sticker sets (`REQUIREMENTS.md` FR-C5): their order, archiving and removing them. */
+/**
+ * The user's sticker sets (`REQUIREMENTS.md` FR-C5), or their custom emoji sets ([emoji]): their order, archiving and
+ * removing them.
+ */
 @Serializable
-data object StickersRoute
+data class StickersRoute(
+    val emoji: Boolean = false,
+)
 
-/** The archived sticker sets ([archived]) or the trending ones, pushed above [StickersRoute]. */
+/**
+ * The archived sticker sets ([archived]) or the trending ones, of custom emoji where [emoji], pushed above
+ * [StickersRoute].
+ */
 @Serializable
 data class StickerSetListRoute(
     val archived: Boolean,
+    val emoji: Boolean = false,
 )
 
 /**

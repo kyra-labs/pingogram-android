@@ -514,6 +514,7 @@ class TdlibLinkRepositoryTest {
                     LinkTarget.MyQrCode,
                 ),
                 Arguments.of(TdApi.InternalLinkTypeStickerSet("garden", false), LinkTarget.StickerSet("garden")),
+                Arguments.of(TdApi.InternalLinkTypeStickerSet("hearts", true), LinkTarget.StickerSet("hearts")),
                 Arguments.of(
                     TdApi.InternalLinkTypeProxy(TdApi.Proxy("proxy.example", 443, TdApi.ProxyTypeMtproto("dd00"))),
                     LinkTarget.ProxyServer(Proxy("proxy.example", 443, ProxyType.Mtproto("dd00"))),
@@ -528,7 +529,6 @@ class TdlibLinkRepositoryTest {
                 TdApi.InternalLinkTypeLanguagePack(),
                 TdApi.InternalLinkTypeTheme(),
                 TdApi.InternalLinkTypeBackground(),
-                TdApi.InternalLinkTypeStickerSet("hearts", true),
                 TdApi.InternalLinkTypeWebApp(),
                 TdApi.InternalLinkTypeInvoice(),
                 TdApi.InternalLinkTypePassportDataRequest(),
