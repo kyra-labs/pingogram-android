@@ -66,24 +66,40 @@ regresses by more than 10%.
   - **The phone number setting.** `MainActivity` waits for "Hide phone numbers" with the Appearance settings, from
     the same file. It used to show the app with numbers hidden, then provide the setting's value as a static
     composition local, which composed the whole app again a frame or two after the first one.
+- The first trace (2026-10-25, the owner's Galaxy S24 Ultra on Android 17, a `benchmarkRelease` build of `main` after
+  the changes above, 5 cold starts):
+  - **To the first frame:** 165–175 ms, and 261 ms for the first start after installing.
+  - **The splash screen waits for the settings file** (`main.awaitSettings`): 52–81 ms, 66 ms on average. The main
+    thread sleeps for 50–60 ms of each cold start, so this is the wait, not work.
+    - The lock state needs only the passcode settings, so nothing in it waits for TDLib. All of it is the file's
+      first read in a cold process.
+    - `PingogramApplication` now starts that read while the activity is created (`app.readSettings`), so the activity
+      finds the settings in memory; the next trace shows how much of the wait goes.
+  - **The app's sections are small:** `app.inject` 4.4 ms, `main.onCreate` 9 ms, `app.starters` 4.8 ms (in the
+    background).
+  - **The emoji font** (`androidx.emoji2`, which Compose brings): its initializer takes 0.5 ms on the main thread. The
+    font loads about 600 ms after the start, 9 ms on a thread of its own, well after the first frame, and the
+    paragraphs laid out again after it did not show among the long frames. It stays: removing it would change how new
+    emoji draw on older Android versions for no measurable gain.
+  - **Compose worked out its semantics in every frame:** about 1.2 s over the trace (`checkForSemanticsChanges`,
+    `sendAccessibilitySemanticsStructureChangeEvents`). It does that only while an accessibility service runs, so one
+    was on during this trace and the benchmarks of §9. The scripts now write the running services into `device.txt`.
+  - **The warm starts did not happen:** Android reported them as hot. "Don't keep activities" did not destroy the
+    activity on this phone, so the scripts now start warm starts with `NEW_TASK | CLEAR_TASK`.
 - Still open:
-  - **The emoji font.** `androidx.emoji2`'s initializer, which Compose brings, loads it from Play services about
-    500 ms after the first frame. Every paragraph is then laid out again. Removing it would change how new emoji
-    draw on older Android versions, so it is measured first (`tools/perfetto/startup.sql`'s last query) and removed
-    only if the owner agrees.
   - **The warm start** (v0.5.0: 171 ms against 135 ms, §9). A warm start runs no `Application.onCreate`: its time is
     the activity's creation, the wait for the settings behind the splash screen (`main.awaitSettings`), the first
     composition and the chat list's first content (`reportFullyDrawn`). Between the first baseline and v0.5.0 the
     start gained the deep links' and shares' handling and `LinkViewModel`, the call and secure window providers, the
     color theme's palette and the chat style in `PingogramTheme`, the third pane's navigator and the story rings above
-    the chat list. Which of them costs what is for the trace to say.
+    the chat list. Which of them costs what is for the next trace's warm starts to say.
 - Measuring a start on a phone: `tools/perfetto/startup.sh` (`startup.ps1` in PowerShell) records one Perfetto trace
   (`startup.pbtxt`) of 5 cold and 5 warm starts of an installed, profileable build (`benchmarkRelease`), with what
   `am start -W` reports for each.
-  Warm starts use the developer option "Don't keep activities" while they run, so leaving the app destroys its
-  activity, as Macrobenchmark's warm starts do. `startup.sql` summarizes the trace: each start's time to first frame
-  and to full display, the app's sections (`app.inject`, `app.tdlibStart`, `app.starters`, `main.onCreate`,
-  `main.awaitSettings`), the main thread's longest framework slices and states, and the emoji font's load. The trace
+  A warm start keeps the process and starts the activity with `NEW_TASK | CLEAR_TASK`, which destroys it and creates it
+  again. `startup.sql` summarizes the trace: each start's time to first frame
+  and to full display, the app's sections (`app.inject`, `app.tdlibStart`, `app.starters`, `app.readSettings`,
+  `main.onCreate`, `main.awaitSettings`), the main thread's longest framework slices and states, and the emoji font's load. The trace
   runs to hundreds of MB (300 MB on a Galaxy S24 Ultra before CPU idle states and binder transactions were left out),
   too large to send: `summarize.py` runs `startup.sql` on it with Perfetto's Python package (`pip install perfetto`)
   into `summary.txt`, a few KB of numbers, which the scripts write themselves where the package is installed.

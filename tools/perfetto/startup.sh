@@ -6,9 +6,8 @@
 # Install a profileable build first and sign in (`./gradlew :app:installFossBenchmarkRelease`), then run this with the
 # phone unlocked and the screen on. It records one Perfetto trace (tools/perfetto/startup.pbtxt) while it starts the app
 # [starts] times cold (the process stopped first) and as many times warm (the process kept, the activity created again),
-# and saves what `am start -W` reports for each start. Warm starts use Android's developer option "Don't keep
-# activities" for their duration, so leaving the app destroys its activity as Macrobenchmark's warm starts do; the option
-# is put back as it was, also when the script stops early.
+# and saves what `am start -W` reports for each start. A warm start keeps the process and starts the activity with
+# NEW_TASK | CLEAR_TASK, which destroys it and creates it again in the running process.
 #
 # It writes startup.perfetto-trace, starts.txt and device.txt into the output directory (default:
 # ./startup-<date>), and summary.txt where Perfetto's Python package is installed (pip install perfetto; summarize.py).
@@ -35,11 +34,9 @@ mkdir -p "$out"
   adb shell getprop ro.build.version.release
   adb shell dumpsys package "$package" | grep -m 1 versionName || true
   adb shell dumpsys package "$package" | grep -m 1 -o "PROFILEABLE[A-Z_]*\|DEBUGGABLE" || echo "profileable: not shown (app sections need a profileable build)"
+  # Accessibility services make Compose work out its semantics in every frame: which ones run, by package name.
+  echo "accessibility services: $(adb shell settings get secure enabled_accessibility_services | tr -d '\r')"
 } > "$out/device.txt"
-
-keep_activities="$(adb shell settings get global always_finish_activities | tr -d '\r')"
-restore() { adb shell settings put global always_finish_activities "${keep_activities/null/0}" >/dev/null; }
-trap restore EXIT
 
 home() { adb shell input keyevent KEYCODE_HOME; sleep 2; }
 
@@ -63,16 +60,14 @@ for i in $(seq 1 "$starts"); do
   sleep "$settle"
 done
 
-adb shell settings put global always_finish_activities 1 >/dev/null
 for i in $(seq 1 "$starts"); do
-  # Leaving the app destroys its activity ("Don't keep activities"); the process stays.
+  # The process stays; NEW_TASK | CLEAR_TASK (0x10008000) destroys the activity and creates it again, a warm start.
   home
   echo "=== warm $i ===" >> "$out/starts.txt"
-  adb shell am start-activity -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "$activity" \
-    >> "$out/starts.txt"
+  adb shell am start-activity -W -f 0x10008000 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER \
+    -n "$activity" >> "$out/starts.txt"
   sleep "$settle"
 done
-restore
 home
 
 echo "Waiting for the trace to end."
