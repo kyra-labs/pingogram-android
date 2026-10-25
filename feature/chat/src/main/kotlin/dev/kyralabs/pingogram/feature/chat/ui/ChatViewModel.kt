@@ -85,6 +85,7 @@ import dev.kyralabs.pingogram.feature.chat.ui.content.opensInViewer
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatForwarding
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ChatTargets
 import dev.kyralabs.pingogram.feature.chat.ui.forward.ForwardSheet
+import dev.kyralabs.pingogram.feature.chat.ui.forward.TargetPreferences
 import dev.kyralabs.pingogram.feature.chat.ui.inline.ChatInlineBots
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotRepositories
 import dev.kyralabs.pingogram.feature.chat.ui.inline.InlineBotUiState
@@ -346,7 +347,7 @@ class ChatViewModel internal constructor(
     recordingClock: () -> Long = SystemClock::elapsedRealtime,
     private val topic: MessageTopic? = null,
     sendsPhotosInOriginalQuality: Flow<Boolean> = flowOf(false),
-    hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
+    targetPreferences: TargetPreferences = TargetPreferences(),
 ) : ViewModel() {
     @AssistedInject
     constructor(
@@ -386,7 +387,7 @@ class ChatViewModel internal constructor(
         customEmojiRepository: CustomEmojiRepository,
         pollRepository: PollRepository,
         scheduledMessageRepository: ScheduledMessageRepository,
-        chatLock: ChatLockRepository,
+        targetPreferences: TargetPreferences,
         @Assisted("messageId") messageId: Long? = null,
         @Assisted("topic") topic: MessageTopic? = null,
     ) : this(
@@ -430,7 +431,7 @@ class ChatViewModel internal constructor(
         messageId,
         topic = topic,
         sendsPhotosInOriginalQuality = composerSettings.sendPhotosInOriginalQuality,
-        hiddenChats = chatLock.hiddenChatIds.filterNotNull(),
+        targetPreferences = targetPreferences,
     )
 
     /**
@@ -796,7 +797,7 @@ class ChatViewModel internal constructor(
             actions = messageActionRepository,
             scope = viewModelScope,
             dispatcher = dispatcher,
-            hiddenChats = hiddenChats,
+            targetPreferences = targetPreferences,
             onEffect = { effectChannel.trySend(it) },
         )
 

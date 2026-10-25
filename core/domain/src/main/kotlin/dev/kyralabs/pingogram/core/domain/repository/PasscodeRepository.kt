@@ -45,5 +45,7 @@ interface PasscodeRepository {
 
     suspend fun setBiometricUnlock(enabled: Boolean): Outcome<Unit>
 
+    suspend fun setDeviceCredentialUnlock(enabled: Boolean): Outcome<Unit>
+
     suspend fun setHideContent(enabled: Boolean): Outcome<Unit>
 }

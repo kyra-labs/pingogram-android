@@ -66,7 +66,7 @@ class ForwardViewModel internal constructor(
     dispatcher: CoroutineDispatcher,
     applicationScope: CoroutineScope,
     private val results: ForwardResults,
-    hiddenChats: Flow<Set<Long>> = flowOf(emptySet()),
+    targetPreferences: TargetPreferences = TargetPreferences(),
 ) : ViewModel() {
     @Inject
     constructor(
@@ -80,7 +80,7 @@ class ForwardViewModel internal constructor(
         @Dispatcher(Default) dispatcher: CoroutineDispatcher,
         @ApplicationScope applicationScope: CoroutineScope,
         results: ForwardResults,
-        chatLock: ChatLockRepository,
+        targetPreferences: TargetPreferences,
     ) : this(
         savedStateHandle.toRoute<ForwardRoute>(),
         chats,
@@ -92,7 +92,7 @@ class ForwardViewModel internal constructor(
         dispatcher,
         applicationScope,
         results,
-        chatLock.hiddenChatIds.filterNotNull(),
+        targetPreferences,
     )
 
     private val closedState = MutableStateFlow(false)
@@ -112,7 +112,7 @@ class ForwardViewModel internal constructor(
             dispatcher = dispatcher,
             sendScope = applicationScope,
             onClosed = { closedState.value = true },
-            hiddenChats = hiddenChats,
+            targetPreferences = targetPreferences,
             onEffect = ::onEffect,
         )
 

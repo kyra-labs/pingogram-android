@@ -12,6 +12,9 @@ import dev.kyralabs.pingogram.feature.settings.ui.passcode.BiometricAvailability
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeChecker
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeEntryUiState
 import dev.kyralabs.pingogram.feature.settings.ui.passcode.PasscodeInput
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.ScreenLock
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.canUnlock
+import dev.kyralabs.pingogram.feature.settings.ui.passcode.screenLockFor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +33,9 @@ import javax.inject.Inject
  * What the passcode entry before locked chats shows.
  *
  * @property entry the passcode entry, for the passcode's type.
- * @property biometricUnlock whether the fingerprint button shows: biometric unlock is on and the device can do it.
+ * @property biometricUnlock whether the fingerprint button shows: biometric unlock (or unlocking with the screen lock)
+ *   is on and the device can do it.
+ * @property screenLock what the system's prompt takes of the phone's screen lock.
  * @property promptBiometrics whether the system's biometric prompt should show by itself, once the entry is in front:
  *   the first time after each lock.
  */
@@ -39,6 +44,7 @@ data class ChatUnlockUiState(
     val entry: PasscodeEntryUiState = PasscodeEntryUiState(),
     val biometricUnlock: Boolean = false,
     val promptBiometrics: Boolean = false,
+    val screenLock: ScreenLock = ScreenLock.Off,
 )
 
 /** What the user does on the passcode entry before locked chats, handled by [ChatUnlockViewModel.onEvent]. */
@@ -91,7 +97,12 @@ class ChatUnlockViewModel
 
         val uiState: StateFlow<ChatUnlockUiState> =
             combine(checker.entry, local) { entry, local ->
-                ChatUnlockUiState(entry, local.biometricUnlock, local.promptBiometrics)
+                ChatUnlockUiState(
+                    entry,
+                    local.biometricUnlock,
+                    local.promptBiometrics,
+                    biometrics.screenLockFor(settings),
+                )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, ChatUnlockUiState())
 
         init {
@@ -142,7 +153,7 @@ class ChatUnlockViewModel
             local.value = LocalState(biometricUnlock = biometricUnlock, promptBiometrics = biometricUnlock)
         }
 
-        private fun canUseBiometrics(): Boolean = settings.biometricUnlock && biometrics.canAuthenticate()
+        private fun canUseBiometrics(): Boolean = biometrics.canUnlock(settings)
 
         private data class LocalState(
             val biometricUnlock: Boolean = false,

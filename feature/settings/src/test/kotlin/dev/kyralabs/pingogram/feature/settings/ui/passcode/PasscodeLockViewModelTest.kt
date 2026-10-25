@@ -28,6 +28,13 @@ import org.junit.jupiter.api.Test
 class PasscodeLockViewModelTest {
     private val appLock = FakeAppLockRepository(passcode = "2580")
     private var biometricsAvailable = true
+    private var screenLockAvailable = false
+    private val availability =
+        object : BiometricAvailability {
+            override fun canAuthenticate() = biometricsAvailable
+
+            override fun canUseScreenLock() = screenLockAvailable
+        }
 
     @BeforeEach
     fun setUp() {
@@ -40,7 +47,7 @@ class PasscodeLockViewModelTest {
     }
 
     private fun TestScope.viewModel(passcodes: FakePasscodeRepository) =
-        PasscodeLockViewModel(passcodes, appLock) { biometricsAvailable }.also { runCurrent() }
+        PasscodeLockViewModel(passcodes, appLock, availability).also { runCurrent() }
 
     private fun TestScope.send(
         viewModel: PasscodeLockViewModel,
@@ -143,6 +150,26 @@ class PasscodeLockViewModelTest {
             send(viewModel, PasscodeLockEvent.Refresh)
 
             assertTrue((viewModel.state as PasscodeLockUiState.On).biometricAvailable)
+        }
+
+    @Test
+    fun `offers the screen lock where the phone has one, off at first, and saves the switch`() =
+        runTest {
+            val passcodes = FakePasscodeRepository()
+            val viewModel = viewModel(passcodes)
+            passcodes.setPasscode("1234", PasscodeType.Pin)
+            runCurrent()
+            assertFalse((viewModel.state as PasscodeLockUiState.On).screenLockAvailable)
+
+            screenLockAvailable = true
+            send(viewModel, PasscodeLockEvent.Refresh)
+            val shown = viewModel.state as PasscodeLockUiState.On
+            assertTrue(shown.screenLockAvailable)
+            assertFalse(shown.screenLockUnlock)
+
+            send(viewModel, PasscodeLockEvent.SetScreenLockUnlock(true))
+            assertTrue((viewModel.state as PasscodeLockUiState.On).screenLockUnlock)
+            assertTrue(passcodes.settings.value.deviceCredentialUnlock)
         }
 
     @Test

@@ -106,6 +106,8 @@ class DataStorePasscodeRepository internal constructor(
 
     override suspend fun setBiometricUnlock(enabled: Boolean) = edit { it[BIOMETRIC_UNLOCK] = enabled }
 
+    override suspend fun setDeviceCredentialUnlock(enabled: Boolean) = edit { it[DEVICE_CREDENTIAL_UNLOCK] = enabled }
+
     override suspend fun setHideContent(enabled: Boolean) = edit { it[HIDE_CONTENT] = enabled }
 
     private suspend fun edit(change: (MutablePreferences) -> Unit): Outcome<Unit> =
@@ -131,6 +133,7 @@ private fun Preferences.toPasscodeSettings(): PasscodeSettings {
         type = enumOrNull<PasscodeType>(this[TYPE]) ?: defaults.type,
         autoLock = enumOrNull<AutoLock>(this[AUTO_LOCK]) ?: defaults.autoLock,
         biometricUnlock = this[BIOMETRIC_UNLOCK] ?: defaults.biometricUnlock,
+        deviceCredentialUnlock = this[DEVICE_CREDENTIAL_UNLOCK] ?: defaults.deviceCredentialUnlock,
         hideContent = this[HIDE_CONTENT] ?: defaults.hideContent,
         failedAttempts = this[FAILED_ATTEMPTS] ?: defaults.failedAttempts,
     )
@@ -155,5 +158,6 @@ private val ITERATIONS = intPreferencesKey("passcode.iterations")
 private val TYPE = stringPreferencesKey("passcode.type")
 private val AUTO_LOCK = stringPreferencesKey("passcode.auto_lock")
 private val BIOMETRIC_UNLOCK = booleanPreferencesKey("passcode.biometric_unlock")
+private val DEVICE_CREDENTIAL_UNLOCK = booleanPreferencesKey("passcode.device_credential_unlock")
 private val HIDE_CONTENT = booleanPreferencesKey("passcode.hide_content")
 private val FAILED_ATTEMPTS = intPreferencesKey("passcode.failed_attempts")
