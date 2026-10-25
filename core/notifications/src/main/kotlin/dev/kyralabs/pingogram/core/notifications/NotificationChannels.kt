@@ -184,7 +184,8 @@ class NotificationChannels
                 }
             manager.createNotificationChannelsCompat(channels)
             OBSOLETE_CHANNELS.forEach(manager::deleteNotificationChannel)
-            (1 until DeviceAccountLimits.MAX_ACCOUNTS_WITH_PREMIUM).filter { it !in slots }.forEach { gone ->
+            for (gone in 1 until DeviceAccountLimits.MAX_ACCOUNTS_WITH_PREMIUM) {
+                if (gone in slots) continue
                 PingogramChannel.entries.filter { it.perAccount }.forEach {
                     manager.deleteNotificationChannel(it.idFor(gone))
                 }

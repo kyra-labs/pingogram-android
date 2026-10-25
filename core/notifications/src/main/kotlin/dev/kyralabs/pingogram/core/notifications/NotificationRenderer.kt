@@ -355,17 +355,27 @@ internal class AccountNotificationRenderer(
         val visible = !calls && !isLocked && group.chatId !in openChatIds
         val previous = shown[group.id]
         val now = Shown(group, visible, isLocked)
-        if (previous == now && !(renamed && visible)) return LockedChange()
+        if (previous == now && !(renamed && now.visible)) return LockedChange()
         shown[group.id] = now
         val alert = ChatNotificationAlerts.shouldAlert(previous?.group, group)
+        show(group, previous, now, alert)
+        return LockedChange(changed = isLocked || previous?.locked == true, alert = isLocked && alert)
+    }
+
+    /** Posts [group] as it shows [now], or cancels what it showed before ([previous]). */
+    private suspend fun show(
+        group: NotificationGroup,
+        previous: Shown?,
+        now: Shown,
+        alert: Boolean,
+    ) {
         // A group seen first now, quietly: TDLib restoring the last run's groups.
-        val restored = visible && previous == null && !alert
+        val restored = now.visible && previous == null && !alert
         when {
             restored && earlier.isStillShown(group, accountName) -> Unit
-            visible -> post(group, alert)
+            now.visible -> post(group, alert)
             previous?.visible == true -> manager.cancel(groupTag, group.id)
         }
-        return LockedChange(changed = isLocked || previous?.locked == true, alert = isLocked && alert)
     }
 
     private suspend fun post(
@@ -422,14 +432,12 @@ internal class AccountNotificationRenderer(
         id: Int,
         notification: Notification,
     ) {
-        if (!canPost()) return
-        manager.notify(tag, id, notification)
+        val canPost =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (canPost) manager.notify(tag, id, notification)
     }
-
-    private fun canPost(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
 
     /**
      * A group as last rendered: whether it was posted as a conversation ([visible]), counted in the locked chats'

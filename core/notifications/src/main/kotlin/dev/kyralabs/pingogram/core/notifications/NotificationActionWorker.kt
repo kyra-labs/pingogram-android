@@ -64,10 +64,14 @@ class NotificationActionWorker
 
         override suspend fun doWork(): Result {
             val action = NotificationAction.fromData(inputData) ?: return Result.failure()
-            val account = accounts(action.slot) ?: return Result.failure()
-            val loggedIn = withTimeoutOrNull(LOGIN_TIMEOUT) { account.auth.awaitLoggedIn() } == true
-            val done = loggedIn && account.notifications.perform(action) is Outcome.Success
-            if (!done && action !is NotificationAction.Dismiss) renderer.refresh(action.slot, action.groupId)
+            val account = accounts(action.slot)
+            val done =
+                account != null &&
+                    withTimeoutOrNull(LOGIN_TIMEOUT) { account.auth.awaitLoggedIn() } == true &&
+                    account.notifications.perform(action) is Outcome.Success
+            if (!done && account != null && action !is NotificationAction.Dismiss) {
+                renderer.refresh(action.slot, action.groupId)
+            }
             return if (done) Result.success() else Result.failure()
         }
 

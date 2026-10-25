@@ -100,10 +100,9 @@ internal class ConversationShortcuts(
                 ShortcutManagerCompat
                     .getDynamicShortcuts(context)
                     .mapNotNull { shortcut ->
-                        val chatId = NotificationIntents.chatIdOfShortcut(shortcut.id)
+                        val chat = NotificationIntents.chatOfShortcut(shortcut.id)?.takeIf { it.slot == slot }
                         val key = shortcut.extras?.getString(KEY_EXTRA)
-                        val own = NotificationIntents.accountOfShortcut(shortcut.id) == slot
-                        if (own && chatId != null && key != null) chatId to key else null
+                        if (chat != null && key != null) chat.chatId to key else null
                     }.toMap(HashMap())
             } catch (_: IllegalStateException) {
                 // The user is locked: before the first unlock after a reboot.
@@ -191,7 +190,7 @@ internal class ConversationShortcuts(
                     ShortcutManagerCompat
                         .getShortcuts(context, flags)
                         .map { it.id }
-                        .filter { NotificationIntents.accountOfShortcut(it) == slot }
+                        .filter { NotificationIntents.chatOfShortcut(it)?.slot == slot }
                 if (ids.isNotEmpty()) {
                     ShortcutManagerCompat.removeDynamicShortcuts(context, ids)
                     ShortcutManagerCompat.removeLongLivedShortcuts(context, ids)

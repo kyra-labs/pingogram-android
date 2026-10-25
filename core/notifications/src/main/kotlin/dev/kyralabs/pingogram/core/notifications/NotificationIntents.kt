@@ -12,7 +12,7 @@ import android.net.Uri
  * app receives it, and the URI's scheme needs no intent filter.
  *
  * With several accounts (`docs/adr/0031-multiple-accounts.md`), each intent and shortcut id names its account's slot
- * as well ([accountOf], [accountOfShortcut]), which the app switches to before opening the chat. The first account's
+ * as well ([accountOf], [chatOfShortcut]), which the app switches to before opening the chat. The first account's
  * are as they were before there were several, so the shortcuts and notifications of earlier versions open in it.
  */
 object NotificationIntents {
@@ -61,7 +61,8 @@ object NotificationIntents {
                     .Builder()
                     .scheme(SCHEME)
                     .authority(LOCKED_CHATS_HOST)
-                    .withAccount(slot)
+                    // Another account's data differs, so it gets a pending intent of its own.
+                    .apply { if (slot != 0) appendQueryParameter(ACCOUNT_PARAMETER, "$slot") }
                     .build()
             intent.putExtra(EXTRA_ACCOUNT, slot)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -114,20 +115,15 @@ object NotificationIntents {
     ): String = if (slot == 0) "$SHORTCUT_PREFIX$chatId" else "$SHORTCUT_PREFIX${slot}_$chatId"
 
     /**
-     * The chat of conversation shortcut [shortcutId] ([shortcutId]): what a share from a Direct Share target names
-     * (`Intent.EXTRA_SHORTCUT_ID`). Null for any other id.
+     * The chat of conversation shortcut [shortcutId] ([shortcutId]) and its account: what a share from a Direct Share
+     * target names (`Intent.EXTRA_SHORTCUT_ID`). Null for any other id.
      */
-    fun chatIdOfShortcut(shortcutId: String?): Long? = shortcutParts(shortcutId)?.second
-
-    /** The account of conversation shortcut [shortcutId] ([shortcutId]); null for any other id. */
-    fun accountOfShortcut(shortcutId: String?): Int? = shortcutParts(shortcutId)?.first
-
-    private fun shortcutParts(shortcutId: String?): Pair<Int, Long>? {
-        val rest = shortcutId?.takeIf { it.startsWith(SHORTCUT_PREFIX) }?.removePrefix(SHORTCUT_PREFIX) ?: return null
-        val separator = rest.indexOf('_')
-        val slot = if (separator < 0) 0 else rest.substring(0, separator).toIntOrNull() ?: return null
-        val chatId = rest.substring(separator + 1).toLongOrNull()?.takeIf { it != NO_CHAT } ?: return null
-        return slot to chatId
+    fun chatOfShortcut(shortcutId: String?): ShortcutChat? {
+        val rest = shortcutId?.takeIf { it.startsWith(SHORTCUT_PREFIX) }?.removePrefix(SHORTCUT_PREFIX)
+        val separator = rest?.indexOf('_') ?: -1
+        val slot = if (separator < 0) 0 else rest?.substring(0, separator)?.toIntOrNull()
+        val chatId = rest?.substring(separator + 1)?.toLongOrNull()?.takeIf { it != NO_CHAT }
+        return if (slot != null && chatId != null) ShortcutChat(slot, chatId) else null
     }
 
     /**
@@ -145,12 +141,8 @@ object NotificationIntents {
             .scheme(SCHEME)
             .authority(CHAT_HOST)
             .appendPath("$chatId")
-            .withAccount(slot)
+            .apply { if (slot != 0) appendQueryParameter(ACCOUNT_PARAMETER, "$slot") }
             .build()
-
-    /** Another account's intents differ from the first's in their data, so each gets a pending intent of its own. */
-    private fun Uri.Builder.withAccount(slot: Int): Uri.Builder =
-        if (slot == 0) this else appendQueryParameter(ACCOUNT_PARAMETER, "$slot")
 
     private const val IMMUTABLE_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
@@ -165,3 +157,9 @@ object NotificationIntents {
     // TDLib's chat ids are never 0.
     private const val NO_CHAT = 0L
 }
+
+/** A conversation shortcut's chat ([NotificationIntents.chatOfShortcut]) and the slot of its account. */
+data class ShortcutChat(
+    val slot: Int,
+    val chatId: Long,
+)

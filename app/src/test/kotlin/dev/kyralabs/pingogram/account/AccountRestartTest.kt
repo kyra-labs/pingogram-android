@@ -20,8 +20,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Which account an intent opens in (`docs/adr/0031-multiple-accounts.md`): the shown one's intents are handed on, another
- * account's switch to it first and open the app again with the intent.
+ * Which account an intent opens in (`docs/adr/0031-multiple-accounts.md`): the shown one's intents are handed on,
+ * another account's switch to it first and open the app again with the intent.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)

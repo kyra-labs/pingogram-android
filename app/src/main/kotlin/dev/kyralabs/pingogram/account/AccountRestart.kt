@@ -118,14 +118,13 @@ private fun Accounts.switching(): AccountSwitching =
 
 /**
  * The account [intent] belongs to: a notification's or a conversation shortcut's ([NotificationIntents.accountOf]),
- * or a share's to a Direct Share target ([NotificationIntents.accountOfShortcut]). Null for intents of no account in
+ * or a share's to a Direct Share target ([NotificationIntents.chatOfShortcut]). Null for intents of no account in
  * particular, which open in the shown one.
  */
 internal fun accountOf(intent: Intent?): Int? {
-    if (intent == null) return null
-    NotificationIntents.accountOf(intent)?.let { return it }
-    val sharing = intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE
-    val fromHistory = intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
-    if (!sharing || fromHistory) return null
-    return NotificationIntents.accountOfShortcut(intent.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID))
+    val sharing = intent?.action == Intent.ACTION_SEND || intent?.action == Intent.ACTION_SEND_MULTIPLE
+    val fromHistory = intent != null && intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+    val sharedTo = intent?.getStringExtra(ShortcutManagerCompat.EXTRA_SHORTCUT_ID)
+    return NotificationIntents.accountOf(intent)
+        ?: NotificationIntents.chatOfShortcut(sharedTo)?.slot?.takeIf { sharing && !fromHistory }
 }

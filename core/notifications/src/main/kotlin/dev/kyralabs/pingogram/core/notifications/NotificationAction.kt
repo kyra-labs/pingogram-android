@@ -3,8 +3,8 @@ package dev.kyralabs.pingogram.core.notifications
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.core.app.RemoteInput
+import androidx.core.net.toUri
 import androidx.work.Data
 
 /**
@@ -156,7 +156,7 @@ internal sealed interface NotificationAction {
                     .setAction(INTENT_ACTION_PREFIX + action)
                     .putExtra(KEY_GROUP_ID, groupId)
                     .putExtra(KEY_ACCOUNT, conversation.slot)
-                    .apply { if (conversation.slot != 0) data = Uri.parse("$ACCOUNT_URI${conversation.slot}") }
+                    .apply { if (conversation.slot != 0) data = "$ACCOUNT_URI${conversation.slot}".toUri() }
                     .apply(extras)
             return PendingIntent.getBroadcast(context, groupId, intent, PendingIntent.FLAG_UPDATE_CURRENT or mutability)
         }
