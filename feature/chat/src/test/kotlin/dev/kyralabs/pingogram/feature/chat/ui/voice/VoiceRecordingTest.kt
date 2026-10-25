@@ -9,8 +9,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -164,6 +170,22 @@ class VoiceRecordingTest {
         assertEquals(listOf(VoiceEvent.Start(locked = true)), events)
         node(R.string.voice_send).performClick()
         assertEquals(VoiceEvent.Send, events.last())
+    }
+
+    @Test
+    fun `screen readers hear Recording and Paused as a polite live region`() {
+        setComposer()
+        microphone().performSemanticsAction(SemanticsActions.OnClick)
+
+        node(R.string.voice_state_recording)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+        node(R.string.voice_pause).performClick()
+
+        node(R.string.voice_state_paused)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+        composeRule
+            .onAllNodesWithContentDescription(string(R.string.voice_state_recording), useUnmergedTree = true)
+            .assertCountEquals(0)
     }
 
     @Test

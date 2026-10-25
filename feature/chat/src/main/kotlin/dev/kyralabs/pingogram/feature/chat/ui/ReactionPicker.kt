@@ -1,6 +1,7 @@
 package dev.kyralabs.pingogram.feature.chat.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -150,9 +151,10 @@ private fun LazyGridScope.sectionHeader(
 
 /**
  * The reactions on the message, all of them, as a [HorizontalUncontainedCarousel] of reaction chips: each its emoji
- * over how often it was added, on `surfaceContainerHighest`, or `secondaryContainer` if the user added it too, masked
- * to the `large` shape. Tapping one but the paid star adds or takes back the user's reaction with a toggle haptic,
- * as the badges on the bubble do. The chips are [reactionTile][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
+ * over how often it was added, on `surfaceContainerHighest`, or `secondaryContainer` with a `primary` outline if the
+ * user added it too (the carousel's mask border, so not by color alone), masked to the `large` shape. Tapping one but
+ * the paid star adds or takes back the user's reaction with a toggle haptic, as the badges on the bubble do. The chips
+ * are [reactionTile][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
  * wide, wider with the font scale, so a count never clips.
  */
 @Composable
@@ -174,7 +176,18 @@ private fun MessageReactionsCarousel(
             onToggle =
                 { choose(ChatEvent.ToggleReaction(sheet.reactionsMessageId, reaction.label)) }
                     .takeIf { reaction.label != ReactionLabel.Paid },
-            modifier = Modifier.maskClip(MaterialTheme.shapes.large),
+            modifier =
+                Modifier.maskClip(MaterialTheme.shapes.large).then(
+                    // The user's own reaction shows by more than its color: a primary outline along the mask.
+                    if (reaction.isChosen) {
+                        Modifier.maskBorder(
+                            BorderStroke(MaterialTheme.sizes.reactionBadgeRing, MaterialTheme.colorScheme.primary),
+                            MaterialTheme.shapes.large,
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
         )
     }
 }

@@ -58,6 +58,11 @@ class MessageFocusScreenshotTest {
     @Config(qualifiers = EXPANDED)
     fun focusedExpandedDark() = captureFocused("focused.expandedDark", ThemeMode.Dark)
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3) the ring still follows the bubble, as tall as its text. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun focusedFontScale200() = captureFocused("focused.fontScale200", ThemeMode.Light)
+
     @Test
     fun hoveredLight() = captureHovered("hovered.light", ThemeMode.Light)
 

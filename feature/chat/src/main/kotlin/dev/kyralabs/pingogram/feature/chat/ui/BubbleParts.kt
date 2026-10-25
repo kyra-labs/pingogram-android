@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.lerp
@@ -155,7 +156,8 @@ internal fun ReactionBadges(
 
 /**
  * A reaction's emoji, with its count when more than one person added it, on a round `surfaceContainerHighest` badge,
- * or `secondaryContainer` when the user chose it too: [chosenFraction] blends them, read in the draw phase. A button
+ * or `secondaryContainer` with a `primary` ring when the user chose it too, so the user's own reaction shows by more
+ * than a color (`REQUIREMENTS.md` §6.3): [chosenFraction] blends them, read in the draw phase. A button
  * if [onClick] is not null. A custom emoji shows its picture, and until it does a tonal dot: the content color as a
  * tint of the badge ([CUSTOM_EMOJI_TINT]), a placeholder rather than a dark mark.
  */
@@ -168,7 +170,8 @@ private fun ReactionBadge(
     val scheme = MaterialTheme.colorScheme
     val container = { lerp(scheme.surfaceContainerHighest, scheme.secondaryContainer, chosenFraction()) }
     val content = { lerp(scheme.onSurfaceVariant, scheme.onSecondaryContainer, chosenFraction()) }
-    BadgeFrame(container, onClick) {
+    val ring = { lerp(scheme.surface, scheme.primary, chosenFraction()) }
+    BadgeFrame(container, onClick, ring) {
         ReactionGlyph(
             reaction.label,
             MaterialTheme.typography.titleMedium,
@@ -204,16 +207,19 @@ private fun MoreReactionsBadge(
 
 /**
  * A reaction badge's frame: a circle at least [reactionBadge][dev.kyralabs.pingogram.core.ui.theme.PingogramSizes]
- * wide, a pill when its content is wider, in [container], with a ring in the conversation's `surface` that sets it off
- * from the bubble it overlaps. A button if [onClick] is not null: its touch target is 48 dp tall without the badge
- * taking more room ([touchTarget]), its state layer clipped to the circle.
+ * wide, a pill when its content is wider, in [container], with a ring ([ring], the conversation's `surface` by default)
+ * that sets it off from the bubble it overlaps, drawn in the draw phase. A button if [onClick] is not null: its touch
+ * target is 48 dp tall without the badge taking more room ([touchTarget]), its state layer clipped to the circle.
  */
 @Composable
 private fun BadgeFrame(
     container: ColorProducer,
     onClick: (() -> Unit)?,
+    ring: ColorProducer? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
+    val surface = MaterialTheme.colorScheme.surface
+    val ringColor = ring ?: ColorProducer { surface }
     val sizes = MaterialTheme.sizes
     val interactions = remember { MutableInteractionSource() }
     val target =
@@ -225,8 +231,9 @@ private fun BadgeFrame(
         modifier =
             target
                 .defaultMinSize(minWidth = sizes.reactionBadge, minHeight = sizes.reactionBadge)
-                .background(MaterialTheme.colorScheme.surface, CircleShape)
-                .padding(sizes.reactionBadgeRing)
+                .drawBehind {
+                    drawRoundRect(ringColor(), cornerRadius = CornerRadius(size.minDimension / 2))
+                }.padding(sizes.reactionBadgeRing)
                 .clip(CircleShape)
                 .then(stateLayer)
                 .drawBehind { drawRect(container()) }

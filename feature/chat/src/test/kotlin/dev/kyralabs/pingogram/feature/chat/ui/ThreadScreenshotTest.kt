@@ -7,6 +7,7 @@ import com.github.takahirom.roborazzi.captureScreenRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ThreadPreviewData
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +35,14 @@ class ThreadScreenshotTest(
 
     @Test
     fun dark() = capture("dark", ThemeMode.Dark)
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "comments")
+        capture("fontScale200", ThemeMode.Light)
+    }
 
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(

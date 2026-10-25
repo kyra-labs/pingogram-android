@@ -12,6 +12,7 @@ import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chat.ui.content.PreviewImages
 import dev.kyralabs.pingogram.feature.chat.ui.preview.SponsoredPreviewData
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -32,6 +33,14 @@ class SponsoredMessageCardScreenshotTest(
 
     @Test
     fun dark() = capture("dark", ThemeMode.Dark)
+
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(cardName == "photo")
+        capture("fontScale200", ThemeMode.Light)
+    }
 
     private fun capture(
         variant: String,

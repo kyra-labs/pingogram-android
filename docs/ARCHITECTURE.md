@@ -62,6 +62,11 @@ Composable ──events──▶ ViewModel ──▶ UseCase / Repository ──
   every update, reset on `AuthorizationStateClosed`) and joins the `Set<TdlibUpdateCache>`
   (`@Binds @IntoSet` in `UpdateCacheModule`) that `PingogramApplication` injects before
   `TdlibClient.start()`. Every new caching repository must join that set.
+- **Connection** (FR-L5, `docs/audit/accessibility.md` A11): `core:domain`'s `ConnectionRepository`
+  (`TdlibConnectionRepository`: `TdlibClient.connectionState` as `ConnectionStatus`) feeds the chat list's pill
+  (`ChatListViewModel`) and the conversation's top bar, through `feature:chat`'s `ChatConnectionViewModel`, a view model
+  of its own beside `ChatViewModel` (the connection is the app's, not the chat's, and only the top bar reads it), which
+  `ConversationRoute` hands to `ChatScreen` as `connection`.
 - **Settings** (`core:datastore`) are the app's own, kept on the device and kept across logouts: one
   Preferences DataStore file (`filesDir/datastore/settings.preferences_pb`, `DataStoreModule`, one
   instance per process, IO dispatcher) behind the settings repositories of `core:domain`, e.g.

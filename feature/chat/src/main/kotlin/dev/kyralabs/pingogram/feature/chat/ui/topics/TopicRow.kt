@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import dev.kyralabs.pingogram.core.domain.model.TopicColor
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
@@ -56,19 +57,22 @@ internal fun TopicRowItem(
         modifier =
             modifier.padding(insets).semantics(mergeDescendants = true) {
                 contentDescription =
-                    listOfNotNull(
-                        topic.name,
-                        resources.getString(R.string.topic_closed).takeIf { topic.isClosed },
-                        resources.getString(R.string.topic_pinned).takeIf { topic.isPinned },
-                        preview?.text,
-                        topic.time,
-                        topic.unreadCount.takeIf { it > 0 }?.let {
-                            resources.getQuantityString(R.plurals.topic_unread, it, it)
-                        },
-                        topic.unreadMentionCount.takeIf { it > 0 }?.let {
-                            resources.getQuantityString(R.plurals.topic_mentions, it, it)
-                        },
-                    ).joinToString()
+                    spokenList(
+                        resources,
+                        listOf(
+                            topic.name,
+                            resources.getString(R.string.topic_closed).takeIf { topic.isClosed },
+                            resources.getString(R.string.topic_pinned).takeIf { topic.isPinned },
+                            preview?.text,
+                            topic.time,
+                            topic.unreadCount.takeIf { it > 0 }?.let {
+                                resources.getQuantityString(R.plurals.topic_unread, it, it)
+                            },
+                            topic.unreadMentionCount.takeIf { it > 0 }?.let {
+                                resources.getQuantityString(R.plurals.topic_mentions, it, it)
+                            },
+                        ),
+                    )
             },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         contentPadding = insetContentPadding(insets),

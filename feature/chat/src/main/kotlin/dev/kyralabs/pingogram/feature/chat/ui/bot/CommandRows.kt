@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.withStyle
 import dev.kyralabs.pingogram.core.ui.component.Avatar
 import dev.kyralabs.pingogram.core.ui.text.numericContent
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.core.ui.text.userContent
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.feature.chat.R
@@ -108,8 +110,9 @@ internal fun Modifier.commandSemantics(
 ): Modifier {
     val bot = item.bot?.name?.resolve()
     val insertLabel = stringResource(R.string.bot_command_insert, item.text)
+    val resources = LocalResources.current
     return semantics {
-        contentDescription = listOfNotNull(item.text, item.description.ifBlank { null }, bot).joinToString(", ")
+        contentDescription = spokenList(resources, listOf(item.text, item.description, bot))
         customActions =
             listOf(
                 CustomAccessibilityAction(insertLabel) {

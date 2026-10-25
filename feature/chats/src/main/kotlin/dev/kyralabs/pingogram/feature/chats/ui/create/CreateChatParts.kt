@@ -2,14 +2,18 @@ package dev.kyralabs.pingogram.feature.chats.ui.create
 
 import android.content.Context
 import android.content.Intent
+import android.icu.text.ListFormatter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,7 +35,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -45,9 +53,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -60,6 +73,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import dev.kyralabs.pingogram.core.ui.component.ContentSheet
 import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.text.bidiIsolated
@@ -211,53 +225,6 @@ internal fun CreateChatTextField(
 }
 
 /**
- * A single choice of a form, every label fitting: Material 3 Expressive's connected [ToggleButton]s, which morph on
- * press and to a full pill when checked, as the contact forms' and Appearance's choices (`docs/DESIGN_SYSTEM.md` §6,
- * "Settings rows").
- */
-@Composable
-internal fun ConnectedChoices(
-    labels: List<String>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val colors = ToggleButtonDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-    val typography = MaterialTheme.typography
-    Row(
-        modifier.fillMaxWidth().selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-    ) {
-        labels.forEachIndexed { index, label ->
-            val checked = index == selectedIndex
-            ToggleButton(
-                checked = checked,
-                onCheckedChange = { onSelect(index) },
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .semantics { role = Role.RadioButton },
-                enabled = enabled,
-                shapes =
-                    when (index) {
-                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                        labels.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
-                    },
-                colors = colors,
-            ) {
-                Text(
-                    text = label,
-                    maxLines = 1,
-                    style = if (checked) typography.labelLargeEmphasized else typography.labelLarge,
-                )
-            }
-        }
-    }
-}
-
-/**
  * The end of a creation form: the `FLOOD_WAIT` countdown ([floodWait]) and the progress of a request ([isWorking]),
  * then the buttons ([actions]) at the end, wrapping onto more lines when they do not fit side by side.
  */
@@ -355,7 +322,17 @@ internal fun NotAddedAlert(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
                 if (dialog.names.isNotEmpty()) {
-                    Text(dialog.names.joinToString(", ") { it.bidiIsolated() }.bidiIsolated())
+                    // In the language's list style ("Ada, Grace, and Alan"), each name isolated from the others.
+                    val locale = LocalConfiguration.current.locales[0]
+                    val names =
+                        remember(dialog.names, locale) {
+                            ListFormatter
+                                .getInstance(
+                                    locale,
+                                ).format(dialog.names.map { it.bidiIsolated() })
+                                .bidiIsolated()
+                        }
+                    Text(names)
                 }
                 Text(
                     stringResource(

@@ -36,6 +36,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import dev.kyralabs.pingogram.core.ui.theme.sizes
@@ -181,14 +185,22 @@ private fun RowScope.LockedContent(
     }
 }
 
-/** The dot that says it records: `error`, swelling with the voice; `onSurfaceVariant` and still while paused. */
+/**
+ * The dot that says it records: `error`, swelling with the voice; `onSurfaceVariant` and still while paused. Screen
+ * readers hear what it shows, "Recording" or "Paused", as a polite live region, so pausing and resuming are announced:
+ * on screen the Pause button turning into Resume says it too, not only the colors.
+ */
 @Composable
 private fun RecordingDot(recording: VoiceRecordingUiState) {
     val meter = recording.meter
     val paused = recording.isPaused
+    val state = stringResource(if (paused) R.string.voice_state_paused else R.string.voice_state_recording)
     Box(
         Modifier
-            .size(MaterialTheme.sizes.recordingDot)
+            .semantics {
+                contentDescription = state
+                liveRegion = LiveRegionMode.Polite
+            }.size(MaterialTheme.sizes.recordingDot)
             .graphicsLayer {
                 val scale = if (paused) 1f else DOT_REST + meter.level * DOT_GROWTH
                 scaleX = scale

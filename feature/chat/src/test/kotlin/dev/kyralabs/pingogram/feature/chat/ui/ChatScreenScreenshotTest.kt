@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureScreenRoboImage
+import dev.kyralabs.pingogram.core.domain.model.ConnectionStatus
 import dev.kyralabs.pingogram.core.ui.component.LoadingIndicatorDelay
 import dev.kyralabs.pingogram.feature.chat.ui.preview.BubblePreviewData
 import dev.kyralabs.pingogram.feature.chat.ui.preview.ChatPreviewData
@@ -53,6 +54,27 @@ class ChatScreenScreenshotTest(
     @Config(qualifiers = MEDIUM)
     fun medium() = captureAudit(ScreenshotVariant.Medium)
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "groupChat")
+        capture(ScreenshotVariant.Light, "fontScale200")
+    }
+
+    /** While TDLib connects, the top bar says so in place of the status (audit A11). */
+    @Test
+    fun connectingLight() {
+        assumeTrue(stateName == "privateChat" || stateName == "groupChat")
+        capture(ScreenshotVariant.Light, "connectingLight", ConnectionStatus.Connecting)
+    }
+
+    @Test
+    fun connectingDark() {
+        assumeTrue(stateName == "privateChat")
+        capture(ScreenshotVariant.Dark, "connectingDark", ConnectionStatus.WaitingForNetwork)
+    }
+
     /** The audit's other looks (`docs/DESIGN_SYSTEM.md` §12) for one representative state only. */
     private fun captureAudit(variant: ScreenshotVariant) {
         assumeTrue(stateName == "groupChat")
@@ -60,11 +82,15 @@ class ChatScreenScreenshotTest(
     }
 
     @OptIn(ExperimentalRoborazziApi::class)
-    private fun capture(variant: ScreenshotVariant) {
+    private fun capture(
+        variant: ScreenshotVariant,
+        name: String = variant.goldenName,
+        connection: ConnectionStatus = ConnectionStatus.Ready,
+    ) {
         val state = STATES.getValue(stateName)
         composeRule.setContent {
             ScreenshotTheme(variant) {
-                ChatScreen(state = state, onEvent = {}, onBack = {})
+                ChatScreen(state = state, onEvent = {}, onBack = {}, connection = connection)
             }
         }
         composeRule.waitForIdle()
@@ -73,7 +99,7 @@ class ChatScreenScreenshotTest(
             composeRule.mainClock.advanceTimeBy(LoadingIndicatorDelay.inWholeMilliseconds)
             composeRule.waitForIdle()
         }
-        captureScreenRoboImage(goldenPath(javaClass, "$stateName.${variant.goldenName}"))
+        captureScreenRoboImage(goldenPath(javaClass, "$stateName.$name"))
     }
 
     companion object {

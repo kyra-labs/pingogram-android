@@ -57,6 +57,14 @@ class ShareScreenshotTest(
         capture("expandedDark", ThemeMode.Dark)
     }
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(stateName == "photosToTwoChats")
+        capture("fontScale200", ThemeMode.Light)
+    }
+
     @OptIn(ExperimentalRoborazziApi::class)
     private fun capture(
         variant: String,

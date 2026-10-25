@@ -26,6 +26,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +38,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -42,6 +48,7 @@ import dev.kyralabs.pingogram.core.ui.component.windowMargin
 import dev.kyralabs.pingogram.core.ui.theme.sizes
 import dev.kyralabs.pingogram.core.ui.theme.spacing
 import dev.kyralabs.pingogram.feature.chats.R
+import kotlinx.coroutines.delay
 import dev.kyralabs.pingogram.core.ui.R as UiR
 
 /** The Chats tab's top bar with the folder tabs ([ChatListTopBar]), or the archive's ([ArchiveTopBar]). */
@@ -91,6 +98,8 @@ internal fun ChatListTopBar(
     // The window margin (§7): 16 dp on compact windows, 24 dp on medium and wider ones.
     val margin = windowMargin()
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        // Behind the bar: what the user touches there stays the bar's.
+        ConnectedAnnouncement(state.connection, Modifier.matchParentSize())
         // As wide as the rows below, so the title and the tabs line up with them on wide windows.
         Column(Modifier.widthIn(max = MaterialTheme.sizes.contentMaxWidth)) {
             TopAppBar(
@@ -271,6 +280,44 @@ private fun ConnectionPill(
         }
     }
 }
+
+/**
+ * "Connected" for screen readers once the connection is back after the pill showed a state (`docs/DESIGN_SYSTEM.md`
+ * §9): a polite live region behind the bar ([modifier] sizes it: a node without bounds would not reach them), empty but
+ * for the [CONNECTED_ANNOUNCEMENT_MILLIS] it holds the word, which change Android announces. Nothing is drawn, and
+ * nothing is announced while the connection was ready all along, as at a start that finds it connected.
+ */
+@Composable
+private fun ConnectedAnnouncement(
+    connection: ConnectionStatus,
+    modifier: Modifier = Modifier,
+) {
+    val ready = connection == ConnectionStatus.Ready
+    // Read only by the effect, so it composes nothing again.
+    var wasDisconnected by remember { mutableStateOf(false) }
+    var announcing by remember { mutableStateOf(false) }
+    LaunchedEffect(ready) {
+        if (!ready) {
+            wasDisconnected = true
+            announcing = false
+        } else if (wasDisconnected) {
+            wasDisconnected = false
+            announcing = true
+            delay(CONNECTED_ANNOUNCEMENT_MILLIS)
+            announcing = false
+        }
+    }
+    val connected = stringResource(R.string.chat_list_connected)
+    Box(
+        modifier.semantics {
+            liveRegion = LiveRegionMode.Polite
+            if (announcing) contentDescription = connected
+        },
+    )
+}
+
+/** How long [ConnectedAnnouncement] holds "Connected": long enough to be read, short enough not to be found later. */
+internal const val CONNECTED_ANNOUNCEMENT_MILLIS = 3_000L
 
 private fun ConnectionStatus.labelRes(): Int =
     when (this) {

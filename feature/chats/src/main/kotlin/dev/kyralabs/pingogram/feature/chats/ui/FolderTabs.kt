@@ -3,6 +3,7 @@ package dev.kyralabs.pingogram.feature.chats.ui
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,7 +33,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import dev.kyralabs.pingogram.core.ui.component.fadingEdges
@@ -150,7 +154,7 @@ private fun FolderButtonGroup(
     }
 }
 
-/** One tab of [FolderButtonGroup]: its label, and its unread count in a badge. */
+/** One tab of [FolderButtonGroup]: its [FolderToggleButton], one tab for screen readers. */
 @Suppress("LongParameterList") // The tab, its texts and state, and the group's shapes, colors and interactions.
 @Composable
 private fun FolderButton(
@@ -165,15 +169,45 @@ private fun FolderButton(
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
 ) {
+    // Tabs rather than check boxes, one always selected (Material's single-select button group sample): screen readers
+    // hear a selected tab, without the toggle button's checked state, which TalkBack would read as "Tab, checked".
+    Box(
+        modifier =
+            modifier.clearAndSetSemantics {
+                role = Role.Tab
+                contentDescription = description
+                this.selected = selected
+                if (enabled) {
+                    onClick {
+                        onSelect(tab.folderId)
+                        true
+                    }
+                } else {
+                    disabled()
+                }
+            },
+        propagateMinConstraints = true,
+    ) {
+        FolderToggleButton(tab, label, selected, onSelect, enabled, shapes, colors, interactionSource)
+    }
+}
+
+/** The button of a [FolderButton]: its label, and its unread count in a badge. */
+@Suppress("LongParameterList") // The tab, its label and state, and the group's shapes, colors and interactions.
+@Composable
+private fun FolderToggleButton(
+    tab: FolderTab,
+    label: String,
+    selected: Boolean,
+    onSelect: (Int?) -> Unit,
+    enabled: Boolean,
+    shapes: ToggleButtonShapes,
+    colors: ToggleButtonColors,
+    interactionSource: MutableInteractionSource,
+) {
     ToggleButton(
         checked = selected,
         onCheckedChange = { onSelect(tab.folderId) },
-        // Tabs rather than check boxes: one is always selected (Material's single-select button group sample).
-        modifier =
-            modifier.semantics {
-                role = Role.Tab
-                contentDescription = description
-            },
         enabled = enabled,
         shapes = shapes,
         colors = colors,

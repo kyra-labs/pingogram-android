@@ -4,6 +4,7 @@ import android.content.res.Resources
 import dev.kyralabs.pingogram.core.domain.model.FormattedText
 import dev.kyralabs.pingogram.core.domain.model.TextEntityType
 import dev.kyralabs.pingogram.core.ui.text.resolve
+import dev.kyralabs.pingogram.core.ui.text.spokenList
 import dev.kyralabs.pingogram.feature.chat.R
 import dev.kyralabs.pingogram.feature.chat.ui.poll.pollDescription
 import dev.kyralabs.pingogram.feature.chat.ui.scheduled.scheduleDescription
@@ -27,32 +28,7 @@ internal fun bubbleDescription(
     // A scheduled message's time is when it goes out: "Sends 9:41 AM", "Sends when Ada is online".
     val shownTime = bubble.schedule?.let { scheduleDescription(resources, it, bubble.time) } ?: bubble.time
     val time = if (bubble.isEdited) resources.getString(R.string.chat_bubble_time_edited, shownTime) else shownTime
-    val content =
-        listOfNotNull(
-            bubble.forwardedFrom?.resolve(resources),
-            bubble.reply?.let { reply ->
-                val text = reply.text.resolve(resources)
-                reply.sender?.let { resources.getString(R.string.chat_bubble_reply, it.resolve(resources), text) }
-                    ?: text
-            },
-            bubble.contentLabel?.resolve(resources),
-            pollDescription(resources, bubble),
-            bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
-            bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),
-            bubble.linkPreview?.title,
-            bubble.reactions.joinToString(", ") { reaction ->
-                resources.getString(R.string.chat_bubble_reaction, reaction.label.spoken(resources), reaction.count)
-            },
-            bubble.selfDestructSeconds?.let {
-                resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
-            },
-            bubble.thread?.let { threadLinkText(resources, it) },
-            bubble.keyboard?.let { keyboard ->
-                val count = keyboard.rows.sumOf { it.size }
-                resources.getQuantityString(R.plurals.bot_buttons_count, count, count)
-            },
-            bubble.searchMatch?.let { resources.getString(R.string.chat_bubble_search_match) },
-        ).filter(String::isNotBlank).joinToString(", ")
+    val content = spokenList(resources, bubbleContent(resources, bubble))
     val status = bubble.status?.let { resources.getString(it.spoken) }
     return if (status != null) {
         resources.getString(R.string.chat_bubble_description, sender, time, content, status)
@@ -60,6 +36,40 @@ internal fun bubbleDescription(
         resources.getString(R.string.chat_bubble_description_incoming, sender, time, content)
     }
 }
+
+/** The parts of [bubble]'s content screen readers hear, in [bubbleDescription]'s order. */
+private fun bubbleContent(
+    resources: Resources,
+    bubble: ChatItem.Bubble,
+): List<String> =
+    listOfNotNull(
+        bubble.forwardedFrom?.resolve(resources),
+        bubble.reply?.let { reply ->
+            val text = reply.text.resolve(resources)
+            reply.sender?.let { resources.getString(R.string.chat_bubble_reply, it.resolve(resources), text) }
+                ?: text
+        },
+        bubble.contentLabel?.resolve(resources),
+        pollDescription(resources, bubble),
+        bubble.translation?.let { translationLabel(resources, it, resources.configuration.locales[0]) },
+        bubble.text.spokenText(bubble.spoilersRevealed, resources.getString(R.string.chat_bubble_spoiler)),
+        bubble.linkPreview?.title,
+        spokenList(
+            resources,
+            bubble.reactions.map { reaction ->
+                resources.getString(R.string.chat_bubble_reaction, reaction.label.spoken(resources), reaction.count)
+            },
+        ),
+        bubble.selfDestructSeconds?.let {
+            resources.getString(R.string.chat_bubble_self_destruct, selfDestructText(resources, it))
+        },
+        bubble.thread?.let { threadLinkText(resources, it) },
+        bubble.keyboard?.let { keyboard ->
+            val count = keyboard.rows.sumOf { it.size }
+            resources.getQuantityString(R.plurals.bot_buttons_count, count, count)
+        },
+        bubble.searchMatch?.let { resources.getString(R.string.chat_bubble_search_match) },
+    )
 
 /** The text, with [spoiler] in place of each hidden spoiler, so a screen reader does not give it away. */
 private fun FormattedText.spokenText(

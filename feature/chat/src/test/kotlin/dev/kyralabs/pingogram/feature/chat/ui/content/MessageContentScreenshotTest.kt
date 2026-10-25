@@ -7,6 +7,8 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import com.github.takahirom.roborazzi.captureRoboImage
 import dev.kyralabs.pingogram.core.domain.model.ThemeMode
 import dev.kyralabs.pingogram.core.ui.theme.PingogramTheme
+import dev.kyralabs.pingogram.feature.chat.ui.FONT_SCALE_200
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -28,6 +30,14 @@ class MessageContentScreenshotTest(
     @Test
     fun dark() = capture("dark", ThemeMode.Dark)
 
+    /** At 200% font scale (`REQUIREMENTS.md` §6.3), the state with the most text: it grows and never clips. */
+    @Test
+    @Config(fontScale = FONT_SCALE_200)
+    fun fontScale200() {
+        assumeTrue(sampleName in FONT_SCALE_200_SAMPLES)
+        capture("fontScale200", ThemeMode.Light)
+    }
+
     private fun capture(
         variant: String,
         themeMode: ThemeMode,
@@ -43,6 +53,9 @@ class MessageContentScreenshotTest(
     }
 
     companion object {
+        /** The samples with the most text, and the voice message the conversation's goldens leave out at 200%. */
+        private val FONT_SCALE_200_SAMPLES = setOf("pollVoted", "audio", "voicePlaying", "documentDownloading")
+
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
         fun samples(): List<Array<Any>> = ContentSamples.map { arrayOf(it.name) }
